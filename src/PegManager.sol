@@ -97,9 +97,9 @@ contract PegManager is IPegManager {
     /// @notice Generates a Taproot address with both key spend and script spend paths
     /// @param internalKey The committee's public key (x-only, 32 bytes)
     /// @param scriptRoot The merkle root of the script spend path
-    /// @param customTweak Additional tweak data for address customization
+    // /// @param customTweak Additional tweak data for address customization
     /// @return taprootAddress bytes (32 bytes output key + 1 byte version)
-    function generateTaprootAddress(bytes32 internalKey, bytes32 scriptRoot, bytes32 customTweak)
+    function generateTaprootAddress(bytes32 internalKey, bytes32 scriptRoot, bytes32)
         public
         view
         returns (bytes memory)
@@ -156,8 +156,7 @@ contract PegManager is IPegManager {
         // 3. Get X, Y point from  tweaked key
         (uint256 internalX, uint256 internalY) = Secp256k1.ecMul(times, Secp256k1.GX, Secp256k1.GY);
         // 4. Add tweaked key point to committee point
-        (uint256 ouptputKeyX, uint256 ouptputKeyY) =
-            Secp256k1.ecAdd(committeePubKeyX, committeePubKeyY, internalX, internalY);
+        (uint256 ouptputKeyX,) = Secp256k1.ecAdd(committeePubKeyX, committeePubKeyY, internalX, internalY);
 
         // 5. Add Taproot script pub key prefix bytes (0x5120)
         return abi.encodePacked(hex"5120", ouptputKeyX);
