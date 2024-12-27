@@ -1,1 +1,2 @@
-TestContract:testBar() (gas: 401)
+FormatTest:testFormat() (gas: 5374)
+TestPegManager:test_getTemporaryPegInAddress() (gas: 2253281)
