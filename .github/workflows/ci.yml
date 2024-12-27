@@ -23,7 +23,7 @@ jobs:
         run: forge install
 
       - name: Check gas snapshots
-        run: forge snapshot --check
+        run: forge snapshot --check --ffi
 
       - name: Run tests
-        run: forge test
+        run: forge test --ffi --vv
