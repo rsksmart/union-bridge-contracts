@@ -177,7 +177,7 @@ Solidity 0.8.4 introduced custom errors, allowing developers to define their own
 TBD
 
 - **Tools for Analysis**:  
-For automated security analysis of the smart contracts to detect vulnerabilities like reentrancy and overflow errors we sill use the following tools:
+For automated security analysis of the smart contracts to detect vulnerabilities like reentrancy and overflow errors we will use the following tools:
 
   - Slither: A static analysis tool for Solidity smart contracts, designed to identify vulnerabilities and coding issues. It provides detailed reports and supports custom checks, allowing developers to improve contract security early in the development cycle.
 

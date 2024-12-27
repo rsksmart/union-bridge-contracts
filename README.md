@@ -1,12 +1,17 @@
 # BitVMX Union Bridge Contracts
 This repository contains the specifications and Solidity code for the Union Bridge Contracts.
 
-## Getting Started
-To build and test this repo you can run:
+## Testing
+1. Copy the `test/.env.example` file to `test/.env` and edit accordingly.
 
+2. Run the test suite:
 ```sh
-forge build
-forge test
+forge test --ffi -vv
+```
+
+For convenience, forge provides a useful command to format the code:
+```sh
+forge fmt
 ```
 
 ## Writing tests
