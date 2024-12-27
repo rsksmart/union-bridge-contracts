@@ -5,6 +5,7 @@ import {CommitteeRegistry} from "./CommitteeRegistry.sol";
 import {Committee} from "./CommitteeRegistry.sol";
 import "./IPegManager.sol";
 import "forge-std/console.sol";
+import "./Secp256k1.sol";
 
 /// @title PegManager
 /// @notice Manages peg-in and peg-out operations between Bitcoin and Rootstock
@@ -117,13 +118,17 @@ contract PegManager is IPegManager {
         console.log("tweakValue");
         console.logBytes32(tweakValue);
 
-        // 2. Create tagged hash for taproot tweak
-        bytes32 tagHash = sha256(abi.encodePacked("TapTweak"));
-        bytes32 tweakedKey = sha256(abi.encodePacked(tagHash, tagHash, internalKey, tweakValue));
+        // 2. Convert to Taproot ScriptPubKey
+        bytes memory scriptPubKey = getScriptPubKey(tweakValue, internalKey);
+        console.log("scriptPubKey");
+        console.logBytes(scriptPubKey);
+
+        // 3. Create tagged hash for taproot tweak
+        bytes32 tweakedKey = generateAddressWithTweak(internalKey, tweakValue);
         console.log("tweakedKey");
         console.logBytes32(tweakedKey);
 
-        // 3. Add Taproot version byte (0x01) to tweaked key
+        // 4. Add Taproot version byte (0x01) to tweaked key
         return abi.encodePacked(hex"01", tweakedKey);
     }
 
@@ -135,6 +140,27 @@ contract PegManager is IPegManager {
         bytes memory preimage = abi.encodePacked(tagHash, tagHash, message);
 
         return sha256(preimage);
+    }
+
+    /// @notice Generates a Taproot address with single key spend path
+    /// @param tweakedKey The tweaked the public key (TapTweak) converted to integer (so it's like a private key)
+    /// @param committeePubKey The committee's public key (x-only, 32 bytes)
+    /// @return scriptPubKey  bytes (32 bytes output y + 2 byte script pubkey prefix)
+    function getScriptPubKey(bytes32 tweakedKey, bytes32 committeePubKey) public pure returns (bytes memory) {
+        // 1. Use tweaked key as internal key (x-only pubkey) to obtain y
+        uint256 times = uint256(tweakedKey);
+        uint256 committeePubKeyX = uint256(committeePubKey);
+        // 2. Get committee even y
+        uint8 even = 0x02;
+        uint256 committeePubKeyY = Secp256k1.deriveY(even, committeePubKeyX);
+        // 3. Get X, Y point from  tweaked key
+        (uint256 internalX, uint256 internalY) = Secp256k1.ecMul(times, Secp256k1.GX, Secp256k1.GY);
+        // 4. Add tweaked key point to committee point
+        (uint256 ouptputKeyX, uint256 ouptputKeyY) =
+            Secp256k1.ecAdd(committeePubKeyX, committeePubKeyY, internalX, internalY);
+
+        // 5. Add Taproot script pub key prefix bytes (0x5120)
+        return abi.encodePacked(hex"5120", ouptputKeyX);
     }
 
     /// @notice Generates a Taproot address with single key spend path
