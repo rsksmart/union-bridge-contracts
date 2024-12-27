@@ -29,7 +29,7 @@ contract TestPegManager is Test {
         pm = new PegManager(registry);
     }
 
-    function test_getTemporaryPegInAddress() public {
+    function test_getTemporaryPegInAddress() public view {
         // check that the function returns the correct taproot address
         bytes memory dummyRskAddress = abi.encodePacked(bytes20(0x4C9a9CbFa14106439B0F96a64d9260F3b8947934));
         uint64 value = 100_000; // 0.001 BTC
