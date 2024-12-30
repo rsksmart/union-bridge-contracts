@@ -6,7 +6,7 @@ This repository contains the specifications and Solidity code for the Union Brid
 
 2. Run the test suite:
 ```sh
-forge test --ffi -vv
+forge test --ffi
 ```
 
 For convenience, forge provides a useful command to format the code:
