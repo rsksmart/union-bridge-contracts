@@ -9,6 +9,11 @@ This repository contains the specifications and Solidity code for the Union Brid
 forge test --ffi -vv
 ```
 
+3. Create gas snapshot:
+```sh
+forge snapshot --ffi
+```
+
 For convenience, forge provides a useful command to format the code:
 ```sh
 forge fmt
