@@ -6,7 +6,12 @@ This repository contains the specifications and Solidity code for the Union Brid
 
 2. Run the test suite:
 ```sh
-forge test --ffi
+forge test --ffi -vv
+```
+
+3. Create gas snapshot:
+```sh
+forge snapshot --ffi
 ```
 
 For convenience, forge provides a useful command to format the code:
