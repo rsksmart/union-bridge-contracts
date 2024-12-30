@@ -1,2 +1,2 @@
-FormatTest:testFormat() (gas: 5374)
-TestPegManager:test_getTemporaryPegInAddress() (gas: 2253281)
+FormatTest:testFormat() (gas: 4994)
+TestPegManager:test_getTemporaryPegInAddress() (gas: 2246965)
