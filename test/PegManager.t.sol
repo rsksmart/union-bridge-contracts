@@ -4,11 +4,14 @@ pragma solidity ^0.8.19;
 import "forge-std/Test.sol";
 import "src/PegManager.sol";
 import "src/CommitteeRegistry.sol";
+import "src/BitcoinManager.sol";
 
 contract TestPegManager is Test {
     PegManager pm;
 
     function setUp() external {
+        BitcoinManager bitcoinManager = new BitcoinManager();
+
         address[2] memory committee1 = [vm.addr(1), vm.addr(2)];
         address[2] memory committee2 = [vm.addr(3), vm.addr(4)];
         address[2] memory committee3 = [vm.addr(5), vm.addr(6)];
@@ -26,7 +29,7 @@ contract TestPegManager is Test {
             committee3, bytes32(hex"2908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785ed")
         );
 
-        pm = new PegManager(registry);
+        pm = new PegManager(registry, bitcoinManager);
     }
 
     function test_getTemporaryPegInAddress() external view {

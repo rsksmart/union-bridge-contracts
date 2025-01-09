@@ -1,17 +1,19 @@
 // SPDX-License-Identifier: UNKNOWN
 pragma solidity ^0.8.19;
 
-interface IPegManager {
+interface IBitcoinManager {
     /// @notice Allows users generate a temporary Bitcoin address to perform a peg-in.
     /// @param rootstockDepositAddress The RSK deposit address
     // /// @param bitcoinReimbursementAddress The BTC reimbursement address
-    /// @param value The amount to peg in
+    /// @param value uint64 The amount to peg in
+    /// @param committeeKey bytes32 Get the current packet's committee key
     /// @return temporaryPegInAddress The temporary peg-in address
     function getTemporaryPegInAddress(
         bytes calldata rootstockDepositAddress,
         // bytes calldata bitcoinReimbursementAddress,
-        uint64 value
-    ) external returns (bytes memory temporaryPegInAddress);
+        uint64 value,
+        bytes32 committeeKey
+    ) external view returns (bytes memory temporaryPegInAddress);
 
     // /// @notice Accepts a peg-in request
     // /// @param pegInRequestTxSPVProof The SPV proof of the peg-in request transaction

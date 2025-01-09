@@ -1,12 +1,9 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.19;
 
-struct Committee {
-    address[2] members;
-    bytes32 internalKey;
-}
+import "./ICommitee.sol";
 
-contract CommitteeRegistry {
+contract CommitteeRegistry is ICommittee {
     mapping(uint256 => Committee) private committees;
     uint256 public committeeCount;
 

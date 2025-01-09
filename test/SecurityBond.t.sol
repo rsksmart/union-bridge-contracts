@@ -5,13 +5,15 @@ import "forge-std/Test.sol";
 import "src/SecurityBond.sol";
 import "src/PegManager.sol";
 import "src/CommitteeRegistry.sol";
+import "src/BitcoinManager.sol";
 
 contract TestSecurityBond is Test {
     SecurityBond sb;
 
     function setUp() external {
+        BitcoinManager bitcoinManager = new BitcoinManager();
         CommitteeRegistry registry = new CommitteeRegistry();
-        PegManager pm = new PegManager(registry);
+        PegManager pm = new PegManager(registry, bitcoinManager);
         sb = new SecurityBond(pm);
     }
 

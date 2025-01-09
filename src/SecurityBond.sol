@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.19;
 
-import "./IPegManager.sol";
+import "./IStreamManager.sol";
 
 contract SecurityBond {
     // Address of the Memeber => Amount provided
     mapping(address => uint256) public depositedSecurityBond;
-    IPegManager pegManager;
+    IStreamManager streamManager;
 
     event newSecurityBondDeposit(address indexed sender, uint64 indexed denomination, uint256 amount);
     event newSecurityBondWithdraw(address indexed sender, uint64 indexed denomination, uint256 amount);
@@ -15,12 +15,12 @@ contract SecurityBond {
     error outOfBound(uint256 sent, uint256 max);
     error failToSend(address to, uint256 value);
 
-    constructor(IPegManager _pegManager) {
-        pegManager = _pegManager;
+    constructor(IStreamManager _streamManager) {
+        streamManager = _streamManager;
     }
 
     function getMinimumDeposit(uint64 denomination) public view returns (uint64) {
-        return pegManager.getStream(denomination).securityBondValue;
+        return streamManager.getStream(denomination).securityBondValue;
     }
 
     function securityBondDeposit(uint64 denomination) external payable {
