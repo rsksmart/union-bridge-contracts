@@ -2,9 +2,9 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import "src/PegManager.sol";
-import "src/CommitteeRegistry.sol";
-import "src/BitcoinManager.sol";
+import {PegManager} from "src/PegManager.sol";
+import {CommitteeRegistry} from "src/CommitteeRegistry.sol";
+import {BitcoinManager} from "src/BitcoinManager.sol";
 
 contract TestPegManager is Test {
     PegManager pm;

@@ -2,10 +2,10 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import "src/SecurityBond.sol";
-import "src/PegManager.sol";
-import "src/CommitteeRegistry.sol";
-import "src/BitcoinManager.sol";
+import {SecurityBond} from "src/SecurityBond.sol";
+import {PegManager, StreamManager} from "src/PegManager.sol";
+import {CommitteeRegistry} from "src/CommitteeRegistry.sol";
+import {BitcoinManager} from "src/BitcoinManager.sol";
 
 contract TestSecurityBond is Test {
     SecurityBond sb;
@@ -33,7 +33,7 @@ contract TestSecurityBond is Test {
         // Arrenge
         uint64 denomination = 111_000; // 0.001 BTC
         // Assert
-        vm.expectRevert("Stream not found");
+        vm.expectRevert(abi.encodeWithSelector(StreamManager.StreamNotFoundByDenomination.selector, denomination));
         // Act
         sb.getMinimumDeposit(denomination);
     }

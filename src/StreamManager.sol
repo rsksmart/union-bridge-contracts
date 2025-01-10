@@ -16,6 +16,8 @@ abstract contract StreamManager is IStreamManager, Initializable {
     // StreamId => Packet.sequenceNumber => SlotId
     mapping(uint256 => mapping(uint256 => Slot[])) public slots; // TODO see how to handle it in a mapping instead of an array
 
+    error StreamNotFoundByDenomination(uint256 denomination);
+
     /// @dev Initializes the streams with their denominations and parameters
     function initialize(uint256 _committeeId, bytes32 _committeeInternalKey) public onlyInitializing {
         denominations = [
@@ -60,7 +62,7 @@ abstract contract StreamManager is IStreamManager, Initializable {
                 return streams[i];
             }
         }
-        revert("Stream not found");
+        revert StreamNotFoundByDenomination(_denomination);
     }
 
     function getStreamById(uint256 _streamId) external view returns (Stream memory) {
