@@ -4,8 +4,8 @@ pragma solidity ^0.8.19;
 import "forge-std/console.sol";
 import "./CommitteeRegistry.sol";
 import "./StreamManager.sol";
-import "./IBitcoinManager.sol";
-import "./IPegManager.sol";
+import "./interfaces/IBitcoinManager.sol";
+import "./interfaces/IPegManager.sol";
 
 /// @title PegManager
 /// @notice Manages peg-in and peg-out operations between Bitcoin and Rootstock

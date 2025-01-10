@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.19;
 
-import "./ICommitee.sol";
+import "./interfaces/ICommitee.sol";
 
 contract CommitteeRegistry is ICommittee {
     mapping(uint256 => Committee) private committees;
