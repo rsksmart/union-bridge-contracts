@@ -3,7 +3,7 @@
 pragma solidity ^0.8.0;
 
 // https://github.com/witnet/elliptic-curve-solidity/blob/master/contracts/EllipticCurve.sol
-import "elliptic-curve-solidity/contracts/EllipticCurve.sol";
+import {EllipticCurve} from "elliptic-curve-solidity/contracts/EllipticCurve.sol";
 
 /**
  * @title Secp256k1 Elliptic Curve

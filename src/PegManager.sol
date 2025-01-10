@@ -2,6 +2,7 @@
 pragma solidity ^0.8.19;
 
 import "forge-std/console.sol";
+//import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.soll";
 import {Committee, ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
 import {Stream, Packet, SlotState, StreamManager} from "./StreamManager.sol";
 import {IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
