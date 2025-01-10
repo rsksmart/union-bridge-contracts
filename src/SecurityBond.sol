@@ -46,12 +46,12 @@ contract SecurityBond is Initializable {
 
         depositedSecurityBond[msg.sender] = depositedSecurityBond[msg.sender] - securityBondValue;
 
+        emit newSecurityBondWithdraw(msg.sender, _denomination, securityBondValue);
+
         // Call returns a boolean value indicating success or failure.
         (bool sent,) = msg.sender.call{value: securityBondValue}("");
         if (!sent) {
             revert failToSend(msg.sender, securityBondValue);
         }
-
-        emit newSecurityBondWithdraw(msg.sender, _denomination, securityBondValue);
     }
 }
