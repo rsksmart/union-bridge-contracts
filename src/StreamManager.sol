@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.19;
 
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {Stream, Packet, Slot, SlotState, IStreamManager} from "./interfaces/IStreamManager.sol";
 
 /// @title Stream Manager
 /// @notice Manages streams
-contract StreamManager is IStreamManager {
+abstract contract StreamManager is IStreamManager, Initializable {
     Stream[5] internal streams;
     uint64[5] internal denominations;
     uint64 internal constant SECURITY_BOND_MULTIPLYER = 2;
@@ -15,7 +16,8 @@ contract StreamManager is IStreamManager {
     // StreamId => Packet.sequenceNumber => SlotId
     mapping(uint256 => mapping(uint256 => Slot[])) public slots; // TODO see how to handle it in a mapping instead of an array
 
-    constructor() {
+    /// @dev Initializes the streams with their denominations and parameters
+    function initialize(uint256 _committeeId, bytes32 _committeeInternalKey) public onlyInitializing {
         denominations = [
             uint64(100_000), // 0.001 BTC
             uint64(1_000_000), // 0.01 BTC
@@ -23,10 +25,7 @@ contract StreamManager is IStreamManager {
             uint64(100_000_000), // 1 BTC
             uint64(1_000_000_000) // 10 BTC
         ];
-    }
 
-    /// @dev Initializes the streams with their denominations and parameters
-    function initializeStreams(uint256 committeeId, bytes32 committeeInternalKey) internal {
         for (uint256 i = 0; i < 5; i++) {
             streams[i].streamId = i;
             streams[i].denomination = denominations[i];
@@ -43,8 +42,8 @@ contract StreamManager is IStreamManager {
             // Then modify it in place
             Packet storage newPacket = packets[i][sequenceNumber];
             newPacket.sequenceNumber = sequenceNumber;
-            newPacket.committeeId = committeeId;
-            newPacket.committeeInternalKey = committeeInternalKey;
+            newPacket.committeeId = _committeeId;
+            newPacket.committeeInternalKey = _committeeInternalKey;
 
             // Initialize slots directly in storage
             for (uint256 j = 0; j < 100; j++) {
@@ -55,9 +54,9 @@ contract StreamManager is IStreamManager {
         }
     }
 
-    function getStream(uint64 denomination) public view returns (Stream memory) {
+    function getStream(uint64 _denomination) public view returns (Stream memory) {
         for (uint256 i = 0; i < 5; i++) {
-            if (streams[i].denomination == denomination) {
+            if (streams[i].denomination == _denomination) {
                 return streams[i];
             }
         }

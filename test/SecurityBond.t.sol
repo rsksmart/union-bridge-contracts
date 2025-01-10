@@ -13,8 +13,11 @@ contract TestSecurityBond is Test {
     function setUp() external {
         BitcoinManager bitcoinManager = new BitcoinManager();
         CommitteeRegistry registry = new CommitteeRegistry();
-        PegManager pm = new PegManager(registry, bitcoinManager);
-        sb = new SecurityBond(pm);
+        registry.initialize();
+        PegManager pm = new PegManager();
+        pm.initialize(registry, bitcoinManager);
+        sb = new SecurityBond();
+        sb.initialize(pm);
     }
 
     function test_getMinimumDeposit_Success() external {

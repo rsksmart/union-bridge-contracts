@@ -1,19 +1,20 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.19;
 
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {Committee, ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
 
-contract CommitteeRegistry is ICommitteeRegistry {
+contract CommitteeRegistry is ICommitteeRegistry, Initializable {
     mapping(uint256 => Committee) private committees;
-    uint256 public committeeCount;
+    uint256 public committeeCount = 0;
 
-    constructor() {
+    function initialize() public initializer {
         committeeCount = 0;
     }
 
-    function registerCommittee(address[2] memory members, bytes32 committeeKey) external returns (uint256) {
+    function registerCommittee(address[2] memory _members, bytes32 _committeeKey) external returns (uint256) {
         uint256 committeeId = committeeCount;
-        committees[committeeId] = Committee(members, committeeKey);
+        committees[committeeId] = Committee(_members, _committeeKey);
         committeeCount++;
         return committeeId;
     }

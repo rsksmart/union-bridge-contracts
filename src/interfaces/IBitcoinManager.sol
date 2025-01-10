@@ -3,16 +3,16 @@ pragma solidity ^0.8.19;
 
 interface IBitcoinManager {
     /// @notice Allows users generate a temporary Bitcoin address to perform a peg-in.
-    /// @param rootstockDepositAddress The RSK deposit address
+    /// @param _rootstockDepositAddress The RSK deposit address
     // /// @param bitcoinReimbursementAddress The BTC reimbursement address
-    /// @param value uint64 The amount to peg in
-    /// @param committeeKey bytes32 Get the current packet's committee key
+    /// @param _value uint64 The amount to peg in
+    /// @param _committeeKey bytes32 Get the current packet's committee key
     /// @return temporaryPegInAddress The temporary peg-in address
     function getTemporaryPegInAddress(
-        bytes calldata rootstockDepositAddress,
+        bytes calldata _rootstockDepositAddress,
         // bytes calldata bitcoinReimbursementAddress,
-        uint64 value,
-        bytes32 committeeKey
+        uint64 _value,
+        bytes32 _committeeKey
     ) external view returns (bytes memory temporaryPegInAddress);
 
     // /// @notice Accepts a peg-in request

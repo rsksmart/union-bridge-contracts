@@ -44,9 +44,9 @@ struct Stream {
 
 interface IStreamManager {
     /// @notice Allows users to get the Stream information for a given denomination
-    /// @param denomination The value to peg in used by the stream in satoshi
+    /// @param _denomination The value to peg in used by the stream in satoshi
     /// @return Stream The stream information
-    function getStream(uint64 denomination) external view returns (Stream memory);
+    function getStream(uint64 _denomination) external view returns (Stream memory);
 
     /// @notice Allows users to get the Stream information for a given index
     /// @param _streamId The index in the array of streams

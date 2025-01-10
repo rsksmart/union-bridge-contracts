@@ -17,6 +17,7 @@ contract TestPegManager is Test {
         address[2] memory committee3 = [vm.addr(5), vm.addr(6)];
 
         CommitteeRegistry registry = new CommitteeRegistry();
+        registry.initialize();
 
         // Register committees with their mock keys. These are Bitcoin x-only public keys.
         registry.registerCommittee(
@@ -29,7 +30,8 @@ contract TestPegManager is Test {
             committee3, bytes32(hex"2908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785ed")
         );
 
-        pm = new PegManager(registry, bitcoinManager);
+        pm = new PegManager();
+        pm.initialize(registry, bitcoinManager);
     }
 
     function test_getTemporaryPegInAddress_Success() external view {
