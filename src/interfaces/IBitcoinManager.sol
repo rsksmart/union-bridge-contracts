@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNKNOWN
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.20;
 
 interface IBitcoinManager {
     /// @notice Allows users generate a temporary Bitcoin address to perform a peg-in.

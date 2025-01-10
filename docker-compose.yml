@@ -1,0 +1,16 @@
+services:
+  # Trail of bits security tools
+  # We will use Slither
+  # https://github.com/trailofbits/eth-security-toolbox/
+  eth-security-toolbox:
+    image: "ghcr.io/trailofbits/eth-security-toolbox/ci:nightly"
+    platform: "linux/amd64"
+    command:
+      - /bin/bash
+      - -c
+      - |
+        solc-select install 0.8.28
+        solc-select use 0.8.28
+        slither ./share --filter-paths "lib/" --exclude naming-convention,low-level-calls
+    volumes:
+      - ./:/share

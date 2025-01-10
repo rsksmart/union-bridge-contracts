@@ -38,8 +38,18 @@ contract ContractTest is Test {
 ```
 
 ## Development
+
 This project uses [Foundry](https://getfoundry.sh). See the [book](https://book.getfoundry.sh/getting-started/installation.html) for instructions on how to install and use Foundry.
 
 ## Best Practices
 
 We are following [https://book.getfoundry.sh/tutorials/best-practices](https://book.getfoundry.sh/tutorials/best-practices)
+
+## Security
+
+We are using [Slither](https://github.com/crytic/slither) static analyzer to check for potentials threats. We are running it through the docker image [eth-security-toolbox](https://github.com/trailofbits/eth-security-toolbox/) from trail of bits.
+Using the following command:
+
+```sh
+docker-compose up
+```
