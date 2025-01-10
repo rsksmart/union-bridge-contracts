@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.19;
 
-import "forge-std/console.sol";
-import "./libraries/Secp256k1.sol";
-import "./interfaces/IBitcoinManager.sol";
+import {console} from "forge-std/console.sol";
+import {Secp256k1} from "./libraries/Secp256k1.sol";
+import {IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
 
 /// @title BitcoinManager
 /// @notice Manages Bitcoin Addresses and Scripts

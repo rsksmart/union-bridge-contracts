@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.19;
 
-import "./interfaces/IStreamManager.sol";
+import {Stream, Packet, Slot, SlotState, IStreamManager} from "./interfaces/IStreamManager.sol";
 
 /// @title Stream Manager
 /// @notice Manages streams

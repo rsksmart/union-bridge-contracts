@@ -6,7 +6,7 @@ struct Committee {
     bytes32 internalKey;
 }
 
-interface ICommittee {
+interface ICommitteeRegistry {
     function registerCommittee(address[2] memory members, bytes32 committeeKey) external returns (uint256);
 
     function getCommittee(uint256 committeeId) external view returns (address[2] memory);

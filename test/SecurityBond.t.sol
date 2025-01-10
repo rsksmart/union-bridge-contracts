@@ -17,7 +17,7 @@ contract TestSecurityBond is Test {
         sb = new SecurityBond(pm);
     }
 
-    function test_getMinimumDeposit() external {
+    function test_getMinimumDeposit_Success() external {
         // Arrenge
         uint64 denomination = 100_000; // 0.001 BTC
         // Act
@@ -26,7 +26,16 @@ contract TestSecurityBond is Test {
         assertEq(minDeposit, denomination * 2, "Error SecurityBond min deposit should be twice the denomination");
     }
 
-    function test_securityBondDeposit_success() public {
+    function test_getMinimumDeposit_Revert_StreamNotFound() external {
+        // Arrenge
+        uint64 denomination = 111_000; // 0.001 BTC
+        // Assert
+        vm.expectRevert("Stream not found");
+        // Act
+        sb.getMinimumDeposit(denomination);
+    }
+
+    function test_securityBondDeposit_Success() public {
         // Arrenge
         uint64 denomination = 100_000; // 0.001 BTC
         uint256 balanceBefore = address(sb).balance;
@@ -43,7 +52,7 @@ contract TestSecurityBond is Test {
         assertEq(depositBalanceAfter - depositBalanceBefore, value, "expect security bond mapping increase of 1 ether");
     }
 
-    function test_securityBondDeposit_revert() public {
+    function test_securityBondDeposit_Revert_DespositBondTooLow() public {
         // Arrenge
         uint64 denomination = 100_000; // 0.001 BTC
         // Assert

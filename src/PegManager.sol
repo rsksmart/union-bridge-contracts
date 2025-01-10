@@ -2,18 +2,18 @@
 pragma solidity ^0.8.19;
 
 import "forge-std/console.sol";
-import "./CommitteeRegistry.sol";
-import "./StreamManager.sol";
-import "./interfaces/IBitcoinManager.sol";
-import "./interfaces/IPegManager.sol";
+import {Committee, ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
+import {Stream, Packet, SlotState, StreamManager} from "./StreamManager.sol";
+import {IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
+import {IPegManager} from "./interfaces/IPegManager.sol";
 
 /// @title PegManager
 /// @notice Manages peg-in and peg-out operations between Bitcoin and Rootstock
 contract PegManager is StreamManager, IPegManager {
-    CommitteeRegistry public immutable committeeRegistry;
+    ICommitteeRegistry public immutable committeeRegistry;
     IBitcoinManager public immutable bitcoinManager;
 
-    constructor(CommitteeRegistry _committeeRegistry, IBitcoinManager _bitcoinManager) {
+    constructor(ICommitteeRegistry _committeeRegistry, IBitcoinManager _bitcoinManager) {
         committeeRegistry = _committeeRegistry;
         bitcoinManager = _bitcoinManager;
         (uint256 committeeId, Committee memory committee) = committeeRegistry.getNextAvailableCommittee();

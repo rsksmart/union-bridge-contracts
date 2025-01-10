@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.19;
 
-import "./interfaces/IStreamManager.sol";
+import {IStreamManager} from "./interfaces/IStreamManager.sol";
 
 contract SecurityBond {
     // Address of the Memeber => Amount provided
