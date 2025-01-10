@@ -1,2 +1,5 @@
-FormatTest:testFormat() (gas: 4994)
-TestPegManager:test_getTemporaryPegInAddress() (gas: 2246965)
+FormatTest:testFormat() (gas: 4955)
+TestPegManager:test_getTemporaryPegInAddress() (gas: 750092)
+TestSecurityBond:test_getMinimumDeposit() (gas: 16596)
+TestSecurityBond:test_securityBondDeposit_revert() (gas: 19768)
+TestSecurityBond:test_securityBondDeposit_success() (gas: 49817)
