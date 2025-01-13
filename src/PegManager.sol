@@ -16,8 +16,8 @@ contract PegManager is IPegManager, StreamManager {
     function initialize(ICommitteeRegistry _committeeRegistry, IBitcoinManager _bitcoinManager) public initializer {
         committeeRegistry = _committeeRegistry;
         bitcoinManager = _bitcoinManager;
-        (uint256 committeeId, Committee memory committee) = committeeRegistry.getNextAvailableCommittee();
-        StreamManager.initialize(committeeId, committee.internalKey);
+        Committee memory committee = committeeRegistry.getNextAvailableCommittee();
+        StreamManager.initialize(committee.internalKey);
     }
 
     function getTemporaryPegInAddress(

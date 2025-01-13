@@ -2,14 +2,17 @@
 pragma solidity ^0.8.20;
 
 struct Committee {
-    address[2] members;
-    bytes32 internalKey;
+    bytes32 internalKey; // BTC public key of the commitee
+    address leader; // TODO add leader logic
+    address backupLeader; // TODO add backup logic
 }
 
 interface ICommitteeRegistry {
-    function registerCommittee(address[2] memory _members, bytes32 _committeeKey) external returns (uint256);
+    function registerCommittee(Committee calldata _committee, address[] memory _members) external;
 
-    function getCommittee(uint256 _committeeId) external view returns (address[2] memory);
+    function getCommittee(bytes32 _committeeKey) external view returns (Committee calldata);
 
-    function getNextAvailableCommittee() external view returns (uint256, Committee memory);
+    function getCommitteeMembers(bytes32 _committeeKey) external view returns (address[] calldata);
+
+    function getNextAvailableCommittee() external view returns (Committee calldata);
 }

@@ -19,7 +19,7 @@ abstract contract StreamManager is IStreamManager, Initializable {
     error StreamNotFoundByDenomination(uint256 denomination);
 
     /// @dev Initializes the streams with their denominations and parameters
-    function initialize(uint256 _committeeId, bytes32 _committeeInternalKey) public onlyInitializing {
+    function initialize(bytes32 _committeeInternalKey) public onlyInitializing {
         denominations = [
             uint64(100_000), // 0.001 BTC
             uint64(1_000_000), // 0.01 BTC
@@ -44,7 +44,6 @@ abstract contract StreamManager is IStreamManager, Initializable {
             // Then modify it in place
             Packet storage newPacket = packets[i][sequenceNumber];
             newPacket.sequenceNumber = sequenceNumber;
-            newPacket.committeeId = _committeeId;
             newPacket.committeeInternalKey = _committeeInternalKey;
 
             // Initialize slots directly in storage

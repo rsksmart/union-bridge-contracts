@@ -2,20 +2,15 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
+import {StreamManager} from "src/PegManager.sol";
 import {SecurityBond} from "src/SecurityBond.sol";
-import {PegManager, StreamManager} from "src/PegManager.sol";
-import {CommitteeRegistry} from "src/CommitteeRegistry.sol";
-import {BitcoinManager} from "src/BitcoinManager.sol";
+import {HelperContract} from "test/HelperContract.sol";
 
-contract TestSecurityBond is Test {
+contract TestSecurityBond is Test, HelperContract {
     SecurityBond sb;
 
     function setUp() external {
-        BitcoinManager bitcoinManager = new BitcoinManager();
-        CommitteeRegistry registry = new CommitteeRegistry();
-        registry.initialize();
-        PegManager pm = new PegManager();
-        pm.initialize(registry, bitcoinManager);
+        this.setUpPegManager();
         sb = new SecurityBond();
         sb.initialize(pm);
     }

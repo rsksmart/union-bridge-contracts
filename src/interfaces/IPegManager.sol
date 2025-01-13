@@ -11,7 +11,7 @@ interface IPegManager {
         bytes calldata _rootstockDepositAddress,
         // bytes calldata bitcoinReimbursementAddress,
         uint64 _value
-    ) external returns (bytes memory temporaryPegInAddress);
+    ) external returns (bytes calldata temporaryPegInAddress);
 
     // /// @notice Accepts a peg-in request
     // /// @param pegInRequestTxSPVProof The SPV proof of the peg-in request transaction

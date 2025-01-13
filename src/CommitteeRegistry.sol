@@ -5,27 +5,49 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 import {Committee, ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
 
 contract CommitteeRegistry is ICommitteeRegistry, Initializable {
-    mapping(uint256 => Committee) private committees;
-    uint256 public committeeCount = 0;
+    uint256 public constant MAX_COMITTEE_SIZE = 100;
+    uint256 public constant MAX_MEMBERS_SIZE = 100;
+    bytes32[] public committees;
+    // Committee key => Comittee
+    mapping(bytes32 => Committee) public committeesByKey;
+    // Committee key => members addresses
+    mapping(bytes32 => address[]) public membersByCommitee;
 
-    function initialize() public initializer {
-        committeeCount = 0;
+    event newCommittee(
+        uint256 indexed committeeId, bytes32 indexed committeeKey, Committee committee, address[] _members
+    );
+
+    error tooManyMembers(uint256 maxMemebersSize);
+    error tooManyCommittees(uint256 maxComitteeSize);
+
+    function initialize() public initializer {}
+
+    function registerCommittee(Committee calldata _committee, address[] calldata _members) external {
+        if (committees.length >= MAX_COMITTEE_SIZE) {
+            revert tooManyCommittees(MAX_COMITTEE_SIZE);
+        }
+        // Set up Committee
+        committees.push(_committee.internalKey);
+        committeesByKey[_committee.internalKey] = _committee;
+
+        // Set up Members
+        if (_members.length > MAX_MEMBERS_SIZE) {
+            revert tooManyMembers(MAX_MEMBERS_SIZE);
+        }
+        // Set up memebers
+        membersByCommitee[_committee.internalKey] = _members;
     }
 
-    function registerCommittee(address[2] memory _members, bytes32 _committeeKey) external returns (uint256) {
-        uint256 committeeId = committeeCount;
-        committees[committeeId] = Committee(_members, _committeeKey);
-        committeeCount++;
-        return committeeId;
+    function getCommittee(bytes32 _committeeKey) external view returns (Committee memory) {
+        return committeesByKey[_committeeKey];
     }
 
-    function getCommittee(uint256 committeeId) external view returns (address[2] memory) {
-        return committees[committeeId].members;
+    function getCommitteeMembers(bytes32 _committeeKey) external view returns (address[] memory) {
+        return membersByCommitee[_committeeKey];
     }
 
-    function getNextAvailableCommittee() external view returns (uint256, Committee memory) {
+    function getNextAvailableCommittee() external view returns (Committee memory) {
         // For now, always return the first committee
-        uint256 committeeId = 0;
-        return (committeeId, committees[committeeId]);
+        return committeesByKey[committees[0]];
     }
 }

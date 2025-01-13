@@ -25,7 +25,7 @@ struct Packet {
     // Slot[] slots; // A dynamic array to store the slots of the packet
     // Arrays should not be in scruct otherwise they are too havy on memory and cause a stack too deep exception
     // uint256 slotLength; // Length of the array (redundant but can be stored if needed)
-    uint256 committeeId; // Unique committee ID
+    // uint256 committeeId; // Unique committee ID // Not Necessary
     bytes32 committeeInternalKey; // The internal key of the committee
 }
 
@@ -46,12 +46,12 @@ interface IStreamManager {
     /// @notice Allows users to get the Stream information for a given denomination
     /// @param _denomination The value to peg in used by the stream in satoshi
     /// @return Stream The stream information
-    function getStream(uint64 _denomination) external view returns (Stream memory);
+    function getStream(uint64 _denomination) external view returns (Stream calldata);
 
     /// @notice Allows users to get the Stream information for a given index
     /// @param _streamId The index in the array of streams
     /// @return Stream The stream information
-    function getStreamById(uint256 _streamId) external view returns (Stream memory);
+    function getStreamById(uint256 _streamId) external view returns (Stream calldata);
 
     /// @notice Get the number of streams
     /// @return uint256 The number of streams
