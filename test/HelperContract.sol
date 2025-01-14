@@ -10,10 +10,13 @@ import {BitcoinManager} from "src/BitcoinManager.sol";
 abstract contract HelperContract is Test {
     BitcoinManager bitcoinManager;
     CommitteeRegistry registry;
+    bytes32 committee1Key;
     Committee committee1;
     address[] memebersCommittee1;
+    bytes32 committee2Key;
     Committee committee2;
     address[] memebersCommittee2;
+    bytes32 committee3Key;
     Committee committee3;
     address[] memebersCommittee3;
     PegManager pm;
@@ -22,33 +25,28 @@ abstract contract HelperContract is Test {
         bitcoinManager = new BitcoinManager();
     }
 
-    function setUpCommitteeRegistry() internal {
-        committee1 = Committee({
-            internalKey: hex"0908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785eb",
-            leader: vm.addr(1),
-            backupLeader: vm.addr(2)
-        });
+    function setUpCommittees() internal {
+        committee1Key = hex"0908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785eb";
+        committee1 = Committee({internalKey: committee1Key, leader: vm.addr(1), backupLeader: vm.addr(2)});
         memebersCommittee1 = new address[](2);
         memebersCommittee1[0] = vm.addr(1);
         memebersCommittee1[1] = vm.addr(2);
 
-        committee2 = Committee({
-            internalKey: hex"1908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785ec",
-            leader: vm.addr(3),
-            backupLeader: vm.addr(4)
-        });
+        committee2Key = hex"1908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785ec";
+        committee2 = Committee({internalKey: committee2Key, leader: vm.addr(3), backupLeader: vm.addr(4)});
         memebersCommittee2 = new address[](2);
         memebersCommittee2[0] = vm.addr(3);
         memebersCommittee2[1] = vm.addr(4);
 
-        committee3 = Committee({
-            internalKey: hex"2908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785ed",
-            leader: vm.addr(5),
-            backupLeader: vm.addr(6)
-        });
+        committee3Key = hex"2908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785ed";
+        committee3 = Committee({internalKey: committee3Key, leader: vm.addr(5), backupLeader: vm.addr(6)});
         memebersCommittee3 = new address[](2);
         memebersCommittee3[0] = vm.addr(5);
         memebersCommittee3[1] = vm.addr(6);
+    }
+
+    function setUpCommitteeRegistry() internal {
+        setUpCommittees();
 
         registry = new CommitteeRegistry();
         registry.initialize();
@@ -105,5 +103,17 @@ abstract contract HelperContract is Test {
                 string(abi.encodePacked("expect", testName, " memeber[", Strings.toString(i), "] to have same address"))
             );
         }
+    }
+
+    function uintToAddress(uint256 i) internal returns (address) {
+        return bytes32ToAddress(uintToBytes32(i));
+    }
+
+    function bytes32ToAddress(bytes32 word) internal returns (address) {
+        return address(bytes20(word));
+    }
+
+    function uintToBytes32(uint256 i) internal returns (bytes32) {
+        return keccak256(abi.encode(i));
     }
 }
