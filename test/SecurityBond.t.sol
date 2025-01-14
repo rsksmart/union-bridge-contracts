@@ -10,7 +10,7 @@ contract TestSecurityBond is Test, HelperContract {
     SecurityBond sb;
 
     function setUp() external {
-        this.setUpPegManager();
+        setUpPegManager();
         sb = new SecurityBond();
         sb.initialize(pm);
     }

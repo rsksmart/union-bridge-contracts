@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 import {PegManager} from "src/PegManager.sol";
 import {Committee, CommitteeRegistry} from "src/CommitteeRegistry.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
@@ -17,11 +18,11 @@ abstract contract HelperContract is Test {
     address[] memebersCommittee3;
     PegManager pm;
 
-    function setUpBitcoinManager() public {
+    function setUpBitcoinManager() internal {
         bitcoinManager = new BitcoinManager();
     }
 
-    function setUpCommitteeRegistry() public {
+    function setUpCommitteeRegistry() internal {
         committee1 = Committee({
             internalKey: hex"0908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785eb",
             leader: vm.addr(1),
@@ -58,10 +59,51 @@ abstract contract HelperContract is Test {
         registry.registerCommittee(committee3, memebersCommittee3);
     }
 
-    function setUpPegManager() public {
-        this.setUpBitcoinManager();
-        this.setUpCommitteeRegistry();
+    function setUpPegManager() internal {
+        setUpBitcoinManager();
+        setUpCommitteeRegistry();
         pm = new PegManager();
         pm.initialize(registry, bitcoinManager);
+    }
+
+    function assertEqCommittee(
+        Committee memory actualCommittee,
+        Committee memory expectedCommittee,
+        string memory testName
+    ) internal {
+        assertEq(
+            actualCommittee.internalKey,
+            expectedCommittee.internalKey,
+            string(abi.encodePacked("expect", testName, "to have  same internalKey"))
+        );
+        assertEq(
+            actualCommittee.leader,
+            expectedCommittee.leader,
+            string(abi.encodePacked("expect", testName, "to have same leader"))
+        );
+        assertEq(
+            actualCommittee.backupLeader,
+            expectedCommittee.backupLeader,
+            string(abi.encodePacked("expect", testName, "to have same backupLeader"))
+        );
+    }
+
+    function assertEqCommitteeMembers(
+        address[] memory actualMembers,
+        address[] memory expectedMembers,
+        string memory testName
+    ) internal {
+        assertEq(
+            actualMembers.length,
+            expectedMembers.length,
+            string(abi.encodePacked("expect", testName, "to have same amount of memebers"))
+        );
+        for (uint256 i = 0; i < actualMembers.length; i++) {
+            assertEq(
+                actualMembers[i],
+                expectedMembers[i],
+                string(abi.encodePacked("expect", testName, " memeber[", Strings.toString(i), "] to have same address"))
+            );
+        }
     }
 }

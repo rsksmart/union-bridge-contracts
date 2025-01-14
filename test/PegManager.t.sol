@@ -6,7 +6,7 @@ import {HelperContract} from "test/HelperContract.sol";
 
 contract TestPegManager is Test, HelperContract {
     function setUp() external {
-        this.setUpPegManager();
+        setUpPegManager();
     }
 
     function test_getTemporaryPegInAddress_Success() external view {

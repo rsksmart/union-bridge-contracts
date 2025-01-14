@@ -2,21 +2,37 @@
 This repository contains the specifications and Solidity code for the Union Bridge Contracts.
 
 ## Testing
-1. Copy the `test/.env.example` file to `test/.env` and edit accordingly.
 
-2. Run the test suite:
-```sh
-forge test --ffi -vv
+You can run the full test suit with:
+
+ ```sh
+bash run.sh
 ```
 
-3. Create gas snapshot:
-```sh
-forge snapshot --ffi
+What it does is runs the followgin steps
+
+1. [Formats the code](https://book.getfoundry.sh/reference/config/formatter):
+
+```
+bash format.sh
 ```
 
-For convenience, forge provides a useful command to format the code:
+2. Run the [test suite](https://book.getfoundry.sh/forge/tests):
+
 ```sh
-forge fmt
+bash test.sh
+```
+
+3. Create [gas snapshot](https://book.getfoundry.sh/forge/gas-function-snapshots):
+
+```sh
+bash gas-snapshot.sh
+```
+
+4. Run [Slither](https://github.com/crytic/slither) in a docker image:
+
+```sh
+docker-compose up
 ```
 
 ## Writing tests
