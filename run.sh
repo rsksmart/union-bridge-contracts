@@ -1,4 +1,6 @@
 #!/bin/sh
+set -eux
+
 bash test.sh
 bash gas-snapshot.sh
-docker-compose up
+sudo docker-compose up
