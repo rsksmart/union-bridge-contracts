@@ -1,21 +1,21 @@
 // SPDX-License-Identifier: Unlicense
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import "src/SecurityBond.sol";
-import "src/PegManager.sol";
-import "src/CommitteeRegistry.sol";
+import {StreamManager} from "src/PegManager.sol";
+import {SecurityBond} from "src/SecurityBond.sol";
+import {HelperContract} from "test/HelperContract.sol";
 
-contract TestSecurityBond is Test {
+contract TestSecurityBond is Test, HelperContract {
     SecurityBond sb;
 
     function setUp() external {
-        CommitteeRegistry registry = new CommitteeRegistry();
-        PegManager pm = new PegManager(registry);
-        sb = new SecurityBond(pm);
+        setUpPegManager();
+        sb = new SecurityBond();
+        sb.initialize(pm);
     }
 
-    function test_getMinimumDeposit() external {
+    function test_getMinimumDeposit_Success() external {
         // Arrenge
         uint64 denomination = 100_000; // 0.001 BTC
         // Act
@@ -24,7 +24,16 @@ contract TestSecurityBond is Test {
         assertEq(minDeposit, denomination * 2, "Error SecurityBond min deposit should be twice the denomination");
     }
 
-    function test_securityBondDeposit_success() public {
+    function test_getMinimumDeposit_Revert_StreamNotFound() external {
+        // Arrenge
+        uint64 denomination = 111_000; // 0.001 BTC
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(StreamManager.StreamNotFoundByDenomination.selector, denomination));
+        // Act
+        sb.getMinimumDeposit(denomination);
+    }
+
+    function test_securityBondDeposit_Success() public {
         // Arrenge
         uint64 denomination = 100_000; // 0.001 BTC
         uint256 balanceBefore = address(sb).balance;
@@ -41,7 +50,7 @@ contract TestSecurityBond is Test {
         assertEq(depositBalanceAfter - depositBalanceBefore, value, "expect security bond mapping increase of 1 ether");
     }
 
-    function test_securityBondDeposit_revert() public {
+    function test_securityBondDeposit_Revert_DespositBondTooLow() public {
         // Arrenge
         uint64 denomination = 100_000; // 0.001 BTC
         // Assert
