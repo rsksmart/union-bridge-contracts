@@ -11,8 +11,14 @@ import "./Secp256k1.sol";
 /// @notice Manages peg-in and peg-out operations between Bitcoin and Rootstock
 contract PegManager is IPegManager {
     CommitteeRegistry public immutable committeeRegistry;
-    Stream[5] public streams;
+    Stream[5] private streams;
     uint64[5] private denominations;
+    uint64 private constant SECURITY_BOND_MULTIPLYER = 2;
+
+    // StreamId => Packet list
+    mapping(uint256 => Packet[]) public packets; // TODO see how to handle it in a mapping instead of an array
+    // StreamId => Packet.sequenceNumber => SlotId
+    mapping(uint256 => mapping(uint256 => Slot[])) public slots; // TODO see how to handle it in a mapping instead of an array
 
     constructor(CommitteeRegistry _committeeRegistry) {
         committeeRegistry = _committeeRegistry;
@@ -33,23 +39,25 @@ contract PegManager is IPegManager {
             streams[i].denomination = denominations[i];
             streams[i].peginPointer = 0;
             streams[i].pegoutPointer = -1;
-            streams[i].securityBondValue = denominations[i] * 2;
+            streams[i].securityBondValue = denominations[i] * SECURITY_BOND_MULTIPLYER;
 
             // Create initial packet
             (uint256 committeeId, Committee memory committee) = committeeRegistry.getNextAvailableCommittee();
 
             // First push an empty packet to storage
-            streams[i].packets.push();
+
+            packets[i].push();
+            uint256 sequenceNumber = packets[i].length - 1;
 
             // Then modify it in place
-            Packet storage newPacket = streams[i].packets[streams[i].packets.length - 1];
-            newPacket.sequenceNumber = 0;
+            Packet storage newPacket = packets[i][sequenceNumber];
+            newPacket.sequenceNumber = sequenceNumber;
             newPacket.committeeId = committeeId;
             newPacket.committeeInternalKey = committee.internalKey;
 
             // Initialize slots directly in storage
             for (uint256 j = 0; j < 100; j++) {
-                newPacket.slots.push(
+                slots[i][sequenceNumber].push(
                     Slot({slotId: j, state: SlotState.EMPTY, utxo: "", peginTx: "", take0Tx: "", take1TX: ""})
                 );
             }
@@ -65,6 +73,14 @@ contract PegManager is IPegManager {
         revert("Stream not found");
     }
 
+    function getStreamById(uint256 _streamId) external view returns (Stream memory) {
+        return streams[_streamId];
+    }
+
+    function getStreamsLength() external view returns (uint256) {
+        return streams.length;
+    }
+
     function getTemporaryPegInAddress(
         bytes calldata rootstockDepositAddress,
         // bytes calldata bitcoinReimbursementAddress,
@@ -74,7 +90,7 @@ contract PegManager is IPegManager {
         Stream memory stream = getStream(value);
 
         // Get the current packet's committee key
-        Packet memory currentPacket = stream.packets[stream.peginPointer];
+        Packet memory currentPacket = packets[stream.streamId][stream.peginPointer];
         bytes32 committeeKey = currentPacket.committeeInternalKey;
         console.log("committeeKey");
         console.logBytes32(committeeKey);

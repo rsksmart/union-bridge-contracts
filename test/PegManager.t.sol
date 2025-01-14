@@ -8,7 +8,7 @@ import "src/CommitteeRegistry.sol";
 contract TestPegManager is Test {
     PegManager pm;
 
-    function setUp() public {
+    function setUp() external {
         address[2] memory committee1 = [vm.addr(1), vm.addr(2)];
         address[2] memory committee2 = [vm.addr(3), vm.addr(4)];
         address[2] memory committee3 = [vm.addr(5), vm.addr(6)];
@@ -29,7 +29,7 @@ contract TestPegManager is Test {
         pm = new PegManager(registry);
     }
 
-    function test_getTemporaryPegInAddress() public view {
+    function test_getTemporaryPegInAddress() external view {
         // check that the function returns the correct taproot address
         bytes memory dummyRskAddress = abi.encodePacked(bytes20(0x4C9a9CbFa14106439B0F96a64d9260F3b8947934));
         uint64 value = 100_000; // 0.001 BTC
