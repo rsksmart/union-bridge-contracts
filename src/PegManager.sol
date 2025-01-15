@@ -34,4 +34,44 @@ contract PegManager is IPegManager, StreamManager {
 
         return bitcoinManager.getTemporaryPegInAddress(_rootstockDepositAddress, _value, committeeKey);
     }
+
+    struct PegInRequestTxSPVProof {
+        uint256 packetNumber; // Packet Index in the Stream
+        address destinationAddress; // destination Address in Rootstock
+        bytes32 btcReinburstmentAddress; // Bitcoin reimburstment address
+        uint64 value; // The denomination of the stream in satoshis
+        bytes32 txHash; // The Bitcoin PegIn Transaction Hash
+        bytes32 blockHash; // The Bitcoin Block Hash where the pegin tx happened
+        string utxo; // UTXO of the PegIn Transaction
+    }
+
+    function acceptPegInRequest(PegInRequestTxSPVProof calldata pegInRequestTxSPVProof) public {
+        // TODO validate who can call this function
+
+        // Validate data in transaction
+        //  Check destination address from second output, after OP_RETURN, and compare it with the destination address from the first output script.
+        //  Contains value bitcoin to the taproot temporary address
+
+        // Validate transaction is in the Block
+
+        // Validate Block is in the BTC Blockchain
+
+        // Validate Block has enough confirmations
+        Stream memory stream = getStream(pegInRequestTxSPVProof.value);
+        stream.pegInConfirmations;
+
+        // Calidate Committee Key against the bitcoin Tx
+        Packet memory packet = getPacket(stream.streamId, pegInRequestTxSPVProof.packetNumber);
+        packet.committeeInternalKey;
+
+        // Store Tx in pegInSlot as Prepared
+        preparePegInTx(
+            stream.streamId,
+            pegInRequestTxSPVProof.packetNumber,
+            pegInRequestTxSPVProof.txHash,
+            pegInRequestTxSPVProof.utxo
+        );
+
+        // Emit event to prepareTakeTransactions
+    }
 }
