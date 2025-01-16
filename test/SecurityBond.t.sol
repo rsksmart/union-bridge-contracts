@@ -15,7 +15,7 @@ contract TestSecurityBond is Test, HelperContract {
         sb.initialize(pm);
     }
 
-    function test_getMinimumDeposit_Success() external {
+    function test_getMinimumDeposit_Success() external view {
         // Arrenge
         uint64 denomination = 100_000; // 0.001 BTC
         // Act

@@ -13,7 +13,7 @@ contract BitcoinManager is IBitcoinManager {
         // bytes calldata bitcoinReimbursementAddress,
         uint64 value,
         bytes32 committeeKey // Get the current packet's committee key
-    ) external view returns (bytes memory bitcoinDepositAddress) {
+    ) external pure returns (bytes memory bitcoinDepositAddress) {
         console.log("committeeKey");
         console.logBytes32(committeeKey);
 
@@ -39,7 +39,7 @@ contract BitcoinManager is IBitcoinManager {
     /// @return taprootAddress bytes (32 bytes output key + 1 byte version)
     function generateTaprootAddress(bytes32 internalKey, bytes32 scriptRoot, bytes32)
         public
-        view
+        pure
         returns (bytes memory)
     {
         // if script root is empty, do not include it in the tweak
@@ -70,7 +70,7 @@ contract BitcoinManager is IBitcoinManager {
         return abi.encodePacked(hex"01", tweakedKey);
     }
 
-    function taggedHash(string memory tag, bytes memory message) public view returns (bytes32) {
+    function taggedHash(string memory tag, bytes memory message) public pure returns (bytes32) {
         console.log("message");
         console.logBytes(message);
 
@@ -96,7 +96,8 @@ contract BitcoinManager is IBitcoinManager {
         // 4. Add tweaked key point to committee point
         (uint256 ouptputKeyX,) = Secp256k1.ecAdd(committeePubKeyX, committeePubKeyY, internalX, internalY);
 
-        // 5. Add Taproot script pub key prefix bytes (0x5120)
+        // 5. Add Taproot script pub key prefix bytes
+        // OP_PUSHNUM_1 (0x51) OP_PUSHBYTES_32 (0x20)
         return abi.encodePacked(hex"5120", ouptputKeyX);
     }
 
