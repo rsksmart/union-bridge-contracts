@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import {PegManager} from "src/PegManager.sol";
 import {Committee, CommitteeRegistry} from "src/CommitteeRegistry.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
+import {RSK_BRIDGE_ADDRESS, Bridge} from "src/interfaces/Bridge.sol";
 
 abstract contract HelperContract is Test {
     BitcoinManager bitcoinManager;
@@ -61,14 +62,14 @@ abstract contract HelperContract is Test {
         setUpBitcoinManager();
         setUpCommitteeRegistry();
         pm = new PegManager();
-        pm.initialize(registry, bitcoinManager);
+        pm.initialize(registry, bitcoinManager, Bridge(RSK_BRIDGE_ADDRESS));
     }
 
     function assertEqCommittee(
         Committee memory actualCommittee,
         Committee memory expectedCommittee,
         string memory testName
-    ) internal {
+    ) internal pure {
         assertEq(
             actualCommittee.internalKey,
             expectedCommittee.internalKey,
@@ -90,7 +91,7 @@ abstract contract HelperContract is Test {
         address[] memory actualMembers,
         address[] memory expectedMembers,
         string memory testName
-    ) internal {
+    ) internal pure {
         assertEq(
             actualMembers.length,
             expectedMembers.length,
@@ -105,15 +106,15 @@ abstract contract HelperContract is Test {
         }
     }
 
-    function uintToAddress(uint256 i) internal returns (address) {
+    function uintToAddress(uint256 i) internal pure returns (address) {
         return bytes32ToAddress(uintToBytes32(i));
     }
 
-    function bytes32ToAddress(bytes32 word) internal returns (address) {
+    function bytes32ToAddress(bytes32 word) internal pure returns (address) {
         return address(bytes20(word));
     }
 
-    function uintToBytes32(uint256 i) internal returns (bytes32) {
+    function uintToBytes32(uint256 i) internal pure returns (bytes32) {
         return keccak256(abi.encode(i));
     }
 }
