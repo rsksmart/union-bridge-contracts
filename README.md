@@ -57,9 +57,14 @@ contract ContractTest is Test {
 
 This project uses [Foundry](https://getfoundry.sh). See the [book](https://book.getfoundry.sh/getting-started/installation.html) for instructions on how to install and use Foundry.
 
-## Best Practices
+### Best Practices
 
 We are following [https://book.getfoundry.sh/tutorials/best-practices](https://book.getfoundry.sh/tutorials/best-practices)
+
+### Precompiled Bridge contract (aka PowPeg or Legacy Bridge)
+
+We use a soldity interface called [Bridge.sol](./src//interfaces/Bridge.sol) to interact with the pre compiled contract, this information was obtained from the [FastBtc bridge contracts](https://github.com/rsksmart/liquidity-bridge-contract/tree/master)
+
 
 ## Security
 
