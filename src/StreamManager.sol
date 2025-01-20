@@ -14,7 +14,7 @@ abstract contract StreamManager is IStreamManager, Initializable {
     // StreamId => Packet list
     mapping(uint256 => Packet[]) public packets; // TODO see how to handle it in a mapping instead of an array
     // StreamId => Packet.sequenceNumber => SlotId
-    mapping(uint256 => mapping(uint256 => Slot[])) public slots; // TODO see how to handle it in a mapping instead of an array
+    mapping(uint256 => mapping(uint256 => Slot[])) internal slots; // TODO see how to handle it in a mapping instead of an array
     // TODO check if we can use another key or a hash for the slots and packets as they are not unique through the streams
 
     error StreamNotFoundByDenomination(uint256 denomination);
@@ -82,6 +82,10 @@ abstract contract StreamManager is IStreamManager, Initializable {
             revert PacketOutOfBound(_packetNumber);
         }
         return packetList[_packetNumber];
+    }
+
+    function getSlot(uint256 _streamId, uint256 _packetNumber, uint256 _slotId) public view returns (Slot memory) {
+        return slots[_streamId][_packetNumber][_slotId];
     }
 
     function getEmptySlotId(uint256 _streamId, uint256 _packetNumber) public view returns (uint256) {

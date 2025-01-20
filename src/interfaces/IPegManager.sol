@@ -7,7 +7,6 @@ struct PegInRequestTxSPVProof {
     string btcReinburstmentAddress; // Bitcoin reimburstment address
     uint64 value; // The denomination of the stream in satoshis
     bytes32 blockHash; // The Bitcoin Block Hash where the pegin tx happened
-    uint256 blockNumber; // The Bitcoin Block Number where the pegin tx happened
     string utxo; // UTXO of the PegIn Transaction
     bytes32 txHash; // The Bitcoin PegIn Transaction Hash
     uint256 merkleBranchPath; // Merkle Path is a uint but is actually an array of bits indicating if the path is left of right according to 1 or 0
@@ -52,4 +51,12 @@ interface IPegManager {
     // /// @param sequenceNumber The sequence number
     // /// @param slotId The slot identifier
     // function selectUTXOsForPegOut(uint256 streamId, uint256 sequenceNumber, uint256 slotId) external;
+
+    error bridgeBtcInexistantBlockHash(bytes32 blockHash);
+    error bridgeBtcBlockNotInBestChain(bytes32 blockHash);
+    error bridgeBtcInconsistentBlock(bytes32 blockHash);
+    error bridgeBtcBlockTooOld(int256 maxDepth);
+    error bridgeBtcTxInvalidMerkleBranch(uint256 merkleBranchPath, bytes32[] merkleBranchHashes);
+    error bridgeBtcUnknownError(int256 errorCode);
+    error notEnoughConfirmations(int256 actual, uint256 expected);
 }

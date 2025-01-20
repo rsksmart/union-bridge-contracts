@@ -8,6 +8,7 @@ contract BridgeMock is Bridge {
     mapping(uint256 => bytes) private headers;
     mapping(bytes32 => bytes) private headersByHash;
     int256 private bestBlock;
+    int256 private confirmations;
 
     receive() external payable override {}
 
@@ -257,13 +258,17 @@ contract BridgeMock is Bridge {
         return int256(2);
     }
 
+    function setBtcTransactionConfirmations(int256 _confirmations) external {
+        confirmations = _confirmations;
+    }
+
     function getBtcTransactionConfirmations(bytes32, bytes32, uint256, bytes32[] calldata)
         external
-        pure
+        view
         override
         returns (int256)
     {
-        return int256(2);
+        return confirmations;
     }
 
     function getLockingCap() external pure override returns (int256) {

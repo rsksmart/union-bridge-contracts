@@ -65,10 +65,10 @@ abstract contract HelperContract is Test {
         setUpCommitteeRegistry();
 
         // Deploy mock of the precompile
-        bridgeMock = new BridgeMock();
         // Set mock bytecode to the expected precompile address
         // https://book.getfoundry.sh/cheatcodes/etch
-        vm.etch(0x0000000000000000000000000000000001000006, address(bridgeMock).code);
+        vm.etch(RSK_BRIDGE_ADDRESS, address(new BridgeMock()).code);
+        bridgeMock = BridgeMock(RSK_BRIDGE_ADDRESS);
 
         pm = new PegManager();
         pm.initialize(registry, bitcoinManager);
