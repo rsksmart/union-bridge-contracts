@@ -7,6 +7,7 @@ contract BridgeMock is Bridge {
     mapping(bytes32 => uint256) private amounts;
     mapping(uint256 => bytes) private headers;
     mapping(bytes32 => bytes) private headersByHash;
+    int256 private bestBlock;
 
     receive() external payable override {}
 
@@ -50,8 +51,12 @@ contract BridgeMock is Bridge {
         return abi.encodePacked(part1, part2, part3);
     }
 
-    function getBtcBlockchainBestChainHeight() external pure override returns (int256) {
-        return 0;
+    function setBtcBlockchainBestChainHeight(int256 _block) external {
+        bestBlock = _block;
+    }
+
+    function getBtcBlockchainBestChainHeight() external view override returns (int256) {
+        return bestBlock;
     }
 
     function getStateForBtcReleaseClient() external pure override returns (bytes memory) {

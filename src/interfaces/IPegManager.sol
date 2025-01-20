@@ -1,6 +1,19 @@
 // SPDX-License-Identifier: UNKNOWN
 pragma solidity ^0.8.20;
 
+struct PegInRequestTxSPVProof {
+    uint256 packetNumber; // Packet Index in the Stream
+    address destinationAddress; // destination Address in Rootstock
+    string btcReinburstmentAddress; // Bitcoin reimburstment address
+    uint64 value; // The denomination of the stream in satoshis
+    bytes32 blockHash; // The Bitcoin Block Hash where the pegin tx happened
+    uint256 blockNumber; // The Bitcoin Block Number where the pegin tx happened
+    string utxo; // UTXO of the PegIn Transaction
+    bytes32 txHash; // The Bitcoin PegIn Transaction Hash
+    uint256 merkleBranchPath; // Merkle Path is a uint but is actually an array of bits indicating if the path is left of right according to 1 or 0
+    bytes32[] merkleBranchHashes; // Merkle Branch Hashes are the hashes that will be used together with the merkleBranchPath to obtain the Merkle Root, this is an optimization to avoid sending the whole Merkle Tree
+}
+
 interface IPegManager {
     /// @notice Allows users generate a temporary Bitcoin address to perform a peg-in.
     /// @param _rootstockDepositAddress The RSK deposit address

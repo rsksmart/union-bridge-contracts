@@ -2,11 +2,12 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {PegManager} from "src/PegManager.sol";
 import {Committee, CommitteeRegistry} from "src/CommitteeRegistry.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
 import {RSK_BRIDGE_ADDRESS, Bridge} from "src/interfaces/Bridge.sol";
+import {BridgeMock} from "./BridgeMock.sol";
 
 abstract contract HelperContract is Test {
     BitcoinManager bitcoinManager;
@@ -21,6 +22,7 @@ abstract contract HelperContract is Test {
     Committee committee3;
     address[] memebersCommittee3;
     PegManager pm;
+    BridgeMock bridgeMock;
 
     function setUpBitcoinManager() internal {
         bitcoinManager = new BitcoinManager();
@@ -61,8 +63,15 @@ abstract contract HelperContract is Test {
     function setUpPegManager() internal {
         setUpBitcoinManager();
         setUpCommitteeRegistry();
+
+        // Deploy mock of the precompile
+        bridgeMock = new BridgeMock();
+        // Set mock bytecode to the expected precompile address
+        // https://book.getfoundry.sh/cheatcodes/etch
+        vm.etch(0x0000000000000000000000000000000001000006, address(bridgeMock).code);
+
         pm = new PegManager();
-        pm.initialize(registry, bitcoinManager, Bridge(RSK_BRIDGE_ADDRESS));
+        pm.initialize(registry, bitcoinManager);
     }
 
     function assertEqCommittee(
