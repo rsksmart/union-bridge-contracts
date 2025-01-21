@@ -63,8 +63,6 @@ contract PegManager is IPegManager, StreamManager {
             pegInRequestTxSPVProof.merkleBranchPath,
             pegInRequestTxSPVProof.merkleBranchHashes
         );
-        console.log("confirmations");
-        console.logInt(confirmations);
         if (confirmations == BTC_TRANSACTION_CONFIRMATION_INEXISTENT_BLOCK_HASH_ERROR_CODE) {
             revert bridgeBtcInexistantBlockHash(pegInRequestTxSPVProof.blockHash);
         }
@@ -98,12 +96,23 @@ contract PegManager is IPegManager, StreamManager {
 
         // Store Tx in pegInSlot as Prepared
         // TODO corroborate if state should be prepared with Diego
-        preparePegInTx(
+        uint256 slotId = preparePegInTx(
             stream.streamId,
             pegInRequestTxSPVProof.packetNumber,
             pegInRequestTxSPVProof.txHash,
             pegInRequestTxSPVProof.utxo
         );
-        // TODO Emit event to prepareTakeTransactions
+
+        // TODO Check if info emitted is enough or too much
+        emit PrepareTakeTransaction(
+            pegInRequestTxSPVProof.blockHash,
+            pegInRequestTxSPVProof.txHash,
+            pegInRequestTxSPVProof.value,
+            pegInRequestTxSPVProof.packetNumber,
+            slotId,
+            pegInRequestTxSPVProof.destinationAddress,
+            pegInRequestTxSPVProof.btcReinburstmentAddress,
+            pegInRequestTxSPVProof.utxo
+        );
     }
 }

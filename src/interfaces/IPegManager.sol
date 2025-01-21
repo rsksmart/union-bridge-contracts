@@ -52,6 +52,17 @@ interface IPegManager {
     // /// @param slotId The slot identifier
     // function selectUTXOsForPegOut(uint256 streamId, uint256 sequenceNumber, uint256 slotId) external;
 
+    event PrepareTakeTransaction(
+        bytes32 indexed blockHash,
+        bytes32 indexed txHash,
+        uint64 value,
+        uint256 packetNumber,
+        uint256 slotId,
+        address destinationAddress,
+        string btcReinburstmentAddress,
+        string utxo
+    );
+
     error bridgeBtcInexistantBlockHash(bytes32 blockHash);
     error bridgeBtcBlockNotInBestChain(bytes32 blockHash);
     error bridgeBtcInconsistentBlock(bytes32 blockHash);

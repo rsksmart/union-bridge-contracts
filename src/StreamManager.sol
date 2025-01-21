@@ -100,7 +100,10 @@ abstract contract StreamManager is IStreamManager, Initializable {
     }
 
     /// @dev Looks for the first empty slot and asigns the PegIn Tx in prepared state
-    function preparePegInTx(uint256 _streamId, uint256 _packetNumber, bytes32 _pegInTx, string memory _utxo) internal {
+    function preparePegInTx(uint256 _streamId, uint256 _packetNumber, bytes32 _pegInTx, string memory _utxo)
+        internal
+        returns (uint256)
+    {
         uint256 slotId = this.getEmptySlotId(_streamId, _packetNumber);
         Slot storage slot = slots[_streamId][_packetNumber][slotId];
         slot.state = SlotState.PREPARED;
@@ -108,5 +111,6 @@ abstract contract StreamManager is IStreamManager, Initializable {
         // but the takes in the scrut are mentioned to be used by the peg out
         slot.pegInTx = _pegInTx;
         slot.utxo = _utxo;
+        return slotId;
     }
 }

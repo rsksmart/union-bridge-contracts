@@ -31,6 +31,7 @@ contract TestPegManager is Test, HelperContract {
         uint256 packetNumber = 0;
         bytes32 txHash = 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079;
         string memory utxo = "bc1q6w6qghzq5ye7udslwekw4excywv0c5zcvvx4fy";
+        uint256 expectedSlotId = 0;
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(10);
         // Create PegIn struct information
@@ -53,12 +54,26 @@ contract TestPegManager is Test, HelperContract {
         pegInRequestTxSPVProof.merkleBranchHashes[0] =
             0x3fcef4a1ddf759a858190b89ecbd1ff3dffb49704e110b68baf5b5de7021910f;
 
+        // Assert
+        vm.expectEmit(address(pm));
+        // We emit the event we expect to see.
+        emit IPegManager.PrepareTakeTransaction(
+            pegInRequestTxSPVProof.blockHash,
+            pegInRequestTxSPVProof.txHash,
+            pegInRequestTxSPVProof.value,
+            pegInRequestTxSPVProof.packetNumber,
+            expectedSlotId,
+            pegInRequestTxSPVProof.destinationAddress,
+            pegInRequestTxSPVProof.btcReinburstmentAddress,
+            pegInRequestTxSPVProof.utxo
+        );
+
         // Act
         pm.acceptPegInRequest(pegInRequestTxSPVProof);
 
         // Assert
         Stream memory stream = pm.getStream(value);
-        Slot memory slot = pm.getSlot(stream.streamId, packetNumber, 0);
+        Slot memory slot = pm.getSlot(stream.streamId, packetNumber, expectedSlotId);
 
         assertEq(slot.pegInTx, txHash, "Incorrect peg in txHash");
         assertEq(slot.utxo, utxo, "Incorrect utxo");
