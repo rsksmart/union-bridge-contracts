@@ -10,19 +10,19 @@ import {RSK_BRIDGE_ADDRESS, Bridge} from "src/interfaces/Bridge.sol";
 import {BridgeMock} from "./BridgeMock.sol";
 
 abstract contract HelperContract is Test {
-    BitcoinManager bitcoinManager;
-    CommitteeRegistry registry;
-    bytes32 committee1Key;
-    Committee committee1;
-    address[] memebersCommittee1;
-    bytes32 committee2Key;
-    Committee committee2;
-    address[] memebersCommittee2;
-    bytes32 committee3Key;
-    Committee committee3;
-    address[] memebersCommittee3;
-    PegManager pm;
-    BridgeMock bridgeMock;
+    BitcoinManager internal bitcoinManager;
+    CommitteeRegistry internal registry;
+    bytes32 internal committee1Key;
+    Committee internal committee1;
+    address[] internal memebersCommittee1;
+    bytes32 internal committee2Key;
+    Committee internal committee2;
+    address[] internal memebersCommittee2;
+    bytes32 internal committee3Key;
+    Committee internal committee3;
+    address[] internal memebersCommittee3;
+    PegManager internal pm;
+    BridgeMock internal bridgeMock;
 
     function setUpBitcoinManager() internal {
         bitcoinManager = new BitcoinManager();

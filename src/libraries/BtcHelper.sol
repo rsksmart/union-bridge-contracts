@@ -10,7 +10,9 @@ library BtcHelper {
     /// @dev This is how Bitcoin calls double sha256
     function hash256(bytes memory _toHash) internal pure returns (bytes32) {
         bytes32 bigEndianHash = sha256(abi.encode(sha256(_toHash)));
-        // reverse converts from big endian (used by Bitcoin) to little endian (used everywhere else)
+        // reverse bits
+        // converts from little endian (used by Bitcoin) to big endian (used by humans)
+        // https://learnmeabitcoin.com/technical/general/byte-order/#:~:text=In%20both%20transaction%20and%20block,we%20humans%20write%20numbers%20down.
         return reverse(bigEndianHash);
     }
 

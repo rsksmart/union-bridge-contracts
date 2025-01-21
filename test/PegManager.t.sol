@@ -10,14 +10,30 @@ import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE} from "src/interfaces/Bridge.sol";
 
 contract TestPegManager is Test, HelperContract {
+    // Arrenge
+    uint64 internal constant value = 100_000; // 0.001 BTC
+    // https://www.blockchain.com/explorer/blocks/btc/879500
+    bytes32 internal constant blockHash = 0x0000000000000000000282fa21665766e58eb6cb94e458c3ef6d4af1121e38d9;
+    uint256 internal constant packetNumber = 0;
+    // https://www.blockchain.com/explorer/transactions/btc/c00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079
+    // txID 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079
+    bytes32 internal constant txHash = 0xda7941bdccc1c040046e9b998e78a7cefec97cadc5a2f561a32afa2700598fcb;
+    // https://www.blockchain.com/explorer/transactions/btc/c00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079
+    bytes internal constant rawTx =
+        hex"02000000000101d2b336bde0b006f9d9ffca836627e673bb6d6764a3fe2706f4c2c75d78810b369e06000000fdffffff012601000000000000160014d3b4045c40a133ee361f766ceae4d82398fc505803407bf29bfcee5613d2b5ad37c3a2732f3260938f00e7d2d9da5fdf80213088e25d71048c09449e4fbcca8e69cd84a04973d9b3562d114f26b9daffa6bf3929527d4420afd36e561af10735e88f95d9655e5b3f7bc79de0a4781ef99d1e030c0c567422ac0063036f7264510a746578742f706c61696e000d3837393530302e6269746d61706821c0afd36e561af10735e88f95d9655e5b3f7bc79de0a4781ef99d1e030c0c56742200000000";
+    string internal constant utxo = "bc1q6w6qghzq5ye7udslwekw4excywv0c5zcvvx4fy";
+    string internal constant btcReinburstmentAddress = "1PuJjnF476W3zXfVYmJfGnouzFDAXakkL4";
+
     function setUp() external {
         setUpPegManager();
     }
 
     function test_getTemporaryPegInAddress_Success() external view {
+        // Arrenge
         // check that the function returns the correct taproot address
         bytes memory dummyRskAddress = abi.encodePacked(bytes20(0x4C9a9CbFa14106439B0F96a64d9260F3b8947934));
-        uint64 value = 100_000; // 0.001 BTC
+
+        // Act
         bytes memory result = pm.getTemporaryPegInAddress(dummyRskAddress, value);
 
         console.log("result");
@@ -26,11 +42,6 @@ contract TestPegManager is Test, HelperContract {
 
     function test_acceptPegInRequest_Success() external {
         // Arrenge
-        uint64 value = 100_000;
-        bytes32 blockHash = 0x0000000000000000000282fa21665766e58eb6cb94e458c3ef6d4af1121e38d9;
-        uint256 packetNumber = 0;
-        bytes32 txHash = 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079;
-        string memory utxo = "bc1q6w6qghzq5ye7udslwekw4excywv0c5zcvvx4fy";
         uint256 expectedSlotId = 0;
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(10);
@@ -39,12 +50,10 @@ contract TestPegManager is Test, HelperContract {
             value: value, // 0.001 BTC
             packetNumber: packetNumber,
             destinationAddress: address(this),
-            btcReinburstmentAddress: "1PuJjnF476W3zXfVYmJfGnouzFDAXakkL4",
-            // https://www.blockchain.com/explorer/blocks/btc/879500
+            btcReinburstmentAddress: btcReinburstmentAddress,
             blockHash: blockHash,
-            // https://www.blockchain.com/explorer/transactions/btc/c00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079
             utxo: utxo,
-            txHash: txHash,
+            rawTx: rawTx,
             // Values obtained using https://github.com/rsksmart/pmt-builder
             // TODO fix this values as it's returning -5 in the bridge
             merkleBranchPath: 4285202432,
@@ -59,7 +68,7 @@ contract TestPegManager is Test, HelperContract {
         // We emit the event we expect to see.
         emit IPegManager.PrepareTakeTransaction(
             pegInRequestTxSPVProof.blockHash,
-            pegInRequestTxSPVProof.txHash,
+            txHash,
             pegInRequestTxSPVProof.value,
             pegInRequestTxSPVProof.packetNumber,
             expectedSlotId,
@@ -83,21 +92,17 @@ contract TestPegManager is Test, HelperContract {
     function test_acceptPegInRequest_Revert_notEnoughConfirmations() external {
         // Arrenge
         int256 actualConfirmations = 0;
-        uint64 value = 100_000;
-        bytes32 blockHash = 0x0000000000000000000282fa21665766e58eb6cb94e458c3ef6d4af1121e38d9;
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(actualConfirmations);
         // Create PegIn struct information
         PegInRequestTxSPVProof memory pegInRequestTxSPVProof = PegInRequestTxSPVProof({
-            value: value, // 0.001 BTC
-            packetNumber: 0,
+            value: value,
+            packetNumber: packetNumber,
             destinationAddress: address(this),
-            btcReinburstmentAddress: "1PuJjnF476W3zXfVYmJfGnouzFDAXakkL4",
-            // https://www.blockchain.com/explorer/blocks/btc/879500
+            btcReinburstmentAddress: btcReinburstmentAddress,
             blockHash: blockHash,
-            // https://www.blockchain.com/explorer/transactions/btc/c00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079
-            utxo: "bc1q6w6qghzq5ye7udslwekw4excywv0c5zcvvx4fy",
-            txHash: 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079,
+            utxo: utxo,
+            rawTx: rawTx,
             merkleBranchPath: 1,
             merkleBranchHashes: new bytes32[](1)
         });
@@ -121,15 +126,13 @@ contract TestPegManager is Test, HelperContract {
         bridgeMock.setBtcTransactionConfirmations(BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE);
         // Create PegIn struct information
         PegInRequestTxSPVProof memory pegInRequestTxSPVProof = PegInRequestTxSPVProof({
-            value: 100_000, // 0.001 BTC
-            packetNumber: 0,
+            value: value,
+            packetNumber: packetNumber,
             destinationAddress: address(this),
-            btcReinburstmentAddress: "1PuJjnF476W3zXfVYmJfGnouzFDAXakkL4",
-            // https://www.blockchain.com/explorer/blocks/btc/879500
-            blockHash: 0x0000000000000000000282fa21665766e58eb6cb94e458c3ef6d4af1121e38d9,
-            // https://www.blockchain.com/explorer/transactions/btc/c00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079
-            utxo: "bc1q6w6qghzq5ye7udslwekw4excywv0c5zcvvx4fy",
-            txHash: 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079,
+            btcReinburstmentAddress: btcReinburstmentAddress,
+            blockHash: blockHash,
+            utxo: utxo,
+            rawTx: rawTx,
             // Values obtained using https://github.com/rsksmart/pmt-builder
             merkleBranchPath: 4285202432,
             merkleBranchHashes: new bytes32[](13)

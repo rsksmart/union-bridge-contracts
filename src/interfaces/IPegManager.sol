@@ -1,6 +1,21 @@
 // SPDX-License-Identifier: UNKNOWN
 pragma solidity ^0.8.20;
 
+struct BtcTransaction {
+    bytes4 version; // TX version: 02000000
+    bytes2 witnessMarkerFlag; // Witness marker and flag: 0001
+    uint8 inputCount; // Input count: 01
+    bytes[] inputs; // hex inputs
+    uint8 scriptSigLen; // Unlocking script length: 00
+    bytes[] scriptSig; // Unlocking script: EMPTY (note: non-SegWit inputs will have script length >0 and have the unlocking script here instead of in the witness, so for non-SegWit this will not be EMPTY)
+    uint32 sequence; // "sequence": 4294967293
+    uint8 outputCount; // Output count: 02
+    bytes[] outputs; // All outputs Output 01: 40420f00000000001976a914341b568f59229818c460b1795ad48cd78895c54d88ac Output 02: 6eeefa4a00000000160014d701ce5e753bd9454d343c8a3b86d84a3c34dbf5
+    uint8 witnessCount; // TWitness count: 02
+    bytes[] witness; // All witness  Witness 01: 473044022001609cd43eb8e9b8f8438eded9f6b10bad32efd7620724ccd2ed5277c0c6a3ae02200f0c1c3f4c409ada536d2363a2d8bdad418df67fed9b36bfa4482bd9985bf39601 Witness 02: 2102ee3c98964dd1bfe13bee16c0b95fcf8281f12c5885d1fcb7b59fc2cb01ca7632
+    uint64 locktime; // TX locktime: 00000000
+}
+
 struct PegInRequestTxSPVProof {
     uint256 packetNumber; // Packet Index in the Stream
     address destinationAddress; // destination Address in Rootstock
@@ -8,7 +23,7 @@ struct PegInRequestTxSPVProof {
     uint64 value; // The denomination of the stream in satoshis
     bytes32 blockHash; // The Bitcoin Block Hash where the pegin tx happened
     string utxo; // UTXO of the PegIn Transaction
-    bytes32 txHash; // The Bitcoin PegIn Transaction Hash
+    bytes rawTx; // The Bitcoin PegIn Transaction Hash
     uint256 merkleBranchPath; // Merkle Path is a uint but is actually an array of bits indicating if the path is left of right according to 1 or 0
     bytes32[] merkleBranchHashes; // Merkle Branch Hashes are the hashes that will be used together with the merkleBranchPath to obtain the Merkle Root, this is an optimization to avoid sending the whole Merkle Tree
 }

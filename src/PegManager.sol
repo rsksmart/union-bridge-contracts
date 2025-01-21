@@ -54,11 +54,14 @@ contract PegManager is IPegManager, StreamManager {
         // TODO Validate data in transaction
         //  Check destination address from second output, after OP_RETURN, and compare it with the destination address from the first output script.
         //  Contains value bitcoin to the taproot temporary address
+        bytes32 txHash = BtcHelper.hash256(pegInRequestTxSPVProof.rawTx);
+
+        // TODO  should also validate witness data??? https://learnmeabitcoin.com/technical/transaction/wtxid/#commitment
 
         // Validate transaction is in the Block
         // Validate block is in the Mainchain
         int256 confirmations = bridge.getBtcTransactionConfirmations(
-            pegInRequestTxSPVProof.txHash,
+            txHash,
             pegInRequestTxSPVProof.blockHash,
             pegInRequestTxSPVProof.merkleBranchPath,
             pegInRequestTxSPVProof.merkleBranchHashes
@@ -96,17 +99,13 @@ contract PegManager is IPegManager, StreamManager {
 
         // Store Tx in pegInSlot as Prepared
         // TODO corroborate if state should be prepared with Diego
-        uint256 slotId = preparePegInTx(
-            stream.streamId,
-            pegInRequestTxSPVProof.packetNumber,
-            pegInRequestTxSPVProof.txHash,
-            pegInRequestTxSPVProof.utxo
-        );
+        uint256 slotId =
+            preparePegInTx(stream.streamId, pegInRequestTxSPVProof.packetNumber, txHash, pegInRequestTxSPVProof.utxo);
 
         // TODO Check if info emitted is enough or too much
         emit PrepareTakeTransaction(
             pegInRequestTxSPVProof.blockHash,
-            pegInRequestTxSPVProof.txHash,
+            txHash,
             pegInRequestTxSPVProof.value,
             pegInRequestTxSPVProof.packetNumber,
             slotId,

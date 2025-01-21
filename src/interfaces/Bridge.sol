@@ -6,7 +6,7 @@ address payable constant RSK_BRIDGE_ADDRESS = payable(0x000000000000000000000000
 // Enough depth to be able to search backwards one month worth of blocks
 // (6 blocks/hour, 24 hours/day, 30 days/month)
 int256 constant BTC_TRANSACTION_CONFIRMATION_MAX_DEPTH = 4320;
-// Obtained from https://github.com/rsksmart/rskj/blob/master/rskj-core/src/main/java/co/rsk/peg/BridgeSupport.java#L89C1-L93C100
+// From https://github.com/rsksmart/rskj/blob/master/rskj-core/src/main/java/co/rsk/peg/BridgeSupport.java#L89C1-L93C100
 int256 constant BTC_TRANSACTION_CONFIRMATION_INEXISTENT_BLOCK_HASH_ERROR_CODE = -1;
 int256 constant BTC_TRANSACTION_CONFIRMATION_BLOCK_NOT_IN_BEST_CHAIN_ERROR_CODE = -2;
 int256 constant BTC_TRANSACTION_CONFIRMATION_INCONSISTENT_BLOCK_ERROR_CODE = -3;
