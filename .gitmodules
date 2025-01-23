@@ -13,3 +13,4 @@
 [submodule "lib/btc-transaction-solidity-helper"]
 	path = lib/btc-transaction-solidity-helper
 	url = https://github.com/rsksmart/btc-transaction-solidity-helper
+	tag = v0.2.1

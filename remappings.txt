@@ -2,3 +2,4 @@
 @openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/
 ds-test/=lib/forge-std/lib/ds-test/src/
 forge-std/=lib/forge-std/src/
+@rsksmart/btc-transaction-solidity-helper=lib/btc-transaction-solidity-helper
