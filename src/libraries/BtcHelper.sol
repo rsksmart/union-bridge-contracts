@@ -1,22 +1,102 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import {BtcTxIn, BtcTxOut, BtcTransaction} from "../interfaces/IPegManager.sol";
+
 /**
  * @title Btc Helper
  * @notice Usefull functions for Bitcoin parsin/encoding/decoding
  * @author Fairgate
  */
 library BtcHelper {
-    /// @dev This is how Bitcoin calls double sha256
+    function encodeTxIn(bytes32 _txId, uint32 _vout, uint32 _sequence, bytes memory _scriptSig)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        // TODO convert size to compat size https://learnmeabitcoin.com/technical/transaction/#structure-input-count
+        uint8 scriptSigSize = uint8(_scriptSig.length);
+
+        // See struct values https://learnmeabitcoin.com/technical/transaction/#structure-input-count
+        // See hex format https://learnmeabitcoin.com/technical/transaction/wtxid/#segwit
+        return abi.encodePacked(
+            reverseBytes32(_txId), // txId needs to be converted to little Endian
+            reverseUint32(_vout), // vout needs to be converted to little Endian
+            scriptSigSize, // scriptSigSize is compact-size
+            _scriptSig, // scriptSig should be empty for non-legacy transactions
+            reverseUint32(_sequence) // sequence needs to be converted to little Endian
+        );
+    }
+
+    /// @dev Convert TxInputs to raw vin hex using Bitcoin format
+    function encodeTxInputs(BtcTxIn[] memory _inputs) internal pure returns (bytes memory) {
+        // [inputs count]
+        // [txid0][vout0][script sig size 0][script sig 0][sequence0]
+        // [txid1][vout1][script sig size 1][script sig 1][sequence1]...
+        uint8 inputsCount = uint8(_inputs.length);
+        bytes memory hexInputs = abi.encodePacked(inputsCount);
+
+        for (uint8 i = 0; i < _inputs.length; i++) {
+            hexInputs = abi.encodePacked(
+                hexInputs, encodeTxIn(_inputs[i].txId, _inputs[i].vout, _inputs[i].sequence, _inputs[i].scriptSig)
+            );
+        }
+        return hexInputs;
+    }
+
+    function encodeTxOut(uint64 _amount, bytes memory _scriptPubKey) internal pure returns (bytes memory) {
+        // TODO convert size to compat size https://learnmeabitcoin.com/technical/transaction/#structure-input-count
+        uint8 scriptPubKeySize = uint8(_scriptPubKey.length);
+
+        // See struct values https://learnmeabitcoin.com/technical/transaction/#structure-input-count
+        // See hex format https://learnmeabitcoin.com/technical/transaction/wtxid/#segwit
+        return abi.encodePacked(
+            reverseUint64(_amount), // amount needs to be converted to little Endian
+            scriptPubKeySize, // scriptPubKeySize is compact-size
+            _scriptPubKey
+        );
+    }
+
+    /// @dev Convert TxOutputs to raw vout hex using Bitcoin format
+    function encodeTxOutputs(BtcTxOut[] memory _outputs) internal pure returns (bytes memory) {
+        // [output count]
+        // [amount0][script pubkey size 0][script pubkey 0]
+        // [amount1][script pubkey size 1][script pubkey 1]...
+        uint8 outputsCount = uint8(_outputs.length);
+        bytes memory hexOutputs = abi.encodePacked(outputsCount);
+
+        for (uint8 i = 0; i < _outputs.length; i++) {
+            hexOutputs = abi.encodePacked(hexOutputs, encodeTxOut(_outputs[i].amount, _outputs[i].scriptPubKey));
+        }
+        return hexOutputs;
+    }
+
+    /// @dev Convert Tx to raw tx hex using Bitcoin format for getting the tx hash
+    function encodeTx(BtcTransaction memory _btcTx) internal pure returns (bytes memory) {
+        // [version][inputs][outputs][locktime]
+        return abi.encodePacked(
+            reverseUint32(_btcTx.version), // version needs to be converted to little Endian
+            encodeTxInputs(_btcTx.inputs),
+            encodeTxOutputs(_btcTx.outputs),
+            reverseUint32(_btcTx.locktime) // locktime needs to be converted to little Endian
+        );
+    }
+
+    /// @dev Convert Tx to raw tx hex using Bitcoin format and then uses hash256 to get the txHash
+    function getBtcTxHash(BtcTransaction memory _btcTx) internal pure returns (bytes32) {
+        return hash256(encodeTx(_btcTx));
+    }
+
+    /// @dev This is how Bitcoin calls double sha256 and we reverse it to correct endian
     function hash256(bytes memory _toHash) internal pure returns (bytes32) {
-        bytes32 bigEndianHash = sha256(abi.encode(sha256(_toHash)));
+        bytes32 littleEndianHash = sha256(abi.encode(sha256(_toHash)));
         // reverse bits
         // converts from little endian (used by Bitcoin) to big endian (used by humans)
         // https://learnmeabitcoin.com/technical/general/byte-order/#:~:text=In%20both%20transaction%20and%20block,we%20humans%20write%20numbers%20down.
-        return reverse(bigEndianHash);
+        return reverseBytes32(littleEndianHash);
     }
 
-    function reverse(bytes32 input) internal pure returns (bytes32 v) {
+    function reverseBytes32(bytes32 input) internal pure returns (bytes32 v) {
         // Function to reverse bytes
         // https://ethereum.stackexchange.com/questions/83626/how-to-reverse-byte-order-in-uint256-or-bytes32#answer-83627
         v = input;
@@ -39,5 +119,38 @@ library BtcHelper {
 
         // swap 16-byte long pairs
         v = (v >> 128) | (v << 128);
+    }
+
+    /// @notice          Changes the endianness of a uint64
+    /// @param _b        The unsigned integer to reverse
+    /// @return v        The reversed value
+    function reverseUint64(uint64 _b) internal pure returns (uint64 v) {
+        v = _b;
+
+        // swap bytes
+        v = ((v >> 8) & 0x00FF00FF00FF00FF) | ((v & 0x00FF00FF00FF00FF) << 8);
+        // swap 2-byte long pairs
+        v = ((v >> 16) & 0x0000FFFF0000FFFF) | ((v & 0x0000FFFF0000FFFF) << 16);
+        // swap 4-byte long pairs
+        v = (v >> 32) | (v << 32);
+    }
+
+    /// @notice          Changes the endianness of a uint32
+    /// @param _b        The unsigned integer to reverse
+    /// @return v        The reversed value
+    function reverseUint32(uint32 _b) internal pure returns (uint32 v) {
+        v = _b;
+
+        // swap bytes
+        v = ((v >> 8) & 0x00FF00FF) | ((v & 0x00FF00FF) << 8);
+        // swap 2-byte long pairs
+        v = (v >> 16) | (v << 16);
+    }
+
+    /// @notice          Changes the endianness of a uint16
+    /// @param _b        The unsigned integer to reverse
+    /// @return v        The reversed value
+    function reverseUint16(uint16 _b) internal pure returns (uint16 v) {
+        v = (_b << 8) | (_b >> 8);
     }
 }

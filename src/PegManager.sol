@@ -48,52 +48,67 @@ contract PegManager is IPegManager, StreamManager {
         return bitcoinManager.getTemporaryPegInAddress(_rootstockDepositAddress, _value, committeeKey);
     }
 
-    function acceptPegInRequest(PegInRequestTxSPVProof calldata pegInRequestTxSPVProof) public {
-        // TODO validate who can call this function
-
-        // TODO Validate data in transaction
-        //  Check destination address from second output, after OP_RETURN, and compare it with the destination address from the first output script.
-        //  Contains value bitcoin to the taproot temporary address
-        bytes32 txHash = BtcHelper.hash256(pegInRequestTxSPVProof.rawTx);
-
-        // TODO  should also validate witness data??? https://learnmeabitcoin.com/technical/transaction/wtxid/#commitment
-
-        // Validate transaction is in the Block
+    function _verifyTxConfirmations(
+        uint256 _minConfirmations,
+        bytes32 _txHash,
+        bytes32 _blockHash,
+        uint256 _merkleBranchPath,
+        bytes32[] memory _merkleBranchHashes
+    ) internal {
+        // Get tx confirmations using SPV from Rsk bridge precompiled contract
+        int256 confirmations =
+            bridge.getBtcTransactionConfirmations(_txHash, _blockHash, _merkleBranchPath, _merkleBranchHashes);
         // Validate block is in the Mainchain
-        int256 confirmations = bridge.getBtcTransactionConfirmations(
-            txHash,
-            pegInRequestTxSPVProof.blockHash,
-            pegInRequestTxSPVProof.merkleBranchPath,
-            pegInRequestTxSPVProof.merkleBranchHashes
-        );
         if (confirmations == BTC_TRANSACTION_CONFIRMATION_INEXISTENT_BLOCK_HASH_ERROR_CODE) {
-            revert bridgeBtcInexistantBlockHash(pegInRequestTxSPVProof.blockHash);
+            revert bridgeBtcInexistantBlockHash(_blockHash);
         }
         if (confirmations == BTC_TRANSACTION_CONFIRMATION_BLOCK_NOT_IN_BEST_CHAIN_ERROR_CODE) {
-            revert bridgeBtcBlockNotInBestChain(pegInRequestTxSPVProof.blockHash);
+            revert bridgeBtcBlockNotInBestChain(_blockHash);
         }
         if (confirmations == BTC_TRANSACTION_CONFIRMATION_INCONSISTENT_BLOCK_ERROR_CODE) {
-            revert bridgeBtcInconsistentBlock(pegInRequestTxSPVProof.blockHash);
+            revert bridgeBtcInconsistentBlock(_blockHash);
         }
+        // Rsk only allows to retrieve blocks up to 1 month
         if (confirmations == BTC_TRANSACTION_CONFIRMATION_BLOCK_TOO_OLD_ERROR_CODE) {
             revert bridgeBtcBlockTooOld(BTC_TRANSACTION_CONFIRMATION_MAX_DEPTH);
         }
+        // Validate transaction is in the Block
         if (confirmations == BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE) {
-            revert bridgeBtcTxInvalidMerkleBranch(
-                pegInRequestTxSPVProof.merkleBranchPath, pegInRequestTxSPVProof.merkleBranchHashes
-            );
+            revert bridgeBtcTxInvalidMerkleBranch(_txHash, _merkleBranchPath, _merkleBranchHashes);
         }
         if (confirmations < 0) {
             revert bridgeBtcUnknownError(confirmations);
         }
 
         // Validate block has enough Confirmations
-        Stream memory stream = getStream(pegInRequestTxSPVProof.value);
-        if (confirmations < int256(uint256(stream.pegInConfirmations))) {
-            revert notEnoughConfirmations(confirmations, stream.pegInConfirmations);
+        if (confirmations < int256(_minConfirmations)) {
+            revert notEnoughConfirmations(confirmations, _minConfirmations);
         }
+    }
+
+    function acceptPegInRequest(PegInRequestTxSPVProof calldata pegInRequestTxSPVProof) public {
+        // TODO validate who can call this function
+
+        // TODO Validate data in transaction
+        //  Check destination address from second output, after OP_RETURN, and compare it with the destination address from the first output script.
+        //  Contains value bitcoin to the taproot temporary address
+        bytes32 txHash = BtcHelper.getBtcTxHash(pegInRequestTxSPVProof.btcTx);
+
+        // TODO  should also validate witness data??? https://learnmeabitcoin.com/technical/transaction/wtxid/#commitment
+
+        // Get corresponding stream
+        Stream memory stream = getStream(pegInRequestTxSPVProof.value);
+        // Verify the Tx is mined in a Block inside the Mainchain and has enough confirmations
+        _verifyTxConfirmations(
+            stream.pegInConfirmations,
+            txHash,
+            pegInRequestTxSPVProof.blockHash,
+            pegInRequestTxSPVProof.merkleBranchPath,
+            pegInRequestTxSPVProof.merkleBranchHashes
+        );
 
         // TODO Validate Committee Key against the bitcoin Tx
+        // Get corresponding packet
         Packet memory packet = getPacket(stream.streamId, pegInRequestTxSPVProof.packetNumber);
         packet.committeeInternalKey;
 

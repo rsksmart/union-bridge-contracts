@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 import {HelperContract} from "test/HelperContract.sol";
-import {PegInRequestTxSPVProof, IPegManager} from "src/interfaces/IPegManager.sol";
+import {BtcTransaction, PegInRequestTxSPVProof, IPegManager} from "src/interfaces/IPegManager.sol";
 import {Slot, SlotState, Stream} from "src/interfaces/IStreamManager.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE} from "src/interfaces/Bridge.sol";
@@ -21,6 +21,7 @@ contract TestPegManager is Test, HelperContract {
     // https://www.blockchain.com/explorer/transactions/btc/c00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079
     bytes internal constant rawTx =
         hex"02000000000101d2b336bde0b006f9d9ffca836627e673bb6d6764a3fe2706f4c2c75d78810b369e06000000fdffffff012601000000000000160014d3b4045c40a133ee361f766ceae4d82398fc505803407bf29bfcee5613d2b5ad37c3a2732f3260938f00e7d2d9da5fdf80213088e25d71048c09449e4fbcca8e69cd84a04973d9b3562d114f26b9daffa6bf3929527d4420afd36e561af10735e88f95d9655e5b3f7bc79de0a4781ef99d1e030c0c567422ac0063036f7264510a746578742f706c61696e000d3837393530302e6269746d61706821c0afd36e561af10735e88f95d9655e5b3f7bc79de0a4781ef99d1e030c0c56742200000000";
+    BtcTransaction btcTx;
     string internal constant utxo = "bc1q6w6qghzq5ye7udslwekw4excywv0c5zcvvx4fy";
     string internal constant btcReinburstmentAddress = "1PuJjnF476W3zXfVYmJfGnouzFDAXakkL4";
 
@@ -53,7 +54,7 @@ contract TestPegManager is Test, HelperContract {
             btcReinburstmentAddress: btcReinburstmentAddress,
             blockHash: blockHash,
             utxo: utxo,
-            rawTx: rawTx,
+            btcTx: btcTx,
             // Values obtained using https://github.com/rsksmart/pmt-builder
             // TODO fix this values as it's returning -5 in the bridge
             merkleBranchPath: 4285202432,
@@ -102,7 +103,7 @@ contract TestPegManager is Test, HelperContract {
             btcReinburstmentAddress: btcReinburstmentAddress,
             blockHash: blockHash,
             utxo: utxo,
-            rawTx: rawTx,
+            btcTx: btcTx,
             merkleBranchPath: 1,
             merkleBranchHashes: new bytes32[](1)
         });
@@ -132,7 +133,7 @@ contract TestPegManager is Test, HelperContract {
             btcReinburstmentAddress: btcReinburstmentAddress,
             blockHash: blockHash,
             utxo: utxo,
-            rawTx: rawTx,
+            btcTx: btcTx,
             // Values obtained using https://github.com/rsksmart/pmt-builder
             merkleBranchPath: 4285202432,
             merkleBranchHashes: new bytes32[](13)
