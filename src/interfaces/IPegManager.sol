@@ -29,9 +29,6 @@ struct BtcTransaction {
 }
 
 struct PegInRequestTxSPVProof {
-    uint256 packetNumber; // Packet Index in the Stream
-    address destinationAddress; // destination Address in Rootstock
-    string btcReinburstmentAddress; // Bitcoin reimburstment address
     uint64 value; // The denomination of the stream in satoshis
     bytes32 blockHash; // The Bitcoin Block Hash where the pegin tx happened
     string utxo; // UTXO of the PegIn Transaction
@@ -97,4 +94,7 @@ interface IPegManager {
     error bridgeBtcTxInvalidMerkleBranch(bytes32 txHash, uint256 merkleBranchPath, bytes32[] merkleBranchHashes);
     error bridgeBtcUnknownError(int256 errorCode);
     error notEnoughConfirmations(int256 actual, uint256 expected);
+    error incorrectOutputNumber(uint256 actual, uint256 expected);
+    error invalidOpReturnLength(uint256 actual, uint256 expected);
+    error incorrectlyFormedOpReturn(uint256 index);
 }

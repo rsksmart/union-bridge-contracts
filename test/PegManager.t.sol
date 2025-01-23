@@ -15,12 +15,19 @@ contract TestPegManager is Test, HelperContract {
     // https://www.blockchain.com/explorer/blocks/btc/879500
     bytes32 internal constant BLOCK_HASH = 0x0000000000000000000282fa21665766e58eb6cb94e458c3ef6d4af1121e38d9;
     uint256 internal constant PACKET_NUMBER = 0;
+    address internal DESTINATION_ADDRESS;
 
     string internal constant UTXO = "bc1q6w6qghzq5ye7udslwekw4excywv0c5zcvvx4fy";
     string internal constant BTC_REINBURSTMENT_ADDRESS = "1PuJjnF476W3zXfVYmJfGnouzFDAXakkL4";
 
     function setUp() external {
         setUpPegManager();
+        DESTINATION_ADDRESS = address(this);
+
+        // TODO CREATE OP_RETRUN txOut
+        // packetNumber: PACKET_NUMBER,
+        // destinationAddress: DESTINATION_ADDRESS,
+        // btcReinburstmentAddress: BTC_REINBURSTMENT_ADDRESS,
     }
 
     function test_getTemporaryPegInAddress_Success() external view {
@@ -43,9 +50,6 @@ contract TestPegManager is Test, HelperContract {
         // Create PegIn struct information
         PegInRequestTxSPVProof memory pegInRequestTxSPVProof = PegInRequestTxSPVProof({
             value: VALUE, // 0.001 BTC
-            packetNumber: PACKET_NUMBER,
-            destinationAddress: address(this),
-            btcReinburstmentAddress: BTC_REINBURSTMENT_ADDRESS,
             blockHash: BLOCK_HASH,
             utxo: UTXO,
             btcTx: getBtcTransaction(),
@@ -65,10 +69,10 @@ contract TestPegManager is Test, HelperContract {
             pegInRequestTxSPVProof.blockHash,
             getExpectedTxHash(),
             pegInRequestTxSPVProof.value,
-            pegInRequestTxSPVProof.packetNumber,
+            PACKET_NUMBER,
             expectedSlotId,
-            pegInRequestTxSPVProof.destinationAddress,
-            pegInRequestTxSPVProof.btcReinburstmentAddress,
+            DESTINATION_ADDRESS,
+            BTC_REINBURSTMENT_ADDRESS,
             pegInRequestTxSPVProof.utxo
         );
 
@@ -92,9 +96,6 @@ contract TestPegManager is Test, HelperContract {
         // Create PegIn struct information
         PegInRequestTxSPVProof memory pegInRequestTxSPVProof = PegInRequestTxSPVProof({
             value: VALUE,
-            packetNumber: PACKET_NUMBER,
-            destinationAddress: address(this),
-            btcReinburstmentAddress: BTC_REINBURSTMENT_ADDRESS,
             blockHash: BLOCK_HASH,
             utxo: UTXO,
             btcTx: getBtcTransaction(),
@@ -122,9 +123,6 @@ contract TestPegManager is Test, HelperContract {
         // Create PegIn struct information
         PegInRequestTxSPVProof memory pegInRequestTxSPVProof = PegInRequestTxSPVProof({
             value: VALUE,
-            packetNumber: PACKET_NUMBER,
-            destinationAddress: address(this),
-            btcReinburstmentAddress: BTC_REINBURSTMENT_ADDRESS,
             blockHash: BLOCK_HASH,
             utxo: UTXO,
             btcTx: getBtcTransaction(),

@@ -5,7 +5,7 @@ import "forge-std/console.sol";
 import {Committee, ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
 import {Stream, Packet, SlotState, StreamManager} from "./StreamManager.sol";
 import {IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
-import {PegInRequestTxSPVProof, IPegManager} from "./interfaces/IPegManager.sol";
+import {BtcTransaction, BtcTxOut, PegInRequestTxSPVProof, IPegManager} from "./interfaces/IPegManager.sol";
 import {
     Bridge,
     RSK_BRIDGE_ADDRESS,
@@ -17,6 +17,8 @@ import {
     BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE
 } from "./interfaces/Bridge.sol";
 import {BtcHelper} from "./libraries/BtcHelper.sol";
+import {BytesHelper} from "./libraries/BytesHelper.sol";
+import {OpCodes} from "./libraries/OpCodes.sol";
 
 /// @title PegManager
 /// @notice Manages peg-in and peg-out operations between Bitcoin and Rootstock
@@ -46,6 +48,56 @@ contract PegManager is IPegManager, StreamManager {
         bytes32 committeeKey = currentPacket.committeeInternalKey;
 
         return bitcoinManager.getTemporaryPegInAddress(_rootstockDepositAddress, _value, committeeKey);
+    }
+
+    function acceptPegInRequest(PegInRequestTxSPVProof calldata pegInRequestTxSPVProof) external {
+        // TODO validate who can call this function
+
+        if (pegInRequestTxSPVProof.btcTx.outputs.length < 2) {
+            revert incorrectOutputNumber(uint64(pegInRequestTxSPVProof.btcTx.outputs.length), 2);
+        }
+        // Second transaction should be OP_RETURN
+        (uint64 packetNumber, address destinationAddress, string memory btcReinburstmentAddress) =
+            _getAndValidateTxOpReturn(pegInRequestTxSPVProof.btcTx.outputs[1]);
+
+        //  TODO Check destination address from second output, after OP_RETURN, and compare it with the destination address from the first output script.
+        //  Contains value bitcoin to the taproot temporary address
+        // TODO Validate data in Taproot transaction
+        // TODO  should also validate witness data??? https://learnmeabitcoin.com/technical/transaction/wtxid/#commitment
+
+        bytes32 txHash = BtcHelper.getBtcTxHash(pegInRequestTxSPVProof.btcTx);
+
+        // Get corresponding stream
+        Stream memory stream = getStream(pegInRequestTxSPVProof.value);
+        // Verify the Tx is mined in a Block inside the Mainchain and has enough confirmations
+        _verifyTxConfirmations(
+            stream.pegInConfirmations,
+            txHash,
+            pegInRequestTxSPVProof.blockHash,
+            pegInRequestTxSPVProof.merkleBranchPath,
+            pegInRequestTxSPVProof.merkleBranchHashes
+        );
+
+        // TODO Validate Committee Key against the bitcoin Tx
+        // Get corresponding packet
+        Packet memory packet = getPacket(stream.streamId, packetNumber);
+        packet.committeeInternalKey;
+
+        // Store Tx in pegInSlot as Prepared
+        // TODO corroborate if state should be prepared with Diego
+        uint256 slotId = preparePegInTx(stream.streamId, packetNumber, txHash, pegInRequestTxSPVProof.utxo);
+
+        // TODO Check if info emitted is enough or too much
+        emit PrepareTakeTransaction(
+            pegInRequestTxSPVProof.blockHash,
+            txHash,
+            pegInRequestTxSPVProof.value,
+            packetNumber,
+            slotId,
+            destinationAddress,
+            btcReinburstmentAddress,
+            pegInRequestTxSPVProof.utxo
+        );
     }
 
     function _verifyTxConfirmations(
@@ -86,47 +138,58 @@ contract PegManager is IPegManager, StreamManager {
         }
     }
 
-    function acceptPegInRequest(PegInRequestTxSPVProof calldata pegInRequestTxSPVProof) public {
-        // TODO validate who can call this function
+    function _getAndValidateTxOpReturn(BtcTxOut memory opReturnOut) internal returns (uint64, address, string memory) {
+        // [OP_RETURN][OP_PUSHBYTES_9][RSK_PEGIN][OP_PUSHBYTES_8][packet number][OP_PUSHBYTES_20][rsk destination address][OP_PUSHBYTES_62][reimburstment address]
+        // Size: 1   +          1    +      9    +       1       +      8       +       1       +       20               +        1         +       62
+        uint8 expectedSize = (1 + 1 + 9 + 1 + 8 + 1 + 20 + 1 + 62);
+        if (opReturnOut.scriptPubKey.length == expectedSize) {
+            revert invalidOpReturnLength(opReturnOut.scriptPubKey.length, expectedSize);
+        }
+        // OP_RETURN
+        uint8 index = 0;
+        if (opReturnOut.scriptPubKey[index] == OpCodes.OP_RETURN) {
+            revert incorrectlyFormedOpReturn(index);
+        }
+        index++;
 
-        // TODO Validate data in transaction
-        //  Check destination address from second output, after OP_RETURN, and compare it with the destination address from the first output script.
-        //  Contains value bitcoin to the taproot temporary address
-        bytes32 txHash = BtcHelper.getBtcTxHash(pegInRequestTxSPVProof.btcTx);
+        // RSK_PEGIN string used as flag
+        if (opReturnOut.scriptPubKey[index] == OpCodes.OP_PUSHBYTES_9) {
+            revert incorrectlyFormedOpReturn(index);
+        }
+        index++;
+        if (
+            BytesHelper.stringCompare(
+                BytesHelper.bytesToString(opReturnOut.scriptPubKey, index, index + 9), "RSK_PEGIN"
+            )
+        ) {
+            revert incorrectlyFormedOpReturn(index);
+        }
+        index = index + 9;
 
-        // TODO  should also validate witness data??? https://learnmeabitcoin.com/technical/transaction/wtxid/#commitment
+        // Packet Index in the Stream
+        if (opReturnOut.scriptPubKey[index] == OpCodes.OP_PUSHBYTES_8) {
+            revert incorrectlyFormedOpReturn(index);
+        }
+        index++;
+        uint64 packetNumber = BytesHelper.bytesToUint64(opReturnOut.scriptPubKey, index);
+        index = index + 8; // uint64 length
 
-        // Get corresponding stream
-        Stream memory stream = getStream(pegInRequestTxSPVProof.value);
-        // Verify the Tx is mined in a Block inside the Mainchain and has enough confirmations
-        _verifyTxConfirmations(
-            stream.pegInConfirmations,
-            txHash,
-            pegInRequestTxSPVProof.blockHash,
-            pegInRequestTxSPVProof.merkleBranchPath,
-            pegInRequestTxSPVProof.merkleBranchHashes
-        );
+        // destination Address in Rootstock
+        if (opReturnOut.scriptPubKey[index] == OpCodes.OP_PUSHBYTES_20) {
+            revert incorrectlyFormedOpReturn(index);
+        }
+        index++;
+        address destinationAddress = BytesHelper.bytesToAddress(opReturnOut.scriptPubKey, index);
+        index = index + 20; // address length
 
-        // TODO Validate Committee Key against the bitcoin Tx
-        // Get corresponding packet
-        Packet memory packet = getPacket(stream.streamId, pegInRequestTxSPVProof.packetNumber);
-        packet.committeeInternalKey;
+        // Bitcoin reimburstment address
+        if (opReturnOut.scriptPubKey[index] == OpCodes.OP_PUSHBYTES_62) {
+            revert incorrectlyFormedOpReturn(index);
+        }
+        index++;
+        string memory btcReinburstmentAddress = BytesHelper.bytesToString(opReturnOut.scriptPubKey, index, index + 62);
+        index = index + 62; // Btc reimbursment address as base58 string length
 
-        // Store Tx in pegInSlot as Prepared
-        // TODO corroborate if state should be prepared with Diego
-        uint256 slotId =
-            preparePegInTx(stream.streamId, pegInRequestTxSPVProof.packetNumber, txHash, pegInRequestTxSPVProof.utxo);
-
-        // TODO Check if info emitted is enough or too much
-        emit PrepareTakeTransaction(
-            pegInRequestTxSPVProof.blockHash,
-            txHash,
-            pegInRequestTxSPVProof.value,
-            pegInRequestTxSPVProof.packetNumber,
-            slotId,
-            pegInRequestTxSPVProof.destinationAddress,
-            pegInRequestTxSPVProof.btcReinburstmentAddress,
-            pegInRequestTxSPVProof.utxo
-        );
+        return (packetNumber, destinationAddress, btcReinburstmentAddress);
     }
 }

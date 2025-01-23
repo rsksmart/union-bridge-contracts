@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import {OpCodes} from "./OpCodes.sol";
 import {BtcTxIn, BtcTxOut, BtcTransaction} from "../interfaces/IPegManager.sol";
 
 /**
