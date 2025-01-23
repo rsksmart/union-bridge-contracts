@@ -14,15 +14,12 @@ library BtcHelper {
         pure
         returns (bytes memory)
     {
-        // TODO convert size to compat size https://learnmeabitcoin.com/technical/transaction/#structure-input-count
-        uint8 scriptSigSize = uint8(_scriptSig.length);
-
         // See struct values https://learnmeabitcoin.com/technical/transaction/#structure-input-count
         // See hex format https://learnmeabitcoin.com/technical/transaction/wtxid/#segwit
         return abi.encodePacked(
             reverseBytes32(_txId), // txId needs to be converted to little Endian
             reverseUint32(_vout), // vout needs to be converted to little Endian
-            scriptSigSize, // scriptSigSize is compact-size
+            toCompactSize(_scriptSig.length), // scriptSigSize is compact-size
             _scriptSig, // scriptSig should be empty for non-legacy transactions
             reverseUint32(_sequence) // sequence needs to be converted to little Endian
         );
@@ -33,10 +30,8 @@ library BtcHelper {
         // [inputs count]
         // [txid0][vout0][script sig size 0][script sig 0][sequence0]
         // [txid1][vout1][script sig size 1][script sig 1][sequence1]...
-        uint8 inputsCount = uint8(_inputs.length);
-        bytes memory hexInputs = abi.encodePacked(inputsCount);
-
-        for (uint8 i = 0; i < _inputs.length; i++) {
+        bytes memory hexInputs = toCompactSize(_inputs.length);
+        for (uint64 i = 0; i < _inputs.length; i++) {
             hexInputs = abi.encodePacked(
                 hexInputs, encodeTxIn(_inputs[i].txId, _inputs[i].vout, _inputs[i].sequence, _inputs[i].scriptSig)
             );
@@ -45,14 +40,11 @@ library BtcHelper {
     }
 
     function encodeTxOut(uint64 _amount, bytes memory _scriptPubKey) internal pure returns (bytes memory) {
-        // TODO convert size to compat size https://learnmeabitcoin.com/technical/transaction/#structure-input-count
-        uint8 scriptPubKeySize = uint8(_scriptPubKey.length);
-
         // See struct values https://learnmeabitcoin.com/technical/transaction/#structure-input-count
         // See hex format https://learnmeabitcoin.com/technical/transaction/wtxid/#segwit
         return abi.encodePacked(
             reverseUint64(_amount), // amount needs to be converted to little Endian
-            scriptPubKeySize, // scriptPubKeySize is compact-size
+            toCompactSize(_scriptPubKey.length), // scriptPubKeySize is compact-size
             _scriptPubKey
         );
     }
@@ -62,10 +54,8 @@ library BtcHelper {
         // [output count]
         // [amount0][script pubkey size 0][script pubkey 0]
         // [amount1][script pubkey size 1][script pubkey 1]...
-        uint8 outputsCount = uint8(_outputs.length);
-        bytes memory hexOutputs = abi.encodePacked(outputsCount);
-
-        for (uint8 i = 0; i < _outputs.length; i++) {
+        bytes memory hexOutputs = toCompactSize(_outputs.length);
+        for (uint64 i = 0; i < _outputs.length; i++) {
             hexOutputs = abi.encodePacked(hexOutputs, encodeTxOut(_outputs[i].amount, _outputs[i].scriptPubKey));
         }
         return hexOutputs;
@@ -152,5 +142,24 @@ library BtcHelper {
     /// @return v        The reversed value
     function reverseUint16(uint16 _b) internal pure returns (uint16 v) {
         v = (_b << 8) | (_b >> 8);
+    }
+
+    /// @dev returns hex bytes with size in btc compact size
+    /// The first byte indicates which bytes encode the integer:
+    /// <= FC – This byte (0 - 252)
+    /// FD – The next two bytes (253 - 65535)
+    /// FE – The next four bytes (65536 - 4294967295)
+    /// FF – The next eight bytes (4294967296 - 18446744073709551615)
+    // Note: Bytes encoding the integer are in little endian.
+    // https://learnmeabitcoin.com/technical/general/compact-size/
+    function toCompactSize(uint256 size) internal pure returns (bytes memory) {
+        if (size <= 252) {
+            return abi.encodePacked(uint8(size));
+        } else if (size <= 65535) {
+            return abi.encodePacked(uint8(0xFD), reverseUint16(uint16(size)));
+        } else if (size <= 4294967295) {
+            return abi.encodePacked(uint8(0xFE), reverseUint32(uint32(size)));
+        }
+        return abi.encodePacked(uint8(0xFF), reverseUint64(uint64(size)));
     }
 }

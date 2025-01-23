@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import "forge-std/Test.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {PegManager} from "src/PegManager.sol";
+import {BtcTxIn, BtcTxOut, BtcTransaction} from "src/interfaces/IPegManager.sol";
 import {Committee, CommitteeRegistry} from "src/CommitteeRegistry.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
 import {RSK_BRIDGE_ADDRESS, Bridge} from "src/interfaces/Bridge.sol";
@@ -125,5 +126,42 @@ abstract contract HelperContract is Test {
 
     function uintToBytes32(uint256 i) internal pure returns (bytes32) {
         return keccak256(abi.encode(i));
+    }
+
+    function getBtcTxIn() internal pure returns (BtcTxIn memory) {
+        // Data from tx 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079
+        // https://www.blockchain.com/explorer/transactions/btc/c00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079
+        return BtcTxIn({
+            txId: 0x360b81785dc7c2f40627fea364676dbb73e6276683caffd9f906b0e0bd36b3d2,
+            vout: 1694,
+            sequence: 4294967293,
+            scriptSig: hex""
+        });
+    }
+
+    function getBtcTxOut() internal pure returns (BtcTxOut memory) {
+        // Data from tx 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079
+        // https://www.blockchain.com/explorer/transactions/btc/c00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079
+        return BtcTxOut({amount: 294, scriptPubKey: hex"0014d3b4045c40a133ee361f766ceae4d82398fc5058"});
+    }
+
+    function getBtcTransaction() internal pure returns (BtcTransaction memory) {
+        // Data from tx 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079
+        // https://www.blockchain.com/explorer/transactions/btc/c00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079
+        BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
+        btcInputs[0] = getBtcTxIn();
+        // Output
+        BtcTxOut[] memory btcOutputs = new BtcTxOut[](1);
+        btcOutputs[0] = getBtcTxOut();
+        return BtcTransaction({version: 2, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
+    }
+
+    function getExpectedRawTx() internal pure returns (bytes memory) {
+        return
+        hex"0200000001d2b336bde0b006f9d9ffca836627e673bb6d6764a3fe2706f4c2c75d78810b369e06000000fdffffff012601000000000000160014d3b4045c40a133ee361f766ceae4d82398fc505800000000";
+    }
+
+    function getExpectedTxHash() internal pure returns (bytes32) {
+        return 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079;
     }
 }

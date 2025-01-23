@@ -11,19 +11,13 @@ import {BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE} from "src
 
 contract TestPegManager is Test, HelperContract {
     // Arrenge
-    uint64 internal constant value = 100_000; // 0.001 BTC
+    uint64 internal constant VALUE = 100_000; // 0.001 BTC
     // https://www.blockchain.com/explorer/blocks/btc/879500
-    bytes32 internal constant blockHash = 0x0000000000000000000282fa21665766e58eb6cb94e458c3ef6d4af1121e38d9;
-    uint256 internal constant packetNumber = 0;
-    // https://www.blockchain.com/explorer/transactions/btc/c00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079
-    // txID 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079
-    bytes32 internal constant txHash = 0xda7941bdccc1c040046e9b998e78a7cefec97cadc5a2f561a32afa2700598fcb;
-    // https://www.blockchain.com/explorer/transactions/btc/c00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079
-    bytes internal constant rawTx =
-        hex"02000000000101d2b336bde0b006f9d9ffca836627e673bb6d6764a3fe2706f4c2c75d78810b369e06000000fdffffff012601000000000000160014d3b4045c40a133ee361f766ceae4d82398fc505803407bf29bfcee5613d2b5ad37c3a2732f3260938f00e7d2d9da5fdf80213088e25d71048c09449e4fbcca8e69cd84a04973d9b3562d114f26b9daffa6bf3929527d4420afd36e561af10735e88f95d9655e5b3f7bc79de0a4781ef99d1e030c0c567422ac0063036f7264510a746578742f706c61696e000d3837393530302e6269746d61706821c0afd36e561af10735e88f95d9655e5b3f7bc79de0a4781ef99d1e030c0c56742200000000";
-    BtcTransaction btcTx;
-    string internal constant utxo = "bc1q6w6qghzq5ye7udslwekw4excywv0c5zcvvx4fy";
-    string internal constant btcReinburstmentAddress = "1PuJjnF476W3zXfVYmJfGnouzFDAXakkL4";
+    bytes32 internal constant BLOCK_HASH = 0x0000000000000000000282fa21665766e58eb6cb94e458c3ef6d4af1121e38d9;
+    uint256 internal constant PACKET_NUMBER = 0;
+
+    string internal constant UTXO = "bc1q6w6qghzq5ye7udslwekw4excywv0c5zcvvx4fy";
+    string internal constant BTC_REINBURSTMENT_ADDRESS = "1PuJjnF476W3zXfVYmJfGnouzFDAXakkL4";
 
     function setUp() external {
         setUpPegManager();
@@ -35,7 +29,7 @@ contract TestPegManager is Test, HelperContract {
         bytes memory dummyRskAddress = abi.encodePacked(bytes20(0x4C9a9CbFa14106439B0F96a64d9260F3b8947934));
 
         // Act
-        bytes memory result = pm.getTemporaryPegInAddress(dummyRskAddress, value);
+        bytes memory result = pm.getTemporaryPegInAddress(dummyRskAddress, VALUE);
 
         console.log("result");
         console.logBytes(result);
@@ -48,13 +42,13 @@ contract TestPegManager is Test, HelperContract {
         bridgeMock.setBtcTransactionConfirmations(10);
         // Create PegIn struct information
         PegInRequestTxSPVProof memory pegInRequestTxSPVProof = PegInRequestTxSPVProof({
-            value: value, // 0.001 BTC
-            packetNumber: packetNumber,
+            value: VALUE, // 0.001 BTC
+            packetNumber: PACKET_NUMBER,
             destinationAddress: address(this),
-            btcReinburstmentAddress: btcReinburstmentAddress,
-            blockHash: blockHash,
-            utxo: utxo,
-            btcTx: btcTx,
+            btcReinburstmentAddress: BTC_REINBURSTMENT_ADDRESS,
+            blockHash: BLOCK_HASH,
+            utxo: UTXO,
+            btcTx: getBtcTransaction(),
             // Values obtained using https://github.com/rsksmart/pmt-builder
             // TODO fix this values as it's returning -5 in the bridge
             merkleBranchPath: 4285202432,
@@ -69,7 +63,7 @@ contract TestPegManager is Test, HelperContract {
         // We emit the event we expect to see.
         emit IPegManager.PrepareTakeTransaction(
             pegInRequestTxSPVProof.blockHash,
-            txHash,
+            getExpectedTxHash(),
             pegInRequestTxSPVProof.value,
             pegInRequestTxSPVProof.packetNumber,
             expectedSlotId,
@@ -82,11 +76,11 @@ contract TestPegManager is Test, HelperContract {
         pm.acceptPegInRequest(pegInRequestTxSPVProof);
 
         // Assert
-        Stream memory stream = pm.getStream(value);
-        Slot memory slot = pm.getSlot(stream.streamId, packetNumber, expectedSlotId);
+        Stream memory stream = pm.getStream(VALUE);
+        Slot memory slot = pm.getSlot(stream.streamId, PACKET_NUMBER, expectedSlotId);
 
-        assertEq(slot.pegInTx, txHash, "Incorrect peg in txHash");
-        assertEq(slot.utxo, utxo, "Incorrect utxo");
+        assertEq(slot.pegInTx, getExpectedTxHash(), "Incorrect peg in txHash");
+        assertEq(slot.utxo, UTXO, "Incorrect utxo");
         assertEq(uint256(slot.state), uint256(SlotState.PREPARED), "Incorrect slot state");
     }
 
@@ -97,13 +91,13 @@ contract TestPegManager is Test, HelperContract {
         bridgeMock.setBtcTransactionConfirmations(actualConfirmations);
         // Create PegIn struct information
         PegInRequestTxSPVProof memory pegInRequestTxSPVProof = PegInRequestTxSPVProof({
-            value: value,
-            packetNumber: packetNumber,
+            value: VALUE,
+            packetNumber: PACKET_NUMBER,
             destinationAddress: address(this),
-            btcReinburstmentAddress: btcReinburstmentAddress,
-            blockHash: blockHash,
-            utxo: utxo,
-            btcTx: btcTx,
+            btcReinburstmentAddress: BTC_REINBURSTMENT_ADDRESS,
+            blockHash: BLOCK_HASH,
+            utxo: UTXO,
+            btcTx: getBtcTransaction(),
             merkleBranchPath: 1,
             merkleBranchHashes: new bytes32[](1)
         });
@@ -111,7 +105,7 @@ contract TestPegManager is Test, HelperContract {
             0x3fcef4a1ddf759a858190b89ecbd1ff3dffb49704e110b68baf5b5de7021910f;
 
         // Assert
-        Stream memory stream = pm.getStream(value);
+        Stream memory stream = pm.getStream(VALUE);
         vm.expectRevert(
             abi.encodeWithSelector(
                 IPegManager.notEnoughConfirmations.selector, actualConfirmations, stream.pegInConfirmations
@@ -127,13 +121,13 @@ contract TestPegManager is Test, HelperContract {
         bridgeMock.setBtcTransactionConfirmations(BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE);
         // Create PegIn struct information
         PegInRequestTxSPVProof memory pegInRequestTxSPVProof = PegInRequestTxSPVProof({
-            value: value,
-            packetNumber: packetNumber,
+            value: VALUE,
+            packetNumber: PACKET_NUMBER,
             destinationAddress: address(this),
-            btcReinburstmentAddress: btcReinburstmentAddress,
-            blockHash: blockHash,
-            utxo: utxo,
-            btcTx: btcTx,
+            btcReinburstmentAddress: BTC_REINBURSTMENT_ADDRESS,
+            blockHash: BLOCK_HASH,
+            utxo: UTXO,
+            btcTx: getBtcTransaction(),
             // Values obtained using https://github.com/rsksmart/pmt-builder
             merkleBranchPath: 4285202432,
             merkleBranchHashes: new bytes32[](13)
