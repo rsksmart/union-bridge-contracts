@@ -7,7 +7,7 @@ import {PegManager} from "src/PegManager.sol";
 import {BtcTxIn, BtcTxOut, BtcTransaction} from "src/interfaces/IPegManager.sol";
 import {Committee, CommitteeRegistry} from "src/CommitteeRegistry.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
-import {RSK_BRIDGE_ADDRESS, Bridge} from "src/interfaces/Bridge.sol";
+import {RSK_BRIDGE_ADDRESS, IBridge} from "src/interfaces/IBridge.sol";
 import {BridgeMock} from "./BridgeMock.sol";
 
 abstract contract HelperContract is Test {

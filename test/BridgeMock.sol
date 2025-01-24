@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "src/interfaces/Bridge.sol";
+import "src/interfaces/IBridge.sol";
 
-contract BridgeMock is Bridge {
+contract BridgeMock is IBridge {
     mapping(bytes32 => uint256) private amounts;
     mapping(uint256 => bytes) private headers;
     mapping(bytes32 => bytes) private headersByHash;

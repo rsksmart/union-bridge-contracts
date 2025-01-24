@@ -49,10 +49,9 @@ interface IPegManager {
         uint64 _value
     ) external returns (bytes calldata temporaryPegInAddress);
 
-    // /// @notice Accepts a peg-in request
-    // /// @param pegInRequestTxSPVProof The SPV proof of the peg-in request transaction
-    // /// @param numberOfConfirmations Number of confirmations required
-    // function acceptPegInRequest(bytes calldata pegInRequestTxSPVProof, uint8 numberOfConfirmations) external;
+    /// @notice Accepts a peg-in request
+    /// @param _pegInRequestTxSPVProof The SPV proof of the peg-in request transaction
+    function acceptPegInRequest(PegInRequestTxSPVProof calldata _pegInRequestTxSPVProof) external;
 
     // /// @notice Registers peg transactions
     // /// @param take0Tx First take transaction
@@ -87,13 +86,6 @@ interface IPegManager {
         string utxo
     );
 
-    error bridgeBtcInexistantBlockHash(bytes32 blockHash);
-    error bridgeBtcBlockNotInBestChain(bytes32 blockHash);
-    error bridgeBtcInconsistentBlock(bytes32 blockHash);
-    error bridgeBtcBlockTooOld(int256 maxDepth);
-    error bridgeBtcTxInvalidMerkleBranch(bytes32 txHash, uint256 merkleBranchPath, bytes32[] merkleBranchHashes);
-    error bridgeBtcUnknownError(int256 errorCode);
-    error notEnoughConfirmations(int256 actual, uint256 expected);
     error incorrectOutputNumber(uint256 actual, uint256 expected);
     error invalidOpReturnLength(uint256 actual, uint256 expected);
     error incorrectlyFormedOpReturn(uint256 index);

@@ -3,34 +3,23 @@ pragma solidity ^0.8.20;
 
 import "forge-std/console.sol";
 import {Committee, ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
-import {Stream, Packet, SlotState, StreamManager} from "./StreamManager.sol";
 import {IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
 import {BtcTransaction, BtcTxOut, PegInRequestTxSPVProof, IPegManager} from "./interfaces/IPegManager.sol";
-import {
-    Bridge,
-    RSK_BRIDGE_ADDRESS,
-    BTC_TRANSACTION_CONFIRMATION_MAX_DEPTH,
-    BTC_TRANSACTION_CONFIRMATION_INEXISTENT_BLOCK_HASH_ERROR_CODE,
-    BTC_TRANSACTION_CONFIRMATION_BLOCK_NOT_IN_BEST_CHAIN_ERROR_CODE,
-    BTC_TRANSACTION_CONFIRMATION_INCONSISTENT_BLOCK_ERROR_CODE,
-    BTC_TRANSACTION_CONFIRMATION_BLOCK_TOO_OLD_ERROR_CODE,
-    BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE
-} from "./interfaces/Bridge.sol";
 import {BtcHelper} from "./libraries/BtcHelper.sol";
 import {BytesHelper} from "./libraries/BytesHelper.sol";
 import {OpCodes} from "./libraries/OpCodes.sol";
+import {Stream, Packet, SlotState, StreamManager} from "./StreamManager.sol";
+import {SPV} from "./SPV.sol";
 
 /// @title PegManager
 /// @notice Manages peg-in and peg-out operations between Bitcoin and Rootstock
-contract PegManager is IPegManager, StreamManager {
+contract PegManager is IPegManager, StreamManager, SPV {
     ICommitteeRegistry public committeeRegistry;
     IBitcoinManager public bitcoinManager;
-    Bridge public bridge;
 
     function initialize(ICommitteeRegistry _committeeRegistry, IBitcoinManager _bitcoinManager) public initializer {
         committeeRegistry = _committeeRegistry;
         bitcoinManager = _bitcoinManager;
-        bridge = Bridge(RSK_BRIDGE_ADDRESS);
         Committee memory committee = committeeRegistry.getNextAvailableCommittee();
         StreamManager.initialize(committee.internalKey);
     }
@@ -76,7 +65,7 @@ contract PegManager is IPegManager, StreamManager {
 
         // Verify the TxHash part of the Merkle Root of Tx of a Block
         // And that block is inside Bitcoin Mainchain and has enough confirmations
-        _verifyTxConfirmations(
+        verifyTxConfirmations(
             stream.pegInConfirmations,
             txHash,
             _pegInRequestTxSPVProof.blockHash,
@@ -104,44 +93,6 @@ contract PegManager is IPegManager, StreamManager {
             btcReinburstmentAddress,
             _pegInRequestTxSPVProof.utxo
         );
-    }
-
-    function _verifyTxConfirmations(
-        uint256 _minConfirmations,
-        bytes32 _txHash,
-        bytes32 _blockHash,
-        uint256 _merkleBranchPath,
-        bytes32[] memory _merkleBranchHashes
-    ) internal {
-        // Get tx confirmations using SPV from Rsk bridge precompiled contract
-        int256 confirmations =
-            bridge.getBtcTransactionConfirmations(_txHash, _blockHash, _merkleBranchPath, _merkleBranchHashes);
-        // Validate block is in the Mainchain
-        if (confirmations == BTC_TRANSACTION_CONFIRMATION_INEXISTENT_BLOCK_HASH_ERROR_CODE) {
-            revert bridgeBtcInexistantBlockHash(_blockHash);
-        }
-        if (confirmations == BTC_TRANSACTION_CONFIRMATION_BLOCK_NOT_IN_BEST_CHAIN_ERROR_CODE) {
-            revert bridgeBtcBlockNotInBestChain(_blockHash);
-        }
-        if (confirmations == BTC_TRANSACTION_CONFIRMATION_INCONSISTENT_BLOCK_ERROR_CODE) {
-            revert bridgeBtcInconsistentBlock(_blockHash);
-        }
-        // Rsk only allows to retrieve blocks up to 1 month
-        if (confirmations == BTC_TRANSACTION_CONFIRMATION_BLOCK_TOO_OLD_ERROR_CODE) {
-            revert bridgeBtcBlockTooOld(BTC_TRANSACTION_CONFIRMATION_MAX_DEPTH);
-        }
-        // Validate transaction is in the Block
-        if (confirmations == BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE) {
-            revert bridgeBtcTxInvalidMerkleBranch(_txHash, _merkleBranchPath, _merkleBranchHashes);
-        }
-        if (confirmations < 0) {
-            revert bridgeBtcUnknownError(confirmations);
-        }
-
-        // Validate block has enough Confirmations
-        if (confirmations < int256(_minConfirmations)) {
-            revert notEnoughConfirmations(confirmations, _minConfirmations);
-        }
     }
 
     function _getTxOpReturnData(BtcTxOut memory _opReturnOut) internal returns (uint64, address, string memory) {

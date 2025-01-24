@@ -13,7 +13,7 @@ int256 constant BTC_TRANSACTION_CONFIRMATION_INCONSISTENT_BLOCK_ERROR_CODE = -3;
 int256 constant BTC_TRANSACTION_CONFIRMATION_BLOCK_TOO_OLD_ERROR_CODE = -4;
 int256 constant BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE = -5;
 
-interface Bridge {
+interface IBridge {
     receive() external payable;
 
     function getBtcBlockchainBestChainHeight() external view returns (int256);

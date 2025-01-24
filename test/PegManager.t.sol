@@ -6,8 +6,9 @@ import "forge-std/console.sol";
 import {HelperContract} from "test/HelperContract.sol";
 import {BtcTransaction, PegInRequestTxSPVProof, IPegManager} from "src/interfaces/IPegManager.sol";
 import {Slot, SlotState, Stream} from "src/interfaces/IStreamManager.sol";
+import {BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE} from "src/interfaces/IBridge.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
-import {BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE} from "src/interfaces/Bridge.sol";
+import {SPV} from "src/SPV.sol";
 
 contract TestPegManager is Test, HelperContract {
     // Arrenge
@@ -103,9 +104,7 @@ contract TestPegManager is Test, HelperContract {
         // Assert
         Stream memory stream = pm.getStream(VALUE);
         vm.expectRevert(
-            abi.encodeWithSelector(
-                IPegManager.notEnoughConfirmations.selector, actualConfirmations, stream.pegInConfirmations
-            )
+            abi.encodeWithSelector(SPV.notEnoughConfirmations.selector, actualConfirmations, stream.pegInConfirmations)
         );
         // Act
         pm.acceptPegInRequest(pegInRequestTxSPVProof);
@@ -155,7 +154,7 @@ contract TestPegManager is Test, HelperContract {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(
-                IPegManager.bridgeBtcTxInvalidMerkleBranch.selector,
+                SPV.bridgeBtcTxInvalidMerkleBranch.selector,
                 getExpectedTxHash(),
                 pegInRequestTxSPVProof.merkleBranchPath,
                 pegInRequestTxSPVProof.merkleBranchHashes
