@@ -25,7 +25,7 @@ interface IPegManager {
     ) external returns (bytes calldata temporaryPegInAddress);
 
     /// @notice Accepts a peg-in request
-    /// @param _pegInRequestTxSPVProof The SPV proof of the peg-in request transaction
+    /// @param _pegInRequestTxSPVProof The ProofValidator proof of the peg-in request transaction
     function acceptPegInRequest(PegInRequestTxSPVProof calldata _pegInRequestTxSPVProof) external;
 
     // /// @notice Registers peg transactions

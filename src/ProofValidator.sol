@@ -12,9 +12,9 @@ import {
     BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE
 } from "./interfaces/IBridge.sol";
 
-/// @title SPV
+/// @title ProofValidator
 /// @notice Simple proof validator for proving Bitcoin Tx in RSK
-abstract contract SPV {
+abstract contract ProofValidator {
     error bridgeBtcInexistantBlockHash(bytes32 blockHash);
     error bridgeBtcBlockNotInBestChain(bytes32 blockHash);
     error bridgeBtcInconsistentBlock(bytes32 blockHash);
@@ -29,7 +29,7 @@ abstract contract SPV {
     /// @param _blockHash The hash of the block containing the transaction
     /// @param _merkleBranchPath The path in the merkle tree to verify the transaction
     /// @param _merkleBranchHashes The hashes needed to verify the merkle proof
-    /// @dev Uses RSK bridge precompiled contract to verify the transaction via SPV
+    /// @dev Uses RSK bridge precompiled contract to verify the transaction via ProofValidator
     /// @dev Will revert if:
     ///      - Block hash doesn't exist
     ///      - Block is not in best chain
@@ -44,7 +44,7 @@ abstract contract SPV {
         uint256 _merkleBranchPath,
         bytes32[] memory _merkleBranchHashes
     ) internal view {
-        // Get tx confirmations using SPV from Rsk bridge precompiled contract
+        // Get tx confirmations using ProofValidator from Rsk bridge precompiled contract
         int256 confirmations = IBridge(RSK_BRIDGE_ADDRESS).getBtcTransactionConfirmations(
             _txHash, _blockHash, _merkleBranchPath, _merkleBranchHashes
         );

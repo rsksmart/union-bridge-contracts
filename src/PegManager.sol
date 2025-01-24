@@ -6,11 +6,11 @@ import {Committee, ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol
 import {BtcTransaction, BtcTxOut, IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
 import {PegInRequestTxSPVProof, IPegManager} from "./interfaces/IPegManager.sol";
 import {Stream, Packet, SlotState, StreamManager} from "./StreamManager.sol";
-import {SPV} from "./SPV.sol";
+import {ProofValidator} from "./ProofValidator.sol";
 
 /// @title PegManager
 /// @notice Manages peg-in and peg-out operations between Bitcoin and Rootstock
-contract PegManager is IPegManager, StreamManager, SPV {
+contract PegManager is IPegManager, StreamManager, ProofValidator {
     ICommitteeRegistry public committeeRegistry;
     IBitcoinManager public bitcoinManager;
 

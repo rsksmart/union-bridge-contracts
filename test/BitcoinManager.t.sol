@@ -1,5 +1,5 @@
 import "forge-std/Test.sol";
-import {HelperContract} from "./HelperContract.sol";
+import {HelperContract} from "./Helpers/HelperContract.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
 import {BtcTxIn, BtcTxOut, BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
 

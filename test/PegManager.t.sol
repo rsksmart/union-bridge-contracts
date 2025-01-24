@@ -3,11 +3,11 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
-import {HelperContract} from "test/HelperContract.sol";
+import {HelperContract} from "test/Helpers/HelperContract.sol";
 import {PegInRequestTxSPVProof, IPegManager} from "src/interfaces/IPegManager.sol";
 import {Slot, SlotState, Stream} from "src/interfaces/IStreamManager.sol";
 import {BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE} from "src/interfaces/IBridge.sol";
-import {SPV} from "src/SPV.sol";
+import {ProofValidator} from "src/ProofValidator.sol";
 
 contract TestPegManager is Test, HelperContract {
     // Arrenge
@@ -103,7 +103,9 @@ contract TestPegManager is Test, HelperContract {
         // Assert
         Stream memory stream = pm.getStream(VALUE);
         vm.expectRevert(
-            abi.encodeWithSelector(SPV.notEnoughConfirmations.selector, actualConfirmations, stream.pegInConfirmations)
+            abi.encodeWithSelector(
+                ProofValidator.notEnoughConfirmations.selector, actualConfirmations, stream.pegInConfirmations
+            )
         );
         // Act
         pm.acceptPegInRequest(pegInRequestTxSPVProof);
@@ -153,7 +155,7 @@ contract TestPegManager is Test, HelperContract {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(
-                SPV.bridgeBtcTxInvalidMerkleBranch.selector,
+                ProofValidator.bridgeBtcTxInvalidMerkleBranch.selector,
                 getExpectedPegInRequestTxHash(),
                 pegInRequestTxSPVProof.merkleBranchPath,
                 pegInRequestTxSPVProof.merkleBranchHashes

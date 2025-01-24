@@ -61,15 +61,18 @@ abstract contract HelperContract is Test {
         registry.registerCommittee(committee3, memebersCommittee3);
     }
 
-    function setUpPegManager() internal {
-        setUpBitcoinManager();
-        setUpCommitteeRegistry();
-
+    function setUpBridgeMock() internal {
         // Deploy mock of the precompile
         // Set mock bytecode to the expected precompile address
         // https://book.getfoundry.sh/cheatcodes/etch
         vm.etch(RSK_BRIDGE_ADDRESS, address(new BridgeMock()).code);
         bridgeMock = BridgeMock(RSK_BRIDGE_ADDRESS);
+    }
+
+    function setUpPegManager() internal {
+        setUpBitcoinManager();
+        setUpCommitteeRegistry();
+        setUpBridgeMock();
 
         pm = new PegManager();
         pm.initialize(registry, bitcoinManager);
