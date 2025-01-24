@@ -4,10 +4,9 @@ pragma solidity ^0.8.20;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 import {HelperContract} from "test/HelperContract.sol";
-import {BtcTransaction, PegInRequestTxSPVProof, IPegManager} from "src/interfaces/IPegManager.sol";
+import {PegInRequestTxSPVProof, IPegManager} from "src/interfaces/IPegManager.sol";
 import {Slot, SlotState, Stream} from "src/interfaces/IStreamManager.sol";
 import {BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE} from "src/interfaces/IBridge.sol";
-import {BtcUtils} from "src/libraries/BtcUtils.sol";
 import {SPV} from "src/SPV.sol";
 
 contract TestPegManager is Test, HelperContract {
@@ -63,7 +62,7 @@ contract TestPegManager is Test, HelperContract {
         // We emit the event we expect to see.
         emit IPegManager.PrepareTakeTransaction(
             pegInRequestTxSPVProof.blockHash,
-            getExpectedTxHash(),
+            getExpectedPegInRequestTxHash(),
             pegInRequestTxSPVProof.value,
             PACKET_NUMBER,
             expectedSlotId,
@@ -79,7 +78,7 @@ contract TestPegManager is Test, HelperContract {
         Stream memory stream = pm.getStream(VALUE);
         Slot memory slot = pm.getSlot(stream.streamId, PACKET_NUMBER, expectedSlotId);
 
-        assertEq(slot.pegInTx, getExpectedTxHash(), "Incorrect peg in txHash");
+        assertEq(slot.pegInTx, getExpectedPegInRequestTxHash(), "Incorrect peg in txHash");
         assertEq(slot.utxo, UTXO, "Incorrect utxo");
         assertEq(uint256(slot.state), uint256(SlotState.PREPARED), "Incorrect slot state");
     }
@@ -155,7 +154,7 @@ contract TestPegManager is Test, HelperContract {
         vm.expectRevert(
             abi.encodeWithSelector(
                 SPV.bridgeBtcTxInvalidMerkleBranch.selector,
-                getExpectedTxHash(),
+                getExpectedPegInRequestTxHash(),
                 pegInRequestTxSPVProof.merkleBranchPath,
                 pegInRequestTxSPVProof.merkleBranchHashes
             )

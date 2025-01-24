@@ -4,8 +4,8 @@ pragma solidity ^0.8.20;
 import "forge-std/Test.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {PegManager} from "src/PegManager.sol";
-import {BtcTxIn, BtcTxOut, BtcTransaction} from "src/interfaces/IPegManager.sol";
 import {Committee, CommitteeRegistry} from "src/CommitteeRegistry.sol";
+import {BtcTxIn, BtcTxOut, BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
 import {RSK_BRIDGE_ADDRESS, IBridge} from "src/interfaces/IBridge.sol";
 import {BridgeMock} from "./BridgeMock.sol";
@@ -163,7 +163,7 @@ abstract contract HelperContract is Test {
         return BtcTransaction({version: 2, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
     }
 
-    function getExpectedTxHash() internal pure returns (bytes32) {
+    function getExpectedPegInRequestTxHash() internal pure returns (bytes32) {
         return 0x6e2cd48ae052aa3e884d4bfa13f44867b2d510b62d20915ff55eb94560e4f188;
     }
 }

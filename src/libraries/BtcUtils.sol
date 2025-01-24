@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {OpCodes} from "./OpCodes.sol";
-import {BtcTxIn, BtcTxOut, BtcTransaction} from "../interfaces/IPegManager.sol";
+import {BtcTransaction, BtcTxIn, BtcTxOut} from "../interfaces/IBitcoinManager.sol";
 
 /**
  * @title Btc Utils
@@ -72,11 +72,6 @@ library BtcUtils {
             encodeTxOutputs(_btcTx.outputs),
             reverseUint32(_btcTx.locktime) // locktime needs to be converted to little Endian
         );
-    }
-
-    /// @dev Convert Tx to raw tx hex using Bitcoin format and then uses hash256 to get the txHash
-    function getBtcTxHash(BtcTransaction memory _btcTx) internal pure returns (bytes32) {
-        return hash256(encodeTx(_btcTx));
     }
 
     /// @dev This is how Bitcoin calls double sha256 and we reverse it to correct endian
