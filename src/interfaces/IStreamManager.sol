@@ -9,7 +9,7 @@ enum SlotState {
 }
 
 struct Slot {
-    uint256 slotId; // Unique ID
+    uint64 slotId; // Unique ID
     SlotState state; // The denomination in satoshis of the packet (redundant, this field is also in the stream structure)
     // TBD drp;                        // Dispute Resolution Protocol information
     // TBD otk;                        // Dispute Resolution Protocol one-time-keys
@@ -20,7 +20,7 @@ struct Slot {
 }
 
 struct Packet {
-    uint256 sequenceNumber; // Unique ID
+    uint64 sequenceNumber; // Unique ID
     // uint64 denomination; // The denomination in satoshis of the packet (redundant, this field is also in the stream structure)
     // Slot[] slots; // A dynamic array to store the slots of the packet
     // Arrays should not be in scruct otherwise they are too havy on memory and cause a stack too deep exception
@@ -30,7 +30,7 @@ struct Packet {
 }
 
 struct Stream {
-    uint256 streamId; // Unique ID
+    uint64 streamId; // Unique ID
     uint64 denomination; // The denomination of the stream in satoshis
     // Packet[] packets; // A dynamic array to store the packets of the stream
     // Arrays should not be in scruct otherwise they are too havy on memory and cause a stack too deep exception
@@ -51,21 +51,21 @@ interface IStreamManager {
     /// @notice Allows users to get the Stream information for a given index
     /// @param _streamId The index in the array of streams
     /// @return Stream The stream information
-    function getStreamById(uint256 _streamId) external view returns (Stream calldata);
+    function getStreamById(uint64 _streamId) external view returns (Stream calldata);
 
     /// @notice Get the number of streams
-    /// @return uint256 The number of streams
-    function getStreamsLength() external view returns (uint256);
+    /// @return uint64 The number of streams
+    function getStreamsLength() external view returns (uint64);
 
     /// @notice Allows users to get the Packet information for a given packet index at a stream
     /// @param _streamId The index in the array of streams
     /// @param _packetNumber The index in the array of packets
     /// @return Packet The packet information
-    function getPacket(uint256 _streamId, uint256 _packetNumber) external view returns (Packet calldata);
+    function getPacket(uint64 _streamId, uint64 _packetNumber) external view returns (Packet calldata);
 
     /// @notice Allows users to get the first empty Slot information for a given packet index at a stream
     /// @param _streamId The index in the array of streams
     /// @param _packetNumber The index in the array of packets
     /// @return uint256 The slotId of the first empty slot information
-    function getEmptySlotId(uint256 _streamId, uint256 _packetNumber) external view returns (uint256);
+    function getEmptySlotId(uint64 _streamId, uint64 _packetNumber) external view returns (uint64);
 }

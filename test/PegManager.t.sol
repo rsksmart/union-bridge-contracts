@@ -14,7 +14,7 @@ contract TestPegManager is Test, HelperContract {
     uint64 internal constant VALUE = 100_000; // 0.001 BTC
     // https://www.blockchain.com/explorer/blocks/btc/879500
     bytes32 internal constant BLOCK_HASH = 0x0000000000000000000282fa21665766e58eb6cb94e458c3ef6d4af1121e38d9;
-    uint256 internal constant PACKET_NUMBER = 0;
+    uint64 internal constant PACKET_NUMBER = 0;
     address internal constant DESTINATION_ADDRESS = 0x7Ac5496aee77c1bA1F0854206A26DdA82A81d6d8;
 
     string internal constant UTXO = "1PuJjnF476W3zXfVYmJfGnouzFDAXakkL4";
@@ -39,7 +39,7 @@ contract TestPegManager is Test, HelperContract {
 
     function test_acceptPegInRequest_Success() external {
         // Arrenge
-        uint256 expectedSlotId = 0;
+        uint64 expectedSlotId = 0;
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(10);
         // Create PegIn struct information

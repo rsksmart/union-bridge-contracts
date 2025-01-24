@@ -12,9 +12,9 @@ abstract contract StreamManager is IStreamManager, Initializable {
     uint64 internal constant SECURITY_BOND_MULTIPLYER = 2;
 
     // StreamId => Packet list
-    mapping(uint256 => Packet[]) public packets; // TODO see how to handle it in a mapping instead of an array
+    mapping(uint64 => Packet[]) public packets; // TODO see how to handle it in a mapping instead of an array
     // StreamId => Packet.sequenceNumber => SlotId
-    mapping(uint256 => mapping(uint256 => Slot[])) internal slots; // TODO see how to handle it in a mapping instead of an array
+    mapping(uint64 => mapping(uint64 => Slot[])) internal slots; // TODO see how to handle it in a mapping instead of an array
     // TODO check if we can use another key or a hash for the slots and packets as they are not unique through the streams
 
     error StreamNotFoundByDenomination(uint256 denomination);
@@ -31,7 +31,7 @@ abstract contract StreamManager is IStreamManager, Initializable {
             uint64(1_000_000_000) // 10 BTC
         ];
 
-        for (uint256 i = 0; i < 5; i++) {
+        for (uint64 i = 0; i < 5; i++) {
             streams[i].streamId = i;
             streams[i].denomination = denominations[i];
             streams[i].peginPointer = 0;
@@ -40,18 +40,11 @@ abstract contract StreamManager is IStreamManager, Initializable {
             streams[i].pegInConfirmations = uint8(i + 1); // TODO Validate this value
 
             // Create initial packet
-
-            // First push an empty packet to storage
-            packets[i].push();
-            uint256 sequenceNumber = packets[i].length - 1;
-
-            // Then modify it in place
-            Packet storage newPacket = packets[i][sequenceNumber];
-            newPacket.sequenceNumber = sequenceNumber;
-            newPacket.committeeInternalKey = _committeeInternalKey;
+            uint64 sequenceNumber = uint64(packets[i].length);
+            packets[i].push(Packet({sequenceNumber: sequenceNumber, committeeInternalKey: _committeeInternalKey}));
 
             // Initialize slots directly in storage
-            for (uint256 j = 0; j < 100; j++) {
+            for (uint64 j = 0; j < 100; j++) {
                 slots[i][sequenceNumber].push(
                     Slot({slotId: j, state: SlotState.EMPTY, utxo: "", pegInTx: "", take0Tx: "", take1TX: ""})
                 );
@@ -68,15 +61,15 @@ abstract contract StreamManager is IStreamManager, Initializable {
         revert StreamNotFoundByDenomination(_denomination);
     }
 
-    function getStreamById(uint256 _streamId) external view returns (Stream memory) {
+    function getStreamById(uint64 _streamId) external view returns (Stream memory) {
         return streams[_streamId];
     }
 
-    function getStreamsLength() external view returns (uint256) {
-        return streams.length;
+    function getStreamsLength() external view returns (uint64) {
+        return uint64(streams.length);
     }
 
-    function getPacket(uint256 _streamId, uint256 _packetNumber) public view returns (Packet memory) {
+    function getPacket(uint64 _streamId, uint64 _packetNumber) public view returns (Packet memory) {
         Packet[] memory packetList = packets[_streamId];
         if (packetList.length < _packetNumber) {
             revert PacketOutOfBound(_packetNumber);
@@ -84,13 +77,13 @@ abstract contract StreamManager is IStreamManager, Initializable {
         return packetList[_packetNumber];
     }
 
-    function getSlot(uint256 _streamId, uint256 _packetNumber, uint256 _slotId) public view returns (Slot memory) {
+    function getSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) public view returns (Slot memory) {
         return slots[_streamId][_packetNumber][_slotId];
     }
 
-    function getEmptySlotId(uint256 _streamId, uint256 _packetNumber) public view returns (uint256) {
+    function getEmptySlotId(uint64 _streamId, uint64 _packetNumber) public view returns (uint64) {
         Slot[] memory slotList = slots[_streamId][_packetNumber];
-        for (uint256 i = 0; i < slotList.length; i++) {
+        for (uint64 i = 0; i < slotList.length; i++) {
             if (slotList[i].state == SlotState.EMPTY) {
                 return i;
             }
@@ -100,11 +93,11 @@ abstract contract StreamManager is IStreamManager, Initializable {
     }
 
     /// @dev Looks for the first empty slot and asigns the PegIn Tx in prepared state
-    function preparePegInTx(uint256 _streamId, uint256 _packetNumber, bytes32 _pegInTx, string memory _utxo)
+    function preparePegInTx(uint64 _streamId, uint64 _packetNumber, bytes32 _pegInTx, string memory _utxo)
         internal
-        returns (uint256)
+        returns (uint64)
     {
-        uint256 slotId = this.getEmptySlotId(_streamId, _packetNumber);
+        uint64 slotId = this.getEmptySlotId(_streamId, _packetNumber);
         Slot storage slot = slots[_streamId][_packetNumber][slotId];
         slot.state = SlotState.PREPARED;
         // TODO validate if the PegInTx is what we want to store, as the document mentions the Take for the registerPegInTxs
