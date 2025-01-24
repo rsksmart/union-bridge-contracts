@@ -15,19 +15,14 @@ contract TestPegManager is Test, HelperContract {
     // https://www.blockchain.com/explorer/blocks/btc/879500
     bytes32 internal constant BLOCK_HASH = 0x0000000000000000000282fa21665766e58eb6cb94e458c3ef6d4af1121e38d9;
     uint256 internal constant PACKET_NUMBER = 0;
-    address internal DESTINATION_ADDRESS;
+    address internal constant DESTINATION_ADDRESS = 0x7Ac5496aee77c1bA1F0854206A26DdA82A81d6d8;
 
-    string internal constant UTXO = "bc1q6w6qghzq5ye7udslwekw4excywv0c5zcvvx4fy";
-    string internal constant BTC_REINBURSTMENT_ADDRESS = "1PuJjnF476W3zXfVYmJfGnouzFDAXakkL4";
+    string internal constant UTXO = "1PuJjnF476W3zXfVYmJfGnouzFDAXakkL4";
+    string internal constant BTC_REINBURSTMENT_ADDRESS =
+        "bc1ph5yy7z7uxcnlz9ly9nx705p8yypvsyfrh9jfgcs866g5q0zlmgsqenymkh";
 
     function setUp() external {
         setUpPegManager();
-        DESTINATION_ADDRESS = address(this);
-
-        // TODO CREATE OP_RETRUN txOut
-        // packetNumber: PACKET_NUMBER,
-        // destinationAddress: DESTINATION_ADDRESS,
-        // btcReinburstmentAddress: BTC_REINBURSTMENT_ADDRESS,
     }
 
     function test_getTemporaryPegInAddress_Success() external view {
@@ -52,7 +47,7 @@ contract TestPegManager is Test, HelperContract {
             value: VALUE, // 0.001 BTC
             blockHash: BLOCK_HASH,
             utxo: UTXO,
-            btcTx: getBtcTransaction(),
+            btcTx: getBtcPegInRequestTx(),
             // Values obtained using https://github.com/rsksmart/pmt-builder
             // TODO fix this values as it's returning -5 in the bridge
             merkleBranchPath: 4285202432,
@@ -98,7 +93,7 @@ contract TestPegManager is Test, HelperContract {
             value: VALUE,
             blockHash: BLOCK_HASH,
             utxo: UTXO,
-            btcTx: getBtcTransaction(),
+            btcTx: getBtcPegInRequestTx(),
             merkleBranchPath: 1,
             merkleBranchHashes: new bytes32[](1)
         });
@@ -125,7 +120,7 @@ contract TestPegManager is Test, HelperContract {
             value: VALUE,
             blockHash: BLOCK_HASH,
             utxo: UTXO,
-            btcTx: getBtcTransaction(),
+            btcTx: getBtcPegInRequestTx(),
             // Values obtained using https://github.com/rsksmart/pmt-builder
             merkleBranchPath: 4285202432,
             merkleBranchHashes: new bytes32[](13)
@@ -161,6 +156,7 @@ contract TestPegManager is Test, HelperContract {
         vm.expectRevert(
             abi.encodeWithSelector(
                 IPegManager.bridgeBtcTxInvalidMerkleBranch.selector,
+                getExpectedTxHash(),
                 pegInRequestTxSPVProof.merkleBranchPath,
                 pegInRequestTxSPVProof.merkleBranchHashes
             )

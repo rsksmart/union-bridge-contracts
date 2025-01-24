@@ -50,53 +50,59 @@ contract PegManager is IPegManager, StreamManager {
         return bitcoinManager.getTemporaryPegInAddress(_rootstockDepositAddress, _value, committeeKey);
     }
 
-    function acceptPegInRequest(PegInRequestTxSPVProof calldata pegInRequestTxSPVProof) external {
+    function acceptPegInRequest(PegInRequestTxSPVProof calldata _pegInRequestTxSPVProof) external {
         // TODO validate who can call this function
 
-        if (pegInRequestTxSPVProof.btcTx.outputs.length < 2) {
-            revert incorrectOutputNumber(uint64(pegInRequestTxSPVProof.btcTx.outputs.length), 2);
+        if (_pegInRequestTxSPVProof.btcTx.outputs.length < 2) {
+            revert incorrectOutputNumber(uint64(_pegInRequestTxSPVProof.btcTx.outputs.length), 2);
         }
+
+        // First transaction _pegInRequestTxSPVProof.btcTx.outputs[0]
+        // TODO Validate the Taproot transaction
+        // TODO  should also validate witness data??? https://learnmeabitcoin.com/technical/transaction/wtxid/#commitment
+
         // Second transaction should be OP_RETURN
         (uint64 packetNumber, address destinationAddress, string memory btcReinburstmentAddress) =
-            _getAndValidateTxOpReturn(pegInRequestTxSPVProof.btcTx.outputs[1]);
+            _getTxOpReturnData(_pegInRequestTxSPVProof.btcTx.outputs[1]);
 
         //  TODO Check destination address from second output, after OP_RETURN, and compare it with the destination address from the first output script.
         //  Contains value bitcoin to the taproot temporary address
-        // TODO Validate data in Taproot transaction
-        // TODO  should also validate witness data??? https://learnmeabitcoin.com/technical/transaction/wtxid/#commitment
-
-        bytes32 txHash = BtcHelper.getBtcTxHash(pegInRequestTxSPVProof.btcTx);
 
         // Get corresponding stream
-        Stream memory stream = getStream(pegInRequestTxSPVProof.value);
-        // Verify the Tx is mined in a Block inside the Mainchain and has enough confirmations
+        Stream memory stream = getStream(_pegInRequestTxSPVProof.value);
+
+        // Calculate txHash from BtcTransaction
+        bytes32 txHash = BtcHelper.getBtcTxHash(_pegInRequestTxSPVProof.btcTx);
+
+        // Verify the TxHash part of the Merkle Root of Tx of a Block
+        // And that block is inside Bitcoin Mainchain and has enough confirmations
         _verifyTxConfirmations(
             stream.pegInConfirmations,
             txHash,
-            pegInRequestTxSPVProof.blockHash,
-            pegInRequestTxSPVProof.merkleBranchPath,
-            pegInRequestTxSPVProof.merkleBranchHashes
+            _pegInRequestTxSPVProof.blockHash,
+            _pegInRequestTxSPVProof.merkleBranchPath,
+            _pegInRequestTxSPVProof.merkleBranchHashes
         );
 
-        // TODO Validate Committee Key against the bitcoin Tx
         // Get corresponding packet
         Packet memory packet = getPacket(stream.streamId, packetNumber);
+        // TODO Validate Committee Key against the bitcoin Tx
         packet.committeeInternalKey;
 
         // Store Tx in pegInSlot as Prepared
         // TODO corroborate if state should be prepared with Diego
-        uint256 slotId = preparePegInTx(stream.streamId, packetNumber, txHash, pegInRequestTxSPVProof.utxo);
+        uint256 slotId = preparePegInTx(stream.streamId, packetNumber, txHash, _pegInRequestTxSPVProof.utxo);
 
         // TODO Check if info emitted is enough or too much
         emit PrepareTakeTransaction(
-            pegInRequestTxSPVProof.blockHash,
+            _pegInRequestTxSPVProof.blockHash,
             txHash,
-            pegInRequestTxSPVProof.value,
+            _pegInRequestTxSPVProof.value,
             packetNumber,
             slotId,
             destinationAddress,
             btcReinburstmentAddress,
-            pegInRequestTxSPVProof.utxo
+            _pegInRequestTxSPVProof.utxo
         );
     }
 
@@ -138,28 +144,28 @@ contract PegManager is IPegManager, StreamManager {
         }
     }
 
-    function _getAndValidateTxOpReturn(BtcTxOut memory opReturnOut) internal returns (uint64, address, string memory) {
+    function _getTxOpReturnData(BtcTxOut memory _opReturnOut) internal returns (uint64, address, string memory) {
         // [OP_RETURN][OP_PUSHBYTES_9][RSK_PEGIN][OP_PUSHBYTES_8][packet number][OP_PUSHBYTES_20][rsk destination address][OP_PUSHBYTES_62][reimburstment address]
         // Size: 1   +          1    +      9    +       1       +      8       +       1       +       20               +        1         +       62
         uint8 expectedSize = (1 + 1 + 9 + 1 + 8 + 1 + 20 + 1 + 62);
-        if (opReturnOut.scriptPubKey.length == expectedSize) {
-            revert invalidOpReturnLength(opReturnOut.scriptPubKey.length, expectedSize);
+        if (_opReturnOut.scriptPubKey.length != expectedSize) {
+            revert invalidOpReturnLength(_opReturnOut.scriptPubKey.length, expectedSize);
         }
         // OP_RETURN
         uint8 index = 0;
-        if (opReturnOut.scriptPubKey[index] == OpCodes.OP_RETURN) {
+        if (_opReturnOut.scriptPubKey[index] != OpCodes.OP_RETURN) {
             revert incorrectlyFormedOpReturn(index);
         }
         index++;
 
         // RSK_PEGIN string used as flag
-        if (opReturnOut.scriptPubKey[index] == OpCodes.OP_PUSHBYTES_9) {
+        if (_opReturnOut.scriptPubKey[index] != OpCodes.OP_PUSHBYTES_9) {
             revert incorrectlyFormedOpReturn(index);
         }
         index++;
         if (
-            BytesHelper.stringCompare(
-                BytesHelper.bytesToString(opReturnOut.scriptPubKey, index, index + 9), "RSK_PEGIN"
+            !BytesHelper.stringCompare(
+                BytesHelper.bytesToString(_opReturnOut.scriptPubKey, index, index + 9), "RSK_PEGIN"
             )
         ) {
             revert incorrectlyFormedOpReturn(index);
@@ -167,27 +173,27 @@ contract PegManager is IPegManager, StreamManager {
         index = index + 9;
 
         // Packet Index in the Stream
-        if (opReturnOut.scriptPubKey[index] == OpCodes.OP_PUSHBYTES_8) {
+        if (_opReturnOut.scriptPubKey[index] != OpCodes.OP_PUSHBYTES_8) {
             revert incorrectlyFormedOpReturn(index);
         }
         index++;
-        uint64 packetNumber = BytesHelper.bytesToUint64(opReturnOut.scriptPubKey, index);
+        uint64 packetNumber = BytesHelper.bytesToUint64(_opReturnOut.scriptPubKey, index);
         index = index + 8; // uint64 length
 
         // destination Address in Rootstock
-        if (opReturnOut.scriptPubKey[index] == OpCodes.OP_PUSHBYTES_20) {
+        if (_opReturnOut.scriptPubKey[index] != OpCodes.OP_PUSHBYTES_20) {
             revert incorrectlyFormedOpReturn(index);
         }
         index++;
-        address destinationAddress = BytesHelper.bytesToAddress(opReturnOut.scriptPubKey, index);
+        address destinationAddress = BytesHelper.bytesToAddress(_opReturnOut.scriptPubKey, index);
         index = index + 20; // address length
 
         // Bitcoin reimburstment address
-        if (opReturnOut.scriptPubKey[index] == OpCodes.OP_PUSHBYTES_62) {
+        if (_opReturnOut.scriptPubKey[index] != OpCodes.OP_PUSHBYTES_62) {
             revert incorrectlyFormedOpReturn(index);
         }
         index++;
-        string memory btcReinburstmentAddress = BytesHelper.bytesToString(opReturnOut.scriptPubKey, index, index + 62);
+        string memory btcReinburstmentAddress = BytesHelper.bytesToString(_opReturnOut.scriptPubKey, index, index + 62);
         index = index + 62; // Btc reimbursment address as base58 string length
 
         return (packetNumber, destinationAddress, btcReinburstmentAddress);
