@@ -5,11 +5,11 @@ import {OpCodes} from "./OpCodes.sol";
 import {BtcTxIn, BtcTxOut, BtcTransaction} from "../interfaces/IPegManager.sol";
 
 /**
- * @title Btc Helper
+ * @title Btc Utils
  * @notice Usefull functions for Bitcoin parsin/encoding/decoding
  * @author Fairgate
  */
-library BtcHelper {
+library BtcUtils {
     function encodeTxIn(bytes32 _txId, uint32 _vout, uint32 _sequence, bytes memory _scriptSig)
         internal
         pure

@@ -5,7 +5,7 @@ import "forge-std/console.sol";
 import {Committee, ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
 import {IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
 import {BtcTransaction, BtcTxOut, PegInRequestTxSPVProof, IPegManager} from "./interfaces/IPegManager.sol";
-import {BtcHelper} from "./libraries/BtcHelper.sol";
+import {BtcUtils} from "./libraries/BtcUtils.sol";
 import {BytesHelper} from "./libraries/BytesHelper.sol";
 import {OpCodes} from "./libraries/OpCodes.sol";
 import {Stream, Packet, SlotState, StreamManager} from "./StreamManager.sol";
@@ -61,7 +61,7 @@ contract PegManager is IPegManager, StreamManager, SPV {
         Stream memory stream = getStream(_pegInRequestTxSPVProof.value);
 
         // Calculate txHash from BtcTransaction
-        bytes32 txHash = BtcHelper.getBtcTxHash(_pegInRequestTxSPVProof.btcTx);
+        bytes32 txHash = BtcUtils.getBtcTxHash(_pegInRequestTxSPVProof.btcTx);
 
         // Verify the TxHash part of the Merkle Root of Tx of a Block
         // And that block is inside Bitcoin Mainchain and has enough confirmations

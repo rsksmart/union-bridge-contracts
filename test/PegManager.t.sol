@@ -7,7 +7,7 @@ import {HelperContract} from "test/HelperContract.sol";
 import {BtcTransaction, PegInRequestTxSPVProof, IPegManager} from "src/interfaces/IPegManager.sol";
 import {Slot, SlotState, Stream} from "src/interfaces/IStreamManager.sol";
 import {BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE} from "src/interfaces/IBridge.sol";
-import {BtcHelper} from "src/libraries/BtcHelper.sol";
+import {BtcUtils} from "src/libraries/BtcUtils.sol";
 import {SPV} from "src/SPV.sol";
 
 contract TestPegManager is Test, HelperContract {

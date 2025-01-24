@@ -2,11 +2,11 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import {BtcHelper} from "src/libraries/BtcHelper.sol";
+import {BtcUtils} from "src/libraries/BtcUtils.sol";
 import {HelperContract} from "./HelperContract.sol";
 import {BtcTxIn, BtcTxOut, BtcTransaction} from "src/interfaces/IPegManager.sol";
 
-contract TestBtcHelper is Test {
+contract TestBtcUtils is Test {
     function setUp() external {}
 
     function getBtcTxIn() internal pure returns (BtcTxIn memory) {
@@ -50,7 +50,7 @@ contract TestBtcHelper is Test {
         // Arrenge
         BtcTxIn memory btcInput = getBtcTxIn();
         // Act
-        bytes memory hexTxIn = BtcHelper.encodeTxIn(btcInput.txId, btcInput.vout, btcInput.sequence, btcInput.scriptSig);
+        bytes memory hexTxIn = BtcUtils.encodeTxIn(btcInput.txId, btcInput.vout, btcInput.sequence, btcInput.scriptSig);
         // Assert
         assertEq(
             hexTxIn,
@@ -63,7 +63,7 @@ contract TestBtcHelper is Test {
         // Arrenge
         BtcTransaction memory btcTx = getBtcTransaction();
         // Act
-        bytes memory hexTxIn = BtcHelper.encodeTxInputs(btcTx.inputs);
+        bytes memory hexTxIn = BtcUtils.encodeTxInputs(btcTx.inputs);
         // Assert
         assertEq(
             hexTxIn,
@@ -76,7 +76,7 @@ contract TestBtcHelper is Test {
         // Arrenge
         BtcTxOut memory btcOutput = getBtcTxOut();
         // Act
-        bytes memory hexTxOut = BtcHelper.encodeTxOut(btcOutput.amount, btcOutput.scriptPubKey);
+        bytes memory hexTxOut = BtcUtils.encodeTxOut(btcOutput.amount, btcOutput.scriptPubKey);
         // Assert
         assertEq(
             hexTxOut,
@@ -89,7 +89,7 @@ contract TestBtcHelper is Test {
         // Arrenge
         BtcTransaction memory btcTx = getBtcTransaction();
         // Act
-        bytes memory hexTxIn = BtcHelper.encodeTxOutputs(btcTx.outputs);
+        bytes memory hexTxIn = BtcUtils.encodeTxOutputs(btcTx.outputs);
         // Assert
         assertEq(
             hexTxIn,
@@ -102,7 +102,7 @@ contract TestBtcHelper is Test {
         // Arrenge
         BtcTransaction memory btcTx = getBtcTransaction();
         // Act
-        bytes memory hexTxIn = BtcHelper.encodeTx(btcTx);
+        bytes memory hexTxIn = BtcUtils.encodeTx(btcTx);
         // Assert
         assertEq(hexTxIn, getExpectedRawTx(), "Encoded Tx should be correctly formed");
     }
@@ -111,7 +111,7 @@ contract TestBtcHelper is Test {
         // Arrenge
         bytes32 txId = 0x360b81785dc7c2f40627fea364676dbb73e6276683caffd9f906b0e0bd36b3d2;
         // Act
-        bytes32 reversedTxId = BtcHelper.reverseBytes32(txId);
+        bytes32 reversedTxId = BtcUtils.reverseBytes32(txId);
         // Assert
         assertEq(
             reversedTxId,
@@ -126,7 +126,7 @@ contract TestBtcHelper is Test {
         bytes memory blockBytes =
             hex"00600022bd414202c86f2e80aca72283aa584d6ee2b7597b1d6d02000000000000000000f6f5a9ccc718288b2af0c6695fec614550b3a5f4ef4c04d4116faaaa64ece1e0ac0f8967618c02173e6999e2";
         // Act
-        bytes32 blockHash = BtcHelper.hash256(blockBytes);
+        bytes32 blockHash = BtcUtils.hash256(blockBytes);
         // Assert
         assertEq(
             blockHash,
@@ -142,7 +142,7 @@ contract TestBtcHelper is Test {
         // https://www.quicknode.com/docs/bitcoin/getrawtransaction
         bytes memory rawTransaction = getExpectedRawTx();
         // Act
-        bytes32 txHash = BtcHelper.hash256(rawTransaction);
+        bytes32 txHash = BtcUtils.hash256(rawTransaction);
         // Assert
         assertEq(
             txHash,
@@ -155,7 +155,7 @@ contract TestBtcHelper is Test {
         // Arrenge
         BtcTransaction memory btcTx = getBtcTransaction();
         // Act
-        bytes32 txHash = BtcHelper.getBtcTxHash(btcTx);
+        bytes32 txHash = BtcUtils.getBtcTxHash(btcTx);
         // Assert
         assertEq(
             txHash,
