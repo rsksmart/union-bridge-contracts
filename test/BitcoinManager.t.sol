@@ -3,7 +3,7 @@ import {HelperContract} from "./HelperContract.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
 import {BtcTxIn, BtcTxOut, BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
 
-contract TestBtcUtils is Test, HelperContract {
+contract TestBtcHelper is Test, HelperContract {
     function setUp() external {
         bitcoinManager = new BitcoinManager();
     }

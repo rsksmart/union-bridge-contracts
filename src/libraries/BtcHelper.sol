@@ -6,7 +6,7 @@ pragma solidity ^0.8.20;
  * @notice Usefull functions for Bitcoin parsin/encoding/decoding
  * @author Fairgate
  */
-library BtcUtils {
+library BtcHelper {
     /// @dev This is how Bitcoin calls double sha256 and we reverse it to correct endian
     function hash256(bytes memory _toHash) internal pure returns (bytes32) {
         bytes32 littleEndianHash = sha256(abi.encode(sha256(_toHash)));
@@ -44,7 +44,7 @@ library BtcUtils {
     /// @notice          Changes the endianness of a uint64
     /// @param _b        The unsigned integer to reverse
     /// @return v        The reversed value
-    /// https://github.com/bob-collective/bitcoin-spv/blob/8f375250198ff5d2fb95ee2ccf72d835cd7ca4c2/src/BTCUtils.sol
+    /// https://github.com/bob-collective/bitcoin-spv/blob/8f375250198ff5d2fb95ee2ccf72d835cd7ca4c2/src/BtcHelper.sol
     function reverseUint64(uint64 _b) internal pure returns (uint64 v) {
         v = _b;
 
@@ -59,7 +59,7 @@ library BtcUtils {
     /// @notice          Changes the endianness of a uint32
     /// @param _b        The unsigned integer to reverse
     /// @return v        The reversed value
-    /// https://github.com/bob-collective/bitcoin-spv/blob/8f375250198ff5d2fb95ee2ccf72d835cd7ca4c2/src/BTCUtils.sol
+    /// https://github.com/bob-collective/bitcoin-spv/blob/8f375250198ff5d2fb95ee2ccf72d835cd7ca4c2/src/BtcHelper.sol
     function reverseUint32(uint32 _b) internal pure returns (uint32 v) {
         v = _b;
 
@@ -72,7 +72,7 @@ library BtcUtils {
     /// @notice          Changes the endianness of a uint16
     /// @param _b        The unsigned integer to reverse
     /// @return v        The reversed value
-    /// https://github.com/bob-collective/bitcoin-spv/blob/8f375250198ff5d2fb95ee2ccf72d835cd7ca4c2/src/BTCUtils.sol
+    /// https://github.com/bob-collective/bitcoin-spv/blob/8f375250198ff5d2fb95ee2ccf72d835cd7ca4c2/src/BtcHelper.sol
     function reverseUint16(uint16 _b) internal pure returns (uint16 v) {
         v = (_b << 8) | (_b >> 8);
     }

@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import {console} from "forge-std/console.sol";
 import {Secp256k1} from "./libraries/Secp256k1.sol";
 import {BtcTransaction, BtcTxOut, IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
-import {BtcUtils} from "./libraries/BtcUtils.sol";
+import {BtcHelper} from "./libraries/BtcHelper.sol";
 import {BtcTxParser} from "./libraries/BtcTxParser.sol";
 import {BytesHelper} from "./libraries/BytesHelper.sol";
 import {OpCodes} from "./libraries/OpCodes.sol";
@@ -193,6 +193,6 @@ contract BitcoinManager is IBitcoinManager {
 
     /// @dev Convert Tx to raw tx hex using Bitcoin format and then uses hash256 to get the txHash
     function getBtcTxHash(BtcTransaction calldata _btcTx) external pure returns (bytes32) {
-        return BtcUtils.hash256(BtcTxParser.encodeTx(_btcTx));
+        return BtcHelper.hash256(BtcTxParser.encodeTx(_btcTx));
     }
 }

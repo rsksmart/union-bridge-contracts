@@ -2,16 +2,16 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import {BtcUtils} from "src/libraries/BtcUtils.sol";
+import {BtcHelper} from "src/libraries/BtcHelper.sol";
 
-contract TestBtcUtils is Test {
+contract TestBtcHelper is Test {
     function setUp() external {}
 
     function test_reverseBytes32_Success() external pure {
         // Arrenge
         bytes32 txId = 0x360b81785dc7c2f40627fea364676dbb73e6276683caffd9f906b0e0bd36b3d2;
         // Act
-        bytes32 reversedTxId = BtcUtils.reverseBytes32(txId);
+        bytes32 reversedTxId = BtcHelper.reverseBytes32(txId);
         // Assert
         assertEq(
             reversedTxId,
@@ -26,7 +26,7 @@ contract TestBtcUtils is Test {
         bytes memory blockBytes =
             hex"00600022bd414202c86f2e80aca72283aa584d6ee2b7597b1d6d02000000000000000000f6f5a9ccc718288b2af0c6695fec614550b3a5f4ef4c04d4116faaaa64ece1e0ac0f8967618c02173e6999e2";
         // Act
-        bytes32 blockHash = BtcUtils.hash256(blockBytes);
+        bytes32 blockHash = BtcHelper.hash256(blockBytes);
         // Assert
         assertEq(
             blockHash,

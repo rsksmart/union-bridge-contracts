@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {BtcUtils} from "./BtcUtils.sol";
+import {BtcHelper} from "./BtcHelper.sol";
 import {BtcTransaction, BtcTxIn, BtcTxOut} from "../interfaces/IBitcoinManager.sol";
 
 /**
@@ -18,11 +18,11 @@ library BtcTxParser {
         // See struct values https://learnmeabitcoin.com/technical/transaction/#structure-input-count
         // See hex format https://learnmeabitcoin.com/technical/transaction/wtxid/#segwit
         return abi.encodePacked(
-            BtcUtils.reverseBytes32(_txId), // txId needs to be converted to little Endian
-            BtcUtils.reverseUint32(_vout), // vout needs to be converted to little Endian
+            BtcHelper.reverseBytes32(_txId), // txId needs to be converted to little Endian
+            BtcHelper.reverseUint32(_vout), // vout needs to be converted to little Endian
             toCompactSize(_scriptSig.length), // scriptSigSize is compact-_size
             _scriptSig, // scriptSig should be empty for non-legacy transactions
-            BtcUtils.reverseUint32(_sequence) // sequence needs to be converted to little Endian
+            BtcHelper.reverseUint32(_sequence) // sequence needs to be converted to little Endian
         );
     }
 
@@ -44,7 +44,7 @@ library BtcTxParser {
         // See struct values https://learnmeabitcoin.com/technical/transaction/#structure-outputs
         // See hex format https://learnmeabitcoin.com/technical/transaction/wtxid/#segwit
         return abi.encodePacked(
-            BtcUtils.reverseUint64(_amount), // amount needs to be converted to little Endian
+            BtcHelper.reverseUint64(_amount), // amount needs to be converted to little Endian
             toCompactSize(_scriptPubKey.length), // scriptPubKeySize is compact-_size
             _scriptPubKey
         );
@@ -67,10 +67,10 @@ library BtcTxParser {
     function encodeTx(BtcTransaction memory _btcTx) internal pure returns (bytes memory) {
         // [version][inputs][outputs][locktime]
         return abi.encodePacked(
-            BtcUtils.reverseUint32(_btcTx.version), // version needs to be converted to little Endian
+            BtcHelper.reverseUint32(_btcTx.version), // version needs to be converted to little Endian
             encodeTxInputs(_btcTx.inputs),
             encodeTxOutputs(_btcTx.outputs),
-            BtcUtils.reverseUint32(_btcTx.locktime) // locktime needs to be converted to little Endian
+            BtcHelper.reverseUint32(_btcTx.locktime) // locktime needs to be converted to little Endian
         );
     }
 
@@ -86,10 +86,10 @@ library BtcTxParser {
         if (_size <= 252) {
             return abi.encodePacked(uint8(_size));
         } else if (_size <= 65535) {
-            return abi.encodePacked(uint8(0xFD), BtcUtils.reverseUint16(uint16(_size)));
+            return abi.encodePacked(uint8(0xFD), BtcHelper.reverseUint16(uint16(_size)));
         } else if (_size <= 4294967295) {
-            return abi.encodePacked(uint8(0xFE), BtcUtils.reverseUint32(uint32(_size)));
+            return abi.encodePacked(uint8(0xFE), BtcHelper.reverseUint32(uint32(_size)));
         }
-        return abi.encodePacked(uint8(0xFF), BtcUtils.reverseUint64(uint64(_size)));
+        return abi.encodePacked(uint8(0xFF), BtcHelper.reverseUint64(uint64(_size)));
     }
 }
