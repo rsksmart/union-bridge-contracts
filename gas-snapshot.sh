@@ -1,2 +1,2 @@
 #!/bin/sh
-forge snapshot --gas-report
+forge snapshot
