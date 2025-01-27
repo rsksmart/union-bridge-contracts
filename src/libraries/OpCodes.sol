@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-// https://github.com/rsksmart/btc-transaction-solidity-helper/blob/main/contracts/OpCodes.sol
+// Inspired by https://github.com/rsksmart/btc-transaction-solidity-helper/blob/main/contracts/OpCodes.sol
+// Opcodes https://docs.rs/syscoin/latest/src/bitcoin/blockdata/opcodes.rs.html
 library OpCodes {
     bytes1 public constant OP_DUP = 0x76;
     bytes1 public constant OP_HASH160 = 0xa9;

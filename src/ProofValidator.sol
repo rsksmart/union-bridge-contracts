@@ -71,7 +71,7 @@ abstract contract ProofValidator {
         }
 
         // Validate block has enough Confirmations
-        if (confirmations < int256(_minConfirmations)) {
+        if (uint256(confirmations) < _minConfirmations) {
             revert notEnoughConfirmations(confirmations, _minConfirmations);
         }
     }

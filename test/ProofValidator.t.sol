@@ -14,8 +14,12 @@ contract TestProofValidator is Test, HelperContract {
         proofValidator = new ProofValidatorHarness();
     }
 
-    function test_reverseBytes32_Success() external view {
+    function test_reverseBytes32_Success() external {
         // Arrenge
+        int256 actualConfirmations = 10;
+        // Set Mock Bridge state
+        bridgeMock.setBtcTransactionConfirmations(actualConfirmations);
+        // Proof arguments
         uint256 minConfirmations = 10;
         bytes32 txHash = 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079;
         bytes32 blockHash = 0x0000000000000000000282fa21665766e58eb6cb94e458c3ef6d4af1121e38d9;

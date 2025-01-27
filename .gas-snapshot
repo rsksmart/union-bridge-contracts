@@ -19,6 +19,7 @@ TestPegManager:test_acceptPegInRequest_Revert_bridgeBtcTxInvalidMerkleBranch() (
 TestPegManager:test_acceptPegInRequest_Revert_notEnoughConfirmations() (gas: 129068)
 TestPegManager:test_acceptPegInRequest_Success() (gas: 1418356)
 TestPegManager:test_getTemporaryPegInAddress_Success() (gas: 758820)
+TestProofValidator:test_reverseBytes32_Success() (gas: 60612)
 TestSecurityBond:test_getMinimumDeposit_Revert_StreamNotFound() (gas: 25361)
 TestSecurityBond:test_getMinimumDeposit_Success() (gas: 18055)
 TestSecurityBond:test_securityBondDeposit_Revert_DespositBondTooLow() (gas: 39379)
