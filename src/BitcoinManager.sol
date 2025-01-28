@@ -13,21 +13,21 @@ import {OpCodes} from "./libraries/OpCodes.sol";
 /// @notice Manages Bitcoin Addresses and Scripts
 contract BitcoinManager is IBitcoinManager {
     function getTemporaryPegInAddress(
-        address rootstockDepositAddress,
-        // bytes calldata bitcoinReimbursementAddress,
-        uint64 value,
-        bytes32 committeeKey // Get the current packet's committee key
+        address _rootstockDepositAddress,
+        // bytes calldata _bitcoinReimbursementAddress,
+        uint64 _value,
+        bytes32 _committeeKey
     ) external pure returns (bytes memory bitcoinDepositAddress) {
-        console.log("committeeKey");
-        console.logBytes32(committeeKey);
+        console.log("_committeeKey");
+        console.logBytes32(_committeeKey);
 
-        // Create custom tweak from deposit address and value
-        bytes32 customTweak = sha256(abi.encodePacked(rootstockDepositAddress, value));
+        // Create custom tweak from deposit address and _value
+        bytes32 customTweak = sha256(abi.encodePacked(_rootstockDepositAddress, _value));
         console.log("customTweak");
         console.logBytes32(customTweak);
 
         // Generate and return the taproot address
-        bytes memory scriptPubKey = getPegInP2TRScriptPub(rootstockDepositAddress, value, committeeKey);
+        bytes memory scriptPubKey = getPegInP2TRScriptPub(_rootstockDepositAddress, _value, _committeeKey);
 
         // Add Taproot version byte (0x01) to script pub
         return abi.encodePacked(hex"01", scriptPubKey);
@@ -108,11 +108,11 @@ contract BitcoinManager is IBitcoinManager {
     /// @dev Validates a Bitcoin peg-in transaction
     function validatePegInP2TRData(
         BtcTxOut calldata p2trOut,
-        address rootstockDepositAddress,
+        address _rootstockDepositAddress,
         // bytes calldata bitcoinReimbursementAddress,
-        bytes32 committeeKey
+        bytes32 _committeeKey
     ) external pure {
-        bytes memory p2trScriptPubKey = getPegInP2TRScriptPub(rootstockDepositAddress, p2trOut.amount, committeeKey);
+        bytes memory p2trScriptPubKey = getPegInP2TRScriptPub(_rootstockDepositAddress, p2trOut.amount, _committeeKey);
         if (!BytesHelper.compare(p2trOut.scriptPubKey, p2trScriptPubKey)) {
             revert incorrectP2TRScriptPub(p2trOut.scriptPubKey, p2trScriptPubKey);
         }
@@ -124,21 +124,21 @@ contract BitcoinManager is IBitcoinManager {
     }
 
     /// @notice Generates a Taproot script pub key with both key spend and script spend paths
-    /// @param rootstockDepositAddress The RSK address to deposit pegged in RBTC
-    /// @param committeeKey The committee's public key (x-only, 32 bytes)
+    /// @param _rootstockDepositAddress The RSK address to deposit pegged in RBTC
+    /// @param _committeeKey The committee's public key (x-only, 32 bytes)
     // /// @param customTweak Additional tweak data for address customization
     /// @return taprootScriptPubKey bytes (OP_1 + OP_PUSHBYTES_32 + 32 bytes output key)
     function getPegInP2TRScriptPub(
-        address rootstockDepositAddress,
+        address _rootstockDepositAddress,
         // string calldata bitcoinReimbursementAddress,
-        uint64 value,
-        bytes32 committeeKey // Get the current packet's committee key bytes32)
+        uint64 _value,
+        bytes32 _committeeKey // Get the current packet's committee key bytes32)
     ) internal pure returns (bytes memory) {
         // TODO make actual script root with other spending paths
         // using timelock, DAG and ZK proof
         bytes32 scriptRoot = bytes32(0);
 
         // Convert to Taproot ScriptPubKey
-        return BtcAddressParser.getP2TRScriptPathScriptPubKey(committeeKey, scriptRoot);
+        return BtcAddressParser.getP2TRScriptPathScriptPubKey(_committeeKey, scriptRoot);
     }
 }

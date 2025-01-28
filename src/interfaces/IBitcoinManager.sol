@@ -60,10 +60,10 @@ interface IBitcoinManager {
         returns (uint64, address, string calldata);
 
     function validatePegInP2TRData(
-        BtcTxOut calldata p2trOut,
-        address rootstockDepositAddress,
-        // bytes calldata bitcoinReimbursementAddress,
-        bytes32 committeeKey
+        BtcTxOut calldata _p2trOut,
+        address _rootstockDepositAddress,
+        // bytes calldata _bitcoinReimbursementAddress,
+        bytes32 _committeeKey
     ) external pure;
 
     /// @notice Calculates the Bitcoin transaction hash (txid) for a given transaction

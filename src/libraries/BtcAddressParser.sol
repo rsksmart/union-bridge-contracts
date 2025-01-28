@@ -11,34 +11,32 @@ import {Secp256k1} from "./Secp256k1.sol";
  */
 library BtcAddressParser {
     bytes constant TAP_TWEAK = bytes("TapTweak");
-    bytes constant TAP_LEAF = bytes("TapLeaf");
-    bytes constant TAP_Branch = bytes("TapBranch");
 
     /// @notice Generates a Taproot PubScript where you provide a signature for the public key
     /// used to create the locking script. This works in a similar way to a simple P2WPKH.
-    /// @param publicKey The public key used to create the locking script (x-only, 32 bytes)
+    /// @param _publicKey The public key used to create the locking script (x-only, 32 bytes)
     /// @return scriptPubKey  bytes (32 bytes output y + 2 byte script pubkey prefix)
     /// @dev https://learnmeabitcoin.com/technical/upgrades/taproot/
-    function getP2TRKeyPathScriptPubKey(bytes32 publicKey) internal pure returns (bytes memory) {
+    function getP2TRKeyPathScriptPubKey(bytes32 _publicKey) internal pure returns (bytes memory) {
         // Get Key path Script tweak
-        bytes32 tweak = getTweak(abi.encodePacked(publicKey));
-        bytes32 tweakedPublicKey = getTweakedPublicKey(publicKey, tweak);
+        bytes32 tweak = getTweak(abi.encodePacked(_publicKey));
+        bytes32 tweakedPublicKey = getTweakedPublicKey(_publicKey, tweak);
         return getP2TRScriptPubKey(tweakedPublicKey);
     }
 
     /// @notice Generates a Taproot PubScript.
-    /// @param publicKey The public key used to create the locking script (x-only, 32 bytes)
-    /// @param merkleRoot The root hash of the Taproot scripts merkle tree. If empty it wll
+    /// @param _publicKey The public key used to create the locking script (x-only, 32 bytes)
+    /// @param _merkleRoot The root hash of the Taproot scripts merkle tree. If empty it wll
     /// @return scriptPubKey  bytes (32 bytes output y + 2 byte script pubkey prefix)
     /// @dev https://learnmeabitcoin.com/technical/upgrades/taproot/
-    function getP2TRScriptPathScriptPubKey(bytes32 publicKey, bytes32 merkleRoot)
+    function getP2TRScriptPathScriptPubKey(bytes32 _publicKey, bytes32 _merkleRoot)
         internal
         pure
         returns (bytes memory)
     {
         // Get Script path Script tweak
-        bytes32 tweak = getTweak(abi.encodePacked(publicKey, merkleRoot));
-        bytes32 tweakedPublicKey = getTweakedPublicKey(publicKey, tweak);
+        bytes32 tweak = getTweak(abi.encodePacked(_publicKey, _merkleRoot));
+        bytes32 tweakedPublicKey = getTweakedPublicKey(_publicKey, tweak);
         return getP2TRScriptPubKey(tweakedPublicKey);
     }
 
@@ -48,11 +46,11 @@ library BtcAddressParser {
     }
 
     /// @dev https://learnmeabitcoin.com/technical/upgrades/taproot/#tweaked-public-key
-    function getTweakedPublicKey(bytes32 publicKey, bytes32 tweak) private pure returns (bytes32) {
+    function getTweakedPublicKey(bytes32 _publicKey, bytes32 _tweak) private pure returns (bytes32) {
         // 1. Use tweak as internal key (x-only pubkey) to obtain y
         // The tweaked the public key (with TapTweak) is converted to integer (so it's like a private key)
-        uint256 times = uint256(tweak);
-        uint256 publicKeyX = uint256(publicKey);
+        uint256 times = uint256(_tweak);
+        uint256 publicKeyX = uint256(_publicKey);
         // 2. Get public key even y
         uint8 even = 0x02;
         uint256 publicKeyY = Secp256k1.deriveY(even, publicKeyX);
@@ -70,9 +68,9 @@ library BtcAddressParser {
         return abi.encodePacked(OpCodes.OP_1, OpCodes.OP_PUSHBYTES_32, tweakedPublicKey);
     }
 
-    function taggedHash(bytes memory tag, bytes memory message) private pure returns (bytes32) {
-        bytes32 tagHash = sha256(tag);
-        return sha256(abi.encodePacked(tagHash, tagHash, message));
+    function taggedHash(bytes memory _tag, bytes memory _data) private pure returns (bytes32) {
+        bytes32 tagHash = sha256(_tag);
+        return sha256(abi.encodePacked(tagHash, tagHash, _data));
     }
 
     /// @notice          Implements bitcoin's hash160 (rmd160(sha2()))
