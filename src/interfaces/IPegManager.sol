@@ -4,7 +4,6 @@ pragma solidity ^0.8.20;
 import {BtcTransaction} from "./IBitcoinManager.sol";
 
 struct PegInRequestTxSPVProof {
-    uint64 value; // The denomination of the stream in satoshis
     bytes32 blockHash; // The Bitcoin Block Hash where the pegin tx happened
     string utxo; // UTXO of the PegIn Transaction
     BtcTransaction btcTx; // The Bitcoin PegIn Transaction
@@ -19,7 +18,7 @@ interface IPegManager {
     /// @param _value The amount to peg in
     /// @return temporaryPegInAddress The temporary peg-in address
     function getTemporaryPegInAddress(
-        bytes calldata _rootstockDepositAddress,
+        address _rootstockDepositAddress,
         // bytes calldata bitcoinReimbursementAddress,
         uint64 _value
     ) external returns (bytes calldata temporaryPegInAddress);

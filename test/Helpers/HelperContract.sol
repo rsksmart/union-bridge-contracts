@@ -24,6 +24,8 @@ abstract contract HelperContract is Test {
     address[] internal memebersCommittee3;
     PegManager internal pm;
     BridgeMock internal bridgeMock;
+    // Arrenge
+    uint64 internal constant VALUE = 100_000; // 0.001 BTC
 
     function setUpBitcoinManager() internal {
         bitcoinManager = new BitcoinManager();
@@ -142,8 +144,8 @@ abstract contract HelperContract is Test {
 
     function getBtcP2TROut() internal pure returns (BtcTxOut memory) {
         return BtcTxOut({
-            amount: 100_000,
-            scriptPubKey: hex"51206d4e468ec692189e4a64f59cbb6224d4617bafff6b319def00f18c9ec2e5bb78"
+            amount: VALUE,
+            scriptPubKey: hex"5120a6129e042cb00e93b995c9475337fe77899f4f687f79975eaa7daac851b3c974"
         });
     }
 
@@ -155,8 +157,6 @@ abstract contract HelperContract is Test {
     }
 
     function getBtcPegInRequestTx() internal pure returns (BtcTransaction memory) {
-        // Data from tx 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079
-        // https://www.blockchain.com/explorer/transactions/btc/c00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079
         BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
         btcInputs[0] = getBtcTxIn();
         // Output
@@ -167,6 +167,6 @@ abstract contract HelperContract is Test {
     }
 
     function getExpectedPegInRequestTxHash() internal pure returns (bytes32) {
-        return 0x6e2cd48ae052aa3e884d4bfa13f44867b2d510b62d20915ff55eb94560e4f188;
+        return 0xf9066fc0336ad079cfd200ffd7ce4c474c8219f337edcbea7c50c09abd8a5a40;
     }
 }

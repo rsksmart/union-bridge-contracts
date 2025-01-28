@@ -36,11 +36,11 @@ interface IBitcoinManager {
     /// @param _committeeKey bytes32 Get the current packet's committee key
     /// @return temporaryPegInAddress The temporary peg-in address
     function getTemporaryPegInAddress(
-        bytes calldata _rootstockDepositAddress,
+        address _rootstockDepositAddress,
         // bytes calldata bitcoinReimbursementAddress,
         uint64 _value,
         bytes32 _committeeKey
-    ) external view returns (bytes memory temporaryPegInAddress);
+    ) external pure returns (bytes calldata temporaryPegInAddress);
 
     /// @notice Validates a Bitcoin peg-in transaction
     /// @dev Checks that the transaction has at least 2 outputs - one for the peg-in amount and one for the OP_RETURN data
@@ -54,10 +54,17 @@ interface IBitcoinManager {
     /// @return destinationAddress The RSK destination address encoded in the OP_RETURN data
     /// @return btcReimbursementAddress The Bitcoin reimbursement address encoded in the OP_RETURN data
     /// @dev Expected OP_RETURN format: [OP_RETURN][RSK_PEGIN][packet number][rsk address][btc address]
-    function getTxOpReturnData(BtcTxOut calldata _opReturnOut)
+    function getPegInOpReturnData(BtcTxOut calldata _opReturnOut)
         external
         pure
         returns (uint64, address, string calldata);
+
+    function validatePegInP2TRData(
+        BtcTxOut calldata p2trOut,
+        address rootstockDepositAddress,
+        // bytes calldata bitcoinReimbursementAddress,
+        bytes32 committeeKey
+    ) external pure;
 
     /// @notice Calculates the Bitcoin transaction hash (txid) for a given transaction
     /// @dev Encodes the transaction into Bitcoin's raw format and performs double SHA256 hash
@@ -90,4 +97,6 @@ interface IBitcoinManager {
     error incorrectOutputNumber(uint256 actual, uint256 expected);
     error invalidOpReturnLength(uint256 actual, uint256 expected);
     error incorrectlyFormedOpReturn(uint256 index);
+    error incorrectP2TRValue(uint64 actual, uint64 expected);
+    error incorrectP2TRScriptPub(bytes actual, bytes expected);
 }

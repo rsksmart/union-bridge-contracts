@@ -44,7 +44,7 @@ library BtcHelper {
     /// @notice          Changes the endianness of a uint64
     /// @param _b        The unsigned integer to reverse
     /// @return v        The reversed value
-    /// https://github.com/bob-collective/bitcoin-spv/blob/8f375250198ff5d2fb95ee2ccf72d835cd7ca4c2/src/BtcHelper.sol
+    /// https://github.com/bob-collective/bitcoin-spv/blob/master/src/BTCUtils.sol#L127
     function reverseUint64(uint64 _b) internal pure returns (uint64 v) {
         v = _b;
 
@@ -59,7 +59,7 @@ library BtcHelper {
     /// @notice          Changes the endianness of a uint32
     /// @param _b        The unsigned integer to reverse
     /// @return v        The reversed value
-    /// https://github.com/bob-collective/bitcoin-spv/blob/8f375250198ff5d2fb95ee2ccf72d835cd7ca4c2/src/BtcHelper.sol
+    /// https://github.com/bob-collective/bitcoin-spv/blob/master/src/BTCUtils.sol#L143
     function reverseUint32(uint32 _b) internal pure returns (uint32 v) {
         v = _b;
 
@@ -72,7 +72,7 @@ library BtcHelper {
     /// @notice          Changes the endianness of a uint16
     /// @param _b        The unsigned integer to reverse
     /// @return v        The reversed value
-    /// https://github.com/bob-collective/bitcoin-spv/blob/8f375250198ff5d2fb95ee2ccf72d835cd7ca4c2/src/BtcHelper.sol
+    /// https://github.com/bob-collective/bitcoin-spv/blob/master/src/BTCUtils.sol#L163
     function reverseUint16(uint16 _b) internal pure returns (uint16 v) {
         v = (_b << 8) | (_b >> 8);
     }
