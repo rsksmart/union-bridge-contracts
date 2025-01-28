@@ -2,24 +2,28 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {PegManager} from "src/PegManager.sol";
 import {Committee, CommitteeRegistry} from "src/CommitteeRegistry.sol";
+import {BtcTxIn, BtcTxOut, BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
+import {RSK_BRIDGE_ADDRESS, IBridge} from "src/interfaces/IBridge.sol";
+import {BridgeMock} from "./BridgeMock.sol";
 
 abstract contract HelperContract is Test {
-    BitcoinManager bitcoinManager;
-    CommitteeRegistry registry;
-    bytes32 committee1Key;
-    Committee committee1;
-    address[] memebersCommittee1;
-    bytes32 committee2Key;
-    Committee committee2;
-    address[] memebersCommittee2;
-    bytes32 committee3Key;
-    Committee committee3;
-    address[] memebersCommittee3;
-    PegManager pm;
+    BitcoinManager internal bitcoinManager;
+    CommitteeRegistry internal registry;
+    bytes32 internal committee1Key;
+    Committee internal committee1;
+    address[] internal memebersCommittee1;
+    bytes32 internal committee2Key;
+    Committee internal committee2;
+    address[] internal memebersCommittee2;
+    bytes32 internal committee3Key;
+    Committee internal committee3;
+    address[] internal memebersCommittee3;
+    PegManager internal pm;
+    BridgeMock internal bridgeMock;
 
     function setUpBitcoinManager() internal {
         bitcoinManager = new BitcoinManager();
@@ -57,9 +61,19 @@ abstract contract HelperContract is Test {
         registry.registerCommittee(committee3, memebersCommittee3);
     }
 
+    function setUpBridgeMock() internal {
+        // Deploy mock of the precompile
+        // Set mock bytecode to the expected precompile address
+        // https://book.getfoundry.sh/cheatcodes/etch
+        vm.etch(RSK_BRIDGE_ADDRESS, address(new BridgeMock()).code);
+        bridgeMock = BridgeMock(RSK_BRIDGE_ADDRESS);
+    }
+
     function setUpPegManager() internal {
         setUpBitcoinManager();
         setUpCommitteeRegistry();
+        setUpBridgeMock();
+
         pm = new PegManager();
         pm.initialize(registry, bitcoinManager);
     }
@@ -68,7 +82,7 @@ abstract contract HelperContract is Test {
         Committee memory actualCommittee,
         Committee memory expectedCommittee,
         string memory testName
-    ) internal {
+    ) internal pure {
         assertEq(
             actualCommittee.internalKey,
             expectedCommittee.internalKey,
@@ -90,7 +104,7 @@ abstract contract HelperContract is Test {
         address[] memory actualMembers,
         address[] memory expectedMembers,
         string memory testName
-    ) internal {
+    ) internal pure {
         assertEq(
             actualMembers.length,
             expectedMembers.length,
@@ -105,15 +119,54 @@ abstract contract HelperContract is Test {
         }
     }
 
-    function uintToAddress(uint256 i) internal returns (address) {
+    function uintToAddress(uint256 i) internal pure returns (address) {
         return bytes32ToAddress(uintToBytes32(i));
     }
 
-    function bytes32ToAddress(bytes32 word) internal returns (address) {
+    function bytes32ToAddress(bytes32 word) internal pure returns (address) {
         return address(bytes20(word));
     }
 
-    function uintToBytes32(uint256 i) internal returns (bytes32) {
+    function uintToBytes32(uint256 i) internal pure returns (bytes32) {
         return keccak256(abi.encode(i));
+    }
+
+    function getBtcTxIn() internal pure returns (BtcTxIn memory) {
+        return BtcTxIn({
+            txId: 0x360b81785dc7c2f40627fea364676dbb73e6276683caffd9f906b0e0bd36b3d2,
+            vout: 1694,
+            sequence: 4294967293,
+            scriptSig: hex""
+        });
+    }
+
+    function getBtcP2TROut() internal pure returns (BtcTxOut memory) {
+        return BtcTxOut({
+            amount: 100_000,
+            scriptPubKey: hex"51206d4e468ec692189e4a64f59cbb6224d4617bafff6b319def00f18c9ec2e5bb78"
+        });
+    }
+
+    function getBtcOPReturnOut() internal pure returns (BtcTxOut memory) {
+        return BtcTxOut({
+            amount: 0,
+            scriptPubKey: hex"6a0952534b5f504547494e080000000000000000147ac5496aee77c1ba1f0854206a26dda82a81d6d83e6263317068357979377a377578636e6c7a396c79396e783730357038797970767379667268396a66676373383636673571307a6c6d677371656e796d6b68"
+        });
+    }
+
+    function getBtcPegInRequestTx() internal pure returns (BtcTransaction memory) {
+        // Data from tx 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079
+        // https://www.blockchain.com/explorer/transactions/btc/c00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079
+        BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
+        btcInputs[0] = getBtcTxIn();
+        // Output
+        BtcTxOut[] memory btcOutputs = new BtcTxOut[](2);
+        btcOutputs[0] = getBtcP2TROut();
+        btcOutputs[1] = getBtcOPReturnOut();
+        return BtcTransaction({version: 2, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
+    }
+
+    function getExpectedPegInRequestTxHash() internal pure returns (bytes32) {
+        return 0x6e2cd48ae052aa3e884d4bfa13f44867b2d510b62d20915ff55eb94560e4f188;
     }
 }

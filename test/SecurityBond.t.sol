@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import "forge-std/Test.sol";
 import {StreamManager} from "src/PegManager.sol";
 import {SecurityBond} from "src/SecurityBond.sol";
-import {HelperContract} from "test/HelperContract.sol";
+import {HelperContract} from "test/Helpers/HelperContract.sol";
 
 contract TestSecurityBond is Test, HelperContract {
     SecurityBond sb;
@@ -15,7 +15,7 @@ contract TestSecurityBond is Test, HelperContract {
         sb.initialize(pm);
     }
 
-    function test_getMinimumDeposit_Success() external {
+    function test_getMinimumDeposit_Success() external view {
         // Arrenge
         uint64 denomination = 100_000; // 0.001 BTC
         // Act

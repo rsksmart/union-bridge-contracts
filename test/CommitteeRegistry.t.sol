@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 import {Committee, CommitteeRegistry} from "src/CommitteeRegistry.sol";
-import {HelperContract} from "test/HelperContract.sol";
+import {HelperContract} from "test/Helpers/HelperContract.sol";
 
 contract TestCommitteeRegistry is Test, HelperContract {
     function setUp() external {
@@ -15,28 +15,28 @@ contract TestCommitteeRegistry is Test, HelperContract {
         registry.registerCommittee(committee1, memebersCommittee1);
     }
 
-    function test_getCommittee_Success() external {
+    function test_getCommittee_Success() external view {
         // Act
         Committee memory aCommittee = registry.getCommittee(committee1Key);
         // Assert
         assertEqCommittee(aCommittee, committee1, "getted committee1");
     }
 
-    function test_getCommitteeMembers_Success() external {
+    function test_getCommitteeMembers_Success() external view {
         // Act
         address[] memory members = registry.getCommitteeMembers(committee1Key);
         // Assert
         assertEqCommitteeMembers(members, memebersCommittee1, "getted committee1 memebers");
     }
 
-    function test_getCommitteesLength_Success() external {
+    function test_getCommitteesLength_Success() external view {
         // Act
         uint256 length = registry.getCommitteesLength();
         // Assert
         assertEq(length, 1, "expected committees length should be 1");
     }
 
-    function test_getCommitteeByIndex_Success() external {
+    function test_getCommitteeByIndex_Success() external view {
         // Act
         bytes32 aCommitteeKey = registry.getCommitteeByIndex(0);
         (committee1Key);
@@ -64,8 +64,6 @@ contract TestCommitteeRegistry is Test, HelperContract {
     }
 
     function test_registerCommittee_Revert_AlreadyRegistered() external {
-        // Arrenge
-        uint256 MAX_MEMBERS_SIZE = registry.MAX_MEMBERS_SIZE();
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(CommitteeRegistry.alreadyRegisteredCommittee.selector, committee1.internalKey)

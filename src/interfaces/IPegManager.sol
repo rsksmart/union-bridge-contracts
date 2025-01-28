@@ -1,6 +1,17 @@
 // SPDX-License-Identifier: UNKNOWN
 pragma solidity ^0.8.20;
 
+import {BtcTransaction} from "./IBitcoinManager.sol";
+
+struct PegInRequestTxSPVProof {
+    uint64 value; // The denomination of the stream in satoshis
+    bytes32 blockHash; // The Bitcoin Block Hash where the pegin tx happened
+    string utxo; // UTXO of the PegIn Transaction
+    BtcTransaction btcTx; // The Bitcoin PegIn Transaction
+    uint256 merkleBranchPath; // Merkle Path is a uint but is actually an array of bits indicating if the path is left of right according to 1 or 0
+    bytes32[] merkleBranchHashes; // Merkle Branch Hashes are the hashes that will be used together with the merkleBranchPath to obtain the Merkle Root, this is an optimization to avoid sending the whole Merkle Tree
+}
+
 interface IPegManager {
     /// @notice Allows users generate a temporary Bitcoin address to perform a peg-in.
     /// @param _rootstockDepositAddress The RSK deposit address
@@ -13,10 +24,9 @@ interface IPegManager {
         uint64 _value
     ) external returns (bytes calldata temporaryPegInAddress);
 
-    // /// @notice Accepts a peg-in request
-    // /// @param pegInRequestTxSPVProof The SPV proof of the peg-in request transaction
-    // /// @param numberOfConfirmations Number of confirmations required
-    // function acceptPegInRequest(bytes calldata pegInRequestTxSPVProof, uint8 numberOfConfirmations) external;
+    /// @notice Accepts a peg-in request
+    /// @param _pegInRequestTxSPVProof The ProofValidator proof of the peg-in request transaction
+    function acceptPegInRequest(PegInRequestTxSPVProof calldata _pegInRequestTxSPVProof) external;
 
     // /// @notice Registers peg transactions
     // /// @param take0Tx First take transaction
@@ -39,4 +49,15 @@ interface IPegManager {
     // /// @param sequenceNumber The sequence number
     // /// @param slotId The slot identifier
     // function selectUTXOsForPegOut(uint256 streamId, uint256 sequenceNumber, uint256 slotId) external;
+
+    event PrepareTakeTransaction(
+        bytes32 indexed blockHash,
+        bytes32 indexed txHash,
+        uint64 value,
+        uint256 packetNumber,
+        uint256 slotId,
+        address destinationAddress,
+        string btcReinburstmentAddress,
+        string utxo
+    );
 }
