@@ -7,6 +7,45 @@ pragma solidity ^0.8.20;
  * @author Fairgate
  */
 library BtcHelper {
+    /// @dev returns hex bytes with _size in btc compact _size
+    /// The first byte indicates which bytes encode the integer:
+    /// <= FC – This byte (0 - 252)
+    /// FD – The next two bytes (253 - 65535)
+    /// FE – The next four bytes (65536 - 4294967295)
+    /// FF – The next eight bytes (4294967296 - 18446744073709551615)
+    // Note: Bytes encoding the integer are in little endian.
+    // https://learnmeabitcoin.com/technical/general/compact-_size/
+    function toCompactSize(uint256 _size) internal pure returns (bytes memory) {
+        if (_size <= 252) {
+            return abi.encodePacked(uint8(_size));
+        } else if (_size <= 65535) {
+            return abi.encodePacked(uint8(0xFD), BtcHelper.reverseUint16(uint16(_size)));
+        } else if (_size <= 4294967295) {
+            return abi.encodePacked(uint8(0xFE), BtcHelper.reverseUint32(uint32(_size)));
+        }
+        return abi.encodePacked(uint8(0xFF), BtcHelper.reverseUint64(uint64(_size)));
+    }
+
+    /// @notice Implements Bitcoin's tagged hash algorithm used in Taproot
+    /// @dev Computes sha256(tagHash || tagHash || data) where tagHash = sha256(tag)
+    /// @param _tag The tag string to use (e.g. "TapTweak", "TapLeaf", etc)
+    /// @param _data The data to hash
+    /// @return taggedHash
+    /// @custom:ref https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki#tagged-hashes
+    function taggedHash(bytes memory _tag, bytes memory _data) internal pure returns (bytes32) {
+        bytes32 tagHash = sha256(_tag);
+        return sha256(abi.encodePacked(tagHash, tagHash, _data));
+    }
+
+    /// @notice          Implements bitcoin's hash160 (rmd160(sha2()))
+    /// @dev             abi.encodePacked changes the return to bytes instead of bytes32
+    /// @param _b        The pre-image
+    /// @return          The digest
+    /// https://github.com/bob-collective/bitcoin-spv/blob/master/src/BTCUtils.sol#L192C5-L198C6
+    function hash160(bytes memory _b) internal pure returns (bytes memory) {
+        return abi.encodePacked(ripemd160(abi.encodePacked(sha256(_b))));
+    }
+
     /// @dev This is how Bitcoin calls double sha256 and we reverse it to correct endian
     function hash256(bytes memory _toHash) internal pure returns (bytes32) {
         bytes32 littleEndianHash = sha256(abi.encode(sha256(_toHash)));

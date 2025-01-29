@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import {OpCodes} from "./OpCodes.sol";
 import {Secp256k1} from "./Secp256k1.sol";
+import {BtcHelper} from "./BtcHelper.sol";
 
 /**
  * @title Bitcoin Address Parser
@@ -42,7 +43,7 @@ library BtcAddressParser {
 
     /// @dev https://learnmeabitcoin.com/technical/upgrades/taproot/#tweak
     function getTweak(bytes memory data) private pure returns (bytes32) {
-        return taggedHash(TAP_TWEAK, data);
+        return BtcHelper.taggedHash(TAP_TWEAK, data);
     }
 
     /// @dev https://learnmeabitcoin.com/technical/upgrades/taproot/#tweaked-public-key
@@ -66,19 +67,5 @@ library BtcAddressParser {
     function getP2TRScriptPubKey(bytes32 tweakedPublicKey) private pure returns (bytes memory) {
         // OP_1 (0x51) OP_PUSHBYTES_32 (0x20) <32-byte tweaked public key>
         return abi.encodePacked(OpCodes.OP_1, OpCodes.OP_PUSHBYTES_32, tweakedPublicKey);
-    }
-
-    function taggedHash(bytes memory _tag, bytes memory _data) private pure returns (bytes32) {
-        bytes32 tagHash = sha256(_tag);
-        return sha256(abi.encodePacked(tagHash, tagHash, _data));
-    }
-
-    /// @notice          Implements bitcoin's hash160 (rmd160(sha2()))
-    /// @dev             abi.encodePacked changes the return to bytes instead of bytes32
-    /// @param _b        The pre-image
-    /// @return          The digest
-    /// https://github.com/bob-collective/bitcoin-spv/blob/master/src/BTCUtils.sol#L192C5-L198C6
-    function hash160(bytes memory _b) internal pure returns (bytes memory) {
-        return abi.encodePacked(ripemd160(abi.encodePacked(sha256(_b))));
     }
 }

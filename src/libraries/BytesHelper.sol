@@ -12,7 +12,11 @@ library BytesHelper {
         return compare(bytes(a), bytes(b));
     }
 
-    function bytesToString(bytes calldata _bytes, uint256 _from, uint256 _upTo) public pure returns (string calldata) {
+    function getBytesToString(bytes calldata _bytes, uint256 _from, uint256 _upTo)
+        public
+        pure
+        returns (string calldata)
+    {
         if (_upTo < _from) {
             revert indexOverflow(_bytes.length, _from, _upTo);
         }
@@ -20,6 +24,14 @@ library BytesHelper {
             revert indexOverflow(_bytes.length, _from, _upTo);
         }
         return string(_bytes[_from:_upTo]);
+    }
+
+    function bytesToBytes32(bytes calldata _bytes, uint256 _from) public pure returns (bytes32) {
+        uint256 upTo = _from + 32;
+        if (_bytes.length < upTo) {
+            revert indexOverflow(_bytes.length, _from, upTo);
+        }
+        return bytes32(_bytes[_from:]);
     }
 
     function bytesToAddress(bytes calldata _bytes, uint256 _from) public pure returns (address) {
