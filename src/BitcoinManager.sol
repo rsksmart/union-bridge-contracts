@@ -43,13 +43,13 @@ contract BitcoinManager is IBitcoinManager {
 
     /// @dev Expected OP_RETURN format:
     /// @dev [OP_RETURN (1 byte)]
-    /// @dev [OP_PUSHBYTES_9 (1 byte)][RSK_PEGIN (9 bytes)]
-    /// @dev [OP_PUSHBYTES_8 (1 byte)][packet number (8 bytes)]
-    /// @dev [OP_PUSHBYTES_20 (1 byte)][rsk destination address (20 bytes)]
-    /// @dev [OP_PUSHBYTES_62 (1 byte)][reimbursement address (62 bytes)]
-    /// @dev Total expected size: 104 bytes
+    /// @dev [OP_PUSHBYTES_69 (1 byte)][RSK_PEGIN (9 bytes)]
+    /// @dev [packet number (8 bytes)]
+    /// @dev [rsk destination address (20 bytes)]
+    /// @dev [reimbursement public key (32 bytes)]
+    /// @dev Total expected size: 71 bytes
     function getPegInOpReturnData(BtcTxOut calldata _opReturnOut) external pure returns (uint64, address, bytes32) {
-        uint8 expectedSize = (1 + 1 + 9 + 1 + 8 + 1 + 20 + 1 + 62);
+        uint8 expectedSize = (1 + 1 + 9 + 8 + 20 + 32);
         if (_opReturnOut.scriptPubKey.length != expectedSize) {
             revert invalidOpReturnLength(_opReturnOut.scriptPubKey.length, expectedSize);
         }
@@ -61,11 +61,12 @@ contract BitcoinManager is IBitcoinManager {
         }
         index++;
 
-        // Validate RSK_PEGIN flag
-        if (_opReturnOut.scriptPubKey[index] != OpCodes.OP_PUSHBYTES_9) {
+        // Validate PUSHBYTES op code
+        if (_opReturnOut.scriptPubKey[index] != OpCodes.OP_PUSHBYTES_69) {
             revert incorrectlyFormedOpReturn(index);
         }
         index++;
+        // Validate RSK_PEGIN flag
         if (
             !BytesHelper.stringCompare(
                 BytesHelper.getBytesToString(_opReturnOut.scriptPubKey, index, index + 9), "RSK_PEGIN"
@@ -76,28 +77,16 @@ contract BitcoinManager is IBitcoinManager {
         index = index + 9;
 
         // Extract packet number
-        if (_opReturnOut.scriptPubKey[index] != OpCodes.OP_PUSHBYTES_8) {
-            revert incorrectlyFormedOpReturn(index);
-        }
-        index++;
         uint64 packetNumber = BytesHelper.bytesToUint64(_opReturnOut.scriptPubKey, index);
         index = index + 8;
 
         // Extract RSK destination address
-        if (_opReturnOut.scriptPubKey[index] != OpCodes.OP_PUSHBYTES_20) {
-            revert incorrectlyFormedOpReturn(index);
-        }
-        index++;
         address destinationAddress = BytesHelper.bytesToAddress(_opReturnOut.scriptPubKey, index);
         index = index + 20;
 
-        // Extract Bitcoin reimbursement address
-        if (_opReturnOut.scriptPubKey[index] != OpCodes.OP_PUSHBYTES_62) {
-            revert incorrectlyFormedOpReturn(index);
-        }
-        index++;
+        // Extract Bitcoin reimbursement public key (x only)
         bytes32 btcReimbursementPubKey = BytesHelper.bytesToBytes32(_opReturnOut.scriptPubKey, index);
-        index = index + 32;
+        // index = index + 32;
 
         return (packetNumber, destinationAddress, btcReimbursementPubKey);
     }

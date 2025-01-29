@@ -2,7 +2,8 @@
 pragma solidity ^0.8.20;
 
 // Inspired by https://github.com/rsksmart/btc-transaction-solidity-helper/blob/main/contracts/OpCodes.sol
-// Opcodes https://en.bitcoin.it/wiki/Script
+// Opcodes description https://en.bitcoin.it/wiki/Script
+// All opcodes in rust https://docs.rs/syscoin/latest/src/bitcoin/blockdata/opcodes.rs.html
 library OpCodes {
     /// Duplicates the top stack item
     bytes1 public constant OP_DUP = 0x76;
@@ -31,8 +32,7 @@ library OpCodes {
     bytes1 public constant OP_PUSHBYTES_1 = 0x01;
     bytes1 public constant OP_PUSHBYTES_4 = 0x04;
     bytes1 public constant OP_PUSHBYTES_8 = 0x08;
-    bytes1 public constant OP_PUSHBYTES_9 = 0x09;
     bytes1 public constant OP_PUSHBYTES_20 = 0x14;
     bytes1 public constant OP_PUSHBYTES_32 = 0x20;
-    bytes1 public constant OP_PUSHBYTES_62 = 0x3e;
+    bytes1 public constant OP_PUSHBYTES_69 = 0x45;
 }

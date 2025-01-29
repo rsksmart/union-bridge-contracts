@@ -18,7 +18,7 @@ contract TestPegManager is Test, HelperContract {
 
     string internal constant UTXO = "1PuJjnF476W3zXfVYmJfGnouzFDAXakkL4";
     bytes32 internal constant BTC_REIMBURSEMENT_ADDRESS =
-        0xa2fc329a085d8cfc4fa28795993d7b666cee024e94c40115141b8e9be4a29fa4;
+        0x741976f972e9aa5e226eae26289b794aac9bbe702f378aa64c6104f16b79298c;
 
     function setUp() external {
         setUpPegManager();

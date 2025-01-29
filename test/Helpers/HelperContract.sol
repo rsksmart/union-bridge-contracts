@@ -152,7 +152,7 @@ abstract contract HelperContract is Test {
     function getBtcOPReturnOut() internal pure returns (BtcTxOut memory) {
         return BtcTxOut({
             amount: 0,
-            scriptPubKey: hex"6a0952534b5f504547494e080000000000000000147ac5496aee77c1ba1f0854206a26dda82a81d6d83e6263317068357979377a377578636e6c7a396c79396e783730357038797970767379667268396a66676373383636673571307a6c6d677371656e796d6b68"
+            scriptPubKey: hex"6a4552534b5f504547494e00000000000000007ac5496aee77c1ba1f0854206a26dda82a81d6d8741976f972e9aa5e226eae26289b794aac9bbe702f378aa64c6104f16b79298c"
         });
     }
 
@@ -167,6 +167,6 @@ abstract contract HelperContract is Test {
     }
 
     function getExpectedPegInRequestTxHash() internal pure returns (bytes32) {
-        return 0xf9066fc0336ad079cfd200ffd7ce4c474c8219f337edcbea7c50c09abd8a5a40;
+        return 0xab8720363e4d6e288b463dc908deb66fb270f2050053a9b822bfe737925bf3cb;
     }
 }
