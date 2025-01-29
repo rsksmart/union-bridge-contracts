@@ -21,11 +21,11 @@ contract PegManager is IPegManager, StreamManager, ProofValidator {
         StreamManager.initialize(committee.internalKey);
     }
 
-    function getTemporaryPegInAddress(
-        address _rootstockDepositAddress,
-        // bytes calldata bitcoinReimbursementAddress,
-        uint64 _value
-    ) external view returns (bytes memory bitcoinDepositAddress) {
+    function getTemporaryPegInAddress(address _rootstockDepositAddress, bytes32 _btcReimbursementPubKey, uint64 _value)
+        external
+        view
+        returns (bytes memory bitcoinDepositAddress)
+    {
         // Get the stream for this value
         Stream memory stream = getStream(_value);
 
@@ -33,7 +33,9 @@ contract PegManager is IPegManager, StreamManager, ProofValidator {
         Packet memory currentPacket = packets[stream.streamId][stream.peginPointer];
         bytes32 committeeKey = currentPacket.committeeInternalKey;
 
-        return bitcoinManager.getTemporaryPegInAddress(_rootstockDepositAddress, _value, committeeKey);
+        return bitcoinManager.getTemporaryPegInAddress(
+            _rootstockDepositAddress, _btcReimbursementPubKey, _value, committeeKey
+        );
     }
 
     function acceptPegInRequest(PegInRequestTxSPVProof calldata _pegInRequestTxSPVProof) external {
@@ -43,7 +45,7 @@ contract PegManager is IPegManager, StreamManager, ProofValidator {
         bitcoinManager.validatePegInTx(_pegInRequestTxSPVProof.btcTx);
 
         // Second transaction should be OP_RETURN
-        (uint64 packetNumber, address destinationAddress, string memory btcReinburstmentAddress) =
+        (uint64 packetNumber, address destinationAddress, bytes32 btcReimbursementPubKey) =
             bitcoinManager.getPegInOpReturnData(_pegInRequestTxSPVProof.btcTx.outputs[1]);
 
         // First transaction is the PegIn P2TR _pegInRequestTxSPVProof.btcTx.outputs[0]
@@ -56,6 +58,7 @@ contract PegManager is IPegManager, StreamManager, ProofValidator {
         bitcoinManager.validatePegInP2TRData(
             _pegInRequestTxSPVProof.btcTx.outputs[0],
             destinationAddress,
+            btcReimbursementPubKey,
             getPacket(stream.streamId, packetNumber).committeeInternalKey
         );
 
@@ -84,7 +87,7 @@ contract PegManager is IPegManager, StreamManager, ProofValidator {
             packetNumber,
             slotId,
             destinationAddress,
-            btcReinburstmentAddress,
+            btcReimbursementPubKey,
             _pegInRequestTxSPVProof.utxo
         );
     }

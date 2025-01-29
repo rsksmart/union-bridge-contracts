@@ -31,13 +31,13 @@ struct BtcTransaction {
 interface IBitcoinManager {
     /// @notice Allows users generate a temporary Bitcoin address to perform a peg-in.
     /// @param _rootstockDepositAddress The RSK deposit address
-    // /// @param bitcoinReimbursementAddress The BTC reimbursement address
+    /// @param _btcReimbursementPubKey The BTC reimbursement public key x-cordinate only
     /// @param _value uint64 The amount to peg in
     /// @param _committeeKey bytes32 Get the current packet's committee key
     /// @return temporaryPegInAddress The temporary peg-in address
     function getTemporaryPegInAddress(
         address _rootstockDepositAddress,
-        // bytes calldata bitcoinReimbursementAddress,
+        bytes32 _btcReimbursementPubKey,
         uint64 _value,
         bytes32 _committeeKey
     ) external pure returns (bytes calldata temporaryPegInAddress);
@@ -52,17 +52,14 @@ interface IBitcoinManager {
     /// @param _opReturnOut The Bitcoin transaction output containing OP_RETURN data
     /// @return packetNumber The packet number encoded in the OP_RETURN data
     /// @return destinationAddress The RSK destination address encoded in the OP_RETURN data
-    /// @return btcReimbursementAddress The Bitcoin reimbursement address encoded in the OP_RETURN data
+    /// @return btcReimbursementPubKey The Bitcoin reimbursement public key (x only) encoded in the OP_RETURN data
     /// @dev Expected OP_RETURN format: [OP_RETURN][RSK_PEGIN][packet number][rsk address][btc address]
-    function getPegInOpReturnData(BtcTxOut calldata _opReturnOut)
-        external
-        pure
-        returns (uint64, address, string calldata);
+    function getPegInOpReturnData(BtcTxOut calldata _opReturnOut) external pure returns (uint64, address, bytes32);
 
     function validatePegInP2TRData(
         BtcTxOut calldata _p2trOut,
         address _rootstockDepositAddress,
-        // bytes calldata _bitcoinReimbursementAddress,
+        bytes32 _btcReimbursementPubKey,
         bytes32 _committeeKey
     ) external pure;
 

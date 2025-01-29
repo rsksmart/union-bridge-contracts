@@ -17,8 +17,8 @@ contract TestPegManager is Test, HelperContract {
     address internal constant DESTINATION_ADDRESS = 0x7Ac5496aee77c1bA1F0854206A26DdA82A81d6d8;
 
     string internal constant UTXO = "1PuJjnF476W3zXfVYmJfGnouzFDAXakkL4";
-    string internal constant BTC_REINBURSTMENT_ADDRESS =
-        "bc1ph5yy7z7uxcnlz9ly9nx705p8yypvsyfrh9jfgcs866g5q0zlmgsqenymkh";
+    bytes32 internal constant BTC_REIMBURSEMENT_ADDRESS =
+        0xa2fc329a085d8cfc4fa28795993d7b666cee024e94c40115141b8e9be4a29fa4;
 
     function setUp() external {
         setUpPegManager();
@@ -30,7 +30,7 @@ contract TestPegManager is Test, HelperContract {
         address dummyRskAddress = 0x4C9a9CbFa14106439B0F96a64d9260F3b8947934;
 
         // Act
-        bytes memory result = pm.getTemporaryPegInAddress(dummyRskAddress, VALUE);
+        bytes memory result = pm.getTemporaryPegInAddress(dummyRskAddress, BTC_REIMBURSEMENT_ADDRESS, VALUE);
 
         console.log("result");
         console.logBytes(result);
@@ -66,7 +66,7 @@ contract TestPegManager is Test, HelperContract {
             PACKET_NUMBER,
             expectedSlotId,
             DESTINATION_ADDRESS,
-            BTC_REINBURSTMENT_ADDRESS,
+            BTC_REIMBURSEMENT_ADDRESS,
             pegInRequestTxSPVProof.utxo
         );
 
