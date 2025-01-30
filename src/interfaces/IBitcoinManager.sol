@@ -56,12 +56,9 @@ interface IBitcoinManager {
     /// @dev Expected OP_RETURN format: [OP_RETURN][RSK_PEGIN][packet number][rsk address][btc address]
     function getPegInOpReturnData(BtcTxOut calldata _opReturnOut) external pure returns (uint64, address, bytes32);
 
-    function validatePegInP2TRData(
-        BtcTxOut calldata _p2trOut,
-        address _rootstockDepositAddress,
-        bytes32 _btcReimbursementPubKey,
-        bytes32 _committeeKey
-    ) external pure;
+    function validatePegInP2TRData(BtcTxOut calldata _p2trOut, bytes32 _btcReimbursementPubKey, bytes32 _committeeKey)
+        external
+        pure;
 
     /// @notice Calculates the Bitcoin transaction hash (txid) for a given transaction
     /// @dev Encodes the transaction into Bitcoin's raw format and performs double SHA256 hash

@@ -2,16 +2,19 @@
 pragma solidity ^0.8.20;
 
 import {console} from "forge-std/console.sol";
-import {BtcAddressParser} from "./libraries/BtcAddressParser.sol";
 import {BtcTransaction, BtcTxOut, IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
 import {BtcHelper} from "./libraries/BtcHelper.sol";
 import {BtcTxParser} from "./libraries/BtcTxParser.sol";
 import {BytesHelper} from "./libraries/BytesHelper.sol";
+import {BtcScriptParser} from "./libraries/BtcScriptParser.sol";
+import {BtcAddressParser} from "./libraries/BtcAddressParser.sol";
 import {OpCodes} from "./libraries/OpCodes.sol";
 
 /// @title BitcoinManager
 /// @notice Manages Bitcoin Addresses and Scripts
 contract BitcoinManager is IBitcoinManager {
+    uint8 constant TIMELOCK_BLOCKS = 10;
+
     function getTemporaryPegInAddress(
         address _rootstockDepositAddress,
         bytes32 _btcReimbursementPubKey,
@@ -27,8 +30,7 @@ contract BitcoinManager is IBitcoinManager {
         console.logBytes32(customTweak);
 
         // Generate and return the taproot address
-        bytes memory scriptPubKey =
-            getPegInP2TRScriptPub(_rootstockDepositAddress, _btcReimbursementPubKey, _committeeKey);
+        bytes memory scriptPubKey = getPegInP2TRScriptPub(_btcReimbursementPubKey, _committeeKey);
 
         // Add Taproot version byte (0x01) to script pub
         return abi.encodePacked(hex"01", scriptPubKey);
@@ -92,14 +94,11 @@ contract BitcoinManager is IBitcoinManager {
     }
 
     /// @dev Validates a Bitcoin peg-in transaction
-    function validatePegInP2TRData(
-        BtcTxOut calldata p2trOut,
-        address _rootstockDepositAddress,
-        bytes32 _btcReimbursementPubKey,
-        bytes32 _committeeKey
-    ) external pure {
-        bytes memory p2trScriptPubKey =
-            getPegInP2TRScriptPub(_rootstockDepositAddress, _btcReimbursementPubKey, _committeeKey);
+    function validatePegInP2TRData(BtcTxOut calldata p2trOut, bytes32 _btcReimbursementPubKey, bytes32 _committeeKey)
+        external
+        pure
+    {
+        bytes memory p2trScriptPubKey = getPegInP2TRScriptPub(_btcReimbursementPubKey, _committeeKey);
         if (!BytesHelper.compare(p2trOut.scriptPubKey, p2trScriptPubKey)) {
             revert incorrectP2TRScriptPub(p2trOut.scriptPubKey, p2trScriptPubKey);
         }
@@ -111,19 +110,21 @@ contract BitcoinManager is IBitcoinManager {
     }
 
     /// @notice Generates a Taproot script pub key with both key spend and script spend paths
-    /// @param _rootstockDepositAddress The RSK address to deposit pegged in RBTC
     /// @param _btcReimbursementPubKey The committee's public key (x-only, 32 bytes)
     /// @param _committeeKey The committee's public key (x-only, 32 bytes)
     // /// @param customTweak Additional tweak data for address customization
     /// @return taprootScriptPubKey bytes (OP_1 + OP_PUSHBYTES_32 + 32 bytes output key)
     function getPegInP2TRScriptPub(
-        address _rootstockDepositAddress,
         bytes32 _btcReimbursementPubKey,
         bytes32 _committeeKey // Get the current packet's committee key bytes32)
     ) internal pure returns (bytes memory) {
-        bytes32 scriptRoot = bytes32(0);
+        bytes32 timelockLeaf =
+            BtcScriptParser.getLeaf(BtcScriptParser.getTimelockScript(TIMELOCK_BLOCKS, _btcReimbursementPubKey));
+        // TODO add backup committee payment script
+        // TODO should we do something with _rootstockDepositAddress here???
 
         // Convert to Taproot ScriptPubKey
-        return BtcAddressParser.getP2TRScriptPathScriptPubKey(_committeeKey, scriptRoot);
+        // If you only have one leaf in your script tree, the merkle root will be that leaf hash.
+        return BtcAddressParser.getP2TRScriptPubKey(_committeeKey, timelockLeaf);
     }
 }

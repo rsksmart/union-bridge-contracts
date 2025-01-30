@@ -57,7 +57,6 @@ contract PegManager is IPegManager, StreamManager, ProofValidator {
         // https://learnmeabitcoin.com/technical/transaction/wtxid/#commitment
         bitcoinManager.validatePegInP2TRData(
             _pegInRequestTxSPVProof.btcTx.outputs[0],
-            destinationAddress,
             btcReimbursementPubKey,
             getPacket(stream.streamId, packetNumber).committeeInternalKey
         );
