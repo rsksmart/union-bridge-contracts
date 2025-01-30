@@ -44,20 +44,21 @@ contract PegManager is IPegManager, StreamManager, ProofValidator {
         // Validate transaction has at least 2 outputs
         bitcoinManager.validatePegInTx(_pegInRequestTxSPVProof.btcTx);
 
-        // Second transaction should be OP_RETURN
+        // Second transaction should be OP_RETURN with data
         (uint64 packetNumber, address destinationAddress, bytes32 btcReimbursementPubKey) =
             bitcoinManager.getPegInOpReturnData(_pegInRequestTxSPVProof.btcTx.outputs[1]);
 
         // First transaction is the PegIn P2TR _pegInRequestTxSPVProof.btcTx.outputs[0]
-        // Get corresponding stream from the amount
+        // Get corresponding stream for the amount if non found reverts
         Stream memory stream = getStream(_pegInRequestTxSPVProof.btcTx.outputs[0].amount);
 
-        // TODO Validate the Taproot transaction
-        // TODO  should also validate witness data???
-        // https://learnmeabitcoin.com/technical/transaction/wtxid/#commitment
+        // TODO Missing Backup committee in Taproot validation.
+        // Validates that the Taproot Script has a Key Path for the committeeInternalKey
+        // and has a timelock for btcReimbursementPubKey
         bitcoinManager.validatePegInP2TRData(
             _pegInRequestTxSPVProof.btcTx.outputs[0],
             btcReimbursementPubKey,
+            // getPacket reverts if packet does not exist
             getPacket(stream.streamId, packetNumber).committeeInternalKey
         );
 
@@ -65,7 +66,8 @@ contract PegManager is IPegManager, StreamManager, ProofValidator {
         bytes32 txHash = bitcoinManager.getBtcTxHash(_pegInRequestTxSPVProof.btcTx);
 
         // Verify the TxHash part of the Merkle Root of Tx of a Block
-        // And that block is inside Bitcoin Mainchain and has enough confirmations
+        // and that block is inside Bitcoin Mainchain
+        // annd has enough confirmations
         verifyTxConfirmations(
             stream.pegInConfirmations,
             txHash,
