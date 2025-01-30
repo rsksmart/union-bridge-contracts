@@ -40,8 +40,10 @@ abstract contract StreamManager is IStreamManager, Initializable {
             streams[i].pegInConfirmations = uint8(i + 1); // TODO Validate this value
 
             // Create initial packet
-            uint64 sequenceNumber = uint64(packets[i].length);
-            packets[i].push(Packet({sequenceNumber: sequenceNumber, committeeInternalKey: _committeeInternalKey}));
+            uint64 sequenceNumber = uint64(packets[streams[i].streamId].length);
+            packets[streams[i].streamId].push(
+                Packet({sequenceNumber: sequenceNumber, committeeInternalKey: _committeeInternalKey})
+            );
 
             // Initialize slots directly in storage
             for (uint64 j = 0; j < 100; j++) {

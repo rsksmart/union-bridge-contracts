@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
-import {HelperContract} from "test/Helpers/HelperContract.sol";
+import {HelperContract} from "test/helpers/HelperContract.sol";
 import {PegInRequestTxSPVProof, IPegManager} from "src/interfaces/IPegManager.sol";
 import {Slot, SlotState, Stream} from "src/interfaces/IStreamManager.sol";
 import {BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE} from "src/interfaces/IBridge.sol";
@@ -11,15 +11,14 @@ import {ProofValidator} from "src/ProofValidator.sol";
 
 contract TestPegManager is Test, HelperContract {
     // Arrenge
-    uint64 internal constant VALUE = 100_000; // 0.001 BTC
     // https://www.blockchain.com/explorer/blocks/btc/879500
     bytes32 internal constant BLOCK_HASH = 0x0000000000000000000282fa21665766e58eb6cb94e458c3ef6d4af1121e38d9;
     uint64 internal constant PACKET_NUMBER = 0;
     address internal constant DESTINATION_ADDRESS = 0x7Ac5496aee77c1bA1F0854206A26DdA82A81d6d8;
 
     string internal constant UTXO = "1PuJjnF476W3zXfVYmJfGnouzFDAXakkL4";
-    string internal constant BTC_REINBURSTMENT_ADDRESS =
-        "bc1ph5yy7z7uxcnlz9ly9nx705p8yypvsyfrh9jfgcs866g5q0zlmgsqenymkh";
+    bytes32 internal constant BTC_REIMBURSEMENT_ADDRESS =
+        0x741976f972e9aa5e226eae26289b794aac9bbe702f378aa64c6104f16b79298c;
 
     function setUp() external {
         setUpPegManager();
@@ -28,10 +27,10 @@ contract TestPegManager is Test, HelperContract {
     function test_getTemporaryPegInAddress_Success() external view {
         // Arrenge
         // check that the function returns the correct taproot address
-        bytes memory dummyRskAddress = abi.encodePacked(bytes20(0x4C9a9CbFa14106439B0F96a64d9260F3b8947934));
+        address dummyRskAddress = 0x4C9a9CbFa14106439B0F96a64d9260F3b8947934;
 
         // Act
-        bytes memory result = pm.getTemporaryPegInAddress(dummyRskAddress, VALUE);
+        bytes memory result = pm.getTemporaryPegInAddress(dummyRskAddress, BTC_REIMBURSEMENT_ADDRESS, VALUE);
 
         console.log("result");
         console.logBytes(result);
@@ -40,11 +39,11 @@ contract TestPegManager is Test, HelperContract {
     function test_acceptPegInRequest_Success() external {
         // Arrenge
         uint64 expectedSlotId = 0;
+
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(10);
         // Create PegIn struct information
         PegInRequestTxSPVProof memory pegInRequestTxSPVProof = PegInRequestTxSPVProof({
-            value: VALUE, // 0.001 BTC
             blockHash: BLOCK_HASH,
             utxo: UTXO,
             btcTx: getBtcPegInRequestTx(),
@@ -63,11 +62,11 @@ contract TestPegManager is Test, HelperContract {
         emit IPegManager.PrepareTakeTransaction(
             pegInRequestTxSPVProof.blockHash,
             getExpectedPegInRequestTxHash(),
-            pegInRequestTxSPVProof.value,
+            VALUE,
             PACKET_NUMBER,
             expectedSlotId,
             DESTINATION_ADDRESS,
-            BTC_REINBURSTMENT_ADDRESS,
+            BTC_REIMBURSEMENT_ADDRESS,
             pegInRequestTxSPVProof.utxo
         );
 
@@ -90,7 +89,6 @@ contract TestPegManager is Test, HelperContract {
         bridgeMock.setBtcTransactionConfirmations(actualConfirmations);
         // Create PegIn struct information
         PegInRequestTxSPVProof memory pegInRequestTxSPVProof = PegInRequestTxSPVProof({
-            value: VALUE,
             blockHash: BLOCK_HASH,
             utxo: UTXO,
             btcTx: getBtcPegInRequestTx(),
@@ -117,7 +115,6 @@ contract TestPegManager is Test, HelperContract {
         bridgeMock.setBtcTransactionConfirmations(BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE);
         // Create PegIn struct information
         PegInRequestTxSPVProof memory pegInRequestTxSPVProof = PegInRequestTxSPVProof({
-            value: VALUE,
             blockHash: BLOCK_HASH,
             utxo: UTXO,
             btcTx: getBtcPegInRequestTx(),

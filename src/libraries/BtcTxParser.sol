@@ -20,7 +20,7 @@ library BtcTxParser {
         return abi.encodePacked(
             BtcHelper.reverseBytes32(_txId), // txId needs to be converted to little Endian
             BtcHelper.reverseUint32(_vout), // vout needs to be converted to little Endian
-            toCompactSize(_scriptSig.length), // scriptSigSize is compact-_size
+            BtcHelper.toCompactSize(_scriptSig.length), // scriptSigSize is compact-_size
             _scriptSig, // scriptSig should be empty for non-legacy transactions
             BtcHelper.reverseUint32(_sequence) // sequence needs to be converted to little Endian
         );
@@ -31,7 +31,7 @@ library BtcTxParser {
         // [inputs count]
         // [txid0][vout0][script sig _size 0][script sig 0][sequence0]
         // [txid1][vout1][script sig _size 1][script sig 1][sequence1]...
-        bytes memory hexInputs = toCompactSize(_inputs.length);
+        bytes memory hexInputs = BtcHelper.toCompactSize(_inputs.length);
         for (uint64 i = 0; i < _inputs.length; i++) {
             hexInputs = abi.encodePacked(
                 hexInputs, encodeTxIn(_inputs[i].txId, _inputs[i].vout, _inputs[i].sequence, _inputs[i].scriptSig)
@@ -45,7 +45,7 @@ library BtcTxParser {
         // See hex format https://learnmeabitcoin.com/technical/transaction/wtxid/#segwit
         return abi.encodePacked(
             BtcHelper.reverseUint64(_amount), // amount needs to be converted to little Endian
-            toCompactSize(_scriptPubKey.length), // scriptPubKeySize is compact-_size
+            BtcHelper.toCompactSize(_scriptPubKey.length), // scriptPubKeySize is compact-_size
             _scriptPubKey
         );
     }
@@ -55,7 +55,7 @@ library BtcTxParser {
         // [output count]
         // [amount0][script pubkey _size 0][script pubkey 0]
         // [amount1][script pubkey _size 1][script pubkey 1]...
-        bytes memory hexOutputs = toCompactSize(_outputs.length);
+        bytes memory hexOutputs = BtcHelper.toCompactSize(_outputs.length);
         for (uint64 i = 0; i < _outputs.length; i++) {
             hexOutputs = abi.encodePacked(hexOutputs, encodeTxOut(_outputs[i].amount, _outputs[i].scriptPubKey));
         }
@@ -72,24 +72,5 @@ library BtcTxParser {
             encodeTxOutputs(_btcTx.outputs),
             BtcHelper.reverseUint32(_btcTx.locktime) // locktime needs to be converted to little Endian
         );
-    }
-
-    /// @dev returns hex bytes with _size in btc compact _size
-    /// The first byte indicates which bytes encode the integer:
-    /// <= FC – This byte (0 - 252)
-    /// FD – The next two bytes (253 - 65535)
-    /// FE – The next four bytes (65536 - 4294967295)
-    /// FF – The next eight bytes (4294967296 - 18446744073709551615)
-    // Note: Bytes encoding the integer are in little endian.
-    // https://learnmeabitcoin.com/technical/general/compact-_size/
-    function toCompactSize(uint256 _size) internal pure returns (bytes memory) {
-        if (_size <= 252) {
-            return abi.encodePacked(uint8(_size));
-        } else if (_size <= 65535) {
-            return abi.encodePacked(uint8(0xFD), BtcHelper.reverseUint16(uint16(_size)));
-        } else if (_size <= 4294967295) {
-            return abi.encodePacked(uint8(0xFE), BtcHelper.reverseUint32(uint32(_size)));
-        }
-        return abi.encodePacked(uint8(0xFF), BtcHelper.reverseUint64(uint64(_size)));
     }
 }

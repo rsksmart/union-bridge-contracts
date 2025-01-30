@@ -34,4 +34,17 @@ contract TestBtcHelper is Test {
             "Hashing the block with Hash256 should give the correct block hash"
         );
     }
+
+    function test_taggedHash_Success() external pure {
+        // Assert
+        bytes memory data = hex"c0025187";
+        // Act
+        bytes32 leafHash = BtcHelper.taggedHash("TapLeaf", data);
+        // Assert
+        assertEq(
+            leafHash,
+            0x6b13becdaf0eee497e2f304adcfa1c0c9e84561c9989b7f2b5fc39f5f90a60f6,
+            "Should give the correct tagged hash"
+        );
+    }
 }

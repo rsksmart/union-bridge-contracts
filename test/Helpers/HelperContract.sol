@@ -24,6 +24,8 @@ abstract contract HelperContract is Test {
     address[] internal memebersCommittee3;
     PegManager internal pm;
     BridgeMock internal bridgeMock;
+    // Arrenge
+    uint64 internal constant VALUE = 100_000; // 0.001 BTC
 
     function setUpBitcoinManager() internal {
         bitcoinManager = new BitcoinManager();
@@ -142,21 +144,19 @@ abstract contract HelperContract is Test {
 
     function getBtcP2TROut() internal pure returns (BtcTxOut memory) {
         return BtcTxOut({
-            amount: 100_000,
-            scriptPubKey: hex"51206d4e468ec692189e4a64f59cbb6224d4617bafff6b319def00f18c9ec2e5bb78"
+            amount: VALUE,
+            scriptPubKey: hex"5120a73fcb378f4ec6d5d93b84847493b7577c7ba5e3735ef768b74d6f5fac280ba9"
         });
     }
 
     function getBtcOPReturnOut() internal pure returns (BtcTxOut memory) {
         return BtcTxOut({
             amount: 0,
-            scriptPubKey: hex"6a0952534b5f504547494e080000000000000000147ac5496aee77c1ba1f0854206a26dda82a81d6d83e6263317068357979377a377578636e6c7a396c79396e783730357038797970767379667268396a66676373383636673571307a6c6d677371656e796d6b68"
+            scriptPubKey: hex"6a4552534b5f504547494e00000000000000007ac5496aee77c1ba1f0854206a26dda82a81d6d8741976f972e9aa5e226eae26289b794aac9bbe702f378aa64c6104f16b79298c"
         });
     }
 
     function getBtcPegInRequestTx() internal pure returns (BtcTransaction memory) {
-        // Data from tx 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079
-        // https://www.blockchain.com/explorer/transactions/btc/c00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079
         BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
         btcInputs[0] = getBtcTxIn();
         // Output
@@ -167,6 +167,6 @@ abstract contract HelperContract is Test {
     }
 
     function getExpectedPegInRequestTxHash() internal pure returns (bytes32) {
-        return 0x6e2cd48ae052aa3e884d4bfa13f44867b2d510b62d20915ff55eb94560e4f188;
+        return 0x5865bf9c9aba580241c3825f7c461b477f56df1a10a9577e1ca953590bc08c25;
     }
 }

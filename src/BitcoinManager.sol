@@ -2,125 +2,38 @@
 pragma solidity ^0.8.20;
 
 import {console} from "forge-std/console.sol";
-import {Secp256k1} from "./libraries/Secp256k1.sol";
 import {BtcTransaction, BtcTxOut, IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
 import {BtcHelper} from "./libraries/BtcHelper.sol";
 import {BtcTxParser} from "./libraries/BtcTxParser.sol";
 import {BytesHelper} from "./libraries/BytesHelper.sol";
+import {BtcScriptParser} from "./libraries/BtcScriptParser.sol";
+import {BtcAddressParser} from "./libraries/BtcAddressParser.sol";
 import {OpCodes} from "./libraries/OpCodes.sol";
 
 /// @title BitcoinManager
 /// @notice Manages Bitcoin Addresses and Scripts
 contract BitcoinManager is IBitcoinManager {
-    function getTemporaryPegInAddress(
-        bytes calldata rootstockDepositAddress,
-        // bytes calldata bitcoinReimbursementAddress,
-        uint64 value,
-        bytes32 committeeKey // Get the current packet's committee key
-    ) external pure returns (bytes memory bitcoinDepositAddress) {
-        console.log("committeeKey");
-        console.logBytes32(committeeKey);
+    uint8 constant TIMELOCK_BLOCKS = 10;
 
-        // Create custom tweak from deposit address and value
-        bytes32 customTweak = sha256(abi.encodePacked(rootstockDepositAddress, value));
+    function getTemporaryPegInAddress(
+        address _rootstockDepositAddress,
+        bytes32 _btcReimbursementPubKey,
+        uint64 _value,
+        bytes32 _committeeKey
+    ) external pure returns (bytes memory bitcoinDepositAddress) {
+        console.log("_committeeKey");
+        console.logBytes32(_committeeKey);
+
+        // Create custom tweak from deposit address and _value
+        bytes32 customTweak = sha256(abi.encodePacked(_rootstockDepositAddress, _value));
         console.log("customTweak");
         console.logBytes32(customTweak);
 
-        // Empty script root (no script path)
-        // TODO make actual script root with other spending paths
-        bytes32 emptyScriptRoot = bytes32(0);
-
         // Generate and return the taproot address
-        return generateTaprootAddress(committeeKey, emptyScriptRoot, customTweak);
-    }
+        bytes memory scriptPubKey = getPegInP2TRScriptPub(_btcReimbursementPubKey, _committeeKey);
 
-    // TODO move bech32 functions to a separate library
-
-    /// @notice Generates a Taproot address with both key spend and script spend paths
-    /// @param internalKey The committee's public key (x-only, 32 bytes)
-    /// @param scriptRoot The merkle root of the script spend path
-    // /// @param customTweak Additional tweak data for address customization
-    /// @return taprootAddress bytes (32 bytes output key + 1 byte version)
-    function generateTaprootAddress(bytes32 internalKey, bytes32 scriptRoot, bytes32)
-        public
-        pure
-        returns (bytes memory)
-    {
-        // if script root is empty, do not include it in the tweak
-        // TODO remove once we implement script path spend
-        bytes32 tweakValue;
-        if (scriptRoot == bytes32(0)) {
-            tweakValue = taggedHash("TapTweak", abi.encodePacked(internalKey));
-            // tweakValue = taggedHash("TapTweak", abi.encodePacked(internalKey, customTweak));
-        } else {
-            tweakValue = taggedHash("TapTweak", abi.encodePacked(internalKey, scriptRoot));
-            // tweakValue = taggedHash("TapTweak", abi.encodePacked(internalKey, scriptRoot, customTweak));
-        }
-
-        console.log("tweakValue");
-        console.logBytes32(tweakValue);
-
-        // 2. Convert to Taproot ScriptPubKey
-        bytes memory scriptPubKey = getScriptPubKey(tweakValue, internalKey);
-        console.log("scriptPubKey");
-        console.logBytes(scriptPubKey);
-
-        // 3. Create tagged hash for taproot tweak
-        bytes32 tweakedKey = generateAddressWithTweak(internalKey, tweakValue);
-        console.log("tweakedKey");
-        console.logBytes32(tweakedKey);
-
-        // 4. Add Taproot version byte (0x01) to tweaked key
-        return abi.encodePacked(hex"01", tweakedKey);
-    }
-
-    function taggedHash(string memory tag, bytes memory message) public pure returns (bytes32) {
-        console.log("message");
-        console.logBytes(message);
-
-        bytes32 tagHash = sha256(bytes(tag));
-        bytes memory preimage = abi.encodePacked(tagHash, tagHash, message);
-
-        return sha256(preimage);
-    }
-
-    /// @notice Generates a Taproot address with single key spend path
-    /// @param tweakedKey The tweaked the public key (TapTweak) converted to integer (so it's like a private key)
-    /// @param committeePubKey The committee's public key (x-only, 32 bytes)
-    /// @return scriptPubKey  bytes (32 bytes output y + 2 byte script pubkey prefix)
-    function getScriptPubKey(bytes32 tweakedKey, bytes32 committeePubKey) public pure returns (bytes memory) {
-        // 1. Use tweaked key as internal key (x-only pubkey) to obtain y
-        uint256 times = uint256(tweakedKey);
-        uint256 committeePubKeyX = uint256(committeePubKey);
-        // 2. Get committee even y
-        uint8 even = 0x02;
-        uint256 committeePubKeyY = Secp256k1.deriveY(even, committeePubKeyX);
-        // 3. Get X, Y point from  tweaked key
-        (uint256 internalX, uint256 internalY) = Secp256k1.ecMul(times, Secp256k1.GX, Secp256k1.GY);
-        // 4. Add tweaked key point to committee point
-        (uint256 ouptputKeyX,) = Secp256k1.ecAdd(committeePubKeyX, committeePubKeyY, internalX, internalY);
-
-        // 5. Add Taproot script pub key prefix bytes
-        // OP_PUSHNUM_1 (0x51) OP_PUSHBYTES_32 (0x20)
-        return abi.encodePacked(hex"5120", ouptputKeyX);
-    }
-
-    /// @notice Generates a Taproot address with single key spend path
-    /// @param committeeKey The committee's public key (x-only, 32 bytes)
-    /// @return taprootAddress bytes (32 bytes output key + 1 byte version)
-    function deriveKeySpendAddress(bytes32 committeeKey) public pure returns (bytes memory) {
-        // 1. Use committee key as internal key (x-only pubkey)
-        bytes32 outputKey = committeeKey;
-
-        // 2. Add Taproot version byte (0x01)
-        return abi.encodePacked(hex"01", outputKey);
-    }
-
-    // Generate addresses using different tweaks
-    function generateAddressWithTweak(bytes32 internalPubKey, bytes32 customTweak) internal pure returns (bytes32) {
-        // Create a unique address by XORing with a custom tweak
-        bytes32 tagHash = sha256(abi.encodePacked("TapTweak"));
-        return sha256(abi.encodePacked(tagHash, tagHash, internalPubKey, customTweak));
+        // Add Taproot version byte (0x01) to script pub
+        return abi.encodePacked(hex"01", scriptPubKey);
     }
 
     /// @dev Validates a Bitcoin peg-in transaction
@@ -132,13 +45,13 @@ contract BitcoinManager is IBitcoinManager {
 
     /// @dev Expected OP_RETURN format:
     /// @dev [OP_RETURN (1 byte)]
-    /// @dev [OP_PUSHBYTES_9 (1 byte)][RSK_PEGIN (9 bytes)]
-    /// @dev [OP_PUSHBYTES_8 (1 byte)][packet number (8 bytes)]
-    /// @dev [OP_PUSHBYTES_20 (1 byte)][rsk destination address (20 bytes)]
-    /// @dev [OP_PUSHBYTES_62 (1 byte)][reimbursement address (62 bytes)]
-    /// @dev Total expected size: 104 bytes
-    function getTxOpReturnData(BtcTxOut calldata _opReturnOut) external pure returns (uint64, address, string memory) {
-        uint8 expectedSize = (1 + 1 + 9 + 1 + 8 + 1 + 20 + 1 + 62);
+    /// @dev [OP_PUSHBYTES_69 (1 byte)][RSK_PEGIN (9 bytes)]
+    /// @dev [packet number (8 bytes)]
+    /// @dev [rsk destination address (20 bytes)]
+    /// @dev [reimbursement public key (32 bytes)]
+    /// @dev Total expected size: 71 bytes
+    function getPegInOpReturnData(BtcTxOut calldata _opReturnOut) external pure returns (uint64, address, bytes32) {
+        uint8 expectedSize = (1 + 1 + 9 + 8 + 20 + 32);
         if (_opReturnOut.scriptPubKey.length != expectedSize) {
             revert invalidOpReturnLength(_opReturnOut.scriptPubKey.length, expectedSize);
         }
@@ -150,14 +63,15 @@ contract BitcoinManager is IBitcoinManager {
         }
         index++;
 
-        // Validate RSK_PEGIN flag
-        if (_opReturnOut.scriptPubKey[index] != OpCodes.OP_PUSHBYTES_9) {
+        // Validate PUSHBYTES op code
+        if (_opReturnOut.scriptPubKey[index] != OpCodes.OP_PUSHBYTES_69) {
             revert incorrectlyFormedOpReturn(index);
         }
         index++;
+        // Validate RSK_PEGIN flag
         if (
             !BytesHelper.stringCompare(
-                BytesHelper.bytesToString(_opReturnOut.scriptPubKey, index, index + 9), "RSK_PEGIN"
+                BytesHelper.getBytesToString(_opReturnOut.scriptPubKey, index, index + 9), "RSK_PEGIN"
             )
         ) {
             revert incorrectlyFormedOpReturn(index);
@@ -165,34 +79,52 @@ contract BitcoinManager is IBitcoinManager {
         index = index + 9;
 
         // Extract packet number
-        if (_opReturnOut.scriptPubKey[index] != OpCodes.OP_PUSHBYTES_8) {
-            revert incorrectlyFormedOpReturn(index);
-        }
-        index++;
         uint64 packetNumber = BytesHelper.bytesToUint64(_opReturnOut.scriptPubKey, index);
         index = index + 8;
 
         // Extract RSK destination address
-        if (_opReturnOut.scriptPubKey[index] != OpCodes.OP_PUSHBYTES_20) {
-            revert incorrectlyFormedOpReturn(index);
-        }
-        index++;
         address destinationAddress = BytesHelper.bytesToAddress(_opReturnOut.scriptPubKey, index);
         index = index + 20;
 
-        // Extract Bitcoin reimbursement address
-        if (_opReturnOut.scriptPubKey[index] != OpCodes.OP_PUSHBYTES_62) {
-            revert incorrectlyFormedOpReturn(index);
-        }
-        index++;
-        string memory btcReinburstmentAddress = BytesHelper.bytesToString(_opReturnOut.scriptPubKey, index, index + 62);
-        index = index + 62;
+        // Extract Bitcoin reimbursement public key (x only)
+        bytes32 btcReimbursementPubKey = BytesHelper.bytesToBytes32(_opReturnOut.scriptPubKey, index);
+        // index = index + 32;
 
-        return (packetNumber, destinationAddress, btcReinburstmentAddress);
+        return (packetNumber, destinationAddress, btcReimbursementPubKey);
+    }
+
+    /// @dev Validates a Bitcoin peg-in transaction
+    function validatePegInP2TRData(BtcTxOut calldata _p2trOut, bytes32 _btcReimbursementPubKey, bytes32 _committeeKey)
+        external
+        pure
+    {
+        bytes memory p2trScriptPubKey = getPegInP2TRScriptPub(_btcReimbursementPubKey, _committeeKey);
+        if (!BytesHelper.compare(_p2trOut.scriptPubKey, p2trScriptPubKey)) {
+            revert incorrectP2TRScriptPub(_p2trOut.scriptPubKey, p2trScriptPubKey);
+        }
     }
 
     /// @dev Convert Tx to raw tx hex using Bitcoin format and then uses hash256 to get the txHash
     function getBtcTxHash(BtcTransaction calldata _btcTx) external pure returns (bytes32) {
         return BtcHelper.hash256(BtcTxParser.encodeTx(_btcTx));
+    }
+
+    /// @notice Generates a Taproot script pub key with both key spend and script spend paths
+    /// @param _btcReimbursementPubKey The committee's public key (x-only, 32 bytes)
+    /// @param _committeeKey The committee's public key (x-only, 32 bytes)
+    // /// @param customTweak Additional tweak data for address customization
+    /// @return taprootScriptPubKey bytes (OP_1 + OP_PUSHBYTES_32 + 32 bytes output key)
+    function getPegInP2TRScriptPub(
+        bytes32 _btcReimbursementPubKey,
+        bytes32 _committeeKey // Get the current packet's committee key bytes32)
+    ) internal pure returns (bytes memory) {
+        bytes32 timelockLeaf =
+            BtcScriptParser.getLeaf(BtcScriptParser.getTimelockScript(TIMELOCK_BLOCKS, _btcReimbursementPubKey));
+        // TODO add backup committee payment script
+        // TODO should we do something with _rootstockDepositAddress here???
+
+        // Convert to Taproot ScriptPubKey
+        // If you only have one leaf in your script tree, the merkle root will be that leaf hash.
+        return BtcAddressParser.getP2TRScriptPubKey(_committeeKey, timelockLeaf);
     }
 }

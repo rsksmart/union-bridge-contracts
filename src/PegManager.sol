@@ -21,11 +21,11 @@ contract PegManager is IPegManager, StreamManager, ProofValidator {
         StreamManager.initialize(committee.internalKey);
     }
 
-    function getTemporaryPegInAddress(
-        bytes calldata _rootstockDepositAddress,
-        // bytes calldata bitcoinReimbursementAddress,
-        uint64 _value
-    ) external view returns (bytes memory bitcoinDepositAddress) {
+    function getTemporaryPegInAddress(address _rootstockDepositAddress, bytes32 _btcReimbursementPubKey, uint64 _value)
+        external
+        view
+        returns (bytes memory bitcoinDepositAddress)
+    {
         // Get the stream for this value
         Stream memory stream = getStream(_value);
 
@@ -33,33 +33,41 @@ contract PegManager is IPegManager, StreamManager, ProofValidator {
         Packet memory currentPacket = packets[stream.streamId][stream.peginPointer];
         bytes32 committeeKey = currentPacket.committeeInternalKey;
 
-        return bitcoinManager.getTemporaryPegInAddress(_rootstockDepositAddress, _value, committeeKey);
+        return bitcoinManager.getTemporaryPegInAddress(
+            _rootstockDepositAddress, _btcReimbursementPubKey, _value, committeeKey
+        );
     }
 
     function acceptPegInRequest(PegInRequestTxSPVProof calldata _pegInRequestTxSPVProof) external {
         // TODO validate who can call this function
 
+        // Validate transaction has at least 2 outputs
         bitcoinManager.validatePegInTx(_pegInRequestTxSPVProof.btcTx);
 
-        // First transaction _pegInRequestTxSPVProof.btcTx.outputs[0]
-        // TODO Validate the Taproot transaction
-        // TODO  should also validate witness data??? https://learnmeabitcoin.com/technical/transaction/wtxid/#commitment
+        // Second transaction should be OP_RETURN with data
+        (uint64 packetNumber, address destinationAddress, bytes32 btcReimbursementPubKey) =
+            bitcoinManager.getPegInOpReturnData(_pegInRequestTxSPVProof.btcTx.outputs[1]);
 
-        // Second transaction should be OP_RETURN
-        (uint64 packetNumber, address destinationAddress, string memory btcReinburstmentAddress) =
-            bitcoinManager.getTxOpReturnData(_pegInRequestTxSPVProof.btcTx.outputs[1]);
+        // First transaction is the PegIn P2TR _pegInRequestTxSPVProof.btcTx.outputs[0]
+        // Get corresponding stream for the amount if non found reverts
+        Stream memory stream = getStream(_pegInRequestTxSPVProof.btcTx.outputs[0].amount);
 
-        //  TODO Check destination address from second output, after OP_RETURN, and compare it with the destination address from the first output script.
-        //  Contains value bitcoin to the taproot temporary address
-
-        // Get corresponding stream
-        Stream memory stream = getStream(_pegInRequestTxSPVProof.value);
+        // TODO Missing Backup committee in Taproot validation.
+        // Validates that the Taproot Script has a Key Path for the committeeInternalKey
+        // and has a timelock for btcReimbursementPubKey
+        bitcoinManager.validatePegInP2TRData(
+            _pegInRequestTxSPVProof.btcTx.outputs[0],
+            btcReimbursementPubKey,
+            // getPacket reverts if packet does not exist
+            getPacket(stream.streamId, packetNumber).committeeInternalKey
+        );
 
         // Calculate txHash from BtcTransaction
         bytes32 txHash = bitcoinManager.getBtcTxHash(_pegInRequestTxSPVProof.btcTx);
 
         // Verify the TxHash part of the Merkle Root of Tx of a Block
-        // And that block is inside Bitcoin Mainchain and has enough confirmations
+        // and that block is inside Bitcoin Mainchain
+        // annd has enough confirmations
         verifyTxConfirmations(
             stream.pegInConfirmations,
             txHash,
@@ -67,11 +75,6 @@ contract PegManager is IPegManager, StreamManager, ProofValidator {
             _pegInRequestTxSPVProof.merkleBranchPath,
             _pegInRequestTxSPVProof.merkleBranchHashes
         );
-
-        // Get corresponding packet
-        Packet memory packet = getPacket(stream.streamId, packetNumber);
-        // TODO Validate Committee Key against the bitcoin Tx
-        packet.committeeInternalKey;
 
         // Store Tx in pegInSlot as Prepared
         // TODO corroborate if state should be prepared with Diego
@@ -81,11 +84,11 @@ contract PegManager is IPegManager, StreamManager, ProofValidator {
         emit PrepareTakeTransaction(
             _pegInRequestTxSPVProof.blockHash,
             txHash,
-            _pegInRequestTxSPVProof.value,
+            stream.denomination,
             packetNumber,
             slotId,
             destinationAddress,
-            btcReinburstmentAddress,
+            btcReimbursementPubKey,
             _pegInRequestTxSPVProof.utxo
         );
     }

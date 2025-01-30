@@ -2,8 +2,8 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import {ProofValidatorHarness} from "./Helpers/ProofValidatorHarness.sol";
-import {HelperContract} from "./Helpers/HelperContract.sol";
+import {ProofValidatorHarness} from "./helpers/ProofValidatorHarness.sol";
+import {HelperContract} from "./helpers/HelperContract.sol";
 
 contract TestProofValidator is Test, HelperContract {
     ProofValidatorHarness proofValidator;

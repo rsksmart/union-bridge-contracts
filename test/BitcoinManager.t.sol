@@ -1,5 +1,8 @@
+// SPDX-License-Identifier: Unlicense
+pragma solidity ^0.8.20;
+
 import "forge-std/Test.sol";
-import {HelperContract} from "./Helpers/HelperContract.sol";
+import {HelperContract} from "./Helpers/helperContract.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
 import {BtcTxIn, BtcTxOut, BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
 

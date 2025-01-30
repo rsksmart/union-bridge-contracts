@@ -31,16 +31,16 @@ struct BtcTransaction {
 interface IBitcoinManager {
     /// @notice Allows users generate a temporary Bitcoin address to perform a peg-in.
     /// @param _rootstockDepositAddress The RSK deposit address
-    // /// @param bitcoinReimbursementAddress The BTC reimbursement address
+    /// @param _btcReimbursementPubKey The BTC reimbursement public key x-cordinate only
     /// @param _value uint64 The amount to peg in
     /// @param _committeeKey bytes32 Get the current packet's committee key
     /// @return temporaryPegInAddress The temporary peg-in address
     function getTemporaryPegInAddress(
-        bytes calldata _rootstockDepositAddress,
-        // bytes calldata bitcoinReimbursementAddress,
+        address _rootstockDepositAddress,
+        bytes32 _btcReimbursementPubKey,
         uint64 _value,
         bytes32 _committeeKey
-    ) external view returns (bytes memory temporaryPegInAddress);
+    ) external pure returns (bytes calldata temporaryPegInAddress);
 
     /// @notice Validates a Bitcoin peg-in transaction
     /// @dev Checks that the transaction has at least 2 outputs - one for the peg-in amount and one for the OP_RETURN data
@@ -52,12 +52,13 @@ interface IBitcoinManager {
     /// @param _opReturnOut The Bitcoin transaction output containing OP_RETURN data
     /// @return packetNumber The packet number encoded in the OP_RETURN data
     /// @return destinationAddress The RSK destination address encoded in the OP_RETURN data
-    /// @return btcReimbursementAddress The Bitcoin reimbursement address encoded in the OP_RETURN data
+    /// @return btcReimbursementPubKey The Bitcoin reimbursement public key (x only) encoded in the OP_RETURN data
     /// @dev Expected OP_RETURN format: [OP_RETURN][RSK_PEGIN][packet number][rsk address][btc address]
-    function getTxOpReturnData(BtcTxOut calldata _opReturnOut)
+    function getPegInOpReturnData(BtcTxOut calldata _opReturnOut) external pure returns (uint64, address, bytes32);
+
+    function validatePegInP2TRData(BtcTxOut calldata _p2trOut, bytes32 _btcReimbursementPubKey, bytes32 _committeeKey)
         external
-        pure
-        returns (uint64, address, string calldata);
+        pure;
 
     /// @notice Calculates the Bitcoin transaction hash (txid) for a given transaction
     /// @dev Encodes the transaction into Bitcoin's raw format and performs double SHA256 hash
@@ -90,4 +91,6 @@ interface IBitcoinManager {
     error incorrectOutputNumber(uint256 actual, uint256 expected);
     error invalidOpReturnLength(uint256 actual, uint256 expected);
     error incorrectlyFormedOpReturn(uint256 index);
+    error incorrectP2TRValue(uint64 actual, uint64 expected);
+    error incorrectP2TRScriptPub(bytes actual, bytes expected);
 }
