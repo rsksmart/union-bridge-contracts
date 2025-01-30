@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
-import {HelperContract} from "test/Helpers/HelperContract.sol";
+import {HelperContract} from "test/helpers/HelperContract.sol";
 import {PegInRequestTxSPVProof, IPegManager} from "src/interfaces/IPegManager.sol";
 import {Slot, SlotState, Stream} from "src/interfaces/IStreamManager.sol";
 import {BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE} from "src/interfaces/IBridge.sol";
