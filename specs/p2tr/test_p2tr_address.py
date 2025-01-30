@@ -31,7 +31,7 @@ def connect_rpc():
             except JSONRPCError:
                 print("Could not create or load wallet")
                 raise
-    
+
     return rpc
 
 def create_taproot_address():
@@ -71,66 +71,64 @@ def fund_address(rpc_connection, address, amount):
 def spend_from_taproot(rpc_connection, address, privkey, txid, amount):
     """Spend funds from the taproot address using key spend path"""
     try:
-        # Convert txid string to bytes and then to reversed hex
-        txid_bytes = bytes.fromhex(txid)[::-1]  
+        # Get the raw transaction to get output index and script
+        raw_tx = rpc_connection._call('getrawtransaction', txid, True)
 
-        # Get the transaction details
-        raw_tx = rpc_connection.getrawtransaction(txid_bytes, True)
-        
-        # Find the output index that corresponds to our taproot address
+        # Find our output index
         vout = None
-        for i, output in enumerate(raw_tx['tx'].vout):
-            output_info = rpc_connection._call('getaddressinfo', address)
-            if 'scriptPubKey' in output_info:
-                script_hex = output_info['scriptPubKey']
-                if output.scriptPubKey == bytes.fromhex(script_hex):
-                    vout = i
-                    break
-
+        for i, output in enumerate(raw_tx['vout']):
+            if output['scriptPubKey']['address'] == address:
+                vout = i
+                break
         if vout is None:
-            raise ValueError("Couldn't find taproot output in transaction")
+            raise Exception("Could not find output for address")
 
-        # Create destination address and output
-        dest_address = rpc_connection._call('getnewaddress')
-        fee = 0.00001
-        output_amount = amount - fee
-
-        dest_address_info = rpc_connection._call('getaddressinfo', dest_address)
-        script_pubkey = bytes.fromhex(dest_address_info['scriptPubKey'])
-        tx_out = CTxOut(int(output_amount * 100000000), script_pubkey)
-
+        # Get the input value from the previous transaction
+        input_value = int(float(raw_tx['vout'][vout]['value']) * 100000000)  # Convert BTC to satoshis
+        
+        # Create destination address for the spend
+        dest_address = rpc_connection._call('getnewaddress', "", "bech32")
+        
+        # Calculate fee and amount to send (sending amount - fee)
+        fee = 0.0001  # 10000 satoshis
+        send_amount = amount - fee
+        
         # Create unsigned transaction
-        tx_in = CTxIn(
-            COutPoint(txid_bytes, vout),
-            CScript([]),  # Empty scriptSig for witness transactions
-            0xffffffff
-        )
+        inputs = [{'txid': txid, 'vout': vout}]
+        outputs = {dest_address: send_amount}
+        unsigned_tx = rpc_connection._call('createrawtransaction', inputs, outputs)
         
-        # Create transaction template for signing
-        unsigned_tx = CTransaction([tx_in], [tx_out])
+        # Convert private key to HDKey for signing
+        internal_key = HDKey(bytes.fromhex(privkey), network='regtest')
         
-        # Create sighash for Taproot
-        sighash = unsigned_tx.GetTxid()
+        # Create transaction object
+        tx = Transaction.parse_hex(unsigned_tx)
         
-        # Sign the transaction using the taproot private key with Schnorr signature
-        hd_key = HDKey(privkey)
-        # Use the sign function with schnorr hash type
-        signature = sign(sighash, hd_key, hash_type=0x00)  # SIGHASH_ALL_TAPROOT = 0x00
+        # Set witness type on transaction
+        tx.witness_type = 'segwit'
         
-        # Create witness data with stack
-        witness_stack = [bytes(signature)]
-        script_witness = CScriptWitness(witness_stack)
-        witness = CTxInWitness(scriptWitness=script_witness)
-        witness_data = CTxWitness([witness])
+        # Get the locking script from the previous transaction
+        locking_script = bytes.fromhex(raw_tx['vout'][vout]['scriptPubKey']['hex'])
+        
+        # Configure the input properly for Taproot
+        tx.inputs[0].witness_type = 'segwit'
+        tx.inputs[0].script_type = 'p2tr'
+        tx.inputs[0].keys = [internal_key]
+        tx.inputs[0].unlocking_script = b''  # Empty scriptSig as required for witness
+        tx.inputs[0].value = input_value  # Set the input value
+        tx.inputs[0].locking_script = locking_script  # Set the locking script
+        tx.inputs[0].redeemscript = locking_script  # Use locking script as redeem script for Taproot
+        tx.inputs[0].witnesses = [b'']  # Initialize empty witness
+        
+        # Sign the transaction
+        tx.sign(internal_key)
+        
+        # Send the signed transaction
+        signed_tx_hex = tx.raw_hex()
+        txid = rpc_connection._call('sendrawtransaction', signed_tx_hex)
 
-        # Create transaction with signed input and witness data
-        tx = CTransaction([tx_in], [tx_out], witness=witness_data)
-        
-        # Send the transaction
-        raw_tx_hex = tx.serialize().hex()
-        txid = rpc_connection._call('sendrawtransaction', raw_tx_hex)
-        
         return txid
+
     except Exception as e:
         print(f"Error spending from taproot: {e}")
         raise e
@@ -142,7 +140,15 @@ def main():
         rpc = connect_rpc()
         
         # Create taproot address
-        address, privkey = create_taproot_address()
+        # address, privkey = create_taproot_address()
+        privkey = '4356879078676432346579865453456786754534567776543424754556472782'
+        address = 'bcrt1plz7zhw6jqvw6ac5d5kzgr68v8vz9yqhdjgfmv2ln8c3p6vdnumhswrrae5'  # my address (regtest)
+        # address = 'bc1plz7zhw6jqvw6ac5d5kzgr68v8vz9yqhdjgfmv2ln8c3p6vdnumhs5jl5kp'  # my address (mainnet)
+
+        # privkey = '55d7c5a9ce3d2b15a62434d01205f3e59077d51316f5c20628b3a4b8b2a76f4c'  # LMaB example private key
+        # address = 'bc1ppuxgmd6n4j73wdp688p08a8rte97dkn5n70r2ym6kgsw0v3c5ensrytduf'  # LMaB example address (mainnet)
+        # address = 'bcrt1ppuxgmd6n4j73wdp688p08a8rte97dkn5n70r2ym6kgsw0v3c5ense4hynu'  # LMaB example address (regtest)
+
         print(f"Created taproot address: {address}")
 
         # Fund the address
@@ -150,10 +156,10 @@ def main():
         txid = fund_address(rpc, address, amount)
         if txid:
             print(f"Funded address with {amount} BTC. TXID: {txid}")
-            
+
             # Wait a bit for transaction to be fully processed
             time.sleep(2)
-            
+
             # Spend from the address
             spend_txid = spend_from_taproot(rpc, address, privkey, txid, amount)
             if spend_txid:
