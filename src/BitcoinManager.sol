@@ -94,13 +94,13 @@ contract BitcoinManager is IBitcoinManager {
     }
 
     /// @dev Validates a Bitcoin peg-in transaction
-    function validatePegInP2TRData(BtcTxOut calldata p2trOut, bytes32 _btcReimbursementPubKey, bytes32 _committeeKey)
+    function validatePegInP2TRData(BtcTxOut calldata _p2trOut, bytes32 _btcReimbursementPubKey, bytes32 _committeeKey)
         external
         pure
     {
         bytes memory p2trScriptPubKey = getPegInP2TRScriptPub(_btcReimbursementPubKey, _committeeKey);
-        if (!BytesHelper.compare(p2trOut.scriptPubKey, p2trScriptPubKey)) {
-            revert incorrectP2TRScriptPub(p2trOut.scriptPubKey, p2trScriptPubKey);
+        if (!BytesHelper.compare(_p2trOut.scriptPubKey, p2trScriptPubKey)) {
+            revert incorrectP2TRScriptPub(_p2trOut.scriptPubKey, p2trScriptPubKey);
         }
     }
 

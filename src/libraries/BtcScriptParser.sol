@@ -38,12 +38,12 @@ library BtcScriptParser {
     }
 
     /// @dev https://learnmeabitcoin.com/technical/upgrades/taproot/#script-tree-merkle-root-branch-hash
-    function getBranch(bytes32 _aLeafOrBranch, bytes32 _anotherLeafOrBranch) internal pure returns (bytes32) {
-        bytes32 lowerHash = _aLeafOrBranch;
-        bytes32 higherHash = _anotherLeafOrBranch;
-        if (_aLeafOrBranch > _anotherLeafOrBranch) {
-            lowerHash = _anotherLeafOrBranch;
-            higherHash = _aLeafOrBranch;
+    function getBranch(bytes32 _leafOrBranch, bytes32 _otherLeafOrBranch) internal pure returns (bytes32) {
+        bytes32 lowerHash = _leafOrBranch;
+        bytes32 higherHash = _otherLeafOrBranch;
+        if (_leafOrBranch > _otherLeafOrBranch) {
+            lowerHash = _otherLeafOrBranch;
+            higherHash = _leafOrBranch;
         }
         bytes memory data = abi.encodePacked(lowerHash, higherHash);
         return BtcHelper.taggedHash(TAP_BRANCH, data);
