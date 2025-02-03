@@ -87,13 +87,13 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_registerCommittee_Revert_TooManyCommittees() external {
         // Arrenge
-        uint256 MAX_COMITTEE_SIZE = registry.MAX_COMITTEE_SIZE();
+        uint256 MAX_COMMITTEES_SIZE = registry.MAX_COMMITTEES_SIZE();
         bytes32 aCommitteeKey;
         Committee memory aCommittee;
         address[] memory aMemebersCommittee;
 
         // We start at 1 as we already have a committee registered at set
-        for (uint256 i = 1; i < MAX_COMITTEE_SIZE; i++) {
+        for (uint256 i = 1; i < MAX_COMMITTEES_SIZE; i++) {
             aCommitteeKey = uintToBytes32(i);
             aCommittee = Committee({internalKey: aCommitteeKey, leader: vm.addr(3), backupLeader: vm.addr(4)});
             aMemebersCommittee = new address[](2);
@@ -103,14 +103,14 @@ contract TestCommitteeRegistry is Test, HelperContract {
             registry.registerCommittee(aCommittee, aMemebersCommittee);
         }
 
-        aCommitteeKey = uintToBytes32(MAX_COMITTEE_SIZE);
+        aCommitteeKey = uintToBytes32(MAX_COMMITTEES_SIZE);
         aCommittee = Committee({internalKey: aCommitteeKey, leader: vm.addr(3), backupLeader: vm.addr(4)});
         aMemebersCommittee = new address[](2);
         aMemebersCommittee[0] = vm.addr(3);
         aMemebersCommittee[1] = vm.addr(4);
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(CommitteeRegistry.tooManyCommittees.selector, MAX_COMITTEE_SIZE));
+        vm.expectRevert(abi.encodeWithSelector(CommitteeRegistry.tooManyCommittees.selector, MAX_COMMITTEES_SIZE));
         // Act
         registry.registerCommittee(aCommittee, aMemebersCommittee);
     }

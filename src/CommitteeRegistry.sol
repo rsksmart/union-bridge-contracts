@@ -5,10 +5,10 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 import {Committee, ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
 
 contract CommitteeRegistry is ICommitteeRegistry, Initializable {
-    uint256 public constant MAX_COMITTEE_SIZE = 100;
+    uint256 public constant MAX_COMMITTEES_SIZE = 100;
     uint256 public constant MAX_MEMBERS_SIZE = 100;
     bytes32[] internal committees;
-    // Committee key => Comittee
+    // Committee key => Committee
     mapping(bytes32 => Committee) internal committeesByKey;
     // Committee key => members addresses
     mapping(bytes32 => address[]) internal membersByCommitee;
@@ -16,7 +16,7 @@ contract CommitteeRegistry is ICommitteeRegistry, Initializable {
     event newCommittee(bytes32 indexed committeeKey, Committee committee, address[] _members);
 
     error tooManyMembers(uint256 maxMemebersSize);
-    error tooManyCommittees(uint256 maxComitteeSize);
+    error tooManyCommittees(uint256 maxCommitteeSize);
     error alreadyRegisteredCommittee(bytes32 committeeLey);
 
     function initialize() public initializer {}
@@ -26,18 +26,17 @@ contract CommitteeRegistry is ICommitteeRegistry, Initializable {
         if (committeesByKey[_committee.internalKey].internalKey != bytes32(0)) {
             revert alreadyRegisteredCommittee(_committee.internalKey);
         }
-        // Check max
-        if (committees.length >= MAX_COMITTEE_SIZE) {
-            revert tooManyCommittees(MAX_COMITTEE_SIZE);
+        // Check max Committees
+        if (committees.length >= MAX_COMMITTEES_SIZE) {
+            revert tooManyCommittees(MAX_COMMITTEES_SIZE);
         }
-        // Set up Committee
-        committees.push(_committee.internalKey);
-        committeesByKey[_committee.internalKey] = _committee;
-
         // Set up Members
         if (_members.length > MAX_MEMBERS_SIZE) {
             revert tooManyMembers(MAX_MEMBERS_SIZE);
         }
+        // Set up Committee
+        committees.push(_committee.internalKey);
+        committeesByKey[_committee.internalKey] = _committee;
         // Set up memebers
         membersByCommitee[_committee.internalKey] = _members;
         emit newCommittee(_committee.internalKey, _committee, _members);
