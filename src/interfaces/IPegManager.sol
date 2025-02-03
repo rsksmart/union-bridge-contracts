@@ -5,7 +5,6 @@ import {BtcTransaction} from "./IBitcoinManager.sol";
 
 struct PegInRequestTxSPVProof {
     bytes32 blockHash; // The Bitcoin Block Hash where the pegin tx happened
-    string utxo; // UTXO of the PegIn Transaction
     BtcTransaction btcTx; // The Bitcoin PegIn Transaction
     uint256 merkleBranchPath; // Merkle Path is a uint but is actually an array of bits indicating if the path is left of right according to 1 or 0
     bytes32[] merkleBranchHashes; // Merkle Branch Hashes are the hashes that will be used together with the merkleBranchPath to obtain the Merkle Root, this is an optimization to avoid sending the whole Merkle Tree
@@ -47,7 +46,7 @@ interface IPegManager {
     // /// @param slotId The slot identifier
     // function selectUTXOsForPegOut(uint256 streamId, uint256 sequenceNumber, uint256 slotId) external;
 
-    event PrepareTakeTransaction(
+    event RegisteredPegInRequest(
         bytes32 indexed blockHash,
         bytes32 indexed txHash,
         uint64 value,
@@ -55,6 +54,6 @@ interface IPegManager {
         uint256 slotId,
         address destinationAddress,
         bytes32 btcReimbursementPubKey,
-        string utxo
+        bytes utxo
     );
 }

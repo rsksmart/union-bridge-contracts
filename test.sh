@@ -1,3 +1,3 @@
 #!/bin/sh
 bash format.sh
-forge test -vvv
+forge test -vv

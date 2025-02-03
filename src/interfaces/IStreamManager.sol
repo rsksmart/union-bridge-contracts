@@ -2,7 +2,6 @@
 pragma solidity ^0.8.20;
 
 enum SlotState {
-    EMPTY,
     PREPARED,
     FILLED,
     PAID
@@ -13,7 +12,7 @@ struct Slot {
     SlotState state; // The denomination in satoshis of the packet (redundant, this field is also in the stream structure)
     // TBD drp;                        // Dispute Resolution Protocol information
     // TBD otk;                        // Dispute Resolution Protocol one-time-keys
-    string utxo; // Peg-in Output UTXO (unspent transaction output address)
+    bytes utxo; // Peg-in Output UTXO (unspent transaction output address)
     bytes32 pegInTx; // Transaction id of the committee peg-in transaction
     bytes32 take0Tx; // Transaction id of the peg-out without dispute transaction
     bytes32 take1TX; // Transaction id of the successfull dispute peg-out transaction
@@ -63,9 +62,9 @@ interface IStreamManager {
     /// @return Packet The packet information
     function getPacket(uint64 _streamId, uint64 _packetNumber) external view returns (Packet calldata);
 
-    /// @notice Allows users to get the first empty Slot information for a given packet index at a stream
+    /// @notice Allows users to get the first prepared Slot information for a given packet index at a stream
     /// @param _streamId The index in the array of streams
     /// @param _packetNumber The index in the array of packets
-    /// @return uint256 The slotId of the first empty slot information
-    function getEmptySlotId(uint64 _streamId, uint64 _packetNumber) external view returns (uint64);
+    /// @return uint256 The slotId of the first prepared slot information
+    function getPreparedSlotId(uint64 _streamId, uint64 _packetNumber) external view returns (uint64);
 }
