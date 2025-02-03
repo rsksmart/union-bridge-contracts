@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 require_relative 'common.rb' # common functions
 require "digest" # library for SHA256 hash function
+require 'bech32' # for Bech32 encoding
 
 # =========
 # Construct
