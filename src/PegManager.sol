@@ -38,7 +38,7 @@ contract PegManager is IPegManager, StreamManager, ProofValidator {
         );
     }
 
-    function acceptPegInRequest(PegInRequestTxSPVProof calldata _pegInRequestTxSPVProof) external {
+    function registerPegInRequest(PegInRequestTxSPVProof calldata _pegInRequestTxSPVProof) external {
         // TODO validate who can call this function
 
         // Validate transaction has at least 2 outputs
@@ -78,10 +78,11 @@ contract PegManager is IPegManager, StreamManager, ProofValidator {
 
         // Store Tx in pegInSlot as Prepared
         // TODO corroborate if state should be prepared with Diego
-        uint256 slotId = preparePegInTx(stream.streamId, packetNumber, txHash, _pegInRequestTxSPVProof.utxo);
+        uint256 slotId =
+            preparePegInTx(stream.streamId, packetNumber, txHash, _pegInRequestTxSPVProof.btcTx.outputs[0].scriptPubKey);
 
         // TODO Check if info emitted is enough or too much
-        emit PrepareTakeTransaction(
+        emit RegisteredPegInRequest(
             _pegInRequestTxSPVProof.blockHash,
             txHash,
             stream.denomination,
@@ -89,7 +90,7 @@ contract PegManager is IPegManager, StreamManager, ProofValidator {
             slotId,
             destinationAddress,
             btcReimbursementPubKey,
-            _pegInRequestTxSPVProof.utxo
+            _pegInRequestTxSPVProof.btcTx.outputs[0].scriptPubKey
         );
     }
 }

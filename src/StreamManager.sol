@@ -48,7 +48,7 @@ abstract contract StreamManager is IStreamManager, Initializable {
             // Initialize slots directly in storage
             for (uint64 j = 0; j < 100; j++) {
                 slots[i][sequenceNumber].push(
-                    Slot({slotId: j, state: SlotState.EMPTY, utxo: "", pegInTx: "", take0Tx: "", take1TX: ""})
+                    Slot({slotId: j, state: SlotState.PREPARED, utxo: "", pegInTx: "", take0Tx: "", take1TX: ""})
                 );
             }
         }
@@ -83,10 +83,10 @@ abstract contract StreamManager is IStreamManager, Initializable {
         return slots[_streamId][_packetNumber][_slotId];
     }
 
-    function getEmptySlotId(uint64 _streamId, uint64 _packetNumber) public view returns (uint64) {
+    function getPreparedSlotId(uint64 _streamId, uint64 _packetNumber) public view returns (uint64) {
         Slot[] memory slotList = slots[_streamId][_packetNumber];
         for (uint64 i = 0; i < slotList.length; i++) {
-            if (slotList[i].state == SlotState.EMPTY) {
+            if (slotList[i].state == SlotState.PREPARED) {
                 return i;
             }
         }
@@ -95,11 +95,11 @@ abstract contract StreamManager is IStreamManager, Initializable {
     }
 
     /// @dev Looks for the first empty slot and asigns the PegIn Tx in prepared state
-    function preparePegInTx(uint64 _streamId, uint64 _packetNumber, bytes32 _pegInTx, string memory _utxo)
+    function preparePegInTx(uint64 _streamId, uint64 _packetNumber, bytes32 _pegInTx, bytes memory _utxo)
         internal
         returns (uint64)
     {
-        uint64 slotId = this.getEmptySlotId(_streamId, _packetNumber);
+        uint64 slotId = getPreparedSlotId(_streamId, _packetNumber);
         Slot storage slot = slots[_streamId][_packetNumber][slotId];
         slot.state = SlotState.PREPARED;
         // TODO validate if the PegInTx is what we want to store, as the document mentions the Take for the registerPegInTxs

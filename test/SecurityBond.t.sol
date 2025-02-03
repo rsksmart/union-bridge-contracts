@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import "forge-std/Test.sol";
 import {StreamManager} from "src/PegManager.sol";
 import {SecurityBond} from "src/SecurityBond.sol";
-import {HelperContract} from "test/Helpers/HelperContract.sol";
+import {HelperContract} from "test/helpers/HelperContract.sol";
 
 contract TestSecurityBond is Test, HelperContract {
     SecurityBond sb;

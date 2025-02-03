@@ -5,7 +5,6 @@ import {BtcTransaction} from "./IBitcoinManager.sol";
 
 struct PegInRequestTxSPVProof {
     bytes32 blockHash; // The Bitcoin Block Hash where the pegin tx happened
-    string utxo; // UTXO of the PegIn Transaction
     BtcTransaction btcTx; // The Bitcoin PegIn Transaction
     uint256 merkleBranchPath; // Merkle Path is a uint but is actually an array of bits indicating if the path is left of right according to 1 or 0
     bytes32[] merkleBranchHashes; // Merkle Branch Hashes are the hashes that will be used together with the merkleBranchPath to obtain the Merkle Root, this is an optimization to avoid sending the whole Merkle Tree
@@ -21,18 +20,18 @@ interface IPegManager {
         external
         returns (bytes calldata temporaryPegInAddress);
 
-    /// @notice Accepts a peg-in request
+    /// @notice Register a peg-in request transaction from Bitcoin
     /// @param _pegInRequestTxSPVProof The ProofValidator proof of the peg-in request transaction
-    function acceptPegInRequest(PegInRequestTxSPVProof calldata _pegInRequestTxSPVProof) external;
+    function registerPegInRequest(PegInRequestTxSPVProof calldata _pegInRequestTxSPVProof) external;
 
-    // /// @notice Registers peg transactions
+    // /// @notice Accepts and Registers peg transaction out of the temporary address
     // /// @param take0Tx First take transaction
     // /// @param take1Tx Second take transaction
     // /// @param acceptPegInTx Accept peg-in transaction
     // /// @param take0AggregatedSignatures Signatures for take0Tx
     // /// @param take1AggregatedSignatures Signatures for take1Tx
     // /// @param acceptPegInAggregatedSignatures Signatures for acceptPegInTx
-    // function registerPegTransactions(
+    // function acceptPegInRequest(
     //     bytes calldata take0Tx,
     //     bytes calldata take1Tx,
     //     bytes calldata acceptPegInTx,
@@ -47,7 +46,7 @@ interface IPegManager {
     // /// @param slotId The slot identifier
     // function selectUTXOsForPegOut(uint256 streamId, uint256 sequenceNumber, uint256 slotId) external;
 
-    event PrepareTakeTransaction(
+    event RegisteredPegInRequest(
         bytes32 indexed blockHash,
         bytes32 indexed txHash,
         uint64 value,
@@ -55,6 +54,6 @@ interface IPegManager {
         uint256 slotId,
         address destinationAddress,
         bytes32 btcReimbursementPubKey,
-        string utxo
+        bytes utxo
     );
 }
