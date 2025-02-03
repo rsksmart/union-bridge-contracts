@@ -38,7 +38,7 @@ contract PegManager is IPegManager, StreamManager, ProofValidator {
         );
     }
 
-    function acceptPegInRequest(PegInRequestTxSPVProof calldata _pegInRequestTxSPVProof) external {
+    function registerPegInRequest(PegInRequestTxSPVProof calldata _pegInRequestTxSPVProof) external {
         // TODO validate who can call this function
 
         // Validate transaction has at least 2 outputs

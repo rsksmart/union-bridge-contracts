@@ -36,7 +36,7 @@ contract TestPegManager is Test, HelperContract {
         console.logBytes(result);
     }
 
-    function test_acceptPegInRequest_Success() external {
+    function test_registerPegInRequest_Success() external {
         // Arrenge
         uint64 expectedSlotId = 0;
 
@@ -71,7 +71,7 @@ contract TestPegManager is Test, HelperContract {
         );
 
         // Act
-        pm.acceptPegInRequest(pegInRequestTxSPVProof);
+        pm.registerPegInRequest(pegInRequestTxSPVProof);
 
         // Assert
         Stream memory stream = pm.getStream(VALUE);
@@ -82,7 +82,7 @@ contract TestPegManager is Test, HelperContract {
         assertEq(uint256(slot.state), uint256(SlotState.PREPARED), "Incorrect slot state");
     }
 
-    function test_acceptPegInRequest_Revert_notEnoughConfirmations() external {
+    function test_registerPegInRequest_Revert_notEnoughConfirmations() external {
         // Arrenge
         int256 actualConfirmations = 0;
         // Set Mock Bridge state
@@ -106,10 +106,10 @@ contract TestPegManager is Test, HelperContract {
             )
         );
         // Act
-        pm.acceptPegInRequest(pegInRequestTxSPVProof);
+        pm.registerPegInRequest(pegInRequestTxSPVProof);
     }
 
-    function test_acceptPegInRequest_Revert_bridgeBtcTxInvalidMerkleBranch() external {
+    function test_registerPegInRequest_Revert_bridgeBtcTxInvalidMerkleBranch() external {
         // Arrenge
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE);
@@ -159,6 +159,6 @@ contract TestPegManager is Test, HelperContract {
             )
         );
         // Act
-        pm.acceptPegInRequest(pegInRequestTxSPVProof);
+        pm.registerPegInRequest(pegInRequestTxSPVProof);
     }
 }

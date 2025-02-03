@@ -21,18 +21,18 @@ interface IPegManager {
         external
         returns (bytes calldata temporaryPegInAddress);
 
-    /// @notice Accepts a peg-in request
+    /// @notice Register a peg-in request transaction from Bitcoin
     /// @param _pegInRequestTxSPVProof The ProofValidator proof of the peg-in request transaction
-    function acceptPegInRequest(PegInRequestTxSPVProof calldata _pegInRequestTxSPVProof) external;
+    function registerPegInRequest(PegInRequestTxSPVProof calldata _pegInRequestTxSPVProof) external;
 
-    // /// @notice Registers peg transactions
+    // /// @notice Accepts and Registers peg transaction out of the temporary address
     // /// @param take0Tx First take transaction
     // /// @param take1Tx Second take transaction
     // /// @param acceptPegInTx Accept peg-in transaction
     // /// @param take0AggregatedSignatures Signatures for take0Tx
     // /// @param take1AggregatedSignatures Signatures for take1Tx
     // /// @param acceptPegInAggregatedSignatures Signatures for acceptPegInTx
-    // function registerPegTransactions(
+    // function acceptPegInRequest(
     //     bytes calldata take0Tx,
     //     bytes calldata take1Tx,
     //     bytes calldata acceptPegInTx,
