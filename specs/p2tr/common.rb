@@ -231,3 +231,21 @@ def serialize_script(script)
   # return script with compact size prepended
   return compact_size(length) + script
 end
+
+# Base58 encoding alphabet
+ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+
+def base58(hex_string)
+  int_val = hex_string.to_i(16)
+  base58_str = ""
+  
+  while int_val > 0
+    int_val, remainder = int_val.divmod(58)
+    base58_str = ALPHABET[remainder] + base58_str
+  end
+  
+  # Add leading '1' characters for leading zero bytes
+  hex_string.scan(/^00+/).first&.chars&.each { base58_str = '1' + base58_str }
+  
+  base58_str
+end
