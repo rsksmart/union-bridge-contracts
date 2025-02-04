@@ -30,16 +30,16 @@ struct BtcTransaction {
 
 interface IBitcoinManager {
     /// @notice Allows users generate a temporary Bitcoin address to perform a peg-in.
-    /// @param _rootstockDepositAddress The RSK deposit address
-    /// @param _btcReimbursementPubKey The BTC reimbursement public key x-cordinate only
+    /// @param _rskDestinationAddress The RSK deposit address
     /// @param _value uint64 The amount to peg in
-    /// @param _committeeKey bytes32 Get the current packet's committee key
+    /// @param _btcReimbursementPubKey The BTC reimbursement public key x-cordinate only
+    /// @param _committeePubKey bytes32 Get the current packet's committee key
     /// @return temporaryPegInAddress The temporary peg-in address
     function getTemporaryPegInAddress(
-        address _rootstockDepositAddress,
-        bytes32 _btcReimbursementPubKey,
+        address _rskDestinationAddress,
         uint64 _value,
-        bytes32 _committeeKey
+        bytes32 _btcReimbursementPubKey,
+        bytes32 _committeePubKey
     ) external pure returns (bytes calldata temporaryPegInAddress);
 
     /// @notice Validates a Bitcoin peg-in transaction
@@ -56,9 +56,13 @@ interface IBitcoinManager {
     /// @dev Expected OP_RETURN format: [OP_RETURN][RSK_PEGIN][packet number][rsk address][btc address]
     function getPegInOpReturnData(BtcTxOut calldata _opReturnOut) external pure returns (uint64, address, bytes32);
 
-    function validatePegInP2TRData(BtcTxOut calldata _p2trOut, bytes32 _btcReimbursementPubKey, bytes32 _committeeKey)
-        external
-        pure;
+    function validatePegInP2TRData(
+        address _rskDestinationAddress,
+        uint64 _value,
+        bytes32 _btcReimbursementPubKey,
+        bytes32 _committeePubKey,
+        BtcTxOut calldata _p2trOut
+    ) external pure;
 
     /// @notice Calculates the Bitcoin transaction hash (txid) for a given transaction
     /// @dev Encodes the transaction into Bitcoin's raw format and performs double SHA256 hash

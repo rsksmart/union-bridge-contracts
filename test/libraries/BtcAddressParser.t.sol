@@ -12,7 +12,7 @@ contract TestBtcAddressParser is Test {
         bytes32 publicKey = 0x0908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785eb;
         bytes32 merkleRoot = bytes32(0);
         // Act
-        bytes memory scriptPubKey = BtcAddressParser.getP2TRScriptPubKey(publicKey, merkleRoot);
+        bytes memory scriptPubKey = BtcAddressParser.getP2TRScriptPubKey(publicKey, merkleRoot, bytes(""));
         // Assert
         assertEq(
             scriptPubKey,
@@ -27,7 +27,7 @@ contract TestBtcAddressParser is Test {
         bytes32 publicKey = 0xa2fc329a085d8cfc4fa28795993d7b666cee024e94c40115141b8e9be4a29fa4;
         bytes32 merkleRoot = 0xb5b72eea07b3e338962944a752a98772bbe1f1b6550e6fb6ab8c6e6adb152e7c;
         // Act
-        bytes memory scriptPubKey = BtcAddressParser.getP2TRScriptPubKey(publicKey, merkleRoot);
+        bytes memory scriptPubKey = BtcAddressParser.getP2TRScriptPubKey(publicKey, merkleRoot, bytes(""));
         // Assert
         assertEq(
             scriptPubKey,

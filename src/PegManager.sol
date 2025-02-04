@@ -32,7 +32,7 @@ contract PegManager is IPegManager, StreamManager, ProofValidator {
         StreamManager.initialize(committee.internalKey);
     }
 
-    function getTemporaryPegInAddress(address _rootstockDepositAddress, bytes32 _btcReimbursementPubKey, uint64 _value)
+    function getTemporaryPegInAddress(address _rootstockDepositAddress, uint64 _value, bytes32 _btcReimbursementPubKey)
         external
         view
         returns (bytes memory bitcoinDepositAddress)
@@ -42,14 +42,13 @@ contract PegManager is IPegManager, StreamManager, ProofValidator {
 
         // Get the current packet's committee key
         Packet memory currentPacket = packets[stream.streamId][stream.peginPointer];
-        bytes32 committeeKey = currentPacket.committeeInternalKey;
 
         return bitcoinManager.getTemporaryPegInAddress(
-            _rootstockDepositAddress, _btcReimbursementPubKey, _value, committeeKey
+            _rootstockDepositAddress, _value, _btcReimbursementPubKey, currentPacket.committeePubKey
         );
     }
 
-    function getPegInRequest(bytes32 btcTxHash) external returns (StreamPosition memory) {
+    function getPegInRequest(bytes32 btcTxHash) external view returns (StreamPosition memory) {
         return pegInRequests[btcTxHash];
     }
 
@@ -66,7 +65,7 @@ contract PegManager is IPegManager, StreamManager, ProofValidator {
         bitcoinManager.validatePegInTx(_pegInRequestTxSPVProof.btcTx);
 
         // Second transaction should be OP_RETURN with data
-        (uint64 packetNumber, address destinationAddress, bytes32 btcReimbursementPubKey) =
+        (uint64 packetNumber, address rskDestinationAddress, bytes32 btcReimbursementPubKey) =
             bitcoinManager.getPegInOpReturnData(_pegInRequestTxSPVProof.btcTx.outputs[VOUT_INDEX + 1]);
 
         // First transaction is the PegIn P2TR _pegInRequestTxSPVProof.btcTx.outputs[0]
@@ -74,13 +73,15 @@ contract PegManager is IPegManager, StreamManager, ProofValidator {
         Stream memory stream = getStream(_pegInRequestTxSPVProof.btcTx.outputs[VOUT_INDEX].amount);
 
         // TODO Missing Backup committee in Taproot validation.
-        // Validates that the Taproot Script has a Key Path for the committeeInternalKey
+        // Validates that the Taproot Script has a Key Path for the committeePubKey
         // and has a timelock for btcReimbursementPubKey
         bitcoinManager.validatePegInP2TRData(
-            _pegInRequestTxSPVProof.btcTx.outputs[VOUT_INDEX],
+            rskDestinationAddress,
+            stream.denomination,
             btcReimbursementPubKey,
             // getPacket reverts if packet does not exist
-            getPacket(stream.streamId, packetNumber).committeeInternalKey
+            getPacket(stream.streamId, packetNumber).committeePubKey,
+            _pegInRequestTxSPVProof.btcTx.outputs[VOUT_INDEX]
         );
 
         // Verify the txHash part of the Merkle Root of Tx of a Block
@@ -100,7 +101,7 @@ contract PegManager is IPegManager, StreamManager, ProofValidator {
 
         pegInsTempInfo[txHash] = PegInTempInfo({
             value: stream.denomination,
-            destinationAddress: destinationAddress,
+            rskDestinationAddress: rskDestinationAddress,
             btcReimbursementPubKey: btcReimbursementPubKey,
             utxoScriptPubKey: _pegInRequestTxSPVProof.btcTx.outputs[VOUT_INDEX].scriptPubKey
         });
@@ -113,13 +114,13 @@ contract PegManager is IPegManager, StreamManager, ProofValidator {
             VOUT_INDEX + 1, // +1 is added as the index starts at 0
             stream.denomination,
             packetNumber,
-            destinationAddress,
+            rskDestinationAddress,
             btcReimbursementPubKey,
             _pegInRequestTxSPVProof.btcTx.outputs[VOUT_INDEX].scriptPubKey
         );
     }
 
-    function getPegInTempInfo(bytes32 btcTxHash) external returns (PegInTempInfo memory) {
+    function getPegInTempInfo(bytes32 btcTxHash) external view returns (PegInTempInfo memory) {
         return pegInsTempInfo[btcTxHash];
     }
 
