@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import "forge-std/Test.sol";
 import {ProofValidatorHarness} from "./helpers/ProofValidatorHarness.sol";
 import {HelperContract} from "./helpers/HelperContract.sol";
+import {ProofValidator} from "src/ProofValidator.sol";
 
 contract TestProofValidator is Test, HelperContract {
     ProofValidatorHarness proofValidator;
@@ -14,7 +15,7 @@ contract TestProofValidator is Test, HelperContract {
         proofValidator = new ProofValidatorHarness();
     }
 
-    function test_reverseBytes32_Success() external {
+    function test_verifyTxConfirmation_Success() external {
         // Arrenge
         int256 actualConfirmations = 10;
         // Set Mock Bridge state
@@ -39,6 +40,27 @@ contract TestProofValidator is Test, HelperContract {
         merkleBranchHashes[11] = 0x8d84f7110e788ec0591feb5c30f83c9bd326a88c2388d6c6ea10b886e360fffe;
         merkleBranchHashes[12] = 0x5f05f1da73fc3498a59a4245e41b52b0a80dbaa3426fbd541c14327c9a362487;
 
+        // Act
+        proofValidator.verifyTxConfirmationsHarness(
+            minConfirmations, txHash, blockHash, merkleBranchPath, merkleBranchHashes
+        );
+    }
+
+    function test_verifyTxConfirmation_Revert_BridgeBtcInexistantBlockHash() external {
+        // Arrenge
+        int256 actualConfirmations = -1;
+        // Set Mock Bridge state
+        bridgeMock.setBtcTransactionConfirmations(actualConfirmations);
+        // Proof arguments
+        uint256 minConfirmations = 10;
+        bytes32 txHash = 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079;
+        bytes32 blockHash = 0x0000000000000000000282fa21665766e58eb6cb94e458c3ef6d4af1121e38d9;
+        uint256 merkleBranchPath = 4285202432;
+        bytes32[] memory merkleBranchHashes = new bytes32[](1);
+        merkleBranchHashes[0] = 0x3fcef4a1ddf759a858190b89ecbd1ff3dffb49704e110b68baf5b5de7021910f;
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(ProofValidator.BridgeBtcInexistantBlockHash.selector, blockHash));
         // Act
         proofValidator.verifyTxConfirmationsHarness(
             minConfirmations, txHash, blockHash, merkleBranchPath, merkleBranchHashes
