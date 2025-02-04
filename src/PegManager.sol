@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import "forge-std/console.sol";
 import {Committee, ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
 import {BtcTransaction, BtcTxOut, IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
-import {PegInRequestTxSPVProof, IPegManager} from "./interfaces/IPegManager.sol";
+import {PegInRequestTxSPVProof, StreamPosition, IPegManager} from "./interfaces/IPegManager.sol";
 import {Stream, Packet, SlotState, StreamManager} from "./StreamManager.sol";
 import {ProofValidator} from "./ProofValidator.sol";
 
@@ -13,6 +13,8 @@ import {ProofValidator} from "./ProofValidator.sol";
 contract PegManager is IPegManager, StreamManager, ProofValidator {
     ICommitteeRegistry public committeeRegistry;
     IBitcoinManager public bitcoinManager;
+    // Bitcoin txHash => Position in the Stream / Packet
+    mapping(bytes32 => StreamPosition) public pegInRequests;
 
     function initialize(ICommitteeRegistry _committeeRegistry, IBitcoinManager _bitcoinManager) public initializer {
         committeeRegistry = _committeeRegistry;
@@ -41,6 +43,12 @@ contract PegManager is IPegManager, StreamManager, ProofValidator {
     function registerPegInRequest(PegInRequestTxSPVProof calldata _pegInRequestTxSPVProof) external {
         // TODO validate who can call this function
 
+        // Calculate txHash from BtcTransaction
+        bytes32 txHash = bitcoinManager.getBtcTxHash(_pegInRequestTxSPVProof.btcTx);
+        if (pegInRequests[txHash].registered) {
+            revert AlreadyRegisteredPegIn(txHash);
+        }
+
         // Validate transaction has at least 2 outputs
         bitcoinManager.validatePegInTx(_pegInRequestTxSPVProof.btcTx);
 
@@ -62,10 +70,7 @@ contract PegManager is IPegManager, StreamManager, ProofValidator {
             getPacket(stream.streamId, packetNumber).committeeInternalKey
         );
 
-        // Calculate txHash from BtcTransaction
-        bytes32 txHash = bitcoinManager.getBtcTxHash(_pegInRequestTxSPVProof.btcTx);
-
-        // Verify the TxHash part of the Merkle Root of Tx of a Block
+        // Verify the txHash part of the Merkle Root of Tx of a Block
         // and that block is inside Bitcoin Mainchain
         // annd has enough confirmations
         verifyTxConfirmations(
@@ -75,6 +80,10 @@ contract PegManager is IPegManager, StreamManager, ProofValidator {
             _pegInRequestTxSPVProof.merkleBranchPath,
             _pegInRequestTxSPVProof.merkleBranchHashes
         );
+
+        // Store pegInRequest to avpod processing it again
+        pegInRequests[txHash] =
+            StreamPosition({streamId: stream.streamId, packetNumber: packetNumber, registered: true});
 
         // Store Tx in pegInSlot as Prepared
         // TODO corroborate if state should be prepared with Diego

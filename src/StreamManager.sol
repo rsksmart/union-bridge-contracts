@@ -13,13 +13,9 @@ abstract contract StreamManager is IStreamManager, Initializable {
 
     // StreamId => Packet list
     mapping(uint64 => Packet[]) public packets; // TODO see how to handle it in a mapping instead of an array
-    // StreamId => Packet.sequenceNumber => SlotId
+    // StreamId => Packet.packetNumber => SlotId
     mapping(uint64 => mapping(uint64 => Slot[])) internal slots; // TODO see how to handle it in a mapping instead of an array
     // TODO check if we can use another key or a hash for the slots and packets as they are not unique through the streams
-
-    error StreamNotFoundByDenomination(uint256 denomination);
-    error PacketOutOfBound(uint256 sequenceNumber);
-    error NoEmptySlot(uint256 streamId, uint256 packetNumber);
 
     /// @dev Initializes the streams with their denominations and parameters
     function initialize(bytes32 _committeeInternalKey) internal onlyInitializing {
@@ -40,14 +36,14 @@ abstract contract StreamManager is IStreamManager, Initializable {
             streams[i].pegInConfirmations = uint8(i + 1); // TODO Validate this value
 
             // Create initial packet
-            uint64 sequenceNumber = uint64(packets[streams[i].streamId].length);
+            uint64 packetNumber = uint64(packets[streams[i].streamId].length);
             packets[streams[i].streamId].push(
-                Packet({sequenceNumber: sequenceNumber, committeeInternalKey: _committeeInternalKey})
+                Packet({packetNumber: packetNumber, committeeInternalKey: _committeeInternalKey})
             );
 
             // Initialize slots directly in storage
             for (uint64 j = 0; j < 100; j++) {
-                slots[i][sequenceNumber].push(
+                slots[i][packetNumber].push(
                     Slot({slotId: j, state: SlotState.PREPARED, utxo: "", pegInTx: "", take0Tx: "", take1TX: ""})
                 );
             }

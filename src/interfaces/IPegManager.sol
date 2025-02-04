@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {BtcTransaction} from "./IBitcoinManager.sol";
+import {IStreamManager} from "./IStreamManager.sol";
 
 struct PegInRequestTxSPVProof {
     bytes32 blockHash; // The Bitcoin Block Hash where the pegin tx happened
@@ -10,7 +11,20 @@ struct PegInRequestTxSPVProof {
     bytes32[] merkleBranchHashes; // Merkle Branch Hashes are the hashes that will be used together with the merkleBranchPath to obtain the Merkle Root, this is an optimization to avoid sending the whole Merkle Tree
 }
 
-interface IPegManager {
+struct PegInRequest {
+    bytes32 blockHash; // The Bitcoin Block Hash where the pegin tx happened
+    BtcTransaction btcTx; // The Bitcoin PegIn Transaction
+    uint256 merkleBranchPath; // Merkle Path is a uint but is actually an array of bits indicating if the path is left of right according to 1 or 0
+    bytes32[] merkleBranchHashes; // Merkle Branch Hashes are the hashes that will be used together with the merkleBranchPath to obtain the Merkle Root, this is an optimization to avoid sending the whole Merkle Tree
+}
+
+struct StreamPosition {
+    uint64 streamId;
+    uint64 packetNumber;
+    bool registered;
+}
+
+interface IPegManager is IStreamManager {
     /// @notice Allows users generate a temporary Bitcoin address to perform a peg-in.
     /// @param _rootstockDepositAddress The RSK deposit address
     /// @param _btcReimbursementPubKey The BTC reimbursement public key (x only)
@@ -56,4 +70,6 @@ interface IPegManager {
         bytes32 btcReimbursementPubKey,
         bytes utxo
     );
+
+    error AlreadyRegisteredPegIn(bytes32 btcTxHash);
 }

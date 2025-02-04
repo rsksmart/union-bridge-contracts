@@ -53,8 +53,7 @@ contract TestPegManager is Test, HelperContract {
         // TODO set actual mainnet values
         pegInRequestTxSPVProof.merkleBranchHashes[0] =
             0x3fcef4a1ddf759a858190b89ecbd1ff3dffb49704e110b68baf5b5de7021910f;
-        console.log("scriptPubKey Test");
-        console.logBytes(btcTransaction.outputs[0].scriptPubKey);
+
         // Assert
         vm.expectEmit(address(pm));
         // We emit the event we expect to see.
@@ -81,7 +80,36 @@ contract TestPegManager is Test, HelperContract {
         assertEq(uint256(slot.state), uint256(SlotState.PREPARED), "Incorrect slot state");
     }
 
-    function test_registerPegInRequest_Revert_notEnoughConfirmations() external {
+    function test_registerPegInRequest_Revert_AlreadyRegistered() external {
+        // Arrenge
+        BtcTransaction memory btcTransaction = getBtcPegInRequestTx();
+        // Set Mock Bridge state
+        bridgeMock.setBtcTransactionConfirmations(10);
+        // Create PegIn struct information
+        PegInRequestTxSPVProof memory pegInRequestTxSPVProof = PegInRequestTxSPVProof({
+            blockHash: BLOCK_HASH,
+            btcTx: btcTransaction,
+            // Values obtained using https://github.com/rsksmart/pmt-builder
+            // TODO fix this values as it's returning -5 in the bridge
+            merkleBranchPath: 4285202432,
+            merkleBranchHashes: new bytes32[](1)
+        });
+        // TODO set actual mainnet values
+        pegInRequestTxSPVProof.merkleBranchHashes[0] =
+            0x3fcef4a1ddf759a858190b89ecbd1ff3dffb49704e110b68baf5b5de7021910f;
+
+        pm.registerPegInRequest(pegInRequestTxSPVProof);
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IPegManager.AlreadyRegisteredPegIn.selector, getExpectedPegInRequestTxHash())
+        );
+
+        // Act
+        pm.registerPegInRequest(pegInRequestTxSPVProof);
+    }
+
+    function test_registerPegInRequest_Revert_NotEnoughConfirmations() external {
         // Arrenge
         int256 actualConfirmations = 0;
         BtcTransaction memory btcTransaction = getBtcPegInRequestTx();
@@ -101,14 +129,14 @@ contract TestPegManager is Test, HelperContract {
         Stream memory stream = pm.getStream(VALUE);
         vm.expectRevert(
             abi.encodeWithSelector(
-                ProofValidator.notEnoughConfirmations.selector, actualConfirmations, stream.pegInConfirmations
+                ProofValidator.NotEnoughConfirmations.selector, actualConfirmations, stream.pegInConfirmations
             )
         );
         // Act
         pm.registerPegInRequest(pegInRequestTxSPVProof);
     }
 
-    function test_registerPegInRequest_Revert_bridgeBtcTxInvalidMerkleBranch() external {
+    function test_registerPegInRequest_Revert_BridgeBtcTxInvalidMerkleBranch() external {
         // Arrenge
         BtcTransaction memory btcTransaction = getBtcPegInRequestTx();
         // Set Mock Bridge state
@@ -151,7 +179,7 @@ contract TestPegManager is Test, HelperContract {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(
-                ProofValidator.bridgeBtcTxInvalidMerkleBranch.selector,
+                ProofValidator.BridgeBtcTxInvalidMerkleBranch.selector,
                 getExpectedPegInRequestTxHash(),
                 pegInRequestTxSPVProof.merkleBranchPath,
                 pegInRequestTxSPVProof.merkleBranchHashes
