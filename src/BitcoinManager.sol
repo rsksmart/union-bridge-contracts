@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {console} from "forge-std/console.sol";
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {BtcTransaction, BtcTxOut, IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
 import {BtcHelper} from "./libraries/BtcHelper.sol";
 import {BtcTxParser} from "./libraries/BtcTxParser.sol";
@@ -12,8 +13,10 @@ import {OpCodes} from "./libraries/OpCodes.sol";
 
 /// @title BitcoinManager
 /// @notice Manages Bitcoin Addresses and Scripts
-contract BitcoinManager is IBitcoinManager {
+contract BitcoinManager is IBitcoinManager, Initializable {
     uint8 constant TIMELOCK_BLOCKS = 10;
+
+    function initialize() public initializer {}
 
     function getTemporaryPegInAddress(
         address _rskDestinationAddress,
