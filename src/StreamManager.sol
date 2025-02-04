@@ -18,7 +18,7 @@ abstract contract StreamManager is IStreamManager, Initializable {
     // TODO check if we can use another key or a hash for the slots and packets as they are not unique through the streams
 
     /// @dev Initializes the streams with their denominations and parameters
-    function initialize(bytes32 _committeeInternalKey) internal onlyInitializing {
+    function initialize(bytes32 _committeePubKey) internal onlyInitializing {
         denominations = [
             uint64(100_000), // 0.001 BTC
             uint64(1_000_000), // 0.01 BTC
@@ -37,9 +37,7 @@ abstract contract StreamManager is IStreamManager, Initializable {
 
             // Create initial packet
             uint64 packetNumber = uint64(packets[streams[i].streamId].length);
-            packets[streams[i].streamId].push(
-                Packet({packetNumber: packetNumber, committeeInternalKey: _committeeInternalKey})
-            );
+            packets[streams[i].streamId].push(Packet({packetNumber: packetNumber, committeePubKey: _committeePubKey}));
 
             // Initialize slots directly in storage
             for (uint64 j = 0; j < 100; j++) {

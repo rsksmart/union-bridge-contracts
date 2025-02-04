@@ -20,7 +20,7 @@ contract TestPegManager is Test, HelperContract {
     // https://www.blockchain.com/explorer/blocks/btc/879500
     bytes32 internal constant BLOCK_HASH = 0x0000000000000000000282fa21665766e58eb6cb94e458c3ef6d4af1121e38d9;
     uint64 internal constant PACKET_NUMBER = 0;
-    address internal constant DESTINATION_ADDRESS = 0x7Ac5496aee77c1bA1F0854206A26DdA82A81d6d8;
+    address internal constant RSK_DESTINATION_ADDRESS = 0x7Ac5496aee77c1bA1F0854206A26DdA82A81d6d8;
 
     bytes32 internal constant BTC_REIMBURSEMENT_ADDRESS =
         0x741976f972e9aa5e226eae26289b794aac9bbe702f378aa64c6104f16b79298c;
@@ -35,7 +35,7 @@ contract TestPegManager is Test, HelperContract {
         address dummyRskAddress = 0x4C9a9CbFa14106439B0F96a64d9260F3b8947934;
 
         // Act
-        bytes memory result = pm.getTemporaryPegInAddress(dummyRskAddress, BTC_REIMBURSEMENT_ADDRESS, VALUE);
+        bytes memory result = pm.getTemporaryPegInAddress(dummyRskAddress, VALUE, BTC_REIMBURSEMENT_ADDRESS);
 
         console.log("result");
         console.logBytes(result);
@@ -68,7 +68,7 @@ contract TestPegManager is Test, HelperContract {
             1,
             VALUE,
             PACKET_NUMBER,
-            DESTINATION_ADDRESS,
+            RSK_DESTINATION_ADDRESS,
             BTC_REIMBURSEMENT_ADDRESS,
             btcTransaction.outputs[0].scriptPubKey
         );
@@ -86,7 +86,11 @@ contract TestPegManager is Test, HelperContract {
         // Registered Peg In Temp info
         PegInTempInfo memory pegInTempInfo = pm.getPegInTempInfo(txHash);
         assertEq(pegInTempInfo.value, VALUE, "Incorrect peg in temp info value");
-        assertEq(pegInTempInfo.destinationAddress, DESTINATION_ADDRESS, "Incorrect peg in temp info destinationAddress");
+        assertEq(
+            pegInTempInfo.rskDestinationAddress,
+            RSK_DESTINATION_ADDRESS,
+            "Incorrect peg in temp info destinationAddress"
+        );
         assertEq(
             pegInTempInfo.btcReimbursementPubKey,
             BTC_REIMBURSEMENT_ADDRESS,

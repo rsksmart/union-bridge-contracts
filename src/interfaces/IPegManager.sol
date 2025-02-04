@@ -34,7 +34,7 @@ struct StreamPosition {
 
 struct PegInTempInfo {
     uint64 value;
-    address destinationAddress;
+    address rskDestinationAddress;
     bytes32 btcReimbursementPubKey;
     bytes utxoScriptPubKey;
 }
@@ -42,20 +42,20 @@ struct PegInTempInfo {
 interface IPegManager is IStreamManager {
     /// @notice Allows users generate a temporary Bitcoin address to perform a peg-in.
     /// @param _rootstockDepositAddress The RSK deposit address
-    /// @param _btcReimbursementPubKey The BTC reimbursement public key (x only)
     /// @param _value The amount to peg in
+    /// @param _btcReimbursementPubKey The BTC reimbursement public key (x only)
     /// @return temporaryPegInAddress The temporary peg-in address
-    function getTemporaryPegInAddress(address _rootstockDepositAddress, bytes32 _btcReimbursementPubKey, uint64 _value)
+    function getTemporaryPegInAddress(address _rootstockDepositAddress, uint64 _value, bytes32 _btcReimbursementPubKey)
         external
         returns (bytes calldata temporaryPegInAddress);
 
-    function getPegInRequest(bytes32 btcTxHash) external returns (StreamPosition calldata);
+    function getPegInRequest(bytes32 btcTxHash) external view returns (StreamPosition calldata);
 
     /// @notice Register a peg-in request transaction from Bitcoin
     /// @param _pegInRequestTxSPVProof The ProofValidator proof of the peg-in request transaction
     function registerPegInRequest(PegInRequestTxSPVProof calldata _pegInRequestTxSPVProof) external;
 
-    function getPegInTempInfo(bytes32 btcTxHash) external returns (PegInTempInfo calldata);
+    function getPegInTempInfo(bytes32 btcTxHash) external view returns (PegInTempInfo calldata);
 
     /// @notice Accepts and Registers a peg in transaction out of the temporary address
     /// @param _pegInAcceptedTxSPVProof Accept peg-in transaction
@@ -73,7 +73,7 @@ interface IPegManager is IStreamManager {
         uint64 vout,
         uint64 value,
         uint256 packetNumber,
-        address destinationAddress,
+        address rskDestinationAddress,
         bytes32 btcReimbursementPubKey,
         bytes utxoScriptPubKey
     );

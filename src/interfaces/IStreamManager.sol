@@ -25,7 +25,7 @@ struct Packet {
     // Arrays should not be in scruct otherwise they are too havy on memory and cause a stack too deep exception
     // uint256 slotLength; // Length of the array (redundant but can be stored if needed)
     // uint256 committeeId; // Unique committee ID // Not Necessary
-    bytes32 committeeInternalKey; // The internal key of the committee
+    bytes32 committeePubKey; // The internal key of the committee
 }
 
 struct Stream {
