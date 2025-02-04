@@ -19,6 +19,7 @@ import {ProofValidator} from "./ProofValidator.sol";
 contract PegManager is IPegManager, StreamManager, ProofValidator {
     ICommitteeRegistry public committeeRegistry;
     IBitcoinManager public bitcoinManager;
+    uint64 constant VOUT_INDEX = 0;
     // Bitcoin txHash => Position in the Stream / Packet
     mapping(bytes32 => StreamPosition) internal pegInRequests;
     // Bitcoin txHash => TempInfo
@@ -66,17 +67,17 @@ contract PegManager is IPegManager, StreamManager, ProofValidator {
 
         // Second transaction should be OP_RETURN with data
         (uint64 packetNumber, address destinationAddress, bytes32 btcReimbursementPubKey) =
-            bitcoinManager.getPegInOpReturnData(_pegInRequestTxSPVProof.btcTx.outputs[1]);
+            bitcoinManager.getPegInOpReturnData(_pegInRequestTxSPVProof.btcTx.outputs[VOUT_INDEX + 1]);
 
         // First transaction is the PegIn P2TR _pegInRequestTxSPVProof.btcTx.outputs[0]
         // Get corresponding stream for the amount if non found reverts
-        Stream memory stream = getStream(_pegInRequestTxSPVProof.btcTx.outputs[0].amount);
+        Stream memory stream = getStream(_pegInRequestTxSPVProof.btcTx.outputs[VOUT_INDEX].amount);
 
         // TODO Missing Backup committee in Taproot validation.
         // Validates that the Taproot Script has a Key Path for the committeeInternalKey
         // and has a timelock for btcReimbursementPubKey
         bitcoinManager.validatePegInP2TRData(
-            _pegInRequestTxSPVProof.btcTx.outputs[0],
+            _pegInRequestTxSPVProof.btcTx.outputs[VOUT_INDEX],
             btcReimbursementPubKey,
             // getPacket reverts if packet does not exist
             getPacket(stream.streamId, packetNumber).committeeInternalKey
@@ -101,19 +102,20 @@ contract PegManager is IPegManager, StreamManager, ProofValidator {
             value: stream.denomination,
             destinationAddress: destinationAddress,
             btcReimbursementPubKey: btcReimbursementPubKey,
-            utxoScriptPubKey: _pegInRequestTxSPVProof.btcTx.outputs[0].scriptPubKey
+            utxoScriptPubKey: _pegInRequestTxSPVProof.btcTx.outputs[VOUT_INDEX].scriptPubKey
         });
 
         // TODO Check if info emitted is enough or too much
         emit RegisteredPegInRequest(
             _pegInRequestTxSPVProof.blockHash,
             txHash,
-            1, // vout is the P2TR output with BTC and will always be first
+            // vout is the first tx, is the P2TR output
+            VOUT_INDEX + 1, // +1 is added as the index starts at 0
             stream.denomination,
             packetNumber,
             destinationAddress,
             btcReimbursementPubKey,
-            _pegInRequestTxSPVProof.btcTx.outputs[0].scriptPubKey
+            _pegInRequestTxSPVProof.btcTx.outputs[VOUT_INDEX].scriptPubKey
         );
     }
 
@@ -133,7 +135,7 @@ contract PegManager is IPegManager, StreamManager, ProofValidator {
             revert AlreadyRegisteredPegIn(txHash);
         }
 
-        Stream memory stream = getStream(_pegInAcceptedTxSPVProof.btcTx.outputs[0].amount);
+        Stream memory stream = getStream(_pegInAcceptedTxSPVProof.btcTx.outputs[VOUT_INDEX].amount);
         // TODO get packet number
         uint64 packetNumber;
 
@@ -151,7 +153,7 @@ contract PegManager is IPegManager, StreamManager, ProofValidator {
         // Store Tx in pegInSlot as Prepared
         // TODO corroborate if state should be prepared with Diego
         uint256 slotId = preparePegInTx(
-            stream.streamId, packetNumber, txHash, _pegInAcceptedTxSPVProof.btcTx.outputs[0].scriptPubKey
+            stream.streamId, packetNumber, txHash, _pegInAcceptedTxSPVProof.btcTx.outputs[VOUT_INDEX].scriptPubKey
         );
     }
 }
