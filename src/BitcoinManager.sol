@@ -39,7 +39,7 @@ contract BitcoinManager is IBitcoinManager {
     /// @dev Validates a Bitcoin peg-in transaction
     function validatePegInTx(BtcTransaction calldata _pegInBtcTx) external pure {
         if (_pegInBtcTx.outputs.length < 2) {
-            revert incorrectOutputNumber(uint64(_pegInBtcTx.outputs.length), 2);
+            revert IncorrectOutputNumber(uint64(_pegInBtcTx.outputs.length), 2);
         }
     }
 
@@ -53,19 +53,19 @@ contract BitcoinManager is IBitcoinManager {
     function getPegInOpReturnData(BtcTxOut calldata _opReturnOut) external pure returns (uint64, address, bytes32) {
         uint8 expectedSize = (1 + 1 + 9 + 8 + 20 + 32);
         if (_opReturnOut.scriptPubKey.length != expectedSize) {
-            revert invalidOpReturnLength(_opReturnOut.scriptPubKey.length, expectedSize);
+            revert InvalidOpReturnLength(_opReturnOut.scriptPubKey.length, expectedSize);
         }
 
         // Validate OP_RETURN opcode
         uint8 index = 0;
         if (_opReturnOut.scriptPubKey[index] != OpCodes.OP_RETURN) {
-            revert incorrectlyFormedOpReturn(index);
+            revert IncorrectlyFormedOpReturn(index);
         }
         index++;
 
         // Validate PUSHBYTES op code
         if (_opReturnOut.scriptPubKey[index] != OpCodes.OP_PUSHBYTES_69) {
-            revert incorrectlyFormedOpReturn(index);
+            revert IncorrectlyFormedOpReturn(index);
         }
         index++;
         // Validate RSK_PEGIN flag
@@ -74,7 +74,7 @@ contract BitcoinManager is IBitcoinManager {
                 BytesHelper.getBytesToString(_opReturnOut.scriptPubKey, index, index + 9), "RSK_PEGIN"
             )
         ) {
-            revert incorrectlyFormedOpReturn(index);
+            revert IncorrectlyFormedOpReturn(index);
         }
         index = index + 9;
 
@@ -100,7 +100,7 @@ contract BitcoinManager is IBitcoinManager {
     {
         bytes memory p2trScriptPubKey = getPegInP2TRScriptPub(_btcReimbursementPubKey, _committeeKey);
         if (!BytesHelper.compare(_p2trOut.scriptPubKey, p2trScriptPubKey)) {
-            revert incorrectP2TRScriptPub(_p2trOut.scriptPubKey, p2trScriptPubKey);
+            revert IncorrectP2TRScriptPub(_p2trOut.scriptPubKey, p2trScriptPubKey);
         }
     }
 

@@ -15,13 +15,13 @@ import {
 /// @title ProofValidator
 /// @notice Simple proof validator for proving Bitcoin Tx in RSK
 abstract contract ProofValidator {
-    error bridgeBtcInexistantBlockHash(bytes32 blockHash);
-    error bridgeBtcBlockNotInBestChain(bytes32 blockHash);
-    error bridgeBtcInconsistentBlock(bytes32 blockHash);
-    error bridgeBtcBlockTooOld(int256 maxDepth);
-    error bridgeBtcTxInvalidMerkleBranch(bytes32 txHash, uint256 merkleBranchPath, bytes32[] merkleBranchHashes);
-    error bridgeBtcUnknownError(int256 errorCode);
-    error notEnoughConfirmations(int256 actual, uint256 expected);
+    error BridgeBtcInexistantBlockHash(bytes32 blockHash);
+    error BridgeBtcBlockNotInBestChain(bytes32 blockHash);
+    error BridgeBtcInconsistentBlock(bytes32 blockHash);
+    error BridgeBtcBlockTooOld(int256 maxDepth);
+    error BridgeBtcTxInvalidMerkleBranch(bytes32 txHash, uint256 merkleBranchPath, bytes32[] merkleBranchHashes);
+    error BridgeBtcUnknownError(int256 errorCode);
+    error NotEnoughConfirmations(int256 actual, uint256 expected);
 
     /// @notice Verifies that a Bitcoin transaction exists in a block and has enough confirmations
     /// @param _minConfirmations The minimum number of confirmations required for the transaction
@@ -50,29 +50,29 @@ abstract contract ProofValidator {
         );
         // Validate block is in the Mainchain
         if (confirmations == BTC_TRANSACTION_CONFIRMATION_INEXISTENT_BLOCK_HASH_ERROR_CODE) {
-            revert bridgeBtcInexistantBlockHash(_blockHash);
+            revert BridgeBtcInexistantBlockHash(_blockHash);
         }
         if (confirmations == BTC_TRANSACTION_CONFIRMATION_BLOCK_NOT_IN_BEST_CHAIN_ERROR_CODE) {
-            revert bridgeBtcBlockNotInBestChain(_blockHash);
+            revert BridgeBtcBlockNotInBestChain(_blockHash);
         }
         if (confirmations == BTC_TRANSACTION_CONFIRMATION_INCONSISTENT_BLOCK_ERROR_CODE) {
-            revert bridgeBtcInconsistentBlock(_blockHash);
+            revert BridgeBtcInconsistentBlock(_blockHash);
         }
         // Rsk only allows to retrieve blocks up to 1 month
         if (confirmations == BTC_TRANSACTION_CONFIRMATION_BLOCK_TOO_OLD_ERROR_CODE) {
-            revert bridgeBtcBlockTooOld(BTC_TRANSACTION_CONFIRMATION_MAX_DEPTH);
+            revert BridgeBtcBlockTooOld(BTC_TRANSACTION_CONFIRMATION_MAX_DEPTH);
         }
         // Validate transaction is in the Block
         if (confirmations == BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE) {
-            revert bridgeBtcTxInvalidMerkleBranch(_txHash, _merkleBranchPath, _merkleBranchHashes);
+            revert BridgeBtcTxInvalidMerkleBranch(_txHash, _merkleBranchPath, _merkleBranchHashes);
         }
         if (confirmations < 0) {
-            revert bridgeBtcUnknownError(confirmations);
+            revert BridgeBtcUnknownError(confirmations);
         }
 
         // Validate block has enough Confirmations
         if (uint256(confirmations) < _minConfirmations) {
-            revert notEnoughConfirmations(confirmations, _minConfirmations);
+            revert NotEnoughConfirmations(confirmations, _minConfirmations);
         }
     }
 }

@@ -45,7 +45,7 @@ interface IBitcoinManager {
     /// @notice Validates a Bitcoin peg-in transaction
     /// @dev Checks that the transaction has at least 2 outputs - one for the peg-in amount and one for the OP_RETURN data
     /// @param _pegInBtcTx The Bitcoin transaction to validate
-    /// @custom:throws incorrectOutputNumber if transaction has less than 2 outputs
+    /// @custom:throws IncorrectOutputNumber if transaction has less than 2 outputs
     function validatePegInTx(BtcTransaction calldata _pegInBtcTx) external pure;
 
     /// @notice Extracts data from a Bitcoin transaction's OP_RETURN output
@@ -88,9 +88,8 @@ interface IBitcoinManager {
     // /// @param slotId The slot identifier
     // function selectUTXOsForPegOut(uint256 streamId, uint256 sequenceNumber, uint256 slotId) external;
 
-    error incorrectOutputNumber(uint256 actual, uint256 expected);
-    error invalidOpReturnLength(uint256 actual, uint256 expected);
-    error incorrectlyFormedOpReturn(uint256 index);
-    error incorrectP2TRValue(uint64 actual, uint64 expected);
-    error incorrectP2TRScriptPub(bytes actual, bytes expected);
+    error IncorrectOutputNumber(uint256 actual, uint256 expected);
+    error InvalidOpReturnLength(uint256 actual, uint256 expected);
+    error IncorrectlyFormedOpReturn(uint256 index);
+    error IncorrectP2TRScriptPub(bytes actual, bytes expected);
 }

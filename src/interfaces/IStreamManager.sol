@@ -19,7 +19,7 @@ struct Slot {
 }
 
 struct Packet {
-    uint64 sequenceNumber; // Unique ID
+    uint64 packetNumber; // Unique ID
     // uint64 denomination; // The denomination in satoshis of the packet (redundant, this field is also in the stream structure)
     // Slot[] slots; // A dynamic array to store the slots of the packet
     // Arrays should not be in scruct otherwise they are too havy on memory and cause a stack too deep exception
@@ -67,4 +67,8 @@ interface IStreamManager {
     /// @param _packetNumber The index in the array of packets
     /// @return uint256 The slotId of the first prepared slot information
     function getPreparedSlotId(uint64 _streamId, uint64 _packetNumber) external view returns (uint64);
+
+    error StreamNotFoundByDenomination(uint256 denomination);
+    error PacketOutOfBound(uint256 packetNumber);
+    error NoEmptySlot(uint256 streamId, uint256 packetNumber);
 }

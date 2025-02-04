@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import {StreamManager} from "src/PegManager.sol";
+import {IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {SecurityBond} from "src/SecurityBond.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
 
@@ -28,7 +28,7 @@ contract TestSecurityBond is Test, HelperContract {
         // Arrenge
         uint64 denomination = 111_000; // 0.001 BTC
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(StreamManager.StreamNotFoundByDenomination.selector, denomination));
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.StreamNotFoundByDenomination.selector, denomination));
         // Act
         sb.getMinimumDeposit(denomination);
     }
