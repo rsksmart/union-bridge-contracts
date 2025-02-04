@@ -15,7 +15,7 @@ contract TestProofValidator is Test, HelperContract {
         proofValidator = new ProofValidatorHarness();
     }
 
-    function test_verifyTxConfirmation_Success() external {
+    function test_verifyTxConfirmation_Success_EqualMinConfirmation() external {
         // Arrenge
         int256 actualConfirmations = 10;
         // Set Mock Bridge state
@@ -46,6 +46,25 @@ contract TestProofValidator is Test, HelperContract {
         );
     }
 
+    function test_verifyTxConfirmation_Success_BiggerMinConfirmation() external {
+        // Arrenge
+        int256 actualConfirmations = 100;
+        // Set Mock Bridge state
+        bridgeMock.setBtcTransactionConfirmations(actualConfirmations);
+        // Proof arguments
+        uint256 minConfirmations = 10;
+        bytes32 txHash = 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079;
+        bytes32 blockHash = 0x0000000000000000000282fa21665766e58eb6cb94e458c3ef6d4af1121e38d9;
+        uint256 merkleBranchPath = 4285202432;
+        bytes32[] memory merkleBranchHashes = new bytes32[](13);
+        merkleBranchHashes[0] = 0x3fcef4a1ddf759a858190b89ecbd1ff3dffb49704e110b68baf5b5de7021910f;
+
+        // Act
+        proofValidator.verifyTxConfirmationsHarness(
+            minConfirmations, txHash, blockHash, merkleBranchPath, merkleBranchHashes
+        );
+    }
+
     function test_verifyTxConfirmation_Revert_BridgeBtcInexistantBlockHash() external {
         // Arrenge
         int256 actualConfirmations = -1;
@@ -61,6 +80,140 @@ contract TestProofValidator is Test, HelperContract {
 
         // Assert
         vm.expectRevert(abi.encodeWithSelector(ProofValidator.BridgeBtcInexistantBlockHash.selector, blockHash));
+        // Act
+        proofValidator.verifyTxConfirmationsHarness(
+            minConfirmations, txHash, blockHash, merkleBranchPath, merkleBranchHashes
+        );
+    }
+
+    function test_verifyTxConfirmation_Revert_BridgeBtcBlockNotInBestChain() external {
+        // Arrenge
+        int256 actualConfirmations = -2;
+        // Set Mock Bridge state
+        bridgeMock.setBtcTransactionConfirmations(actualConfirmations);
+        // Proof arguments
+        uint256 minConfirmations = 10;
+        bytes32 txHash = 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079;
+        bytes32 blockHash = 0x0000000000000000000282fa21665766e58eb6cb94e458c3ef6d4af1121e38d9;
+        uint256 merkleBranchPath = 4285202432;
+        bytes32[] memory merkleBranchHashes = new bytes32[](1);
+        merkleBranchHashes[0] = 0x3fcef4a1ddf759a858190b89ecbd1ff3dffb49704e110b68baf5b5de7021910f;
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(ProofValidator.BridgeBtcBlockNotInBestChain.selector, blockHash));
+        // Act
+        proofValidator.verifyTxConfirmationsHarness(
+            minConfirmations, txHash, blockHash, merkleBranchPath, merkleBranchHashes
+        );
+    }
+
+    function test_verifyTxConfirmation_Revert_BridgeBtcInconsistentBlock() external {
+        // Arrenge
+        int256 actualConfirmations = -3;
+        // Set Mock Bridge state
+        bridgeMock.setBtcTransactionConfirmations(actualConfirmations);
+        // Proof arguments
+        uint256 minConfirmations = 10;
+        bytes32 txHash = 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079;
+        bytes32 blockHash = 0x0000000000000000000282fa21665766e58eb6cb94e458c3ef6d4af1121e38d9;
+        uint256 merkleBranchPath = 4285202432;
+        bytes32[] memory merkleBranchHashes = new bytes32[](1);
+        merkleBranchHashes[0] = 0x3fcef4a1ddf759a858190b89ecbd1ff3dffb49704e110b68baf5b5de7021910f;
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(ProofValidator.BridgeBtcInconsistentBlock.selector, blockHash));
+        // Act
+        proofValidator.verifyTxConfirmationsHarness(
+            minConfirmations, txHash, blockHash, merkleBranchPath, merkleBranchHashes
+        );
+    }
+
+    function test_verifyTxConfirmation_Revert_BridgeBtcBlockTooOld() external {
+        // Arrenge
+        int256 actualConfirmations = -4;
+        // Set Mock Bridge state
+        bridgeMock.setBtcTransactionConfirmations(actualConfirmations);
+        // Proof arguments
+        uint256 minConfirmations = 10;
+        bytes32 txHash = 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079;
+        bytes32 blockHash = 0x0000000000000000000282fa21665766e58eb6cb94e458c3ef6d4af1121e38d9;
+        uint256 merkleBranchPath = 4285202432;
+        bytes32[] memory merkleBranchHashes = new bytes32[](1);
+        merkleBranchHashes[0] = 0x3fcef4a1ddf759a858190b89ecbd1ff3dffb49704e110b68baf5b5de7021910f;
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(ProofValidator.BridgeBtcBlockTooOld.selector, 4320));
+        // Act
+        proofValidator.verifyTxConfirmationsHarness(
+            minConfirmations, txHash, blockHash, merkleBranchPath, merkleBranchHashes
+        );
+    }
+
+    function test_verifyTxConfirmation_Revert_BridgeBtcTxInvalidMerkleBranch() external {
+        // Arrenge
+        int256 actualConfirmations = -5;
+        // Set Mock Bridge state
+        bridgeMock.setBtcTransactionConfirmations(actualConfirmations);
+        // Proof arguments
+        uint256 minConfirmations = 10;
+        bytes32 txHash = 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079;
+        bytes32 blockHash = 0x0000000000000000000282fa21665766e58eb6cb94e458c3ef6d4af1121e38d9;
+        uint256 merkleBranchPath = 4285202432;
+        bytes32[] memory merkleBranchHashes = new bytes32[](1);
+        merkleBranchHashes[0] = 0x3fcef4a1ddf759a858190b89ecbd1ff3dffb49704e110b68baf5b5de7021910f;
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ProofValidator.BridgeBtcTxInvalidMerkleBranch.selector, txHash, merkleBranchPath, merkleBranchHashes
+            )
+        );
+        // Act
+        proofValidator.verifyTxConfirmationsHarness(
+            minConfirmations, txHash, blockHash, merkleBranchPath, merkleBranchHashes
+        );
+    }
+
+    function test_verifyTxConfirmation_Revert_BridgeBtcUnknownError() external {
+        // Arrenge
+        int256 actualConfirmations = -11;
+        // Set Mock Bridge state
+        bridgeMock.setBtcTransactionConfirmations(actualConfirmations);
+        // Proof arguments
+        uint256 minConfirmations = 10;
+        bytes32 txHash = 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079;
+        bytes32 blockHash = 0x0000000000000000000282fa21665766e58eb6cb94e458c3ef6d4af1121e38d9;
+        uint256 merkleBranchPath = 4285202432;
+        bytes32[] memory merkleBranchHashes = new bytes32[](1);
+        merkleBranchHashes[0] = 0x3fcef4a1ddf759a858190b89ecbd1ff3dffb49704e110b68baf5b5de7021910f;
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(ProofValidator.BridgeBtcUnknownError.selector, actualConfirmations));
+        // Act
+        proofValidator.verifyTxConfirmationsHarness(
+            minConfirmations, txHash, blockHash, merkleBranchPath, merkleBranchHashes
+        );
+    }
+
+    function test_verifyTxConfirmation_Revert_NotEnoughConfirmations() external {
+        // Arrenge
+        int256 actualConfirmations = 9;
+        // Set Mock Bridge state
+        bridgeMock.setBtcTransactionConfirmations(actualConfirmations);
+        // Proof arguments
+        uint256 minConfirmations = 10;
+        bytes32 txHash = 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079;
+        bytes32 blockHash = 0x0000000000000000000282fa21665766e58eb6cb94e458c3ef6d4af1121e38d9;
+        uint256 merkleBranchPath = 4285202432;
+        bytes32[] memory merkleBranchHashes = new bytes32[](1);
+        merkleBranchHashes[0] = 0x3fcef4a1ddf759a858190b89ecbd1ff3dffb49704e110b68baf5b5de7021910f;
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ProofValidator.NotEnoughConfirmations.selector, actualConfirmations, minConfirmations
+            )
+        );
         // Act
         proofValidator.verifyTxConfirmationsHarness(
             minConfirmations, txHash, blockHash, merkleBranchPath, merkleBranchHashes

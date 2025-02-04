@@ -5,23 +5,38 @@ import {BtcTransaction} from "./IBitcoinManager.sol";
 import {IStreamManager} from "./IStreamManager.sol";
 
 struct PegInRequestTxSPVProof {
-    bytes32 blockHash; // The Bitcoin Block Hash where the pegin tx happened
-    BtcTransaction btcTx; // The Bitcoin PegIn Transaction
-    uint256 merkleBranchPath; // Merkle Path is a uint but is actually an array of bits indicating if the path is left of right according to 1 or 0
-    bytes32[] merkleBranchHashes; // Merkle Branch Hashes are the hashes that will be used together with the merkleBranchPath to obtain the Merkle Root, this is an optimization to avoid sending the whole Merkle Tree
+    bytes32 blockHash; // The Bitcoin Block Hash where the request pegin tx happened
+    BtcTransaction btcTx; // The Bitcoin Request PegIn Transaction
+    // Merkle Path is a uint but is actually an array of bits
+    // indicating if the path is left of right according to 1 or 0
+    uint256 merkleBranchPath;
+    // Merkle Branch Hashes are the hashes that will be used together with the merkleBranchPath
+    // to obtain the Merkle Root, this is an optimization to avoid sending the whole Merkle Tree
+    bytes32[] merkleBranchHashes;
 }
 
-struct PegInRequest {
-    bytes32 blockHash; // The Bitcoin Block Hash where the pegin tx happened
-    BtcTransaction btcTx; // The Bitcoin PegIn Transaction
-    uint256 merkleBranchPath; // Merkle Path is a uint but is actually an array of bits indicating if the path is left of right according to 1 or 0
-    bytes32[] merkleBranchHashes; // Merkle Branch Hashes are the hashes that will be used together with the merkleBranchPath to obtain the Merkle Root, this is an optimization to avoid sending the whole Merkle Tree
+struct PegInAcceptedTxSPVProof {
+    bytes32 blockHash; // The Bitcoin Block Hash where the accept pegin tx happened
+    BtcTransaction btcTx; // The Bitcoin Accept PegIn Transaction
+        // Merkle Path is a uint but is actually an array of bits
+    // indicating if the path is left of right according to 1 or 0
+    uint256 merkleBranchPath;
+    // Merkle Branch Hashes are the hashes that will be used together with the merkleBranchPath
+    // to obtain the Merkle Root, this is an optimization to avoid sending the whole Merkle Tree
+    bytes32[] merkleBranchHashes;
 }
 
 struct StreamPosition {
     uint64 streamId;
     uint64 packetNumber;
     bool registered;
+}
+
+struct PegInTempInfo {
+    uint64 value;
+    address destinationAddress;
+    bytes32 btcReimbursementPubKey;
+    bytes utxoScriptPubKey;
 }
 
 interface IPegManager is IStreamManager {
@@ -34,25 +49,17 @@ interface IPegManager is IStreamManager {
         external
         returns (bytes calldata temporaryPegInAddress);
 
+    function getPegInRequest(bytes32 btcTxHash) external returns (StreamPosition calldata);
+
     /// @notice Register a peg-in request transaction from Bitcoin
     /// @param _pegInRequestTxSPVProof The ProofValidator proof of the peg-in request transaction
     function registerPegInRequest(PegInRequestTxSPVProof calldata _pegInRequestTxSPVProof) external;
 
-    // /// @notice Accepts and Registers peg transaction out of the temporary address
-    // /// @param take0Tx First take transaction
-    // /// @param take1Tx Second take transaction
-    // /// @param acceptPegInTx Accept peg-in transaction
-    // /// @param take0AggregatedSignatures Signatures for take0Tx
-    // /// @param take1AggregatedSignatures Signatures for take1Tx
-    // /// @param acceptPegInAggregatedSignatures Signatures for acceptPegInTx
-    // function acceptPegInRequest(
-    //     bytes calldata take0Tx,
-    //     bytes calldata take1Tx,
-    //     bytes calldata acceptPegInTx,
-    //     bytes calldata take0AggregatedSignatures,
-    //     bytes calldata take1AggregatedSignatures,
-    //     bytes calldata acceptPegInAggregatedSignatures
-    // ) external;
+    function getPegInTempInfo(bytes32 btcTxHash) external returns (PegInTempInfo calldata);
+
+    /// @notice Accepts and Registers a peg in transaction out of the temporary address
+    /// @param _pegInAcceptedTxSPVProof Accept peg-in transaction
+    function acceptPegInRequest(PegInAcceptedTxSPVProof calldata _pegInAcceptedTxSPVProof) external;
 
     // /// @notice Selects UTXOs for peg-out
     // /// @param streamId The stream identifier
@@ -63,12 +70,12 @@ interface IPegManager is IStreamManager {
     event RegisteredPegInRequest(
         bytes32 indexed blockHash,
         bytes32 indexed txHash,
+        uint64 vout,
         uint64 value,
         uint256 packetNumber,
-        uint256 slotId,
         address destinationAddress,
         bytes32 btcReimbursementPubKey,
-        bytes utxo
+        bytes utxoScriptPubKey
     );
 
     error AlreadyRegisteredPegIn(bytes32 btcTxHash);
