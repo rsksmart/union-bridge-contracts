@@ -5,8 +5,8 @@ rm -rf broadcast/Deploy.s.sol/31/dry-run
 rm -rf cache/Deploy.s.sol/31/dry-run
 source .env
 SCRIPT=script/Deploy.s.sol
-forge script $SCRIPT — compile
+RPC=$RSK_TESTNET_RPC
 forge script $SCRIPT \
-    --rpc-url $RSK_TESTNET_RPC \
+    --rpc-url $RPC \
     --legacy \
     -vvv

@@ -30,7 +30,7 @@ contract Deploy is Script {
             });
             committeeDeploymentParams.committeeMembers.push(vm.addr(1));
             committeeDeploymentParams.committeeMembers.push(vm.addr(2));
-        } else if (block.chainid == 31 || block.chainid == 31337) {
+        } else if (block.chainid == 31) {
             // RSK Testnet or
             // Foundry local chainid
             committeeDeploymentParams.committee = Committee({

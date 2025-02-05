@@ -1,10 +1,10 @@
 #!/bin/sh
 #https://book.getfoundry.sh/guides/scripting-with-solidity#deploying-our-contract
 bash simulate-deploy.sh
-echo "================ DEPLOY CONTRACTS TO $RSK_TESTNET_RPC ================"
+echo "================ DEPLOY CONTRACTS TO $RPC ================"
 forge script \
     $SCRIPT \
-    --rpc-url $RSK_TESTNET_RPC \
+    --rpc-url $RPC \
     --legacy \
     --broadcast \
     -vvvv \
