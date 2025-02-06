@@ -13,7 +13,7 @@ What it does is runs the followgin steps
 
 1. [Formats the code](https://book.getfoundry.sh/reference/config/formatter):
 
-```
+```sh
 bash format.sh
 ```
 
@@ -32,8 +32,25 @@ bash gas-snapshot.sh
 4. Run [Slither](https://github.com/crytic/slither) in a docker image:
 
 ```sh
-docker-compose up
+bash slither.sh
 ```
+
+5. Use [deployment script](https://book.getfoundry.sh/guides/scripting-with-solidity#deploying-our-contract) to run a simulation:
+
+```sh
+bash simulate-deploy.sh
+```
+
+
+## Deployment
+
+Use [deployment script] (https://book.getfoundry.sh/guides/scripting-with-solidity#deploying-our-contract) to deploy:
+
+```sh
+bash deploy.sh
+```
+
+It will ask for a private key interactivly in order to performe the deployment. The address of the private key needs to have funds in order to perform the deployment.
 
 ## Writing tests
 To write new tests for the contracts simply `import forge-std/Test.sol` and inherit it in your test contract. The forge-std Test contract provides a pre-initialized [cheatcodes environment](https://book.getfoundry.sh/cheatcodes/) via the `vm`. It also includes support for [ds-test](https://book.getfoundry.sh/reference/ds-test.html)-style logs and assertions, as well as Hardhat's [console.log](https://github.com/brockelmore/forge-std/blob/master/src/console.sol). Note that logging functionalities require the -vvvv flag.

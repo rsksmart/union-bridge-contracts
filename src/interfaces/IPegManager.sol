@@ -57,7 +57,11 @@ interface IPegManager is IStreamManager {
 
     function getPegInTempInfo(bytes32 btcTxHash) external view returns (PegInTempInfo calldata);
 
-    /// @notice Accepts and Registers a peg in transaction out of the temporary address
+    // /// @notice Verifys and Registers the partial signature for accept peg-in transaction
+    // /// @param _pegInAcceptedTxSPVProof Accept peg-in transaction
+    // function verifyAcceptPegInRequest(PegInAcceptedTxSPVProof calldata _pegInAcceptedTxSPVProof) external;
+
+    /// @notice Accepts and Registers a bitcoin peg in transaction out of the temporary address
     /// @param _pegInAcceptedTxSPVProof Accept peg-in transaction
     function acceptPegInRequest(PegInAcceptedTxSPVProof calldata _pegInAcceptedTxSPVProof) external;
 
