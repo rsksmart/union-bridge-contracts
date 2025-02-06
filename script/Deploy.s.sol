@@ -12,7 +12,7 @@ struct CommitteeDeploymentParams {
     bytes32[] committeeMembers;
 }
 
-contract Deploy is Script, HelperContract {
+contract DeployScript is Script, HelperContract {
     /// @notice Deployment parameters for each chain
     /// from https://github.com/defi-wonderland/solidity-foundry-boilerplate/blob/main/script/Deploy.sol
     CommitteeDeploymentParams internal committeeDeploymentParams;
