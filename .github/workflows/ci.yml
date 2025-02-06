@@ -26,3 +26,6 @@ jobs:
 
       - name: Check gas snapshots
         run: forge snapshot --check
+      
+      - name: Simulate deployment
+        run: bash simulate-deploy.sh
