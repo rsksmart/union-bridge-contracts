@@ -5,8 +5,8 @@ solc_version = "0.8.28"
 evm_version = "london" 
 optimizer = true
 optimizer_runs = 2000
-# gas limit in tests
-gas_limit = 30000000
+## gas limit in tests
+# gas_limit = 300000000 # we end un with a huge gas limit because of the deploy script
 # This is needed by foundry-upgrades
 ffi = true
 ast = true

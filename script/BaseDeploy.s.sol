@@ -27,9 +27,10 @@ abstract contract BaseDeploy is Script {
             _proxyAdminOwner,
             _initialCall // abi.encodeCall(MyUpgradeableToken.initialize, (msg.sender))
         );
+        vm.stopBroadcast();
         // Get the implementation address
         address implementationAddress = Upgrades.getImplementationAddress(proxyAddress);
-        vm.stopBroadcast();
+
         return (implementationAddress, proxyAddress);
     }
 
@@ -51,9 +52,9 @@ abstract contract BaseDeploy is Script {
             _contractName, //"MyUpgradeableToken.sol",
             _initialCall // abi.encodeCall(MyUpgradeableToken.initialize, (msg.sender))
         );
+        vm.stopBroadcast();
         // Get the implementation address
         address implementationAddress = Upgrades.getImplementationAddress(proxyAddress);
-        vm.stopBroadcast();
         return (implementationAddress, proxyAddress);
     }
 

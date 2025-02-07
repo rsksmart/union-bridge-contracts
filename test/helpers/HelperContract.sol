@@ -2,7 +2,9 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
+import {console} from "forge-std/console.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+import {DeployScript} from "script/Deploy.s.sol";
 import {PegManager} from "src/PegManager.sol";
 import {Role, Member, CommitteeMember, Committee, CommitteeRegistry} from "src/CommitteeRegistry.sol";
 import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
@@ -36,10 +38,6 @@ abstract contract HelperContract is Test {
     BridgeMock internal bridgeMock;
     // Arrenge
     uint64 internal constant VALUE = 100_000; // 0.001 BTC
-
-    function setUpBitcoinManager() internal {
-        bitcoinManager = new BitcoinManager();
-    }
 
     function setUpCommittees() internal {
         requestedStreams = new StreamDenomination[](1);
@@ -105,13 +103,19 @@ abstract contract HelperContract is Test {
         bridgeMock = BridgeMock(RSK_BRIDGE_ADDRESS);
     }
 
-    function setUpPegManager() internal {
-        setUpBitcoinManager();
-        setUpCommitteeRegistry();
+    function setUpDeploy() internal {
+        // Set up bridge mock at bridge precompiled address
         setUpBridgeMock();
+        // Using the deployment script in tests like in
+        // https://github.com/Cyfrin/foundry-smart-contract-lottery-cu/blob/main/test/unit/RaffleTest.t.sol#L38
+        DeployScript deployScript = new DeployScript();
+        deployScript.run();
+        bitcoinManager = deployScript.bitcoinManager();
+        registry = deployScript.committeeRegistry();
+        pm = deployScript.pegManager();
 
-        pm = new PegManager();
-        pm.initialize(registry, bitcoinManager);
+        // Register committees with their mock keys. These are Bitcoin x-only public keys.
+        setUpCommittees();
     }
 
     function assertEqCommittee(
