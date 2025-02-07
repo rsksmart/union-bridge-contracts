@@ -4,7 +4,7 @@ source .env
 RPC=$RSK_TESTNET_RPC
 echo "================ DEPLOY CONTRACTS TO $RPC ================"
 forge script \
-    script/Deploy.s.sol \
+    script/01_Deploy.s.sol \
     --rpc-url $RPC \
     --legacy \
     --broadcast \

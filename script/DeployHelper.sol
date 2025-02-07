@@ -5,7 +5,7 @@ import "forge-std/Script.sol";
 import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 
 ///@dev We are using fundry-upgrades see https://github.com/OpenZeppelin/openzeppelin-foundry-upgrades
-abstract contract BaseDeploy is Script {
+abstract contract DeployHelper is Script {
     /**
      * @dev Deploys a transparent proxy using the given contract as the implementation.
      *

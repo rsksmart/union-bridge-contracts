@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
-import {DeployScript} from "script/Deploy.s.sol";
+import {DeployScript} from "script/01_Deploy.s.sol";
 import {PegManager} from "src/PegManager.sol";
 import {Role, Member, CommitteeMember, Committee, CommitteeRegistry} from "src/CommitteeRegistry.sol";
 import {StreamDenomination} from "src/interfaces/IStreamManager.sol";

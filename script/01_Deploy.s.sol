@@ -21,7 +21,7 @@ contract DeployScript is BaseDeploy, HelperContract {
     CommitteeRegistry public committeeRegistry; // TODO unify with the one in HelperContract
     PegManager public pegManager; // TODO unify with the one in HelperContract
 
-    function setUp() public {
+    function setUp() internal {
         CommitteeMember[] memory members = new CommitteeMember[](2);
         members[0] = CommitteeMember({index: 0, role: Role.Operator});
         members[1] = CommitteeMember({index: 1, role: Role.Operator});
@@ -59,6 +59,7 @@ contract DeployScript is BaseDeploy, HelperContract {
     }
 
     function run() public {
+        setUp();
         deployCommitteeRegistry();
         deployBitcoinManager();
         deployPegManager(committeeRegistry, bitcoinManager);
