@@ -1,18 +1,31 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
+enum Role {
+    Operator,
+    Watchtower
+}
+
+struct Member {
+    bytes32 publicKey;
+    Role role;
+    mapping(string => string) data;
+}
+
 struct Committee {
     bytes32 internalKey; // BTC public key of the commitee
-    address leader; // TODO add leader logic
-    address backupLeader; // TODO add backup logic
+    uint8[] memberIndices; // Indexes of the members in the members array
+    uint8 leaderIndex; // TODO add leader logic
 }
 
 interface ICommitteeRegistry {
-    function registerCommittee(Committee calldata _committee, address[] memory _members) external;
+    function registerMember(bytes32 _publicKey, Role _role) external;
+
+    function registerCommittee(Committee calldata _committee) external;
 
     function getCommittee(bytes32 _committeeKey) external view returns (Committee calldata);
 
-    function getCommitteeMembers(bytes32 _committeeKey) external view returns (address[] calldata);
+    function getCommitteeMemberIndices(bytes32 _committeeKey) external view returns (uint8[] calldata);
 
     function getCommitteeByIndex(uint256 _committeeIndex) external view returns (bytes32);
 

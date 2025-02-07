@@ -4,24 +4,35 @@ pragma solidity ^0.8.20;
 import "forge-std/Test.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {PegManager} from "src/PegManager.sol";
-import {Committee, CommitteeRegistry} from "src/CommitteeRegistry.sol";
+import {Role, Member, Committee, CommitteeRegistry} from "src/CommitteeRegistry.sol";
 import {BtcTxIn, BtcTxOut, BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
 import {RSK_BRIDGE_ADDRESS, IBridge} from "src/interfaces/IBridge.sol";
 import {BridgeMock} from "./BridgeMock.sol";
 
 abstract contract HelperContract is Test {
+    // Mock keys
+    bytes32 constant COMMITEE_1_PUB_KEY = 0x0908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785eb;
+    bytes32 constant COMMITEE_2_PUB_KEY = 0x1908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785ec;
+    bytes32 constant COMMITEE_3_PUB_KEY = 0x2908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785ed;
+    bytes32 constant COMMITTEE_1_MEMBER_1_PUB_KEY = 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa;
+    bytes32 constant COMMITTEE_1_MEMBER_2_PUB_KEY = 0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb;
+    bytes32 constant COMMITTEE_2_MEMBER_1_PUB_KEY = 0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc;
+    bytes32 constant COMMITTEE_2_MEMBER_2_PUB_KEY = 0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd;
+    bytes32 constant COMMITTEE_3_MEMBER_1_PUB_KEY = 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
+    bytes32 constant COMMITTEE_3_MEMBER_2_PUB_KEY = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
+
     BitcoinManager internal bitcoinManager;
     CommitteeRegistry internal registry;
-    bytes32 internal committee1Key;
     Committee internal committee1;
-    address[] internal memebersCommittee1;
-    bytes32 internal committee2Key;
     Committee internal committee2;
-    address[] internal memebersCommittee2;
-    bytes32 internal committee3Key;
     Committee internal committee3;
-    address[] internal memebersCommittee3;
+    bytes32 internal committee1Key;
+    bytes32 internal committee2Key;
+    bytes32 internal committee3Key;
+    uint8[] internal committee1Members;
+    uint8[] internal committee2Members;
+    uint8[] internal committee3Members;
     PegManager internal pm;
     BridgeMock internal bridgeMock;
     // Arrenge
@@ -32,23 +43,27 @@ abstract contract HelperContract is Test {
     }
 
     function setUpCommittees() internal {
-        committee1Key = hex"0908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785eb";
-        committee1 = Committee({internalKey: committee1Key, leader: vm.addr(1), backupLeader: vm.addr(2)});
-        memebersCommittee1 = new address[](2);
-        memebersCommittee1[0] = vm.addr(1);
-        memebersCommittee1[1] = vm.addr(2);
+        committee1Key = COMMITEE_1_PUB_KEY;
+        committee2Key = COMMITEE_2_PUB_KEY;
+        committee3Key = COMMITEE_3_PUB_KEY;
 
-        committee2Key = hex"1908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785ec";
-        committee2 = Committee({internalKey: committee2Key, leader: vm.addr(3), backupLeader: vm.addr(4)});
-        memebersCommittee2 = new address[](2);
-        memebersCommittee2[0] = vm.addr(3);
-        memebersCommittee2[1] = vm.addr(4);
+        committee1Members = [0, 1];
+        committee2Members = [2, 3];
+        committee3Members = [4, 5];
 
-        committee3Key = hex"2908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785ed";
-        committee3 = Committee({internalKey: committee3Key, leader: vm.addr(5), backupLeader: vm.addr(6)});
-        memebersCommittee3 = new address[](2);
-        memebersCommittee3[0] = vm.addr(5);
-        memebersCommittee3[1] = vm.addr(6);
+        committee1 = Committee({internalKey: committee1Key, memberIndices: committee1Members, leaderIndex: 0});
+        committee2 = Committee({internalKey: committee2Key, memberIndices: committee2Members, leaderIndex: 0});
+        committee3 = Committee({internalKey: committee3Key, memberIndices: committee3Members, leaderIndex: 0});
+    }
+
+    function registerMockMembers() internal {
+        // Register members with their mock keys
+        registry.registerMember(COMMITTEE_1_MEMBER_1_PUB_KEY, Role.Operator);
+        registry.registerMember(COMMITTEE_1_MEMBER_2_PUB_KEY, Role.Operator);
+        registry.registerMember(COMMITTEE_2_MEMBER_1_PUB_KEY, Role.Operator);
+        registry.registerMember(COMMITTEE_2_MEMBER_2_PUB_KEY, Role.Operator);
+        registry.registerMember(COMMITTEE_3_MEMBER_1_PUB_KEY, Role.Operator);
+        registry.registerMember(COMMITTEE_3_MEMBER_2_PUB_KEY, Role.Operator);
     }
 
     function setUpCommitteeRegistry() internal {
@@ -57,10 +72,12 @@ abstract contract HelperContract is Test {
         registry = new CommitteeRegistry();
         registry.initialize();
 
+        registerMockMembers();
+
         // Register committees with their mock keys. These are Bitcoin x-only public keys.
-        registry.registerCommittee(committee1, memebersCommittee1);
-        registry.registerCommittee(committee2, memebersCommittee2);
-        registry.registerCommittee(committee3, memebersCommittee3);
+        registry.registerCommittee(committee1);
+        registry.registerCommittee(committee2);
+        registry.registerCommittee(committee3);
     }
 
     function setUpBridgeMock() internal {
@@ -90,27 +107,29 @@ abstract contract HelperContract is Test {
             expectedCommittee.internalKey,
             string(abi.encodePacked("expect", testName, "to have  same internalKey"))
         );
+        for (uint256 i = 0; i < actualCommittee.memberIndices.length; i++) {
+            assertEq(
+                actualCommittee.memberIndices[i],
+                expectedCommittee.memberIndices[i],
+                string(abi.encodePacked("expect", testName, "to have  same memberIndices[", Strings.toString(i), "]"))
+            );
+        }
         assertEq(
-            actualCommittee.leader,
-            expectedCommittee.leader,
+            actualCommittee.leaderIndex,
+            expectedCommittee.leaderIndex,
             string(abi.encodePacked("expect", testName, "to have same leader"))
-        );
-        assertEq(
-            actualCommittee.backupLeader,
-            expectedCommittee.backupLeader,
-            string(abi.encodePacked("expect", testName, "to have same backupLeader"))
         );
     }
 
     function assertEqCommitteeMembers(
-        address[] memory actualMembers,
-        address[] memory expectedMembers,
+        uint8[] memory actualMembers,
+        uint8[] memory expectedMembers,
         string memory testName
     ) internal pure {
         assertEq(
             actualMembers.length,
             expectedMembers.length,
-            string(abi.encodePacked("expect", testName, "to have same amount of memebers"))
+            string(abi.encodePacked("expect", testName, "to have same amount of members"))
         );
         for (uint256 i = 0; i < actualMembers.length; i++) {
             assertEq(
