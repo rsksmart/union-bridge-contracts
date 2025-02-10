@@ -4,7 +4,8 @@ pragma solidity ^0.8.20;
 import "forge-std/Test.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {PegManager} from "src/PegManager.sol";
-import {Role, Member, Committee, CommitteeRegistry} from "src/CommitteeRegistry.sol";
+import {Role, Member, CommitteeMember, Committee, CommitteeRegistry} from "src/CommitteeRegistry.sol";
+import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
 import {BtcTxIn, BtcTxOut, BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
 import {RSK_BRIDGE_ADDRESS, IBridge} from "src/interfaces/IBridge.sol";
@@ -22,6 +23,10 @@ abstract contract HelperContract is Test {
     bytes32 constant COMMITTEE_3_MEMBER_1_PUB_KEY = 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
     bytes32 constant COMMITTEE_3_MEMBER_2_PUB_KEY = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
 
+    // Dummy requested roles and streams for the members
+    StreamDenomination[] internal requestedStreams;
+    Role[] internal requestedRoles;
+
     BitcoinManager internal bitcoinManager;
     CommitteeRegistry internal registry;
     Committee internal committee1;
@@ -30,9 +35,9 @@ abstract contract HelperContract is Test {
     bytes32 internal committee1Key;
     bytes32 internal committee2Key;
     bytes32 internal committee3Key;
-    uint8[] internal committee1Members;
-    uint8[] internal committee2Members;
-    uint8[] internal committee3Members;
+    CommitteeMember[] internal committee1Members;
+    CommitteeMember[] internal committee2Members;
+    CommitteeMember[] internal committee3Members;
     PegManager internal pm;
     BridgeMock internal bridgeMock;
     // Arrenge
@@ -43,27 +48,45 @@ abstract contract HelperContract is Test {
     }
 
     function setUpCommittees() internal {
+        requestedStreams = new StreamDenomination[](1);
+        requestedRoles = new Role[](1);
+        requestedStreams[0] = StreamDenomination._0_001BTC;
+        requestedRoles[0] = Role.Operator;
+
         committee1Key = COMMITEE_1_PUB_KEY;
         committee2Key = COMMITEE_2_PUB_KEY;
         committee3Key = COMMITEE_3_PUB_KEY;
 
-        committee1Members = [0, 1];
-        committee2Members = [2, 3];
-        committee3Members = [4, 5];
+        committee1Members.push(CommitteeMember({index: 0, role: Role.Operator}));
+        committee1Members.push(CommitteeMember({index: 1, role: Role.Operator}));
 
-        committee1 = Committee({internalKey: committee1Key, memberIndices: committee1Members, leaderIndex: 0});
-        committee2 = Committee({internalKey: committee2Key, memberIndices: committee2Members, leaderIndex: 0});
-        committee3 = Committee({internalKey: committee3Key, memberIndices: committee3Members, leaderIndex: 0});
+        committee2Members.push(CommitteeMember({index: 2, role: Role.Operator}));
+        committee2Members.push(CommitteeMember({index: 3, role: Role.Operator}));
+
+        committee3Members.push(CommitteeMember({index: 4, role: Role.Operator}));
+        committee3Members.push(CommitteeMember({index: 5, role: Role.Operator}));
+
+        committee1.internalKey = committee1Key;
+        committee1.memberIndicesAndRoles = committee1Members;
+        committee1.leaderIndex = 0;
+
+        committee2.internalKey = committee2Key;
+        committee2.memberIndicesAndRoles = committee2Members;
+        committee2.leaderIndex = 0;
+
+        committee3.internalKey = committee3Key;
+        committee3.memberIndicesAndRoles = committee3Members;
+        committee3.leaderIndex = 0;
     }
 
     function registerMockMembers() internal {
         // Register members with their mock keys
-        registry.registerMember(COMMITTEE_1_MEMBER_1_PUB_KEY, Role.Operator);
-        registry.registerMember(COMMITTEE_1_MEMBER_2_PUB_KEY, Role.Operator);
-        registry.registerMember(COMMITTEE_2_MEMBER_1_PUB_KEY, Role.Operator);
-        registry.registerMember(COMMITTEE_2_MEMBER_2_PUB_KEY, Role.Operator);
-        registry.registerMember(COMMITTEE_3_MEMBER_1_PUB_KEY, Role.Operator);
-        registry.registerMember(COMMITTEE_3_MEMBER_2_PUB_KEY, Role.Operator);
+        registry.registerMember(COMMITTEE_1_MEMBER_1_PUB_KEY, requestedStreams, requestedRoles);
+        registry.registerMember(COMMITTEE_1_MEMBER_2_PUB_KEY, requestedStreams, requestedRoles);
+        registry.registerMember(COMMITTEE_2_MEMBER_1_PUB_KEY, requestedStreams, requestedRoles);
+        registry.registerMember(COMMITTEE_2_MEMBER_2_PUB_KEY, requestedStreams, requestedRoles);
+        registry.registerMember(COMMITTEE_3_MEMBER_1_PUB_KEY, requestedStreams, requestedRoles);
+        registry.registerMember(COMMITTEE_3_MEMBER_2_PUB_KEY, requestedStreams, requestedRoles);
     }
 
     function setUpCommitteeRegistry() internal {
@@ -107,10 +130,10 @@ abstract contract HelperContract is Test {
             expectedCommittee.internalKey,
             string(abi.encodePacked("expect", testName, "to have  same internalKey"))
         );
-        for (uint256 i = 0; i < actualCommittee.memberIndices.length; i++) {
+        for (uint256 i = 0; i < actualCommittee.memberIndicesAndRoles.length; i++) {
             assertEq(
-                actualCommittee.memberIndices[i],
-                expectedCommittee.memberIndices[i],
+                actualCommittee.memberIndicesAndRoles[i].index,
+                expectedCommittee.memberIndicesAndRoles[i].index,
                 string(abi.encodePacked("expect", testName, "to have  same memberIndices[", Strings.toString(i), "]"))
             );
         }
@@ -122,8 +145,8 @@ abstract contract HelperContract is Test {
     }
 
     function assertEqCommitteeMembers(
-        uint8[] memory actualMembers,
-        uint8[] memory expectedMembers,
+        CommitteeMember[] memory actualMembers,
+        CommitteeMember[] memory expectedMembers,
         string memory testName
     ) internal pure {
         assertEq(
@@ -133,8 +156,8 @@ abstract contract HelperContract is Test {
         );
         for (uint256 i = 0; i < actualMembers.length; i++) {
             assertEq(
-                actualMembers[i],
-                expectedMembers[i],
+                actualMembers[i].index,
+                expectedMembers[i].index,
                 string(abi.encodePacked("expect", testName, " memeber[", Strings.toString(i), "] to have same address"))
             );
         }

@@ -2,11 +2,12 @@
 pragma solidity ^0.8.20;
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {Role, Member, Committee, ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
+import {Role, Member, CommitteeMember, Committee, ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
+import {StreamDenomination} from "./interfaces/IStreamManager.sol";
 
 contract CommitteeRegistry is ICommitteeRegistry, Initializable {
     uint256 public constant MAX_COMMITTEES_SIZE = 100;
-    uint256 public constant MAX_MEMBERS_SIZE = 1000;
+    uint256 public constant MAX_MEMBERS_SIZE = 256;
     uint256 public constant MAX_MEMBERS_PER_COMMITTEE = 100;
     Member[] internal members;
     bytes32[] internal committees;
@@ -14,10 +15,14 @@ contract CommitteeRegistry is ICommitteeRegistry, Initializable {
     mapping(bytes32 => Committee) internal committeesByKey;
 
     event newCommittee(Committee _committee);
-    event newMember(bytes32 _publicKey, Role _role);
+    event newMember(bytes32 _publicKey);
 
-    error alreadyRegisteredMember(bytes32 memberLey);
-    error nonRegisteredMember(uint8 memberLey);
+    error requestedDifferentStreamsAndRolesLength(uint256 streamsLength, uint256 rolesLength);
+    error requestedNoRoles();
+    error requestedNoneRoleForStream(StreamDenomination stream);
+    error requestedMultipleRolesForStream(StreamDenomination stream, Role role1, Role role2);
+    error alreadyRegisteredMember(bytes32 memberPubKey);
+    error nonRegisteredMember(uint16 memberIndex);
     error tooManyMembers(uint256 maxMemebers);
     error tooManyMembersPerComitee(uint256 maxMemebersPerCommittee);
     error tooManyCommittees(uint256 maxCommitteeSize);
@@ -25,25 +30,52 @@ contract CommitteeRegistry is ICommitteeRegistry, Initializable {
 
     function initialize() public initializer {}
 
-    function registerMember(bytes32 _publicKey, Role _role) external {
+    function registerMember(
+        bytes32 _publicKey,
+        StreamDenomination[] calldata requestedStreams,
+        Role[] calldata requestedRoles
+    ) public {
         // Check max Members
         if (members.length >= MAX_MEMBERS_SIZE) {
             revert tooManyMembers(MAX_MEMBERS_SIZE);
         }
 
-        //Check if exists
-        for (uint256 i = 0; i < members.length; i++) {
-            if (members[i].publicKey == _publicKey && members[i].role == _role) {
+        // Check if exists
+        uint256 memberLength = members.length;
+        for (uint256 i = 0; i < memberLength; i++) {
+            if (members[i].publicKey == _publicKey) {
                 revert alreadyRegisteredMember(_publicKey);
             }
+        }
+
+        // Check if the roles and streams are the same length
+        if (requestedStreams.length != requestedRoles.length) {
+            revert requestedDifferentStreamsAndRolesLength(requestedStreams.length, requestedRoles.length);
+        }
+
+        // Check at least one role requested
+        if (requestedRoles.length == 0) {
+            revert requestedNoRoles();
         }
 
         members.push(); // Expand the array
         Member storage m = members[members.length - 1]; // Get reference
         m.publicKey = _publicKey;
-        m.role = _role;
 
-        emit newMember(_publicKey, _role);
+        // Set requested roles
+        for (uint256 i = 0; i < requestedStreams.length; i++) {
+            if (requestedRoles[i] == Role.None) {
+                revert requestedNoneRoleForStream(requestedStreams[i]);
+            }
+            if (m.requestedRoles[requestedStreams[i]] != Role.None) {
+                revert requestedMultipleRolesForStream(
+                    requestedStreams[i], m.requestedRoles[requestedStreams[i]], requestedRoles[i]
+                );
+            }
+            m.requestedRoles[requestedStreams[i]] = requestedRoles[i];
+        }
+
+        emit newMember(_publicKey);
     }
 
     function registerCommittee(Committee calldata _committee) external {
@@ -56,13 +88,13 @@ contract CommitteeRegistry is ICommitteeRegistry, Initializable {
             revert tooManyCommittees(MAX_COMMITTEES_SIZE);
         }
         // Check max Members for the committee
-        if (_committee.memberIndices.length > MAX_MEMBERS_PER_COMMITTEE) {
+        if (_committee.memberIndicesAndRoles.length > MAX_MEMBERS_PER_COMMITTEE) {
             revert tooManyMembersPerComitee(MAX_MEMBERS_PER_COMMITTEE);
         }
         // Check if all members are registered
-        for (uint256 i = 0; i < _committee.memberIndices.length; i++) {
-            if (_committee.memberIndices[i] >= members.length) {
-                revert nonRegisteredMember(_committee.memberIndices[i]);
+        for (uint256 i = 0; i < _committee.memberIndicesAndRoles.length; i++) {
+            if (_committee.memberIndicesAndRoles[i].index >= members.length) {
+                revert nonRegisteredMember(_committee.memberIndicesAndRoles[i].index);
             }
         }
         // Set up Committee
@@ -83,8 +115,12 @@ contract CommitteeRegistry is ICommitteeRegistry, Initializable {
         return committeesByKey[_committeeKey];
     }
 
-    function getCommitteeMemberIndices(bytes32 _committeeKey) external view returns (uint8[] memory) {
-        return committeesByKey[_committeeKey].memberIndices;
+    function getCommitteeMemberIndicesAndRoles(bytes32 _committeeKey)
+        external
+        view
+        returns (CommitteeMember[] memory)
+    {
+        return committeesByKey[_committeeKey].memberIndicesAndRoles;
     }
 
     function getNextAvailableCommittee() external view returns (Committee memory) {
