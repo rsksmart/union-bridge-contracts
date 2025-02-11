@@ -22,7 +22,7 @@ struct CommitteeMember {
 
 struct Committee {
     bytes32 internalKey; // BTC public key of the commitee
-    CommitteeMember[] memberIndicesAndRoles; // Indices and roles of the members from the members array
+    CommitteeMember[] memberIndexesAndRoles; // Indices and roles of the members from the members array
     uint8 leaderIndex; // TODO add leader logic
 }
 
@@ -37,7 +37,7 @@ interface ICommitteeRegistry {
 
     function getCommittee(bytes32 _committeeKey) external view returns (Committee calldata);
 
-    function getCommitteeMemberIndicesAndRoles(bytes32 _committeeKey)
+    function getCommitteememberIndexesAndRoles(bytes32 _committeeKey)
         external
         view
         returns (CommitteeMember[] memory);

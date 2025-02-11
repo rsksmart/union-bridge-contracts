@@ -67,15 +67,15 @@ abstract contract HelperContract is Test {
         committee3Members.push(CommitteeMember({index: 5, role: Role.Operator}));
 
         committee1.internalKey = committee1Key;
-        committee1.memberIndicesAndRoles = committee1Members;
+        committee1.memberIndexesAndRoles = committee1Members;
         committee1.leaderIndex = 0;
 
         committee2.internalKey = committee2Key;
-        committee2.memberIndicesAndRoles = committee2Members;
+        committee2.memberIndexesAndRoles = committee2Members;
         committee2.leaderIndex = 0;
 
         committee3.internalKey = committee3Key;
-        committee3.memberIndicesAndRoles = committee3Members;
+        committee3.memberIndexesAndRoles = committee3Members;
         committee3.leaderIndex = 0;
     }
 
@@ -130,10 +130,10 @@ abstract contract HelperContract is Test {
             expectedCommittee.internalKey,
             string(abi.encodePacked("expect", testName, "to have  same internalKey"))
         );
-        for (uint256 i = 0; i < actualCommittee.memberIndicesAndRoles.length; i++) {
+        for (uint256 i = 0; i < actualCommittee.memberIndexesAndRoles.length; i++) {
             assertEq(
-                actualCommittee.memberIndicesAndRoles[i].index,
-                expectedCommittee.memberIndicesAndRoles[i].index,
+                actualCommittee.memberIndexesAndRoles[i].index,
+                expectedCommittee.memberIndexesAndRoles[i].index,
                 string(abi.encodePacked("expect", testName, "to have  same memberIndices[", Strings.toString(i), "]"))
             );
         }

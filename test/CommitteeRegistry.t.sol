@@ -29,7 +29,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_getCommitteeMemberIndices_Success() external view {
         // Act
-        CommitteeMember[] memory members = registry.getCommitteeMemberIndicesAndRoles(committee1Key);
+        CommitteeMember[] memory members = registry.getCommitteememberIndexesAndRoles(committee1Key);
         // Assert
         assertEqCommitteeMembers(members, committee1Members, "getted committee1 members");
     }
@@ -65,7 +65,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         assertEq(actualKey, committee2Key, "expected obtained key by index to be the same as the registered committee1");
 
         // Members
-        CommitteeMember[] memory members = registry.getCommitteeMemberIndicesAndRoles(committee2Key);
+        CommitteeMember[] memory members = registry.getCommitteememberIndexesAndRoles(committee2Key);
         assertEqCommitteeMembers(members, committee2Members, "registered committee1");
     }
 
@@ -87,7 +87,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
             registry.registerMember(bytes32(uint256(i)), requestedStreams, requestedRoles);
             committee2Members[i] = CommitteeMember({index: i, role: Role.Operator});
         }
-        aCommittee = Committee({internalKey: committee2Key, memberIndicesAndRoles: committee2Members, leaderIndex: 0});
+        aCommittee = Committee({internalKey: committee2Key, memberIndexesAndRoles: committee2Members, leaderIndex: 0});
 
         // Assert
         vm.expectRevert(
@@ -111,7 +111,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
             aCommitteeMembers[1] = CommitteeMember({index: 1, role: Role.Operator});
             aCommitteeKey = uintToBytes32(i);
             aCommittee =
-                Committee({internalKey: aCommitteeKey, memberIndicesAndRoles: aCommitteeMembers, leaderIndex: 0});
+                Committee({internalKey: aCommitteeKey, memberIndexesAndRoles: aCommitteeMembers, leaderIndex: 0});
 
             registry.registerCommittee(aCommittee);
         }
@@ -120,7 +120,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         aCommitteeMembers[0] = CommitteeMember({index: 0, role: Role.Operator});
         aCommitteeMembers[1] = CommitteeMember({index: 1, role: Role.Operator});
         aCommitteeKey = uintToBytes32(MAX_COMMITTEES_SIZE);
-        aCommittee = Committee({internalKey: aCommitteeKey, memberIndicesAndRoles: aCommitteeMembers, leaderIndex: 0});
+        aCommittee = Committee({internalKey: aCommitteeKey, memberIndexesAndRoles: aCommitteeMembers, leaderIndex: 0});
 
         // Assert
         vm.expectRevert(abi.encodeWithSelector(CommitteeRegistry.tooManyCommittees.selector, MAX_COMMITTEES_SIZE));

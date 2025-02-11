@@ -29,8 +29,8 @@ contract Deploy is Script {
         if (block.chainid == 30) {
             committeeDeploymentParams.committee.internalKey =
                 0x0908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785eb;
-            committeeDeploymentParams.committee.memberIndicesAndRoles.push(members[0]);
-            committeeDeploymentParams.committee.memberIndicesAndRoles.push(members[1]);
+            committeeDeploymentParams.committee.memberIndexesAndRoles.push(members[0]);
+            committeeDeploymentParams.committee.memberIndexesAndRoles.push(members[1]);
             committeeDeploymentParams.committee.leaderIndex = 0;
             committeeDeploymentParams.committeeMembers.push(bytes32(uint256(1)));
             committeeDeploymentParams.committeeMembers.push(bytes32(uint256(2)));
@@ -39,8 +39,8 @@ contract Deploy is Script {
             // Foundry local chainid
             committeeDeploymentParams.committee.internalKey =
                 0x0908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785eb;
-            committeeDeploymentParams.committee.memberIndicesAndRoles.push(members[0]);
-            committeeDeploymentParams.committee.memberIndicesAndRoles.push(members[1]);
+            committeeDeploymentParams.committee.memberIndexesAndRoles.push(members[0]);
+            committeeDeploymentParams.committee.memberIndexesAndRoles.push(members[1]);
             committeeDeploymentParams.committee.leaderIndex = 0;
             committeeDeploymentParams.committeeMembers.push(bytes32(uint256(1)));
             committeeDeploymentParams.committeeMembers.push(bytes32(uint256(2)));

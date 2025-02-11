@@ -88,13 +88,13 @@ contract CommitteeRegistry is ICommitteeRegistry, Initializable {
             revert tooManyCommittees(MAX_COMMITTEES_SIZE);
         }
         // Check max Members for the committee
-        if (_committee.memberIndicesAndRoles.length > MAX_MEMBERS_PER_COMMITTEE) {
+        if (_committee.memberIndexesAndRoles.length > MAX_MEMBERS_PER_COMMITTEE) {
             revert tooManyMembersPerComitee(MAX_MEMBERS_PER_COMMITTEE);
         }
         // Check if all members are registered
-        for (uint256 i = 0; i < _committee.memberIndicesAndRoles.length; i++) {
-            if (_committee.memberIndicesAndRoles[i].index >= members.length) {
-                revert nonRegisteredMember(_committee.memberIndicesAndRoles[i].index);
+        for (uint256 i = 0; i < _committee.memberIndexesAndRoles.length; i++) {
+            if (_committee.memberIndexesAndRoles[i].index >= members.length) {
+                revert nonRegisteredMember(_committee.memberIndexesAndRoles[i].index);
             }
         }
         // Set up Committee
@@ -115,12 +115,12 @@ contract CommitteeRegistry is ICommitteeRegistry, Initializable {
         return committeesByKey[_committeeKey];
     }
 
-    function getCommitteeMemberIndicesAndRoles(bytes32 _committeeKey)
+    function getCommitteememberIndexesAndRoles(bytes32 _committeeKey)
         external
         view
         returns (CommitteeMember[] memory)
     {
-        return committeesByKey[_committeeKey].memberIndicesAndRoles;
+        return committeesByKey[_committeeKey].memberIndexesAndRoles;
     }
 
     function getNextAvailableCommittee() external view returns (Committee memory) {
