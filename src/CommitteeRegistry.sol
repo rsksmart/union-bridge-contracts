@@ -14,8 +14,8 @@ contract CommitteeRegistry is ICommitteeRegistry, Initializable {
     // Committee key => Committee
     mapping(bytes32 => Committee) internal committeesByKey;
 
-    event newCommittee(Committee _committee);
-    event newMember(bytes32 _publicKey);
+    event newCommittee(bytes32 indexed internalKey, Committee _committee);
+    event newMember(bytes32 indexed publicKey, StreamDenomination[] requestedStreams, Role[] requestedRoles);
 
     error requestedDifferentStreamsAndRolesLength(uint256 streamsLength, uint256 rolesLength);
     error requestedNoRoles();
@@ -75,7 +75,7 @@ contract CommitteeRegistry is ICommitteeRegistry, Initializable {
             m.requestedRoles[requestedStreams[i]] = requestedRoles[i];
         }
 
-        emit newMember(_publicKey);
+        emit newMember(_publicKey, requestedStreams, requestedRoles);
     }
 
     function registerCommittee(Committee calldata _committee) external {
@@ -100,7 +100,7 @@ contract CommitteeRegistry is ICommitteeRegistry, Initializable {
         // Set up Committee
         committees.push(_committee.internalKey);
         committeesByKey[_committee.internalKey] = _committee;
-        emit newCommittee(_committee);
+        emit newCommittee(_committee.internalKey, _committee);
     }
 
     function getCommitteeByIndex(uint256 _committeeIndex) external view returns (bytes32) {
