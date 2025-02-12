@@ -16,12 +16,6 @@ abstract contract HelperContract is Test {
     bytes32 constant COMMITEE_1_PUB_KEY = 0x0908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785eb;
     bytes32 constant COMMITEE_2_PUB_KEY = 0x1908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785ec;
     bytes32 constant COMMITEE_3_PUB_KEY = 0x2908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785ed;
-    bytes32 constant COMMITTEE_1_MEMBER_1_PUB_KEY = 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa;
-    bytes32 constant COMMITTEE_1_MEMBER_2_PUB_KEY = 0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb;
-    bytes32 constant COMMITTEE_2_MEMBER_1_PUB_KEY = 0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc;
-    bytes32 constant COMMITTEE_2_MEMBER_2_PUB_KEY = 0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd;
-    bytes32 constant COMMITTEE_3_MEMBER_1_PUB_KEY = 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
-    bytes32 constant COMMITTEE_3_MEMBER_2_PUB_KEY = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
 
     // Dummy requested roles and streams for the members
     StreamDenomination[] internal requestedStreams;
@@ -81,12 +75,12 @@ abstract contract HelperContract is Test {
 
     function registerMockMembers() internal {
         // Register members with their mock keys
-        registry.registerMember(COMMITTEE_1_MEMBER_1_PUB_KEY, requestedStreams, requestedRoles);
-        registry.registerMember(COMMITTEE_1_MEMBER_2_PUB_KEY, requestedStreams, requestedRoles);
-        registry.registerMember(COMMITTEE_2_MEMBER_1_PUB_KEY, requestedStreams, requestedRoles);
-        registry.registerMember(COMMITTEE_2_MEMBER_2_PUB_KEY, requestedStreams, requestedRoles);
-        registry.registerMember(COMMITTEE_3_MEMBER_1_PUB_KEY, requestedStreams, requestedRoles);
-        registry.registerMember(COMMITTEE_3_MEMBER_2_PUB_KEY, requestedStreams, requestedRoles);
+        registry.registerMember(generatePubKey(0), requestedStreams, requestedRoles);
+        registry.registerMember(generatePubKey(1), requestedStreams, requestedRoles);
+        registry.registerMember(generatePubKey(2), requestedStreams, requestedRoles);
+        registry.registerMember(generatePubKey(3), requestedStreams, requestedRoles);
+        registry.registerMember(generatePubKey(4), requestedStreams, requestedRoles);
+        registry.registerMember(generatePubKey(5), requestedStreams, requestedRoles);
     }
 
     function setUpCommitteeRegistry() internal {
@@ -210,5 +204,9 @@ abstract contract HelperContract is Test {
 
     function getExpectedPegInRequestTxHash() internal pure returns (bytes32) {
         return 0x9a68bd7cee559ed776567741ee1fa48bc50c6d80376165d5ead2245cef96725c;
+    }
+
+    function generatePubKey(uint256 i) internal pure returns (bytes32) {
+        return bytes32(i);
     }
 }

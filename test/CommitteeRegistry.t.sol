@@ -14,8 +14,8 @@ contract TestCommitteeRegistry is Test, HelperContract {
         registry.initialize();
 
         // Register members with their mock keys
-        registry.registerMember(COMMITTEE_1_MEMBER_1_PUB_KEY, requestedStreams, requestedRoles);
-        registry.registerMember(COMMITTEE_1_MEMBER_2_PUB_KEY, requestedStreams, requestedRoles);
+        registry.registerMember(generatePubKey(0), requestedStreams, requestedRoles);
+        registry.registerMember(generatePubKey(1), requestedStreams, requestedRoles);
 
         registry.registerCommittee(committee1);
     }
@@ -52,8 +52,8 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Arrenge
         uint256 previousLength = registry.getCommitteesLength();
         // Act
-        registry.registerMember(COMMITTEE_2_MEMBER_1_PUB_KEY, requestedStreams, requestedRoles);
-        registry.registerMember(COMMITTEE_2_MEMBER_2_PUB_KEY, requestedStreams, requestedRoles);
+        registry.registerMember(generatePubKey(2), requestedStreams, requestedRoles);
+        registry.registerMember(generatePubKey(3), requestedStreams, requestedRoles);
         registry.registerCommittee(committee2);
         // Assert
         // Committee
@@ -83,7 +83,8 @@ contract TestCommitteeRegistry is Test, HelperContract {
         Committee memory aCommittee;
         uint256 MAX_MEMBERS_PER_COMMITTEE = registry.MAX_MEMBERS_PER_COMMITTEE();
         CommitteeMember[] memory committee2Members = new CommitteeMember[](MAX_MEMBERS_PER_COMMITTEE + 1);
-        for (uint8 i = 0; i < committee2Members.length; i++) {
+        // We start at 2 as we already have 2 members registered in the setup
+        for (uint8 i = 2; i < committee2Members.length; i++) {
             registry.registerMember(bytes32(uint256(i)), requestedStreams, requestedRoles);
             committee2Members[i] = CommitteeMember({index: i, role: Role.Operator});
         }
@@ -130,11 +131,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_registerMember_Revert_AlreadyRegistered() external {
         // Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(CommitteeRegistry.alreadyRegisteredMember.selector, COMMITTEE_1_MEMBER_1_PUB_KEY)
-        );
+        vm.expectRevert(abi.encodeWithSelector(CommitteeRegistry.alreadyRegisteredMember.selector, generatePubKey(0)));
         // Act
-        registry.registerMember(COMMITTEE_1_MEMBER_1_PUB_KEY, requestedStreams, requestedRoles);
+        registry.registerMember(generatePubKey(0), requestedStreams, requestedRoles);
     }
 
     function test_registerCommittee_Revert_nonRegisteredMember() external {
@@ -148,14 +147,14 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Arrenge
         uint256 MAX_MEMBERS_SIZE = registry.MAX_MEMBERS_SIZE();
         // -2 because we already have 2 members registered in the setup
-        for (uint16 i = 0; i < MAX_MEMBERS_SIZE - 2; i++) {
+        for (uint16 i = 2; i < MAX_MEMBERS_SIZE; i++) {
             registry.registerMember(bytes32(uint256(i)), requestedStreams, requestedRoles);
         }
 
         // Assert
         vm.expectRevert(abi.encodeWithSelector(CommitteeRegistry.tooManyMembers.selector, MAX_MEMBERS_SIZE));
         // Act
-        registry.registerMember(bytes32(uint256(MAX_MEMBERS_SIZE)), requestedStreams, requestedRoles);
+        registry.registerMember(generatePubKey(MAX_MEMBERS_SIZE), requestedStreams, requestedRoles);
     }
 
     function test_registerMember_Revert_RequestedDifferentStreamsAndRolesLength() external {
@@ -164,14 +163,14 @@ contract TestCommitteeRegistry is Test, HelperContract {
             abi.encodeWithSelector(CommitteeRegistry.requestedDifferentStreamsAndRolesLength.selector, 1, 2)
         );
         // Act
-        registry.registerMember(bytes32(uint256(1)), new StreamDenomination[](1), new Role[](2));
+        registry.registerMember(generatePubKey(10), new StreamDenomination[](1), new Role[](2));
     }
 
     function test_registerMember_Revert_RequestedNoRoles() external {
         // Assert
         vm.expectRevert(abi.encodeWithSelector(CommitteeRegistry.requestedNoRoles.selector));
         // Act
-        registry.registerMember(bytes32(uint256(1)), new StreamDenomination[](0), new Role[](0));
+        registry.registerMember(generatePubKey(10), new StreamDenomination[](0), new Role[](0));
     }
 
     function test_registerMember_Revert_RequestedNoneRoleForStream() external {
@@ -181,7 +180,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         );
         // Act
         // Role.None is default for Role
-        registry.registerMember(bytes32(uint256(1)), new StreamDenomination[](1), new Role[](1));
+        registry.registerMember(generatePubKey(10), new StreamDenomination[](1), new Role[](1));
     }
 
     function test_registerMember_Revert_RequestedMultipleRolesForStream() external {
@@ -199,6 +198,6 @@ contract TestCommitteeRegistry is Test, HelperContract {
         roles[0] = Role.Operator;
         roles[1] = Role.Watchtower;
         // StreamDenomination._0_001BTC is default for StreamDenomination
-        registry.registerMember(bytes32(uint256(1)), new StreamDenomination[](2), roles);
+        registry.registerMember(generatePubKey(10), new StreamDenomination[](2), roles);
     }
 }

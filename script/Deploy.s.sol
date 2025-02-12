@@ -5,20 +5,20 @@ import {Script, console} from "forge-std/Script.sol";
 import {StreamDenomination, Role, CommitteeMember, Committee, CommitteeRegistry} from "src/CommitteeRegistry.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
 import {PegManager} from "src/PegManager.sol";
+import {HelperContract} from "test/helpers/HelperContract.sol";
 
 struct CommitteeDeploymentParams {
     Committee committee;
     bytes32[] committeeMembers;
 }
 
-contract Deploy is Script {
+contract Deploy is Script, HelperContract {
     /// @notice Deployment parameters for each chain
     /// from https://github.com/defi-wonderland/solidity-foundry-boilerplate/blob/main/script/Deploy.sol
     CommitteeDeploymentParams internal committeeDeploymentParams;
     // Contracts to be deployed
-    CommitteeRegistry public committeeRegistry;
-    BitcoinManager public bitcoinManager;
-    PegManager public pegManager;
+    CommitteeRegistry public committeeRegistry; // TODO unify with the one in HelperContract
+    PegManager public pegManager; // TODO unify with the one in HelperContract
 
     function setUp() public {
         CommitteeMember[] memory members = new CommitteeMember[](2);
@@ -32,8 +32,8 @@ contract Deploy is Script {
             committeeDeploymentParams.committee.memberIndexesAndRoles.push(members[0]);
             committeeDeploymentParams.committee.memberIndexesAndRoles.push(members[1]);
             committeeDeploymentParams.committee.leaderIndex = 0;
-            committeeDeploymentParams.committeeMembers.push(bytes32(uint256(1)));
-            committeeDeploymentParams.committeeMembers.push(bytes32(uint256(2)));
+            committeeDeploymentParams.committeeMembers.push(generatePubKey(0));
+            committeeDeploymentParams.committeeMembers.push(generatePubKey(1));
         } else if (block.chainid == 31) {
             // RSK Testnet or
             // Foundry local chainid
@@ -42,8 +42,8 @@ contract Deploy is Script {
             committeeDeploymentParams.committee.memberIndexesAndRoles.push(members[0]);
             committeeDeploymentParams.committee.memberIndexesAndRoles.push(members[1]);
             committeeDeploymentParams.committee.leaderIndex = 0;
-            committeeDeploymentParams.committeeMembers.push(bytes32(uint256(1)));
-            committeeDeploymentParams.committeeMembers.push(bytes32(uint256(2)));
+            committeeDeploymentParams.committeeMembers.push(generatePubKey(0));
+            committeeDeploymentParams.committeeMembers.push(generatePubKey(1));
         } else {
             revert("Blockchain is not RSK");
         }
