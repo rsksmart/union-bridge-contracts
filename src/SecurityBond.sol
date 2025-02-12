@@ -38,7 +38,7 @@ contract SecurityBond is Initializable {
     }
 
     function securityBondWithdraw(uint64 _denomination) external {
-        // TODO should check that he is not part of the comittee any more
+        // TODO should check that he is not part of the committee any more
 
         // TODO we are considering that he withdraws the minimum deposit
         // but he should be able to withdraw more if he deposited more

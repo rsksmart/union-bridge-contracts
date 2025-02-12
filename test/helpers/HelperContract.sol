@@ -4,24 +4,34 @@ pragma solidity ^0.8.20;
 import "forge-std/Test.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {PegManager} from "src/PegManager.sol";
-import {Committee, CommitteeRegistry} from "src/CommitteeRegistry.sol";
+import {Role, Member, CommitteeMember, Committee, CommitteeRegistry} from "src/CommitteeRegistry.sol";
+import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
 import {BtcTxIn, BtcTxOut, BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
 import {RSK_BRIDGE_ADDRESS, IBridge} from "src/interfaces/IBridge.sol";
 import {BridgeMock} from "./BridgeMock.sol";
 
 abstract contract HelperContract is Test {
+    // Mock keys
+    bytes32 constant COMMITEE_1_PUB_KEY = 0x0908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785eb;
+    bytes32 constant COMMITEE_2_PUB_KEY = 0x1908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785ec;
+    bytes32 constant COMMITEE_3_PUB_KEY = 0x2908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785ed;
+
+    // Dummy requested roles and streams for the members
+    StreamDenomination[] internal requestedStreams;
+    Role[] internal requestedRoles;
+
     BitcoinManager internal bitcoinManager;
     CommitteeRegistry internal registry;
-    bytes32 internal committee1Key;
     Committee internal committee1;
-    address[] internal memebersCommittee1;
-    bytes32 internal committee2Key;
     Committee internal committee2;
-    address[] internal memebersCommittee2;
-    bytes32 internal committee3Key;
     Committee internal committee3;
-    address[] internal memebersCommittee3;
+    bytes32 internal committee1Key;
+    bytes32 internal committee2Key;
+    bytes32 internal committee3Key;
+    CommitteeMember[] internal committee1Members;
+    CommitteeMember[] internal committee2Members;
+    CommitteeMember[] internal committee3Members;
     PegManager internal pm;
     BridgeMock internal bridgeMock;
     // Arrenge
@@ -32,23 +42,45 @@ abstract contract HelperContract is Test {
     }
 
     function setUpCommittees() internal {
-        committee1Key = hex"0908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785eb";
-        committee1 = Committee({internalKey: committee1Key, leader: vm.addr(1), backupLeader: vm.addr(2)});
-        memebersCommittee1 = new address[](2);
-        memebersCommittee1[0] = vm.addr(1);
-        memebersCommittee1[1] = vm.addr(2);
+        requestedStreams = new StreamDenomination[](1);
+        requestedRoles = new Role[](1);
+        requestedStreams[0] = StreamDenomination._0_001BTC;
+        requestedRoles[0] = Role.Operator;
 
-        committee2Key = hex"1908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785ec";
-        committee2 = Committee({internalKey: committee2Key, leader: vm.addr(3), backupLeader: vm.addr(4)});
-        memebersCommittee2 = new address[](2);
-        memebersCommittee2[0] = vm.addr(3);
-        memebersCommittee2[1] = vm.addr(4);
+        committee1Key = COMMITEE_1_PUB_KEY;
+        committee2Key = COMMITEE_2_PUB_KEY;
+        committee3Key = COMMITEE_3_PUB_KEY;
 
-        committee3Key = hex"2908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785ed";
-        committee3 = Committee({internalKey: committee3Key, leader: vm.addr(5), backupLeader: vm.addr(6)});
-        memebersCommittee3 = new address[](2);
-        memebersCommittee3[0] = vm.addr(5);
-        memebersCommittee3[1] = vm.addr(6);
+        committee1Members.push(CommitteeMember({index: 0, role: Role.Operator}));
+        committee1Members.push(CommitteeMember({index: 1, role: Role.Operator}));
+
+        committee2Members.push(CommitteeMember({index: 2, role: Role.Operator}));
+        committee2Members.push(CommitteeMember({index: 3, role: Role.Operator}));
+
+        committee3Members.push(CommitteeMember({index: 4, role: Role.Operator}));
+        committee3Members.push(CommitteeMember({index: 5, role: Role.Operator}));
+
+        committee1.internalKey = committee1Key;
+        committee1.memberIndexesAndRoles = committee1Members;
+        committee1.leaderIndex = 0;
+
+        committee2.internalKey = committee2Key;
+        committee2.memberIndexesAndRoles = committee2Members;
+        committee2.leaderIndex = 0;
+
+        committee3.internalKey = committee3Key;
+        committee3.memberIndexesAndRoles = committee3Members;
+        committee3.leaderIndex = 0;
+    }
+
+    function registerMockMembers() internal {
+        // Register members with their mock keys
+        registry.registerMember(generatePubKey(0), requestedStreams, requestedRoles);
+        registry.registerMember(generatePubKey(1), requestedStreams, requestedRoles);
+        registry.registerMember(generatePubKey(2), requestedStreams, requestedRoles);
+        registry.registerMember(generatePubKey(3), requestedStreams, requestedRoles);
+        registry.registerMember(generatePubKey(4), requestedStreams, requestedRoles);
+        registry.registerMember(generatePubKey(5), requestedStreams, requestedRoles);
     }
 
     function setUpCommitteeRegistry() internal {
@@ -57,10 +89,12 @@ abstract contract HelperContract is Test {
         registry = new CommitteeRegistry();
         registry.initialize();
 
+        registerMockMembers();
+
         // Register committees with their mock keys. These are Bitcoin x-only public keys.
-        registry.registerCommittee(committee1, memebersCommittee1);
-        registry.registerCommittee(committee2, memebersCommittee2);
-        registry.registerCommittee(committee3, memebersCommittee3);
+        registry.registerCommittee(committee1);
+        registry.registerCommittee(committee2);
+        registry.registerCommittee(committee3);
     }
 
     function setUpBridgeMock() internal {
@@ -90,32 +124,34 @@ abstract contract HelperContract is Test {
             expectedCommittee.internalKey,
             string(abi.encodePacked("expect", testName, "to have  same internalKey"))
         );
+        for (uint256 i = 0; i < actualCommittee.memberIndexesAndRoles.length; i++) {
+            assertEq(
+                actualCommittee.memberIndexesAndRoles[i].index,
+                expectedCommittee.memberIndexesAndRoles[i].index,
+                string(abi.encodePacked("expect", testName, "to have  same memberIndices[", Strings.toString(i), "]"))
+            );
+        }
         assertEq(
-            actualCommittee.leader,
-            expectedCommittee.leader,
+            actualCommittee.leaderIndex,
+            expectedCommittee.leaderIndex,
             string(abi.encodePacked("expect", testName, "to have same leader"))
-        );
-        assertEq(
-            actualCommittee.backupLeader,
-            expectedCommittee.backupLeader,
-            string(abi.encodePacked("expect", testName, "to have same backupLeader"))
         );
     }
 
     function assertEqCommitteeMembers(
-        address[] memory actualMembers,
-        address[] memory expectedMembers,
+        CommitteeMember[] memory actualMembers,
+        CommitteeMember[] memory expectedMembers,
         string memory testName
     ) internal pure {
         assertEq(
             actualMembers.length,
             expectedMembers.length,
-            string(abi.encodePacked("expect", testName, "to have same amount of memebers"))
+            string(abi.encodePacked("expect", testName, "to have same amount of members"))
         );
         for (uint256 i = 0; i < actualMembers.length; i++) {
             assertEq(
-                actualMembers[i],
-                expectedMembers[i],
+                actualMembers[i].index,
+                expectedMembers[i].index,
                 string(abi.encodePacked("expect", testName, " memeber[", Strings.toString(i), "] to have same address"))
             );
         }
@@ -168,5 +204,9 @@ abstract contract HelperContract is Test {
 
     function getExpectedPegInRequestTxHash() internal pure returns (bytes32) {
         return 0x9a68bd7cee559ed776567741ee1fa48bc50c6d80376165d5ead2245cef96725c;
+    }
+
+    function generatePubKey(uint256 i) internal pure returns (bytes32) {
+        return bytes32(i);
     }
 }

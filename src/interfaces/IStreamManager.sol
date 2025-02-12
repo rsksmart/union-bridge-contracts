@@ -1,6 +1,14 @@
 // SPDX-License-Identifier: UNKNOWN
 pragma solidity ^0.8.20;
 
+enum StreamDenomination { //TODO integrate this enum into StreamManager logic
+    _0_001BTC,
+    _0_01BTC,
+    _0_1BTC,
+    _1BTC,
+    _10BTC
+}
+
 enum SlotState {
     PREPARED,
     FILLED,

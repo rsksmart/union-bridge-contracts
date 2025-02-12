@@ -2,44 +2,48 @@
 pragma solidity ^0.8.20;
 
 import {Script, console} from "forge-std/Script.sol";
-import {Committee, CommitteeRegistry} from "src/CommitteeRegistry.sol";
+import {StreamDenomination, Role, CommitteeMember, Committee, CommitteeRegistry} from "src/CommitteeRegistry.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
 import {PegManager} from "src/PegManager.sol";
+import {HelperContract} from "test/helpers/HelperContract.sol";
 
 struct CommitteeDeploymentParams {
     Committee committee;
-    address[] committeeMembers;
+    bytes32[] committeeMembers;
 }
 
-contract Deploy is Script {
+contract Deploy is Script, HelperContract {
     /// @notice Deployment parameters for each chain
     /// from https://github.com/defi-wonderland/solidity-foundry-boilerplate/blob/main/script/Deploy.sol
     CommitteeDeploymentParams internal committeeDeploymentParams;
     // Contracts to be deployed
-    CommitteeRegistry public committeeRegistry;
-    BitcoinManager public bitcoinManager;
-    PegManager public pegManager;
+    CommitteeRegistry public committeeRegistry; // TODO unify with the one in HelperContract
+    PegManager public pegManager; // TODO unify with the one in HelperContract
 
     function setUp() public {
+        CommitteeMember[] memory members = new CommitteeMember[](2);
+        members[0] = CommitteeMember({index: 0, role: Role.Operator});
+        members[1] = CommitteeMember({index: 1, role: Role.Operator});
+
         // RSK Mainnet
         if (block.chainid == 30) {
-            committeeDeploymentParams.committee = Committee({
-                internalKey: 0x0908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785eb,
-                leader: vm.addr(1),
-                backupLeader: vm.addr(2)
-            });
-            committeeDeploymentParams.committeeMembers.push(vm.addr(1));
-            committeeDeploymentParams.committeeMembers.push(vm.addr(2));
+            committeeDeploymentParams.committee.internalKey =
+                0x0908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785eb;
+            committeeDeploymentParams.committee.memberIndexesAndRoles.push(members[0]);
+            committeeDeploymentParams.committee.memberIndexesAndRoles.push(members[1]);
+            committeeDeploymentParams.committee.leaderIndex = 0;
+            committeeDeploymentParams.committeeMembers.push(generatePubKey(0));
+            committeeDeploymentParams.committeeMembers.push(generatePubKey(1));
         } else if (block.chainid == 31) {
             // RSK Testnet or
             // Foundry local chainid
-            committeeDeploymentParams.committee = Committee({
-                internalKey: 0x0908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785eb,
-                leader: vm.addr(1),
-                backupLeader: vm.addr(2)
-            });
-            committeeDeploymentParams.committeeMembers.push(vm.addr(1));
-            committeeDeploymentParams.committeeMembers.push(vm.addr(2));
+            committeeDeploymentParams.committee.internalKey =
+                0x0908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785eb;
+            committeeDeploymentParams.committee.memberIndexesAndRoles.push(members[0]);
+            committeeDeploymentParams.committee.memberIndexesAndRoles.push(members[1]);
+            committeeDeploymentParams.committee.leaderIndex = 0;
+            committeeDeploymentParams.committeeMembers.push(generatePubKey(0));
+            committeeDeploymentParams.committeeMembers.push(generatePubKey(1));
         } else {
             revert("Blockchain is not RSK");
         }
@@ -56,9 +60,14 @@ contract Deploy is Script {
 
         committeeRegistry = new CommitteeRegistry();
         committeeRegistry.initialize();
-        committeeRegistry.registerCommittee(
-            committeeDeploymentParams.committee, committeeDeploymentParams.committeeMembers
-        );
+
+        StreamDenomination[] memory streams = new StreamDenomination[](1);
+        streams[0] = StreamDenomination._0_001BTC;
+        Role[] memory roles = new Role[](1);
+        roles[0] = Role.Operator;
+        committeeRegistry.registerMember(committeeDeploymentParams.committeeMembers[0], streams, roles);
+        committeeRegistry.registerMember(committeeDeploymentParams.committeeMembers[1], streams, roles);
+        committeeRegistry.registerCommittee(committeeDeploymentParams.committee);
 
         vm.stopBroadcast();
     }
