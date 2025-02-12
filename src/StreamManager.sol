@@ -10,6 +10,7 @@ abstract contract StreamManager is IStreamManager, Initializable {
     Stream[5] internal streams;
     uint64[5] internal denominations;
     uint64 internal constant SECURITY_BOND_MULTIPLYER = 2;
+    uint256[50] private __gap;
 
     // StreamId => Packet list
     mapping(uint64 => Packet[]) public packets; // TODO see how to handle it in a mapping instead of an array
