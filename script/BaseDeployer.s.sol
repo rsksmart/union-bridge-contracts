@@ -2,10 +2,10 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
-import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
+import {Upgrades, Options} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 
 ///@dev We are using fundry-upgrades see https://github.com/OpenZeppelin/openzeppelin-foundry-upgrades
-abstract contract DeployHelper is Script {
+abstract contract BaseDeployer is Script {
     /**
      * @dev Deploys a transparent proxy using the given contract as the implementation.
      *
@@ -19,7 +19,7 @@ abstract contract DeployHelper is Script {
         string memory _contractName,
         address _proxyAdminOwner,
         bytes memory _initialCall
-    ) external returns (address, address) {
+    ) internal returns (address, address) {
         vm.startBroadcast();
         // Deploy the upgradeable contract
         address proxyAddress = Upgrades.deployTransparentProxy(
@@ -43,14 +43,19 @@ abstract contract DeployHelper is Script {
      * @return Proxy address
      */
     function deployContractAndUUPSProxy(string memory _contractName, bytes memory _initialCall)
-        external
+        internal
         returns (address, address)
     {
+        // Open zeppelin upgrades plugin currecntly does not support external libraries
+        // See https://docs.openzeppelin.com/upgrades-plugins/faq#why-cant-i-use-external-libraries
+        // Options memory opts;
+        // opts.unsafeAllow = "unsafeAllowLinkedLibraries";
         vm.startBroadcast();
         // Deploy the upgradeable contract
         address proxyAddress = Upgrades.deployUUPSProxy(
             _contractName, //"MyUpgradeableToken.sol",
             _initialCall // abi.encodeCall(MyUpgradeableToken.initialize, (msg.sender))
+                //opts
         );
         vm.stopBroadcast();
         // Get the implementation address
