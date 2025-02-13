@@ -76,7 +76,6 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
         // Get corresponding stream for the amount if non found reverts
         Stream memory stream = getStream(_pegInRequestTxSPVProof.btcTx.outputs[VOUT_INDEX].amount);
 
-        // TODO Missing Backup committee in Taproot validation.
         // Validates that the Taproot Script has a Key Path for the committeePubKey
         // and has a timelock for btcReimbursementPubKey
         bitcoinManager.validatePegInP2TRData(
