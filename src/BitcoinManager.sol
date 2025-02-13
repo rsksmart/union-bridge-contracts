@@ -3,20 +3,23 @@ pragma solidity ^0.8.20;
 
 import {console} from "forge-std/console.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {BaseProxy} from "./BaseProxy.sol";
 import {BtcTransaction, BtcTxOut, IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
+import {BytesHelper} from "./libraries/BytesHelper.sol";
 import {BtcHelper} from "./libraries/BtcHelper.sol";
 import {BtcTxParser} from "./libraries/BtcTxParser.sol";
-import {BytesHelper} from "./libraries/BytesHelper.sol";
 import {BtcScriptParser} from "./libraries/BtcScriptParser.sol";
 import {BtcAddressParser} from "./libraries/BtcAddressParser.sol";
 import {OpCodes} from "./libraries/OpCodes.sol";
 
 /// @title BitcoinManager
 /// @notice Manages Bitcoin Addresses and Scripts
-contract BitcoinManager is IBitcoinManager, Initializable {
+contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
     uint8 constant TIMELOCK_BLOCKS = 10;
 
-    function initialize() public initializer {}
+    function initialize(address _initialOwner) public initializer {
+        __BaseProxy_init(_initialOwner);
+    }
 
     function getTemporaryPegInAddress(
         address _rskDestinationAddress,
@@ -65,11 +68,8 @@ contract BitcoinManager is IBitcoinManager, Initializable {
         }
         index++;
         // Validate RSK_PEGIN flag
-        if (
-            !BytesHelper.stringCompare(
-                BytesHelper.getBytesToString(_opReturnOut.scriptPubKey, index, index + 9), "RSK_PEGIN"
-            )
-        ) {
+        if (!BytesHelper.stringCompare(BytesHelper.getBytesToString(_opReturnOut.scriptPubKey, index, 9), "RSK_PEGIN"))
+        {
             revert IncorrectlyFormedOpReturn(index);
         }
         index = index + 9;

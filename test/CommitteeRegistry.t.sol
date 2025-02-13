@@ -5,13 +5,17 @@ import "forge-std/Test.sol";
 import {Role, Member, CommitteeMember, Committee, CommitteeRegistry} from "src/CommitteeRegistry.sol";
 import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract TestCommitteeRegistry is Test, HelperContract {
     function setUp() external {
         setUpCommittees();
 
-        registry = new CommitteeRegistry();
-        registry.initialize();
+        CommitteeRegistry registryImpl = new CommitteeRegistry();
+        address upgradableOwner = msg.sender;
+        ERC1967Proxy proxy =
+            new ERC1967Proxy(address(registryImpl), abi.encodeCall(CommitteeRegistry.initialize, (upgradableOwner)));
+        registry = CommitteeRegistry(address(proxy));
 
         // Register members with their mock keys
         registry.registerMember(generatePubKey(0), requestedStreams, requestedRoles);

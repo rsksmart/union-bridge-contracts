@@ -2,10 +2,13 @@
 pragma solidity ^0.8.20;
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {BaseProxy} from "./BaseProxy.sol";
 import {Role, Member, CommitteeMember, Committee, ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination} from "./interfaces/IStreamManager.sol";
 
-contract CommitteeRegistry is ICommitteeRegistry, Initializable {
+contract CommitteeRegistry is ICommitteeRegistry, Initializable, BaseProxy {
     uint256 public constant MAX_COMMITTEES_SIZE = 100;
     uint256 public constant MAX_MEMBERS_SIZE = 256;
     uint256 public constant MAX_MEMBERS_PER_COMMITTEE = 100;
@@ -28,7 +31,9 @@ contract CommitteeRegistry is ICommitteeRegistry, Initializable {
     error tooManyCommittees(uint256 maxCommitteeSize);
     error alreadyRegisteredCommittee(bytes32 committeeLey);
 
-    function initialize() public initializer {}
+    function initialize(address _initialOwner) public initializer {
+        __BaseProxy_init(_initialOwner);
+    }
 
     function registerMember(
         bytes32 _publicKey,

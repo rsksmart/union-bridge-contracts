@@ -11,7 +11,6 @@ contract TestProofValidator is Test, HelperContract {
 
     function setUp() external {
         setUpBridgeMock();
-
         proofValidator = new ProofValidatorHarness();
     }
 

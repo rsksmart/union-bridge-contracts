@@ -124,3 +124,23 @@ Using the following command:
 ```sh
 docker-compose up
 ```
+
+## Troubleshooting
+
+### ValidateCommandError
+
+If you see something like 
+
+```
+[FAIL: revert: Failed to run upgrade safety validation: /Users/pmprete/.npm/_npx/e9c2fe9985ed1095/node_modules/@openzeppelin/upgrades-core/dist/cli/validate/build-info-file.js:127
+            throw new error_1.ValidateCommandError(`Build info file ${buildInfoFilePath} is not from a full compilation.`, () => PARTIAL_COMPILE_HELP);
+                  ^
+
+ValidateCommandError: Build info file out/build-info/001d9012b78cf83be88732141551bdb6.json is not from a full compilation.
+```
+
+Then recompile all contracts withthe following commands and try again:
+
+```sh
+forge clean && forge build
+```

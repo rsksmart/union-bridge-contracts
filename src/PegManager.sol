@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/console.sol";
+import {BaseProxy} from "./BaseProxy.sol";
 import {Committee, ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
 import {BtcTransaction, BtcTxOut, IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
 import {
@@ -16,7 +17,7 @@ import {ProofValidator} from "./ProofValidator.sol";
 
 /// @title PegManager
 /// @notice Manages peg-in and peg-out operations between Bitcoin and Rootstock
-contract PegManager is IPegManager, StreamManager, ProofValidator {
+contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
     ICommitteeRegistry public committeeRegistry;
     IBitcoinManager public bitcoinManager;
     uint64 constant VOUT_INDEX = 0;
@@ -25,11 +26,14 @@ contract PegManager is IPegManager, StreamManager, ProofValidator {
     // Bitcoin txHash => TempInfo
     mapping(bytes32 => PegInTempInfo) internal pegInsTempInfo;
 
-    function initialize(ICommitteeRegistry _committeeRegistry, IBitcoinManager _bitcoinManager) public initializer {
+    function initialize(address _initialOwner, ICommitteeRegistry _committeeRegistry, IBitcoinManager _bitcoinManager)
+        public
+        initializer
+    {
         committeeRegistry = _committeeRegistry;
         bitcoinManager = _bitcoinManager;
-        Committee memory committee = committeeRegistry.getNextAvailableCommittee();
-        StreamManager.initialize(committee.internalKey);
+        StreamManager.initialize();
+        __BaseProxy_init(_initialOwner);
     }
 
     function getTemporaryPegInAddress(address _rootstockDepositAddress, uint64 _value, bytes32 _btcReimbursementPubKey)
@@ -72,7 +76,6 @@ contract PegManager is IPegManager, StreamManager, ProofValidator {
         // Get corresponding stream for the amount if non found reverts
         Stream memory stream = getStream(_pegInRequestTxSPVProof.btcTx.outputs[VOUT_INDEX].amount);
 
-        // TODO Missing Backup committee in Taproot validation.
         // Validates that the Taproot Script has a Key Path for the committeePubKey
         // and has a timelock for btcReimbursementPubKey
         bitcoinManager.validatePegInP2TRData(

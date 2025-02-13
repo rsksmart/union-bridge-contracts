@@ -1,10 +1,14 @@
 #!/bin/sh
-#https://book.getfoundry.sh/guides/scripting-with-solidity#deploying-our-contract
+echo "================ CLEAN BUILD FOR OZ ================"
+# openzeppelin-foundry-upgrades requires a clean build
+forge clean && forge build
 echo "================ SIMULATE DEPLOY ================"
-rm -rf broadcast/Deploy.s.sol/31/dry-run
-rm -rf cache/Deploy.s.sol/31/dry-run
+# remove dry runs as we have one per simulation
+rm -rf broadcast/DeployScript.s.sol/31/dry-run
+rm -rf cache/DeployScript.s.sol/31/dry-run
+#https://book.getfoundry.sh/guides/scripting-with-solidity#deploying-our-contract
 source .env
-forge script script/Deploy.s.sol \
+forge script script/DeployScript.s.sol \
     --rpc-url $RSK_TESTNET_RPC \
     --legacy \
     -vvv
