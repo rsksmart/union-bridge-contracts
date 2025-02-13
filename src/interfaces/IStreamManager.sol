@@ -76,6 +76,8 @@ interface IStreamManager {
     /// @return uint256 The slotId of the first prepared slot information
     function getPreparedSlotId(uint64 _streamId, uint64 _packetNumber) external view returns (uint64);
 
+    function createPacketsAndSlots(bytes32 _committeePubKey) external;
+
     error StreamNotFoundByDenomination(uint256 denomination);
     error PacketOutOfBound(uint256 packetNumber);
     error NoEmptySlot(uint256 streamId, uint256 packetNumber);

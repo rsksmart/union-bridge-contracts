@@ -27,8 +27,8 @@ abstract contract StreamManager is IStreamManager, Initializable {
             uint64(100_000_000), // 1 BTC
             uint64(1_000_000_000) // 10 BTC
         ];
-
-        for (uint64 i = 0; i < denominations.length; i++) {
+        uint256 length = denominations.length;
+        for (uint64 i = 0; i < length; i++) {
             streams[i].streamId = i;
             streams[i].denomination = denominations[i];
             streams[i].peginPointer = 0;
@@ -40,7 +40,8 @@ abstract contract StreamManager is IStreamManager, Initializable {
 
     /// @dev Creates In all streams a packet and slots using the given committee
     function createPacketsAndSlots(bytes32 _committeePubKey) external {
-        for (uint64 i = 0; i < denominations.length; i++) {
+        uint256 length = denominations.length;
+        for (uint64 i = 0; i < length; i++) {
             // Create initial packet
             uint64 packetNumber = uint64(packets[streams[i].streamId].length);
             packets[streams[i].streamId].push(Packet({packetNumber: packetNumber, committeePubKey: _committeePubKey}));
@@ -55,7 +56,8 @@ abstract contract StreamManager is IStreamManager, Initializable {
     }
 
     function getStream(uint64 _denomination) public view returns (Stream memory) {
-        for (uint256 i = 0; i < 5; i++) {
+        uint256 length = denominations.length;
+        for (uint256 i = 0; i < length; i++) {
             if (streams[i].denomination == _denomination) {
                 return streams[i];
             }
@@ -85,7 +87,8 @@ abstract contract StreamManager is IStreamManager, Initializable {
 
     function getPreparedSlotId(uint64 _streamId, uint64 _packetNumber) public view returns (uint64) {
         Slot[] memory slotList = slots[_streamId][_packetNumber];
-        for (uint64 i = 0; i < slotList.length; i++) {
+        uint256 length = slotList.length;
+        for (uint64 i = 0; i < length; i++) {
             if (slotList[i].state == SlotState.PREPARED) {
                 return i;
             }

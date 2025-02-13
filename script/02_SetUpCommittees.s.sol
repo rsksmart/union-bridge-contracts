@@ -92,7 +92,8 @@ contract SetUpCommittees is Script, TestUtils {
     function registerMembers(CommitteeRegistry _committeeRegistry, RegisterMemberParams[] memory _registerMembersParams)
         public
     {
-        for (uint256 i = 0; i < _registerMembersParams.length; i++) {
+        uint256 length = _registerMembersParams.length;
+        for (uint256 i = 0; i < length; i++) {
             registerMember(_committeeRegistry, _registerMembersParams[i]);
         }
     }
@@ -113,7 +114,8 @@ contract SetUpCommittees is Script, TestUtils {
         CommitteeRegistry _committeeRegistry,
         RegisterCommitteeParams[] memory _registerCommitteesParams
     ) public {
-        for (uint256 i = 0; i < _registerCommitteesParams.length; i++) {
+        uint256 length = _registerCommitteesParams.length;
+        for (uint256 i = 0; i < length; i++) {
             registerCommittee(_committeeRegistry, _registerCommitteesParams[i].committee);
         }
     }
