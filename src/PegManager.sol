@@ -32,8 +32,7 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
     {
         committeeRegistry = _committeeRegistry;
         bitcoinManager = _bitcoinManager;
-        Committee memory committee = committeeRegistry.getNextAvailableCommittee();
-        StreamManager.initialize(committee.internalKey);
+        StreamManager.initialize();
         __BaseProxy_init(_initialOwner);
     }
 

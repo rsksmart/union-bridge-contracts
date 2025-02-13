@@ -3,8 +3,7 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
-import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
-import {DeployScript} from "script/01_Deploy.s.sol";
+import {DeployScript} from "script/DeployScript.s.sol";
 import {PegManager} from "src/PegManager.sol";
 import {Role, Member, CommitteeMember, Committee, CommitteeRegistry} from "src/CommitteeRegistry.sol";
 import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
@@ -12,8 +11,9 @@ import {BtcTxIn, BtcTxOut, BtcTransaction} from "src/interfaces/IBitcoinManager.
 import {BitcoinManager} from "src/BitcoinManager.sol";
 import {RSK_BRIDGE_ADDRESS, IBridge} from "src/interfaces/IBridge.sol";
 import {BridgeMock} from "./BridgeMock.sol";
+import {TestUtils} from "./TestUtils.sol";
 
-abstract contract HelperContract is Test {
+abstract contract HelperContract is Test, TestUtils {
     // Mock keys
     bytes32 constant COMMITEE_1_PUB_KEY = 0x0908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785eb;
     bytes32 constant COMMITEE_2_PUB_KEY = 0x1908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785ec;
@@ -36,6 +36,7 @@ abstract contract HelperContract is Test {
     CommitteeMember[] internal committee3Members;
     PegManager internal pm;
     BridgeMock internal bridgeMock;
+    address upgradeOwner = vm.addr(777);
     // Arrenge
     uint64 internal constant VALUE = 100_000; // 0.001 BTC
 
@@ -71,30 +72,6 @@ abstract contract HelperContract is Test {
         committee3.leaderIndex = 0;
     }
 
-    function registerMockMembers() internal {
-        // Register members with their mock keys
-        registry.registerMember(generatePubKey(0), requestedStreams, requestedRoles);
-        registry.registerMember(generatePubKey(1), requestedStreams, requestedRoles);
-        registry.registerMember(generatePubKey(2), requestedStreams, requestedRoles);
-        registry.registerMember(generatePubKey(3), requestedStreams, requestedRoles);
-        registry.registerMember(generatePubKey(4), requestedStreams, requestedRoles);
-        registry.registerMember(generatePubKey(5), requestedStreams, requestedRoles);
-    }
-
-    function setUpCommitteeRegistry() internal {
-        setUpCommittees();
-
-        registry = new CommitteeRegistry();
-        registry.initialize();
-
-        registerMockMembers();
-
-        // Register committees with their mock keys. These are Bitcoin x-only public keys.
-        registry.registerCommittee(committee1);
-        registry.registerCommittee(committee2);
-        registry.registerCommittee(committee3);
-    }
-
     function setUpBridgeMock() internal {
         // Deploy mock of the precompile
         // Set mock bytecode to the expected precompile address
@@ -103,7 +80,7 @@ abstract contract HelperContract is Test {
         bridgeMock = BridgeMock(RSK_BRIDGE_ADDRESS);
     }
 
-    function setUpDeploy() internal {
+    function runTestDeployScript() internal {
         // Set up bridge mock at bridge precompiled address
         setUpBridgeMock();
         // Using the deployment script in tests like in
@@ -116,61 +93,6 @@ abstract contract HelperContract is Test {
 
         // Register committees with their mock keys. These are Bitcoin x-only public keys.
         setUpCommittees();
-    }
-
-    function assertEqCommittee(
-        Committee memory actualCommittee,
-        Committee memory expectedCommittee,
-        string memory testName
-    ) internal pure {
-        assertEq(
-            actualCommittee.internalKey,
-            expectedCommittee.internalKey,
-            string(abi.encodePacked("expect", testName, "to have  same internalKey"))
-        );
-        for (uint256 i = 0; i < actualCommittee.memberIndexesAndRoles.length; i++) {
-            assertEq(
-                actualCommittee.memberIndexesAndRoles[i].index,
-                expectedCommittee.memberIndexesAndRoles[i].index,
-                string(abi.encodePacked("expect", testName, "to have  same memberIndices[", Strings.toString(i), "]"))
-            );
-        }
-        assertEq(
-            actualCommittee.leaderIndex,
-            expectedCommittee.leaderIndex,
-            string(abi.encodePacked("expect", testName, "to have same leader"))
-        );
-    }
-
-    function assertEqCommitteeMembers(
-        CommitteeMember[] memory actualMembers,
-        CommitteeMember[] memory expectedMembers,
-        string memory testName
-    ) internal pure {
-        assertEq(
-            actualMembers.length,
-            expectedMembers.length,
-            string(abi.encodePacked("expect", testName, "to have same amount of members"))
-        );
-        for (uint256 i = 0; i < actualMembers.length; i++) {
-            assertEq(
-                actualMembers[i].index,
-                expectedMembers[i].index,
-                string(abi.encodePacked("expect", testName, " memeber[", Strings.toString(i), "] to have same address"))
-            );
-        }
-    }
-
-    function uintToAddress(uint256 i) internal pure returns (address) {
-        return bytes32ToAddress(uintToBytes32(i));
-    }
-
-    function bytes32ToAddress(bytes32 word) internal pure returns (address) {
-        return address(bytes20(word));
-    }
-
-    function uintToBytes32(uint256 i) internal pure returns (bytes32) {
-        return keccak256(abi.encode(i));
     }
 
     function getBtcTxIn() internal pure returns (BtcTxIn memory) {
@@ -208,9 +130,5 @@ abstract contract HelperContract is Test {
 
     function getExpectedPegInRequestTxHash() internal pure returns (bytes32) {
         return 0x9a68bd7cee559ed776567741ee1fa48bc50c6d80376165d5ead2245cef96725c;
-    }
-
-    function generatePubKey(uint256 i) internal pure returns (bytes32) {
-        return bytes32(i);
     }
 }

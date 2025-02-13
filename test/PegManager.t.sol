@@ -26,7 +26,7 @@ contract TestPegManager is Test, HelperContract {
         0x741976f972e9aa5e226eae26289b794aac9bbe702f378aa64c6104f16b79298c;
 
     function setUp() external {
-        setUpDeploy();
+        runTestDeployScript();
     }
 
     function test_getTemporaryPegInAddress_Success() external view {

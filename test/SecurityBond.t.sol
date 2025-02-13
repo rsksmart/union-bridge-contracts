@@ -10,7 +10,7 @@ contract TestSecurityBond is Test, HelperContract {
     SecurityBond sb;
 
     function setUp() external {
-        setUpDeploy();
+        runTestDeployScript();
         sb = new SecurityBond();
         sb.initialize(pm);
     }

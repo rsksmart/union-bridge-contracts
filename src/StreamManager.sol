@@ -19,7 +19,7 @@ abstract contract StreamManager is IStreamManager, Initializable {
     // TODO check if we can use another key or a hash for the slots and packets as they are not unique through the streams
 
     /// @dev Initializes the streams with their denominations and parameters
-    function initialize(bytes32 _committeePubKey) internal onlyInitializing {
+    function initialize() internal onlyInitializing {
         denominations = [
             uint64(100_000), // 0.001 BTC
             uint64(1_000_000), // 0.01 BTC
@@ -28,14 +28,19 @@ abstract contract StreamManager is IStreamManager, Initializable {
             uint64(1_000_000_000) // 10 BTC
         ];
 
-        for (uint64 i = 0; i < 5; i++) {
+        for (uint64 i = 0; i < denominations.length; i++) {
             streams[i].streamId = i;
             streams[i].denomination = denominations[i];
             streams[i].peginPointer = 0;
             streams[i].pegoutPointer = -1;
             streams[i].securityBondValue = denominations[i] * SECURITY_BOND_MULTIPLYER; // TODO Validate this value
             streams[i].pegInConfirmations = uint8(i + 1); // TODO Validate this value
+        }
+    }
 
+    /// @dev Creates In all streams a packet and slots using the given committee
+    function createPacketsAndSlots(bytes32 _committeePubKey) external {
+        for (uint64 i = 0; i < denominations.length; i++) {
             // Create initial packet
             uint64 packetNumber = uint64(packets[streams[i].streamId].length);
             packets[streams[i].streamId].push(Packet({packetNumber: packetNumber, committeePubKey: _committeePubKey}));
