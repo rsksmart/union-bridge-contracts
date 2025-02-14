@@ -26,8 +26,9 @@ library OpCodes {
 
     /// An empty array of bytes is pushed onto the stack. (This is not a no-op: an item is added to the stack.)
     bytes1 public constant OP_0 = 0x00;
-    /// OP_PUSHNUM_1 The number 1 [0x01] is pushed onto the stack.
+    /// @dev Same as OP_PUSHNUM_1 This opcode is used to push the number 1 to the stack.
     bytes1 public constant OP_1 = 0x51;
+    bytes1 public constant OP_PUSHNUM_16 = 0x60;
 
     bytes1 public constant OP_PUSHBYTES_1 = 0x01;
     bytes1 public constant OP_PUSHBYTES_2 = 0x02;

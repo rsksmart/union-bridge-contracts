@@ -15,8 +15,8 @@ library BtcScriptParser {
     bytes constant TAP_BRANCH = bytes("TapBranch");
     uint256 constant MAX_BLOCK_TIMELOCK = 65535;
     // Errors
+
     error NumberTooLarge(uint256 actual, uint256 max);
-    error NoNumberToPush();
 
     function getP2WPKHScript(bytes32 _publicKey) internal pure returns (bytes memory) {
         // Pay To Witness Public Key Hash
@@ -25,12 +25,11 @@ library BtcScriptParser {
 
     function pushNumberToStack(uint256 _number) internal pure returns (bytes memory) {
         if (_number == 0) {
-            revert NoNumberToPush();
-        }
-        if (_number <= 16) { 
+            return abi.encodePacked(OpCodes.OP_0);
+        } else if (_number <= 16) {
             // 1 - 16
             // only push opcode from OP_PUSHNUM_1 up to OP_PUSHNUM_16
-            return abi.encodePacked(bytes1(uint8(OpCodes.OP_1) + uint8(_number - 1))); 
+            return abi.encodePacked(bytes1(uint8(OpCodes.OP_1) + uint8(_number - 1)));
         } else if (_number <= 127) {
             // 17 - 127
             // push the number as a single byte
@@ -61,6 +60,7 @@ library BtcScriptParser {
             pushNumberToStack(_blocks),
             OpCodes.OP_CHECKSEQUENCEVERIFY, // OP_CSV
             OpCodes.OP_DROP,
+            OpCodes.OP_PUSHBYTES_32,
             _publicKey, // public key is the 32-byte x-coordinate only.
             OpCodes.OP_CHECKSIG
         );

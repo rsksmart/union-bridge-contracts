@@ -96,4 +96,7 @@ interface IBitcoinManager {
     error InvalidOpReturnLength(uint256 actual, uint256 expected);
     error IncorrectlyFormedOpReturn(uint256 index);
     error IncorrectP2TRScriptPub(bytes actual, bytes expected);
+    error InvalidPublicKey(bytes32 publicKey);
+    error InvalidAddress(address _address);
+    error InvalidValue(uint64 _value);
 }

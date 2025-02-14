@@ -141,7 +141,7 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
 
         Stream memory stream = getStream(_pegInAcceptedTxSPVProof.btcTx.outputs[VOUT_INDEX].amount);
         // TODO get packet number
-        uint64 packetNumber;
+        uint64 packetNumber = 0;
 
         // Verify the txHash part of the Merkle Root of Tx of a Block
         // and that block is inside Bitcoin Mainchain

@@ -112,7 +112,7 @@ library BtcHelper {
     /// @param _b        The unsigned integer to reverse
     /// @return v        The reversed value
     function reverseUint24(uint24 _b) internal pure returns (uint24 v) {
-        v =  (_b << 16) | (_b & 0x00FF00) | (_b >> 16);
+        v = (_b << 16) | (_b & 0x00FF00) | (_b >> 16);
     }
 
     /// @notice          Changes the endianness of a uint16
