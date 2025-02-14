@@ -67,6 +67,45 @@ library BytesHelper {
         return tempUint;
     }
 
+    function bytesToUint32(bytes memory _bytes, uint256 _from) internal pure returns (uint32) {
+        // uint32 are 4 bytes long
+        uint256 upTo = _from + 4;
+        if (_bytes.length < upTo) {
+            revert indexOverflow(_bytes.length, _from, upTo);
+        }
+        uint32 tempUint;
+        assembly {
+            tempUint := mload(add(add(_bytes, 0x4), _from))
+        }
+        return tempUint;
+    }
+
+    function bytesToUint24(bytes memory _bytes, uint256 _from) internal pure returns (uint24) {
+        // uint24 are 3 bytes long
+        uint256 upTo = _from + 3;
+        if (_bytes.length < upTo) {
+            revert indexOverflow(_bytes.length, _from, upTo);
+        }
+        uint24 tempUint;
+        assembly {
+            tempUint := mload(add(add(_bytes, 0x3), _from))
+        }
+        return tempUint;
+    }
+
+    function bytesToUint16(bytes memory _bytes, uint256 _from) internal pure returns (uint16) {
+        // uint16 are 2 bytes long
+        uint256 upTo = _from + 2;
+        if (_bytes.length < upTo) {
+            revert indexOverflow(_bytes.length, _from, upTo);
+        }
+        uint16 tempUint;
+        assembly {
+            tempUint := mload(add(add(_bytes, 0x2), _from))
+        }
+        return tempUint;
+    }
+
     function slice(bytes memory _bytes, uint256 _start, uint256 _length) internal pure returns (bytes memory) {
         if (_length + 31 < _length) {
             // slice_overflow

@@ -27,12 +27,34 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         bytes32 _btcReimbursementPubKey,
         bytes32 _committeePubKey
     ) external pure returns (bytes memory bitcoinDepositAddress) {
+        validateRequestPegInInputs(_btcReimbursementPubKey, _committeePubKey, _rskDestinationAddress, _value);
         // Generate and return the taproot address
         bytes memory scriptPubKey =
             getPegInP2TRScriptPub(_rskDestinationAddress, _value, _btcReimbursementPubKey, _committeePubKey);
 
         // Add Taproot version byte (0x01) to script pub
         return abi.encodePacked(hex"01", scriptPubKey);
+    }
+
+    /// @dev Validates the inputs for a peg-in request
+    function validateRequestPegInInputs(
+        bytes32 _btcReimbursementPubKey,
+        bytes32 _committeePubKey,
+        address _rskDestinationAddress,
+        uint64 _value
+    ) internal pure {
+        if (_btcReimbursementPubKey == bytes32(0)) {
+            revert InvalidPublicKey(_btcReimbursementPubKey);
+        }
+        if (_committeePubKey == bytes32(0)) {
+            revert InvalidPublicKey(_committeePubKey);
+        }
+        if (_rskDestinationAddress == address(0)) {
+            revert InvalidAddress(_rskDestinationAddress);
+        }
+        if (_value == 0) {
+            revert InvalidValue(_value);
+        }
     }
 
     /// @dev Validates a Bitcoin peg-in transaction
@@ -97,6 +119,7 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         bytes32 _committeePubKey,
         BtcTxOut calldata _p2trOut
     ) external pure {
+        validateRequestPegInInputs(_btcReimbursementPubKey, _committeePubKey, _rskDestinationAddress, _value);
         bytes memory p2trScriptPubKey =
             getPegInP2TRScriptPub(_rskDestinationAddress, _value, _btcReimbursementPubKey, _committeePubKey);
         if (!BytesHelper.compare(_p2trOut.scriptPubKey, p2trScriptPubKey)) {

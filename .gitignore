@@ -1,4 +1,10 @@
+# virtual environment
+venv/
+# foundry
+dry-run/
 cache/
 out/
-venv/
-dry-run/
+# macOS
+.DS_Store
+# vscode
+.vscode/
