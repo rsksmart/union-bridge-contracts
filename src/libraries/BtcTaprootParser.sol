@@ -10,8 +10,11 @@ import {BtcHelper} from "./BtcHelper.sol";
  * @notice Allows to encode / decode Bitcoin Addresses
  * @author Fairgate
  */
-library BtcAddressParser {
+library BtcTaprootParser {
     bytes constant TAP_TWEAK = bytes("TapTweak");
+    bytes1 constant LEAF_VERSION = 0xc0; // number 192 aka tapscript
+    bytes constant TAP_LEAF = bytes("TapLeaf");
+    bytes constant TAP_BRANCH = bytes("TapBranch");
 
     /// @notice Generates a Taproot PubScript.
     /// @param _publicKey The public key used to create the locking script (x-only, 32 bytes)
@@ -63,5 +66,23 @@ library BtcAddressParser {
     function getP2TRScriptPubKey(bytes32 tweakedPublicKey) private pure returns (bytes memory) {
         // OP_1 (0x51) OP_PUSHBYTES_32 (0x20) <32-byte tweaked public key>
         return abi.encodePacked(OpCodes.OP_1, OpCodes.OP_PUSHBYTES_32, tweakedPublicKey);
+    }
+
+    /// @dev https://learnmeabitcoin.com/technical/upgrades/taproot/#script-tree-merkle-root-leaf-hash
+    function getLeaf(bytes memory _script) internal pure returns (bytes32) {
+        bytes memory data = abi.encodePacked(LEAF_VERSION, BtcHelper.toCompactSize(_script.length), _script);
+        return BtcHelper.taggedHash(TAP_LEAF, data);
+    }
+
+    /// @dev https://learnmeabitcoin.com/technical/upgrades/taproot/#script-tree-merkle-root-branch-hash
+    function getBranch(bytes32 _leafOrBranch, bytes32 _otherLeafOrBranch) internal pure returns (bytes32) {
+        bytes32 lowerHash = _leafOrBranch;
+        bytes32 higherHash = _otherLeafOrBranch;
+        if (_leafOrBranch > _otherLeafOrBranch) {
+            lowerHash = _otherLeafOrBranch;
+            higherHash = _leafOrBranch;
+        }
+        bytes memory data = abi.encodePacked(lowerHash, higherHash);
+        return BtcHelper.taggedHash(TAP_BRANCH, data);
     }
 }
