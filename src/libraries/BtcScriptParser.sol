@@ -10,9 +10,6 @@ import {BtcHelper} from "./BtcHelper.sol";
  * @author Fairgate
  */
 library BtcScriptParser {
-    bytes1 constant LEAF_VERSION = 0xc0; // number 192 aka tapscript
-    bytes constant TAP_LEAF = bytes("TapLeaf");
-    bytes constant TAP_BRANCH = bytes("TapBranch");
     uint256 constant MAX_BLOCK_TIMELOCK = 65535;
     // Errors
 
@@ -64,23 +61,5 @@ library BtcScriptParser {
             _publicKey, // public key is the 32-byte x-coordinate only.
             OpCodes.OP_CHECKSIG
         );
-    }
-
-    /// @dev https://learnmeabitcoin.com/technical/upgrades/taproot/#script-tree-merkle-root-leaf-hash
-    function getLeaf(bytes memory _script) internal pure returns (bytes32) {
-        bytes memory data = abi.encodePacked(LEAF_VERSION, BtcHelper.toCompactSize(_script.length), _script);
-        return BtcHelper.taggedHash(TAP_LEAF, data);
-    }
-
-    /// @dev https://learnmeabitcoin.com/technical/upgrades/taproot/#script-tree-merkle-root-branch-hash
-    function getBranch(bytes32 _leafOrBranch, bytes32 _otherLeafOrBranch) internal pure returns (bytes32) {
-        bytes32 lowerHash = _leafOrBranch;
-        bytes32 higherHash = _otherLeafOrBranch;
-        if (_leafOrBranch > _otherLeafOrBranch) {
-            lowerHash = _otherLeafOrBranch;
-            higherHash = _leafOrBranch;
-        }
-        bytes memory data = abi.encodePacked(lowerHash, higherHash);
-        return BtcHelper.taggedHash(TAP_BRANCH, data);
     }
 }

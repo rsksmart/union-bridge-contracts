@@ -9,7 +9,7 @@ import {BytesHelper} from "./libraries/BytesHelper.sol";
 import {BtcHelper} from "./libraries/BtcHelper.sol";
 import {BtcTxParser} from "./libraries/BtcTxParser.sol";
 import {BtcScriptParser} from "./libraries/BtcScriptParser.sol";
-import {BtcAddressParser} from "./libraries/BtcAddressParser.sol";
+import {BtcTaprootParser} from "./libraries/BtcTaprootParser.sol";
 import {OpCodes} from "./libraries/OpCodes.sol";
 
 /// @title BitcoinManager
@@ -146,11 +146,11 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         bytes32 _committeePubKey
     ) internal pure returns (bytes memory) {
         bytes32 timelockLeaf =
-            BtcScriptParser.getLeaf(BtcScriptParser.getTimelockScript(TIMELOCK_BLOCKS, _btcReimbursementPubKey));
+            BtcTaprootParser.getLeaf(BtcScriptParser.getTimelockScript(TIMELOCK_BLOCKS, _btcReimbursementPubKey));
         // Use _rskDestinationAddress as part of the tweak
         bytes memory customTweakData = abi.encodePacked(_rskDestinationAddress, _value);
         // Convert to Taproot ScriptPubKey
         // If you only have one leaf in your script tree, the merkle root will be that leaf hash.
-        return BtcAddressParser.getP2TRScriptPubKey(_committeePubKey, timelockLeaf, customTweakData);
+        return BtcTaprootParser.getP2TRScriptPubKey(_committeePubKey, timelockLeaf, customTweakData);
     }
 }
