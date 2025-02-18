@@ -111,6 +111,18 @@ abstract contract HelperContract is Test, TestUtils {
         });
     }
 
+    function getBtcOPReturnPacket() internal pure returns (uint64) {
+        return 0;
+    }
+
+    function getBtcOPReturnDestinationAddress() internal pure returns (address) {
+        return 0x7Ac5496aee77c1bA1F0854206A26DdA82A81d6d8;
+    }
+
+    function getBtcOPReturnReimbursementPubKey() internal pure returns (bytes32) {
+        return 0x741976f972e9aa5e226eae26289b794aac9bbe702f378aa64c6104f16b79298c;
+    }
+
     function getBtcOPReturnOut() internal pure returns (BtcTxOut memory) {
         return BtcTxOut({
             amount: 0,
