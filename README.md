@@ -1,6 +1,9 @@
 # BitVMX Union Bridge Contracts
 This repository contains the specifications and Solidity code for the Union Bridge Contracts.
 
+## Dependencies
+- Node.js LTS (22)
+
 ## Testing
 
 You can run the full test suit with:
