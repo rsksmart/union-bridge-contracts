@@ -22,23 +22,19 @@ contract TestPegManager is Test, HelperContract {
     uint64 internal constant PACKET_NUMBER = 0;
     address internal constant RSK_DESTINATION_ADDRESS = 0x7Ac5496aee77c1bA1F0854206A26DdA82A81d6d8;
 
-    bytes32 internal constant BTC_REIMBURSEMENT_ADDRESS =
-        0x741976f972e9aa5e226eae26289b794aac9bbe702f378aa64c6104f16b79298c;
+    bytes32 internal constant BTC_REIMBURSEMENT_PUBKEY =
+        0x5d238354a7e74c9e373317053226537dec221c5c775bcca01e806ec358c5c08d;
 
     function setUp() external {
         runTestDeployScript();
     }
 
     function test_getTemporaryPegInAddress_Success() external view {
-        // Arrenge
-        // check that the function returns the correct taproot address
         address dummyRskAddress = 0x4C9a9CbFa14106439B0F96a64d9260F3b8947934;
+        bytes memory tempAddress = "bcrt1p60tcmwu3kzrhyegywl8hjj29akfy6hpn8tq2c4h06kkl0qpwplns2g7zhc";
 
-        // Act
-        bytes memory result = pm.getTemporaryPegInAddress(dummyRskAddress, VALUE, BTC_REIMBURSEMENT_ADDRESS);
-
-        console.log("result");
-        console.logBytes(result);
+        bytes memory result = pm.getTemporaryPegInAddress(dummyRskAddress, VALUE, BTC_REIMBURSEMENT_PUBKEY);
+        assertEq(result, tempAddress, "Incorrect temporary peg in address");
     }
 
     function test_registerPegInRequest_Success() external {
@@ -69,7 +65,7 @@ contract TestPegManager is Test, HelperContract {
             VALUE,
             PACKET_NUMBER,
             RSK_DESTINATION_ADDRESS,
-            BTC_REIMBURSEMENT_ADDRESS,
+            BTC_REIMBURSEMENT_PUBKEY,
             btcTransaction.outputs[0].scriptPubKey
         );
 
@@ -93,7 +89,7 @@ contract TestPegManager is Test, HelperContract {
         );
         assertEq(
             pegInTempInfo.btcReimbursementPubKey,
-            BTC_REIMBURSEMENT_ADDRESS,
+            BTC_REIMBURSEMENT_PUBKEY,
             "Incorrect peg in temp info btcReimbursementPubKey"
         );
         assertEq(

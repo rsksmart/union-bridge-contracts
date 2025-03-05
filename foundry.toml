@@ -2,7 +2,7 @@
 solc_version = "0.8.28"
 # Use emv version previous to Paris in RSK to avoid prevrandao error 
 # https://book.getfoundry.sh/cheatcodes/prevrandao
-evm_version = "london" 
+evm_version = "london"
 optimizer = true
 optimizer_runs = 2000
 ## gas limit in tests

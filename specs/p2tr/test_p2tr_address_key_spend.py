@@ -107,24 +107,15 @@ def test_p2tr(rpc, secret_key_from, address_from, address_to, funding_txid, fee)
     # segwit we need to set has_segwit=True
     tx = Transaction([txin], [txOut], has_segwit=True)
 
-    # print("\nRaw transaction:\n" + tx.serialize())
-    # print("\ntxid: " + tx.get_txid())
-    # print("\ntxwid: " + tx.get_wtxid())
-
     # sign taproot input
     # to create the digest message to sign in taproot we need to
     # pass all the utxos' scriptPubKeys and their amounts
     sig = priv.sign_taproot_input(tx, 0, utxos_script_pubkeys, amounts)
-    # print(sig)
 
     tx.witnesses.append(TxWitnessInput([sig]))
-
-    # print raw signed transaction ready to be broadcasted
-    # print("\nRaw signed transaction:\n" + tx.serialize())
-    # print("\nTxId:", tx.get_txid())
-    # print("\nTxwId:", tx.get_wtxid())
-    # print("\nSize:", tx.get_size())
-    # print("\nvSize:", tx.get_vsize())
+    
+    # log witness
+    print(tx.witnesses)
 
     txid = rpc._call('sendrawtransaction', tx.serialize())
     print('Sent', txid)

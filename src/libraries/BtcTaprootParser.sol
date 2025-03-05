@@ -16,30 +16,6 @@ library BtcTaprootParser {
     bytes constant TAP_LEAF = bytes("TapLeaf");
     bytes constant TAP_BRANCH = bytes("TapBranch");
 
-    /// @notice Generates a Taproot PubScript.
-    /// @param _publicKey The public key used to create the locking script (x-only, 32 bytes)
-    /// @param _merkleRoot The root hash of the Taproot scripts merkle tree. If empty it wll
-    /// @return scriptPubKey  bytes (32 bytes output y + 2 byte script pubkey prefix)
-    /// @dev If you do not use a script tree, your merkle will be empty (zero bytes).
-    /// https://learnmeabitcoin.com/technical/upgrades/taproot/
-    function getP2TRScriptPubKey(bytes32 _publicKey, bytes32 _merkleRoot, bytes memory customTweakData)
-        internal
-        pure
-        returns (bytes memory)
-    {
-        bytes32 tweak;
-        // If you are not using a script tree, the data will just be the public key.
-        if (_merkleRoot == bytes32(0)) {
-            // Get Key path tweak
-            tweak = getTweak(abi.encodePacked(_publicKey, customTweakData));
-        } else {
-            // Get Script path tweak
-            tweak = getTweak(abi.encodePacked(_publicKey, _merkleRoot, customTweakData));
-        }
-        bytes32 tweakedPublicKey = getTweakedPublicKey(_publicKey, tweak);
-        return getP2TRScriptPubKey(tweakedPublicKey);
-    }
-
     /// @dev https://learnmeabitcoin.com/technical/upgrades/taproot/#tweak
     function getTweak(bytes memory data) internal pure returns (bytes32) {
         return BtcHelper.taggedHash(TAP_TWEAK, data);
@@ -63,7 +39,7 @@ library BtcTaprootParser {
     }
 
     /// @dev https://learnmeabitcoin.com/technical/upgrades/taproot/#scriptpubkey
-    function getP2TRScriptPubKey(bytes32 tweakedPublicKey) private pure returns (bytes memory) {
+    function getP2TRScriptPubKey(bytes32 tweakedPublicKey) internal pure returns (bytes memory) {
         // OP_1 (0x51) OP_PUSHBYTES_32 (0x20) <32-byte tweaked public key>
         return abi.encodePacked(OpCodes.OP_1, OpCodes.OP_PUSHBYTES_32, tweakedPublicKey);
     }

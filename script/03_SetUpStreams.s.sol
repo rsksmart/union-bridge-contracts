@@ -14,13 +14,13 @@ contract SetUpStreams is Script {
     function setUp() internal {
         // RSK Mainnet
         if (block.chainid == 30) {
-            committeePubKey = 0x0908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785eb;
+            committeePubKey = 0x924c163b385af7093440184af6fd6244936d1288cbb41cc3812286d3f83a3329;
         } else if (block.chainid == 31) {
             // RSK Testnet
-            committeePubKey = 0x0908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785eb;
+            committeePubKey = 0x924c163b385af7093440184af6fd6244936d1288cbb41cc3812286d3f83a3329;
         } else if (block.chainid == 31337 || block.chainid == 1337) {
             // Foundry local chainid
-            committeePubKey = 0x0908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785eb;
+            committeePubKey = 0x924c163b385af7093440184af6fd6244936d1288cbb41cc3812286d3f83a3329;
         } else {
             revert("Blockchain is not RSK or regtest");
         }

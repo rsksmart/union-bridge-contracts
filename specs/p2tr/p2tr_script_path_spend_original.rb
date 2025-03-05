@@ -16,32 +16,41 @@ internal_pubkey = '924c163b385af7093440184af6fd6244936d1288cbb41cc3812286d3f83a3
 # Merkle Tree
 # -----------
 
-# merkle root
-merkle_root = ""
+# hash leaf
+leaf_version = 192 # 0xc0
+script = '206d4ddc0e47d2e8f82cbe2fc2d0d749e7bd3338112cecdc76d8f831ae6620dbe0ac' # OP_PUSHBYTES_32 6d4ddc0e47d2e8f82cbe2fc2d0d749e7bd3338112cecdc76d8f831ae6620dbe0 OP_CHECKSIG
+leaf_hash = tagged_hash("TapLeaf", field(dechex(leaf_version), 1) + serialize_script(script))
+puts 'leaf_hash: ' + leaf_hash
+#=> 858dfe26a3dd48a2c1fcee1d631f0aadf6a61135fc51f75758e945bca534ef16
 
+# merkle root
+merkle_root = leaf_hash
+puts 'merkle_root: ' + merkle_root
 # ----------------
 # Tweak Public Key
 # ----------------
 
 # create a hash from the public key and merkle root - this will be used to tweak the public key
-tweak = tagged_hash("TapTweak", internal_pubkey + merkle_root)
-#=> 8dc8b9030225e044083511759b58328b46dffcc78b920b4b97169f9d7b43d3b5
+tweak = tagged_hash("TapTweak", internal_pubkey + merkle_root) 
+puts 'tweak: ' + tweak
+#=> 479785dd89a6441dbe00c7661865a0cc68672e8021f4547ac7f89ac26ac049f2
 
 # tweak the public key
 t = int(tweak) # convert to integer (so it's like a private key) (check this is less than curve order)
 internal_pubkey_point = lift_x(internal_pubkey)
 tweaked_pubkey_point = add(internal_pubkey_point, multiply(t, $G)) # (check y is even)
 tweaked_pubkey = bytes(tweaked_pubkey_point[:x])
-#=> 0f0c8db753acbd17343a39c2f3f4e35e4be6da749f9e35137ab220e7b238a667
 puts 'tweaked_pubkey: ' + tweaked_pubkey
+#=> f3778defe5173a9bf7169575116224f961c03c725c0e98b8da8f15df29194b80
 
 # convert to scriptpubkey
 scriptpubkey = '51' + '20' + tweaked_pubkey
-#=> 51200f0c8db753acbd17343a39c2f3f4e35e4be6da749f9e35137ab220e7b238a667
 puts 'scriptpubkey: ' + scriptpubkey
+#=> 5120f3778defe5173a9bf7169575116224f961c03c725c0e98b8da8f15df29194b80
 
 # Generate Taproot Address
 pubkey_hash = scriptpubkey[4..-1]
+puts 'pubkey_hash: ' + pubkey_hash
 address = encode_taproot_address(pubkey_hash)
 puts 'address: ' + address
 
@@ -49,44 +58,63 @@ puts 'address: ' + address
 # Spend
 # =====
 
+# -------------
+# Control Block
+# -------------
+# <control byte with leaf version and parity bit> <internal pubkey> <leaves/branches required to calculate merkle root>
+
+# note: all leaf_versions are 192
+control_byte = calculate_control_byte(192, tweaked_pubkey_point)
+
+# control block (no branches or leaves are needed to build the merkle root - the hash of the script is the merkle root)
+control_block = control_byte + internal_pubkey
+#=> c0924c163b385af7093440184af6fd6244936d1288cbb41cc3812286d3f83a3329
+
 # -------------------
 # Signature Algorithm
 # -------------------
 
-hash_type = 1 # SIGHASH_ALL
-hash_type_byte = field(dechex(hash_type), 1) # specific hash type being used for this input (1 = SIGHASH_ALL)
-
-ext_flag = 0
-annex_present = 0 # 1 = true, 0 = false
-spend_type = field(dechex((ext_flag * 2) + annex_present), 1)
-
 # unsigned raw tx:
 #
-# 02000000000101ec9016580d98a93909faf9d2f431e74f781b438d81372bb6aab4db67725c11a70000000000ffffffff0110270000000000001600144e44ca792ce545acba99d41304460dd1f53be3840000000000
+# 020000000001013cfe8b95d22502698fd98837f83d8d4be31ee3eddd9d1ab1a95654c64604c4d10000000000ffffffff01983a0000000000001600140de745dc58d8e62e6f47bde30cd5804a82016f9e0000000000
+
+hash_type = 1 # SIGHASH_ALL
+hash_type_byte = field(dechex(hash_type), 1)
+
+ext_flag = 1 # Use ext_flag = 1 to indicate we are spending using tapscript (i.e. a script path spend of a taproot output)
+annex_present = 0 # 1 = true, 0 = false
+spend_type = field(dechex((ext_flag * 2) + annex_present), 1)
 
 version = '02000000'
 locktime = '00000000'
 
-prevouts = 'ec9016580d98a93909faf9d2f431e74f781b438d81372bb6aab4db67725c11a7'+'00000000' # txid and amount are in little-endian
+# hash_type & 0x80 != SIGHASH_ANYONECANPAY
+prevouts = '3cfe8b95d22502698fd98837f83d8d4be31ee3eddd9d1ab1a95654c64604c4d1'+'00000000'
 amounts = reversebytes(field(dechex('20000'), 8))
 sequences = 'ffffffff'
-scriptpubkeys = serialize_script('51200f0c8db753acbd17343a39c2f3f4e35e4be6da749f9e35137ab220e7b238a667')
+scriptpubkeys = serialize_script('5120f3778defe5173a9bf7169575116224f961c03c725c0e98b8da8f15df29194b80')
 
-sha_prevouts = Digest::SHA256.hexdigest([prevouts].pack("H*"));           #=> eaff979f4771d11a857e48550a28c4d3503cf2a966182c94010fd21d5b700700
+sha_prevouts = Digest::SHA256.hexdigest([prevouts].pack("H*"));           #=> fd9703aeae8f25e8734366f3be9b5e7ac2a56772d577c598cfa6e869c698f7eb
 sha_amounts = Digest::SHA256.hexdigest([amounts].pack("H*"));             #=> ae9475d31b535bec000c9bfc7abc79b6a07db9eea2dd0e5066adddfb349bb53b
 sha_sequences = Digest::SHA256.hexdigest([sequences].pack("H*"));         #=> ad95131bc0b799c0b1af477fb14fcf26a6a9f76079e48bf090acb7e8367bfd0e
-sha_scriptpubkeys = Digest::SHA256.hexdigest([scriptpubkeys].pack("H*")); #=> 4cd686f794463476c6fc24b4a43e0abc7b58a0ea78a998d2be39cdb73f8d9cc2
+sha_scriptpubkeys = Digest::SHA256.hexdigest([scriptpubkeys].pack("H*")); #=> ef0ffac40687f5fc2a58c5348cd6f17469c333d0f2782769e0c3f05e97062182
 
-outputs = '1027000000000000' + serialize_script('00144e44ca792ce545acba99d41304460dd1f53be384') # amount + scriptpubkey
-sha_outputs = Digest::SHA256.hexdigest([outputs].pack("H*")); #=> c3a3f98ac2310126a614269e5715b0cabf38ce62232dd9ed8a878bdc0addea75
+outputs = '983a000000000000' + serialize_script('00140de745dc58d8e62e6f47bde30cd5804a82016f9e')
+sha_outputs = Digest::SHA256.hexdigest([outputs].pack("H*")); #=> 41c602530c3cfa80923771e080db8674c730480f9764290bc5b372ae28cf8dbc
+
+input_outpoint = '3cfe8b95d22502698fd98837f83d8d4be31ee3eddd9d1ab1a95654c64604c4d1'+'00000000'
+input_amount = reversebytes(field(dechex('20000'), 8))
+input_scriptpubkey = serialize_script('5120f3778defe5173a9bf7169575116224f961c03c725c0e98b8da8f15df29194b80') # always 32 bytes
+input_sequence = 'ffffffff'
 
 input_index = '00000000' # 4-byte vin of the input you're spending
 
-sha_annex = ''
+sha_annex = '' # SHA256 of (compact_size(size of annex) || annex), where annex includes the mandatory 0x50 prefix
 
 sha_single_output = ''
 
-# signature message
+
+# common signature message
 sigmsg = ''
 sigmsg += hash_type_byte + version + locktime
 
@@ -111,57 +139,46 @@ else
   sigmsg += input_outpoint + input_amount + input_scriptpubkey + input_sequence
 end
 
-sigmsg += sha_annex
+if (annex_present == 1)
+  annex = ''
+  sha_annex = Digest::SHA256.hexdigest([annex].pack("H*"))
+  sigmsg += sha_annex
+end
 
 # SIGHASH_SINGLE
 if (hash_type & 3 == 3)
   sigmsg += sha_single_output
 end
 
-#=> 010200000000000000eaff979f4771d11a857e48550a28c4d3503cf2a966182c94010fd21d5b700700ae9475d31b535bec000c9bfc7abc79b6a07db9eea2dd0e5066adddfb349bb53b4cd686f794463476c6fc24b4a43e0abc7b58a0ea78a998d2be39cdb73f8d9cc2ad95131bc0b799c0b1af477fb14fcf26a6a9f76079e48bf090acb7e8367bfd0ec3a3f98ac2310126a614269e5715b0cabf38ce62232dd9ed8a878bdc0addea750000000000
+# SigMsg extension (BIP 342)
+if (ext_flag == 1)
 
-# sighash epoch
-epoch = '00'
+  # <extension> = <tap leaf hash> <key version = 0x00> <codesep position = 0xffffffff>
+  #   <tap leaf hash>    = the leaf hash of the script you're spending
+  #   <key version>      = public key version (currently 0x00)
+  #   <codesep position> = the opcode position of the last OP_CODESEPARATOR (0xffffffff if none)
+  extension = leaf_hash + '00' + 'ffffffff'
 
-# sighash
-sighash = tagged_hash("TapSighash", epoch + sigmsg) # don't forget the 0x00 prefix to the sigmsg
-#=> a7b390196945d71549a2454f0185ece1b47c56873cf41789d78926852c355132
-
-
-# -----------------
-# Tweak Private Key
-# -----------------
-
-# original data from before
-internal_pubkey = '924c163b385af7093440184af6fd6244936d1288cbb41cc3812286d3f83a3329'
-tweak = '8dc8b9030225e044083511759b58328b46dffcc78b920b4b97169f9d7b43d3b5'
-private_key = '55d7c5a9ce3d2b15a62434d01205f3e59077d51316f5c20628b3a4b8b2a76f4c'
-
-# convert private key to the public key point so we can check if it creates an even y value
-private_key_int = int(private_key) #=> 38827828470485795394567956987183954348973858899545806359243020977513867734860
-private_key_to_public_key = multiply(private_key_int)
-# {:x=>66172109705071441823295681989107852967180089637640153745774876919271983297321, :y=>48613218598235331436749946747294004934275959149063298181052452063566809595043}
-# x = 924c163b385af7093440184af6fd6244936d1288cbb41cc3812286d3f83a3329 (same as internal public key)
-
-# negate the private key if y is odd
-if private_key_to_public_key[:y] % 2 == 1
-  private_key_int_negated = $n - private_key_int #=> 76964260766830400029003028021503953503863705379529098023362142164004293759477
-else
-  private_key_int_negated = private_key_int
+  sigmsg += extension
+#=> 010200000000000000fd9703aeae8f25e8734366f3be9b5e7ac2a56772d577c598cfa6e869c698f7ebae9475d31b535bec000c9bfc7abc79b6a07db9eea2dd0e5066adddfb349bb53bef0ffac40687f5fc2a58c5348cd6f17469c333d0f2782769e0c3f05e97062182ad95131bc0b799c0b1af477fb14fcf26a6a9f76079e48bf090acb7e8367bfd0e41c602530c3cfa80923771e080db8674c730480f9764290bc5b372ae28cf8dbc0200000000858dfe26a3dd48a2c1fcee1d631f0aadf6a61135fc51f75758e945bca534ef1600ffffffff
 end
 
-tweaked_privkey_int = (private_key_int_negated + int(tweak)) % $n
-tweaked_privkey = bytes(tweaked_privkey_int)
-#=> 37f0f35933e8b52e6210dca589523ea5b66827b4749c49456e62fae4c89c6469
+# sighash
+sighash = tagged_hash("TapSighash", '00' + sigmsg) # don't forget the 0x00 prefix to the sigmsg
+#=> 752453d473e511a0da2097d664d69fe5eb89d8d9d00eab924b42fc0801a980c9
+
+# ---------
+# Signature
+# ---------
+
+# signing data
+private_key = '9b8de5d7f20a8ebb026a82babac3aa47a008debbfde5348962b2c46520bd5189'
+message = sighash
+aux_rand = '0000000000000000000000000000000000000000000000000000000000000000' # all signatures are created with an all-zero (0x0000...0000) BIP340 auxiliary randomness array.
 
 # ----
 # Sign
 # ----
-
-# signing data
-private_key = tweaked_privkey
-message = sighash
-aux_rand = '0000000000000000000000000000000000000000000000000000000000000000'
 
 # convert private key to an integer
 d0 = int(private_key)
@@ -218,14 +235,29 @@ s = (k + e * d) % $n # this is linear (whereas s in ECDSA is non-linear)
 
 # signature is the r and s values converted to 32-byte hexadecimal string and concatenated
 sig = bytes(r) + bytes(s)
-#=> b693a0797b24bae12ed0516a2f5ba765618dca89b75e498ba5b745b71644362298a45ca39230d10a02ee6290a91cebf9839600f7e35158a447ea182ea0e022ae
+#=> 01769105cbcbdcaaee5e58cd201ba3152477fda31410df8b91b4aee2c4864c7700615efb425e002f146a39ca0a4f2924566762d9213bd33f825fad83977fba7f
+
+# witness (signature + hash_type byte)
+signature = sig + hash_type_byte
+#=> 01769105cbcbdcaaee5e58cd201ba3152477fda31410df8b91b4aee2c4864c7700615efb425e002f146a39ca0a4f2924566762d9213bd33f825fad83977fba7f01
+
+# NOTE: If the hash_type_byte is not given (i.e. the signature is 64 instead of 64 bytes), the hash_type is assumed to be 0x00
+# Why permit two signature lengths? By making the most common type of hash_type implicit, a byte can often be saved.
 
 # -------
 # Witness
 # -------
+# <script inputs> <script> <control block>
 
-# witness (signature + hash_type byte)
-witness = sig + hash_type_byte
+script_inputs = signature # CAUTION: The witness only contains data pushes, unlike the scriptSig.
+script        = '206d4ddc0e47d2e8f82cbe2fc2d0d749e7bd3338112cecdc76d8f831ae6620dbe0ac' # OP_PUSHBYTES_32 6d4ddc0e47d2e8f82cbe2fc2d0d749e7bd3338112cecdc76d8f831ae6620dbe0 OP_CHECKSIG
+control_block = control_block
+
+witness = 
+  compact_size(3) + 
+  compact_size(script_inputs.length / 2) + script_inputs + 
+  compact_size(script.length / 2) + script + 
+  compact_size(control_block.length / 2) + control_block
 
 puts witness
-#=> b693a0797b24bae12ed0516a2f5ba765618dca89b75e498ba5b745b71644362298a45ca39230d10a02ee6290a91cebf9839600f7e35158a447ea182ea0e022ae01
+#=> 034101769105cbcbdcaaee5e58cd201ba3152477fda31410df8b91b4aee2c4864c7700615efb425e002f146a39ca0a4f2924566762d9213bd33f825fad83977fba7f0122206d4ddc0e47d2e8f82cbe2fc2d0d749e7bd3338112cecdc76d8f831ae6620dbe0ac21c0924c163b385af7093440184af6fd6244936d1288cbb41cc3812286d3f83a3329

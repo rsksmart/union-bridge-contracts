@@ -15,7 +15,7 @@ import {TestUtils} from "./TestUtils.sol";
 
 abstract contract HelperContract is Test, TestUtils {
     // Mock keys
-    bytes32 constant COMMITEE_1_PUB_KEY = 0x0908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785eb;
+    bytes32 constant COMMITEE_1_PUB_KEY = 0x924c163b385af7093440184af6fd6244936d1288cbb41cc3812286d3f83a3329;
     bytes32 constant COMMITEE_2_PUB_KEY = 0x1908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785ec;
     bytes32 constant COMMITEE_3_PUB_KEY = 0x2908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785ed;
 
@@ -107,7 +107,7 @@ abstract contract HelperContract is Test, TestUtils {
     function getBtcP2TROut() internal pure returns (BtcTxOut memory) {
         return BtcTxOut({
             amount: VALUE,
-            scriptPubKey: hex"51205b85a923c4468566ce550a6a2922af8741b308576e2b0a6bdc7f6f16c073fd58"
+            scriptPubKey: hex"5120cce32aec920a48fb9e430a14e9ee4b98694e121a6478aa09d6785d7ad2821a9c"
         });
     }
 
@@ -120,13 +120,13 @@ abstract contract HelperContract is Test, TestUtils {
     }
 
     function getBtcOPReturnReimbursementPubKey() internal pure returns (bytes32) {
-        return 0x741976f972e9aa5e226eae26289b794aac9bbe702f378aa64c6104f16b79298c;
+        return 0x5d238354a7e74c9e373317053226537dec221c5c775bcca01e806ec358c5c08d;
     }
 
     function getBtcOPReturnOut() internal pure returns (BtcTxOut memory) {
         return BtcTxOut({
             amount: 0,
-            scriptPubKey: hex"6a4552534b5f504547494e00000000000000007ac5496aee77c1ba1f0854206a26dda82a81d6d8741976f972e9aa5e226eae26289b794aac9bbe702f378aa64c6104f16b79298c"
+            scriptPubKey: hex"6a4552534b5f504547494e00000000000000007ac5496aee77c1ba1f0854206a26dda82a81d6d85d238354a7e74c9e373317053226537dec221c5c775bcca01e806ec358c5c08d"
         });
     }
 
@@ -141,6 +141,6 @@ abstract contract HelperContract is Test, TestUtils {
     }
 
     function getExpectedPegInRequestTxHash() internal pure returns (bytes32) {
-        return 0x15a259c29a1b23d75262cdbbbbb0e45a9633bf9c0f136d0d76e34497d1f87d39;
+        return 0x7c7a3ba2bdc40c5559dc5c9b60a14ab5eadd1e3b7a5fc9cc66a9804e250374a9;
     }
 }

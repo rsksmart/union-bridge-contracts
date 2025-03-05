@@ -14,6 +14,7 @@ import {
 } from "./interfaces/IPegManager.sol";
 import {Stream, Packet, SlotState, StreamManager} from "./StreamManager.sol";
 import {ProofValidator} from "./ProofValidator.sol";
+import {BtcScriptParser} from "./libraries/BtcScriptParser.sol";
 
 /// @title PegManager
 /// @notice Manages peg-in and peg-out operations between Bitcoin and Rootstock
@@ -46,9 +47,10 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
 
         // Get the current packet's committee key
         Packet memory currentPacket = packets[stream.streamId][stream.peginPointer];
+        bytes32 committeeKey = currentPacket.committeePubKey;
 
         return bitcoinManager.getTemporaryPegInAddress(
-            _rootstockDepositAddress, _value, _btcReimbursementPubKey, currentPacket.committeePubKey
+            _rootstockDepositAddress, _value, _btcReimbursementPubKey, committeeKey
         );
     }
 

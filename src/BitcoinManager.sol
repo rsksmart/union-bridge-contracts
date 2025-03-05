@@ -10,15 +10,19 @@ import {BtcHelper} from "./libraries/BtcHelper.sol";
 import {BtcTxParser} from "./libraries/BtcTxParser.sol";
 import {BtcScriptParser} from "./libraries/BtcScriptParser.sol";
 import {BtcTaprootParser} from "./libraries/BtcTaprootParser.sol";
+import {Bech32m} from "src/libraries/bech32m.sol";
 import {OpCodes} from "./libraries/OpCodes.sol";
+import {Network} from "./network.sol";
 
 /// @title BitcoinManager
 /// @notice Manages Bitcoin Addresses and Scripts
 contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
     uint8 constant TIMELOCK_BLOCKS = 10;
+    Network public network;
 
-    function initialize(address _initialOwner) public initializer {
+    function initialize(address _initialOwner, Network _network) public initializer {
         __BaseProxy_init(_initialOwner);
+        network = _network;
     }
 
     function getTemporaryPegInAddress(
@@ -26,14 +30,40 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         uint64 _value,
         bytes32 _btcReimbursementPubKey,
         bytes32 _committeePubKey
-    ) external pure returns (bytes memory bitcoinDepositAddress) {
+    ) external view returns (bytes memory bitcoinDepositAddress) {
         validateRequestPegInInputs(_btcReimbursementPubKey, _committeePubKey, _rskDestinationAddress, _value);
-        // Generate and return the taproot address
-        bytes memory scriptPubKey =
-            getPegInP2TRScriptPub(_rskDestinationAddress, _value, _btcReimbursementPubKey, _committeePubKey);
 
-        // Add Taproot version byte (0x01) to script pub
-        return abi.encodePacked(hex"01", scriptPubKey);
+        bytes32 tweakedPublicKey =
+            getTimelockTweakedPublicKey(_rskDestinationAddress, _value, _btcReimbursementPubKey, _committeePubKey);
+
+        string memory addr = Bech32m.encodeTaprootAddress(abi.encodePacked(tweakedPublicKey), network);
+
+        return bytes(addr);
+    }
+
+    function getTimelockTweakedPublicKey(
+        address _rskDestinationAddress,
+        uint64 _value,
+        bytes32 _btcReimbursementPubKey,
+        bytes32 _committeePubKey
+    ) internal pure returns (bytes32) {
+        bytes32 publicKey = _committeePubKey;
+
+        bytes memory timelockScript = BtcScriptParser.getTimelockScript(TIMELOCK_BLOCKS, _btcReimbursementPubKey);
+        bytes32 timelockLeaf = BtcTaprootParser.getLeaf(timelockScript);
+
+        bytes memory data = abi.encodePacked(_rskDestinationAddress, uint32(_value));
+        // Max deposit amount using 4 bytes is 42.94 BTC (4,294,967,295 satoshis)
+        // TODO increase _value size to allow for larger amounts
+        bytes memory extraDataScript = abi.encodePacked(OpCodes.OP_RETURN, OpCodes.OP_PUSHBYTES_24, data);
+        bytes32 extraDataLeaf = BtcTaprootParser.getLeaf(extraDataScript);
+
+        bytes32 merkleRoot = BtcTaprootParser.getBranch(timelockLeaf, extraDataLeaf);
+
+        bytes32 tweak = BtcTaprootParser.getTweak(abi.encodePacked(publicKey, merkleRoot));
+        bytes32 tweakedPublicKey = BtcTaprootParser.getTweakedPublicKey(publicKey, tweak);
+
+        return tweakedPublicKey;
     }
 
     /// @dev Validates the inputs for a peg-in request
@@ -135,7 +165,7 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
     /// @notice Generates a Taproot script pub key with both key spend and script spend paths
     /// @param _rskDestinationAddress address that will get the RBTC
     /// @param _value amount sent in btc, should be equal to stream denomination
-    /// @param _btcReimbursementPubKey The committee's public key (x-only, 32 bytes)
+    /// @param _btcReimbursementPubKey The user's public key (x-only, 32 bytes)
     /// @param _committeePubKey The committee's public key (x-only, 32 bytes)
     // /// @param customTweak Additional tweak data for address customization
     /// @return taprootScriptPubKey bytes (OP_1 + OP_PUSHBYTES_32 + 32 bytes output key)
@@ -145,12 +175,8 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         bytes32 _btcReimbursementPubKey,
         bytes32 _committeePubKey
     ) internal pure returns (bytes memory) {
-        bytes32 timelockLeaf =
-            BtcTaprootParser.getLeaf(BtcScriptParser.getTimelockScript(TIMELOCK_BLOCKS, _btcReimbursementPubKey));
-        // Use _rskDestinationAddress as part of the tweak
-        bytes memory customTweakData = abi.encodePacked(_rskDestinationAddress, _value);
-        // Convert to Taproot ScriptPubKey
-        // If you only have one leaf in your script tree, the merkle root will be that leaf hash.
-        return BtcTaprootParser.getP2TRScriptPubKey(_committeePubKey, timelockLeaf, customTweakData);
+        bytes32 tweakedPublicKey =
+            getTimelockTweakedPublicKey(_rskDestinationAddress, _value, _btcReimbursementPubKey, _committeePubKey);
+        return BtcTaprootParser.getP2TRScriptPubKey(tweakedPublicKey);
     }
 }

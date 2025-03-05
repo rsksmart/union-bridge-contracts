@@ -6,18 +6,23 @@ import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 import {CommitteeRegistry} from "src/CommitteeRegistry.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
 import {PegManager} from "src/PegManager.sol";
+import {Network} from "src/network.sol";
 
 ///@dev We are using fundry-upgrades see https://github.com/OpenZeppelin/openzeppelin-foundry-upgrades
 contract DeployImplAndProxy is Script {
     // Contracts to be deployed
     address public upgradableOwner;
+    Network public btcNetwork;
 
     function setUp() internal {
         address[] memory wallets = vm.getWallets();
         // RSK Mainnet
         if (block.chainid == 30) {
             upgradableOwner = wallets[0];
+            btcNetwork = Network.MAINNET;
         } else if (block.chainid == 31) {
+            btcNetwork = Network.TESTNET;
+
             // RSK Testnet
             if (wallets.length > 0) {
                 upgradableOwner = wallets[0];
@@ -27,6 +32,7 @@ contract DeployImplAndProxy is Script {
         } else if (block.chainid == 31337 || block.chainid == 1337) {
             // Foundry local chainid
             upgradableOwner = vm.addr(777);
+            btcNetwork = Network.REGTEST;
         } else {
             revert("Blockchain is not RSK or regtest");
         }
@@ -49,7 +55,7 @@ contract DeployImplAndProxy is Script {
 
     function deployBitcoinManager() public returns (BitcoinManager) {
         (address implementationAddress, address proxyAdddress) = deployContractAndUUPSProxy(
-            "BitcoinManager.sol", abi.encodeCall(BitcoinManager.initialize, (upgradableOwner))
+            "BitcoinManager.sol", abi.encodeCall(BitcoinManager.initialize, (upgradableOwner, btcNetwork))
         );
         return BitcoinManager(proxyAdddress);
     }

@@ -38,7 +38,7 @@ contract SetUpCommittees is Script, TestUtils {
             // Committee setup
             committeesParams.push();
             committeesParams[0].committee.internalKey =
-                0x0908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785eb;
+                0x924c163b385af7093440184af6fd6244936d1288cbb41cc3812286d3f83a3329;
             committeesParams[0].committee.memberIndexesAndRoles.push(members[0]);
             committeesParams[0].committee.memberIndexesAndRoles.push(members[1]);
             committeesParams[0].committee.leaderIndex = 0;
@@ -54,7 +54,7 @@ contract SetUpCommittees is Script, TestUtils {
             // Committee setup
             committeesParams.push();
             committeesParams[0].committee.internalKey =
-                0x0908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785eb;
+                0x924c163b385af7093440184af6fd6244936d1288cbb41cc3812286d3f83a3329;
             committeesParams[0].committee.memberIndexesAndRoles.push(members[0]);
             committeesParams[0].committee.memberIndexesAndRoles.push(members[1]);
             committeesParams[0].committee.leaderIndex = 0;
@@ -74,7 +74,7 @@ contract SetUpCommittees is Script, TestUtils {
             // Committee setup
             committeesParams.push();
             committeesParams[0].committee.internalKey =
-                0x0908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785eb;
+                0x924c163b385af7093440184af6fd6244936d1288cbb41cc3812286d3f83a3329;
             committeesParams[0].committee.memberIndexesAndRoles.push(members[0]);
             committeesParams[0].committee.memberIndexesAndRoles.push(members[1]);
             committeesParams[0].committee.leaderIndex = 0;
