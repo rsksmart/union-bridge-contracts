@@ -1,8 +1,8 @@
 #!/bin/sh
 set -eux
 
-bash simulate-deploy.sh
-bash format.sh
+bash shell/script/deploy/simulate-deploy.sh
+bash shell/format.sh
 forge test -vvv
-bash gas-snapshot.sh
-bash slither.sh
+bash shell/gas-snapshot.sh
+bash shell/slither.sh

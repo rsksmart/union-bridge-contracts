@@ -22,7 +22,7 @@ jobs:
           version: v0.3.0
 
       - name: Simulate deployment
-        run: bash simulate-deploy.sh
+        run: bash shell/script/deploy/simulate-deploy.sh
 
       - name: Run tests
         run: forge test -vvv

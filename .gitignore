@@ -2,6 +2,7 @@
 venv/
 # foundry
 dry-run/
+31337/
 cache/
 out/
 # macOS

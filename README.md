@@ -17,7 +17,7 @@ What it does is runs the followgin steps
 1. [Formats the code](https://book.getfoundry.sh/reference/config/formatter):
 
 ```sh
-bash format.sh
+bash shell/scripts/format.sh
 ```
 
 2. Run the [test suite](https://book.getfoundry.sh/forge/tests):
@@ -29,19 +29,19 @@ bash test.sh
 3. Create [gas snapshot](https://book.getfoundry.sh/forge/gas-function-snapshots):
 
 ```sh
-bash gas-snapshot.sh
+bash shell/scripts/gas-snapshot.sh
 ```
 
 4. Run [Slither](https://github.com/crytic/slither) in a docker image:
 
 ```sh
-bash slither.sh
+bash shell/scripts/slither.sh
 ```
 
 5. Use [deployment script](https://book.getfoundry.sh/guides/scripting-with-solidity#deploying-our-contract) to run a simulation:
 
 ```sh
-bash simulate-deploy.sh
+bash shell/sscript/simulate-deploy.sh
 ```
 
 
@@ -50,7 +50,7 @@ bash simulate-deploy.sh
 Use [deployment script] (https://book.getfoundry.sh/guides/scripting-with-solidity#deploying-our-contract) to deploy:
 
 ```sh
-bash deploy.sh
+bash shell/scripts/deploy/deploy.sh
 ```
 
 It will ask for a private key interactivly in order to performe the deployment. The address of the private key needs to have funds in order to perform the deployment.

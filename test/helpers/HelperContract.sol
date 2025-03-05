@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
-import {DeployScript} from "script/DeployScript.s.sol";
+import {DeployScript} from "script/deploy/DeployScript.s.sol";
 import {PegManager} from "src/PegManager.sol";
 import {Role, Member, CommitteeMember, Committee, CommitteeRegistry} from "src/CommitteeRegistry.sol";
 import {StreamDenomination} from "src/interfaces/IStreamManager.sol";

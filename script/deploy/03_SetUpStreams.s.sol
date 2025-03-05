@@ -28,6 +28,8 @@ contract SetUpStreams is Script {
 
     function run(PegManager _pegManager) public {
         setUp();
+        vm.startBroadcast();
         _pegManager.createPacketsAndSlots(committeePubKey);
+        vm.stopBroadcast();
     }
 }
