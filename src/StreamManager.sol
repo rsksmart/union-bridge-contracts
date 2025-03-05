@@ -7,9 +7,10 @@ import {Stream, Packet, Slot, SlotState, IStreamManager} from "./interfaces/IStr
 /// @title Stream Manager
 /// @notice Manages streams
 abstract contract StreamManager is IStreamManager, Initializable {
-    Stream[5] internal streams;
-    uint64[5] internal denominations;
+    Stream[] internal streams;
+    uint64[] internal denominations;
     uint64 internal constant SECURITY_BOND_MULTIPLYER = 2;
+    uint64 public constant MAX_DENOMINATIONS_SIZE = 10;
     uint256[50] private __gap;
 
     // StreamId => Packet list
@@ -19,22 +20,23 @@ abstract contract StreamManager is IStreamManager, Initializable {
     // TODO check if we can use another key or a hash for the slots and packets as they are not unique through the streams
 
     /// @dev Initializes the streams with their denominations and parameters
-    function initialize() internal onlyInitializing {
-        denominations = [
-            uint64(100_000), // 0.001 BTC
-            uint64(1_000_000), // 0.01 BTC
-            uint64(10_000_000), // 0.1 BTC
-            uint64(100_000_000), // 1 BTC
-            uint64(1_000_000_000) // 10 BTC
-        ];
-        uint256 length = denominations.length;
+    function initialize(uint64[] memory _denominations) internal onlyInitializing {
+        uint256 length = _denominations.length;
+        if (length > MAX_DENOMINATIONS_SIZE) {
+            revert tooManyDenominations(MAX_DENOMINATIONS_SIZE);
+        }
+        denominations = _denominations;
         for (uint64 i = 0; i < length; i++) {
-            streams[i].streamId = i;
-            streams[i].denomination = denominations[i];
-            streams[i].peginPointer = 0;
-            streams[i].pegoutPointer = -1;
-            streams[i].securityBondValue = denominations[i] * SECURITY_BOND_MULTIPLYER; // TODO Validate this value
-            streams[i].pegInConfirmations = uint8(i + 1); // TODO Validate this value
+            streams.push(
+                Stream({
+                    streamId: i,
+                    denomination: _denominations[i],
+                    peginPointer: 0,
+                    pegoutPointer: -1,
+                    securityBondValue: _denominations[i] * SECURITY_BOND_MULTIPLYER,
+                    pegInConfirmations: uint8(i + 1)
+                })
+            );
         }
     }
 

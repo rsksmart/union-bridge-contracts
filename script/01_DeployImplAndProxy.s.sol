@@ -13,21 +13,34 @@ contract DeployImplAndProxy is Script {
     // Contracts to be deployed
     address public upgradableOwner;
     Network public btcNetwork;
+    uint64[] denominations;
 
     function setUp() internal {
         address[] memory wallets = vm.getWallets();
+        denominations = [
+            uint64(100_000), // 0.001 BTC
+            uint64(1_000_000), // 0.01 BTC
+            uint64(10_000_000), // 0.1 BTC
+            uint64(100_000_000), // 1 BTC
+            uint64(1_000_000_000) // 10 BTC
+        ];
         // RSK Mainnet
         if (block.chainid == 30) {
             upgradableOwner = wallets[0];
             btcNetwork = Network.MAINNET;
         } else if (block.chainid == 31) {
             btcNetwork = Network.TESTNET;
-
             // RSK Testnet
             if (wallets.length > 0) {
                 upgradableOwner = wallets[0];
             } else {
                 upgradableOwner = vm.addr(777);
+            }
+            uint256 length = denominations.length;
+            for (uint64 i = 0; i < length; i++) {
+                // we reduce the denominations by a factor of 100
+                // as it's hard to get the large values in the testnet
+                denominations[i] = denominations[i] / 100;
             }
         } else if (block.chainid == 31337 || block.chainid == 1337) {
             // Foundry local chainid
@@ -66,7 +79,7 @@ contract DeployImplAndProxy is Script {
     {
         (address implementationAddress, address proxyAdddress) = deployContractAndUUPSProxy(
             "PegManager.sol",
-            abi.encodeCall(PegManager.initialize, (upgradableOwner, _committeeRegistry, _bitcoinManager))
+            abi.encodeCall(PegManager.initialize, (upgradableOwner, _committeeRegistry, _bitcoinManager, denominations))
         );
         return PegManager(proxyAdddress);
     }

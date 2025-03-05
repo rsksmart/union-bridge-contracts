@@ -27,13 +27,15 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
     // Bitcoin txHash => TempInfo
     mapping(bytes32 => PegInTempInfo) internal pegInsTempInfo;
 
-    function initialize(address _initialOwner, ICommitteeRegistry _committeeRegistry, IBitcoinManager _bitcoinManager)
-        public
-        initializer
-    {
+    function initialize(
+        address _initialOwner,
+        ICommitteeRegistry _committeeRegistry,
+        IBitcoinManager _bitcoinManager,
+        uint64[] memory _denominations
+    ) public initializer {
         committeeRegistry = _committeeRegistry;
         bitcoinManager = _bitcoinManager;
-        StreamManager.initialize();
+        StreamManager.initialize(_denominations);
         __BaseProxy_init(_initialOwner);
     }
 

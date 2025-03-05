@@ -81,4 +81,5 @@ interface IStreamManager {
     error StreamNotFoundByDenomination(uint256 denomination);
     error PacketOutOfBound(uint256 packetNumber);
     error NoEmptySlot(uint256 streamId, uint256 packetNumber);
+    error tooManyDenominations(uint256 maxDenominationsSize);
 }

@@ -96,7 +96,8 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
 
     /// @dev Expected OP_RETURN format:
     /// @dev [OP_RETURN (1 byte)]
-    /// @dev [OP_PUSHBYTES_69 (1 byte)][RSK_PEGIN (9 bytes)]
+    /// @dev [OP_PUSHBYTES_69 (1 byte)]
+    /// @dev [RSK_PEGIN (9 bytes)]
     /// @dev [packet number (8 bytes)]
     /// @dev [rsk destination address (20 bytes)]
     /// @dev [reimbursement public key (32 bytes)]
