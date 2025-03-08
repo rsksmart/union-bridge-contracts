@@ -47,7 +47,7 @@ interface IPegManager is IStreamManager {
     /// @return temporaryPegInAddress The temporary peg-in address
     function getTemporaryPegInAddress(address _rootstockDepositAddress, uint64 _value, bytes32 _btcReimbursementPubKey)
         external
-        returns (bytes calldata temporaryPegInAddress);
+        returns (string memory temporaryPegInAddress);
 
     function getPegInRequest(bytes32 btcTxHash) external view returns (StreamPosition calldata);
 

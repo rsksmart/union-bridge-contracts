@@ -12,7 +12,7 @@ contract GetTemporaryAddressScript is Script {
     bytes32 btc_reimbursement_pub_key;
 
     function setUp() internal {
-        pegManager = PegManager(0xBb2180ebd78ce97360503434eD37fcf4a1Df61c3);
+        pegManager = PegManager(0x5FC8d32690cc91D4c39d9d3abcBD16989F875707);
         rootstock_deposit_address = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
         value = 100_000;
         btc_reimbursement_pub_key = 0xc72a9f6fc8e57f1de528a48b6c4ad7a6db30b24a7bbf8cdd74b0a3b248b6f7f1;
@@ -41,9 +41,9 @@ contract GetTemporaryAddressScript is Script {
         console.log("committeePubKey");
         console.logBytes32(committeePubKey);
 
-        bytes memory result =
+        string memory result =
             pegManager.getTemporaryPegInAddress(rootstock_deposit_address, value, btc_reimbursement_pub_key);
         console.log("getTemporaryPegInAddress");
-        console.logBytes(result);
+        console.log(result);
     }
 }

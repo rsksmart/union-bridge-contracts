@@ -40,7 +40,7 @@ interface IBitcoinManager {
         uint64 _value,
         bytes32 _btcReimbursementPubKey,
         bytes32 _committeePubKey
-    ) external view returns (bytes calldata temporaryPegInAddress);
+    ) external view returns (string memory temporaryPegInAddress);
 
     /// @notice Validates a Bitcoin peg-in transaction
     /// @dev Checks that the transaction has at least 2 outputs - one for the peg-in amount and one for the OP_RETURN data

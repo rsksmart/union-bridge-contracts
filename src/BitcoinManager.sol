@@ -30,15 +30,13 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         uint64 _value,
         bytes32 _btcReimbursementPubKey,
         bytes32 _committeePubKey
-    ) external view returns (bytes memory bitcoinDepositAddress) {
+    ) external view returns (string memory bitcoinDepositAddress) {
         validateRequestPegInInputs(_btcReimbursementPubKey, _committeePubKey, _rskDestinationAddress, _value);
 
         bytes32 tweakedPublicKey =
             getTimelockTweakedPublicKey(_rskDestinationAddress, _value, _btcReimbursementPubKey, _committeePubKey);
 
-        string memory addr = Bech32m.encodeTaprootAddress(abi.encodePacked(tweakedPublicKey), network);
-
-        return bytes(addr);
+        return Bech32m.encodeTaprootAddress(abi.encodePacked(tweakedPublicKey), network);
     }
 
     function getTimelockTweakedPublicKey(

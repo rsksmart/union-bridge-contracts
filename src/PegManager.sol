@@ -42,7 +42,7 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
     function getTemporaryPegInAddress(address _rootstockDepositAddress, uint64 _value, bytes32 _btcReimbursementPubKey)
         external
         view
-        returns (bytes memory bitcoinDepositAddress)
+        returns (string memory bitcoinDepositAddress)
     {
         // Get the stream for this value
         Stream memory stream = getStream(_value);
