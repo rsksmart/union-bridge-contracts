@@ -37,6 +37,7 @@ library OpCodes {
     bytes1 public constant OP_PUSHBYTES_8 = 0x08;
     bytes1 public constant OP_PUSHBYTES_20 = 0x14;
     bytes1 public constant OP_PUSHBYTES_24 = 0x18;
+    bytes1 public constant OP_PUSHBYTES_28 = 0x1c;
     bytes1 public constant OP_PUSHBYTES_32 = 0x20;
     bytes1 public constant OP_PUSHBYTES_69 = 0x45;
 }

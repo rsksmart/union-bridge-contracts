@@ -110,7 +110,16 @@ contract DeployImplAndProxy is Script {
         vm.stopBroadcast();
         // Get the implementation address
         address implementationAddress = Upgrades.getImplementationAddress(proxyAddress);
+        printDeployAddress(proxyAddress, _contractName);
         return (implementationAddress, proxyAddress);
+    }
+
+    function printDeployAddress(address _proxyAddress, string memory _contractName) public view {
+        if (vm.isContext(VmSafe.ForgeContext.ScriptBroadcast)) {
+            // execute when running `forge script --broadcast`
+            // this is to avoid printing the address when running tests
+            console.log(_contractName, " proxy address: ", _proxyAddress);
+        }
     }
 
     //     /**

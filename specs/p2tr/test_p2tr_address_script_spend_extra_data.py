@@ -80,7 +80,7 @@ def test_p2tr(rpc, secret_key_from, address_from, address_to, funding_txid, fee)
 
     # concatenate rootstock_deposit_address and deposit_amount as a hex string
     # we'll always use 4 bytes for the amount
-    data = rootstock_deposit_address + deposit_amount.to_bytes(4).hex()
+    data = rootstock_deposit_address + deposit_amount.to_bytes(8).hex()
     print("Data:", data)
 
     # extra_data_script = Script(['OP_RETURN', rootstock_deposit_address, deposit_amount])

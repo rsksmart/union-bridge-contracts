@@ -1,10 +1,16 @@
 #!/bin/sh
-#https://book.getfoundry.sh/guides/scripting-with-solidity#deploying-our-contract
-source ../../.env
+
+# we go to the root of the project to avoid relative path issues
+current_path=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
+cd "$current_path";
+cd ..
+cd ..
+# set up environment variables
+source .env
 RPC=$LOCAL_RPC
 echo "================ GET TEMPORARY ADDRESS FROM $RPC ================"
 forge script \
-    ../../script/GetTemporaryAddress.s.sol \
+    script/GetTemporaryAddress.s.sol \
     --rpc-url $RPC \
     --legacy \
     -vvvv \
