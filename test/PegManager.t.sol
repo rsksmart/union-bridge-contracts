@@ -31,7 +31,7 @@ contract TestPegManager is Test, HelperContract {
 
     function test_getTemporaryPegInAddress_Success() external view {
         address dummyRskAddress = 0x4C9a9CbFa14106439B0F96a64d9260F3b8947934;
-        string memory tempAddress = "bcrt1p60tcmwu3kzrhyegywl8hjj29akfy6hpn8tq2c4h06kkl0qpwplns2g7zhc";
+        string memory tempAddress = "bcrt1ptp8gw3yt9rjavkrlxhwmlm9y5w4c5u6yeeltmupanle76eq4ftrszyjhnn";
 
         string memory result = pm.getTemporaryPegInAddress(dummyRskAddress, VALUE, BTC_REIMBURSEMENT_PUBKEY);
         assertEq(result, tempAddress, "Incorrect temporary peg in address");

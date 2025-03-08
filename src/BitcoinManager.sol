@@ -50,10 +50,8 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         bytes memory timelockScript = BtcScriptParser.getTimelockScript(TIMELOCK_BLOCKS, _btcReimbursementPubKey);
         bytes32 timelockLeaf = BtcTaprootParser.getLeaf(timelockScript);
 
-        bytes memory data = abi.encodePacked(_rskDestinationAddress, uint32(_value));
-        // Max deposit amount using 4 bytes is 42.94 BTC (4,294,967,295 satoshis)
-        // TODO increase _value size to allow for larger amounts
-        bytes memory extraDataScript = abi.encodePacked(OpCodes.OP_RETURN, OpCodes.OP_PUSHBYTES_24, data);
+        bytes memory data = abi.encodePacked(_rskDestinationAddress, _value);
+        bytes memory extraDataScript = abi.encodePacked(OpCodes.OP_RETURN, OpCodes.OP_PUSHBYTES_28, data);
         bytes32 extraDataLeaf = BtcTaprootParser.getLeaf(extraDataScript);
 
         bytes32 merkleRoot = BtcTaprootParser.getBranch(timelockLeaf, extraDataLeaf);
