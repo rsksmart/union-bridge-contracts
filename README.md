@@ -5,8 +5,13 @@ This repository contains the specifications and Solidity code for the Union Brid
 - Node.js LTS (22)
 
 ## Testing
+You can run unit test with:
 
-You can run the full test suit with:
+ ```sh
+bash test.sh
+```
+
+Or you can run the full test suit with:
 
  ```sh
 bash run.sh
@@ -17,31 +22,31 @@ What it does is runs the followgin steps
 1. [Formats the code](https://book.getfoundry.sh/reference/config/formatter):
 
 ```sh
-bash shell/scripts/format.sh
+bash shell/format.sh
 ```
 
 2. Run the [test suite](https://book.getfoundry.sh/forge/tests):
 
 ```sh
-bash test.sh
+bash shell/test.sh
 ```
 
 3. Create [gas snapshot](https://book.getfoundry.sh/forge/gas-function-snapshots):
 
 ```sh
-bash shell/scripts/gas-snapshot.sh
+bash shell/gas-snapshot.sh
 ```
 
 4. Run [Slither](https://github.com/crytic/slither) in a docker image:
 
 ```sh
-bash shell/scripts/slither.sh
+bash shell/slither.sh
 ```
 
 5. Use [deployment script](https://book.getfoundry.sh/guides/scripting-with-solidity#deploying-our-contract) to run a simulation:
 
 ```sh
-bash shell/sscript/simulate-deploy.sh
+bash shell/sscript/deploy/simulate-deploy.sh
 ```
 
 
@@ -50,7 +55,7 @@ bash shell/sscript/simulate-deploy.sh
 Use [deployment script] (https://book.getfoundry.sh/guides/scripting-with-solidity#deploying-our-contract) to deploy:
 
 ```sh
-bash shell/scripts/deploy/deploy.sh
+bash shell/script/deploy/deploy.sh
 ```
 
 It will ask for a private key interactivly in order to performe the deployment. The address of the private key needs to have funds in order to perform the deployment.
