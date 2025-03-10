@@ -118,6 +118,15 @@ contract SetUpCommittees is Script, TestUtils {
         for (uint256 i = 0; i < length; i++) {
             registerCommittee(_committeeRegistry, _registerCommitteesParams[i].committee);
         }
+        if (_committeeRegistry.getCommitteesLength() != length) {
+            revert("CommitteeRegistry committees length is not the same as the number of committees");
+        }
+        if (
+            _committeeRegistry.getCommitteeByIndex(length - 1)
+                != _registerCommitteesParams[length - 1].committee.internalKey
+        ) {
+            revert("CommitteeRegistry last committee is not the same as the last committee in the array");
+        }
     }
 
     function registerCommittee(CommitteeRegistry _committeeRegistry, Committee memory _commitee) public {

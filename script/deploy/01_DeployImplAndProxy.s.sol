@@ -54,20 +54,29 @@ contract DeployImplAndProxy is Script {
     function run() public returns (CommitteeRegistry, BitcoinManager, PegManager) {
         setUp();
         CommitteeRegistry committeeRegistry = deployCommitteeRegistry();
+        if (committeeRegistry.owner() != upgradableOwner) {
+            revert("CommitteeRegistry owner is not the upgradable owner");
+        }
         BitcoinManager bitcoinManager = deployBitcoinManager();
+        if (bitcoinManager.owner() != upgradableOwner) {
+            revert("BitcoinManager owner is not the upgradable owner");
+        }
         PegManager pegManager = deployPegManager(committeeRegistry, bitcoinManager);
+        if (pegManager.owner() != upgradableOwner) {
+            revert("PegManager owner is not the upgradable owner");
+        }
         return (committeeRegistry, bitcoinManager, pegManager);
     }
 
     function deployCommitteeRegistry() public returns (CommitteeRegistry) {
-        (address implementationAddress, address proxyAdddress) = deployContractAndUUPSProxy(
+        (, address proxyAdddress) = deployContractAndUUPSProxy(
             "CommitteeRegistry.sol", abi.encodeCall(CommitteeRegistry.initialize, (upgradableOwner))
         );
         return CommitteeRegistry(proxyAdddress);
     }
 
     function deployBitcoinManager() public returns (BitcoinManager) {
-        (address implementationAddress, address proxyAdddress) = deployContractAndUUPSProxy(
+        (, address proxyAdddress) = deployContractAndUUPSProxy(
             "BitcoinManager.sol", abi.encodeCall(BitcoinManager.initialize, (upgradableOwner, btcNetwork))
         );
         return BitcoinManager(proxyAdddress);
@@ -77,7 +86,7 @@ contract DeployImplAndProxy is Script {
         public
         returns (PegManager)
     {
-        (address implementationAddress, address proxyAdddress) = deployContractAndUUPSProxy(
+        (, address proxyAdddress) = deployContractAndUUPSProxy(
             "PegManager.sol",
             abi.encodeCall(PegManager.initialize, (upgradableOwner, _committeeRegistry, _bitcoinManager, denominations))
         );
