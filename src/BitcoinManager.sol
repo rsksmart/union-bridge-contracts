@@ -10,7 +10,7 @@ import {BtcHelper} from "./libraries/BtcHelper.sol";
 import {BtcTxParser} from "./libraries/BtcTxParser.sol";
 import {BtcScriptParser} from "./libraries/BtcScriptParser.sol";
 import {BtcTaprootParser} from "./libraries/BtcTaprootParser.sol";
-import {Bech32m} from "src/libraries/bech32m.sol";
+import {Bech32m} from "src/libraries/Bech32m.sol";
 import {OpCodes} from "./libraries/OpCodes.sol";
 import {Network} from "./network.sol";
 
