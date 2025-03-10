@@ -1,4 +1,6 @@
 FormatTest:testFormat() (gas: 5244)
+TestBech32m:test_encodeTaprootAddress_mainnet() (gas: 138912)
+TestBech32m:test_encodeTaprootAddress_testnet() (gas: 138875)
 TestBtcHelper:test_getBtcTxHash_Success() (gas: 25367)
 TestBtcHelper:test_getPegInOpReturnData_Success() (gas: 15818)
 TestBtcHelper:test_hash256_Success_BlockHash() (gas: 5443)

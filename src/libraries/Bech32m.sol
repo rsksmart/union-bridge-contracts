@@ -107,9 +107,9 @@ library Bech32m {
         return checksum;
     }
 
-    function encodeTaprootAddress(bytes memory pubkey, Network network) internal pure returns (string memory) {
+    function encodeTaprootAddress(bytes memory tweakedPubKey, Network network) internal pure returns (string memory) {
         // Convert to 5-bit words
-        uint8[] memory words = convertBits(pubkey, 8, 5, true);
+        uint8[] memory words = convertBits(tweakedPubKey, 8, 5, true);
 
         // Prepare witness version and program
         uint8[] memory program = new uint8[](words.length + 1);
