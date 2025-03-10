@@ -5,6 +5,7 @@ import "forge-std/Script.sol";
 import {CommitteeRegistry} from "src/CommitteeRegistry.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
 import {PegManager} from "src/PegManager.sol";
+import {Stream} from "src/interfaces/IStreamManager.sol";
 
 ///@dev We are using fundry-upgrades see https://github.com/OpenZeppelin/openzeppelin-foundry-upgrades
 contract SetUpStreams is Script {
@@ -31,5 +32,10 @@ contract SetUpStreams is Script {
         vm.startBroadcast();
         _pegManager.createPacketsAndSlots(committeePubKey);
         vm.stopBroadcast();
+        Stream memory stream = _pegManager.getStreamById(0);
+        (uint64 packetNumber, bytes32 packetCommitteePubKey) = _pegManager.packets(stream.streamId, stream.peginPointer);
+        if (committeePubKey != packetCommitteePubKey) {
+            revert("StreamManager packets not created");
+        }
     }
 }
