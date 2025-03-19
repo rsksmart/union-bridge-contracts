@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: UNKNOWN
 pragma solidity ^0.8.20;
 
+// Btc P2TR Fees in satoshis
+// TODO: Check if this is correct
+uint64 constant P2TR_FEES = 1000;
+
 // https://learnmeabitcoin.com/technical/transaction/#structure-inputs-txid
 struct BtcTxIn {
     bytes32 txId; // (reversed little endian) "txid": "360b81785dc7c2f40627fea364676dbb73e6276683caffd9f906b0e0bd36b3d2"
@@ -113,4 +117,5 @@ interface IBitcoinManager {
     error InvalidPublicKey(bytes32 publicKey);
     error InvalidAddress(address _address);
     error InvalidValue(uint64 _value);
+    error InvalidOutputAmount(uint64 actual, uint64 expected);
 }
