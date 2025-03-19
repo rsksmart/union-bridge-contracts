@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {Network} from "../network.sol";
+import {BtcNetwork} from "./Network.sol";
 
 // contract Bech32m {
 library Bech32m {
@@ -107,7 +107,11 @@ library Bech32m {
         return checksum;
     }
 
-    function encodeTaprootAddress(bytes memory tweakedPubKey, Network network) internal pure returns (string memory) {
+    function encodeTaprootAddress(bytes memory tweakedPubKey, BtcNetwork network)
+        internal
+        pure
+        returns (string memory)
+    {
         // Convert to 5-bit words
         uint8[] memory words = convertBits(tweakedPubKey, 8, 5, true);
 
@@ -120,11 +124,11 @@ library Bech32m {
 
         // Determine HRP based on network
         string memory hrp;
-        if (network == Network.MAINNET) {
+        if (network == BtcNetwork.MAINNET) {
             hrp = "bc";
-        } else if (network == Network.TESTNET) {
+        } else if (network == BtcNetwork.TESTNET) {
             hrp = "tb";
-        } else if (network == Network.REGTEST) {
+        } else if (network == BtcNetwork.REGTEST) {
             hrp = "bcrt";
         } else {
             revert("Invalid network");

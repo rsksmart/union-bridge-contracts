@@ -14,7 +14,8 @@ contract DeployScript is Script {
     CommitteeRegistry public committeeRegistry;
     PegManager public pegManager;
     BitcoinManager public bitcoinManager;
-    address upgradableOwner;
+    address public upgradableOwner;
+    address payable public bridgeAddress;
 
     function setUp() internal {}
 
@@ -22,7 +23,7 @@ contract DeployScript is Script {
         setUp();
         // deploy implementation and proxy contracts
         DeployImplAndProxy deploy = new DeployImplAndProxy();
-        (committeeRegistry, bitcoinManager, pegManager) = deploy.run();
+        (committeeRegistry, bitcoinManager, pegManager, upgradableOwner, bridgeAddress) = deploy.run();
         // Set up committees
         SetUpCommittees setUpCommittees = new SetUpCommittees();
         setUpCommittees.run(committeeRegistry);

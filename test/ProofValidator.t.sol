@@ -10,8 +10,9 @@ contract TestProofValidator is Test, HelperContract {
     ProofValidatorHarness proofValidator;
 
     function setUp() external {
-        setUpBridgeMock();
+        runTestDeployScript();
         proofValidator = new ProofValidatorHarness();
+        proofValidator.__ProofValidator_init(payable(address(bridgeMock)));
     }
 
     function test_verifyTxConfirmation_Success_EqualMinConfirmation() external {

@@ -12,15 +12,15 @@ import {BtcScriptParser} from "./libraries/BtcScriptParser.sol";
 import {BtcTaprootParser} from "./libraries/BtcTaprootParser.sol";
 import {Bech32m} from "src/libraries/Bech32m.sol";
 import {OpCodes} from "./libraries/OpCodes.sol";
-import {Network} from "./network.sol";
+import {BtcNetwork} from "./libraries/Network.sol";
 
 /// @title BitcoinManager
 /// @notice Manages Bitcoin Addresses and Scripts
 contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
     uint8 constant TIMELOCK_BLOCKS = 10;
-    Network public network;
+    BtcNetwork public network;
 
-    function initialize(address _initialOwner, Network _network) public initializer {
+    function initialize(address _initialOwner, BtcNetwork _network) public initializer {
         __BaseProxy_init(_initialOwner);
         network = _network;
     }
@@ -159,19 +159,13 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         return BtcHelper.hash256(BtcTxParser.encodeTx(_btcTx));
     }
 
-    /// @notice Generates a Taproot script pub key with both key spend and script spend paths
-    /// @param _rskDestinationAddress address that will get the RBTC
-    /// @param _value amount sent in btc, should be equal to stream denomination
-    /// @param _btcReimbursementPubKey The user's public key (x-only, 32 bytes)
-    /// @param _committeePubKey The committee's public key (x-only, 32 bytes)
-    // /// @param customTweak Additional tweak data for address customization
-    /// @return taprootScriptPubKey bytes (OP_1 + OP_PUSHBYTES_32 + 32 bytes output key)
+    /// @dev Generates the PegInRequest Taproot output script pub key with both key spend and script spend paths
     function getPegInP2TRScriptPub(
         address _rskDestinationAddress,
         uint64 _value,
         bytes32 _btcReimbursementPubKey,
         bytes32 _committeePubKey
-    ) internal pure returns (bytes memory) {
+    ) public pure returns (bytes memory) {
         bytes32 tweakedPublicKey =
             getTimelockTweakedPublicKey(_rskDestinationAddress, _value, _btcReimbursementPubKey, _committeePubKey);
         return BtcTaprootParser.getP2TRScriptPubKey(tweakedPublicKey);

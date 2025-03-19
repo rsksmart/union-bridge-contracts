@@ -3,7 +3,6 @@ pragma solidity ^0.8.20;
 
 import {
     IBridge,
-    RSK_BRIDGE_ADDRESS,
     BTC_TRANSACTION_CONFIRMATION_MAX_DEPTH,
     BTC_TRANSACTION_CONFIRMATION_INEXISTENT_BLOCK_HASH_ERROR_CODE,
     BTC_TRANSACTION_CONFIRMATION_BLOCK_NOT_IN_BEST_CHAIN_ERROR_CODE,
@@ -11,10 +10,13 @@ import {
     BTC_TRANSACTION_CONFIRMATION_BLOCK_TOO_OLD_ERROR_CODE,
     BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE
 } from "./interfaces/IBridge.sol";
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 /// @title ProofValidator
 /// @notice Simple proof validator for proving Bitcoin Tx in RSK
-abstract contract ProofValidator {
+abstract contract ProofValidator is Initializable {
+    IBridge public bridge;
+
     error BridgeBtcInexistantBlockHash(bytes32 blockHash);
     error BridgeBtcBlockNotInBestChain(bytes32 blockHash);
     error BridgeBtcInconsistentBlock(bytes32 blockHash);
@@ -22,6 +24,14 @@ abstract contract ProofValidator {
     error BridgeBtcTxInvalidMerkleBranch(bytes32 txHash, uint256 merkleBranchPath, bytes32[] merkleBranchHashes);
     error BridgeBtcUnknownError(int256 errorCode);
     error NotEnoughConfirmations(int256 actual, uint256 expected);
+    error BridgeAddressZero();
+
+    function __ProofValidator_init(address payable _bridgeAddress) public initializer {
+        if (_bridgeAddress == address(0)) {
+            revert BridgeAddressZero();
+        }
+        bridge = IBridge(_bridgeAddress);
+    }
 
     /// @notice Verifies that a Bitcoin transaction exists in a block and has enough confirmations
     /// @param _minConfirmations The minimum number of confirmations required for the transaction
@@ -45,9 +55,8 @@ abstract contract ProofValidator {
         bytes32[] memory _merkleBranchHashes
     ) internal view {
         // Get tx confirmations using ProofValidator from Rsk bridge precompiled contract
-        int256 confirmations = IBridge(RSK_BRIDGE_ADDRESS).getBtcTransactionConfirmations(
-            _txHash, _blockHash, _merkleBranchPath, _merkleBranchHashes
-        );
+        int256 confirmations =
+            bridge.getBtcTransactionConfirmations(_txHash, _blockHash, _merkleBranchPath, _merkleBranchHashes);
         // Validate block is in the Mainchain
         if (confirmations == BTC_TRANSACTION_CONFIRMATION_INEXISTENT_BLOCK_HASH_ERROR_CODE) {
             revert BridgeBtcInexistantBlockHash(_blockHash);

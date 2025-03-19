@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import "forge-std/Script.sol";
 import {StreamDenomination, Role, CommitteeMember, Committee, CommitteeRegistry} from "src/CommitteeRegistry.sol";
 import {TestUtils} from "test/helpers/TestUtils.sol";
+import {ChainIds} from "src/libraries/Network.sol";
 
 struct RegisterCommitteeParams {
     Committee committee;
@@ -27,7 +28,7 @@ contract SetUpCommittees is Script, TestUtils {
         requestedStreams[0] = StreamDenomination._0_001BTC;
         requestedRoles[0] = Role.Operator;
         // RSK Mainnet
-        if (block.chainid == 30) {
+        if (block.chainid == ChainIds.RSK_MAINNET) {
             // Members setup
             membersParams.push(RegisterMemberParams(generatePubKey(0), requestedStreams, requestedRoles));
             membersParams.push(RegisterMemberParams(generatePubKey(1), requestedStreams, requestedRoles));
@@ -42,7 +43,7 @@ contract SetUpCommittees is Script, TestUtils {
             committeesParams[0].committee.memberIndexesAndRoles.push(members[0]);
             committeesParams[0].committee.memberIndexesAndRoles.push(members[1]);
             committeesParams[0].committee.leaderIndex = 0;
-        } else if (block.chainid == 31) {
+        } else if (block.chainid == ChainIds.RSK_TESTNET) {
             // RSK Testnet
             // Members setup
             membersParams.push(RegisterMemberParams(generatePubKey(0), requestedStreams, requestedRoles));
@@ -58,7 +59,7 @@ contract SetUpCommittees is Script, TestUtils {
             committeesParams[0].committee.memberIndexesAndRoles.push(members[0]);
             committeesParams[0].committee.memberIndexesAndRoles.push(members[1]);
             committeesParams[0].committee.leaderIndex = 0;
-        } else if (block.chainid == 31337 || block.chainid == 1337) {
+        } else if (block.chainid == ChainIds.LOCAL) {
             // Foundry local chainid
             // Members setup
             membersParams.push(RegisterMemberParams(generatePubKey(0), requestedStreams, requestedRoles));

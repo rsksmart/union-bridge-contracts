@@ -6,6 +6,7 @@ import {CommitteeRegistry} from "src/CommitteeRegistry.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
 import {PegManager} from "src/PegManager.sol";
 import {Stream} from "src/interfaces/IStreamManager.sol";
+import {ChainIds} from "src/libraries/Network.sol";
 
 ///@dev We are using fundry-upgrades see https://github.com/OpenZeppelin/openzeppelin-foundry-upgrades
 contract SetUpStreams is Script {
@@ -14,12 +15,12 @@ contract SetUpStreams is Script {
 
     function setUp() internal {
         // RSK Mainnet
-        if (block.chainid == 30) {
+        if (block.chainid == ChainIds.RSK_MAINNET) {
             committeePubKey = 0x924c163b385af7093440184af6fd6244936d1288cbb41cc3812286d3f83a3329;
-        } else if (block.chainid == 31) {
+        } else if (block.chainid == ChainIds.RSK_TESTNET) {
             // RSK Testnet
             committeePubKey = 0x924c163b385af7093440184af6fd6244936d1288cbb41cc3812286d3f83a3329;
-        } else if (block.chainid == 31337 || block.chainid == 1337) {
+        } else if (block.chainid == ChainIds.LOCAL) {
             // Foundry local chainid
             committeePubKey = 0x924c163b385af7093440184af6fd6244936d1288cbb41cc3812286d3f83a3329;
         } else {
@@ -32,8 +33,12 @@ contract SetUpStreams is Script {
         vm.startBroadcast();
         _pegManager.createPacketsAndSlots(committeePubKey);
         vm.stopBroadcast();
+        uint256 streamLen = _pegManager.getStreamsLength();
+        if (streamLen == 0) {
+            revert("StreamManager streams not created");
+        }
         Stream memory stream = _pegManager.getStreamById(0);
-        (uint64 packetNumber, bytes32 packetCommitteePubKey) = _pegManager.packets(stream.streamId, stream.peginPointer);
+        (, bytes32 packetCommitteePubKey) = _pegManager.packets(stream.streamId, stream.peginPointer);
         if (committeePubKey != packetCommitteePubKey) {
             revert("StreamManager packets not created");
         }

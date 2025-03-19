@@ -72,17 +72,7 @@ abstract contract HelperContract is Test, TestUtils {
         committee3.leaderIndex = 0;
     }
 
-    function setUpBridgeMock() internal {
-        // Deploy mock of the precompile
-        // Set mock bytecode to the expected precompile address
-        // https://book.getfoundry.sh/cheatcodes/etch
-        vm.etch(RSK_BRIDGE_ADDRESS, address(new BridgeMock()).code);
-        bridgeMock = BridgeMock(RSK_BRIDGE_ADDRESS);
-    }
-
     function runTestDeployScript() internal {
-        // Set up bridge mock at bridge precompiled address
-        setUpBridgeMock();
         // Using the deployment script in tests like in
         // https://github.com/Cyfrin/foundry-smart-contract-lottery-cu/blob/main/test/unit/RaffleTest.t.sol#L38
         DeployScript deployScript = new DeployScript();
@@ -90,6 +80,8 @@ abstract contract HelperContract is Test, TestUtils {
         bitcoinManager = deployScript.bitcoinManager();
         registry = deployScript.committeeRegistry();
         pm = deployScript.pegManager();
+        // Set up bridge mock at bridge precompiled address
+        bridgeMock = BridgeMock(deployScript.bridgeAddress());
 
         // Register committees with their mock keys. These are Bitcoin x-only public keys.
         setUpCommittees();

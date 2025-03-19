@@ -29,6 +29,7 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
 
     function initialize(
         address _initialOwner,
+        address payable _bridgeAddress,
         ICommitteeRegistry _committeeRegistry,
         IBitcoinManager _bitcoinManager,
         uint64[] memory _denominations
@@ -36,6 +37,7 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
         committeeRegistry = _committeeRegistry;
         bitcoinManager = _bitcoinManager;
         StreamManager.initialize(_denominations);
+        __ProofValidator_init(_bridgeAddress);
         __BaseProxy_init(_initialOwner);
     }
 
@@ -102,7 +104,7 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
             _pegInRequestTxSPVProof.merkleBranchHashes
         );
 
-        // Store pegInRequest to avpod processing it again
+        // Store pegInRequest to avoid processing it again
         pegInRequests[txHash] =
             StreamPosition({streamId: stream.streamId, packetNumber: packetNumber, registered: true});
 

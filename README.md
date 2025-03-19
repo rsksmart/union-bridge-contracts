@@ -49,7 +49,6 @@ bash shell/slither.sh
 bash shell/sscript/deploy/simulate-deploy.sh
 ```
 
-
 ## Deployment
 
 Use [deployment script] (https://book.getfoundry.sh/guides/scripting-with-solidity#deploying-our-contract) to deploy:
@@ -59,24 +58,49 @@ bash shell/script/deploy/deploy.sh
 ```
 
 It will ask for a private key interactivly in order to performe the deployment. The address of the private key needs to have funds in order to perform the deployment.
+If you want to deploy to a local network (regtest) use `deploy-local.sh`.
 
-## Writing tests
-To write new tests for the contracts simply `import forge-std/Test.sol` and inherit it in your test contract. The forge-std Test contract provides a pre-initialized [cheatcodes environment](https://book.getfoundry.sh/cheatcodes/) via the `vm`. It also includes support for [ds-test](https://book.getfoundry.sh/reference/ds-test.html)-style logs and assertions, as well as Hardhat's [console.log](https://github.com/brockelmore/forge-std/blob/master/src/console.sol). Note that logging functionalities require the -vvvv flag.
 
-```solidity
-pragma solidity 0.8.19;
+## Scripts
 
-import "forge-std/Test.sol";
+We have scripts to interact with the deployed contracts
 
-contract ContractTest is Test {
-    function testExample() public {
-        vm.roll(100);
-        console.log(1);
-        emit log("hi");
-        assertTrue(true);
-    }
-}
+### Get temporary address
+
+Returns the address where the user have to send funds to PegIn, set the corresponding arguments at [GetTemporaryAddress.s.sol](./script/GetTemporaryAddress.s.sol)
+
+``` solidity
+// ====== Arguments ======
+rootstock_deposit_address = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
+value = 100_000;
+btc_reimbursement_pub_key = 0xc72a9f6fc8e57f1de528a48b6c4ad7a6db30b24a7bbf8cdd74b0a3b248b6f7f1;
+pegManager = PegManager(0x0165878A594ca255338adfa4d48449f69242Eb8F);
 ```
+
+Then run:
+
+```sh
+bash shell/script/get-temporary-address.sh
+```
+
+### Register peg in request
+
+Register the peg in request transaction sent by the user in Bitcoin, set the corresponding arguments at [RegisterPegInRequest.s.sol](./script/RegisterPegInRequest.s.sol)
+
+``` solidity
+// ====== Arguments ======
+address rskDestinationAddress = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
+uint64 value = 100_000;
+bytes32 btcReimbursementPubKey = 0xc72a9f6fc8e57f1de528a48b6c4ad7a6db30b24a7bbf8cdd74b0a3b248b6f7f1;
+pegManager = PegManager(0x0165878A594ca255338adfa4d48449f69242Eb8F);
+```
+
+Then run:
+
+```sh
+bash shell/script/register-pegin-request.sh
+```
+
 
 ## Development
 

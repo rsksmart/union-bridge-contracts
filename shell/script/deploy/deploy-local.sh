@@ -18,5 +18,5 @@ forge script \
     --rpc-url $RPC \
     --legacy \
     --broadcast \
-    -vvvv \
+    -v \
     --interactives 1 \

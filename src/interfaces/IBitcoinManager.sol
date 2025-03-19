@@ -70,6 +70,20 @@ interface IBitcoinManager {
     /// @return The transaction hash (txid) in big-endian format
     function getBtcTxHash(BtcTransaction calldata _btcTx) external pure returns (bytes32);
 
+    /// @notice Generates a Taproot script pub key with both key spend and script spend paths
+    /// @param _rskDestinationAddress address that will get the RBTC
+    /// @param _value amount sent in btc, should be equal to stream denomination
+    /// @param _btcReimbursementPubKey The user's public key (x-only, 32 bytes)
+    /// @param _committeePubKey The committee's public key (x-only, 32 bytes)
+    // /// @param customTweak Additional tweak data for address customization
+    /// @return taprootScriptPubKey bytes (OP_1 + OP_PUSHBYTES_32 + 32 bytes output key)
+    function getPegInP2TRScriptPub(
+        address _rskDestinationAddress,
+        uint64 _value,
+        bytes32 _btcReimbursementPubKey,
+        bytes32 _committeePubKey
+    ) external pure returns (bytes memory);
+
     // /// @notice Registers peg transactions
     // /// @param take0Tx First take transaction
     // /// @param take1Tx Second take transaction
