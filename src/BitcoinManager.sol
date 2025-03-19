@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import {console} from "forge-std/console.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {BaseProxy} from "./BaseProxy.sol";
-import {BtcTransaction, BtcTxOut, IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
+import {BtcTransaction, BtcTxOut, IBitcoinManager, P2TR_FEES} from "./interfaces/IBitcoinManager.sol";
 import {BytesHelper} from "./libraries/BytesHelper.sol";
 import {BtcHelper} from "./libraries/BtcHelper.sol";
 import {BtcTxParser} from "./libraries/BtcTxParser.sol";
@@ -151,6 +151,11 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
             getPegInP2TRScriptPub(_rskDestinationAddress, _value, _btcReimbursementPubKey, _committeePubKey);
         if (!BytesHelper.compare(_p2trOut.scriptPubKey, p2trScriptPubKey)) {
             revert IncorrectP2TRScriptPub(p2trScriptPubKey, _p2trOut.scriptPubKey);
+        }
+        // Validate that the amount is enough to cover the fees
+        // TODO: Check if this is correct
+        if (_p2trOut.amount < _value - P2TR_FEES) {
+            revert InvalidOutputAmount(_p2trOut.amount, _value - P2TR_FEES);
         }
     }
 
