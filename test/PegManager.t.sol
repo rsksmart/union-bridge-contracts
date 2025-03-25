@@ -16,6 +16,7 @@ import {Slot, SlotState, Packet, Stream, IStreamManager} from "src/interfaces/IS
 import {BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE} from "src/interfaces/IBridge.sol";
 import {ProofValidator} from "src/ProofValidator.sol";
 import {BtcTaprootParser} from "test/libraries/BtcTaprootParser.t.sol";
+import {BtcHelper} from "src/libraries/BtcHelper.sol";
 
 contract TestPegManager is Test, HelperContract {
     // Arrenge
@@ -225,7 +226,7 @@ contract TestPegManager is Test, HelperContract {
         uint64 amount = 9979999; // 0.0998 BTC - 0.0001 BTC (dust)
 
         // Act
-        bytes32 result = pm.computePegOutTxHash(usrPubKey, prevoutsData, amount, 1);
+        (bytes32 result,) = pm.computePegOutTxHash(usrPubKey, prevoutsData, amount, 1);
 
         // ExpectedHash hash computed externally from a python tool using the same inputs and running on regtest
         // required inputs:
@@ -248,65 +249,71 @@ contract TestPegManager is Test, HelperContract {
 
     function test_requestPegOut_Success() external {
         // Arrenge
-        bytes32 expectedHash = 0x84637196976eee99044147aab6b1060bfb08970469f1f1d1c0047aabbbaf9bb7;
+        bytes32 expectedHash = 0x9addac826ff94bb0277ac41c1aea1588d71d7bb24db52ce56d82a7e266a5b47c;
+        bytes memory expectedDigest =
+            hex"00000200000000000000234337e863e00e6ff45f167a14f3963bea912bc0d739c2b402d04f376e814ae2e247139cedddd1ee740814e7de2e771c3745091bbb7af21d4122087c8bc17a36a0c6dbc3091625a23fd870bf8d09182484c12fa63a5c29045a431cf445f153e5ad95131bc0b799c0b1af477fb14fcf26a6a9f76079e48bf090acb7e8367bfd0eefa2c948f4d34b1cb0bccb25ebf3a221deb515ba5afd92f3c81d7601457e26e70000000000";
+
         bytes memory usrPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
-        address bitcoinUserAddress = 0x4C9a9CbFa14106439B0F96a64d9260F3b8947934;
+
+        bytes32 txId = 0xb24858ade3e5be49ae63facb93524ddf460d0771f093525dae328b6c435516a2;
+        bytes memory scriptPubKey = hex"02f519f51e435c20d38af683ea86862f4591ce8cda248077c2d9a72a76b62f32";
+
         uint64 amount = 10000000; // 0.1 BTC
-        bool batchFlag = false;
+        uint256 amountInWei = BtcHelper.satoshiToWei(amount);
 
         Stream memory stream = pm.getStream(uint64(amount));
         uint64 packetNumber = 0;
         uint64 slotId = 0;
-        pm.setSlotAsFilledHarness(stream.streamId, packetNumber, slotId);
+
+        pm.setSlotHarness(stream.streamId, packetNumber, slotId, SlotState.FILLED, scriptPubKey, txId);
 
         // Assert
         vm.expectEmit(address(pm));
         emit IPegManager.PegOutRequested(
-            bitcoinUserAddress, amount, expectedHash, stream.streamId, packetNumber, slotId, batchFlag
+            usrPubKey, amount, expectedHash, expectedDigest, stream.streamId, packetNumber, slotId
         );
 
         // Act
-        pm.requestPegOut{value: amount}(usrPubKey, bitcoinUserAddress, false);
+        pm.requestPegOut{value: amountInWei}(usrPubKey, false);
 
         // Assert
-        bytes32 result = pm.getPegOutTxHash(keccak256(abi.encodePacked(bitcoinUserAddress, amount)));
+        bytes32 result = pm.getPegOutTxHash(keccak256(abi.encodePacked(usrPubKey, amount)));
         assertEq(result, expectedHash, "expected hash doesn't match the pegout computed one");
 
         // Assert
         Slot memory slot = pm.getSlot(stream.streamId, packetNumber, slotId);
-        assertEq(uint64(slot.state), uint64(SlotState.PAID), "Slot was not locked");
+        assertEq(uint64(slot.state), uint64(SlotState.LOCKED), "Slot was not locked");
     }
 
     function test_requestPegOut_Revert_InvalidPublicKeyLength() external {
         // Arrange
         bytes memory usrPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b00";
-        address bitcoinUserAddress = 0x4C9a9CbFa14106439B0F96a64d9260F3b8947934;
 
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IPegManager.InvalidPubKeyLength.selector, usrPubKey.length));
 
         // Act
-        pm.requestPegOut(usrPubKey, bitcoinUserAddress, false);
+        pm.requestPegOut(usrPubKey, false);
     }
 
     function test_requestPegOut_Revert_StreamNotFoundByDenomination() external {
         // Arrange
         bytes memory usrPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
-        address bitcoinUserAddress = 0x4C9a9CbFa14106439B0F96a64d9260F3b8947934;
         uint64 amount = 5;
+        uint256 amountInWei = BtcHelper.satoshiToWei(amount);
 
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IStreamManager.StreamNotFoundByDenomination.selector, amount));
 
         // Act
-        pm.requestPegOut{value: amount}(usrPubKey, bitcoinUserAddress, false);
+        pm.requestPegOut{value: amountInWei}(usrPubKey, false);
     }
 
     function test_requestPegOut_Revert_NoFilledSlot() external {
         // Arrange
         bytes memory usrPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
-        address bitcoinUserAddress = 0x4C9a9CbFa14106439B0F96a64d9260F3b8947934;
         uint64 amount = 100000; // 0.1 BTC
+        uint256 amountInWei = BtcHelper.satoshiToWei(amount);
 
         Stream memory stream = pm.getStream(uint64(amount));
         uint64 packetNumber = 0;
@@ -315,12 +322,12 @@ contract TestPegManager is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(IStreamManager.NoFilledSlot.selector, stream.streamId, packetNumber));
 
         // Act
-        pm.requestPegOut{value: amount}(usrPubKey, bitcoinUserAddress, false);
+        pm.requestPegOut{value: amountInWei}(usrPubKey, false);
     }
 
     function test_getFirstFilledSlot_Success() external {
         // Arrenge
-        pm.setSlotAsFilledHarness(0, 0, 0);
+        pm.setSlotHarness(0, 0, 0, SlotState.FILLED, hex"00", 0);
 
         // Act
         (Slot memory slot,) = pm.getFirstFilledSlot(0);

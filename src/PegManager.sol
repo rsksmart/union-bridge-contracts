@@ -173,21 +173,27 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
         );
     }
 
-    function requestPegOut(bytes calldata _usrPubKey, address _bitcoinUserAddress, bool _batchFlag) external payable {
-        uint64 amount = uint64(msg.value);
-        // TODO validate who can call this function
+    function validatePegOutRequest(bytes calldata _usrPubKey, uint256 amountInWei) internal pure {
+        if (BtcHelper.weiToSatoshi(amountInWei) > type(uint64).max) {
+            revert PegoutRequestAmountExceedsUint64Limit(BtcHelper.weiToSatoshi(amountInWei));
+        }
 
         // Validate the _usrPubKey is 33 bytes
         if (_usrPubKey.length != 33) {
             revert InvalidPubKeyLength(_usrPubKey.length);
         }
 
-        // TODO return RBTC to legacy bridge
+        // TODO: validate who can request a peg-out
+    }
 
-        // TODO acount for batchFlag
+    function requestPegOut(bytes calldata _usrPubKey, bool _batchFlag) external payable {
+        validatePegOutRequest(_usrPubKey, msg.value);
+
+        uint64 amount = uint64(BtcHelper.weiToSatoshi(msg.value));
+        // TODO: acount for batchFlag
 
         // Get first filled Slot
-        Stream memory stream = getStream(uint64(amount)); //TODO: add test for a revert
+        Stream memory stream = getStream(amount); //TODO: add test for a revert
         (Slot memory slot, uint64 packetNumber) = getFirstFilledSlot(stream.streamId); //TODO: add test for a revert no filled slot
 
         // Prepare prevouts data
@@ -199,39 +205,36 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
         (uint64 fee, uint64 dust) = BtcHelper.calculateFeeAndDust(amount);
 
         // Compute the Bitcoin peg-out transaction hash
-        bytes32 pegOutTxHash = computePegOutTxHash(_usrPubKey, prevoutsData, amount - dust - fee, dust);
+        (bytes32 pegOutTxHash, bytes memory digest) =
+            computePegOutTxHash(_usrPubKey, prevoutsData, amount - dust - fee, dust);
 
         // Store the peg-out transaction hash on-chain
-        pegOutTxHashes[keccak256(abi.encodePacked(_bitcoinUserAddress, amount))] = pegOutTxHash;
+        pegOutTxHashes[keccak256(abi.encodePacked(_usrPubKey, amount))] = pegOutTxHash;
 
         // Lock the used slot
         lockSlot(stream.streamId, packetNumber, slot.slotId);
 
+        // TODO: return RBTC to the RSK Legacy Bridge following https://github.com/rsksmart/RSKIPs/pull/502
+
         // Emit an event
         emit PegOutRequested(
-            _bitcoinUserAddress, amount, pegOutTxHash, stream.streamId, packetNumber, slot.slotId, _batchFlag
+            _usrPubKey,
+            amount,
+            pegOutTxHash,
+            //TODO: delet this todo
+            digest,
+            stream.streamId,
+            packetNumber,
+            slot.slotId
         );
     }
 
     function computePegOutTxHash(bytes memory usrPubKey, PrevoutData[] memory prevoutsData, uint64 amount, uint64 dust)
         public
         pure
-        returns (bytes32)
+        returns (bytes32, bytes memory)
     {
-        bytes memory encodedData = "";
-
-        // epoch
-        encodedData = abi.encodePacked(encodedData, uint8(0));
-
-        // hash_type
-        //TODO check if 0x00 (default) or 0x01 (SIGHASH_ALL) is the value being used in the protocol builder
-        encodedData = abi.encodePacked(encodedData, uint8(0x00));
-
-        // nVersion
-        encodedData = abi.encodePacked(encodedData, bytes4(hex"02000000"));
-
-        // nLockTime
-        encodedData = abi.encodePacked(encodedData, uint32(0));
+        // Prepare the more complex parts of the data
 
         // sha_prevouts (32): the SHA256 of the serialization of all input outpoints.
         //TODO: consider having just one prevout
@@ -239,14 +242,12 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
         for (uint256 i = 0; i < prevoutsData.length; i++) {
             prevouts = abi.encodePacked(prevouts, BtcHelper.reverseBytes32(prevoutsData[i].txid), prevoutsData[i].vout);
         }
-        encodedData = abi.encodePacked(encodedData, sha256(prevouts));
 
         // sha_amounts (32): the SHA256 of the serialization of all input outpoints amounts.
         bytes memory amounts;
         for (uint256 i = 0; i < prevoutsData.length; i++) {
             amounts = abi.encodePacked(amounts, BtcHelper.reverseUint64(prevoutsData[i].value));
         }
-        encodedData = abi.encodePacked(encodedData, sha256(amounts));
 
         // sha_scriptpubkeys (32): the SHA256 of the serialization of all spent output scriptPubKeys.
         bytes memory scriptPubKeys;
@@ -257,40 +258,44 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
                 prevoutsData[i].scriptPubKey
             );
         }
-        encodedData = abi.encodePacked(encodedData, sha256(scriptPubKeys));
 
         //TODO: consider un-hardcoding this
         // sha_sequences (32): the SHA256 of the serialization of all input nSequences.
         bytes memory sequences = hex"FFFFFFFF";
-        encodedData = abi.encodePacked(encodedData, sha256(sequences));
 
         // sha_outputs (32): the SHA256 of the serialization of all outputs in CTxOut format.
         bytes memory outputs;
-        bytes memory pubKeyHash = BtcHelper.hash160(abi.encodePacked(usrPubKey));
-        bytes memory scriptPubKey = BtcScriptParser.getP2WPKHScript(pubKeyHash);
+        bytes memory scriptPubKey = BtcScriptParser.getP2WPKHScript(usrPubKey);
         outputs = abi.encodePacked(
             BtcHelper.reverseUint64(amount), BtcHelper.toCompactSize(scriptPubKey.length), scriptPubKey
         );
 
-        bytes memory speedUpScriptHash = abi.encodePacked(sha256(abi.encodePacked(OpCodes.OP_1)));
-        bytes memory speedUpScriptPubKey = BtcScriptParser.getP2WSHScript(speedUpScriptHash);
+        bytes memory speedUpScriptPubKey = BtcScriptParser.getP2WSHScript(abi.encodePacked(OpCodes.OP_1));
         outputs = abi.encodePacked(
             outputs,
             BtcHelper.reverseUint64(dust),
             BtcHelper.toCompactSize(speedUpScriptPubKey.length),
             speedUpScriptPubKey
         );
-        encodedData = abi.encodePacked(encodedData, sha256(outputs));
 
-        // spend_type (1):
-        uint8 spendType = 0;
-        encodedData = abi.encodePacked(encodedData, spendType);
+        // Concatenate all the data
+        bytes memory encodedData = abi.encodePacked(
+            uint8(0), // epoch
+            uint8(0x00), // hash_type
+            bytes4(hex"02000000"), // nVersion
+            uint32(0), // nLockTime
+            sha256(prevouts), // sha_prevouts
+            sha256(amounts), // sha_amounts
+            sha256(scriptPubKeys), // sha_scriptpubkeys
+            sha256(sequences), // sha_sequences
+            sha256(outputs), // sha_outputs
+            uint8(0), // spend_type
+            uint32(0) // input_index
+        );
+        //TODO: hash_type check if 0x00 (default) or 0x01 (SIGHASH_ALL) is the value being used in the protocol builder
 
-        // input_index (4):
-        uint32 inputIndex = 0;
-        encodedData = abi.encodePacked(encodedData, inputIndex);
-
-        return BtcHelper.taggedHash(BtcTaprootParser.TAP_SIGHASH, encodedData);
+        // Return the tagged hash and the encoded data before hashing
+        return (BtcHelper.taggedHash(BtcTaprootParser.TAP_SIGHASH, encodedData), encodedData);
     }
 
     // function debug_computePegOutTxHash(bytes memory usrPubKey, PrevoutData[] memory prevoutsData, uint64 amount, uint64 dust)
@@ -372,14 +377,12 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
 
     //     // sha_outputs (32): the SHA256 of the serialization of all outputs in CTxOut format.
     //     bytes memory outputs;
-    //     bytes memory pubKeyHash = BtcHelper.hash160(abi.encodePacked(usrPubKey));
-    //     bytes memory scriptPubKey = BtcScriptParser.getP2WPKHScript(pubKeyHash);
+    //     bytes memory scriptPubKey = BtcScriptParser.getP2WPKHScript(usrPubKey);
     //     outputs = abi.encodePacked(
     //         BtcHelper.reverseUint64(amount), BtcHelper.toCompactSize(scriptPubKey.length), scriptPubKey
     //     );
 
-    //     bytes memory speedUpScriptHash = abi.encodePacked(sha256(abi.encodePacked(OpCodes.OP_1)));
-    //     bytes memory speedUpScriptPubKey = BtcScriptParser.getP2WSHScript(speedUpScriptHash);
+    //     bytes memory speedUpScriptPubKey = BtcScriptParser.getP2WSHScript(abi.encodePacked(OpCodes.OP_1));
     //     outputs = abi.encodePacked(
     //         outputs,
     //         BtcHelper.reverseUint64(dust),

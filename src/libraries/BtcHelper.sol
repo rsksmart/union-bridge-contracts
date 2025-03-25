@@ -129,4 +129,12 @@ library BtcHelper {
         uint64 dust = 350;
         return (fee, dust);
     }
+
+    function weiToSatoshi(uint256 _amount) internal pure returns (uint256) {
+        return _amount / 10 ** 10;
+    }
+
+    function satoshiToWei(uint256 _amount) internal pure returns (uint256) {
+        return _amount * 10 ** 10;
+    }
 }

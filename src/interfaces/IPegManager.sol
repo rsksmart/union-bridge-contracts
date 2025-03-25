@@ -82,7 +82,7 @@ interface IPegManager is IStreamManager {
     // /// @param _usrPubKey The user public key
     // /// @param _bitcoinUserAddress The Bitcoin user address
     // /// @param _batchFlag The batch flag to indicate if the peg-out is part of a batch
-    function requestPegOut(bytes calldata _usrPubKey, address _bitcoinUserAddress, bool _batchFlag) external payable;
+    function requestPegOut(bytes calldata _usrPubKey, bool _batchFlag) external payable;
 
     event RegisteredPegInRequest(
         bytes32 indexed blockHash,
@@ -95,16 +95,18 @@ interface IPegManager is IStreamManager {
         bytes utxoScriptPubKey
     );
 
+    // address indexed bitcoinUserAddress,
     event PegOutRequested(
-        address indexed bitcoinUserAddress,
+        bytes indexed usrPubKey,
         uint64 amount,
         bytes32 indexed pegOutTxHash,
+        bytes digest,
         uint64 streamId,
         uint64 packetNumber,
-        uint64 slotId,
-        bool batchFlag
+        uint64 slotId
     );
 
     error AlreadyRegisteredPegIn(bytes32 btcTxHash);
     error InvalidPubKeyLength(uint256 usrPubKeyLength);
+    error PegoutRequestAmountExceedsUint64Limit(uint256 amount);
 }

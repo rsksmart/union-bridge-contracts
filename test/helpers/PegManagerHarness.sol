@@ -20,16 +20,23 @@ contract PegManagerHarness is PegManager {
         PegManager.initialize(_initialOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager, _denominations);
     }
 
-    function setSlotAsFilledHarness(uint64 _streamId, uint64 _packet, uint64 _slot) external {
+    function setSlotHarness(
+        uint64 _streamId,
+        uint64 _packet,
+        uint64 _slot,
+        SlotState slotState,
+        bytes memory scriptPubKey,
+        bytes32 txId
+    ) external {
         if (_packet >= packets[_streamId].length) {
             console.log("No packets %d for streamId: %d", _packet, _streamId);
         }
         if (_slot >= slots[_streamId][0].length) {
             console.log("No slot %d in packet %d for streamId: %d", _slot, _packet, _streamId);
         }
-        slots[_streamId][_packet][_slot].state = SlotState.FILLED;
-        slots[_streamId][_packet][_slot].txId = 0xb24858ade3e5be49ae63facb93524ddf460d0771f093525dae328b6c435516a2;
-        slots[_streamId][_packet][_slot].scriptPubKey =
-            BtcTaprootParser.getP2TRScriptPubKey(0x62f519f51e435c20d38af683ea86862f4591ce8cda248077c2d9a72a76b62f32);
+
+        slots[_streamId][_packet][_slot].state = slotState;
+        slots[_streamId][_packet][_slot].scriptPubKey = scriptPubKey;
+        slots[_streamId][_packet][_slot].txId = txId;
     }
 }

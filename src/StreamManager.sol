@@ -122,7 +122,7 @@ abstract contract StreamManager is IStreamManager, Initializable {
 
     function lockSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) internal {
         Slot storage slot = slots[_streamId][_packetNumber][_slotId];
-        slot.state = SlotState.PAID;
+        slot.state = SlotState.LOCKED;
     }
 
     /// @dev Looks for the first empty slot and asigns the PegIn Tx in prepared state
