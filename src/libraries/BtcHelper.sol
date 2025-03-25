@@ -122,4 +122,11 @@ library BtcHelper {
     function reverseUint16(uint16 _b) internal pure returns (uint16 v) {
         v = (_b << 8) | (_b >> 8);
     }
+
+    // TODO calculate fee and dust properly from the amount
+    function calculateFeeAndDust(uint64) internal pure returns (uint64, uint64) {
+        uint64 fee = 1;
+        uint64 dust = 350;
+        return (fee, dust);
+    }
 }

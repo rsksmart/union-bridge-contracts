@@ -5,15 +5,17 @@ import "forge-std/Test.sol";
 import "forge-std/console.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
 import {
+    PrevoutData,
     BtcTransaction,
     PegInRequestTxSPVProof,
     StreamPosition,
     PegInTempInfo,
     IPegManager
 } from "src/interfaces/IPegManager.sol";
-import {Slot, SlotState, Stream} from "src/interfaces/IStreamManager.sol";
+import {Slot, SlotState, Packet, Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE} from "src/interfaces/IBridge.sol";
 import {ProofValidator} from "src/ProofValidator.sol";
+import {BtcTaprootParser} from "test/libraries/BtcTaprootParser.t.sol";
 
 contract TestPegManager is Test, HelperContract {
     // Arrenge
@@ -206,5 +208,130 @@ contract TestPegManager is Test, HelperContract {
         );
         // Act
         pm.registerPegInRequest(pegInRequestTxSPVProof);
+    }
+
+    function test_computePegOutTxHash() external view {
+        // Arrange
+        bytes32 p2tr_spk = 0x18f69d27d77e37a024c1b4663403c3205443f76609451cd85fce13d4dccc98c7;
+        bytes memory usrPubKey = hex"02733ecfb4641477d17f412bc8cb20bbfa429f7b8352977623c04177382843af08";
+        PrevoutData[] memory prevoutsData = new PrevoutData[](1);
+        prevoutsData[0] = PrevoutData({
+            txid: 0xa33c0cab77c7036b7e51ab63945a204c5417f89fcbdb8e3e841779238cca5eff,
+            vout: 0,
+            value: 10000000,
+            scriptPubKey: BtcTaprootParser.getP2TRScriptPubKey(p2tr_spk)
+        });
+
+        uint64 amount = 9979999; // 0.0998 BTC - 0.0001 BTC (dust)
+
+        // Act
+        bytes32 result = pm.computePegOutTxHash(usrPubKey, prevoutsData, amount, 1);
+
+        // ExpectedHash hash computed externally from a python tool using the same inputs and running on regtest
+        // required inputs:
+        // - usrPubKey = 02733ecfb4641477d17f412bc8cb20bbfa429f7b8352977623c04177382843af08
+        // - prevoutsData = [
+        //     {
+        //         "txid": "a33c0cab77c7036b7e51ab63945a204c5417f89fcbdb8e3e841779238cca5eff",
+        //         "vout": 0,
+        //         "value": 10000000,
+        //         "scriptPubKey": P2TR script from (hex"0x18f69d27d77e37a024c1b4663403c3205443f76609451cd85fce13d4dccc98c7")
+        //     }
+        // ]
+        // - amount = 999979999; // 0.0998 BTC - 0.0001 BTC (dust)
+        // - dust = 1
+        bytes32 expectedHash = 0x4c13945bbd5d62034040012df31b72a52cf69340490ec8081bbde5535b7c2374;
+
+        // Assert
+        assertEq(result, expectedHash, "Encoded data does not match expectedHash value");
+    }
+
+    function test_requestPegOut_Success() external {
+        // Arrenge
+        bytes32 expectedHash = 0x84637196976eee99044147aab6b1060bfb08970469f1f1d1c0047aabbbaf9bb7;
+        bytes memory usrPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+        address bitcoinUserAddress = 0x4C9a9CbFa14106439B0F96a64d9260F3b8947934;
+        uint64 amount = 10000000; // 0.1 BTC
+        bool batchFlag = false;
+
+        Stream memory stream = pm.getStream(uint64(amount));
+        uint64 packetNumber = 0;
+        uint64 slotId = 0;
+        pm.setSlotAsFilledHarness(stream.streamId, packetNumber, slotId);
+
+        // Assert
+        vm.expectEmit(address(pm));
+        emit IPegManager.PegOutRequested(
+            bitcoinUserAddress, amount, expectedHash, stream.streamId, packetNumber, slotId, batchFlag
+        );
+
+        // Act
+        pm.requestPegOut{value: amount}(usrPubKey, bitcoinUserAddress, false);
+
+        // Assert
+        bytes32 result = pm.getPegOutTxHash(keccak256(abi.encodePacked(bitcoinUserAddress, amount)));
+        assertEq(result, expectedHash, "expected hash doesn't match the pegout computed one");
+
+        // Assert
+        Slot memory slot = pm.getSlot(stream.streamId, packetNumber, slotId);
+        assertEq(uint64(slot.state), uint64(SlotState.PAID), "Slot was not locked");
+    }
+
+    function test_requestPegOut_Revert_InvalidPublicKeyLength() external {
+        // Arrange
+        bytes memory usrPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b00";
+        address bitcoinUserAddress = 0x4C9a9CbFa14106439B0F96a64d9260F3b8947934;
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IPegManager.InvalidPubKeyLength.selector, usrPubKey.length));
+
+        // Act
+        pm.requestPegOut(usrPubKey, bitcoinUserAddress, false);
+    }
+
+    function test_requestPegOut_Revert_StreamNotFoundByDenomination() external {
+        // Arrange
+        bytes memory usrPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+        address bitcoinUserAddress = 0x4C9a9CbFa14106439B0F96a64d9260F3b8947934;
+        uint64 amount = 5;
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.StreamNotFoundByDenomination.selector, amount));
+
+        // Act
+        pm.requestPegOut{value: amount}(usrPubKey, bitcoinUserAddress, false);
+    }
+
+    function test_requestPegOut_Revert_NoFilledSlot() external {
+        // Arrange
+        bytes memory usrPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+        address bitcoinUserAddress = 0x4C9a9CbFa14106439B0F96a64d9260F3b8947934;
+        uint64 amount = 100000; // 0.1 BTC
+
+        Stream memory stream = pm.getStream(uint64(amount));
+        uint64 packetNumber = 0;
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.NoFilledSlot.selector, stream.streamId, packetNumber));
+
+        // Act
+        pm.requestPegOut{value: amount}(usrPubKey, bitcoinUserAddress, false);
+    }
+
+    function test_getFirstFilledSlot_Success() external {
+        // Arrenge
+        pm.setSlotAsFilledHarness(0, 0, 0);
+
+        // Act
+        (Slot memory slot,) = pm.getFirstFilledSlot(0);
+        assertEq(uint64(slot.state), uint64(SlotState.FILLED), "Incorrect slot state");
+    }
+
+    function test_getFirstFilledSlot_NoFilledSlot() external {
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.NoFilledSlot.selector, 0, 0));
+
+        // Act
+        pm.getFirstFilledSlot(0);
     }
 }

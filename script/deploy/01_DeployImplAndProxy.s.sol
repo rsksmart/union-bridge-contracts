@@ -109,8 +109,13 @@ contract DeployImplAndProxy is Script {
         BitcoinManager _bitcoinManager,
         uint64[] memory _denominations
     ) public returns (PegManager) {
+        string memory contractName = "PegManager.sol";
+        if (vm.isContext(VmSafe.ForgeContext.TestGroup)) {
+            contractName = "PegManagerHarness.sol";
+        }
+
         (, address proxyAdddress) = deployContractAndUUPSProxy(
-            "PegManager.sol",
+            contractName,
             abi.encodeCall(
                 PegManager.initialize,
                 (_upgradableOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager, _denominations)

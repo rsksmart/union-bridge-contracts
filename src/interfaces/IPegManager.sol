@@ -39,6 +39,13 @@ struct PegInTempInfo {
     bytes utxoScriptPubKey;
 }
 
+struct PrevoutData {
+    bytes32 txid;
+    uint32 vout;
+    uint64 value;
+    bytes scriptPubKey;
+}
+
 interface IPegManager is IStreamManager {
     /// @notice Allows users generate a temporary Bitcoin address to perform a peg-in.
     /// @param _rootstockDepositAddress The RSK deposit address
@@ -71,6 +78,12 @@ interface IPegManager is IStreamManager {
     // /// @param slotId The slot identifier
     // function selectUTXOsForPegOut(uint256 streamId, uint256 sequenceNumber, uint256 slotId) external;
 
+    // /// @notice Requests a peg-out to Bitcoin
+    // /// @param _usrPubKey The user public key
+    // /// @param _bitcoinUserAddress The Bitcoin user address
+    // /// @param _batchFlag The batch flag to indicate if the peg-out is part of a batch
+    function requestPegOut(bytes calldata _usrPubKey, address _bitcoinUserAddress, bool _batchFlag) external payable;
+
     event RegisteredPegInRequest(
         bytes32 indexed blockHash,
         bytes32 indexed txHash,
@@ -82,5 +95,16 @@ interface IPegManager is IStreamManager {
         bytes utxoScriptPubKey
     );
 
+    event PegOutRequested(
+        address indexed bitcoinUserAddress,
+        uint64 amount,
+        bytes32 indexed pegOutTxHash,
+        uint64 streamId,
+        uint64 packetNumber,
+        uint64 slotId,
+        bool batchFlag
+    );
+
     error AlreadyRegisteredPegIn(bytes32 btcTxHash);
+    error InvalidPubKeyLength(uint256 usrPubKeyLength);
 }

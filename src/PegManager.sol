@@ -10,11 +10,15 @@ import {
     PegInAcceptedTxSPVProof,
     StreamPosition,
     PegInTempInfo,
+    PrevoutData,
     IPegManager
 } from "./interfaces/IPegManager.sol";
-import {Stream, Packet, SlotState, StreamManager} from "./StreamManager.sol";
+import {Slot, Stream, Packet, SlotState, StreamManager} from "./StreamManager.sol";
 import {ProofValidator} from "./ProofValidator.sol";
+import {BtcHelper} from "./libraries/BtcHelper.sol";
 import {BtcScriptParser} from "./libraries/BtcScriptParser.sol";
+import {BtcTaprootParser} from "./libraries/BtcTaprootParser.sol";
+import {OpCodes} from "./libraries/OpCodes.sol";
 
 /// @title PegManager
 /// @notice Manages peg-in and peg-out operations between Bitcoin and Rootstock
@@ -26,6 +30,8 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
     mapping(bytes32 => StreamPosition) internal pegInRequests;
     // Bitcoin txHash => TempInfo
     mapping(bytes32 => PegInTempInfo) internal pegInsTempInfo;
+    // key = keccak256(abi.encodePacked(_bitcoinUserAddress, _amount))
+    mapping(bytes32 key => bytes32 pegOutTxHash) internal pegOutTxHashes;
 
     function initialize(
         address _initialOwner,
@@ -33,7 +39,7 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
         ICommitteeRegistry _committeeRegistry,
         IBitcoinManager _bitcoinManager,
         uint64[] memory _denominations
-    ) public initializer {
+    ) public virtual initializer {
         committeeRegistry = _committeeRegistry;
         bitcoinManager = _bitcoinManager;
         StreamManager.initialize(_denominations);
@@ -165,5 +171,243 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
         uint256 slotId = preparePegInTx(
             stream.streamId, packetNumber, txHash, _pegInAcceptedTxSPVProof.btcTx.outputs[VOUT_INDEX].scriptPubKey
         );
+    }
+
+    function requestPegOut(bytes calldata _usrPubKey, address _bitcoinUserAddress, bool _batchFlag) external payable {
+        uint64 amount = uint64(msg.value);
+        // TODO validate who can call this function
+
+        // Validate the _usrPubKey is 33 bytes
+        if (_usrPubKey.length != 33) {
+            revert InvalidPubKeyLength(_usrPubKey.length);
+        }
+
+        // TODO return RBTC to legacy bridge
+
+        // TODO acount for batchFlag
+
+        // Get first filled Slot
+        Stream memory stream = getStream(uint64(amount)); //TODO: add test for a revert
+        (Slot memory slot, uint64 packetNumber) = getFirstFilledSlot(stream.streamId); //TODO: add test for a revert no filled slot
+
+        // Prepare prevouts data
+        PrevoutData[] memory prevoutsData = new PrevoutData[](1);
+        prevoutsData[0] = PrevoutData({txid: slot.txId, vout: 0, value: amount, scriptPubKey: slot.scriptPubKey});
+
+        // Calculate fee and dust from amount
+        // TODO: atm is returning hardcoded values, should be calculated
+        (uint64 fee, uint64 dust) = BtcHelper.calculateFeeAndDust(amount);
+
+        // Compute the Bitcoin peg-out transaction hash
+        bytes32 pegOutTxHash = computePegOutTxHash(_usrPubKey, prevoutsData, amount - dust - fee, dust);
+
+        // Store the peg-out transaction hash on-chain
+        pegOutTxHashes[keccak256(abi.encodePacked(_bitcoinUserAddress, amount))] = pegOutTxHash;
+
+        // Lock the used slot
+        lockSlot(stream.streamId, packetNumber, slot.slotId);
+
+        // Emit an event
+        emit PegOutRequested(
+            _bitcoinUserAddress, amount, pegOutTxHash, stream.streamId, packetNumber, slot.slotId, _batchFlag
+        );
+    }
+
+    function computePegOutTxHash(bytes memory usrPubKey, PrevoutData[] memory prevoutsData, uint64 amount, uint64 dust)
+        public
+        pure
+        returns (bytes32)
+    {
+        bytes memory encodedData = "";
+
+        // epoch
+        encodedData = abi.encodePacked(encodedData, uint8(0));
+
+        // hash_type
+        //TODO check if 0x00 (default) or 0x01 (SIGHASH_ALL) is the value being used in the protocol builder
+        encodedData = abi.encodePacked(encodedData, uint8(0x00));
+
+        // nVersion
+        encodedData = abi.encodePacked(encodedData, bytes4(hex"02000000"));
+
+        // nLockTime
+        encodedData = abi.encodePacked(encodedData, uint32(0));
+
+        // sha_prevouts (32): the SHA256 of the serialization of all input outpoints.
+        //TODO: consider having just one prevout
+        bytes memory prevouts;
+        for (uint256 i = 0; i < prevoutsData.length; i++) {
+            prevouts = abi.encodePacked(prevouts, BtcHelper.reverseBytes32(prevoutsData[i].txid), prevoutsData[i].vout);
+        }
+        encodedData = abi.encodePacked(encodedData, sha256(prevouts));
+
+        // sha_amounts (32): the SHA256 of the serialization of all input outpoints amounts.
+        bytes memory amounts;
+        for (uint256 i = 0; i < prevoutsData.length; i++) {
+            amounts = abi.encodePacked(amounts, BtcHelper.reverseUint64(prevoutsData[i].value));
+        }
+        encodedData = abi.encodePacked(encodedData, sha256(amounts));
+
+        // sha_scriptpubkeys (32): the SHA256 of the serialization of all spent output scriptPubKeys.
+        bytes memory scriptPubKeys;
+        for (uint256 i = 0; i < prevoutsData.length; i++) {
+            scriptPubKeys = abi.encodePacked(
+                scriptPubKeys,
+                BtcHelper.toCompactSize(prevoutsData[i].scriptPubKey.length),
+                prevoutsData[i].scriptPubKey
+            );
+        }
+        encodedData = abi.encodePacked(encodedData, sha256(scriptPubKeys));
+
+        //TODO: consider un-hardcoding this
+        // sha_sequences (32): the SHA256 of the serialization of all input nSequences.
+        bytes memory sequences = hex"FFFFFFFF";
+        encodedData = abi.encodePacked(encodedData, sha256(sequences));
+
+        // sha_outputs (32): the SHA256 of the serialization of all outputs in CTxOut format.
+        bytes memory outputs;
+        bytes memory pubKeyHash = BtcHelper.hash160(abi.encodePacked(usrPubKey));
+        bytes memory scriptPubKey = BtcScriptParser.getP2WPKHScript(pubKeyHash);
+        outputs = abi.encodePacked(
+            BtcHelper.reverseUint64(amount), BtcHelper.toCompactSize(scriptPubKey.length), scriptPubKey
+        );
+
+        bytes memory speedUpScriptHash = abi.encodePacked(sha256(abi.encodePacked(OpCodes.OP_1)));
+        bytes memory speedUpScriptPubKey = BtcScriptParser.getP2WSHScript(speedUpScriptHash);
+        outputs = abi.encodePacked(
+            outputs,
+            BtcHelper.reverseUint64(dust),
+            BtcHelper.toCompactSize(speedUpScriptPubKey.length),
+            speedUpScriptPubKey
+        );
+        encodedData = abi.encodePacked(encodedData, sha256(outputs));
+
+        // spend_type (1):
+        uint8 spendType = 0;
+        encodedData = abi.encodePacked(encodedData, spendType);
+
+        // input_index (4):
+        uint32 inputIndex = 0;
+        encodedData = abi.encodePacked(encodedData, inputIndex);
+
+        return BtcHelper.taggedHash(BtcTaprootParser.TAP_SIGHASH, encodedData);
+    }
+
+    // function debug_computePegOutTxHash(bytes memory usrPubKey, PrevoutData[] memory prevoutsData, uint64 amount, uint64 dust)
+    //     public
+    //     pure
+    //     returns (bytes32)
+    // {
+    //     bytes memory encodedData = "";
+
+    //     // epoch
+    //     encodedData = abi.encodePacked(encodedData, uint8(0));
+    //     console.log("epoch");
+    //     console.logBytes1(bytes1(0));
+
+    //     // hash_type
+    //     //TODO check if 0x00 (default) or 0x01 (SIGHASH_ALL) is the value being used in the protocol builder
+    //     encodedData = abi.encodePacked(encodedData, uint8(0x00));
+    //     console.log("hash_type");
+    //     console.logBytes1(bytes1(0x00));
+
+    //     // nVersion
+    //     encodedData = abi.encodePacked(encodedData, bytes4(hex"02000000"));
+    //     console.log("nVersion");
+    //     console.logBytes4(bytes4(hex"02000000"));
+
+    //     // nLockTime
+    //     encodedData = abi.encodePacked(encodedData, uint32(0));
+    //     console.log("nLockTime");
+    //     console.logBytes4(bytes4(0));
+
+    //     // sha_prevouts (32): the SHA256 of the serialization of all input outpoints.
+    //     //TODO: consider having just one prevout
+    //     bytes memory prevouts;
+    //     for (uint256 i = 0; i < prevoutsData.length; i++) {
+    //         prevouts = abi.encodePacked(prevouts, BtcHelper.reverseBytes32(prevoutsData[i].txid), prevoutsData[i].vout);
+    //     }
+    //     encodedData = abi.encodePacked(encodedData, sha256(prevouts));
+    //     console.log("sha_prevouts txid reversed");
+    //     console.logBytes32(BtcHelper.reverseBytes32(prevoutsData[0].txid));
+    //     console.log("sha_prevouts vout");
+    //     console.logBytes4(bytes4(prevoutsData[0].vout));
+    //     console.log("sha_prevouts prehashed");
+    //     console.logBytes(prevouts);
+    //     console.log("sha_prevouts hashed");
+    //     console.logBytes32(sha256(prevouts));
+
+    //     // sha_amounts (32): the SHA256 of the serialization of all input outpoints amounts.
+    //     bytes memory amounts;
+    //     for (uint256 i = 0; i < prevoutsData.length; i++) {
+    //         amounts = abi.encodePacked(amounts, BtcHelper.reverseUint64(prevoutsData[i].value));
+    //     }
+    //     encodedData = abi.encodePacked(encodedData, sha256(amounts));
+    //     console.log("sha_amounts prehashed");
+    //     console.logBytes(amounts);
+    //     console.log("sha_amounts hashed");
+    //     console.logBytes32(sha256(amounts));
+
+    //     // sha_scriptpubkeys (32): the SHA256 of the serialization of all spent output scriptPubKeys.
+    //     bytes memory scriptPubKeys;
+    //     for (uint256 i = 0; i < prevoutsData.length; i++) {
+    //         scriptPubKeys = abi.encodePacked(
+    //             scriptPubKeys,
+    //             BtcHelper.toCompactSize(prevoutsData[i].scriptPubKey.length),
+    //             prevoutsData[i].scriptPubKey
+    //         );
+    //     }
+    //     encodedData = abi.encodePacked(encodedData, sha256(scriptPubKeys));
+    //     console.log("sha_scriptpubkeys prehashed");
+    //     console.logBytes(scriptPubKeys);
+    //     console.log("sha_scriptpubkeys hashed");
+    //     console.logBytes32(sha256(scriptPubKeys));
+
+    //     //TODO: consider un-hardcoding this
+    //     // sha_sequences (32): the SHA256 of the serialization of all input nSequences.
+    //     bytes memory sequences = hex"FFFFFFFF";
+    //     encodedData = abi.encodePacked(encodedData, sha256(sequences));
+    //     console.log("sha_sequences");
+    //     console.logBytes32(sha256(sequences));
+
+    //     // sha_outputs (32): the SHA256 of the serialization of all outputs in CTxOut format.
+    //     bytes memory outputs;
+    //     bytes memory pubKeyHash = BtcHelper.hash160(abi.encodePacked(usrPubKey));
+    //     bytes memory scriptPubKey = BtcScriptParser.getP2WPKHScript(pubKeyHash);
+    //     outputs = abi.encodePacked(
+    //         BtcHelper.reverseUint64(amount), BtcHelper.toCompactSize(scriptPubKey.length), scriptPubKey
+    //     );
+
+    //     bytes memory speedUpScriptHash = abi.encodePacked(sha256(abi.encodePacked(OpCodes.OP_1)));
+    //     bytes memory speedUpScriptPubKey = BtcScriptParser.getP2WSHScript(speedUpScriptHash);
+    //     outputs = abi.encodePacked(
+    //         outputs,
+    //         BtcHelper.reverseUint64(dust),
+    //         BtcHelper.toCompactSize(speedUpScriptPubKey.length),
+    //         speedUpScriptPubKey
+    //     );
+    //     encodedData = abi.encodePacked(encodedData, sha256(outputs));
+    //     console.log("sha_outputs prehashed");
+    //     console.logBytes(outputs);
+    //     console.log("sha_outputs hashed");
+    //     console.logBytes32(sha256(outputs));
+
+    //     // spend_type (1):
+    //     uint8 spendType = 0;
+    //     encodedData = abi.encodePacked(encodedData, spendType);
+    //     console.log("spend_type");
+    //     console.logBytes1(bytes1(spendType));
+
+    //     // input_index (4):
+    //     uint32 inputIndex = 0;
+    //     encodedData = abi.encodePacked(encodedData, inputIndex);
+    //     console.log("input_index");
+    //     console.logBytes4(bytes4(inputIndex));
+
+    //     return BtcHelper.taggedHash(BtcTaprootParser.TAP_SIGHASH, encodedData);
+    // }
+
+    function getPegOutTxHash(bytes32 key) external view returns (bytes32) {
+        return pegOutTxHashes[key];
     }
 }

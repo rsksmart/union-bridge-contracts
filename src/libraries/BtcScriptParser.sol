@@ -15,9 +15,14 @@ library BtcScriptParser {
 
     error NumberTooLarge(uint256 actual, uint256 max);
 
-    function getP2WPKHScript(bytes32 _publicKey) internal pure returns (bytes memory) {
+    function getP2WPKHScript(bytes memory _publicKeyHash) internal pure returns (bytes memory) {
         // Pay To Witness Public Key Hash
-        return abi.encodePacked(OpCodes.OP_0, OpCodes.OP_PUSHBYTES_20, _publicKey);
+        return abi.encodePacked(OpCodes.OP_0, OpCodes.OP_PUSHBYTES_20, _publicKeyHash);
+    }
+
+    function getP2WSHScript(bytes memory _scriptHash) internal pure returns (bytes memory) {
+        // Pay To Witness Script Hash
+        return abi.encodePacked(OpCodes.OP_0, OpCodes.OP_PUSHBYTES_32, _scriptHash);
     }
 
     function pushNumberToStack(uint256 _number) internal pure returns (bytes memory) {
