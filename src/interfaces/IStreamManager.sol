@@ -12,18 +12,19 @@ enum StreamDenomination { //TODO integrate this enum into StreamManager logic
 enum SlotState {
     PREPARED,
     FILLED,
-    PAID
+    PAID,
+    LOCKED
 }
 
 struct Slot {
     uint64 slotId; // Unique ID
-    SlotState state; // The denomination in satoshis of the packet (redundant, this field is also in the stream structure)
+    SlotState state; // The state of the slot
     // TBD drp;                        // Dispute Resolution Protocol information
     // TBD otk;                        // Dispute Resolution Protocol one-time-keys
-    bytes utxo; // Peg-in Output UTXO (unspent transaction output address)
-    bytes32 pegInTx; // Transaction id of the committee peg-in transaction
+    bytes scriptPubKey; // The scriptPubKey of the slot
+    bytes32 txId; // Transaction id of the peg-in transaction
     bytes32 take0Tx; // Transaction id of the peg-out without dispute transaction
-    bytes32 take1TX; // Transaction id of the successfull dispute peg-out transaction
+    bytes32 take1Tx; // Transaction id of the successfull dispute peg-out transaction
 }
 
 struct Packet {
@@ -76,10 +77,30 @@ interface IStreamManager {
     /// @return uint256 The slotId of the first prepared slot information
     function getPreparedSlotId(uint64 _streamId, uint64 _packetNumber) external view returns (uint64);
 
+    // /// @notice Allows users to get the first filled Slot information for a given packet index at a stream
+    // /// @param _streamId The index in the array of streams
+    // /// @param _packetNumber The index in the array of packets
+    // /// @return uint256 The slotId of the first filled slot information
+    // function getFilledSlotId(uint64 _streamId, uint64 _packetNumber) external view returns (uint64);
+
+    // /// @notice Allows users to get the next available packet for a stream
+    // /// @param _streamId The index in the array of streams
+    // /// @return Packet The packet information
+    // function getNextAvailablePacket(uint64 _streamId) external view returns (Packet memory);
+
+    /// @notice Allows users to get the Slot information for a given slot index at a packet index at a stream
+    /// @param _streamId The index in the array of streams
+    /// @param _packetNumber The index in the array of packets
+    /// @param _slotNumber The index in the array of slots
+    /// @return Slot The slot information
+    function getSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotNumber) external view returns (Slot memory);
+
     function createPacketsAndSlots(bytes32 _committeePubKey) external;
 
     error StreamNotFoundByDenomination(uint256 denomination);
     error PacketOutOfBound(uint256 packetNumber);
     error NoEmptySlot(uint256 streamId, uint256 packetNumber);
     error tooManyDenominations(uint256 maxDenominationsSize);
+    error NoFilledSlot(uint256 streamId, uint256 packetNumber);
+    error NonExistentSlot(uint256 streamId, uint256 packetNumber, uint256 slotId);
 }

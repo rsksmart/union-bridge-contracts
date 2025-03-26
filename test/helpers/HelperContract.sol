@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
 import {DeployScript} from "script/deploy/DeployScript.s.sol";
 import {PegManager} from "src/PegManager.sol";
+import {PegManagerHarness} from "test/helpers/PegManagerHarness.sol";
 import {Role, Member, CommitteeMember, Committee, CommitteeRegistry} from "src/CommitteeRegistry.sol";
 import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
 import {BtcTxIn, BtcTxOut, BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
@@ -34,7 +35,7 @@ abstract contract HelperContract is Test, TestUtils {
     CommitteeMember[] internal committee1Members;
     CommitteeMember[] internal committee2Members;
     CommitteeMember[] internal committee3Members;
-    PegManager internal pm;
+    PegManagerHarness internal pm;
     BridgeMock internal bridgeMock;
     address upgradeOwner = vm.addr(777);
     // Arrenge
@@ -79,7 +80,7 @@ abstract contract HelperContract is Test, TestUtils {
         deployScript.run();
         bitcoinManager = deployScript.bitcoinManager();
         registry = deployScript.committeeRegistry();
-        pm = deployScript.pegManager();
+        pm = PegManagerHarness(address(deployScript.pegManager()));
         // Set up bridge mock at bridge precompiled address
         bridgeMock = BridgeMock(deployScript.bridgeAddress());
 

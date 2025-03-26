@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {Stream, Packet, Slot, SlotState, IStreamManager} from "./interfaces/IStreamManager.sol";
+import "forge-std/console.sol";
 
 /// @title Stream Manager
 /// @notice Manages streams
@@ -51,7 +52,7 @@ abstract contract StreamManager is IStreamManager, Initializable {
             // Initialize slots directly in storage
             for (uint64 j = 0; j < 100; j++) {
                 slots[i][packetNumber].push(
-                    Slot({slotId: j, state: SlotState.PREPARED, utxo: "", pegInTx: "", take0Tx: "", take1TX: ""})
+                    Slot({slotId: j, state: SlotState.PREPARED, scriptPubKey: "", txId: "", take0Tx: "", take1Tx: ""})
                 );
             }
         }
@@ -83,10 +84,6 @@ abstract contract StreamManager is IStreamManager, Initializable {
         return packetList[_packetNumber];
     }
 
-    function getSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) public view returns (Slot memory) {
-        return slots[_streamId][_packetNumber][_slotId];
-    }
-
     function getPreparedSlotId(uint64 _streamId, uint64 _packetNumber) public view returns (uint64) {
         Slot[] memory slotList = slots[_streamId][_packetNumber];
         uint256 length = slotList.length;
@@ -99,8 +96,37 @@ abstract contract StreamManager is IStreamManager, Initializable {
         revert NoEmptySlot(_streamId, _packetNumber);
     }
 
+    //TODO optimize lookup with a pointer to the first packet with ready to peg-out slot
+    function getFirstFilledSlot(uint64 _streamId) public view returns (Slot memory slot, uint64 packetNumber) {
+        uint256 packetCount = packets[_streamId].length;
+        for (uint64 i = 0; i < packetCount; i++) {
+            uint256 slotCount = slots[_streamId][i].length;
+            for (uint64 j = 0; j < slotCount; j++) {
+                if (slots[_streamId][i][j].state == SlotState.FILLED) {
+                    return (slots[_streamId][i][j], i);
+                }
+            }
+        }
+        revert NoFilledSlot(_streamId, 0);
+    }
+
+    function getSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotNumber) public view returns (Slot memory) {
+        if (_packetNumber >= packets[_streamId].length) {
+            revert NonExistentSlot(_streamId, _packetNumber, _slotNumber);
+        }
+        if (_slotNumber >= slots[_streamId][_packetNumber].length) {
+            revert NonExistentSlot(_streamId, _packetNumber, _slotNumber);
+        }
+        return slots[_streamId][_packetNumber][_slotNumber];
+    }
+
+    function lockSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) internal {
+        Slot storage slot = slots[_streamId][_packetNumber][_slotId];
+        slot.state = SlotState.LOCKED;
+    }
+
     /// @dev Looks for the first empty slot and asigns the PegIn Tx in prepared state
-    function preparePegInTx(uint64 _streamId, uint64 _packetNumber, bytes32 _pegInTx, bytes memory _utxo)
+    function preparePegInTx(uint64 _streamId, uint64 _packetNumber, bytes32 _pegInTx, bytes memory _scriptPubKey)
         internal
         returns (uint64)
     {
@@ -109,8 +135,8 @@ abstract contract StreamManager is IStreamManager, Initializable {
         slot.state = SlotState.PREPARED;
         // TODO validate if the PegInTx is what we want to store, as the document mentions the Take for the registerPegInTxs
         // but the takes in the scrut are mentioned to be used by the peg out
-        slot.pegInTx = _pegInTx;
-        slot.utxo = _utxo;
+        slot.txId = _pegInTx;
+        slot.scriptPubKey = _scriptPubKey;
         return slotId;
     }
 }

@@ -15,6 +15,7 @@ library BtcTaprootParser {
     bytes1 constant LEAF_VERSION = 0xc0; // number 192 aka tapscript
     bytes constant TAP_LEAF = bytes("TapLeaf");
     bytes constant TAP_BRANCH = bytes("TapBranch");
+    bytes constant TAP_SIGHASH = bytes("TapSighash");
 
     /// @dev https://learnmeabitcoin.com/technical/upgrades/taproot/#tweak
     function getTweak(bytes memory data) internal pure returns (bytes32) {
