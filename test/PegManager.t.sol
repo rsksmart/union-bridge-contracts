@@ -7,15 +7,17 @@ import {HelperContract} from "test/helpers/HelperContract.sol";
 import {
     PrevoutData,
     BtcTransaction,
-    PegInRequestTxSPVProof,
+    BtcTxSPVProof,
     StreamPosition,
-    PegInTempInfo,
+    RequestPegInTempInfo,
+    PegStatus,
     IPegManager
 } from "src/interfaces/IPegManager.sol";
+import {P2TR_FEES, SPEED_UP_AMOUNT, BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
 import {Slot, SlotState, Packet, Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE} from "src/interfaces/IBridge.sol";
 import {ProofValidator} from "src/ProofValidator.sol";
-import {BtcTaprootParser} from "test/libraries/BtcTaprootParser.t.sol";
+import {BtcTaproot} from "src/libraries/BtcTaproot.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 
 contract TestPegManager is Test, HelperContract {
@@ -27,6 +29,21 @@ contract TestPegManager is Test, HelperContract {
 
     bytes32 internal constant BTC_REIMBURSEMENT_PUBKEY =
         0x5d238354a7e74c9e373317053226537dec221c5c775bcca01e806ec358c5c08d;
+
+    // For more info about this see: https://book.getfoundry.sh/forge/writing-tests#before-test-setups
+    function beforeTestSetup(bytes4 testSelector) public pure returns (bytes[] memory beforeTestCalldata) {
+        if (
+            testSelector == this.test_acceptPegInRequest_Success.selector
+                || testSelector == this.test_acceptPegInRequest_Revert_AlreadyRegisteredAcceptPegIn.selector
+                || testSelector == this.test_acceptPegInRequest_Revert_IncorrectInputsNumber.selector
+                || testSelector == this.test_acceptPegInRequest_Revert_IncorrectOutputsNumber.selector
+                || testSelector == this.test_acceptPegInRequest_Revert_InvalidVout.selector
+                || testSelector == this.test_acceptPegInRequest_Revert_Revert_NotEnoughConfirmations.selector
+        ) {
+            beforeTestCalldata = new bytes[](1);
+            beforeTestCalldata[0] = abi.encodePacked(this.test_registerPegInRequest_Success.selector);
+        }
+    }
 
     function setUp() external {
         runTestDeployScript();
@@ -40,23 +57,44 @@ contract TestPegManager is Test, HelperContract {
         assertEq(result, tempAddress, "Incorrect temporary peg in address");
     }
 
+    // ========================== REGISTER PEG IN REQUEST ==========================
     function test_registerPegInRequest_Success() external {
         // Arrenge
         BtcTransaction memory btcTransaction = getBtcPegInRequestTx();
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(10);
         // Create PegIn struct information
-        PegInRequestTxSPVProof memory pegInRequestTxSPVProof = PegInRequestTxSPVProof({
+        BtcTxSPVProof memory pegInRequestTxSPVProof = BtcTxSPVProof({
             blockHash: BLOCK_HASH,
             btcTx: btcTransaction,
-            // Values obtained using https://github.com/rsksmart/pmt-builder
-            // TODO fix this values as it's returning -5 in the bridge
-            merkleBranchPath: 4285202432,
-            merkleBranchHashes: new bytes32[](1)
+            //values obtained from https://github.com/FairgateLabs/rust-bitvmx-transactions/blob/main/src/bin/bridge-pmt.rs
+            merkleBranchPath: 949,
+            merkleBranchHashes: new bytes32[](12)
         });
-        // TODO set actual mainnet values
         pegInRequestTxSPVProof.merkleBranchHashes[0] =
-            0x3fcef4a1ddf759a858190b89ecbd1ff3dffb49704e110b68baf5b5de7021910f;
+            0x480fd40f2e47eeea8edeef2f7f3e2c680642f748c989ed2e542fe5d28164da51;
+        pegInRequestTxSPVProof.merkleBranchHashes[1] =
+            0x95c002b26f393d620ca12515bb4ff266617f56efe6b944e5e284f5124a1310ea;
+        pegInRequestTxSPVProof.merkleBranchHashes[2] =
+            0x5c6e854f9a71ae76fd2ae7ee98b25cf452d49731a70e00bd10aca0bee7265b2e;
+        pegInRequestTxSPVProof.merkleBranchHashes[3] =
+            0xaa27307f38abf6c00f34941cefffcba573dc6eb4220e46b13a9230f49d2a7d20;
+        pegInRequestTxSPVProof.merkleBranchHashes[4] =
+            0x93835ab7468acbd3ba3baef1a014787d391a9a11cae31f06037ac87cfde469e5;
+        pegInRequestTxSPVProof.merkleBranchHashes[5] =
+            0x25877bd79f156e5f242142d34968aada8ac92cf0908aacc9f48313b6b2a73adb;
+        pegInRequestTxSPVProof.merkleBranchHashes[6] =
+            0xa1a1e0737442b3e1248e88c5a6cac8307cd3e788e654b20809529d7765b84e33;
+        pegInRequestTxSPVProof.merkleBranchHashes[7] =
+            0x232432f75c9a979619d3315d65634ac83c2c778cedfd4cdfdf05baf363c43c8c;
+        pegInRequestTxSPVProof.merkleBranchHashes[8] =
+            0xbb822f3484e435d95647c70e837f11fb5287cd4477acd021b462b0cb8b7cb893;
+        pegInRequestTxSPVProof.merkleBranchHashes[9] =
+            0x46f6681d15564294d83a040b5e42403d2d594d4a55aebecd1f5264be9b9f1563;
+        pegInRequestTxSPVProof.merkleBranchHashes[10] =
+            0xfe31a4dff5d25fa665b18afea5256f9f71cfdabdd55930eccdf418414cfefd99;
+        pegInRequestTxSPVProof.merkleBranchHashes[11] =
+            0x512113f66433c1db50f001198988b3a187390df8b52afb48cedae934ae022998;
 
         // Assert
         vm.expectEmit(address(pm));
@@ -64,7 +102,7 @@ contract TestPegManager is Test, HelperContract {
         emit IPegManager.RegisteredPegInRequest(
             pegInRequestTxSPVProof.blockHash,
             getExpectedPegInRequestTxHash(),
-            1,
+            0,
             VALUE,
             PACKET_NUMBER,
             RSK_DESTINATION_ADDRESS,
@@ -81,10 +119,10 @@ contract TestPegManager is Test, HelperContract {
         StreamPosition memory streamPosition = pm.getPegInRequest(txHash);
         assertEq(streamPosition.streamId, 0, "Incorrect streamId registered");
         assertEq(streamPosition.packetNumber, 0, "Incorrect packetNumber registered");
-        assertEq(streamPosition.registered, true, "PegIn Request was not registered");
+        assertEq(uint256(streamPosition.pegStatus), uint256(PegStatus.REGISTERED), "PegIn Request was not registered");
         // Registered Peg In Temp info
-        PegInTempInfo memory pegInTempInfo = pm.getPegInTempInfo(txHash);
-        assertEq(pegInTempInfo.value, VALUE, "Incorrect peg in temp info value");
+        RequestPegInTempInfo memory pegInTempInfo = pm.getRequestPegInTempInfo(txHash);
+        assertEq(pegInTempInfo.outputAmount, VALUE, "Incorrect peg in temp info value");
         assertEq(
             pegInTempInfo.rskDestinationAddress,
             RSK_DESTINATION_ADDRESS,
@@ -108,26 +146,26 @@ contract TestPegManager is Test, HelperContract {
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(10);
         // Create PegIn struct information
-        PegInRequestTxSPVProof memory pegInRequestTxSPVProof = PegInRequestTxSPVProof({
+        BtcTxSPVProof memory pegInRequestTxSPVProof = BtcTxSPVProof({
             blockHash: BLOCK_HASH,
             btcTx: btcTransaction,
-            // Values obtained using https://github.com/rsksmart/pmt-builder
-            // TODO fix this values as it's returning -5 in the bridge
+            // merkle branch values are fake, we don't need them for this test
+            // to get actual values use https://github.com/FairgateLabs/rust-bitvmx-transactions/blob/main/src/bin/bridge-pmt.rs
             merkleBranchPath: 4285202432,
             merkleBranchHashes: new bytes32[](1)
         });
-        // TODO set actual mainnet values
         pegInRequestTxSPVProof.merkleBranchHashes[0] =
             0x3fcef4a1ddf759a858190b89ecbd1ff3dffb49704e110b68baf5b5de7021910f;
 
+        // Register First Peg In Request
         pm.registerPegInRequest(pegInRequestTxSPVProof);
 
         // Assert
         vm.expectRevert(
-            abi.encodeWithSelector(IPegManager.AlreadyRegisteredPegIn.selector, getExpectedPegInRequestTxHash())
+            abi.encodeWithSelector(IPegManager.AlreadyRegisteredPegInRequest.selector, getExpectedPegInRequestTxHash())
         );
 
-        // Act
+        // Act Register Second Peg In Request
         pm.registerPegInRequest(pegInRequestTxSPVProof);
     }
 
@@ -138,7 +176,7 @@ contract TestPegManager is Test, HelperContract {
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(actualConfirmations);
         // Create PegIn struct information
-        PegInRequestTxSPVProof memory pegInRequestTxSPVProof = PegInRequestTxSPVProof({
+        BtcTxSPVProof memory pegInRequestTxSPVProof = BtcTxSPVProof({
             blockHash: BLOCK_HASH,
             btcTx: btcTransaction,
             merkleBranchPath: 1,
@@ -164,39 +202,16 @@ contract TestPegManager is Test, HelperContract {
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE);
         // Create PegIn struct information
-        PegInRequestTxSPVProof memory pegInRequestTxSPVProof = PegInRequestTxSPVProof({
+        BtcTxSPVProof memory pegInRequestTxSPVProof = BtcTxSPVProof({
             blockHash: BLOCK_HASH,
             btcTx: btcTransaction,
-            // Values obtained using https://github.com/rsksmart/pmt-builder
+            // merkle branch values are fake, we don't need them for this test
+            // to get actual values use https://github.com/FairgateLabs/rust-bitvmx-transactions/blob/main/src/bin/bridge-pmt.rs
             merkleBranchPath: 4285202432,
-            merkleBranchHashes: new bytes32[](13)
+            merkleBranchHashes: new bytes32[](1)
         });
         pegInRequestTxSPVProof.merkleBranchHashes[0] =
             0x3fcef4a1ddf759a858190b89ecbd1ff3dffb49704e110b68baf5b5de7021910f;
-        pegInRequestTxSPVProof.merkleBranchHashes[1] =
-            0x481a71c0478c28b68a698b8e9be317e9a0d9d153b0b2db417a45b5773ef6a0f2;
-        pegInRequestTxSPVProof.merkleBranchHashes[2] =
-            0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079;
-        pegInRequestTxSPVProof.merkleBranchHashes[3] =
-            0x1780d0b717e2782046036f3a876037b3fe590834aa5da0b9a09b269d29856660;
-        pegInRequestTxSPVProof.merkleBranchHashes[4] =
-            0x649272353930bb551a61ca491844128dcd33900872bd9387224bbfd3da9906e5;
-        pegInRequestTxSPVProof.merkleBranchHashes[5] =
-            0x9617e6383b72d518449fc2c5a18cc24d1e1b3a59e7f8dce6dbf7e822275d382b;
-        pegInRequestTxSPVProof.merkleBranchHashes[6] =
-            0xa07d3b738d7b280b296cd9a11821c375b600c3524849822925f5c11a39878886;
-        pegInRequestTxSPVProof.merkleBranchHashes[7] =
-            0x9dd03a4e5358ca5c78c1aea47a944dee59a5153e87330c85c218e81f34e46839;
-        pegInRequestTxSPVProof.merkleBranchHashes[8] =
-            0x8c4a0c760fafa20c98217d482f85f297dcab25facbe8d5eccb3666a75ac7da37;
-        pegInRequestTxSPVProof.merkleBranchHashes[9] =
-            0x35d4bf31bdcb1dae3fc659536487c492abae0addcdcfe3e9434c0e9b8f552f8c;
-        pegInRequestTxSPVProof.merkleBranchHashes[10] =
-            0xae229406e25c7c52450f31b8a106f9cf5e5f8ae688ca7a25408e6bb339251221;
-        pegInRequestTxSPVProof.merkleBranchHashes[11] =
-            0x8d84f7110e788ec0591feb5c30f83c9bd326a88c2388d6c6ea10b886e360fffe;
-        pegInRequestTxSPVProof.merkleBranchHashes[12] =
-            0x5f05f1da73fc3498a59a4245e41b52b0a80dbaa3426fbd541c14327c9a362487;
 
         // Assert
         vm.expectRevert(
@@ -211,6 +226,244 @@ contract TestPegManager is Test, HelperContract {
         pm.registerPegInRequest(pegInRequestTxSPVProof);
     }
 
+    // ========================== ACCEPT PEG IN ==========================
+    function test_acceptPegInRequest_Revert_UnregisteredPegInRequest() external {
+        // Arrenge
+        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx();
+        // Set Mock Bridge state
+        bridgeMock.setBtcTransactionConfirmations(10);
+        // Create PegIn struct information
+        BtcTxSPVProof memory pegInAcceptedTxSPVProof = BtcTxSPVProof({
+            blockHash: BLOCK_HASH,
+            btcTx: btcTransaction,
+            // merkle branch values are fake, we don't need them for this test
+            // to get actual values use https://github.com/FairgateLabs/rust-bitvmx-transactions/blob/main/src/bin/bridge-pmt.rs
+            merkleBranchPath: 4285202432,
+            merkleBranchHashes: new bytes32[](1)
+        });
+        pegInAcceptedTxSPVProof.merkleBranchHashes[0] =
+            0x3fcef4a1ddf759a858190b89ecbd1ff3dffb49704e110b68baf5b5de7021910f;
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IPegManager.UnregisteredPegInRequest.selector, btcTransaction.inputs[0].txId)
+        );
+
+        // Act
+        pm.acceptPegInRequest(pegInAcceptedTxSPVProof);
+    }
+
+    function test_acceptPegInRequest_Success() external {
+        // ===  Before test setup  is run for this  test ===
+        // Arrenge
+        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx();
+        // Set Mock Bridge state
+        bridgeMock.setBtcTransactionConfirmations(10);
+        // Create PegIn struct information
+        BtcTxSPVProof memory pegInAcceptedTxSPVProof = BtcTxSPVProof({
+            blockHash: BLOCK_HASH,
+            btcTx: btcTransaction,
+            // merkle branch values are fake, we don't need them for this test
+            // to get actual values use https://github.com/FairgateLabs/rust-bitvmx-transactions/blob/main/src/bin/bridge-pmt.rs
+            merkleBranchPath: 4285202432,
+            merkleBranchHashes: new bytes32[](1)
+        });
+        pegInAcceptedTxSPVProof.merkleBranchHashes[0] =
+            0x3fcef4a1ddf759a858190b89ecbd1ff3dffb49704e110b68baf5b5de7021910f;
+
+        // Assert
+        vm.expectEmit(address(pm));
+
+        // We emit the event we expect to see.
+        bytes32 pegInRequestTxHash = pegInAcceptedTxSPVProof.btcTx.inputs[0].txId;
+        bytes32 acceptPegInTxHash = getExpectedAcceptPegInTxHash();
+        uint64 streamId = 0;
+        uint64 slotId = 0;
+        emit IPegManager.AcceptedPegInRequest(
+            pegInAcceptedTxSPVProof.blockHash,
+            acceptPegInTxHash,
+            pegInRequestTxHash,
+            0, //vout
+            streamId,
+            PACKET_NUMBER,
+            slotId, //slotId
+            RSK_DESTINATION_ADDRESS,
+            satoshiToWei(btcTransaction.outputs[0].amount), // Rbtc amount
+            btcTransaction.outputs[0].scriptPubKey
+        );
+
+        // Act
+        pm.acceptPegInRequest(pegInAcceptedTxSPVProof);
+
+        // Assert
+        // Registered Peg In Stream Position
+        StreamPosition memory streamPosition = pm.getPegInRequest(pegInRequestTxHash);
+        assertEq(streamPosition.streamId, streamId, "Incorrect streamId registered");
+        assertEq(streamPosition.packetNumber, PACKET_NUMBER, "Incorrect packetNumber registered");
+        assertEq(streamPosition.slotId, 0, "Incorrect slotId registered");
+        assertEq(uint256(streamPosition.pegStatus), uint256(PegStatus.ACCEPTED), "PegIn Request was not accepted");
+        // Registered Peg In Temp info should be deleted
+        RequestPegInTempInfo memory pegInTempInfo = pm.getRequestPegInTempInfo(pegInRequestTxHash);
+        assertEq(pegInTempInfo.outputAmount, 0, "Peg in temp info outputAmount should be deleted");
+        assertEq(
+            pegInTempInfo.rskDestinationAddress, address(0), "Peg in temp info destinationAddress should be deleted"
+        );
+        assertEq(
+            pegInTempInfo.btcReimbursementPubKey,
+            bytes32(0),
+            "Peg in temp info btcReimbursementPubKey should be deleted"
+        );
+        assertEq(pegInTempInfo.utxoScriptPubKey, hex"", "Peg in temp info utxoScriptPubKey should be deleted");
+        // Registered Peg In Slot
+        Slot memory slot = pm.getSlot(streamId, PACKET_NUMBER, slotId);
+        assertEq(uint256(slot.state), uint256(SlotState.FILLED), "Slot should be filled");
+        assertEq(slot.acceptPegInTx, acceptPegInTxHash, "Incorrect acceptPegInTx");
+        assertEq(slot.acceptPegInAmount, btcTransaction.outputs[0].amount, "Incorrect acceptPegInAmount");
+    }
+
+    function test_acceptPegInRequest_Revert_AlreadyRegisteredAcceptPegIn() external {
+        // ===  Before test setup  is run for this  test ===
+        // Arrenge
+        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx();
+        // Set Mock Bridge state
+        bridgeMock.setBtcTransactionConfirmations(10);
+        // Create PegIn struct information
+        BtcTxSPVProof memory pegInAcceptedTxSPVProof = BtcTxSPVProof({
+            blockHash: BLOCK_HASH,
+            btcTx: btcTransaction,
+            // merkle branch values are fake, we don't need them for this test
+            // to get actual values use https://github.com/FairgateLabs/rust-bitvmx-transactions/blob/main/src/bin/bridge-pmt.rs
+            merkleBranchPath: 4285202432,
+            merkleBranchHashes: new bytes32[](1)
+        });
+        pegInAcceptedTxSPVProof.merkleBranchHashes[0] =
+            0x3fcef4a1ddf759a858190b89ecbd1ff3dffb49704e110b68baf5b5de7021910f;
+
+        // Register First  Accept Peg In Request
+        pm.acceptPegInRequest(pegInAcceptedTxSPVProof);
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IPegManager.AlreadyRegisteredAcceptPegIn.selector, btcTransaction.inputs[0].txId)
+        );
+
+        // Act Register Second Accept Peg In Request
+        pm.acceptPegInRequest(pegInAcceptedTxSPVProof);
+    }
+
+    function test_acceptPegInRequest_Revert_IncorrectInputsNumber() external {
+        // ===  Before test setup  is run for this  test ===
+        // Arrenge
+        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx();
+        btcTransaction.inputs = new BtcTxIn[](0);
+        // Set Mock Bridge state
+        bridgeMock.setBtcTransactionConfirmations(10);
+        // Create PegIn struct information
+        BtcTxSPVProof memory pegInAcceptedTxSPVProof = BtcTxSPVProof({
+            blockHash: BLOCK_HASH,
+            btcTx: btcTransaction,
+            // merkle branch values are fake, we don't need them for this test
+            // to get actual values use https://github.com/FairgateLabs/rust-bitvmx-transactions/blob/main/src/bin/bridge-pmt.rs
+            merkleBranchPath: 4285202432,
+            merkleBranchHashes: new bytes32[](1)
+        });
+        pegInAcceptedTxSPVProof.merkleBranchHashes[0] =
+            0x3fcef4a1ddf759a858190b89ecbd1ff3dffb49704e110b68baf5b5de7021910f;
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IPegManager.IncorrectInputsNumber.selector, btcTransaction.inputs.length, 1)
+        );
+
+        // Act
+        pm.acceptPegInRequest(pegInAcceptedTxSPVProof);
+    }
+
+    function test_acceptPegInRequest_Revert_IncorrectOutputsNumber() external {
+        // ===  Before test setup  is run for this  test ===
+        // Arrenge
+        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx();
+        btcTransaction.outputs = new BtcTxOut[](0);
+        // Set Mock Bridge state
+        bridgeMock.setBtcTransactionConfirmations(10);
+        // Create PegIn struct information
+        BtcTxSPVProof memory pegInAcceptedTxSPVProof = BtcTxSPVProof({
+            blockHash: BLOCK_HASH,
+            btcTx: btcTransaction,
+            // merkle branch values are fake, we don't need them for this test
+            // to get actual values use https://github.com/FairgateLabs/rust-bitvmx-transactions/blob/main/src/bin/bridge-pmt.rs
+            merkleBranchPath: 4285202432,
+            merkleBranchHashes: new bytes32[](1)
+        });
+        pegInAcceptedTxSPVProof.merkleBranchHashes[0] =
+            0x3fcef4a1ddf759a858190b89ecbd1ff3dffb49704e110b68baf5b5de7021910f;
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IPegManager.IncorrectOutputsNumber.selector, btcTransaction.outputs.length, 2)
+        );
+
+        // Act
+        pm.acceptPegInRequest(pegInAcceptedTxSPVProof);
+    }
+
+    function test_acceptPegInRequest_Revert_InvalidVout() external {
+        // ===  Before test setup  is run for this  test ===
+        // Arrenge
+        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx();
+        btcTransaction.inputs[0].vout = 1;
+        // Set Mock Bridge state
+        bridgeMock.setBtcTransactionConfirmations(10);
+        // Create PegIn struct information
+        BtcTxSPVProof memory pegInAcceptedTxSPVProof = BtcTxSPVProof({
+            blockHash: BLOCK_HASH,
+            btcTx: btcTransaction,
+            // merkle branch values are fake, we don't need them for this test
+            // to get actual values use https://github.com/FairgateLabs/rust-bitvmx-transactions/blob/main/src/bin/bridge-pmt.rs
+            merkleBranchPath: 4285202432,
+            merkleBranchHashes: new bytes32[](1)
+        });
+        pegInAcceptedTxSPVProof.merkleBranchHashes[0] =
+            0x3fcef4a1ddf759a858190b89ecbd1ff3dffb49704e110b68baf5b5de7021910f;
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IPegManager.InvalidVout.selector, btcTransaction.inputs[0].vout, 0));
+
+        // Act
+        pm.acceptPegInRequest(pegInAcceptedTxSPVProof);
+    }
+
+    function test_acceptPegInRequest_Revert_Revert_NotEnoughConfirmations() external {
+        // ===  Before test setup  is run for this  test ===
+        // Arrenge
+        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx();
+        int256 actualConfirmations = 0;
+        // Set Mock Bridge state
+        bridgeMock.setBtcTransactionConfirmations(actualConfirmations);
+        // Create PegIn struct information
+        BtcTxSPVProof memory pegInAcceptedTxSPVProof = BtcTxSPVProof({
+            blockHash: BLOCK_HASH,
+            btcTx: btcTransaction,
+            // merkle branch values are fake, we don't need them for this test
+            // to get actual values use https://github.com/FairgateLabs/rust-bitvmx-transactions/blob/main/src/bin/bridge-pmt.rs
+            merkleBranchPath: 4285202432,
+            merkleBranchHashes: new bytes32[](1)
+        });
+        pegInAcceptedTxSPVProof.merkleBranchHashes[0] =
+            0x3fcef4a1ddf759a858190b89ecbd1ff3dffb49704e110b68baf5b5de7021910f;
+        Stream memory stream = pm.getStreamById(0);
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ProofValidator.NotEnoughConfirmations.selector, actualConfirmations, stream.pegInConfirmations
+            )
+        );
+
+        // Act
+        pm.acceptPegInRequest(pegInAcceptedTxSPVProof);
+    }
+
+    // ================= Request PegOut =================
     function test_computePegOutTxHash() external view {
         // Arrange
         bytes32 p2tr_spk = 0x18f69d27d77e37a024c1b4663403c3205443f76609451cd85fce13d4dccc98c7;
@@ -220,7 +473,7 @@ contract TestPegManager is Test, HelperContract {
             txid: 0xa33c0cab77c7036b7e51ab63945a204c5417f89fcbdb8e3e841779238cca5eff,
             vout: 0,
             value: 10000000,
-            scriptPubKey: BtcTaprootParser.getP2TRScriptPubKey(p2tr_spk)
+            scriptPubKey: BtcTaproot.getP2TRScriptPubKey(p2tr_spk)
         });
 
         uint64 amount = 9979999; // 0.0998 BTC - 0.0001 BTC (dust)

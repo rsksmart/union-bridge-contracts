@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 /**
- * @title Btc Utils
+ * @title Btc Helper
  * @notice Usefull functions for Bitcoin parsin/encoding/decoding
  * @author Fairgate
  */
@@ -26,24 +26,13 @@ library BtcHelper {
         return abi.encodePacked(uint8(0xFF), BtcHelper.reverseUint64(uint64(_size)));
     }
 
-    /// @notice Implements Bitcoin's tagged hash algorithm used in Taproot
-    /// @dev Computes sha256(tagHash || tagHash || data) where tagHash = sha256(tag)
-    /// @param _tag The tag string to use (e.g. "TapTweak", "TapLeaf", etc)
-    /// @param _data The data to hash
-    /// @return taggedHash
-    /// @custom:ref https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki#tagged-hashes
-    function taggedHash(bytes memory _tag, bytes memory _data) internal pure returns (bytes32) {
-        bytes32 tagHash = sha256(_tag);
-        return sha256(abi.encodePacked(tagHash, tagHash, _data));
-    }
-
     /// @notice          Implements bitcoin's hash160 (rmd160(sha2()))
     /// @dev             abi.encodePacked changes the return to bytes instead of bytes32
     /// @param _b        The pre-image
     /// @return          The digest
     /// https://github.com/bob-collective/bitcoin-spv/blob/master/src/BTCUtils.sol#L192C5-L198C6
-    function hash160(bytes memory _b) internal pure returns (bytes memory) {
-        return abi.encodePacked(ripemd160(abi.encodePacked(sha256(_b))));
+    function hash160(bytes memory _b) internal pure returns (bytes20) {
+        return ripemd160(abi.encodePacked(sha256(_b)));
     }
 
     /// @dev This is how Bitcoin calls double sha256 and we reverse it to correct endian

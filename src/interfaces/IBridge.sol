@@ -16,6 +16,8 @@ int256 constant BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE = 
 interface IBridge {
     receive() external payable;
 
+    function requestUnionRBTC(uint256 amount) external returns (int256);
+
     function getBtcBlockchainBestChainHeight() external view returns (int256);
 
     function getStateForBtcReleaseClient() external view returns (bytes memory);

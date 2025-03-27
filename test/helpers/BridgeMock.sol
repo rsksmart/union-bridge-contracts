@@ -12,6 +12,11 @@ contract BridgeMock is IBridge {
 
     receive() external payable override {}
 
+    function requestUnionRBTC(uint256 amount) external pure override returns (int256) {
+        // TODO: set up union bridge address and send funds to it
+        return int256(amount);
+    }
+
     function registerFastBridgeBtcTransaction(
         bytes memory,
         uint256,

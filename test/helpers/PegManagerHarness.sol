@@ -3,8 +3,8 @@ pragma solidity ^0.8.20;
 
 import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {IBitcoinManager} from "src/interfaces/IBitcoinManager.sol";
-import {BtcTaprootParser} from "src/libraries/BtcTaprootParser.sol";
-import {SlotState} from "src/StreamManager.sol";
+import {BtcTaproot} from "src/libraries/BtcTaproot.sol";
+import {SlotState, Slot} from "src/interfaces/IStreamManager.sol";
 import {PegManager} from "src/PegManager.sol";
 import "forge-std/console.sol";
 
@@ -34,9 +34,9 @@ contract PegManagerHarness is PegManager {
         if (_slot >= slots[_streamId][0].length) {
             console.log("No slot %d in packet %d for streamId: %d", _slot, _packet, _streamId);
         }
-
-        slots[_streamId][_packet][_slot].state = slotState;
-        slots[_streamId][_packet][_slot].scriptPubKey = scriptPubKey;
-        slots[_streamId][_packet][_slot].txId = txId;
+        Slot storage slot = slots[_streamId][_packet][_slot];
+        slot.state = slotState;
+        slot.scriptPubKey = scriptPubKey;
+        slot.acceptPegInTx = txId;
     }
 }

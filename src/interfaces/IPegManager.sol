@@ -4,9 +4,9 @@ pragma solidity ^0.8.20;
 import {BtcTransaction} from "./IBitcoinManager.sol";
 import {IStreamManager} from "./IStreamManager.sol";
 
-struct PegInRequestTxSPVProof {
-    bytes32 blockHash; // The Bitcoin Block Hash where the request pegin tx happened
-    BtcTransaction btcTx; // The Bitcoin Request PegIn Transaction
+struct BtcTxSPVProof {
+    bytes32 blockHash; // The Bitcoin Block Hash where the tx happened
+    BtcTransaction btcTx; // The Bitcoin Transaction
     // Merkle Path is a uint but is actually an array of bits
     // indicating if the path is left of right according to 1 or 0
     uint256 merkleBranchPath;
@@ -15,25 +15,26 @@ struct PegInRequestTxSPVProof {
     bytes32[] merkleBranchHashes;
 }
 
-struct PegInAcceptedTxSPVProof {
-    bytes32 blockHash; // The Bitcoin Block Hash where the accept pegin tx happened
-    BtcTransaction btcTx; // The Bitcoin Accept PegIn Transaction
-        // Merkle Path is a uint but is actually an array of bits
-    // indicating if the path is left of right according to 1 or 0
-    uint256 merkleBranchPath;
-    // Merkle Branch Hashes are the hashes that will be used together with the merkleBranchPath
-    // to obtain the Merkle Root, this is an optimization to avoid sending the whole Merkle Tree
-    bytes32[] merkleBranchHashes;
+enum PegStatus {
+    NOT_REGISTERED,
+    REGISTERED,
+    ACCEPTED,
+    USER_TAKEN, // User take: Key spend (everybody signs)
+    TAKE_0, // Undispute advancement of funds
+    TAKE_1, // Take Signal
+    TAKE_2 // Disputed peg-out (Kick Off BitVMX)
+
 }
 
 struct StreamPosition {
     uint64 streamId;
     uint64 packetNumber;
-    bool registered;
+    uint64 slotId;
+    PegStatus pegStatus;
 }
 
-struct PegInTempInfo {
-    uint64 value;
+struct RequestPegInTempInfo {
+    uint64 outputAmount;
     address rskDestinationAddress;
     bytes32 btcReimbursementPubKey;
     bytes utxoScriptPubKey;
@@ -47,6 +48,8 @@ struct PrevoutData {
 }
 
 interface IPegManager is IStreamManager {
+    // ===================== Peg-in Request=====================
+
     /// @notice Allows users generate a temporary Bitcoin address to perform a peg-in.
     /// @param _rootstockDepositAddress The RSK deposit address
     /// @param _value The amount to peg in
@@ -59,18 +62,46 @@ interface IPegManager is IStreamManager {
     function getPegInRequest(bytes32 btcTxHash) external view returns (StreamPosition calldata);
 
     /// @notice Register a peg-in request transaction from Bitcoin
-    /// @param _pegInRequestTxSPVProof The ProofValidator proof of the peg-in request transaction
-    function registerPegInRequest(PegInRequestTxSPVProof calldata _pegInRequestTxSPVProof) external;
+    /// @param _pegInRequestTxSPVProof The BTC SPV proof of Request the peg-in transaction
+    function registerPegInRequest(BtcTxSPVProof calldata _pegInRequestTxSPVProof) external;
 
-    function getPegInTempInfo(bytes32 btcTxHash) external view returns (PegInTempInfo calldata);
+    event RegisteredPegInRequest(
+        bytes32 indexed blockHash,
+        bytes32 indexed txHash,
+        uint64 vout,
+        uint64 value,
+        uint256 packetNumber,
+        address rskDestinationAddress,
+        bytes32 btcReimbursementPubKey,
+        bytes utxoScriptPubKey
+    );
+
+    function getRequestPegInTempInfo(bytes32 btcTxHash) external view returns (RequestPegInTempInfo calldata);
+
+    // ===================== Accept Peg-in Request =====================
 
     // /// @notice Verifys and Registers the partial signature for accept peg-in transaction
     // /// @param _pegInAcceptedTxSPVProof Accept peg-in transaction
-    // function verifyAcceptPegInRequest(PegInAcceptedTxSPVProof calldata _pegInAcceptedTxSPVProof) external;
+    // function verifyAcceptPegInRequest(BtcTxSPVProof calldata _pegInAcceptedTxSPVProof) external;
 
     /// @notice Accepts and Registers a bitcoin peg in transaction out of the temporary address
-    /// @param _pegInAcceptedTxSPVProof Accept peg-in transaction
-    function acceptPegInRequest(PegInAcceptedTxSPVProof calldata _pegInAcceptedTxSPVProof) external;
+    /// @param _pegInAcceptedTxSPVProof The BTC SPV proof of the Accept peg-in transaction
+    function acceptPegInRequest(BtcTxSPVProof calldata _pegInAcceptedTxSPVProof) external;
+
+    event AcceptedPegInRequest(
+        bytes32 indexed blockHash,
+        bytes32 indexed txHash,
+        bytes32 indexed pegInTxHash,
+        uint64 vout,
+        uint64 streamId,
+        uint64 packetNumber,
+        uint64 slotId,
+        address rskDestinationAddress,
+        uint256 rbtcAmount,
+        bytes utxoScriptPubKey
+    );
+
+    // ===================== Peg-out Request =====================
 
     // /// @notice Selects UTXOs for peg-out
     // /// @param streamId The stream identifier
@@ -84,17 +115,6 @@ interface IPegManager is IStreamManager {
     // /// @param _batchFlag The batch flag to indicate if the peg-out is part of a batch
     function requestPegOut(bytes calldata _usrPubKey, bool _batchFlag) external payable;
 
-    event RegisteredPegInRequest(
-        bytes32 indexed blockHash,
-        bytes32 indexed txHash,
-        uint64 vout,
-        uint64 value,
-        uint256 packetNumber,
-        address rskDestinationAddress,
-        bytes32 btcReimbursementPubKey,
-        bytes utxoScriptPubKey
-    );
-
     // address indexed bitcoinUserAddress,
     event PegOutRequested(
         bytes indexed usrPubKey,
@@ -106,7 +126,15 @@ interface IPegManager is IStreamManager {
         uint64 slotId
     );
 
-    error AlreadyRegisteredPegIn(bytes32 btcTxHash);
-    error InvalidPubKeyLength(uint256 usrPubKeyLength);
+    // ===================== Errors =====================
+
     error PegoutRequestAmountExceedsUint64Limit(uint256 amount);
+    error AlreadyRegisteredPegIn(bytes32 btcTxHash);
+    error AlreadyRegisteredPegInRequest(bytes32 btcTxHash);
+    error UnregisteredPegInRequest(bytes32 btcTxHash);
+    error AlreadyRegisteredAcceptPegIn(bytes32 btcTxHash);
+    error IncorrectInputsNumber(uint256 actual, uint256 expected);
+    error IncorrectOutputsNumber(uint256 actual, uint256 expected);
+    error InvalidVout(uint256 actual, uint256 expected);
+    error InvalidPubKeyLength(uint256 usrPubKeyLength);
 }

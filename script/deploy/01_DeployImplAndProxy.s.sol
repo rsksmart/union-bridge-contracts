@@ -43,9 +43,9 @@ contract DeployImplAndProxy is Script {
             }
             uint256 length = denominations.length;
             for (uint64 i = 0; i < length; i++) {
-                // we reduce the denominations by a factor of 100
+                // we reduce the denominations by a factor of 10
                 // as it's hard to get the large values in the testnet
-                denominations[i] = denominations[i] / 100;
+                denominations[i] = denominations[i] / 10;
             }
         } else if (block.chainid == ChainIds.LOCAL) {
             // Foundry local chainid

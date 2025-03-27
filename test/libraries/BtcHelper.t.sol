@@ -35,16 +35,17 @@ contract TestBtcHelper is Test {
         );
     }
 
-    function test_taggedHash_Success() external pure {
-        // Assert
-        bytes memory data = hex"c0025187";
+    function test_hash160_Success_PublicKey() external pure {
+        // Arrenge
+        // Obtained from https://learnmeabitcoin.com/technical/script/p2wpkh/#public-key-tool
+        bytes32 publicKey = 0xd884657576723ed4336ae8fb82e562bc15d21effe3cef1ff550cfe5fd4d8dc90;
         // Act
-        bytes32 leafHash = BtcHelper.taggedHash("TapLeaf", data);
+        bytes20 obtainedHash160 = BtcHelper.hash160(abi.encodePacked(publicKey));
         // Assert
         assertEq(
-            leafHash,
-            0x6b13becdaf0eee497e2f304adcfa1c0c9e84561c9989b7f2b5fc39f5f90a60f6,
-            "Should give the correct tagged hash"
+            bytes32(obtainedHash160),
+            bytes32(hex"d61e0C9A022CE199C978027e2Fa2718EAa8381db"),
+            "Hashing the public key with Hash160 should give the correct hash"
         );
     }
 }

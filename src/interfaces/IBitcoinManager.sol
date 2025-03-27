@@ -3,7 +3,10 @@ pragma solidity ^0.8.20;
 
 // Btc P2TR Fees in satoshis
 // TODO: Check if this is correct
-uint64 constant P2TR_FEES = 1000;
+uint64 constant P2TR_FEES = 335;
+uint64 constant DUST_THRESHOLD = 300;
+uint64 constant SPEED_UP_AMOUNT = 300;
+uint8 constant TIMELOCK_BLOCKS = 10;
 
 // https://learnmeabitcoin.com/technical/transaction/#structure-inputs-txid
 struct BtcTxIn {
@@ -46,21 +49,15 @@ interface IBitcoinManager {
         bytes32 _committeePubKey
     ) external view returns (string memory temporaryPegInAddress);
 
-    /// @notice Validates a Bitcoin peg-in transaction
-    /// @dev Checks that the transaction has at least 2 outputs - one for the peg-in amount and one for the OP_RETURN data
-    /// @param _pegInBtcTx The Bitcoin transaction to validate
-    /// @custom:throws IncorrectOutputNumber if transaction has less than 2 outputs
-    function validatePegInTx(BtcTransaction calldata _pegInBtcTx) external pure;
-
     /// @notice Extracts data from a Bitcoin transaction's OP_RETURN output
+    /// @dev Expected OP_RETURN format: [OP_RETURN][RSK_PEGIN][packet number][rsk address][btc address]
     /// @param _opReturnOut The Bitcoin transaction output containing OP_RETURN data
     /// @return packetNumber The packet number encoded in the OP_RETURN data
     /// @return destinationAddress The RSK destination address encoded in the OP_RETURN data
     /// @return btcReimbursementPubKey The Bitcoin reimbursement public key (x only) encoded in the OP_RETURN data
-    /// @dev Expected OP_RETURN format: [OP_RETURN][RSK_PEGIN][packet number][rsk address][btc address]
     function getPegInOpReturnData(BtcTxOut calldata _opReturnOut) external pure returns (uint64, address, bytes32);
 
-    function validatePegInP2TRData(
+    function validatRequestPegInP2TROutput(
         address _rskDestinationAddress,
         uint64 _value,
         bytes32 _btcReimbursementPubKey,
@@ -71,51 +68,39 @@ interface IBitcoinManager {
     /// @notice Calculates the Bitcoin transaction hash (txid) for a given transaction
     /// @dev Encodes the transaction into Bitcoin's raw format and performs double SHA256 hash
     /// @param _btcTx The Bitcoin transaction to hash
-    /// @return The transaction hash (txid) in big-endian format
+    /// @return txHash The transaction hash in big-endian format
     function getBtcTxHash(BtcTransaction calldata _btcTx) external pure returns (bytes32);
 
-    /// @notice Generates a Taproot script pub key with both key spend and script spend paths
+    /// @notice Generates a Taproot script pub key for the PegInRequest with both key spend and script spend paths
     /// @param _rskDestinationAddress address that will get the RBTC
     /// @param _value amount sent in btc, should be equal to stream denomination
     /// @param _btcReimbursementPubKey The user's public key (x-only, 32 bytes)
     /// @param _committeePubKey The committee's public key (x-only, 32 bytes)
-    // /// @param customTweak Additional tweak data for address customization
-    /// @return taprootScriptPubKey bytes (OP_1 + OP_PUSHBYTES_32 + 32 bytes output key)
-    function getPegInP2TRScriptPub(
+    function getPegInRequestP2TRScriptPub(
         address _rskDestinationAddress,
         uint64 _value,
         bytes32 _btcReimbursementPubKey,
         bytes32 _committeePubKey
     ) external pure returns (bytes memory);
 
-    // /// @notice Registers peg transactions
-    // /// @param take0Tx First take transaction
-    // /// @param take1Tx Second take transaction
-    // /// @param acceptPegInTx Accept peg-in transaction
-    // /// @param take0AggregatedSignatures Signatures for take0Tx
-    // /// @param take1AggregatedSignatures Signatures for take1Tx
-    // /// @param acceptPegInAggregatedSignatures Signatures for acceptPegInTx
-    // function registerPegTransactions(
-    //     bytes calldata take0Tx,
-    //     bytes calldata take1Tx,
-    //     bytes calldata acceptPegInTx,
-    //     bytes calldata take0AggregatedSignatures,
-    //     bytes calldata take1AggregatedSignatures,
-    //     bytes calldata acceptPegInAggregatedSignatures
-    // ) external;
+    /// @notice Validates the accept peg in P2TR output
+    /// @param _committeePubKey The committee's public key (x-only, 32 bytes)
+    /// @param _inputAmount The amount of the input
+    /// @param _p2trOut The Bitcoin transaction output containing the P2TR output
+    function validateAcceptPegInP2TROutput(bytes32 _committeePubKey, uint64 _inputAmount, BtcTxOut calldata _p2trOut)
+        external
+        pure;
 
-    // /// @notice Selects UTXOs for peg-out
-    // /// @param streamId The stream identifier
-    // /// @param sequenceNumber The sequence number
-    // /// @param slotId The slot identifier
-    // function selectUTXOsForPegOut(uint256 streamId, uint256 sequenceNumber, uint256 slotId) external;
+    /// @notice Validates the speed up output
+    /// @param _committeePubKey The committee's public key (x-only, 32 bytes)
+    /// @param _speedUpOut The Bitcoin transaction output containing the speed up output
+    function validateSpeedUpOutput(bytes32 _committeePubKey, BtcTxOut calldata _speedUpOut) external pure;
 
-    error IncorrectOutputNumber(uint256 actual, uint256 expected);
     error InvalidOpReturnLength(uint256 actual, uint256 expected);
     error IncorrectlyFormedOpReturn(uint256 index);
-    error IncorrectP2TRScriptPub(bytes actual, bytes expected);
+    error IncorrectOutputScript(bytes actual, bytes expected);
     error InvalidPublicKey(bytes32 publicKey);
     error InvalidAddress(address _address);
-    error InvalidValue(uint64 _value);
+    error InvalidValue(uint64 _value, uint64 expected);
     error InvalidOutputAmount(uint64 actual, uint64 expected);
 }

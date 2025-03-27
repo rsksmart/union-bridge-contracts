@@ -52,7 +52,15 @@ abstract contract StreamManager is IStreamManager, Initializable {
             // Initialize slots directly in storage
             for (uint64 j = 0; j < 100; j++) {
                 slots[i][packetNumber].push(
-                    Slot({slotId: j, state: SlotState.PREPARED, scriptPubKey: "", txId: "", take0Tx: "", take1Tx: ""})
+                    Slot({
+                        slotId: j,
+                        state: SlotState.PREPARED,
+                        scriptPubKey: "",
+                        acceptPegInTx: "",
+                        acceptPegInAmount: 0,
+                        take0Tx: "",
+                        take1Tx: ""
+                    })
                 );
             }
         }
@@ -126,17 +134,15 @@ abstract contract StreamManager is IStreamManager, Initializable {
     }
 
     /// @dev Looks for the first empty slot and asigns the PegIn Tx in prepared state
-    function preparePegInTx(uint64 _streamId, uint64 _packetNumber, bytes32 _pegInTx, bytes memory _scriptPubKey)
+    function fillPegInTx(uint64 _streamId, uint64 _packetNumber, uint64 _acceptPegInAmount, bytes32 _acceptPegInTx)
         internal
         returns (uint64)
     {
         uint64 slotId = getPreparedSlotId(_streamId, _packetNumber);
         Slot storage slot = slots[_streamId][_packetNumber][slotId];
-        slot.state = SlotState.PREPARED;
-        // TODO validate if the PegInTx is what we want to store, as the document mentions the Take for the registerPegInTxs
-        // but the takes in the scrut are mentioned to be used by the peg out
-        slot.txId = _pegInTx;
-        slot.scriptPubKey = _scriptPubKey;
+        slot.state = SlotState.FILLED;
+        slot.acceptPegInTx = _acceptPegInTx;
+        slot.acceptPegInAmount = _acceptPegInAmount;
         return slotId;
     }
 }

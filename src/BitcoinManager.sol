@@ -4,12 +4,19 @@ pragma solidity ^0.8.20;
 import {console} from "forge-std/console.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {BaseProxy} from "./BaseProxy.sol";
-import {BtcTransaction, BtcTxOut, IBitcoinManager, P2TR_FEES} from "./interfaces/IBitcoinManager.sol";
+import {
+    BtcTransaction,
+    BtcTxOut,
+    TIMELOCK_BLOCKS,
+    P2TR_FEES,
+    SPEED_UP_AMOUNT,
+    IBitcoinManager
+} from "./interfaces/IBitcoinManager.sol";
 import {BytesHelper} from "./libraries/BytesHelper.sol";
 import {BtcHelper} from "./libraries/BtcHelper.sol";
-import {BtcTxParser} from "./libraries/BtcTxParser.sol";
+import {BtcTxEncoder} from "./libraries/BtcTxEncoder.sol";
 import {BtcScriptParser} from "./libraries/BtcScriptParser.sol";
-import {BtcTaprootParser} from "./libraries/BtcTaprootParser.sol";
+import {BtcTaproot} from "./libraries/BtcTaproot.sol";
 import {Bech32m} from "src/libraries/Bech32m.sol";
 import {OpCodes} from "./libraries/OpCodes.sol";
 import {BtcNetwork} from "./libraries/Network.sol";
@@ -17,7 +24,6 @@ import {BtcNetwork} from "./libraries/Network.sol";
 /// @title BitcoinManager
 /// @notice Manages Bitcoin Addresses and Scripts
 contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
-    uint8 constant TIMELOCK_BLOCKS = 10;
     BtcNetwork public network;
 
     function initialize(address _initialOwner, BtcNetwork _network) public initializer {
@@ -25,6 +31,13 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         network = _network;
     }
 
+    /// @dev Convert Tx to raw tx hex using Bitcoin format and then uses hash256 to get the txHash
+    function getBtcTxHash(BtcTransaction calldata _btcTx) external pure returns (bytes32) {
+        return BtcHelper.hash256(BtcTxEncoder.encodeTx(_btcTx));
+    }
+
+    // ========================== Peg In Request ==========================
+    /// @dev Generates a temporary peg in address for a peg in request
     function getTemporaryPegInAddress(
         address _rskDestinationAddress,
         uint64 _value,
@@ -34,30 +47,29 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         validateRequestPegInInputs(_btcReimbursementPubKey, _committeePubKey, _rskDestinationAddress, _value);
 
         bytes32 tweakedPublicKey =
-            getTimelockTweakedPublicKey(_rskDestinationAddress, _value, _btcReimbursementPubKey, _committeePubKey);
+            getRequestPegInTweakedPublicKey(_rskDestinationAddress, _value, _btcReimbursementPubKey, _committeePubKey);
 
         return Bech32m.encodeTaprootAddress(abi.encodePacked(tweakedPublicKey), network);
     }
 
-    function getTimelockTweakedPublicKey(
+    /// @dev Generates the PegInRequest Taproot output script pub key with both key spend and script spend paths
+    function getRequestPegInTweakedPublicKey(
         address _rskDestinationAddress,
         uint64 _value,
         bytes32 _btcReimbursementPubKey,
         bytes32 _committeePubKey
     ) internal pure returns (bytes32) {
-        bytes32 publicKey = _committeePubKey;
-
         bytes memory timelockScript = BtcScriptParser.getTimelockScript(TIMELOCK_BLOCKS, _btcReimbursementPubKey);
-        bytes32 timelockLeaf = BtcTaprootParser.getLeaf(timelockScript);
+        bytes32 timelockLeaf = BtcTaproot.getLeaf(timelockScript);
 
         bytes memory data = abi.encodePacked(_rskDestinationAddress, _value);
         bytes memory extraDataScript = abi.encodePacked(OpCodes.OP_RETURN, OpCodes.OP_PUSHBYTES_28, data);
-        bytes32 extraDataLeaf = BtcTaprootParser.getLeaf(extraDataScript);
+        bytes32 extraDataLeaf = BtcTaproot.getLeaf(extraDataScript);
 
-        bytes32 merkleRoot = BtcTaprootParser.getBranch(timelockLeaf, extraDataLeaf);
+        bytes32 merkleRoot = BtcTaproot.getBranch(timelockLeaf, extraDataLeaf);
 
-        bytes32 tweak = BtcTaprootParser.getTweak(abi.encodePacked(publicKey, merkleRoot));
-        bytes32 tweakedPublicKey = BtcTaprootParser.getTweakedPublicKey(publicKey, tweak);
+        bytes32 tweak = BtcTaproot.getTweak(abi.encodePacked(_committeePubKey, merkleRoot));
+        bytes32 tweakedPublicKey = BtcTaproot.getTweakedPublicKey(_committeePubKey, tweak);
 
         return tweakedPublicKey;
     }
@@ -77,16 +89,6 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         }
         if (_rskDestinationAddress == address(0)) {
             revert InvalidAddress(_rskDestinationAddress);
-        }
-        if (_value == 0) {
-            revert InvalidValue(_value);
-        }
-    }
-
-    /// @dev Validates a Bitcoin peg-in transaction
-    function validatePegInTx(BtcTransaction calldata _pegInBtcTx) external pure {
-        if (_pegInBtcTx.outputs.length < 2) {
-            revert IncorrectOutputNumber(uint64(_pegInBtcTx.outputs.length), 2);
         }
     }
 
@@ -138,41 +140,95 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         return (packetNumber, rskDestinationAddress, btcReimbursementPubKey);
     }
 
-    /// @dev Validates a Bitcoin peg-in transaction
-    function validatePegInP2TRData(
+    /// @notice Validates output against a Taproot script with both key spend and script spend paths
+    /// @param _rskDestinationAddress address that will get the RBTC
+    /// @param _value amount sent in btc, should be equal to stream denomination
+    /// @param _btcReimbursementPubKey The user's public key (x-only, 32 bytes)
+    /// @param _committeePubKey The committee's public key (x-only, 32 bytes)
+    /// @param _p2trOut The P2TR output of the peg in request
+    function validatRequestPegInP2TROutput(
         address _rskDestinationAddress,
         uint64 _value,
         bytes32 _btcReimbursementPubKey,
         bytes32 _committeePubKey,
         BtcTxOut calldata _p2trOut
     ) external pure {
+        // Validate that the amount is enough for the stream
+        // TODO: Check if this is correct
+        if (_p2trOut.amount < _value) {
+            revert InvalidOutputAmount(_p2trOut.amount, _value);
+        }
         validateRequestPegInInputs(_btcReimbursementPubKey, _committeePubKey, _rskDestinationAddress, _value);
         bytes memory p2trScriptPubKey =
-            getPegInP2TRScriptPub(_rskDestinationAddress, _value, _btcReimbursementPubKey, _committeePubKey);
+            getPegInRequestP2TRScriptPub(_rskDestinationAddress, _value, _btcReimbursementPubKey, _committeePubKey);
         if (!BytesHelper.compare(_p2trOut.scriptPubKey, p2trScriptPubKey)) {
-            revert IncorrectP2TRScriptPub(p2trScriptPubKey, _p2trOut.scriptPubKey);
+            revert IncorrectOutputScript(_p2trOut.scriptPubKey, p2trScriptPubKey);
         }
-        // Validate that the amount is enough to cover the fees
-        // TODO: Check if this is correct
-        if (_p2trOut.amount < _value - P2TR_FEES) {
-            revert InvalidOutputAmount(_p2trOut.amount, _value - P2TR_FEES);
-        }
-    }
-
-    /// @dev Convert Tx to raw tx hex using Bitcoin format and then uses hash256 to get the txHash
-    function getBtcTxHash(BtcTransaction calldata _btcTx) external pure returns (bytes32) {
-        return BtcHelper.hash256(BtcTxParser.encodeTx(_btcTx));
     }
 
     /// @dev Generates the PegInRequest Taproot output script pub key with both key spend and script spend paths
-    function getPegInP2TRScriptPub(
+    function getPegInRequestP2TRScriptPub(
         address _rskDestinationAddress,
         uint64 _value,
         bytes32 _btcReimbursementPubKey,
         bytes32 _committeePubKey
     ) public pure returns (bytes memory) {
         bytes32 tweakedPublicKey =
-            getTimelockTweakedPublicKey(_rskDestinationAddress, _value, _btcReimbursementPubKey, _committeePubKey);
-        return BtcTaprootParser.getP2TRScriptPubKey(tweakedPublicKey);
+            getRequestPegInTweakedPublicKey(_rskDestinationAddress, _value, _btcReimbursementPubKey, _committeePubKey);
+        return BtcTaproot.getP2TRScriptPubKey(tweakedPublicKey);
+    }
+
+    // ========================== Peg In Accept ==========================
+    /// @dev Generates the PegInAccept Taproot output script pub key with both key spend and script spend paths
+    function getAcceptPegInTweakedPublicKey(bytes32 _committeePubKey) internal pure returns (bytes32) {
+        // TODO add necesary tap scripts for take0, take1, etc
+
+        // Currently we only consider the key spend path (user take)
+        bytes32 tweak = BtcTaproot.getTweak(abi.encodePacked(_committeePubKey));
+        bytes32 tweakedPublicKey = BtcTaproot.getTweakedPublicKey(_committeePubKey, tweak);
+
+        return tweakedPublicKey;
+    }
+
+    /// @notice Validates output against a Taproot script with both key spend and script spend paths
+    function validateAcceptPegInP2TROutput(bytes32 _committeePubKey, uint64 _inputAmount, BtcTxOut calldata _p2trOut)
+        external
+        pure
+    {
+        // Validate that the amount is enough to cover the fees
+        // TODO: Check if this is correct
+        uint64 inputMinusFees = _inputAmount - (P2TR_FEES + SPEED_UP_AMOUNT);
+        if (_p2trOut.amount < inputMinusFees) {
+            revert InvalidOutputAmount(_p2trOut.amount, inputMinusFees);
+        }
+        bytes memory p2trScriptPubKey = getAcceptPegInP2TRScriptPub(_committeePubKey);
+        if (!BytesHelper.compare(_p2trOut.scriptPubKey, p2trScriptPubKey)) {
+            revert IncorrectOutputScript(_p2trOut.scriptPubKey, p2trScriptPubKey);
+        }
+    }
+
+    /// @dev Generates the PegInRequest Taproot output script pub key with both key spend and script spend paths
+    function getAcceptPegInP2TRScriptPub(bytes32 _committeePubKey) public pure returns (bytes memory) {
+        bytes32 tweakedPublicKey = getAcceptPegInTweakedPublicKey(_committeePubKey);
+        return BtcTaproot.getP2TRScriptPubKey(tweakedPublicKey);
+    }
+
+    // ========================== Peg In Speed Up ==========================
+    /// @dev Validates the speed up output
+    function validateSpeedUpOutput(bytes32 _committeePubKey, BtcTxOut calldata _speedUpOut) external pure {
+        if (_speedUpOut.amount < SPEED_UP_AMOUNT) {
+            revert InvalidValue(_speedUpOut.amount, SPEED_UP_AMOUNT);
+        }
+        bytes memory p2wpkhScriptPubKey = getSpeedUpScriptPub(_committeePubKey);
+        if (!BytesHelper.compare(_speedUpOut.scriptPubKey, p2wpkhScriptPubKey)) {
+            revert IncorrectOutputScript(_speedUpOut.scriptPubKey, p2wpkhScriptPubKey);
+        }
+    }
+
+    /// @dev Generates the PegInRequest Taproot output script pub key with both key spend and script spend paths
+    function getSpeedUpScriptPub(bytes32 _committeePubKey) public pure returns (bytes memory) {
+        // TODO change this to use P2WPSH with OP_1 so anyone can send the speed up
+        // this should change at the same time as in the protocol builder
+        return BtcScriptParser.getP2WPKHScript(abi.encodePacked(_committeePubKey));
     }
 }

@@ -6,10 +6,10 @@ import {BaseProxy} from "./BaseProxy.sol";
 import {Committee, ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
 import {BtcTransaction, BtcTxOut, IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
 import {
-    PegInRequestTxSPVProof,
-    PegInAcceptedTxSPVProof,
+    BtcTxSPVProof,
     StreamPosition,
-    PegInTempInfo,
+    RequestPegInTempInfo,
+    PegStatus,
     PrevoutData,
     IPegManager
 } from "./interfaces/IPegManager.sol";
@@ -17,7 +17,7 @@ import {Slot, Stream, Packet, SlotState, StreamManager} from "./StreamManager.so
 import {ProofValidator} from "./ProofValidator.sol";
 import {BtcHelper} from "./libraries/BtcHelper.sol";
 import {BtcScriptParser} from "./libraries/BtcScriptParser.sol";
-import {BtcTaprootParser} from "./libraries/BtcTaprootParser.sol";
+import {BtcTaproot} from "./libraries/BtcTaproot.sol";
 import {OpCodes} from "./libraries/OpCodes.sol";
 
 /// @title PegManager
@@ -25,11 +25,13 @@ import {OpCodes} from "./libraries/OpCodes.sol";
 contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
     ICommitteeRegistry public committeeRegistry;
     IBitcoinManager public bitcoinManager;
-    uint64 constant VOUT_INDEX = 0;
-    // Bitcoin txHash => Position in the Stream / Packet
-    mapping(bytes32 => StreamPosition) internal pegInRequests;
-    // Bitcoin txHash => TempInfo
-    mapping(bytes32 => PegInTempInfo) internal pegInsTempInfo;
+    uint64 constant VOUT_INDEX_TAPTREE = 0;
+    uint64 constant VOUT_INDEX_SPEED_UP = 1;
+
+    // Request PegIn Tx Hash => Stream Position (streamId, packetNumber, slotId, pegStatus)
+    mapping(bytes32 btcRequestPegInTxHash => StreamPosition streamPosition) internal pegInRequests;
+    // Request PegIn Tx Hash => PegIn Temp Info (value, rskDestinationAddress, btcReimbursementPubKey)
+    mapping(bytes32 btcRequestPegInTxHash => RequestPegInTempInfo tempInfo) internal pegInsTempInfo;
     // key = keccak256(abi.encodePacked(_bitcoinUserAddress, _amount))
     mapping(bytes32 key => bytes32 pegOutTxHash) internal pegOutTxHashes;
 
@@ -45,6 +47,14 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
         StreamManager.initialize(_denominations);
         __ProofValidator_init(_bridgeAddress);
         __BaseProxy_init(_initialOwner);
+    }
+
+    function getPegInRequest(bytes32 btcTxHash) external view returns (StreamPosition memory) {
+        return pegInRequests[btcTxHash];
+    }
+
+    function getRequestPegInTempInfo(bytes32 btcTxHash) external view returns (RequestPegInTempInfo memory) {
+        return pegInsTempInfo[btcTxHash];
     }
 
     function getTemporaryPegInAddress(address _rootstockDepositAddress, uint64 _value, bytes32 _btcReimbursementPubKey)
@@ -64,39 +74,32 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
         );
     }
 
-    function getPegInRequest(bytes32 btcTxHash) external view returns (StreamPosition memory) {
-        return pegInRequests[btcTxHash];
-    }
-
-    function registerPegInRequest(PegInRequestTxSPVProof calldata _pegInRequestTxSPVProof) external {
-        // TODO validate who can call this function
-
+    function registerPegInRequest(BtcTxSPVProof calldata _pegInRequestTxSPVProof) external {
         // Calculate txHash from BtcTransaction
         bytes32 txHash = bitcoinManager.getBtcTxHash(_pegInRequestTxSPVProof.btcTx);
-        if (pegInRequests[txHash].registered) {
-            revert AlreadyRegisteredPegIn(txHash);
+        if (pegInRequests[txHash].pegStatus != PegStatus.NOT_REGISTERED) {
+            revert AlreadyRegisteredPegInRequest(txHash);
         }
-
         // Validate transaction has at least 2 outputs
-        bitcoinManager.validatePegInTx(_pegInRequestTxSPVProof.btcTx);
-
+        if (_pegInRequestTxSPVProof.btcTx.outputs.length < 2) {
+            revert IncorrectOutputsNumber(uint64(_pegInRequestTxSPVProof.btcTx.outputs.length), 2);
+        }
         // Second transaction should be OP_RETURN with data
         (uint64 packetNumber, address rskDestinationAddress, bytes32 btcReimbursementPubKey) =
-            bitcoinManager.getPegInOpReturnData(_pegInRequestTxSPVProof.btcTx.outputs[VOUT_INDEX + 1]);
-
+            bitcoinManager.getPegInOpReturnData(_pegInRequestTxSPVProof.btcTx.outputs[VOUT_INDEX_SPEED_UP]);
         // First transaction is the PegIn P2TR _pegInRequestTxSPVProof.btcTx.outputs[0]
         // Get corresponding stream for the amount if non found reverts
-        Stream memory stream = getStream(_pegInRequestTxSPVProof.btcTx.outputs[VOUT_INDEX].amount);
+        Stream memory stream = getStream(_pegInRequestTxSPVProof.btcTx.outputs[VOUT_INDEX_TAPTREE].amount);
 
         // Validates that the Taproot Script has a Key Path for the committeePubKey
         // and has a timelock for btcReimbursementPubKey
-        bitcoinManager.validatePegInP2TRData(
+        bitcoinManager.validatRequestPegInP2TROutput(
             rskDestinationAddress,
             stream.denomination,
             btcReimbursementPubKey,
             // getPacket reverts if packet does not exist
             getPacket(stream.streamId, packetNumber).committeePubKey,
-            _pegInRequestTxSPVProof.btcTx.outputs[VOUT_INDEX]
+            _pegInRequestTxSPVProof.btcTx.outputs[VOUT_INDEX_TAPTREE]
         );
 
         // Verify the txHash part of the Merkle Root of Tx of a Block
@@ -109,68 +112,141 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
             _pegInRequestTxSPVProof.merkleBranchPath,
             _pegInRequestTxSPVProof.merkleBranchHashes
         );
-
         // Store pegInRequest to avoid processing it again
-        pegInRequests[txHash] =
-            StreamPosition({streamId: stream.streamId, packetNumber: packetNumber, registered: true});
-
-        pegInsTempInfo[txHash] = PegInTempInfo({
-            value: stream.denomination,
+        pegInRequests[txHash] = StreamPosition({
+            streamId: stream.streamId,
+            packetNumber: packetNumber,
+            slotId: 0,
+            pegStatus: PegStatus.REGISTERED
+        });
+        // Store tempprary information to be used in acceptPegInRequest
+        pegInsTempInfo[txHash] = RequestPegInTempInfo({
+            // TODO check if this is gona be used, or just use the stream.denomination
+            outputAmount: _pegInRequestTxSPVProof.btcTx.outputs[VOUT_INDEX_TAPTREE].amount,
             rskDestinationAddress: rskDestinationAddress,
             btcReimbursementPubKey: btcReimbursementPubKey,
-            utxoScriptPubKey: _pegInRequestTxSPVProof.btcTx.outputs[VOUT_INDEX].scriptPubKey
+            // TODO utxoScriptPubKey is not used yet but it will be used when checking the signatures in verifyAcceptPegInTxSignatures
+            utxoScriptPubKey: _pegInRequestTxSPVProof.btcTx.outputs[VOUT_INDEX_TAPTREE].scriptPubKey
         });
 
         // TODO Check if info emitted is enough or too much
         emit RegisteredPegInRequest(
             _pegInRequestTxSPVProof.blockHash,
             txHash,
-            // vout is the first tx, is the P2TR output
-            VOUT_INDEX + 1, // +1 is added as the index starts at 0
+            VOUT_INDEX_TAPTREE, // vout is the first output, is the P2TR
             stream.denomination,
             packetNumber,
             rskDestinationAddress,
             btcReimbursementPubKey,
-            _pegInRequestTxSPVProof.btcTx.outputs[VOUT_INDEX].scriptPubKey
+            _pegInRequestTxSPVProof.btcTx.outputs[VOUT_INDEX_TAPTREE].scriptPubKey
         );
     }
 
-    function getPegInTempInfo(bytes32 btcTxHash) external view returns (PegInTempInfo memory) {
-        return pegInsTempInfo[btcTxHash];
+    function validateAcceptPegInTx(BtcTransaction memory _btcTx)
+        internal
+        view
+        returns (bytes32 requestPegInTxHash, address rskDestinationAddress, StreamPosition storage streamPosition)
+    {
+        // Only input is the peg in request utxo
+        if (_btcTx.inputs.length != 1) {
+            revert IncorrectInputsNumber(_btcTx.inputs.length, 1);
+        }
+        // Only 2 outputs, peg out and speed up (child pays for parent)
+        if (_btcTx.outputs.length != 2) {
+            revert IncorrectOutputsNumber(_btcTx.outputs.length, 2);
+        }
+
+        // TODO validate amount of btc is correct
+
+        // The first input consumes the the peg in request utxo
+        requestPegInTxHash = _btcTx.inputs[VOUT_INDEX_TAPTREE].txId;
+        // Validate that in the first input VOUT is 0
+        if (_btcTx.inputs[VOUT_INDEX_TAPTREE].vout != VOUT_INDEX_TAPTREE) {
+            revert InvalidVout(_btcTx.inputs[VOUT_INDEX_TAPTREE].vout, VOUT_INDEX_TAPTREE);
+        }
+
+        // Validate the peg in request tx exists and the status
+        streamPosition = pegInRequests[requestPegInTxHash];
+        if (streamPosition.pegStatus == PegStatus.NOT_REGISTERED) {
+            revert UnregisteredPegInRequest(requestPegInTxHash);
+        }
+        if (streamPosition.pegStatus != PegStatus.REGISTERED) {
+            revert AlreadyRegisteredAcceptPegIn(requestPegInTxHash);
+        }
+
+        // TODO validate the input taproot script is correct
+        // It should be the taproot key spend path and not the timelock leaf
+        // this goes in the witness of the transaction
+        // if not validated a user could spend the timelock
+        // and use the same outputs as the expected ones and the transaction would be valid
+        // not sure if this can be used as an attack tough
+
+        RequestPegInTempInfo memory requestTempInfo = pegInsTempInfo[requestPegInTxHash];
+        rskDestinationAddress = requestTempInfo.rskDestinationAddress;
+        bytes32 committeePubKey = getPacket(streamPosition.streamId, streamPosition.packetNumber).committeePubKey;
+        // validate the ouputs are the expected
+        // taptree for pegout
+        bitcoinManager.validateAcceptPegInP2TROutput(
+            committeePubKey, requestTempInfo.outputAmount, _btcTx.outputs[VOUT_INDEX_TAPTREE]
+        );
+        // spped up (child pays for parent)
+        bitcoinManager.validateSpeedUpOutput(committeePubKey, _btcTx.outputs[VOUT_INDEX_SPEED_UP]);
     }
 
-    function acceptPegInRequest(PegInAcceptedTxSPVProof calldata _pegInAcceptedTxSPVProof) external {
-        // TODO validate the inputs match the peg in request utxo,
-        // do i need vout?
-        // TODO validate the outputs take0 and such
+    function acceptPegInRequest(BtcTxSPVProof calldata _pegInAcceptedTxSPVProof) external {
+        // validate the inputs match the request pegin and outputs are the expected taptree and speed up
+        (bytes32 requestPegInTxHash, address rskDestinationAddress, StreamPosition storage streamPosition) =
+            validateAcceptPegInTx(_pegInAcceptedTxSPVProof.btcTx);
 
         // Calculate txHash from BtcTransaction
         bytes32 txHash = bitcoinManager.getBtcTxHash(_pegInAcceptedTxSPVProof.btcTx);
-        if (pegInRequests[txHash].registered) {
-            // TODO maybe use same mapping for all? change revert name
-            revert AlreadyRegisteredPegIn(txHash);
-        }
-
-        Stream memory stream = getStream(_pegInAcceptedTxSPVProof.btcTx.outputs[VOUT_INDEX].amount);
-        // TODO get packet number
-        uint64 packetNumber = 0;
 
         // Verify the txHash part of the Merkle Root of Tx of a Block
         // and that block is inside Bitcoin Mainchain
         // annd has enough confirmations
         verifyTxConfirmations(
-            stream.pegInConfirmations,
+            streams[streamPosition.streamId].pegInConfirmations,
             txHash,
             _pegInAcceptedTxSPVProof.blockHash,
             _pegInAcceptedTxSPVProof.merkleBranchPath,
             _pegInAcceptedTxSPVProof.merkleBranchHashes
         );
 
-        // Store Tx in pegInSlot as Prepared
-        // TODO corroborate if state should be prepared with Diego
-        uint256 slotId = preparePegInTx(
-            stream.streamId, packetNumber, txHash, _pegInAcceptedTxSPVProof.btcTx.outputs[VOUT_INDEX].scriptPubKey
+        // get the peg in request tx hash
+        // Store Tx in pegInSlot as Filled
+        streamPosition.slotId = fillPegInTx(
+            streamPosition.streamId,
+            streamPosition.packetNumber,
+            _pegInAcceptedTxSPVProof.btcTx.outputs[VOUT_INDEX_TAPTREE].amount,
+            txHash
         );
+        // Update the peg in request status to ACCEPTED
+        streamPosition.pegStatus = PegStatus.ACCEPTED;
+
+        // === TODO STORE ACCEPT VALUE INTO THE SLOT SO ITS USED FOR THE PEG OUT ===
+
+        // TODO should we use the tempInfo.outputAmount or the acceptPegInAmount
+        uint256 rbtcAmount = BtcHelper.satoshiToWei(_pegInAcceptedTxSPVProof.btcTx.outputs[VOUT_INDEX_TAPTREE].amount);
+
+        emit AcceptedPegInRequest(
+            _pegInAcceptedTxSPVProof.blockHash,
+            txHash,
+            requestPegInTxHash,
+            VOUT_INDEX_TAPTREE,
+            streamPosition.streamId,
+            streamPosition.packetNumber,
+            streamPosition.slotId,
+            rskDestinationAddress,
+            rbtcAmount,
+            _pegInAcceptedTxSPVProof.btcTx.outputs[VOUT_INDEX_TAPTREE].scriptPubKey
+        );
+
+        // TODO mint the peg in tokens
+        //requestRbtc(rskDestinationAddress, rbtcAmount);
+
+        // Get gas refund for deleteing the peg in request tx
+        // since we have the accept peg in tx it is not needed anymore
+        delete pegInsTempInfo[requestPegInTxHash];
     }
 
     function validatePegOutRequest(bytes calldata _usrPubKey, uint256 amountInWei) internal pure {
@@ -198,7 +274,8 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
 
         // Prepare prevouts data
         PrevoutData[] memory prevoutsData = new PrevoutData[](1);
-        prevoutsData[0] = PrevoutData({txid: slot.txId, vout: 0, value: amount, scriptPubKey: slot.scriptPubKey});
+        prevoutsData[0] =
+            PrevoutData({txid: slot.acceptPegInTx, vout: 0, value: amount, scriptPubKey: slot.scriptPubKey});
 
         // Calculate fee and dust from amount
         // TODO: atm is returning hardcoded values, should be calculated
@@ -295,7 +372,7 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
         //TODO: hash_type check if 0x00 (default) or 0x01 (SIGHASH_ALL) is the value being used in the protocol builder
 
         // Return the tagged hash and the encoded data before hashing
-        return (BtcHelper.taggedHash(BtcTaprootParser.TAP_SIGHASH, encodedData), encodedData);
+        return (BtcTaproot.taggedHash(BtcTaproot.TAP_SIGHASH, encodedData), encodedData);
     }
 
     // function debug_computePegOutTxHash(bytes memory usrPubKey, PrevoutData[] memory prevoutsData, uint64 amount, uint64 dust)
@@ -407,7 +484,7 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
     //     console.log("input_index");
     //     console.logBytes4(bytes4(inputIndex));
 
-    //     return BtcHelper.taggedHash(BtcTaprootParser.TAP_SIGHASH, encodedData);
+    //     return BtcHelper.taggedHash(BtcTaproot.TAP_SIGHASH, encodedData);
     // }
 
     function getPegOutTxHash(bytes32 key) external view returns (bytes32) {

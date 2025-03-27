@@ -2,18 +2,18 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import {BtcTxParser} from "src/libraries/BtcTxParser.sol";
+import {BtcTxEncoder} from "src/libraries/BtcTxEncoder.sol";
 import {BtcTxIn, BtcTxOut, BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
 
-contract TestBtcTxParser is Test {
+contract TestBtcTxEncoder is Test {
     function setUp() external {}
 
     function test_encodeTxIn_Success() external pure {
         // Arrenge
-        BtcTxIn memory btcInput = getBtcTxIn();
+        BtcTxIn memory btcInput = getPegInRequestTxIn();
         // Act
         bytes memory hexTxIn =
-            BtcTxParser.encodeTxIn(btcInput.txId, btcInput.vout, btcInput.sequence, btcInput.scriptSig);
+            BtcTxEncoder.encodeTxIn(btcInput.txId, btcInput.vout, btcInput.sequence, btcInput.scriptSig);
         // Assert
         assertEq(
             hexTxIn,
@@ -26,7 +26,7 @@ contract TestBtcTxParser is Test {
         // Arrenge
         BtcTransaction memory btcTx = getBtcTransaction();
         // Act
-        bytes memory hexTxIn = BtcTxParser.encodeTxInputs(btcTx.inputs);
+        bytes memory hexTxIn = BtcTxEncoder.encodeTxInputs(btcTx.inputs);
         // Assert
         assertEq(
             hexTxIn,
@@ -39,7 +39,7 @@ contract TestBtcTxParser is Test {
         // Arrenge
         BtcTxOut memory btcOutput = getBtcTxOut();
         // Act
-        bytes memory hexTxOut = BtcTxParser.encodeTxOut(btcOutput.amount, btcOutput.scriptPubKey);
+        bytes memory hexTxOut = BtcTxEncoder.encodeTxOut(btcOutput.amount, btcOutput.scriptPubKey);
         // Assert
         assertEq(
             hexTxOut,
@@ -52,7 +52,7 @@ contract TestBtcTxParser is Test {
         // Arrenge
         BtcTransaction memory btcTx = getBtcTransaction();
         // Act
-        bytes memory hexTxIn = BtcTxParser.encodeTxOutputs(btcTx.outputs);
+        bytes memory hexTxIn = BtcTxEncoder.encodeTxOutputs(btcTx.outputs);
         // Assert
         assertEq(
             hexTxIn,
@@ -65,13 +65,13 @@ contract TestBtcTxParser is Test {
         // Arrenge
         BtcTransaction memory btcTx = getBtcTransaction();
         // Act
-        bytes memory hexTxIn = BtcTxParser.encodeTx(btcTx);
+        bytes memory hexTxIn = BtcTxEncoder.encodeTx(btcTx);
         // Assert
         assertEq(hexTxIn, getExpectedRawTx(), "Encoded Tx should be correctly formed");
     }
 
     // Helper functions
-    function getBtcTxIn() internal pure returns (BtcTxIn memory) {
+    function getPegInRequestTxIn() internal pure returns (BtcTxIn memory) {
         // Data from tx 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079
         // https://www.blockchain.com/explorer/transactions/btc/c00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079
         return BtcTxIn({
@@ -92,7 +92,7 @@ contract TestBtcTxParser is Test {
         // Data from tx 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079
         // https://www.blockchain.com/explorer/transactions/btc/c00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079
         BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
-        btcInputs[0] = getBtcTxIn();
+        btcInputs[0] = getPegInRequestTxIn();
         // Output
         BtcTxOut[] memory btcOutputs = new BtcTxOut[](1);
         btcOutputs[0] = getBtcTxOut();

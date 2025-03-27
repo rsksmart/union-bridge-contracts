@@ -13,7 +13,6 @@ contract TestBech32m is Test {
         string memory p2trAddress = Bech32m.encodeTaprootAddress(
             hex"9c41e5b3c7e52002735340fce3aac35b53c4d7b45b23c6d904acf2382853366f", BtcNetwork.TESTNET
         );
-        console.log(p2trAddress);
         assertEq(p2trAddress, "tb1pn3q7tv78u5sqyu6ngr7w82krtdfuf4a5tv3udkgy4ners2znxehsse5urx");
     }
 
@@ -23,7 +22,6 @@ contract TestBech32m is Test {
         string memory p2trAddress = Bech32m.encodeTaprootAddress(
             hex"562529047f476b9a833a5a780a75845ec32980330d76d1ac9f351dc76bce5d72", BtcNetwork.MAINNET
         );
-        console.log(p2trAddress);
         assertEq(p2trAddress, "bc1p2cjjjprlga4e4qe6tfuq5avytmpjnqpnp4mdrtylx5wuw67wt4eqg9jscq");
     }
 }

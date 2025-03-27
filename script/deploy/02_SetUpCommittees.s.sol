@@ -54,8 +54,9 @@ contract SetUpCommittees is Script, TestUtils {
             members[1] = CommitteeMember({index: 1, role: Role.Operator});
             // Committee setup
             committeesParams.push();
+            // Obtained from transactions repository
             committeesParams[0].committee.internalKey =
-                0x924c163b385af7093440184af6fd6244936d1288cbb41cc3812286d3f83a3329;
+                0xd1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d;
             committeesParams[0].committee.memberIndexesAndRoles.push(members[0]);
             committeesParams[0].committee.memberIndexesAndRoles.push(members[1]);
             committeesParams[0].committee.leaderIndex = 0;

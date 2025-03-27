@@ -9,7 +9,7 @@ out/
 .DS_Store
 # vscode
 .vscode/
-# node
+# node (installed to supress openzeppelin-foundry-upgrades warnings)
 package-lock.json
 package.json
 node_modules/

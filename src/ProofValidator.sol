@@ -25,6 +25,8 @@ abstract contract ProofValidator is Initializable {
     error BridgeBtcUnknownError(int256 errorCode);
     error NotEnoughConfirmations(int256 actual, uint256 expected);
     error BridgeAddressZero();
+    error BridgeUnauthorizedCaller();
+    error BridgeExceededLockingCap(uint256 amount);
 
     function __ProofValidator_init(address payable _bridgeAddress) public initializer {
         if (_bridgeAddress == address(0)) {
@@ -78,10 +80,23 @@ abstract contract ProofValidator is Initializable {
         if (confirmations < 0) {
             revert BridgeBtcUnknownError(confirmations);
         }
-
         // Validate block has enough Confirmations
         if (uint256(confirmations) < _minConfirmations) {
             revert NotEnoughConfirmations(confirmations, _minConfirmations);
+        }
+    }
+
+    function requestRbtc(uint256 _amount) internal {
+        // We receive the amount of RBTC in our contract
+        int256 confirmations = bridge.requestUnionRBTC(_amount);
+        if (confirmations == -1) {
+            revert BridgeUnauthorizedCaller();
+        }
+        if (confirmations == -2) {
+            revert BridgeExceededLockingCap(_amount);
+        }
+        if (confirmations < 0) {
+            revert BridgeBtcUnknownError(confirmations);
         }
     }
 }

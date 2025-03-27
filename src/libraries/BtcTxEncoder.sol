@@ -5,11 +5,11 @@ import {BtcHelper} from "./BtcHelper.sol";
 import {BtcTransaction, BtcTxIn, BtcTxOut} from "../interfaces/IBitcoinManager.sol";
 
 /**
- * @title Bitcoin Transaction Parser
+ * @title Bitcoin Transaction Encoder
  * @notice Allows to encode / decode Bitcoin hex transactions
  * @author Fairgate
  */
-library BtcTxParser {
+library BtcTxEncoder {
     function encodeTxIn(bytes32 _txId, uint32 _vout, uint32 _sequence, bytes memory _scriptSig)
         internal
         pure

@@ -17,14 +17,14 @@ library BtcScriptParser {
 
     // Pay To Witness Public Key Hash
     function getP2WPKHScript(bytes memory _usrPubKey) internal pure returns (bytes memory) {
-        bytes memory pubKeyHash = BtcHelper.hash160(abi.encodePacked(_usrPubKey));
+        bytes20 pubKeyHash = BtcHelper.hash160(_usrPubKey);
 
         return abi.encodePacked(OpCodes.OP_0, OpCodes.OP_PUSHBYTES_20, pubKeyHash);
     }
 
     // Pay To Witness Script Hash
     function getP2WSHScript(bytes memory _script) internal pure returns (bytes memory) {
-        bytes memory scriptHash = abi.encodePacked(sha256(_script));
+        bytes32 scriptHash = sha256(_script);
 
         return abi.encodePacked(OpCodes.OP_0, OpCodes.OP_PUSHBYTES_32, scriptHash);
     }

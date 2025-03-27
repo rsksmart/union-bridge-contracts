@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
-import {PegManager, StreamPosition, PegInRequestTxSPVProof} from "src/PegManager.sol";
+import {PegManager, StreamPosition, BtcTxSPVProof, PegStatus} from "src/PegManager.sol";
 import {IBitcoinManager, BtcTransaction, BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
 import {Stream, Packet} from "src/interfaces/IStreamManager.sol";
 import {OpCodes} from "src/libraries/OpCodes.sol";
@@ -13,7 +13,7 @@ contract RegisterPegInRequestScript is Script {
     PegManager pegManager;
     IBitcoinManager bitcoinManager;
 
-    function setUp() internal returns (PegInRequestTxSPVProof memory pegInRequestTxSPVProof) {
+    function setUp() internal returns (BtcTxSPVProof memory pegInRequestTxSPVProof) {
         // ====== Arguments ======
         address rskDestinationAddress = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
         uint64 value = 100_000;
@@ -47,7 +47,7 @@ contract RegisterPegInRequestScript is Script {
         // PegIn P2TR output
         btcTransaction.outputs[0] = BtcTxOut({
             amount: value,
-            scriptPubKey: bitcoinManager.getPegInP2TRScriptPub(
+            scriptPubKey: bitcoinManager.getPegInRequestP2TRScriptPub(
                 rskDestinationAddress, value, btcReimbursementPubKey, committeePubKey
             )
         });
@@ -64,7 +64,7 @@ contract RegisterPegInRequestScript is Script {
             )
         });
         // SPV proof to verify with the bridge.getBtcTransactionConfirmations
-        pegInRequestTxSPVProof = PegInRequestTxSPVProof({
+        pegInRequestTxSPVProof = BtcTxSPVProof({
             blockHash: 0x0000000000000000000282fa21665766e58eb6cb94e458c3ef6d4af1121e38d9,
             btcTx: btcTransaction,
             merkleBranchPath: 4285202432,
@@ -75,14 +75,14 @@ contract RegisterPegInRequestScript is Script {
     }
 
     function run() public {
-        PegInRequestTxSPVProof memory pegInRequestTxSPVProof = setUp();
+        BtcTxSPVProof memory pegInRequestTxSPVProof = setUp();
         // get Tx hash
         bytes32 pegInRequestTxHash = bitcoinManager.getBtcTxHash(pegInRequestTxSPVProof.btcTx);
         console.log("pegInRequestTxHash");
         console.logBytes32(pegInRequestTxHash);
         // check if pegInRequest is already registered
         StreamPosition memory streamPosition = pegManager.getPegInRequest(pegInRequestTxHash);
-        if (streamPosition.registered) {
+        if (streamPosition.pegStatus != PegStatus.NOT_REGISTERED) {
             revert("PegInRequest already registered");
         }
         // register pegInRequest
@@ -91,7 +91,7 @@ contract RegisterPegInRequestScript is Script {
         vm.stopBroadcast();
         // check if pegInRequest is registered
         streamPosition = pegManager.getPegInRequest(pegInRequestTxHash);
-        if (!streamPosition.registered) {
+        if (streamPosition.pegStatus != PegStatus.REGISTERED) {
             revert("PegInRequest not registered");
         }
         console.log("=== PegInRequest registered successfully ===");

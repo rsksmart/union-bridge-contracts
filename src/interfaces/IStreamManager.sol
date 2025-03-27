@@ -21,8 +21,9 @@ struct Slot {
     SlotState state; // The state of the slot
     // TBD drp;                        // Dispute Resolution Protocol information
     // TBD otk;                        // Dispute Resolution Protocol one-time-keys
-    bytes scriptPubKey; // The scriptPubKey of the slot
-    bytes32 txId; // Transaction id of the peg-in transaction
+    bytes scriptPubKey; // The scriptPubKey of the Accept Peg-in Output UTXO
+    bytes32 acceptPegInTx; // Transaction id of the committee peg-in transaction
+    uint64 acceptPegInAmount; // The value of the accept peg-in transaction P2TR utxo
     bytes32 take0Tx; // Transaction id of the peg-out without dispute transaction
     bytes32 take1Tx; // Transaction id of the successfull dispute peg-out transaction
 }

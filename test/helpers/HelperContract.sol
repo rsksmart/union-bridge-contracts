@@ -8,8 +8,12 @@ import {PegManager} from "src/PegManager.sol";
 import {PegManagerHarness} from "test/helpers/PegManagerHarness.sol";
 import {Role, Member, CommitteeMember, Committee, CommitteeRegistry} from "src/CommitteeRegistry.sol";
 import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
-import {BtcTxIn, BtcTxOut, BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
+import {BtcTxIn, BtcTxOut, BtcTransaction, TIMELOCK_BLOCKS} from "src/interfaces/IBitcoinManager.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
+import {P2TR_FEES, SPEED_UP_AMOUNT} from "src/interfaces/IBitcoinManager.sol";
+import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
+import {BtcHelper} from "src/libraries/BtcHelper.sol";
+import {BtcTxEncoder} from "src/libraries/BtcTxEncoder.sol";
 import {RSK_BRIDGE_ADDRESS, IBridge} from "src/interfaces/IBridge.sol";
 import {BridgeMock} from "./BridgeMock.sol";
 import {TestUtils} from "./TestUtils.sol";
@@ -88,7 +92,8 @@ abstract contract HelperContract is Test, TestUtils {
         setUpCommittees();
     }
 
-    function getBtcTxIn() internal pure returns (BtcTxIn memory) {
+    // ========================== Peg In Request ==========================
+    function getPegInRequestTxIn() internal pure returns (BtcTxIn memory) {
         return BtcTxIn({
             txId: 0x360b81785dc7c2f40627fea364676dbb73e6276683caffd9f906b0e0bd36b3d2,
             vout: 1694,
@@ -97,26 +102,26 @@ abstract contract HelperContract is Test, TestUtils {
         });
     }
 
-    function getBtcP2TROut() internal pure returns (BtcTxOut memory) {
+    function getPegInRequestP2TROut() internal pure returns (BtcTxOut memory) {
         return BtcTxOut({
             amount: VALUE,
             scriptPubKey: hex"5120c8c2100e84799661079100ee50ce96bd1db6a1021819042b5b950ef01a4e7f41"
         });
     }
 
-    function getBtcOPReturnPacket() internal pure returns (uint64) {
+    function getPegInRequestPacket() internal pure returns (uint64) {
         return 0;
     }
 
-    function getBtcOPReturnDestinationAddress() internal pure returns (address) {
+    function getPegInRskDestinationAddress() internal pure returns (address) {
         return 0x7Ac5496aee77c1bA1F0854206A26DdA82A81d6d8;
     }
 
-    function getBtcOPReturnReimbursementPubKey() internal pure returns (bytes32) {
+    function getPegInBtcReimbursementPubKey() internal pure returns (bytes32) {
         return 0x5d238354a7e74c9e373317053226537dec221c5c775bcca01e806ec358c5c08d;
     }
 
-    function getBtcOPReturnOut() internal pure returns (BtcTxOut memory) {
+    function getPegInRequestOpReturnOut() internal pure returns (BtcTxOut memory) {
         return BtcTxOut({
             amount: 0,
             scriptPubKey: hex"6a4552534b5f504547494e00000000000000007ac5496aee77c1ba1f0854206a26dda82a81d6d85d238354a7e74c9e373317053226537dec221c5c775bcca01e806ec358c5c08d"
@@ -125,15 +130,55 @@ abstract contract HelperContract is Test, TestUtils {
 
     function getBtcPegInRequestTx() internal pure returns (BtcTransaction memory) {
         BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
-        btcInputs[0] = getBtcTxIn();
+        btcInputs[0] = getPegInRequestTxIn();
         // Output
         BtcTxOut[] memory btcOutputs = new BtcTxOut[](2);
-        btcOutputs[0] = getBtcP2TROut();
-        btcOutputs[1] = getBtcOPReturnOut();
+        btcOutputs[0] = getPegInRequestP2TROut();
+        btcOutputs[1] = getPegInRequestOpReturnOut();
         return BtcTransaction({version: 2, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
     }
 
     function getExpectedPegInRequestTxHash() internal pure returns (bytes32) {
-        return 0xdafce105aa64e81b9d71e1b1390d10ed97e052cf200ded7fd7bc4abf1493af69;
+        return BtcHelper.hash256(BtcTxEncoder.encodeTx(getBtcPegInRequestTx()));
+    }
+
+    // ========================== Peg In Accept ==========================
+    function getBtcAcceptPegInTx() internal pure returns (BtcTransaction memory) {
+        BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
+        btcInputs[0] = getAcceptPegInTxIn();
+        // Output
+        BtcTxOut[] memory btcOutputs = new BtcTxOut[](2);
+        btcOutputs[0] = getAcceptPegInP2TROut();
+        btcOutputs[1] = getBtcSpeedUpOut();
+        // Locktime
+        // TODO: Add real locktime
+        uint32 locktime = TIMELOCK_BLOCKS * 600;
+        return BtcTransaction({version: 2, inputs: btcInputs, outputs: btcOutputs, locktime: locktime});
+    }
+
+    function getExpectedAcceptPegInTxHash() internal pure returns (bytes32) {
+        return BtcHelper.hash256(BtcTxEncoder.encodeTx(getBtcAcceptPegInTx()));
+    }
+
+    function getAcceptPegInTxIn() internal pure returns (BtcTxIn memory) {
+        return BtcTxIn({txId: getExpectedPegInRequestTxHash(), vout: 0, sequence: 0xfffffffd, scriptSig: hex""});
+    }
+
+    function getBtcSpeedUpOut() internal pure returns (BtcTxOut memory) {
+        return BtcTxOut({
+            amount: SPEED_UP_AMOUNT,
+            scriptPubKey: BtcScriptParser.getP2WPKHScript(abi.encodePacked(COMMITEE_1_PUB_KEY))
+        });
+    }
+
+    function getAcceptPegInP2TROut() internal pure returns (BtcTxOut memory) {
+        return BtcTxOut({
+            amount: VALUE - (P2TR_FEES + SPEED_UP_AMOUNT),
+            scriptPubKey: hex"51200f0c8db753acbd17343a39c2f3f4e35e4be6da749f9e35137ab220e7b238a667"
+        });
+    }
+
+    function satoshiToWei(uint256 _amount) internal pure returns (uint256) {
+        return _amount * 10 ** 10;
     }
 }

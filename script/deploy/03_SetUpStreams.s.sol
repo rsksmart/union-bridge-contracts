@@ -22,6 +22,7 @@ contract SetUpStreams is Script {
             committeePubKey = 0x924c163b385af7093440184af6fd6244936d1288cbb41cc3812286d3f83a3329;
         } else if (block.chainid == ChainIds.LOCAL) {
             // Foundry local chainid
+            // TODO: We should use the same key as the one in the transactions repository
             committeePubKey = 0x924c163b385af7093440184af6fd6244936d1288cbb41cc3812286d3f83a3329;
         } else {
             revert("Blockchain is not RSK or regtest");
