@@ -24,9 +24,10 @@ contract PegManagerHarness is PegManager {
         uint64 _streamId,
         uint64 _packet,
         uint64 _slot,
-        SlotState slotState,
-        bytes memory scriptPubKey,
-        bytes32 txId
+        SlotState _slotState,
+        bytes memory _scriptPubKey,
+        bytes32 _txId,
+        uint64 _amount
     ) external {
         if (_packet >= packets[_streamId].length) {
             console.log("No packets %d for streamId: %d", _packet, _streamId);
@@ -35,8 +36,9 @@ contract PegManagerHarness is PegManager {
             console.log("No slot %d in packet %d for streamId: %d", _slot, _packet, _streamId);
         }
         Slot storage slot = slots[_streamId][_packet][_slot];
-        slot.state = slotState;
-        slot.scriptPubKey = scriptPubKey;
-        slot.acceptPegInTx = txId;
+        slot.state = _slotState;
+        slot.scriptPubKey = _scriptPubKey;
+        slot.acceptPegInTx = _txId;
+        slot.acceptPegInAmount = _amount;
     }
 }

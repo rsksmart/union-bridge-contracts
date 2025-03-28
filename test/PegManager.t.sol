@@ -468,8 +468,7 @@ contract TestPegManager is Test, HelperContract {
         // Arrange
         bytes32 p2tr_spk = 0x18f69d27d77e37a024c1b4663403c3205443f76609451cd85fce13d4dccc98c7;
         bytes memory usrPubKey = hex"02733ecfb4641477d17f412bc8cb20bbfa429f7b8352977623c04177382843af08";
-        PrevoutData[] memory prevoutsData = new PrevoutData[](1);
-        prevoutsData[0] = PrevoutData({
+        PrevoutData memory prevoutData = PrevoutData({
             txid: 0xa33c0cab77c7036b7e51ab63945a204c5417f89fcbdb8e3e841779238cca5eff,
             vout: 0,
             value: 10000000,
@@ -479,7 +478,7 @@ contract TestPegManager is Test, HelperContract {
         uint64 amount = 9979999; // 0.0998 BTC - 0.0001 BTC (dust)
 
         // Act
-        (bytes32 result,) = pm.computePegOutTxHash(usrPubKey, prevoutsData, amount, 1);
+        (bytes32 result,) = pm.computePegOutTxHash(usrPubKey, prevoutData, amount, 1);
 
         // ExpectedHash hash computed externally from a python tool using the same inputs and running on regtest
         // required inputs:
@@ -518,7 +517,7 @@ contract TestPegManager is Test, HelperContract {
         uint64 packetNumber = 0;
         uint64 slotId = 0;
 
-        pm.setSlotHarness(stream.streamId, packetNumber, slotId, SlotState.FILLED, scriptPubKey, txId);
+        pm.setSlotHarness(stream.streamId, packetNumber, slotId, SlotState.FILLED, scriptPubKey, txId, amount);
 
         // Assert
         vm.expectEmit(address(pm));
@@ -580,7 +579,7 @@ contract TestPegManager is Test, HelperContract {
 
     function test_getFirstFilledSlot_Success() external {
         // Arrenge
-        pm.setSlotHarness(0, 0, 0, SlotState.FILLED, hex"00", 0);
+        pm.setSlotHarness(0, 0, 0, SlotState.FILLED, hex"00", 0, 0);
 
         // Act
         (Slot memory slot,) = pm.getFirstFilledSlot(0);
