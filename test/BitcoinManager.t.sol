@@ -19,7 +19,7 @@ contract TestBtcHelper is Test, HelperContract {
     }
 
     function test_getBtcTxHash_Success() external view {
-        // Arrenge
+        // Arrange
         BtcTransaction memory btcTx = getBtcPegInRequestTx();
         // Act
         bytes32 txHash = bitcoinManager.getBtcTxHash(btcTx);
@@ -33,7 +33,7 @@ contract TestBtcHelper is Test, HelperContract {
 
     // ========================== REGISTER PEG IN REQUEST ==========================
     function test_getPegInOpReturnData_Success() external view {
-        // Arrenge
+        // Arrange
         BtcTxOut memory btcTxOut = getPegInRequestOpReturnOut();
         // Act
         (uint64 packetNumber, address rskDestinationAddress, bytes32 btcReimbursementPubKey) =
@@ -53,7 +53,7 @@ contract TestBtcHelper is Test, HelperContract {
     }
 
     function test_validatRequestPegInP2TROutput_Success() external {
-        // Arrenge
+        // Arrange
         BtcTxOut memory btcTxOut = getBtcPegInRequestTx().outputs[0];
         uint64 value = VALUE;
         address rskDestinationAddress = getPegInRskDestinationAddress();
@@ -67,7 +67,7 @@ contract TestBtcHelper is Test, HelperContract {
     }
 
     function test_validatRequestPegInP2TROutput_Revert_InvalidOutputAmount() external {
-        // Arrenge
+        // Arrange
         BtcTxOut memory btcTxOut = getBtcPegInRequestTx().outputs[0];
         btcTxOut.amount = VALUE - P2TR_FEES;
         uint64 value = VALUE;
@@ -85,7 +85,7 @@ contract TestBtcHelper is Test, HelperContract {
     // ========================== REGISTER ACCEPT PEG IN ==========================
 
     function test_validateAcceptPegInP2TROutput_Success() external {
-        // Arrenge
+        // Arrange
         BtcTxOut memory btcTxOut = getBtcAcceptPegInTx().outputs[0];
         uint64 value = VALUE;
         address rskDestinationAddress = getPegInRskDestinationAddress();
@@ -96,7 +96,7 @@ contract TestBtcHelper is Test, HelperContract {
     }
 
     function test_validateAcceptPegInP2TROutput_Revert_InvalidOutputAmount() external {
-        // Arrenge
+        // Arrange
         BtcTxOut memory btcTxOut = getBtcAcceptPegInTx().outputs[0];
         btcTxOut.amount = VALUE - (P2TR_FEES + SPEED_UP_AMOUNT + 1);
         bytes32 committeePubKey = COMMITEE_1_PUB_KEY;
@@ -111,7 +111,7 @@ contract TestBtcHelper is Test, HelperContract {
     }
 
     function test_validateAcceptPegInP2TROutput_Revert_IncorrectOutputScript() external {
-        // Arrenge
+        // Arrange
         BtcTxOut memory btcTxOut = getBtcAcceptPegInTx().outputs[0];
         bytes memory expectedScriptPubKey = btcTxOut.scriptPubKey;
         btcTxOut.scriptPubKey = hex"0014d3b4045c40a133ee361f766ceae4d82398fc5058";
@@ -127,7 +127,7 @@ contract TestBtcHelper is Test, HelperContract {
     }
 
     function test_validateSpeedUpOutput_Success() external {
-        // Arrenge
+        // Arrange
         BtcTxOut memory btcTxOut = getBtcSpeedUpOut();
         bytes32 committeePubKey = COMMITEE_1_PUB_KEY;
         // Act
@@ -136,7 +136,7 @@ contract TestBtcHelper is Test, HelperContract {
     }
 
     function test_validateSpeedUpOutput_Revert_InvalidOutputAmount() external {
-        // Arrenge
+        // Arrange
         BtcTxOut memory btcTxOut = getBtcSpeedUpOut();
         btcTxOut.amount = SPEED_UP_AMOUNT - 1;
         bytes32 committeePubKey = COMMITEE_1_PUB_KEY;
@@ -147,7 +147,7 @@ contract TestBtcHelper is Test, HelperContract {
     }
 
     function test_validateSpeedUpOutput_Revert_IncorrectOutputScript() external {
-        // Arrenge
+        // Arrange
         BtcTxOut memory btcTxOut = getBtcSpeedUpOut();
         bytes memory expectedScriptPubKey = btcTxOut.scriptPubKey;
         btcTxOut.scriptPubKey = hex"0014d3b4045c40a133ee361f766ceae4d82398fc5058";

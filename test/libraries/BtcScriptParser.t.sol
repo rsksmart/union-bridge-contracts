@@ -12,7 +12,7 @@ contract TestBtcScriptParser is Test, TestUtils {
     function setUp() external {}
 
     function test_getTimelockScript_Success_OP_0() external pure {
-        // Arrenge 1
+        // Arrange 1
         uint32 blocks = 0;
         bytes32 pubKey = generatePubKey(1);
         // Act
@@ -26,7 +26,7 @@ contract TestBtcScriptParser is Test, TestUtils {
     }
 
     function test_getTimelockScript_Success_OP_PUSHNUM() external pure {
-        // Arrenge 1
+        // Arrange 1
         uint32 blocks = 1;
         bytes32 pubKey = generatePubKey(1);
         // Act
@@ -38,7 +38,7 @@ contract TestBtcScriptParser is Test, TestUtils {
         // No second part because the number is 1-16
         _checkScriptAfterPushBlock(script, i, pubKey);
 
-        // Arrenge 16
+        // Arrange 16
         blocks = 16;
         // Act
         script = BtcScriptParser.getTimelockScript(blocks, pubKey);
@@ -50,7 +50,7 @@ contract TestBtcScriptParser is Test, TestUtils {
     }
 
     function test_getTimelockScript_Success_OP_PUSHBYTES1() external pure {
-        // Arrenge 17
+        // Arrange 17
         uint32 blocks = 17;
         bytes32 pubKey = generatePubKey(1);
         // Act
@@ -63,7 +63,7 @@ contract TestBtcScriptParser is Test, TestUtils {
         i++;
         _checkScriptAfterPushBlock(script, i, pubKey);
 
-        // Arrenge 127
+        // Arrange 127
         blocks = 127;
         // Act
         script = BtcScriptParser.getTimelockScript(blocks, pubKey);
@@ -77,7 +77,7 @@ contract TestBtcScriptParser is Test, TestUtils {
     }
 
     function test_getTimelockScript_Success_OP_PUSHBYTES2() external pure {
-        // Arrenge 128
+        // Arrange 128
         uint32 blocks = 128;
         bytes32 pubKey = generatePubKey(1);
         // Act
@@ -94,7 +94,7 @@ contract TestBtcScriptParser is Test, TestUtils {
         i += 2;
         _checkScriptAfterPushBlock(script, i, pubKey);
 
-        // Arrenge 32767
+        // Arrange 32767
         blocks = 32767;
         // Act
         script = BtcScriptParser.getTimelockScript(blocks, pubKey);
@@ -112,7 +112,7 @@ contract TestBtcScriptParser is Test, TestUtils {
     }
 
     function test_getTimelockScript_Success_OP_PUSHBYTES3() external pure {
-        // Arrenge 32768
+        // Arrange 32768
         uint32 blocks = 32768;
         bytes32 pubKey = generatePubKey(1);
         // Act
@@ -129,7 +129,7 @@ contract TestBtcScriptParser is Test, TestUtils {
         i += 3;
         _checkScriptAfterPushBlock(script, i, pubKey);
 
-        // Arrenge 65535
+        // Arrange 65535
         blocks = 65535;
         // Act
         script = BtcScriptParser.getTimelockScript(blocks, pubKey);
@@ -147,7 +147,7 @@ contract TestBtcScriptParser is Test, TestUtils {
     }
 
     function test_getTimelockScript_Error_NumberTooLarge() external {
-        // Arrenge
+        // Arrange
         uint32 blocks = 65536;
         bytes32 pubKey = generatePubKey(1);
         // Assert

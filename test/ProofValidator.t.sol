@@ -16,7 +16,7 @@ contract TestProofValidator is Test, HelperContract {
     }
 
     function test_verifyTxConfirmation_Success_EqualMinConfirmation() external {
-        // Arrenge
+        // Arrange
         int256 actualConfirmations = 10;
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(actualConfirmations);
@@ -47,7 +47,7 @@ contract TestProofValidator is Test, HelperContract {
     }
 
     function test_verifyTxConfirmation_Success_BiggerMinConfirmation() external {
-        // Arrenge
+        // Arrange
         int256 actualConfirmations = 100;
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(actualConfirmations);
@@ -66,7 +66,7 @@ contract TestProofValidator is Test, HelperContract {
     }
 
     function test_verifyTxConfirmation_Revert_BridgeBtcInexistantBlockHash() external {
-        // Arrenge
+        // Arrange
         int256 actualConfirmations = -1;
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(actualConfirmations);
@@ -87,7 +87,7 @@ contract TestProofValidator is Test, HelperContract {
     }
 
     function test_verifyTxConfirmation_Revert_BridgeBtcBlockNotInBestChain() external {
-        // Arrenge
+        // Arrange
         int256 actualConfirmations = -2;
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(actualConfirmations);
@@ -108,7 +108,7 @@ contract TestProofValidator is Test, HelperContract {
     }
 
     function test_verifyTxConfirmation_Revert_BridgeBtcInconsistentBlock() external {
-        // Arrenge
+        // Arrange
         int256 actualConfirmations = -3;
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(actualConfirmations);
@@ -129,7 +129,7 @@ contract TestProofValidator is Test, HelperContract {
     }
 
     function test_verifyTxConfirmation_Revert_BridgeBtcBlockTooOld() external {
-        // Arrenge
+        // Arrange
         int256 actualConfirmations = -4;
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(actualConfirmations);
@@ -150,7 +150,7 @@ contract TestProofValidator is Test, HelperContract {
     }
 
     function test_verifyTxConfirmation_Revert_BridgeBtcTxInvalidMerkleBranch() external {
-        // Arrenge
+        // Arrange
         int256 actualConfirmations = -5;
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(actualConfirmations);
@@ -175,7 +175,7 @@ contract TestProofValidator is Test, HelperContract {
     }
 
     function test_verifyTxConfirmation_Revert_BridgeBtcUnknownError() external {
-        // Arrenge
+        // Arrange
         int256 actualConfirmations = -11;
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(actualConfirmations);
@@ -196,7 +196,7 @@ contract TestProofValidator is Test, HelperContract {
     }
 
     function test_verifyTxConfirmation_Revert_NotEnoughConfirmations() external {
-        // Arrenge
+        // Arrange
         int256 actualConfirmations = 9;
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(actualConfirmations);

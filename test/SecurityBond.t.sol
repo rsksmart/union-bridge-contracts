@@ -16,7 +16,7 @@ contract TestSecurityBond is Test, HelperContract {
     }
 
     function test_getMinimumDeposit_Success() external view {
-        // Arrenge
+        // Arrange
         uint64 denomination = 100_000; // 0.001 BTC
         // Act
         uint64 minDeposit = sb.getMinimumDeposit(denomination);
@@ -25,7 +25,7 @@ contract TestSecurityBond is Test, HelperContract {
     }
 
     function test_getMinimumDeposit_Revert_StreamNotFound() external {
-        // Arrenge
+        // Arrange
         uint64 denomination = 111_000; // 0.001 BTC
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IStreamManager.StreamNotFoundByDenomination.selector, denomination));
@@ -34,7 +34,7 @@ contract TestSecurityBond is Test, HelperContract {
     }
 
     function test_securityBondDeposit_Success() public {
-        // Arrenge
+        // Arrange
         uint64 denomination = 100_000; // 0.001 BTC
         uint256 balanceBefore = address(sb).balance;
         address sender = address(this);
@@ -51,7 +51,7 @@ contract TestSecurityBond is Test, HelperContract {
     }
 
     function test_securityBondDeposit_Revert_DespositBondTooLow() public {
-        // Arrenge
+        // Arrange
         uint64 denomination = 100_000; // 0.001 BTC
         // Assert
         vm.expectRevert(abi.encodeWithSelector(SecurityBond.despositBondTooLow.selector, 0, denomination * 2));

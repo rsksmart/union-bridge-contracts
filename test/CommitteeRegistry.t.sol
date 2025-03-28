@@ -53,7 +53,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
     }
 
     function test_registerCommittee_Success() external {
-        // Arrenge
+        // Arrange
         uint256 previousLength = registry.getCommitteesLength();
         // Act
         registry.registerMember(generatePubKey(2), requestedStreams, requestedRoles);
@@ -83,7 +83,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
     }
 
     function test_registerCommittee_Revert_TooManyMembersPerComitee() external {
-        // Arrenge
+        // Arrange
         Committee memory aCommittee;
         uint256 MAX_MEMBERS_PER_COMMITTEE = registry.MAX_MEMBERS_PER_COMMITTEE();
         CommitteeMember[] memory committee2Members = new CommitteeMember[](MAX_MEMBERS_PER_COMMITTEE + 1);
@@ -103,7 +103,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
     }
 
     function test_registerCommittee_Revert_TooManyCommittees() external {
-        // Arrenge
+        // Arrange
         uint256 MAX_COMMITTEES_SIZE = registry.MAX_COMMITTEES_SIZE();
         bytes32 aCommitteeKey;
         Committee memory aCommittee;
@@ -148,7 +148,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
     }
 
     function test_registerMember_Revert_TooManyMembers() external {
-        // Arrenge
+        // Arrange
         uint256 MAX_MEMBERS_SIZE = registry.MAX_MEMBERS_SIZE();
         // -2 because we already have 2 members registered in the setup
         for (uint16 i = 2; i < MAX_MEMBERS_SIZE; i++) {

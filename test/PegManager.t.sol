@@ -21,7 +21,7 @@ import {BtcTaproot} from "src/libraries/BtcTaproot.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 
 contract TestPegManager is Test, HelperContract {
-    // Arrenge
+    // Arrange
     // https://www.blockchain.com/explorer/blocks/btc/879500
     bytes32 internal constant BLOCK_HASH = 0x0000000000000000000282fa21665766e58eb6cb94e458c3ef6d4af1121e38d9;
     uint64 internal constant PACKET_NUMBER = 0;
@@ -59,7 +59,7 @@ contract TestPegManager is Test, HelperContract {
 
     // ========================== REGISTER PEG IN REQUEST ==========================
     function test_registerPegInRequest_Success() external {
-        // Arrenge
+        // Arrange
         BtcTransaction memory btcTransaction = getBtcPegInRequestTx();
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(10);
@@ -141,7 +141,7 @@ contract TestPegManager is Test, HelperContract {
     }
 
     function test_registerPegInRequest_Revert_AlreadyRegistered() external {
-        // Arrenge
+        // Arrange
         BtcTransaction memory btcTransaction = getBtcPegInRequestTx();
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(10);
@@ -170,7 +170,7 @@ contract TestPegManager is Test, HelperContract {
     }
 
     function test_registerPegInRequest_Revert_NotEnoughConfirmations() external {
-        // Arrenge
+        // Arrange
         int256 actualConfirmations = 0;
         BtcTransaction memory btcTransaction = getBtcPegInRequestTx();
         // Set Mock Bridge state
@@ -197,7 +197,7 @@ contract TestPegManager is Test, HelperContract {
     }
 
     function test_registerPegInRequest_Revert_BridgeBtcTxInvalidMerkleBranch() external {
-        // Arrenge
+        // Arrange
         BtcTransaction memory btcTransaction = getBtcPegInRequestTx();
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE);
@@ -228,7 +228,7 @@ contract TestPegManager is Test, HelperContract {
 
     // ========================== ACCEPT PEG IN ==========================
     function test_acceptPegInRequest_Revert_UnregisteredPegInRequest() external {
-        // Arrenge
+        // Arrange
         BtcTransaction memory btcTransaction = getBtcAcceptPegInTx();
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(10);
@@ -255,7 +255,7 @@ contract TestPegManager is Test, HelperContract {
 
     function test_acceptPegInRequest_Success() external {
         // ===  Before test setup  is run for this  test ===
-        // Arrenge
+        // Arrange
         BtcTransaction memory btcTransaction = getBtcAcceptPegInTx();
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(10);
@@ -323,7 +323,7 @@ contract TestPegManager is Test, HelperContract {
 
     function test_acceptPegInRequest_Revert_AlreadyRegisteredAcceptPegIn() external {
         // ===  Before test setup  is run for this  test ===
-        // Arrenge
+        // Arrange
         BtcTransaction memory btcTransaction = getBtcAcceptPegInTx();
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(10);
@@ -353,7 +353,7 @@ contract TestPegManager is Test, HelperContract {
 
     function test_acceptPegInRequest_Revert_IncorrectInputsNumber() external {
         // ===  Before test setup  is run for this  test ===
-        // Arrenge
+        // Arrange
         BtcTransaction memory btcTransaction = getBtcAcceptPegInTx();
         btcTransaction.inputs = new BtcTxIn[](0);
         // Set Mock Bridge state
@@ -381,7 +381,7 @@ contract TestPegManager is Test, HelperContract {
 
     function test_acceptPegInRequest_Revert_IncorrectOutputsNumber() external {
         // ===  Before test setup  is run for this  test ===
-        // Arrenge
+        // Arrange
         BtcTransaction memory btcTransaction = getBtcAcceptPegInTx();
         btcTransaction.outputs = new BtcTxOut[](0);
         // Set Mock Bridge state
@@ -409,7 +409,7 @@ contract TestPegManager is Test, HelperContract {
 
     function test_acceptPegInRequest_Revert_InvalidVout() external {
         // ===  Before test setup  is run for this  test ===
-        // Arrenge
+        // Arrange
         BtcTransaction memory btcTransaction = getBtcAcceptPegInTx();
         btcTransaction.inputs[0].vout = 1;
         // Set Mock Bridge state
@@ -435,7 +435,7 @@ contract TestPegManager is Test, HelperContract {
 
     function test_acceptPegInRequest_Revert_Revert_NotEnoughConfirmations() external {
         // ===  Before test setup  is run for this  test ===
-        // Arrenge
+        // Arrange
         BtcTransaction memory btcTransaction = getBtcAcceptPegInTx();
         int256 actualConfirmations = 0;
         // Set Mock Bridge state
@@ -500,7 +500,7 @@ contract TestPegManager is Test, HelperContract {
     }
 
     function test_requestPegOut_Success() external {
-        // Arrenge
+        // Arrange
         bytes32 expectedHash = 0x9addac826ff94bb0277ac41c1aea1588d71d7bb24db52ce56d82a7e266a5b47c;
         bytes memory expectedDigest =
             hex"00000200000000000000234337e863e00e6ff45f167a14f3963bea912bc0d739c2b402d04f376e814ae2e247139cedddd1ee740814e7de2e771c3745091bbb7af21d4122087c8bc17a36a0c6dbc3091625a23fd870bf8d09182484c12fa63a5c29045a431cf445f153e5ad95131bc0b799c0b1af477fb14fcf26a6a9f76079e48bf090acb7e8367bfd0eefa2c948f4d34b1cb0bccb25ebf3a221deb515ba5afd92f3c81d7601457e26e70000000000";
@@ -578,7 +578,7 @@ contract TestPegManager is Test, HelperContract {
     }
 
     function test_getFirstFilledSlot_Success() external {
-        // Arrenge
+        // Arrange
         pm.setSlotHarness(0, 0, 0, SlotState.FILLED, hex"00", 0, 0);
 
         // Act

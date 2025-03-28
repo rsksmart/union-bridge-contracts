@@ -42,7 +42,7 @@ abstract contract HelperContract is Test, TestUtils {
     PegManagerHarness internal pm;
     BridgeMock internal bridgeMock;
     address upgradeOwner = vm.addr(777);
-    // Arrenge
+    // Arrange
     uint64 internal constant VALUE = 100_000; // 0.001 BTC
 
     function setUpCommittees() internal {

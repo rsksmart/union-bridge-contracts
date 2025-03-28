@@ -8,7 +8,7 @@ contract TestBtcTaproot is Test {
     function setUp() external {}
 
     function test_taggedHash_Success() external pure {
-        // Arrenge
+        // Arrange
         bytes memory data = hex"c0025187";
         // Act
         bytes32 leafHash = BtcTaproot.taggedHash("TapLeaf", data);
@@ -21,7 +21,7 @@ contract TestBtcTaproot is Test {
     }
 
     function test_getP2TRScriptPubKey_Success() external pure {
-        // Arrenge
+        // Arrange
         bytes32 publicKey = 0x924c163b385af7093440184af6fd6244936d1288cbb41cc3812286d3f83a3329;
         // Act
         bytes memory scriptPubKey = BtcTaproot.getP2TRScriptPubKey(publicKey);
@@ -34,7 +34,7 @@ contract TestBtcTaproot is Test {
     }
 
     function test_getLeaf_Success() external pure {
-        // Arrenge
+        // Arrange
         bytes memory script = hex"5187";
         // Act
         bytes32 leafHash = BtcTaproot.getLeaf(script);
@@ -47,7 +47,7 @@ contract TestBtcTaproot is Test {
     }
 
     function test_getBranch_Success() external pure {
-        // Arrenge
+        // Arrange
         // https://learnmeabitcoin.com/technical/upgrades/taproot/#script-tree-merkle-root-branch-hash
         bytes32 leafHash1 = 0x6b13becdaf0eee497e2f304adcfa1c0c9e84561c9989b7f2b5fc39f5f90a60f6;
         bytes32 leafHash2 = 0xed5af8352e2a54cce8d3ea326beb7907efa850bdfe3711cef9060c7bb5bcf59e;

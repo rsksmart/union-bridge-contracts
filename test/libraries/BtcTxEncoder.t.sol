@@ -9,7 +9,7 @@ contract TestBtcTxEncoder is Test {
     function setUp() external {}
 
     function test_encodeTxIn_Success() external pure {
-        // Arrenge
+        // Arrange
         BtcTxIn memory btcInput = getPegInRequestTxIn();
         // Act
         bytes memory hexTxIn =
@@ -23,7 +23,7 @@ contract TestBtcTxEncoder is Test {
     }
 
     function test_encodeTxInputs_Success() external pure {
-        // Arrenge
+        // Arrange
         BtcTransaction memory btcTx = getBtcTransaction();
         // Act
         bytes memory hexTxIn = BtcTxEncoder.encodeTxInputs(btcTx.inputs);
@@ -36,7 +36,7 @@ contract TestBtcTxEncoder is Test {
     }
 
     function test_encodeTxOut_Success() external pure {
-        // Arrenge
+        // Arrange
         BtcTxOut memory btcOutput = getBtcTxOut();
         // Act
         bytes memory hexTxOut = BtcTxEncoder.encodeTxOut(btcOutput.amount, btcOutput.scriptPubKey);
@@ -49,7 +49,7 @@ contract TestBtcTxEncoder is Test {
     }
 
     function test_encodeTxOutputs_Success() external pure {
-        // Arrenge
+        // Arrange
         BtcTransaction memory btcTx = getBtcTransaction();
         // Act
         bytes memory hexTxIn = BtcTxEncoder.encodeTxOutputs(btcTx.outputs);
@@ -62,7 +62,7 @@ contract TestBtcTxEncoder is Test {
     }
 
     function test_encodeTx_Success() external pure {
-        // Arrenge
+        // Arrange
         BtcTransaction memory btcTx = getBtcTransaction();
         // Act
         bytes memory hexTxIn = BtcTxEncoder.encodeTx(btcTx);
