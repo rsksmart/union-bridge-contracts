@@ -145,7 +145,11 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
     function validateAcceptPegInTx(BtcTransaction memory _btcTx)
         internal
         view
-        returns (bytes32 requestPegInTxHash, address rskDestinationAddress, StreamPosition storage streamPosition)
+        returns (
+            bytes32 requestPegInTxHash,
+            RequestPegInTempInfo memory requestTempInfo,
+            StreamPosition storage streamPosition
+        )
     {
         // Only input is the peg in request utxo
         if (_btcTx.inputs.length != 1) {
@@ -181,8 +185,7 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
         // and use the same outputs as the expected ones and the transaction would be valid
         // not sure if this can be used as an attack tough
 
-        RequestPegInTempInfo memory requestTempInfo = pegInsTempInfo[requestPegInTxHash];
-        rskDestinationAddress = requestTempInfo.rskDestinationAddress;
+        requestTempInfo = pegInsTempInfo[requestPegInTxHash];
         bytes32 committeePubKey = getPacket(streamPosition.streamId, streamPosition.packetNumber).committeePubKey;
         // validate the ouputs are the expected
         // taptree for pegout
@@ -190,13 +193,15 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
             committeePubKey, requestTempInfo.outputAmount, _btcTx.outputs[VOUT_INDEX_TAPTREE]
         );
         // spped up (child pays for parent)
-        bitcoinManager.validateSpeedUpOutput(committeePubKey, _btcTx.outputs[VOUT_INDEX_SPEED_UP]);
+        bitcoinManager.validateSpeedUpOutput(
+            requestTempInfo.btcReimbursementPubKey, _btcTx.outputs[VOUT_INDEX_SPEED_UP]
+        );
     }
 
     function acceptPegInRequest(BtcTxSPVProof calldata _pegInAcceptedTxSPVProof) external {
         // validate the inputs match the request pegin and outputs are the expected taptree and speed up
-        (bytes32 requestPegInTxHash, address rskDestinationAddress, StreamPosition storage streamPosition) =
-            validateAcceptPegInTx(_pegInAcceptedTxSPVProof.btcTx);
+        (bytes32 requestPegInTxHash, RequestPegInTempInfo memory requestTempInfo, StreamPosition storage streamPosition)
+        = validateAcceptPegInTx(_pegInAcceptedTxSPVProof.btcTx);
 
         // Calculate txHash from BtcTransaction
         bytes32 txHash = bitcoinManager.getBtcTxHash(_pegInAcceptedTxSPVProof.btcTx);
@@ -233,10 +238,9 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
             txHash,
             requestPegInTxHash,
             VOUT_INDEX_TAPTREE,
-            streamPosition.streamId,
-            streamPosition.packetNumber,
-            streamPosition.slotId,
-            rskDestinationAddress,
+            streamPosition,
+            requestTempInfo.btcReimbursementPubKey,
+            requestTempInfo.rskDestinationAddress,
             rbtcAmount,
             _pegInAcceptedTxSPVProof.btcTx.outputs[VOUT_INDEX_TAPTREE].scriptPubKey
         );

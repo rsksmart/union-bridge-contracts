@@ -129,9 +129,9 @@ contract TestBtcHelper is Test, HelperContract {
     function test_validateSpeedUpOutput_Success() external {
         // Arrange
         BtcTxOut memory btcTxOut = getBtcSpeedUpOut();
-        bytes32 committeePubKey = COMMITEE_1_PUB_KEY;
+        bytes32 speedUpPubKey = BTC_REIMBURSEMENT_PUBKEY;
         // Act
-        bitcoinManager.validateSpeedUpOutput(committeePubKey, btcTxOut);
+        bitcoinManager.validateSpeedUpOutput(speedUpPubKey, btcTxOut);
         // Assert if not reverts everything is ok
     }
 
@@ -139,11 +139,11 @@ contract TestBtcHelper is Test, HelperContract {
         // Arrange
         BtcTxOut memory btcTxOut = getBtcSpeedUpOut();
         btcTxOut.amount = SPEED_UP_AMOUNT - 1;
-        bytes32 committeePubKey = COMMITEE_1_PUB_KEY;
+        bytes32 speedUpPubKey = BTC_REIMBURSEMENT_PUBKEY;
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IBitcoinManager.InvalidValue.selector, btcTxOut.amount, SPEED_UP_AMOUNT));
         // Act
-        bitcoinManager.validateSpeedUpOutput(committeePubKey, btcTxOut);
+        bitcoinManager.validateSpeedUpOutput(speedUpPubKey, btcTxOut);
     }
 
     function test_validateSpeedUpOutput_Revert_IncorrectOutputScript() external {
@@ -151,7 +151,7 @@ contract TestBtcHelper is Test, HelperContract {
         BtcTxOut memory btcTxOut = getBtcSpeedUpOut();
         bytes memory expectedScriptPubKey = btcTxOut.scriptPubKey;
         btcTxOut.scriptPubKey = hex"0014d3b4045c40a133ee361f766ceae4d82398fc5058";
-        bytes32 committeePubKey = COMMITEE_1_PUB_KEY;
+        bytes32 speedUpPubKey = BTC_REIMBURSEMENT_PUBKEY;
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -159,6 +159,6 @@ contract TestBtcHelper is Test, HelperContract {
             )
         );
         // Act
-        bitcoinManager.validateSpeedUpOutput(committeePubKey, btcTxOut);
+        bitcoinManager.validateSpeedUpOutput(speedUpPubKey, btcTxOut);
     }
 }

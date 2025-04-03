@@ -93,9 +93,8 @@ interface IPegManager is IStreamManager {
         bytes32 indexed txHash,
         bytes32 indexed pegInTxHash,
         uint64 vout,
-        uint64 streamId,
-        uint64 packetNumber,
-        uint64 slotId,
+        StreamPosition streamPosition,
+        bytes32 speedUpPubKey,
         address rskDestinationAddress,
         uint256 rbtcAmount,
         bytes utxoScriptPubKey
