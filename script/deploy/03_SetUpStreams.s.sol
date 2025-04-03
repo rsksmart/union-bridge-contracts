@@ -19,11 +19,12 @@ contract SetUpStreams is Script {
             committeePubKey = 0x924c163b385af7093440184af6fd6244936d1288cbb41cc3812286d3f83a3329;
         } else if (block.chainid == ChainIds.RSK_TESTNET) {
             // RSK Testnet
-            committeePubKey = 0x924c163b385af7093440184af6fd6244936d1288cbb41cc3812286d3f83a3329;
+            // Obtained from transactions repository
+            committeePubKey = 0xd1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d;
         } else if (block.chainid == ChainIds.LOCAL) {
             // Foundry local chainid
-            // TODO: We should use the same key as the one in the transactions repository
-            committeePubKey = 0x924c163b385af7093440184af6fd6244936d1288cbb41cc3812286d3f83a3329;
+            // Obtained from transactions repository
+            committeePubKey = 0xd1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d;
         } else {
             revert("Blockchain is not RSK or regtest");
         }

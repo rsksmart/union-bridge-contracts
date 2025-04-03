@@ -47,14 +47,14 @@ contract TestPegManager is Test, HelperContract {
     }
 
     function test_getTemporaryPegInAddress_Success() external view {
-        address dummyRskAddress = 0x4C9a9CbFa14106439B0F96a64d9260F3b8947934;
+        address dummyRskAddress = 0x7Ac5496aee77c1bA1F0854206A26DdA82A81d6d8;
         // TODO this is the value that includes the op_return data inside the taptree
         // this should be put back once the protocol builder is updated
         // string memory tempAddress = "bcrt1ptp8gw3yt9rjavkrlxhwmlm9y5w4c5u6yeeltmupanle76eq4ftrszyjhnn";
-        string memory tempAddress = "bcrt1prwryjhyj57km40tq2zq997u4fp59cjvaxgzm603kya9lrm5m7xssjan40l";
+        string memory tempAddress = "bcrt1py28js8ef0lgpe5mrh8yn7apt52tkc8k95cyrm8m4fjmpu5zn2mps7esu9h";
 
         string memory result = pm.getTemporaryPegInAddress(dummyRskAddress, VALUE, BTC_REIMBURSEMENT_PUBKEY);
-        assertEq(result, tempAddress, "Incorrect temporary peg in address");
+        assertEq(result, tempAddress, "Incorrect temporary peg in address at PegManager");
     }
 
     // ========================== REGISTER PEG IN REQUEST ==========================

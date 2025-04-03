@@ -71,9 +71,9 @@ Returns the address where the user have to send funds to PegIn, set the correspo
 
 ``` solidity
 // ====== Arguments ======
-rootstock_deposit_address = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
+rootstock_deposit_address = 0x7ac5496aee77c1ba1f0854206a26dda82a81d6d8;
 value = 100_000;
-btc_reimbursement_pub_key = 0xc72a9f6fc8e57f1de528a48b6c4ad7a6db30b24a7bbf8cdd74b0a3b248b6f7f1;
+btc_reimbursement_pub_key = 0x7d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f;
 pegManager = PegManager(0x0165878A594ca255338adfa4d48449f69242Eb8F);
 ```
 
@@ -89,9 +89,9 @@ Register the peg in request transaction sent by the user in Bitcoin, set the cor
 
 ``` solidity
 // ====== Arguments ======
-address rskDestinationAddress = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
+address rskDestinationAddress = 0x7ac5496aee77c1ba1f0854206a26dda82a81d6d8;
 uint64 value = 100_000;
-bytes32 btcReimbursementPubKey = 0xc72a9f6fc8e57f1de528a48b6c4ad7a6db30b24a7bbf8cdd74b0a3b248b6f7f1;
+bytes32 btcReimbursementPubKey = 0x7d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f;
 pegManager = PegManager(0x0165878A594ca255338adfa4d48449f69242Eb8F);
 ```
 

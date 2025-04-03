@@ -20,11 +20,11 @@ import {TestUtils} from "./TestUtils.sol";
 
 abstract contract HelperContract is Test, TestUtils {
     // Mock keys
-    bytes32 constant COMMITEE_1_PUB_KEY = 0x924c163b385af7093440184af6fd6244936d1288cbb41cc3812286d3f83a3329;
+    bytes32 constant COMMITEE_1_PUB_KEY = 0xd1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d;
     bytes32 constant COMMITEE_2_PUB_KEY = 0x1908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785ec;
     bytes32 constant COMMITEE_3_PUB_KEY = 0x2908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785ed;
     bytes32 internal constant BTC_REIMBURSEMENT_PUBKEY =
-        0x5d238354a7e74c9e373317053226537dec221c5c775bcca01e806ec358c5c08d;
+        0x7d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f;
 
     // Dummy requested roles and streams for the members
     StreamDenomination[] internal requestedStreams;
@@ -110,7 +110,7 @@ abstract contract HelperContract is Test, TestUtils {
             // TODO this is the value that includes the op_return data inside the taptree
             // It should be put back once the protocol builder is updated
             // scriptPubKey: hex"5120c8c2100e84799661079100ee50ce96bd1db6a1021819042b5b950ef01a4e7f41"
-            scriptPubKey: hex"51201b86495c92a7adbabd60508052fb9548685c499d3205bd3e36274bf1ee9bf1a1"
+            scriptPubKey: hex"5120228f281f297fd01cd363b9c93f742ba2976c1ec5a6083d9f754cb61e505356c3"
         });
     }
 
@@ -123,13 +123,13 @@ abstract contract HelperContract is Test, TestUtils {
     }
 
     function getPegInBtcReimbursementPubKey() internal pure returns (bytes32) {
-        return 0x5d238354a7e74c9e373317053226537dec221c5c775bcca01e806ec358c5c08d;
+        return 0x7d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f;
     }
 
     function getPegInRequestOpReturnOut() internal pure returns (BtcTxOut memory) {
         return BtcTxOut({
             amount: 0,
-            scriptPubKey: hex"6a4552534b5f504547494e00000000000000007ac5496aee77c1ba1f0854206a26dda82a81d6d85d238354a7e74c9e373317053226537dec221c5c775bcca01e806ec358c5c08d"
+            scriptPubKey: hex"6a4552534b5f504547494e00000000000000007ac5496aee77c1ba1f0854206a26dda82a81d6d87d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f"
         });
     }
 
@@ -181,7 +181,7 @@ abstract contract HelperContract is Test, TestUtils {
     function getAcceptPegInP2TROut() internal pure returns (BtcTxOut memory) {
         return BtcTxOut({
             amount: VALUE - (P2TR_FEES + SPEED_UP_AMOUNT),
-            scriptPubKey: hex"51200f0c8db753acbd17343a39c2f3f4e35e4be6da749f9e35137ab220e7b238a667"
+            scriptPubKey: hex"51209687ca13c4fb3fa3ba05c2f9119dda026bfe66f0098dcf9b896a98ecb2e96702"
         });
     }
 

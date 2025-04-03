@@ -39,13 +39,8 @@ contract DeployImplAndProxy is Script {
             if (wallets.length > 0) {
                 upgradableOwner = wallets[0];
             } else {
+                // This value is used when simulating the deployment
                 upgradableOwner = vm.addr(777);
-            }
-            uint256 length = denominations.length;
-            for (uint64 i = 0; i < length; i++) {
-                // we reduce the denominations by a factor of 10
-                // as it's hard to get the large values in the testnet
-                denominations[i] = denominations[i] / 10;
             }
         } else if (block.chainid == ChainIds.LOCAL) {
             // Foundry local chainid
