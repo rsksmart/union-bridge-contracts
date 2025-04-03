@@ -466,34 +466,35 @@ contract TestPegManager is Test, HelperContract {
     // ================= Request PegOut =================
     function test_computePegOutTxHash() external view {
         // Arrange
-        bytes32 p2tr_spk = 0x18f69d27d77e37a024c1b4663403c3205443f76609451cd85fce13d4dccc98c7;
-        bytes memory usrPubKey = hex"02733ecfb4641477d17f412bc8cb20bbfa429f7b8352977623c04177382843af08";
+        bytes32 p2tr_spk = 0x9687ca13c4fb3fa3ba05c2f9119dda026bfe66f0098dcf9b896a98ecb2e96702;
+        bytes memory usrPubKey = hex"027d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f";
         PrevoutData memory prevoutData = PrevoutData({
-            txid: 0xa33c0cab77c7036b7e51ab63945a204c5417f89fcbdb8e3e841779238cca5eff,
+            txid: 0x8cc94a32480857817b037792eb95556670c9e001981f36102b72b96a8e559789,
             vout: 0,
-            value: 10000000,
+            value: 9365,
             scriptPubKey: BtcTaproot.getP2TRScriptPubKey(p2tr_spk)
         });
 
-        uint64 amount = 9979999; // 0.0998 BTC - 0.0001 BTC (dust)
+        // The amount to be sent to the user
+        uint64 amount = prevoutData.value - (SPEED_UP_AMOUNT + P2TR_FEES); // 0.00008730 BTC
 
         // Act
-        (bytes32 result,) = pm.computePegOutTxHash(usrPubKey, prevoutData, amount, 1);
+        (bytes32 result,) = pm.computePegOutTxHash(usrPubKey, prevoutData, amount, SPEED_UP_AMOUNT);
 
-        // ExpectedHash hash computed externally from a python tool using the same inputs and running on regtest
+        // ExpectedHash hash computed externally from a run of the pegout flow of the protocol builder
+        // using the following inputs and running on regtest
         // required inputs:
-        // - usrPubKey = 02733ecfb4641477d17f412bc8cb20bbfa429f7b8352977623c04177382843af08
+        // - usrPubKey = 027d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f
         // - prevoutsData = [
         //     {
-        //         "txid": "a33c0cab77c7036b7e51ab63945a204c5417f89fcbdb8e3e841779238cca5eff",
+        //         "txid": "8cc94a32480857817b037792eb95556670c9e001981f36102b72b96a8e559789",
         //         "vout": 0,
-        //         "value": 10000000,
-        //         "scriptPubKey": P2TR script from (hex"0x18f69d27d77e37a024c1b4663403c3205443f76609451cd85fce13d4dccc98c7")
+        //         "value": 9365,
+        //         "scriptPubKey": P2TR script from (hex"0x9687ca13c4fb3fa3ba05c2f9119dda026bfe66f0098dcf9b896a98ecb2e96702")
         //     }
         // ]
-        // - amount = 999979999; // 0.0998 BTC - 0.0001 BTC (dust)
-        // - dust = 1
-        bytes32 expectedHash = 0x4c13945bbd5d62034040012df31b72a52cf69340490ec8081bbde5535b7c2374;
+        // - amount = 9365 - (300 + 335);
+        bytes32 expectedHash = 0x78e1d97d2bae82ee61d183c20d612130e854f1254ef4f12455f29e3d8cc34872;
 
         // Assert
         assertEq(result, expectedHash, "Encoded data does not match expectedHash value");
@@ -501,9 +502,9 @@ contract TestPegManager is Test, HelperContract {
 
     function test_requestPegOut_Success() external {
         // Arrange
-        bytes32 expectedHash = 0x9addac826ff94bb0277ac41c1aea1588d71d7bb24db52ce56d82a7e266a5b47c;
+        bytes32 expectedHash = 0x2e2235c6c12f69f2eae6af9aa6e49f9f0176132e0fe28bda666d8d1a63d6cda2;
         bytes memory expectedDigest =
-            hex"00000200000000000000234337e863e00e6ff45f167a14f3963bea912bc0d739c2b402d04f376e814ae2e247139cedddd1ee740814e7de2e771c3745091bbb7af21d4122087c8bc17a36a0c6dbc3091625a23fd870bf8d09182484c12fa63a5c29045a431cf445f153e5ad95131bc0b799c0b1af477fb14fcf26a6a9f76079e48bf090acb7e8367bfd0eefa2c948f4d34b1cb0bccb25ebf3a221deb515ba5afd92f3c81d7601457e26e70000000000";
+            hex"00010200000000000000234337e863e00e6ff45f167a14f3963bea912bc0d739c2b402d04f376e814ae2e247139cedddd1ee740814e7de2e771c3745091bbb7af21d4122087c8bc17a36a0c6dbc3091625a23fd870bf8d09182484c12fa63a5c29045a431cf445f153e523e9829bfb4e23fbd3c4848baa035af15d73bcb83e510f7f097f90a21a4280d2217f9b69543663eb9e09051daf2f4b82b1556c115496a4247808ccb85b846a6e0000000000";
 
         bytes memory usrPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
 
