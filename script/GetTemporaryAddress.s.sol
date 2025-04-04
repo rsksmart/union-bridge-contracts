@@ -14,9 +14,9 @@ contract GetTemporaryAddressScript is Script {
 
     function setUp() internal {
         // ====== Arguments ======
-        rootstock_deposit_address = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
+        rootstock_deposit_address = 0x7Ac5496aee77c1bA1F0854206A26DdA82A81d6d8;
         value = 100_000;
-        btc_reimbursement_pub_key = 0xc72a9f6fc8e57f1de528a48b6c4ad7a6db30b24a7bbf8cdd74b0a3b248b6f7f1;
+        btc_reimbursement_pub_key = 0x7d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f;
         pegManager = PegManager(0x0165878A594ca255338adfa4d48449f69242Eb8F);
     }
 

@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 import {BtcTaproot} from "src/libraries/BtcTaproot.sol";
+import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
 
 contract TestBtcTaproot is Test {
     function setUp() external {}
@@ -20,11 +21,56 @@ contract TestBtcTaproot is Test {
         );
     }
 
+    function test_getTweak_LearnMeABitcoin_Success() external pure {
+        // LearnMeABitcoin example
+        // Arrange
+        bytes32 publicKey = 0xa2fc329a085d8cfc4fa28795993d7b666cee024e94c40115141b8e9be4a29fa4;
+        bytes32 merkleRoot = 0xb5b72eea07b3e338962944a752a98772bbe1f1b6550e6fb6ab8c6e6adb152e7c;
+        bytes memory data = abi.encodePacked(publicKey, merkleRoot);
+        // Act
+        bytes32 tweak = BtcTaproot.getTweak(data);
+        // Assert
+        assertEq(
+            tweak, 0xbf0094eae70ba67e2f9fc3c4b81f078c90931855a8d24c959619174c92060cde, "Should give the correct tweak"
+        );
+    }
+
+    function test_getTweak_Transactions_Success() external pure {
+        // Pegin Transactions repository example
+        // Arrange
+        bytes32 publicKey = 0xd1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d; // derive(0)
+        bytes32 merkleRoot = 0x0abf845c1ebde2f3bd0f8bc4ed12be2a589e4b6190a70e58807d8ef05a5a299e; // timelock(1)
+        bytes memory data = abi.encodePacked(publicKey, merkleRoot);
+        // Act
+        bytes32 tweak = BtcTaproot.getTweak(data);
+        // Assert
+        assertEq(
+            tweak, 0x61918cd0faee4744226968d7f616d13aca9a553fd32ef862dfa511184497b2f8, "Should give the correct tweak"
+        );
+    }
+
+    function test_getTweakedPublicKey_Success() external pure {
+        // Pegin Transactions repository example
+        // Arrange
+        bytes32 publicKey = 0xd1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d; // derive(0)
+        bytes32 merkleRoot = 0x0abf845c1ebde2f3bd0f8bc4ed12be2a589e4b6190a70e58807d8ef05a5a299e; // timelock(1)
+        bytes memory data = abi.encodePacked(publicKey, merkleRoot);
+        bytes32 tweak = BtcTaproot.getTweak(data);
+        // Act
+        bytes32 tweakedPublicKey = BtcTaproot.getTweakedPublicKey(publicKey, tweak);
+        // Assert
+        assertEq(
+            tweakedPublicKey,
+            0x228f281f297fd01cd363b9c93f742ba2976c1ec5a6083d9f754cb61e505356c3,
+            "Should give the correct tweaked public key"
+        );
+    }
+
     function test_getP2TRScriptPubKey_Success() external pure {
         // Arrange
-        bytes32 publicKey = 0x924c163b385af7093440184af6fd6244936d1288cbb41cc3812286d3f83a3329;
+        bytes32 tweakedPublicKey = 0x924c163b385af7093440184af6fd6244936d1288cbb41cc3812286d3f83a3329;
         // Act
-        bytes memory scriptPubKey = BtcTaproot.getP2TRScriptPubKey(publicKey);
+        bytes memory scriptPubKey = BtcTaproot.getP2TRScriptPubKey(tweakedPublicKey);
         // Assert
         assertEq(
             scriptPubKey,
@@ -42,6 +88,21 @@ contract TestBtcTaproot is Test {
         assertEq(
             leafHash,
             0x6b13becdaf0eee497e2f304adcfa1c0c9e84561c9989b7f2b5fc39f5f90a60f6,
+            "getLeaf should give the correct tagged hash"
+        );
+    }
+
+    function test_getLeaf_TimelockScript_Success() external pure {
+        // Arrange
+        uint32 blocks = 1;
+        bytes32 pubKey = 0x7d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f;
+        bytes memory script = BtcScriptParser.getTimelockScript(blocks, pubKey);
+        // Act
+        bytes32 leafHash = BtcTaproot.getLeaf(script);
+        // Assert
+        assertEq(
+            leafHash,
+            0x0abf845c1ebde2f3bd0f8bc4ed12be2a589e4b6190a70e58807d8ef05a5a299e,
             "getLeaf should give the correct tagged hash"
         );
     }

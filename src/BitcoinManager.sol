@@ -62,11 +62,12 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         bytes memory timelockScript = BtcScriptParser.getTimelockScript(TIMELOCK_BLOCKS, _btcReimbursementPubKey);
         bytes32 timelockLeaf = BtcTaproot.getLeaf(timelockScript);
 
-        bytes memory data = abi.encodePacked(_rskDestinationAddress, _value);
-        bytes memory extraDataScript = abi.encodePacked(OpCodes.OP_RETURN, OpCodes.OP_PUSHBYTES_28, data);
-        bytes32 extraDataLeaf = BtcTaproot.getLeaf(extraDataScript);
+        // TODO Add this back once it's implemented in the protocol builder
+        // bytes memory data = abi.encodePacked(_rskDestinationAddress, _value);
+        // bytes memory extraDataScript = abi.encodePacked(OpCodes.OP_RETURN, OpCodes.OP_PUSHBYTES_28, data);
+        // bytes32 extraDataLeaf = BtcTaproot.getLeaf(extraDataScript);
 
-        bytes32 merkleRoot = BtcTaproot.getBranch(timelockLeaf, extraDataLeaf);
+        bytes32 merkleRoot = timelockLeaf; // BtcTaproot.getBranch(timelockLeaf, extraDataLeaf);
 
         bytes32 tweak = BtcTaproot.getTweak(abi.encodePacked(_committeePubKey, merkleRoot));
         bytes32 tweakedPublicKey = BtcTaproot.getTweakedPublicKey(_committeePubKey, tweak);
@@ -215,20 +216,20 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
 
     // ========================== Peg In Speed Up ==========================
     /// @dev Validates the speed up output
-    function validateSpeedUpOutput(bytes32 _committeePubKey, BtcTxOut calldata _speedUpOut) external pure {
+    function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut calldata _speedUpOut) external pure {
         if (_speedUpOut.amount < SPEED_UP_AMOUNT) {
             revert InvalidValue(_speedUpOut.amount, SPEED_UP_AMOUNT);
         }
-        bytes memory p2wpkhScriptPubKey = getSpeedUpScriptPub(_committeePubKey);
+        bytes memory p2wpkhScriptPubKey = getSpeedUpScriptPub(_pubKey);
         if (!BytesHelper.compare(_speedUpOut.scriptPubKey, p2wpkhScriptPubKey)) {
             revert IncorrectOutputScript(_speedUpOut.scriptPubKey, p2wpkhScriptPubKey);
         }
     }
 
     /// @dev Generates the PegInRequest Taproot output script pub key with both key spend and script spend paths
-    function getSpeedUpScriptPub(bytes32 _committeePubKey) public pure returns (bytes memory) {
+    function getSpeedUpScriptPub(bytes32 _pubKey) public pure returns (bytes memory) {
         // TODO change this to use P2WPSH with OP_1 so anyone can send the speed up
         // this should change at the same time as in the protocol builder
-        return BtcScriptParser.getP2WPKHScript(abi.encodePacked(_committeePubKey));
+        return BtcScriptParser.getP2WPKHScript(abi.encodePacked(uint8(0x02), _pubKey));
     }
 }

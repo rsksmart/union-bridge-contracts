@@ -6,7 +6,8 @@ pragma solidity ^0.8.20;
 uint64 constant P2TR_FEES = 335;
 uint64 constant DUST_THRESHOLD = 300;
 uint64 constant SPEED_UP_AMOUNT = 300;
-uint8 constant TIMELOCK_BLOCKS = 10;
+// TODO: this should be a parameter not a constant
+uint8 constant TIMELOCK_BLOCKS = 1;
 
 // https://learnmeabitcoin.com/technical/transaction/#structure-inputs-txid
 struct BtcTxIn {

@@ -27,9 +27,6 @@ contract TestPegManager is Test, HelperContract {
     uint64 internal constant PACKET_NUMBER = 0;
     address internal constant RSK_DESTINATION_ADDRESS = 0x7Ac5496aee77c1bA1F0854206A26DdA82A81d6d8;
 
-    bytes32 internal constant BTC_REIMBURSEMENT_PUBKEY =
-        0x5d238354a7e74c9e373317053226537dec221c5c775bcca01e806ec358c5c08d;
-
     // For more info about this see: https://book.getfoundry.sh/forge/writing-tests#before-test-setups
     function beforeTestSetup(bytes4 testSelector) public pure returns (bytes[] memory beforeTestCalldata) {
         if (
@@ -50,11 +47,14 @@ contract TestPegManager is Test, HelperContract {
     }
 
     function test_getTemporaryPegInAddress_Success() external view {
-        address dummyRskAddress = 0x4C9a9CbFa14106439B0F96a64d9260F3b8947934;
-        string memory tempAddress = "bcrt1ptp8gw3yt9rjavkrlxhwmlm9y5w4c5u6yeeltmupanle76eq4ftrszyjhnn";
+        address dummyRskAddress = 0x7Ac5496aee77c1bA1F0854206A26DdA82A81d6d8;
+        // TODO this is the value that includes the op_return data inside the taptree
+        // this should be put back once the protocol builder is updated
+        // string memory tempAddress = "bcrt1ptp8gw3yt9rjavkrlxhwmlm9y5w4c5u6yeeltmupanle76eq4ftrszyjhnn";
+        string memory tempAddress = "bcrt1py28js8ef0lgpe5mrh8yn7apt52tkc8k95cyrm8m4fjmpu5zn2mps7esu9h";
 
         string memory result = pm.getTemporaryPegInAddress(dummyRskAddress, VALUE, BTC_REIMBURSEMENT_PUBKEY);
-        assertEq(result, tempAddress, "Incorrect temporary peg in address");
+        assertEq(result, tempAddress, "Incorrect temporary peg in address at PegManager");
     }
 
     // ========================== REGISTER PEG IN REQUEST ==========================
@@ -284,9 +284,13 @@ contract TestPegManager is Test, HelperContract {
             acceptPegInTxHash,
             pegInRequestTxHash,
             0, //vout
-            streamId,
-            PACKET_NUMBER,
-            slotId, //slotId
+            StreamPosition({
+                streamId: streamId,
+                packetNumber: PACKET_NUMBER,
+                slotId: slotId,
+                pegStatus: PegStatus.ACCEPTED
+            }),
+            BTC_REIMBURSEMENT_PUBKEY,
             RSK_DESTINATION_ADDRESS,
             satoshiToWei(btcTransaction.outputs[0].amount), // Rbtc amount
             btcTransaction.outputs[0].scriptPubKey
