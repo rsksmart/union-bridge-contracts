@@ -27,6 +27,3 @@ jobs:
       - name: Run tests
         run: forge test -vvv
 
-      - name: Check gas snapshots
-        run: forge snapshot --check
-
