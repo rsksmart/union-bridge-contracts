@@ -135,5 +135,8 @@ interface IPegManager is IStreamManager {
     error IncorrectInputsNumber(uint256 actual, uint256 expected);
     error IncorrectOutputsNumber(uint256 actual, uint256 expected);
     error InvalidVout(uint256 actual, uint256 expected);
+    error InvalidSequence(uint256 actual, uint256 expected);
     error InvalidPubKeyLength(uint256 usrPubKeyLength);
+    error InvalidLocktime(uint256 actual, uint256 expected);
+    error InvalidBtcTxVersion(uint256 actual, uint256 expected);
 }

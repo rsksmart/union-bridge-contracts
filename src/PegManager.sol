@@ -19,14 +19,13 @@ import {BtcHelper} from "./libraries/BtcHelper.sol";
 import {BtcScriptParser} from "./libraries/BtcScriptParser.sol";
 import {BtcTaproot} from "./libraries/BtcTaproot.sol";
 import {OpCodes} from "./libraries/OpCodes.sol";
-
+import {Constants} from "./Constants.sol";
 /// @title PegManager
 /// @notice Manages peg-in and peg-out operations between Bitcoin and Rootstock
-contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
+
+contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy, Constants {
     ICommitteeRegistry public committeeRegistry;
     IBitcoinManager public bitcoinManager;
-    uint64 constant VOUT_INDEX_TAPTREE = 0;
-    uint64 constant VOUT_INDEX_SPEED_UP = 1;
 
     // Request PegIn Tx Hash => Stream Position (streamId, packetNumber, slotId, pegStatus)
     mapping(bytes32 btcRequestPegInTxHash => StreamPosition streamPosition) internal pegInRequests;
@@ -75,6 +74,12 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
     }
 
     function registerPegInRequest(BtcTxSPVProof calldata _pegInRequestTxSPVProof) external {
+        if (_pegInRequestTxSPVProof.btcTx.version != BTC_TX_VERSION) {
+            revert InvalidBtcTxVersion(_pegInRequestTxSPVProof.btcTx.version, BTC_TX_VERSION);
+        }
+        if (_pegInRequestTxSPVProof.btcTx.locktime != LOCKTIME) {
+            revert InvalidLocktime(_pegInRequestTxSPVProof.btcTx.locktime, LOCKTIME);
+        }
         // Calculate txHash from BtcTransaction
         bytes32 txHash = bitcoinManager.getBtcTxHash(_pegInRequestTxSPVProof.btcTx);
         if (pegInRequests[txHash].pegStatus != PegStatus.NOT_REGISTERED) {
@@ -151,6 +156,12 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
             StreamPosition storage streamPosition
         )
     {
+        if (_btcTx.version != BTC_TX_VERSION) {
+            revert InvalidBtcTxVersion(_btcTx.version, BTC_TX_VERSION);
+        }
+        if (_btcTx.locktime != LOCKTIME) {
+            revert InvalidLocktime(_btcTx.locktime, LOCKTIME);
+        }
         // Only input is the peg in request utxo
         if (_btcTx.inputs.length != 1) {
             revert IncorrectInputsNumber(_btcTx.inputs.length, 1);
@@ -167,6 +178,10 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
         // Validate that in the first input VOUT is 0
         if (_btcTx.inputs[VOUT_INDEX_TAPTREE].vout != VOUT_INDEX_TAPTREE) {
             revert InvalidVout(_btcTx.inputs[VOUT_INDEX_TAPTREE].vout, VOUT_INDEX_TAPTREE);
+        }
+        // Validate the sequence is 0xFFFFFFFD
+        if (_btcTx.inputs[VOUT_INDEX_TAPTREE].sequence != SEQUENCE) {
+            revert InvalidSequence(_btcTx.inputs[VOUT_INDEX_TAPTREE].sequence, SEQUENCE);
         }
 
         // Validate the peg in request tx exists and the status
@@ -324,7 +339,7 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
 
         //TODO: consider un-hardcoding, this value is used in little endian so it is reversed
         // sha_sequences (32): the SHA256 of the serialization of all input nSequences.
-        bytes32 sha_sequences = sha256(abi.encodePacked(BtcHelper.reverseUint32(uint32(bytes4(hex"FFFFFFFD")))));
+        bytes32 sha_sequences = sha256(abi.encodePacked(BtcHelper.reverseUint32(SEQUENCE)));
 
         // Prepare the outputs, user and speed up
         bytes memory scriptPubKey = BtcScriptParser.getP2WPKHScript(usrPubKey);
@@ -348,8 +363,8 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
         bytes memory encodedData = abi.encodePacked(
             uint8(0), // epoch
             uint8(0x01), // hash_type
-            bytes4(hex"02000000"), // nVersion
-            uint32(0), // nLockTime
+            BtcHelper.reverseUint32(BTC_TX_VERSION), // nVersion
+            LOCKTIME, // nLockTime
             sha_prevouts,
             sha_amounts,
             sha_scriptPubKeys,

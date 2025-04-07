@@ -84,6 +84,11 @@ interface IBitcoinManager {
         bytes32 _committeePubKey
     ) external pure returns (bytes memory);
 
+    /// @notice Generates a Taproot script pub key for the AcceptPegIn with both key spend and script spend paths
+    /// @param _committeePubKey The committee's public key (x-only, 32 bytes)
+    /// @return The Taproot script pub key
+    function getAcceptPegInP2TRScriptPub(bytes32 _committeePubKey) external pure returns (bytes memory);
+
     /// @notice Validates the accept peg in P2TR output
     /// @param _committeePubKey The committee's public key (x-only, 32 bytes)
     /// @param _inputAmount The amount of the input
@@ -92,10 +97,15 @@ interface IBitcoinManager {
         external
         pure;
 
+    /// @notice Generates a P2WPKH script pub key for the speed up output
+    /// @param _pubKey The user's public key (x-only, 32 bytes)
+    /// @return The P2WPKH script pub key
+    function getSpeedUpScriptPub(bytes32 _pubKey) external pure returns (bytes memory);
+
     /// @notice Validates the speed up output
-    /// @param _committeePubKey The committee's public key (x-only, 32 bytes)
+    /// @param _pubKey The user's public key (x-only, 32 bytes)
     /// @param _speedUpOut The Bitcoin transaction output containing the speed up output
-    function validateSpeedUpOutput(bytes32 _committeePubKey, BtcTxOut calldata _speedUpOut) external pure;
+    function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut calldata _speedUpOut) external pure;
 
     error InvalidOpReturnLength(uint256 actual, uint256 expected);
     error IncorrectlyFormedOpReturn(uint256 index);

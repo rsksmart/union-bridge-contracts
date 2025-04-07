@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
 import {DeployScript} from "script/deploy/DeployScript.s.sol";
-import {PegManager} from "src/PegManager.sol";
+import {PegManager, BtcTxSPVProof} from "src/PegManager.sol";
 import {PegManagerHarness} from "test/helpers/PegManagerHarness.sol";
 import {Role, Member, CommitteeMember, Committee, CommitteeRegistry} from "src/CommitteeRegistry.sol";
 import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
@@ -17,8 +17,9 @@ import {BtcTxEncoder} from "src/libraries/BtcTxEncoder.sol";
 import {RSK_BRIDGE_ADDRESS, IBridge} from "src/interfaces/IBridge.sol";
 import {BridgeMock} from "./BridgeMock.sol";
 import {TestUtils} from "./TestUtils.sol";
+import {Constants} from "src/Constants.sol";
 
-abstract contract HelperContract is Test, TestUtils {
+abstract contract HelperContract is Test, TestUtils, Constants {
     // Mock keys
     bytes32 constant COMMITEE_1_PUB_KEY = 0xd1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d;
     bytes32 constant COMMITEE_2_PUB_KEY = 0x1908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785ec;
@@ -99,7 +100,7 @@ abstract contract HelperContract is Test, TestUtils {
         return BtcTxIn({
             txId: 0x360b81785dc7c2f40627fea364676dbb73e6276683caffd9f906b0e0bd36b3d2,
             vout: 1694,
-            sequence: 4294967293,
+            sequence: SEQUENCE,
             scriptSig: hex""
         });
     }
@@ -140,7 +141,7 @@ abstract contract HelperContract is Test, TestUtils {
         BtcTxOut[] memory btcOutputs = new BtcTxOut[](2);
         btcOutputs[0] = getPegInRequestP2TROut();
         btcOutputs[1] = getPegInRequestOpReturnOut();
-        return BtcTransaction({version: 2, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
+        return BtcTransaction({version: BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: LOCKTIME});
     }
 
     function getExpectedPegInRequestTxHash() internal pure returns (bytes32) {
@@ -156,9 +157,7 @@ abstract contract HelperContract is Test, TestUtils {
         btcOutputs[0] = getAcceptPegInP2TROut();
         btcOutputs[1] = getBtcSpeedUpOut();
         // Locktime
-        // TODO: Add real locktime
-        uint32 locktime = TIMELOCK_BLOCKS * 600;
-        return BtcTransaction({version: 2, inputs: btcInputs, outputs: btcOutputs, locktime: locktime});
+        return BtcTransaction({version: BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: LOCKTIME});
     }
 
     function getExpectedAcceptPegInTxHash() internal pure returns (bytes32) {
@@ -166,7 +165,7 @@ abstract contract HelperContract is Test, TestUtils {
     }
 
     function getAcceptPegInTxIn() internal pure returns (BtcTxIn memory) {
-        return BtcTxIn({txId: getExpectedPegInRequestTxHash(), vout: 0, sequence: 0xfffffffd, scriptSig: hex""});
+        return BtcTxIn({txId: getExpectedPegInRequestTxHash(), vout: 0, sequence: SEQUENCE, scriptSig: hex""});
     }
 
     function getBtcSpeedUpOut() internal pure returns (BtcTxOut memory) {
@@ -187,5 +186,17 @@ abstract contract HelperContract is Test, TestUtils {
 
     function satoshiToWei(uint256 _amount) internal pure returns (uint256) {
         return _amount * 10 ** 10;
+    }
+
+    function createBtcTxSPVProof(BtcTransaction memory _btcTransaction) internal pure returns (BtcTxSPVProof memory) {
+        BtcTxSPVProof memory btcTxSPVProof = BtcTxSPVProof({
+            blockHash: 0x0000000000000000000282fa21665766e58eb6cb94e458c3ef6d4af1121e38d9,
+            btcTx: _btcTransaction,
+            //values obtained from https://github.com/FairgateLabs/rust-bitvmx-transactions/blob/main/src/bin/bridge-pmt.rs
+            merkleBranchPath: 949,
+            merkleBranchHashes: new bytes32[](1)
+        });
+        btcTxSPVProof.merkleBranchHashes[0] = 0x480fd40f2e47eeea8edeef2f7f3e2c680642f748c989ed2e542fe5d28164da51;
+        return btcTxSPVProof;
     }
 }
