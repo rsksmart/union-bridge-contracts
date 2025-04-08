@@ -33,7 +33,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_getCommitteeMemberIndices_Success() external view {
         // Act
-        CommitteeMember[] memory members = registry.getCommitteememberIndexesAndRoles(committee1Key);
+        CommitteeMember[] memory members = registry.getCommitteeMemberIndexesAndRoles(committee1Key);
         // Assert
         assertEqCommitteeMembers(members, committee1Members, "getted committee1 members");
     }
@@ -69,7 +69,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         assertEq(actualKey, committee2Key, "expected obtained key by index to be the same as the registered committee1");
 
         // Members
-        CommitteeMember[] memory members = registry.getCommitteememberIndexesAndRoles(committee2Key);
+        CommitteeMember[] memory members = registry.getCommitteeMemberIndexesAndRoles(committee2Key);
         assertEqCommitteeMembers(members, committee2Members, "registered committee1");
     }
 

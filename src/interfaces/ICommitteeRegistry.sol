@@ -37,7 +37,7 @@ interface ICommitteeRegistry {
 
     function getCommittee(bytes32 _committeeKey) external view returns (Committee calldata);
 
-    function getCommitteememberIndexesAndRoles(bytes32 _committeeKey)
+    function getCommitteeMemberIndexesAndRoles(bytes32 _committeeKey)
         external
         view
         returns (CommitteeMember[] memory);
