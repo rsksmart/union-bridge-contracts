@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
+import "forge-std/console.sol";
+
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -16,6 +18,7 @@ contract CommitteeRegistry is ICommitteeRegistry, Initializable, BaseProxy {
     bytes32[] internal committees;
     // Committee key => Committee
     mapping(bytes32 => Committee) internal committeesByKey;
+    mapping(address => uint16) internal memberIndexByAddress;
 
     event newCommittee(bytes32 indexed internalKey, Committee _committee);
     event newMember(bytes32 indexed publicKey, StreamDenomination[] requestedStreams, Role[] requestedRoles);
@@ -45,6 +48,7 @@ contract CommitteeRegistry is ICommitteeRegistry, Initializable, BaseProxy {
             revert tooManyMembers(MAX_MEMBERS_SIZE);
         }
 
+        // TODO: this cold be checked using the address-to-index mapping
         // Check if exists
         uint256 memberLength = members.length;
         for (uint256 i = 0; i < memberLength; i++) {
@@ -63,9 +67,12 @@ contract CommitteeRegistry is ICommitteeRegistry, Initializable, BaseProxy {
             revert requestedNoRoles();
         }
 
+        // TODO: check if we need to ask for the uncompressed public key and check it against the sender address
         members.push(); // Expand the array
         Member storage m = members[members.length - 1]; // Get reference
         m.publicKey = _publicKey;
+        // We add one to the index to avoid 0 as a valid index
+        memberIndexByAddress[msg.sender] = uint16(members.length - 1) + 1;
 
         // Set requested roles
         for (uint256 i = 0; i < requestedStreams.length; i++) {
@@ -131,5 +138,22 @@ contract CommitteeRegistry is ICommitteeRegistry, Initializable, BaseProxy {
     function getNextAvailableCommittee() external view returns (Committee memory) {
         // For now, always return the first committee
         return committeesByKey[committees[0]];
+    }
+
+    function getMemberPubKeyByIndex(uint16 _memberIndex) external view returns (bytes32) {
+        //TODO: check if needed
+        return members[_memberIndex].publicKey;
+    }
+
+    function getMemberPubKeyByAddress(address _address) external view returns (bytes32) {
+        uint16 memberIndex = memberIndexByAddress[_address];
+
+        // 0 is reserved for non registered members
+        if (memberIndex == 0) {
+            return 0x00;
+        }
+
+        // Substract 1 to get the correct index
+        return members[memberIndex - 1].publicKey;
     }
 }
