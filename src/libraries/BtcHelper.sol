@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import "./Constants.sol";
 /**
  * @title Btc Helper
  * @notice Usefull functions for Bitcoin parsin/encoding/decoding
  * @author Fairgate
  */
+
 library BtcHelper {
     /// @dev returns hex bytes with _size in btc compact _size
     /// The first byte indicates which bytes encode the integer:
@@ -112,11 +114,9 @@ library BtcHelper {
         v = (_b << 8) | (_b >> 8);
     }
 
-    // TODO calculate fee and dust properly from the amount
-    function calculateFeeAndDust(uint64) internal pure returns (uint64, uint64) {
-        uint64 fee = 1;
-        uint64 dust = 350;
-        return (fee, dust);
+    // TODO calculate fee and speed up properly from the amount
+    function calculateFeeAndSpeedUp(uint64) internal pure returns (uint64, uint64) {
+        return (Constants.P2TR_FEE, Constants.SPEED_UP_AMOUNT);
     }
 
     function weiToSatoshi(uint256 _amount) internal pure returns (uint256) {

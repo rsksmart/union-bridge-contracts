@@ -8,18 +8,17 @@ import {PegManager, BtcTxSPVProof} from "src/PegManager.sol";
 import {PegManagerHarness} from "test/helpers/PegManagerHarness.sol";
 import {Role, Member, CommitteeMember, Committee, CommitteeRegistry} from "src/CommitteeRegistry.sol";
 import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
-import {BtcTxIn, BtcTxOut, BtcTransaction, TIMELOCK_BLOCKS} from "src/interfaces/IBitcoinManager.sol";
+import {BtcTxIn, BtcTxOut, BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
-import {P2TR_FEES, SPEED_UP_AMOUNT} from "src/interfaces/IBitcoinManager.sol";
 import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {BtcTxEncoder} from "src/libraries/BtcTxEncoder.sol";
 import {RSK_BRIDGE_ADDRESS, IBridge} from "src/interfaces/IBridge.sol";
 import {BridgeMock} from "./BridgeMock.sol";
 import {TestUtils} from "./TestUtils.sol";
-import {Constants} from "src/Constants.sol";
+import {Constants} from "src/libraries/Constants.sol";
 
-abstract contract HelperContract is Test, TestUtils, Constants {
+abstract contract HelperContract is Test, TestUtils {
     // Mock keys
     bytes32 constant COMMITEE_1_PUB_KEY = 0xd1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d;
     bytes32 constant COMMITEE_2_PUB_KEY = 0x1908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785ec;
@@ -100,7 +99,7 @@ abstract contract HelperContract is Test, TestUtils, Constants {
         return BtcTxIn({
             txId: 0x360b81785dc7c2f40627fea364676dbb73e6276683caffd9f906b0e0bd36b3d2,
             vout: 1694,
-            sequence: SEQUENCE,
+            sequence: Constants.SEQUENCE,
             scriptSig: hex""
         });
     }
@@ -141,7 +140,12 @@ abstract contract HelperContract is Test, TestUtils, Constants {
         BtcTxOut[] memory btcOutputs = new BtcTxOut[](2);
         btcOutputs[0] = getPegInRequestP2TROut();
         btcOutputs[1] = getPegInRequestOpReturnOut();
-        return BtcTransaction({version: BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: LOCKTIME});
+        return BtcTransaction({
+            version: Constants.BTC_TX_VERSION,
+            inputs: btcInputs,
+            outputs: btcOutputs,
+            locktime: Constants.LOCKTIME
+        });
     }
 
     function getExpectedPegInRequestTxHash() internal pure returns (bytes32) {
@@ -157,7 +161,12 @@ abstract contract HelperContract is Test, TestUtils, Constants {
         btcOutputs[0] = getAcceptPegInP2TROut();
         btcOutputs[1] = getBtcSpeedUpOut();
         // Locktime
-        return BtcTransaction({version: BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: LOCKTIME});
+        return BtcTransaction({
+            version: Constants.BTC_TX_VERSION,
+            inputs: btcInputs,
+            outputs: btcOutputs,
+            locktime: Constants.LOCKTIME
+        });
     }
 
     function getExpectedAcceptPegInTxHash() internal pure returns (bytes32) {
@@ -165,12 +174,12 @@ abstract contract HelperContract is Test, TestUtils, Constants {
     }
 
     function getAcceptPegInTxIn() internal pure returns (BtcTxIn memory) {
-        return BtcTxIn({txId: getExpectedPegInRequestTxHash(), vout: 0, sequence: SEQUENCE, scriptSig: hex""});
+        return BtcTxIn({txId: getExpectedPegInRequestTxHash(), vout: 0, sequence: Constants.SEQUENCE, scriptSig: hex""});
     }
 
     function getBtcSpeedUpOut() internal pure returns (BtcTxOut memory) {
         return BtcTxOut({
-            amount: SPEED_UP_AMOUNT,
+            amount: Constants.SPEED_UP_AMOUNT,
             // TODO we consider the btc reimbursement public key as even
             // this may not be the case in the future and we should change this
             scriptPubKey: BtcScriptParser.getP2WPKHScript(abi.encodePacked(uint8(0x02), BTC_REIMBURSEMENT_PUBKEY))
@@ -179,7 +188,7 @@ abstract contract HelperContract is Test, TestUtils, Constants {
 
     function getAcceptPegInP2TROut() internal pure returns (BtcTxOut memory) {
         return BtcTxOut({
-            amount: VALUE - (P2TR_FEES + SPEED_UP_AMOUNT),
+            amount: VALUE - (Constants.P2TR_FEE + Constants.SPEED_UP_AMOUNT),
             scriptPubKey: hex"51209687ca13c4fb3fa3ba05c2f9119dda026bfe66f0098dcf9b896a98ecb2e96702"
         });
     }

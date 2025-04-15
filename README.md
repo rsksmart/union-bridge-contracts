@@ -65,6 +65,15 @@ If you want to deploy to a local network (regtest) use `deploy-local.sh`.
 
 We have scripts to interact with the deployed contracts
 
+### Set Mock Bridge Confirmations
+In order to use the smart contracts on localnet we will need to set the number of confirmations of the BTC transactions because the Powpeg bridge does not exists on our local network.
+To do this we will run:
+
+```sh
+bash shell/script/set-mock-bridge-confirmations.sh
+```
+
+
 ### Get temporary address
 
 Returns the address where the user have to send funds to PegIn, set the corresponding arguments at [GetTemporaryAddress.s.sol](./script/GetTemporaryAddress.s.sol)
@@ -99,6 +108,26 @@ Then run:
 
 ```sh
 bash shell/script/register-pegin-request.sh
+```
+
+### Accept peg in request
+
+Register the accept peg in request transaction sent by the committee in Bitcoin, set the corresponding arguments at [AcceptPegInRequest.s.sol](./script/AcceptPegInRequest.s.sol)
+
+Then run:
+
+```sh
+bash shell/script/accept-pegin-request.sh
+```
+
+### Request peg out
+
+Register the peg out request, set the corresponding arguments at [RegisterPegOutRequest.s.sol](./script/RegisterPegOutRequest.s.sol)
+
+Then run:
+
+```sh
+bash shell/script/register-pegout-request.sh
 ```
 
 

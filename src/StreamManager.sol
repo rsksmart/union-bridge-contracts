@@ -134,15 +134,19 @@ abstract contract StreamManager is IStreamManager, Initializable {
     }
 
     /// @dev Looks for the first empty slot and asigns the PegIn Tx in prepared state
-    function fillPegInTx(uint64 _streamId, uint64 _packetNumber, uint64 _acceptPegInAmount, bytes32 _acceptPegInTx)
-        internal
-        returns (uint64)
-    {
+    function fillAcceptPegInTx(
+        uint64 _streamId,
+        uint64 _packetNumber,
+        uint64 _acceptPegInAmount,
+        bytes32 _acceptPegInTx,
+        bytes memory _scriptPubKey
+    ) internal returns (uint64) {
         uint64 slotId = getPreparedSlotId(_streamId, _packetNumber);
         Slot storage slot = slots[_streamId][_packetNumber][slotId];
         slot.state = SlotState.FILLED;
         slot.acceptPegInTx = _acceptPegInTx;
         slot.acceptPegInAmount = _acceptPegInAmount;
+        slot.scriptPubKey = _scriptPubKey;
         return slotId;
     }
 }

@@ -70,6 +70,34 @@ contract TestBtcTxEncoder is Test {
         assertEq(hexTxIn, getExpectedRawTx(), "Encoded Tx should be correctly formed");
     }
 
+    function test_encodeTx_pegInRequest_Success() external pure {
+        // Arrange
+        BtcTransaction memory btcTx =
+            BtcTransaction({version: 2, inputs: new BtcTxIn[](1), outputs: new BtcTxOut[](2), locktime: 0});
+        btcTx.inputs[0] = BtcTxIn({
+            txId: 0xab4fc20be47cf3d862da4d9a477b3d5d0e0f3b1e54ce220e34646e7f7550f99c,
+            vout: 0,
+            sequence: 0xfffffffd,
+            scriptSig: hex""
+        });
+        btcTx.outputs[0] = BtcTxOut({
+            amount: 100000,
+            scriptPubKey: hex"5120228f281f297fd01cd363b9c93f742ba2976c1ec5a6083d9f754cb61e505356c3"
+        });
+        btcTx.outputs[1] = BtcTxOut({
+            amount: 0,
+            scriptPubKey: hex"6a4552534b5f504547494e00000000000000007ac5496aee77c1ba1f0854206a26dda82a81d6d87d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f"
+        });
+        // Act
+        bytes memory hexTxIn = BtcTxEncoder.encodeTx(btcTx);
+        // Assert
+        assertEq(
+            hexTxIn,
+            hex"02000000019cf950757f6e64340e22ce541e3b0f0e5d3d7b479a4dda62d8f37ce40bc24fab0000000000fdffffff02a086010000000000225120228f281f297fd01cd363b9c93f742ba2976c1ec5a6083d9f754cb61e505356c30000000000000000476a4552534b5f504547494e00000000000000007ac5496aee77c1ba1f0854206a26dda82a81d6d87d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f00000000",
+            "Encoded PegInRequest Tx should be correctly formed"
+        );
+    }
+
     // Helper functions
     function getPegInRequestTxIn() internal pure returns (BtcTxIn memory) {
         // Data from tx 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079

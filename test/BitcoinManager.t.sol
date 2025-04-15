@@ -4,15 +4,9 @@ pragma solidity ^0.8.20;
 import "forge-std/Test.sol";
 import {HelperContract} from "./helpers/HelperContract.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
-import {
-    BtcTxIn,
-    BtcTxOut,
-    BtcTransaction,
-    IBitcoinManager,
-    P2TR_FEES,
-    SPEED_UP_AMOUNT
-} from "src/interfaces/IBitcoinManager.sol";
+import {BtcTxIn, BtcTxOut, BtcTransaction, IBitcoinManager} from "src/interfaces/IBitcoinManager.sol";
 import {OpCodes} from "src/libraries/OpCodes.sol";
+import {Constants} from "src/libraries/Constants.sol";
 
 contract TestBtcHelper is Test, HelperContract {
     function setUp() external {
@@ -43,6 +37,34 @@ contract TestBtcHelper is Test, HelperContract {
             txHash,
             getExpectedPegInRequestTxHash(),
             "Hashing the Transaction without the witness with Hash256 should give the correct txId"
+        );
+    }
+
+    function test_getBtcTxHash_pegInRequest_Success() external view {
+        // Arrange
+        BtcTransaction memory btcTx =
+            BtcTransaction({version: 2, inputs: new BtcTxIn[](1), outputs: new BtcTxOut[](2), locktime: 0});
+        btcTx.inputs[0] = BtcTxIn({
+            txId: 0xab4fc20be47cf3d862da4d9a477b3d5d0e0f3b1e54ce220e34646e7f7550f99c,
+            vout: 0,
+            sequence: 0xfffffffd,
+            scriptSig: hex""
+        });
+        btcTx.outputs[0] = BtcTxOut({
+            amount: 100000,
+            scriptPubKey: hex"5120228f281f297fd01cd363b9c93f742ba2976c1ec5a6083d9f754cb61e505356c3"
+        });
+        btcTx.outputs[1] = BtcTxOut({
+            amount: 0,
+            scriptPubKey: hex"6a4552534b5f504547494e00000000000000007ac5496aee77c1ba1f0854206a26dda82a81d6d87d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f"
+        });
+        // Act
+        bytes32 txHash = bitcoinManager.getBtcTxHash(btcTx);
+        // Assert
+        assertEq(
+            txHash,
+            0x7b160254c1f59d16a1d8c18c89fadb875a0a8cfc94758a76ad6b9caaf21b146d,
+            "Hashing the Transaction without the witness with Hash256 didn't give the correct txId"
         );
     }
 
@@ -106,7 +128,7 @@ contract TestBtcHelper is Test, HelperContract {
     function test_validatRequestPegInP2TROutput_Revert_InvalidOutputAmount() external {
         // Arrange
         BtcTxOut memory btcTxOut = getBtcPegInRequestTx().outputs[0];
-        btcTxOut.amount = VALUE - P2TR_FEES;
+        btcTxOut.amount = VALUE - Constants.P2TR_FEE;
         uint64 value = VALUE;
         address rskDestinationAddress = getPegInRskDestinationAddress();
         bytes32 btcReimbursementPubKey = getPegInBtcReimbursementPubKey();
@@ -134,12 +156,14 @@ contract TestBtcHelper is Test, HelperContract {
     function test_validateAcceptPegInP2TROutput_Revert_InvalidOutputAmount() external {
         // Arrange
         BtcTxOut memory btcTxOut = getBtcAcceptPegInTx().outputs[0];
-        btcTxOut.amount = VALUE - (P2TR_FEES + SPEED_UP_AMOUNT + 1);
+        btcTxOut.amount = VALUE - (Constants.P2TR_FEE + Constants.SPEED_UP_AMOUNT + 1);
         bytes32 committeePubKey = COMMITEE_1_PUB_KEY;
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(
-                IBitcoinManager.InvalidOutputAmount.selector, btcTxOut.amount, VALUE - (P2TR_FEES + SPEED_UP_AMOUNT)
+                IBitcoinManager.InvalidOutputAmount.selector,
+                btcTxOut.amount,
+                VALUE - (Constants.P2TR_FEE + Constants.SPEED_UP_AMOUNT)
             )
         );
         // Act
@@ -174,10 +198,12 @@ contract TestBtcHelper is Test, HelperContract {
     function test_validateSpeedUpOutput_Revert_InvalidOutputAmount() external {
         // Arrange
         BtcTxOut memory btcTxOut = getBtcSpeedUpOut();
-        btcTxOut.amount = SPEED_UP_AMOUNT - 1;
+        btcTxOut.amount = Constants.SPEED_UP_AMOUNT - 1;
         bytes32 speedUpPubKey = BTC_REIMBURSEMENT_PUBKEY;
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IBitcoinManager.InvalidValue.selector, btcTxOut.amount, SPEED_UP_AMOUNT));
+        vm.expectRevert(
+            abi.encodeWithSelector(IBitcoinManager.InvalidValue.selector, btcTxOut.amount, Constants.SPEED_UP_AMOUNT)
+        );
         // Act
         bitcoinManager.validateSpeedUpOutput(speedUpPubKey, btcTxOut);
     }

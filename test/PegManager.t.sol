@@ -13,12 +13,13 @@ import {
     PegStatus,
     IPegManager
 } from "src/interfaces/IPegManager.sol";
-import {P2TR_FEES, SPEED_UP_AMOUNT, BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
+import {BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
 import {Slot, SlotState, Packet, Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE} from "src/interfaces/IBridge.sol";
 import {ProofValidator} from "src/ProofValidator.sol";
 import {BtcTaproot} from "src/libraries/BtcTaproot.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
+import {Constants} from "src/libraries/Constants.sol";
 
 contract TestPegManager is Test, HelperContract {
     // Arrange
@@ -38,6 +39,11 @@ contract TestPegManager is Test, HelperContract {
         ) {
             beforeTestCalldata = new bytes[](1);
             beforeTestCalldata[0] = abi.encodePacked(this.test_registerPegInRequest_Success.selector);
+        }
+        if (testSelector == this.test_requestPegOut_fromAcceptPegIn_Success.selector) {
+            beforeTestCalldata = new bytes[](2);
+            beforeTestCalldata[0] = abi.encodePacked(this.test_registerPegInRequest_Success.selector);
+            beforeTestCalldata[1] = abi.encodePacked(this.test_acceptPegInRequest_Success.selector);
         }
     }
 
@@ -182,7 +188,9 @@ contract TestPegManager is Test, HelperContract {
 
         // Assert
         vm.expectRevert(
-            abi.encodeWithSelector(IPegManager.InvalidBtcTxVersion.selector, btcTransaction.version, BTC_TX_VERSION)
+            abi.encodeWithSelector(
+                IPegManager.InvalidBtcTxVersion.selector, btcTransaction.version, Constants.BTC_TX_VERSION
+            )
         );
 
         // Act
@@ -202,7 +210,9 @@ contract TestPegManager is Test, HelperContract {
             0x3fcef4a1ddf759a858190b89ecbd1ff3dffb49704e110b68baf5b5de7021910f;
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegManager.InvalidLocktime.selector, btcTransaction.locktime, LOCKTIME));
+        vm.expectRevert(
+            abi.encodeWithSelector(IPegManager.InvalidLocktime.selector, btcTransaction.locktime, Constants.LOCKTIME)
+        );
 
         // Act
         pm.registerPegInRequest(pegInRequestTxSPVProof);
@@ -287,6 +297,7 @@ contract TestPegManager is Test, HelperContract {
         assertEq(uint256(slot.state), uint256(SlotState.FILLED), "Slot should be filled");
         assertEq(slot.acceptPegInTx, acceptPegInTxHash, "Incorrect acceptPegInTx");
         assertEq(slot.acceptPegInAmount, btcTransaction.outputs[0].amount, "Incorrect acceptPegInAmount");
+        assertEq(slot.scriptPubKey, btcTransaction.outputs[0].scriptPubKey, "Incorrect scriptPubKey");
     }
 
     function test_acceptPegInRequest_Revert_AlreadyRegisteredAcceptPegIn() external {
@@ -322,7 +333,9 @@ contract TestPegManager is Test, HelperContract {
 
         // Assert
         vm.expectRevert(
-            abi.encodeWithSelector(IPegManager.InvalidBtcTxVersion.selector, btcTransaction.version, BTC_TX_VERSION)
+            abi.encodeWithSelector(
+                IPegManager.InvalidBtcTxVersion.selector, btcTransaction.version, Constants.BTC_TX_VERSION
+            )
         );
 
         // Act
@@ -340,7 +353,9 @@ contract TestPegManager is Test, HelperContract {
         BtcTxSPVProof memory pegInAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegManager.InvalidLocktime.selector, btcTransaction.locktime, LOCKTIME));
+        vm.expectRevert(
+            abi.encodeWithSelector(IPegManager.InvalidLocktime.selector, btcTransaction.locktime, Constants.LOCKTIME)
+        );
 
         // Act
         pm.acceptPegInRequest(pegInAcceptedTxSPVProof);
@@ -358,7 +373,9 @@ contract TestPegManager is Test, HelperContract {
 
         // Assert
         vm.expectRevert(
-            abi.encodeWithSelector(IPegManager.InvalidSequence.selector, btcTransaction.inputs[0].sequence, SEQUENCE)
+            abi.encodeWithSelector(
+                IPegManager.InvalidSequence.selector, btcTransaction.inputs[0].sequence, Constants.SEQUENCE
+            )
         );
 
         // Act
@@ -454,10 +471,10 @@ contract TestPegManager is Test, HelperContract {
         });
 
         // The amount to be sent to the user
-        uint64 amount = prevoutData.value - (SPEED_UP_AMOUNT + P2TR_FEES); // 0.00008730 BTC
+        uint64 amount = prevoutData.value - (Constants.SPEED_UP_AMOUNT + Constants.P2TR_FEE); // 0.00008730 BTC
 
         // Act
-        (bytes32 result,) = pm.computePegOutTxHash(usrPubKey, prevoutData, amount, SPEED_UP_AMOUNT);
+        (bytes32 result,) = pm.computePegOutTxHash(usrPubKey, prevoutData, amount, Constants.SPEED_UP_AMOUNT);
 
         // ExpectedHash hash computed externally from a run of the pegout flow of the protocol builder
         // using the following inputs and running on regtest
@@ -480,9 +497,9 @@ contract TestPegManager is Test, HelperContract {
 
     function test_requestPegOut_Success() external {
         // Arrange
-        bytes32 expectedHash = 0x2e2235c6c12f69f2eae6af9aa6e49f9f0176132e0fe28bda666d8d1a63d6cda2;
+        bytes32 expectedHash = 0xf48100e48109fb0e00c7d4e826b0509347f64fd2874bca28cff17d3d31e8bb9a;
         bytes memory expectedDigest =
-            hex"00010200000000000000234337e863e00e6ff45f167a14f3963bea912bc0d739c2b402d04f376e814ae2e247139cedddd1ee740814e7de2e771c3745091bbb7af21d4122087c8bc17a36a0c6dbc3091625a23fd870bf8d09182484c12fa63a5c29045a431cf445f153e523e9829bfb4e23fbd3c4848baa035af15d73bcb83e510f7f097f90a21a4280d2217f9b69543663eb9e09051daf2f4b82b1556c115496a4247808ccb85b846a6e0000000000";
+            hex"00010200000000000000234337e863e00e6ff45f167a14f3963bea912bc0d739c2b402d04f376e814ae2e247139cedddd1ee740814e7de2e771c3745091bbb7af21d4122087c8bc17a36a0c6dbc3091625a23fd870bf8d09182484c12fa63a5c29045a431cf445f153e523e9829bfb4e23fbd3c4848baa035af15d73bcb83e510f7f097f90a21a4280d2006bb47323a1d7550c68619b10ffa4748cae2dc9f58375cfb06ae22cc8020e530000000000";
 
         bytes memory usrPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
 
@@ -513,6 +530,38 @@ contract TestPegManager is Test, HelperContract {
 
         // Assert
         Slot memory slot = pm.getSlot(stream.streamId, packetNumber, slotId);
+        assertEq(uint64(slot.state), uint64(SlotState.LOCKED), "Slot was not locked");
+    }
+
+    function test_requestPegOut_fromAcceptPegIn_Success() external {
+        // Arrange
+        bytes32 expectedHash = 0x99befc0d4167efaf7e3ec5e8067a1a7c3a90ec85c1f9a792ce309b7eca630999;
+        bytes memory expectedDigest =
+            hex"00010200000000000000cf72c080d473fbab8c45b1c13be4215e216bb20171c0fd659632ce0779df8bc7b223ac0e009cf54402b2529ea4312214616df58c903ec7fd399c12fb08e8e675be45ad9e08ae96e42d7fd1f70a454432049ebd6a625fa377ffa22033fd8692d623e9829bfb4e23fbd3c4848baa035af15d73bcb83e510f7f097f90a21a4280d2cca26f66149c86d9940e70592f0e9c8b07b8cb01d0aabb7782c9d6b17bc12e270000000000";
+
+        bytes memory usrPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+
+        uint64 amount = VALUE;
+        uint256 amountInWei = BtcHelper.satoshiToWei(amount);
+
+        Stream memory stream = pm.getStream(uint64(amount));
+        (Slot memory slot, uint64 packetNumber) = pm.getFirstFilledSlot(stream.streamId);
+
+        // Assert
+        vm.expectEmit(address(pm));
+        emit IPegManager.PegOutRequested(
+            usrPubKey, amount, expectedHash, expectedDigest, stream.streamId, packetNumber, slot.slotId
+        );
+
+        // Act
+        pm.requestPegOut{value: amountInWei}(usrPubKey, false);
+
+        // Assert
+        bytes32 result = pm.getPegOutTxHash(keccak256(abi.encodePacked(usrPubKey, amount)));
+        assertEq(result, expectedHash, "expected hash doesn't match the pegout computed one");
+
+        // Assert
+        slot = pm.getSlot(stream.streamId, packetNumber, slot.slotId);
         assertEq(uint64(slot.state), uint64(SlotState.LOCKED), "Slot was not locked");
     }
 

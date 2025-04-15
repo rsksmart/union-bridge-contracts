@@ -1,14 +1,6 @@
 // SPDX-License-Identifier: UNKNOWN
 pragma solidity ^0.8.20;
 
-// Btc P2TR Fees in satoshis
-// TODO: Check if this is correct
-uint64 constant P2TR_FEES = 335;
-uint64 constant DUST_THRESHOLD = 300;
-uint64 constant SPEED_UP_AMOUNT = 300;
-// TODO: this should be a parameter not a constant
-uint8 constant TIMELOCK_BLOCKS = 1;
-
 // https://learnmeabitcoin.com/technical/transaction/#structure-inputs-txid
 struct BtcTxIn {
     bytes32 txId; // (reversed little endian) "txid": "360b81785dc7c2f40627fea364676dbb73e6276683caffd9f906b0e0bd36b3d2"

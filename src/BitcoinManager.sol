@@ -4,14 +4,7 @@ pragma solidity ^0.8.20;
 import {console} from "forge-std/console.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {BaseProxy} from "./BaseProxy.sol";
-import {
-    BtcTransaction,
-    BtcTxOut,
-    TIMELOCK_BLOCKS,
-    P2TR_FEES,
-    SPEED_UP_AMOUNT,
-    IBitcoinManager
-} from "./interfaces/IBitcoinManager.sol";
+import {BtcTransaction, BtcTxOut, IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
 import {BytesHelper} from "./libraries/BytesHelper.sol";
 import {BtcHelper} from "./libraries/BtcHelper.sol";
 import {BtcTxEncoder} from "./libraries/BtcTxEncoder.sol";
@@ -20,9 +13,10 @@ import {BtcTaproot} from "./libraries/BtcTaproot.sol";
 import {Bech32m} from "src/libraries/Bech32m.sol";
 import {OpCodes} from "./libraries/OpCodes.sol";
 import {BtcNetwork} from "./libraries/Network.sol";
-
+import {Constants} from "./libraries/Constants.sol";
 /// @title BitcoinManager
 /// @notice Manages Bitcoin Addresses and Scripts
+
 contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
     BtcNetwork public network;
 
@@ -59,7 +53,8 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         bytes32 _btcReimbursementPubKey,
         bytes32 _committeePubKey
     ) internal pure returns (bytes32) {
-        bytes memory timelockScript = BtcScriptParser.getTimelockScript(TIMELOCK_BLOCKS, _btcReimbursementPubKey);
+        bytes memory timelockScript =
+            BtcScriptParser.getTimelockScript(Constants.TIMELOCK_BLOCKS, _btcReimbursementPubKey);
         bytes32 timelockLeaf = BtcTaproot.getLeaf(timelockScript);
 
         // TODO Add this back once it's implemented in the protocol builder
@@ -198,7 +193,7 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
     {
         // Validate that the amount is enough to cover the fees
         // TODO: Check if this is correct
-        uint64 inputMinusFees = _inputAmount - (P2TR_FEES + SPEED_UP_AMOUNT);
+        uint64 inputMinusFees = _inputAmount - (Constants.P2TR_FEE + Constants.SPEED_UP_AMOUNT);
         if (_p2trOut.amount < inputMinusFees) {
             revert InvalidOutputAmount(_p2trOut.amount, inputMinusFees);
         }
@@ -217,8 +212,8 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
     // ========================== Peg In Speed Up ==========================
     /// @dev Validates the speed up output
     function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut calldata _speedUpOut) external pure {
-        if (_speedUpOut.amount < SPEED_UP_AMOUNT) {
-            revert InvalidValue(_speedUpOut.amount, SPEED_UP_AMOUNT);
+        if (_speedUpOut.amount < Constants.SPEED_UP_AMOUNT) {
+            revert InvalidValue(_speedUpOut.amount, Constants.SPEED_UP_AMOUNT);
         }
         bytes memory p2wpkhScriptPubKey = getSpeedUpScriptPub(_pubKey);
         if (!BytesHelper.compare(_speedUpOut.scriptPubKey, p2wpkhScriptPubKey)) {

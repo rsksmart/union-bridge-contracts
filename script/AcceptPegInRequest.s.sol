@@ -3,18 +3,12 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
 import {PegManager, StreamPosition, BtcTxSPVProof, PegStatus, RequestPegInTempInfo} from "src/PegManager.sol";
-import {
-    IBitcoinManager,
-    BtcTransaction,
-    BtcTxIn,
-    BtcTxOut,
-    P2TR_FEES,
-    SPEED_UP_AMOUNT
-} from "src/interfaces/IBitcoinManager.sol";
+import {IBitcoinManager, BtcTransaction, BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
 import {Stream, Packet} from "src/interfaces/IStreamManager.sol";
 import {OpCodes} from "src/libraries/OpCodes.sol";
 import {BridgeMock} from "test/helpers/BridgeMock.sol";
 import {ChainIds} from "src/libraries/Network.sol";
+import {Constants} from "src/libraries/Constants.sol";
 
 contract AcceptPegInRequestScript is Script {
     PegManager pegManager;
@@ -65,13 +59,13 @@ contract AcceptPegInRequestScript is Script {
 
         // PegIn P2TR output
         btcTransaction.outputs[0] = BtcTxOut({
-            amount: requestPegInTempInfo.outputAmount - P2TR_FEES - SPEED_UP_AMOUNT,
+            amount: requestPegInTempInfo.outputAmount - Constants.P2TR_FEE - Constants.SPEED_UP_AMOUNT,
             scriptPubKey: bitcoinManager.getAcceptPegInP2TRScriptPub(committeePubKey)
         });
 
         // Speed up output (child pays for parent)
         btcTransaction.outputs[1] = BtcTxOut({
-            amount: SPEED_UP_AMOUNT, // SPEED_UP_AMOUNT
+            amount: Constants.SPEED_UP_AMOUNT, // SPEED_UP_AMOUNT
             scriptPubKey: bitcoinManager.getSpeedUpScriptPub(requestPegInTempInfo.btcReimbursementPubKey)
         });
 
