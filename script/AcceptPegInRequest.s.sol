@@ -42,8 +42,7 @@ contract AcceptPegInRequestScript is Script {
         RequestPegInTempInfo memory requestPegInTempInfo = pegManager.getRequestPegInTempInfo(requestPegInTxHash);
 
         // Get the committee public key
-        bytes32 committeePubKey =
-            pegManager.getPacket(streamPosition.streamId, streamPosition.packetNumber).committeePubKey;
+        bytes32 committeePubKey = pegManager.getCommitteePubKey(streamPosition.streamId, streamPosition.packetNumber);
 
         // BtcTransaction to verify
         BtcTransaction memory btcTransaction =

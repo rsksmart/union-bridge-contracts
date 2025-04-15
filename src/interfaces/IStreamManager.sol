@@ -66,12 +66,6 @@ interface IStreamManager {
     /// @return uint64 The number of streams
     function getStreamsLength() external view returns (uint64);
 
-    /// @notice Allows users to get the Packet information for a given packet index at a stream
-    /// @param _streamId The index in the array of streams
-    /// @param _packetNumber The index in the array of packets
-    /// @return Packet The packet information
-    function getPacket(uint64 _streamId, uint64 _packetNumber) external view returns (Packet calldata);
-
     /// @notice Allows users to get the first prepared Slot information for a given packet index at a stream
     /// @param _streamId The index in the array of streams
     /// @param _packetNumber The index in the array of packets
@@ -95,6 +89,12 @@ interface IStreamManager {
     /// @param _slotNumber The index in the array of slots
     /// @return Slot The slot information
     function getSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotNumber) external view returns (Slot memory);
+
+    /// @notice Allows users to get the committee public key for a given packet index at a stream
+    /// @param _streamId The index in the array of streams
+    /// @param _packetNumber The index in the array of packets
+    /// @return bytes32 The committee public key
+    function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes32);
 
     function createPacketsAndSlots(bytes32 _committeePubKey) external;
 

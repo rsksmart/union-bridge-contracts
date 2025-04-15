@@ -15,9 +15,9 @@ abstract contract StreamManager is IStreamManager, Initializable {
     uint256[50] private __gap;
 
     // StreamId => Packet list
-    mapping(uint64 => Packet[]) public packets; // TODO see how to handle it in a mapping instead of an array
+    mapping(uint64 => Packet[]) public packets;
     // StreamId => Packet.packetNumber => SlotId
-    mapping(uint64 => mapping(uint64 => Slot[])) internal slots; // TODO see how to handle it in a mapping instead of an array
+    mapping(uint64 => mapping(uint64 => Slot[])) internal slots;
     // TODO check if we can use another key or a hash for the slots and packets as they are not unique through the streams
 
     /// @dev Initializes the streams with their denominations and parameters
@@ -41,11 +41,11 @@ abstract contract StreamManager is IStreamManager, Initializable {
         }
     }
 
-    /// @dev Creates In all streams a packet and slots using the given committee
+    /// @dev Adds one packet per stream and creates a 100 slots given committee
     function createPacketsAndSlots(bytes32 _committeePubKey) external {
         uint256 length = denominations.length;
         for (uint64 i = 0; i < length; i++) {
-            // Create initial packet
+            // Add a new packet
             uint64 packetNumber = uint64(packets[streams[i].streamId].length);
             packets[streams[i].streamId].push(Packet({packetNumber: packetNumber, committeePubKey: _committeePubKey}));
 
@@ -84,8 +84,8 @@ abstract contract StreamManager is IStreamManager, Initializable {
         return uint64(streams.length);
     }
 
-    function getPacket(uint64 _streamId, uint64 _packetNumber) public view returns (Packet memory) {
-        Packet[] memory packetList = packets[_streamId];
+    function getPacket(uint64 _streamId, uint64 _packetNumber) internal view returns (Packet storage) {
+        Packet[] storage packetList = packets[_streamId];
         if (packetList.length < _packetNumber) {
             revert PacketOutOfBound(_packetNumber);
         }
@@ -148,5 +148,9 @@ abstract contract StreamManager is IStreamManager, Initializable {
         slot.acceptPegInAmount = _acceptPegInAmount;
         slot.scriptPubKey = _scriptPubKey;
         return slotId;
+    }
+
+    function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) public view returns (bytes32) {
+        return getPacket(_streamId, _packetNumber).committeePubKey;
     }
 }
