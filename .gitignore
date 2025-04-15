@@ -4,7 +4,10 @@ venv/
 dry-run/
 31337/
 cache/
-out/
+out/*
+# don't ignore artifacts used by the union-client
+!out/PegManager.sol
+!out/BitcoinManager.sol
 # macOS
 .DS_Store
 # vscode
