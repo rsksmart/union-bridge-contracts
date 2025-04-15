@@ -315,7 +315,7 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
             computePegOutTxHash(_usrPubKey, prevoutData, slot.acceptPegInAmount - speedUpAmount - fee, speedUpAmount);
 
         // Store the peg-out transaction hash on-chain and initialize the signatures
-        storePegOutTxHashAndInitSignatures(pegOutTxHash, stream.streamId, packetNumber, slot.slotId);
+        storePegOutAndInitSignatures(pegOutTxHash, stream.streamId, packetNumber, slot.slotId);
 
         // Lock the used slot
         lockSlot(stream.streamId, packetNumber, slot.slotId);
@@ -390,12 +390,9 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
         return pegOutTxHashes[key];
     }
 
-    function storePegOutTxHashAndInitSignatures(
-        bytes32 pegOutTxHash,
-        uint64 streamId,
-        uint64 packetNumber,
-        uint64 slotId
-    ) internal {
+    function storePegOutAndInitSignatures(bytes32 pegOutTxHash, uint64 streamId, uint64 packetNumber, uint64 slotId)
+        internal
+    {
         // Store the peg-out transaction hash on-chain and initialize the signatures
         bytes32 key = keccak256(abi.encodePacked(streamId, packetNumber, slotId));
         pegOutTxHashes[key] = pegOutTxHash;
@@ -404,7 +401,7 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
         bytes32 committeeKey = getCommitteePubKey(streamId, packetNumber);
 
         // Get the members
-        CommitteeMember[] memory members = committeeRegistry.getCommitteeMemberIndexesAndRoles(committeeKey);
+        CommitteeMember[] memory members = committeeRegistry.getCommitteeMember(committeeKey);
 
         // Initialize the signatures for each member
         Signatures storage signatures = pegOutTxHashSignatures[pegOutTxHash];
@@ -448,8 +445,6 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
         Signatures storage signatures = pegOutTxHashSignatures[pegOutTxHash];
         SignatureData[] storage signaturesData = signatures.signaturesData;
         for (uint256 i = 0; i < signaturesData.length; i++) {
-            console.log("memberPubKey:");
-            console.logBytes32(signaturesData[i].memberPublicKey);
             if (signaturesData[i].memberPublicKey == memberPubKey) {
                 if (signaturesData[i].signature != "") {
                     revert MemberHasAlreadySigned(memberPubKey, msg.sender, pegOutTxHash);

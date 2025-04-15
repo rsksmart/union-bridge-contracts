@@ -127,11 +127,7 @@ contract CommitteeRegistry is ICommitteeRegistry, Initializable, BaseProxy {
         return committeesByKey[_committeeKey];
     }
 
-    function getCommitteeMemberIndexesAndRoles(bytes32 _committeeKey)
-        external
-        view
-        returns (CommitteeMember[] memory)
-    {
+    function getCommitteeMember(bytes32 _committeeKey) external view returns (CommitteeMember[] memory) {
         return committeesByKey[_committeeKey].memberIndexesAndRoles;
     }
 
