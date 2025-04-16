@@ -49,6 +49,12 @@ bash shell/slither.sh
 bash shell/sscript/deploy/simulate-deploy.sh
 ```
 
+Also you can check the contract size using:
+
+```sh
+bash shell/size-report.sh
+```
+
 ## Deployment
 
 Use [deployment script] (https://book.getfoundry.sh/guides/scripting-with-solidity#deploying-our-contract) to deploy:
