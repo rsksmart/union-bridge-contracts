@@ -16,7 +16,7 @@ struct Member {
 }
 
 struct CommitteeMember {
-    uint16 index;
+    uint16 index; // from the members array
     Role role;
 }
 
@@ -37,14 +37,15 @@ interface ICommitteeRegistry {
 
     function getCommittee(bytes32 _committeeKey) external view returns (Committee calldata);
 
-    function getCommitteememberIndexesAndRoles(bytes32 _committeeKey)
-        external
-        view
-        returns (CommitteeMember[] memory);
+    function getCommitteeMember(bytes32 _committeeKey) external view returns (CommitteeMember[] memory);
 
     function getCommitteeByIndex(uint256 _committeeIndex) external view returns (bytes32);
 
     function getCommitteesLength() external view returns (uint256);
 
     function getNextAvailableCommittee() external view returns (Committee calldata);
+
+    function getMemberPubKeyByAddress(address _address) external view returns (bytes32);
+
+    function getMemberPubKeyByIndex(uint16 _memberIndex) external view returns (bytes32);
 }

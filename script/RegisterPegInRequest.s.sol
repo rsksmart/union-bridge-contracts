@@ -33,7 +33,7 @@ contract RegisterPegInRequestScript is Script {
         // Committee public key
         Stream memory stream = pegManager.getStream(value);
         uint64 packetNumber = stream.peginPointer;
-        bytes32 committeePubKey = pegManager.getPacket(stream.streamId, packetNumber).committeePubKey;
+        bytes32 committeePubKey = pegManager.getCommitteePubKey(stream.streamId, packetNumber);
         // BtcTransaction to verify
         BtcTransaction memory btcTransaction =
             BtcTransaction({version: 2, inputs: new BtcTxIn[](1), outputs: new BtcTxOut[](2), locktime: 0});

@@ -5,6 +5,7 @@ import "forge-std/Script.sol";
 import {StreamDenomination, Role, CommitteeMember, Committee, CommitteeRegistry} from "src/CommitteeRegistry.sol";
 import {TestUtils} from "test/helpers/TestUtils.sol";
 import {ChainIds} from "src/libraries/Network.sol";
+import {BtcHelper} from "src/libraries/BtcHelper.sol";
 
 struct RegisterCommitteeParams {
     Committee committee;
@@ -63,12 +64,13 @@ contract SetUpCommittees is Script, TestUtils {
         } else if (block.chainid == ChainIds.LOCAL) {
             // Foundry local chainid
             // Members setup
-            membersParams.push(RegisterMemberParams(generatePubKey(0), requestedStreams, requestedRoles));
+            // we start generating pubkeys from 1 since 0 the default return for a non existent pubkey in a mapping
             membersParams.push(RegisterMemberParams(generatePubKey(1), requestedStreams, requestedRoles));
             membersParams.push(RegisterMemberParams(generatePubKey(2), requestedStreams, requestedRoles));
             membersParams.push(RegisterMemberParams(generatePubKey(3), requestedStreams, requestedRoles));
             membersParams.push(RegisterMemberParams(generatePubKey(4), requestedStreams, requestedRoles));
             membersParams.push(RegisterMemberParams(generatePubKey(5), requestedStreams, requestedRoles));
+            membersParams.push(RegisterMemberParams(generatePubKey(6), requestedStreams, requestedRoles));
             // Map memebers to comittee
             CommitteeMember[] memory members = new CommitteeMember[](2);
             members[0] = CommitteeMember({index: 0, role: Role.Operator});
@@ -104,7 +106,7 @@ contract SetUpCommittees is Script, TestUtils {
     function registerMember(CommitteeRegistry _committeeRegistry, RegisterMemberParams memory _registerMemberParams)
         public
     {
-        vm.startBroadcast();
+        vm.startBroadcast(address(BtcHelper.hash160(abi.encodePacked(_registerMemberParams.publicKey))));
         _committeeRegistry.registerMember(
             _registerMemberParams.publicKey,
             _registerMemberParams.requestedStreams,

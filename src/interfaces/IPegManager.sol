@@ -47,6 +47,17 @@ struct PrevoutData {
     bytes scriptPubKey;
 }
 
+struct SignatureData {
+    bytes32 memberPublicKey;
+    bytes32 signature;
+    bytes nonce; // Should be 66 bytes
+}
+
+struct Signatures {
+    SignatureData[] signaturesData;
+    uint8 missingSignatures;
+}
+
 interface IPegManager is IStreamManager {
     // ===================== Peg-in Request=====================
 
@@ -125,9 +136,26 @@ interface IPegManager is IStreamManager {
         uint64 slotId
     );
 
+    event SignatureAdded(
+        bytes32 indexed pegOutTxHash,
+        uint64 streamId,
+        uint64 packetNumber,
+        uint64 slotId,
+        bytes32 indexed memberPubKey,
+        bytes32 signature,
+        bytes nonce
+    );
+
+    event AllSignaturesReady(bytes32 indexed pegOutTxHash, uint64 streamId, uint64 packetNumber, uint64 slotId);
+
     // ===================== Errors =====================
 
     error PegoutRequestAmountExceedsUint64Limit(uint256 amount);
+    error PegOutRequestNotFound(bytes32 pegOutTxHash, uint64 streamId, uint64 packetNumber, uint64 slotId);
+    error MemberNotFound(address memberAddress);
+    error MemberHasAlreadySigned(bytes32 memberPubKey, address memberAddress, bytes32 pegOutTxHash);
+    error MemberNotFoundInCommittee(bytes32 memberPubKey, bytes32 pegOutTxHash);
+    error InvalidNonceLength(uint256 actual, uint8 expected);
     error AlreadyRegisteredPegIn(bytes32 btcTxHash);
     error AlreadyRegisteredPegInRequest(bytes32 btcTxHash);
     error UnregisteredPegInRequest(bytes32 btcTxHash);
