@@ -18,4 +18,5 @@ library Constants {
     uint64 constant DUST_THRESHOLD = 300;
     // TODO: this should be a parameter not a constant
     uint8 constant TIMELOCK_BLOCKS = 1;
+    uint8 constant SIGNATURE_NONCE_LENGTH = 66;
 }

@@ -106,7 +106,6 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
             rskDestinationAddress,
             stream.denomination,
             btcReimbursementPubKey,
-
             // getCommitteePubKey reverts if packet does not exist
             getCommitteePubKey(stream.streamId, packetNumber),
             _pegInRequestTxSPVProof.btcTx.outputs[Constants.VOUT_INDEX_TAPTREE]
@@ -436,8 +435,8 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
         }
 
         // Check that nonce is 66 bytes
-        if (nonce.length != SIGNATURE_NONCE_LENGTH) {
-            revert InvalidNonceLength(nonce.length, SIGNATURE_NONCE_LENGTH);
+        if (nonce.length != Constants.SIGNATURE_NONCE_LENGTH) {
+            revert InvalidNonceLength(nonce.length, Constants.SIGNATURE_NONCE_LENGTH);
         }
 
         // Store the signature and nonce for the member

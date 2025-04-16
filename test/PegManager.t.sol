@@ -565,7 +565,7 @@ contract TestPegManager is Test, HelperContract {
         pm.requestPegOut{value: amountInWei}(usrPubKey, false);
 
         // Assert
-        bytes32 result = pm.getPegOutTxHash(keccak256(abi.encodePacked(usrPubKey, amount)));
+        bytes32 result = pm.getPegOutTxHash(keccak256(abi.encodePacked(stream.streamId, packetNumber, slot.slotId)));
         assertEq(result, expectedHash, "expected hash doesn't match the pegout computed one");
 
         // Assert
@@ -828,7 +828,9 @@ contract TestPegManager is Test, HelperContract {
         address CommitteeMember = address(0x7c43548021971177f70c6805585eD7dE138f34DA);
 
         vm.expectRevert(
-            abi.encodeWithSelector(IPegManager.InvalidNonceLength.selector, nonce.length, SIGNATURE_NONCE_LENGTH)
+            abi.encodeWithSelector(
+                IPegManager.InvalidNonceLength.selector, nonce.length, Constants.SIGNATURE_NONCE_LENGTH
+            )
         );
 
         // Act

@@ -71,8 +71,8 @@ contract CommitteeRegistry is ICommitteeRegistry, Initializable, BaseProxy {
         members.push(); // Expand the array
         Member storage m = members[members.length - 1]; // Get reference
         m.publicKey = _publicKey;
-        // We add one to the index to avoid 0 as a valid index
-        memberIndexByAddress[msg.sender] = uint16(members.length - 1) + 1;
+        // We save the position in the array + 1, to avoid 0 as a valid index, it is then substracted in getMemberPubKeyByAddress
+        memberIndexByAddress[msg.sender] = uint16(members.length);
 
         // Set requested roles
         for (uint256 i = 0; i < requestedStreams.length; i++) {
