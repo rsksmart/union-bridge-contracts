@@ -2,7 +2,9 @@
 This repository contains the specifications and Solidity code for the Union Bridge Contracts.
 
 ## Dependencies
-- Node.js LTS (22)
+- You’ll need the [Rust](https://www.rust-lang.org/) compiler and Cargo, Rust’s package manager. The easiest way to install both is by using [rustup.rs.](https://rustup.rs/)
+- [Foundry v1.1.0-nightly](https://book.getfoundry.sh/getting-started/installation)
+- [Node.js LTS (22)](https://nodejs.org/en/download)
 
 ## Testing
 You can run unit test with:
@@ -66,6 +68,15 @@ bash shell/script/deploy/deploy.sh
 It will ask for a private key interactivly in order to performe the deployment. The address of the private key needs to have funds in order to perform the deployment.
 If you want to deploy to a local network (regtest) use `deploy-local.sh`.
 
+### Rust crate with Bindings
+
+To generate the new bindings for the smart contracts run :
+
+```sh
+bash bind.sh
+```
+
+It will automatically generate the rust files for the smart contracts using Alloy
 
 ## Scripts
 

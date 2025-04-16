@@ -12,6 +12,8 @@ ffi = true
 ast = true
 build_info = true
 extra_output = ["storageLayout"]
+# Fix  call didn't revert at a lower depth than cheatcode call depth https://github.com/PaulRBerg/prb-math/issues/248
+allow_internal_expect_revert = true
 
 
 [profile.ci.fuzz]

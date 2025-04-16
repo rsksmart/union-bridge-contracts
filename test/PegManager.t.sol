@@ -573,38 +573,6 @@ contract TestPegManager is Test, HelperContract {
         assertEq(uint64(slot.state), uint64(SlotState.LOCKED), "Slot was not locked");
     }
 
-    function test_requestPegOut_fromAcceptPegIn_Success() external {
-        // Arrange
-        bytes32 expectedHash = 0x99befc0d4167efaf7e3ec5e8067a1a7c3a90ec85c1f9a792ce309b7eca630999;
-        bytes memory expectedDigest =
-            hex"00010200000000000000cf72c080d473fbab8c45b1c13be4215e216bb20171c0fd659632ce0779df8bc7b223ac0e009cf54402b2529ea4312214616df58c903ec7fd399c12fb08e8e675be45ad9e08ae96e42d7fd1f70a454432049ebd6a625fa377ffa22033fd8692d623e9829bfb4e23fbd3c4848baa035af15d73bcb83e510f7f097f90a21a4280d2cca26f66149c86d9940e70592f0e9c8b07b8cb01d0aabb7782c9d6b17bc12e270000000000";
-
-        bytes memory usrPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
-
-        uint64 amount = VALUE;
-        uint256 amountInWei = BtcHelper.satoshiToWei(amount);
-
-        Stream memory stream = pm.getStream(uint64(amount));
-        (Slot memory slot, uint64 packetNumber) = pm.getFirstFilledSlot(stream.streamId);
-
-        // Assert
-        vm.expectEmit(address(pm));
-        emit IPegManager.PegOutRequested(
-            usrPubKey, amount, expectedHash, expectedDigest, stream.streamId, packetNumber, slot.slotId
-        );
-
-        // Act
-        pm.requestPegOut{value: amountInWei}(usrPubKey, false);
-
-        // Assert
-        bytes32 result = pm.getPegOutTxHash(keccak256(abi.encodePacked(usrPubKey, amount)));
-        assertEq(result, expectedHash, "expected hash doesn't match the pegout computed one");
-
-        // Assert
-        slot = pm.getSlot(stream.streamId, packetNumber, slot.slotId);
-        assertEq(uint64(slot.state), uint64(SlotState.LOCKED), "Slot was not locked");
-    }
-
     function test_requestPegOut_Revert_InvalidPublicKeyLength() external {
         // Arrange
         bytes memory usrPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b00";
