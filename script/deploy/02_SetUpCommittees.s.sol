@@ -106,12 +106,23 @@ contract SetUpCommittees is Script, TestUtils {
     function registerMember(CommitteeRegistry _committeeRegistry, RegisterMemberParams memory _registerMemberParams)
         public
     {
-        vm.startBroadcast(address(BtcHelper.hash160(abi.encodePacked(_registerMemberParams.publicKey))));
-        _committeeRegistry.registerMember(
-            _registerMemberParams.publicKey,
-            _registerMemberParams.requestedStreams,
-            _registerMemberParams.requestedRoles
-        );
+        address fakeAddress = address(BtcHelper.hash160(abi.encodePacked(_registerMemberParams.publicKey)));
+        if (vm.isContext(VmSafe.ForgeContext.TestGroup)) {
+            vm.startBroadcast(fakeAddress);
+            _committeeRegistry.registerMember(
+                _registerMemberParams.publicKey,
+                _registerMemberParams.requestedStreams,
+                _registerMemberParams.requestedRoles
+            );
+        } else {
+            vm.startBroadcast();
+            _committeeRegistry.registerMemberWithAddress(
+                _registerMemberParams.publicKey,
+                _registerMemberParams.requestedStreams,
+                _registerMemberParams.requestedRoles,
+                fakeAddress
+            );
+        }
         vm.stopBroadcast();
     }
 

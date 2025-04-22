@@ -40,13 +40,6 @@ struct RequestPegInTempInfo {
     bytes utxoScriptPubKey;
 }
 
-struct PrevoutData {
-    bytes32 txid;
-    uint32 vout;
-    uint64 value;
-    bytes scriptPubKey;
-}
-
 struct SignatureData {
     bytes32 memberPublicKey;
     bytes32 signature;

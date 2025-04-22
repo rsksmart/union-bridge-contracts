@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import {console} from "forge-std/console.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {BaseProxy} from "./BaseProxy.sol";
-import {BtcTransaction, BtcTxOut, IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
+import {PrevoutData, BtcTransaction, BtcTxOut, IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
 import {BytesHelper} from "./libraries/BytesHelper.sol";
 import {BtcHelper} from "./libraries/BtcHelper.sol";
 import {BtcTxEncoder} from "./libraries/BtcTxEncoder.sol";
@@ -14,9 +14,9 @@ import {Bech32m} from "src/libraries/Bech32m.sol";
 import {OpCodes} from "./libraries/OpCodes.sol";
 import {BtcNetwork} from "./libraries/Network.sol";
 import {Constants} from "./libraries/Constants.sol";
+
 /// @title BitcoinManager
 /// @notice Manages Bitcoin Addresses and Scripts
-
 contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
     BtcNetwork public network;
 
@@ -226,5 +226,63 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         // TODO change this to use P2WPSH with OP_1 so anyone can send the speed up
         // this should change at the same time as in the protocol builder
         return BtcScriptParser.getP2WPKHScript(abi.encodePacked(uint8(0x02), _pubKey));
+    }
+
+    function computePegOutTxHash(
+        bytes memory usrPubKey,
+        PrevoutData memory prevoutData,
+        uint64 amount,
+        uint64 speedUpAmount
+    ) public pure returns (bytes32, bytes memory) {
+        // Prepare the more complex parts of the data
+        // sha_prevouts (32): the SHA256 of the serialization of all input outpoints.
+        bytes32 sha_prevouts = sha256(abi.encodePacked(BtcHelper.reverseBytes32(prevoutData.txid), prevoutData.vout));
+
+        // sha_amounts (32): the SHA256 of the serialization of all input outpoints amounts.
+        bytes32 sha_amounts = sha256(abi.encodePacked(BtcHelper.reverseUint64(prevoutData.value)));
+
+        // sha_scriptpubkeys (32): the SHA256 of the serialization of all spent output scriptPubKeys.
+        bytes32 sha_scriptPubKeys =
+            sha256(abi.encodePacked(BtcHelper.toCompactSize(prevoutData.scriptPubKey.length), prevoutData.scriptPubKey));
+
+        //TODO: consider un-hardcoding, this value is used in little endian so it is reversed
+        // sha_sequences (32): the SHA256 of the serialization of all input nSequences.
+        bytes32 sha_sequences = sha256(abi.encodePacked(BtcHelper.reverseUint32(Constants.SEQUENCE)));
+
+        // Prepare the outputs, user and speed up
+        bytes memory scriptPubKey = BtcScriptParser.getP2WPKHScript(usrPubKey);
+        bytes memory outputs = abi.encodePacked(
+            BtcHelper.reverseUint64(amount), BtcHelper.toCompactSize(scriptPubKey.length), scriptPubKey
+        );
+
+        // User is in charge of the speedup to avoid reciclyng attacks
+        bytes memory speedUpScriptPubKey = scriptPubKey;
+        outputs = abi.encodePacked(
+            outputs,
+            BtcHelper.reverseUint64(speedUpAmount),
+            BtcHelper.toCompactSize(speedUpScriptPubKey.length),
+            speedUpScriptPubKey
+        );
+
+        // sha_outputs (32): the SHA256 of the serialization of all outputs in CTxOut format.
+        bytes32 sha_outputs = sha256(outputs);
+
+        // Concatenate all the data
+        bytes memory encodedData = abi.encodePacked(
+            uint8(0), // epoch
+            uint8(0x01), // hash_type
+            BtcHelper.reverseUint32(Constants.BTC_TX_VERSION), // nVersion
+            Constants.LOCKTIME, // nLockTime
+            sha_prevouts,
+            sha_amounts,
+            sha_scriptPubKeys,
+            sha_sequences,
+            sha_outputs,
+            uint8(0), // spend_type
+            uint32(0) // input_index
+        );
+
+        // Return the tagged hash and the encoded data before hashing
+        return (BtcTaproot.taggedHash(BtcTaproot.TAP_SIGHASH, encodedData), encodedData);
     }
 }

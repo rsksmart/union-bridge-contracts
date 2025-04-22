@@ -5,7 +5,6 @@ import "forge-std/Test.sol";
 import "forge-std/console.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
 import {
-    PrevoutData,
     BtcTransaction,
     BtcTxSPVProof,
     StreamPosition,
@@ -13,13 +12,14 @@ import {
     PegStatus,
     IPegManager
 } from "src/interfaces/IPegManager.sol";
-import {BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
+import {PrevoutData, BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
 import {Slot, SlotState, Packet, Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE} from "src/interfaces/IBridge.sol";
 import {ProofValidator} from "src/ProofValidator.sol";
 import {BtcTaproot} from "src/libraries/BtcTaproot.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {Constants} from "src/libraries/Constants.sol";
+import {BtcTxEncoder} from "src/libraries/BtcTxEncoder.sol";
 
 contract TestPegManager is Test, HelperContract {
     // Arrange
@@ -474,7 +474,8 @@ contract TestPegManager is Test, HelperContract {
         uint64 amount = prevoutData.value - (Constants.SPEED_UP_AMOUNT + Constants.P2TR_FEE); // 0.00008730 BTC
 
         // Act
-        (bytes32 result,) = pm.computePegOutTxHash(usrPubKey, prevoutData, amount, Constants.SPEED_UP_AMOUNT);
+        (bytes32 result,) =
+            bitcoinManager.computePegOutTxHash(usrPubKey, prevoutData, amount, Constants.SPEED_UP_AMOUNT);
 
         // ExpectedHash hash computed externally from a run of the pegout flow of the protocol builder
         // using the following inputs and running on regtest
@@ -808,8 +809,7 @@ contract TestPegManager is Test, HelperContract {
         // Act
         address nonCommitteeMember = address(0xDD69735817E0e3F6f826a9238dC2E291184F0131);
         vm.startPrank(nonCommitteeMember);
-        bool allSignaturesReady =
-            pm.addMemberSignaturePegoutTxHash(pegOutTxHash, streamId, packetNumber, slotId, signature, nonce);
+        pm.addMemberSignaturePegoutTxHash(pegOutTxHash, streamId, packetNumber, slotId, signature, nonce);
         vm.stopPrank();
     }
 
@@ -824,7 +824,6 @@ contract TestPegManager is Test, HelperContract {
         bytes memory nonce =
             hex"fff8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
 
-        bytes32 CommitteeMemberPubkey = 0x0000000000000000000000000000000000000000000000000000000000000001;
         address CommitteeMember = address(0x7c43548021971177f70c6805585eD7dE138f34DA);
 
         vm.expectRevert(
@@ -835,8 +834,7 @@ contract TestPegManager is Test, HelperContract {
 
         // Act
         vm.startPrank(CommitteeMember);
-        bool allSignaturesReady =
-            pm.addMemberSignaturePegoutTxHash(pegOutTxHash, streamId, packetNumber, slotId, signature, nonce);
+        pm.addMemberSignaturePegoutTxHash(pegOutTxHash, streamId, packetNumber, slotId, signature, nonce);
         vm.stopPrank();
     }
 
