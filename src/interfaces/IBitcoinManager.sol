@@ -28,6 +28,13 @@ struct BtcTransaction {
     uint32 locktime; // TX locktime: 00000000 (reversed little endian)
 }
 
+struct PrevoutData {
+    bytes32 txid;
+    uint32 vout;
+    uint64 value;
+    bytes scriptPubKey;
+}
+
 interface IBitcoinManager {
     /// @notice Allows users generate a temporary Bitcoin address to perform a peg-in.
     /// @param _rskDestinationAddress The RSK deposit address
@@ -98,6 +105,13 @@ interface IBitcoinManager {
     /// @param _pubKey The user's public key (x-only, 32 bytes)
     /// @param _speedUpOut The Bitcoin transaction output containing the speed up output
     function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut calldata _speedUpOut) external pure;
+
+    function computePegOutTxHash(
+        bytes memory usrPubKey,
+        PrevoutData memory prevoutData,
+        uint64 amount,
+        uint64 speedUpAmount
+    ) external pure returns (bytes32, bytes memory);
 
     error InvalidOpReturnLength(uint256 actual, uint256 expected);
     error IncorrectlyFormedOpReturn(uint256 index);
