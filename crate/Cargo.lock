@@ -3387,6 +3387,7 @@ name = "union-bridge-contracts"
 version = "0.0.1-alpha.1"
 dependencies = [
  "alloy",
+ "serde",
 ]
 
 [[package]]
