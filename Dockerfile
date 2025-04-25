@@ -16,7 +16,8 @@ ENV PATH=$NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
 # Copy our source code into the container
 WORKDIR /app
 COPY . .
-USER foundry
+# "======= Install dependencies ======="
+RUN forge install
 # "======= Build and test contracts ======="
 RUN bash test.sh
 
