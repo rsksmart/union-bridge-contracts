@@ -1,0 +1,23 @@
+ # Deploy smart contracts
+FROM ghcr.io/foundry-rs/foundry
+
+# "======= Install Node for OpenZeppelin ======="
+USER root
+ENV NODE_VERSION=22.14.0
+ENV NVM_DIR=/root/.nvm
+RUN apt-get install -y curl \
+    && curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.2/install.sh | bash \
+    && \. $NVM_DIR/nvm.sh \
+    && nvm install $NODE_VERSION \
+    && npm install -g @openzeppelin/upgrades-core@1.44.0
+# Update the $PATH to make your installed `node` and `npm` available!
+ENV PATH=$NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
+
+# Copy our source code into the container
+WORKDIR /app
+COPY . .
+USER foundry
+# "======= Build and test contracts ======="
+RUN bash test.sh
+
+ENTRYPOINT ["/bin/sh", "-c"]

@@ -10,7 +10,7 @@ contract GetTemporaryAddressScript is Script {
 
     function setUp() internal {
         // ====== Arguments ======
-        confirmations = 10;
+        confirmations = -1;
         bridgeMock = BridgeMock(payable(0x5FbDB2315678afecb367f032d93F642f64180aa3));
     }
 

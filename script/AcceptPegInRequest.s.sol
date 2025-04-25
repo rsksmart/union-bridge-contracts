@@ -6,7 +6,6 @@ import {PegManager, StreamPosition, BtcTxSPVProof, PegStatus, RequestPegInTempIn
 import {IBitcoinManager, BtcTransaction, BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
 import {Stream, Packet} from "src/interfaces/IStreamManager.sol";
 import {OpCodes} from "src/libraries/OpCodes.sol";
-import {BridgeMock} from "test/helpers/BridgeMock.sol";
 import {ChainIds} from "src/libraries/Network.sol";
 import {Constants} from "src/libraries/Constants.sol";
 
@@ -23,14 +22,6 @@ contract AcceptPegInRequestScript is Script {
         // =======================
         // Smart contract addresses
         bitcoinManager = IBitcoinManager(pegManager.bitcoinManager());
-        if (block.chainid == ChainIds.LOCAL) {
-            console.log("Bridge Mock setBtcTransactionConfirmations");
-            // Set Mock Bridge state to return 10 when calling getBtcTransactionConfirmations
-            BridgeMock bridge = BridgeMock(payable(address(pegManager.bridge())));
-            vm.startBroadcast();
-            bridge.setBtcTransactionConfirmations(10);
-            vm.stopBroadcast();
-        }
 
         // Check if the peg-in request exists and is in REGISTERED status
         StreamPosition memory streamPosition = pegManager.getPegInRequest(requestPegInTxHash);
