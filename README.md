@@ -1,10 +1,14 @@
 # BitVMX Union Bridge Contracts
 This repository contains the specifications and Solidity code for the Union Bridge Contracts.
 
-## Dependencies
+## Pre requisites
 - You’ll need the [Rust](https://www.rust-lang.org/) compiler and Cargo, Rust’s package manager. The easiest way to install both is by using [rustup.rs.](https://rustup.rs/)
 - [Foundry v1.1.0-nightly](https://book.getfoundry.sh/getting-started/installation)
 - [Node.js LTS (22)](https://nodejs.org/en/download)
+
+## Install dependencies
+- Run `forge install` to install smart contract dependencies
+- Run `npm install -g @openzeppelin/upgrades-core@1.44.0` to install open zepelin upgrade validations dependencies
 
 ## Testing
 You can run unit test with:
