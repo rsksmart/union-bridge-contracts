@@ -48,9 +48,10 @@ contract DeployImplAndProxy is Script {
             btcBtcNetwork = BtcNetwork.REGTEST;
             // Set Bridge Mock
             vm.startBroadcast();
-            BridgeMock bridge = new BridgeMock();
+            BridgeMock bridgeMock = new BridgeMock();
+            bridgeMock.setBtcTransactionConfirmations(10);
             vm.stopBroadcast();
-            bridgeAddress = payable(address(bridge));
+            bridgeAddress = payable(address(bridgeMock));
             printDeployAddress(bridgeAddress, "BridgeMock");
         } else {
             revert("Blockchain is not RSK or regtest");

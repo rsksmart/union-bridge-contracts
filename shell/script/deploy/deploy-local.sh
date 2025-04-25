@@ -10,7 +10,20 @@ cd ..
 bash shell/clean-build.sh
 # set up environment variables
 source .env
-RPC=$LOCAL_RPC
+echo "================ RPC_URL: $RPC_URL ================"
+if [[ -z "${RPC_URL}" ]]; then
+  RPC=$LOCAL_RPC
+else
+  RPC=$RPC_URL
+fi
+echo "================ PRIVATE_KEY: $PRIVATE_KEY ================"
+if [[ -z "${PRIVATE_KEY}" ]]; then
+  # Anvil Private Key
+  echo "YOU NEED TO DEFINE ENV VARIABLE PRIVATE_KEY"
+  exit 1
+else
+  DELPOY_PRIVATE_KEY=$PRIVATE_KEY
+fi
 echo "================ DEPLOY CONTRACTS TO $RPC ================"
 # deploy to local anvil
 forge script \
@@ -19,4 +32,4 @@ forge script \
     --legacy \
     --broadcast \
     -v \
-    --interactives 1 \
+    --private-key $DELPOY_PRIVATE_KEY \
