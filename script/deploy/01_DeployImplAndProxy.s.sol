@@ -49,7 +49,6 @@ contract DeployImplAndProxy is Script {
             // Set Bridge Mock
             vm.startBroadcast();
             BridgeMock bridgeMock = new BridgeMock();
-            bridgeMock.setBtcTransactionConfirmations(10);
             vm.stopBroadcast();
             bridgeAddress = payable(address(bridgeMock));
             printDeployAddress(bridgeAddress, "BridgeMock");
@@ -77,6 +76,11 @@ contract DeployImplAndProxy is Script {
         if (payable(address(pegManager.bridge())) != bridgeAddress) {
             revert("PegManager bridge is not the bridge address");
         }
+
+        BridgeMock bridgeMock = BridgeMock(bridgeAddress);
+        vm.startBroadcast();
+        bridgeMock.setBtcTransactionConfirmations(10);
+        vm.stopBroadcast();
 
         return (committeeRegistry, bitcoinManager, pegManager, upgradableOwner, bridgeAddress);
     }
