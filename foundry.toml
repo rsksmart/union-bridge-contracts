@@ -5,8 +5,11 @@ solc_version = "0.8.28"
 evm_version = "london"
 optimizer = true
 optimizer_runs = 2000
-## gas limit in tests
-# gas_limit = 300000000 # we end un with a huge gas limit because of the deploy script
+# TODO Create2 is not compatible with OpenZeppelin upgrades
+# Create2, In order to reliably deploy to deterministic addresses we will need to make sure our bytecode stays the same
+# bytecode_hash = "none"
+# cbor_metadata = false
+# always_use_create_2_factory = true
 # This is needed by foundry-upgrades
 ffi = true
 ast = true
