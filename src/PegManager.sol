@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import "forge-std/console.sol";
 import {BaseProxy} from "./BaseProxy.sol";
 import {Committee, CommitteeMember, ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
-import {PrevoutData, BtcTransaction, BtcTxOut, IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
+import {PrevoutData, BtcTransaction, IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
 import {
     BtcTxSPVProof,
     StreamPosition,
@@ -17,9 +17,6 @@ import {
 import {Slot, Stream, Packet, SlotState, StreamManager} from "./StreamManager.sol";
 import {ProofValidator} from "./ProofValidator.sol";
 import {BtcHelper} from "./libraries/BtcHelper.sol";
-import {BtcScriptParser} from "./libraries/BtcScriptParser.sol";
-import {BtcTaproot} from "./libraries/BtcTaproot.sol";
-import {OpCodes} from "./libraries/OpCodes.sol";
 import {Constants} from "./libraries/Constants.sol";
 
 /// @title PegManager
