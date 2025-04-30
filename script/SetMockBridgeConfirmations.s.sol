@@ -3,8 +3,9 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
 import {BridgeMock} from "test/helpers/BridgeMock.sol";
+import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 
-contract GetTemporaryAddressScript is Script {
+contract GetTemporaryAddressScript is ScriptUtils {
     BridgeMock bridgeMock;
     int256 confirmations;
 
@@ -17,7 +18,7 @@ contract GetTemporaryAddressScript is Script {
     function run() public {
         setUp();
 
-        vm.startBroadcast();
+        vm.startBroadcast(getDeployerKey());
         bridgeMock.setBtcTransactionConfirmations(confirmations);
         vm.stopBroadcast();
 

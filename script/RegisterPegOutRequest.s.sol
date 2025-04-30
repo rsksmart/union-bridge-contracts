@@ -6,8 +6,9 @@ import {PegManager} from "src/PegManager.sol";
 import {ChainIds} from "src/libraries/Network.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {Slot, Stream, Packet, SlotState, StreamManager} from "src/StreamManager.sol";
+import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 
-contract RegisterPegOutRequestScript is Script {
+contract RegisterPegOutRequestScript is ScriptUtils {
     PegManager pegManager;
     uint64 amount;
     uint256 amountInWei;
@@ -29,7 +30,7 @@ contract RegisterPegOutRequestScript is Script {
         (Slot memory slot, uint64 packetNumber) = pegManager.getFirstFilledSlot(stream.streamId);
 
         console.log("=== Request PegOut ===");
-        vm.startBroadcast();
+        vm.startBroadcast(getDeployerKey());
         pegManager.requestPegOut{value: amountInWei}(usrPubKey, false);
         vm.stopBroadcast();
 
