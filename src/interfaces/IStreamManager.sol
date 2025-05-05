@@ -52,6 +52,10 @@ struct Stream {
 }
 
 interface IStreamManager {
+    /// @notice Allows users to create packets and slots
+    /// @param _committeePubKey The public key of the committee
+    function createPacketsAndSlots(bytes32 _committeePubKey) external;
+
     /// @notice Allows users to get the Stream information for a given denomination
     /// @param _denomination The value to peg in used by the stream in satoshi
     /// @return Stream The stream information
@@ -66,22 +70,23 @@ interface IStreamManager {
     /// @return uint64 The number of streams
     function getStreamsLength() external view returns (uint64);
 
+    /// @notice Allows users to get the packet information for a given packet index at a stream
+    /// @param _streamId The index in the array of streams
+    /// @param _packetNumber The index in the array of packets
+    /// @return Packet The packet information
+    function getPacket(uint64 _streamId, uint64 _packetNumber) external view returns (Packet memory);
+
     /// @notice Allows users to get the first prepared Slot information for a given packet index at a stream
     /// @param _streamId The index in the array of streams
     /// @param _packetNumber The index in the array of packets
-    /// @return uint256 The slotId of the first prepared slot information
+    /// @return uint64 The slotId of the first prepared slot information
     function getPreparedSlotId(uint64 _streamId, uint64 _packetNumber) external view returns (uint64);
 
-    // /// @notice Allows users to get the first filled Slot information for a given packet index at a stream
-    // /// @param _streamId The index in the array of streams
-    // /// @param _packetNumber The index in the array of packets
-    // /// @return uint256 The slotId of the first filled slot information
-    // function getFilledSlotId(uint64 _streamId, uint64 _packetNumber) external view returns (uint64);
-
-    // /// @notice Allows users to get the next available packet for a stream
-    // /// @param _streamId The index in the array of streams
-    // /// @return Packet The packet information
-    // function getNextAvailablePacket(uint64 _streamId) external view returns (Packet memory);
+    /// @notice Allows users to get the first filled Slot information for a given packet index at a stream
+    /// @param _streamId The index in the array of streams
+    /// @return slot The slot of the first filled slot information
+    /// @return packetNumber The packet number of the first filled slot information
+    function getFirstFilledSlot(uint64 _streamId) external view returns (Slot memory slot, uint64 packetNumber);
 
     /// @notice Allows users to get the Slot information for a given slot index at a packet index at a stream
     /// @param _streamId The index in the array of streams
@@ -90,13 +95,36 @@ interface IStreamManager {
     /// @return Slot The slot information
     function getSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotNumber) external view returns (Slot memory);
 
+    /// @notice Allows users to lock a slot
+    /// @param _streamId The index in the array of streams
+    /// @param _packetNumber The index in the array of packets
+    /// @param _slotId The index in the array of slots
+    function lockSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) external;
+
+    /// @notice Allows users to fill the accept peg-in transaction for a given slot
+    /// @param _streamId The index in the array of streams
+    /// @param _packetNumber The index in the array of packets
+    /// @param _acceptPegInAmount The amount of the accept peg-in transaction
+    /// @param _acceptPegInTx The transaction id of the accept peg-in transaction
+    /// @param _scriptPubKey The scriptPubKey of the accept peg-in transaction
+    /// @return uint64 The slotId of the filled slot
+    function fillAcceptPegInTx(
+        uint64 _streamId,
+        uint64 _packetNumber,
+        uint64 _acceptPegInAmount,
+        bytes32 _acceptPegInTx,
+        bytes memory _scriptPubKey
+    ) external returns (uint64);
+
     /// @notice Allows users to get the committee public key for a given packet index at a stream
     /// @param _streamId The index in the array of streams
     /// @param _packetNumber The index in the array of packets
     /// @return bytes32 The committee public key
     function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes32);
 
-    function createPacketsAndSlots(bytes32 _committeePubKey) external;
+    event StreamCreated(uint64 streamId, uint64 denomination);
+    event PacketCreated(uint64 streamId, uint64 packetNumber);
+    event SlotCreated(uint64 streamId, uint64 packetNumber, uint64 slotId);
 
     error StreamNotFoundByDenomination(uint256 denomination);
     error PacketOutOfBound(uint256 packetNumber);
@@ -104,4 +132,5 @@ interface IStreamManager {
     error tooManyDenominations(uint256 maxDenominationsSize);
     error NoFilledSlot(uint256 streamId, uint256 packetNumber);
     error NonExistentSlot(uint256 streamId, uint256 packetNumber, uint256 slotId);
+    error UnauthorizedAccount(address sender);
 }

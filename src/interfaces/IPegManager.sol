@@ -51,7 +51,9 @@ struct Signatures {
     uint8 missingSignatures;
 }
 
-interface IPegManager is IStreamManager {
+interface IPegManager {
+    function setStreamManager(IStreamManager _streamManager) external;
+
     // ===================== Peg-in Request=====================
 
     /// @notice Allows users generate a temporary Bitcoin address to perform a peg-in.

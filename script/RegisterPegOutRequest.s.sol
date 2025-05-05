@@ -5,11 +5,12 @@ import "forge-std/Script.sol";
 import {PegManager} from "src/PegManager.sol";
 import {ChainIds} from "src/libraries/Network.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
-import {Slot, Stream, Packet, SlotState, StreamManager} from "src/StreamManager.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
+import {Slot, Stream, Packet, SlotState, IStreamManager} from "src/interfaces/IStreamManager.sol";
 
 contract RegisterPegOutRequestScript is ScriptUtils {
     PegManager pegManager;
+    IStreamManager streamManager;
     uint64 amount;
     uint256 amountInWei;
     bytes usrPubKey;
@@ -17,6 +18,7 @@ contract RegisterPegOutRequestScript is ScriptUtils {
     function setUp() internal {
         // ====== Arguments ======
         pegManager = PegManager(0x0165878A594ca255338adfa4d48449f69242Eb8F);
+        streamManager = IStreamManager(pegManager.streamManager());
         amount = 100_000; // 0.001 BTC
         amountInWei = BtcHelper.satoshiToWei(amount);
         usrPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
@@ -26,8 +28,8 @@ contract RegisterPegOutRequestScript is ScriptUtils {
         setUp();
 
         // Get first filled Slot
-        Stream memory stream = pegManager.getStream(amount);
-        (Slot memory slot, uint64 packetNumber) = pegManager.getFirstFilledSlot(stream.streamId);
+        Stream memory stream = streamManager.getStream(amount);
+        (Slot memory slot, uint64 packetNumber) = streamManager.getFirstFilledSlot(stream.streamId);
 
         console.log("=== Request PegOut ===");
         vm.startBroadcast(getDeployerKey());

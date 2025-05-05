@@ -6,6 +6,7 @@ import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 import {CommitteeRegistry} from "src/CommitteeRegistry.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
 import {PegManager} from "src/PegManager.sol";
+import {StreamManager} from "src/StreamManager.sol";
 import {RSK_BRIDGE_ADDRESS} from "src/interfaces/IBridge.sol";
 import {BtcNetwork} from "src/libraries/Network.sol";
 import {BridgeMock} from "test/helpers/BridgeMock.sol";
@@ -21,7 +22,6 @@ contract DeployImplAndProxy is ScriptUtils {
     address payable public bridgeAddress;
 
     function setUp() internal {
-        address[] memory wallets = vm.getWallets();
         bridgeAddress = RSK_BRIDGE_ADDRESS;
         denominations = [
             uint64(100_000), // 0.001 BTC
@@ -30,36 +30,33 @@ contract DeployImplAndProxy is ScriptUtils {
             uint64(100_000_000), // 1 BTC
             uint64(1_000_000_000) // 10 BTC
         ];
+        upgradableOwner = getDeployerAddress();
         // RSK Mainnet
         if (block.chainid == ChainIds.RSK_MAINNET) {
-            upgradableOwner = wallets[0];
             btcBtcNetwork = BtcNetwork.MAINNET;
         } else if (block.chainid == ChainIds.RSK_TESTNET) {
-            btcBtcNetwork = BtcNetwork.TESTNET;
             // RSK Testnet
-            if (wallets.length > 0) {
-                upgradableOwner = wallets[0];
-            } else {
-                // This value is used when simulating the deployment
-                upgradableOwner = vm.addr(777);
-            }
+            btcBtcNetwork = BtcNetwork.TESTNET;
         } else if (block.chainid == ChainIds.LOCAL) {
             // Foundry local chainid
-            upgradableOwner = vm.addr(777);
             btcBtcNetwork = BtcNetwork.REGTEST;
             // Set Bridge Mock
             vm.startBroadcast(getDeployerKey());
             BridgeMock bridgeMock = new BridgeMock();
             vm.stopBroadcast();
             bridgeAddress = payable(address(bridgeMock));
-            printDeployAddress(bridgeAddress, "BridgeMock");
         } else {
             revert("Blockchain is not RSK or regtest");
         }
     }
 
-    function run() public returns (CommitteeRegistry, BitcoinManager, PegManager, address, address payable) {
+    function run()
+        public
+        returns (CommitteeRegistry, BitcoinManager, PegManager, StreamManager, address, address payable)
+    {
         setUp();
+        printAddress(upgradableOwner, "upgradableOwner");
+        printAddress(bridgeAddress, "Bridge");
         CommitteeRegistry committeeRegistry = deployCommitteeRegistry(upgradableOwner);
         if (committeeRegistry.owner() != upgradableOwner) {
             revert("CommitteeRegistry owner is not the upgradable owner");
@@ -68,8 +65,7 @@ contract DeployImplAndProxy is ScriptUtils {
         if (bitcoinManager.owner() != upgradableOwner) {
             revert("BitcoinManager owner is not the upgradable owner");
         }
-        PegManager pegManager =
-            deployPegManager(upgradableOwner, bridgeAddress, committeeRegistry, bitcoinManager, denominations);
+        PegManager pegManager = deployPegManager(upgradableOwner, bridgeAddress, committeeRegistry, bitcoinManager);
         // Verify contracts are initialized
         if (pegManager.owner() != upgradableOwner) {
             revert("PegManager owner is not the upgradable owner");
@@ -78,14 +74,25 @@ contract DeployImplAndProxy is ScriptUtils {
             revert("PegManager bridge is not the bridge address");
         }
 
+        StreamManager streamManager = deployStreamManager(upgradableOwner, address(pegManager), denominations);
+        if (streamManager.owner() != upgradableOwner) {
+            revert("StreamManager owner is not the upgradable owner");
+        }
+        if (streamManager.pegManager() != address(pegManager)) {
+            revert("StreamManager pegManager is not the pegManager address");
+        }
+
+        vm.startBroadcast(getDeployerKey());
+        pegManager.setStreamManager(streamManager);
+        vm.stopBroadcast();
+
         if (block.chainid == ChainIds.LOCAL) {
-            BridgeMock bridgeMock = BridgeMock(bridgeAddress);
             vm.startBroadcast(getDeployerKey());
-            bridgeMock.setBtcTransactionConfirmations(10);
+            BridgeMock(bridgeAddress).setBtcTransactionConfirmations(10);
             vm.stopBroadcast();
         }
 
-        return (committeeRegistry, bitcoinManager, pegManager, upgradableOwner, bridgeAddress);
+        return (committeeRegistry, bitcoinManager, pegManager, streamManager, upgradableOwner, bridgeAddress);
     }
 
     function deployCommitteeRegistry(address _upgradableOwner) public returns (CommitteeRegistry) {
@@ -109,22 +116,30 @@ contract DeployImplAndProxy is ScriptUtils {
         address _upgradableOwner,
         address payable _bridgeAddress,
         CommitteeRegistry _committeeRegistry,
-        BitcoinManager _bitcoinManager,
-        uint64[] memory _denominations
+        BitcoinManager _bitcoinManager
     ) public returns (PegManager) {
-        string memory contractName = "PegManager.sol";
-        if (vm.isContext(VmSafe.ForgeContext.TestGroup)) {
-            contractName = "PegManagerHarness.sol";
-        }
-
         (, address proxyAdddress) = deployContractAndUUPSProxy(
-            contractName,
+            "PegManager.sol",
             abi.encodeCall(
-                PegManager.initialize,
-                (_upgradableOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager, _denominations)
+                PegManager.initialize, (_upgradableOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager)
             )
         );
         return PegManager(proxyAdddress);
+    }
+
+    function deployStreamManager(address _upgradableOwner, address _pegManager, uint64[] memory _denominations)
+        public
+        returns (StreamManager)
+    {
+        string memory contractName = "StreamManager.sol";
+        if (vm.isContext(VmSafe.ForgeContext.TestGroup)) {
+            contractName = "StreamManagerHarness.sol";
+        }
+
+        (, address proxyAdddress) = deployContractAndUUPSProxy(
+            contractName, abi.encodeCall(StreamManager.initialize, (_upgradableOwner, _pegManager, _denominations))
+        );
+        return StreamManager(proxyAdddress);
     }
 
     /**
@@ -153,15 +168,15 @@ contract DeployImplAndProxy is ScriptUtils {
         vm.stopBroadcast();
         // Get the implementation address
         address implementationAddress = Upgrades.getImplementationAddress(proxyAddress);
-        printDeployAddress(proxyAddress, _contractName);
+        printAddress(proxyAddress, _contractName);
         return (implementationAddress, proxyAddress);
     }
 
-    function printDeployAddress(address _proxyAddress, string memory _contractName) public view {
+    function printAddress(address _proxyAddress, string memory _contractName) public view {
         if (vm.isContext(VmSafe.ForgeContext.ScriptBroadcast)) {
             // execute when running `forge script --broadcast`
             // this is to avoid printing the address when running tests
-            console.log(_contractName, " proxy address: ", _proxyAddress);
+            console.log(_contractName, " address: ", _proxyAddress);
         }
     }
 

@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import "forge-std/Script.sol";
 import {PegManager, StreamPosition, BtcTxSPVProof, PegStatus, RequestPegInTempInfo} from "src/PegManager.sol";
 import {IBitcoinManager, BtcTransaction, BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
-import {Stream, Packet} from "src/interfaces/IStreamManager.sol";
+import {Stream, Packet, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {OpCodes} from "src/libraries/OpCodes.sol";
 import {ChainIds} from "src/libraries/Network.sol";
 import {Constants} from "src/libraries/Constants.sol";
@@ -12,6 +12,7 @@ import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 
 contract AcceptPegInRequestScript is ScriptUtils {
     PegManager pegManager;
+    IStreamManager streamManager;
     IBitcoinManager bitcoinManager;
 
     function setUp() internal returns (BtcTxSPVProof memory pegInAcceptedTxSPVProof) {
@@ -22,6 +23,7 @@ contract AcceptPegInRequestScript is ScriptUtils {
         pegManager = PegManager(0x0165878A594ca255338adfa4d48449f69242Eb8F);
         // =======================
         // Smart contract addresses
+        streamManager = IStreamManager(pegManager.streamManager());
         bitcoinManager = IBitcoinManager(pegManager.bitcoinManager());
 
         // Check if the peg-in request exists and is in REGISTERED status
@@ -34,7 +36,7 @@ contract AcceptPegInRequestScript is ScriptUtils {
         RequestPegInTempInfo memory requestPegInTempInfo = pegManager.getRequestPegInTempInfo(requestPegInTxHash);
 
         // Get the committee public key
-        bytes32 committeePubKey = pegManager.getCommitteePubKey(streamPosition.streamId, streamPosition.packetNumber);
+        bytes32 committeePubKey = streamManager.getCommitteePubKey(streamPosition.streamId, streamPosition.packetNumber);
 
         // BtcTransaction to verify
         BtcTransaction memory btcTransaction =

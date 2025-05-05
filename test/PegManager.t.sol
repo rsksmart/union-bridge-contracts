@@ -153,7 +153,7 @@ contract TestPegManager is Test, HelperContract {
         BtcTxSPVProof memory pegInRequestTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
         // Assert
-        Stream memory stream = pm.getStream(VALUE);
+        Stream memory stream = streamManager.getStream(VALUE);
         vm.expectRevert(
             abi.encodeWithSelector(
                 ProofValidator.NotEnoughConfirmations.selector, actualConfirmations, stream.pegInConfirmations
@@ -301,7 +301,7 @@ contract TestPegManager is Test, HelperContract {
         );
         assertEq(pegInTempInfo.utxoScriptPubKey, hex"", "Peg in temp info utxoScriptPubKey should be deleted");
         // Registered Peg In Slot
-        Slot memory slot = pm.getSlot(streamId, PACKET_NUMBER, slotId);
+        Slot memory slot = streamManager.getSlot(streamId, PACKET_NUMBER, slotId);
         assertEq(uint256(slot.state), uint256(SlotState.FILLED), "Slot should be filled");
         assertEq(slot.acceptPegInTx, acceptPegInTxHash, "Incorrect acceptPegInTx");
         assertEq(slot.acceptPegInAmount, btcTransaction.outputs[0].amount, "Incorrect acceptPegInAmount");
@@ -454,7 +454,7 @@ contract TestPegManager is Test, HelperContract {
         bridgeMock.setBtcTransactionConfirmations(actualConfirmations);
         // Create PegIn accepted tx struct information
         BtcTxSPVProof memory pegInAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
-        Stream memory stream = pm.getStreamById(0);
+        Stream memory stream = streamManager.getStreamById(0);
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -518,11 +518,13 @@ contract TestPegManager is Test, HelperContract {
         uint64 amount = 10000000; // 0.1 BTC
         uint256 amountInWei = BtcHelper.satoshiToWei(amount);
 
-        Stream memory stream = pm.getStream(uint64(amount));
+        Stream memory stream = streamManager.getStream(uint64(amount));
         uint64 packetNumber = 0;
         uint64 slotId = 0;
 
-        pm.setSlotHarness(stream.streamId, packetNumber, slotId, SlotState.FILLED, scriptPubKey, txId, amount);
+        streamManager.setSlotHarness(
+            stream.streamId, packetNumber, slotId, SlotState.FILLED, scriptPubKey, txId, amount
+        );
 
         // Assert
         vm.expectEmit(address(pm));
@@ -538,7 +540,7 @@ contract TestPegManager is Test, HelperContract {
         assertEq(pegOutTxHash, expectedHash, "expected hash doesn't match the pegout computed one");
 
         // Assert
-        Slot memory slot = pm.getSlot(stream.streamId, packetNumber, slotId);
+        Slot memory slot = streamManager.getSlot(stream.streamId, packetNumber, slotId);
         assertEq(uint64(slot.state), uint64(SlotState.LOCKED), "Slot was not locked");
 
         // Assert
@@ -561,8 +563,8 @@ contract TestPegManager is Test, HelperContract {
         uint64 amount = VALUE;
         uint256 amountInWei = BtcHelper.satoshiToWei(amount);
 
-        Stream memory stream = pm.getStream(uint64(amount));
-        (Slot memory slot, uint64 packetNumber) = pm.getFirstFilledSlot(stream.streamId);
+        Stream memory stream = streamManager.getStream(uint64(amount));
+        (Slot memory slot, uint64 packetNumber) = streamManager.getFirstFilledSlot(stream.streamId);
 
         // Assert
         vm.expectEmit(address(pm));
@@ -578,7 +580,7 @@ contract TestPegManager is Test, HelperContract {
         assertEq(result, expectedHash, "expected hash doesn't match the pegout computed one");
 
         // Assert
-        slot = pm.getSlot(stream.streamId, packetNumber, slot.slotId);
+        slot = streamManager.getSlot(stream.streamId, packetNumber, slot.slotId);
         assertEq(uint64(slot.state), uint64(SlotState.LOCKED), "Slot was not locked");
     }
 
@@ -612,7 +614,7 @@ contract TestPegManager is Test, HelperContract {
         uint64 amount = 100000; // 0.1 BTC
         uint256 amountInWei = BtcHelper.satoshiToWei(amount);
 
-        Stream memory stream = pm.getStream(uint64(amount));
+        Stream memory stream = streamManager.getStream(uint64(amount));
         uint64 packetNumber = 0;
 
         // Assert
@@ -620,23 +622,6 @@ contract TestPegManager is Test, HelperContract {
 
         // Act
         pm.requestPegOut{value: amountInWei}(usrPubKey, false);
-    }
-
-    function test_getFirstFilledSlot_Success() external {
-        // Arrange
-        pm.setSlotHarness(0, 0, 0, SlotState.FILLED, hex"00", 0, 0);
-
-        // Act
-        (Slot memory slot,) = pm.getFirstFilledSlot(0);
-        assertEq(uint64(slot.state), uint64(SlotState.FILLED), "Incorrect slot state");
-    }
-
-    function test_getFirstFilledSlot_NoFilledSlot() external {
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(IStreamManager.NoFilledSlot.selector, 0, 0));
-
-        // Act
-        pm.getFirstFilledSlot(0);
     }
 
     // we only check the revert case since the success cases are being checked in the _addMemberSignaturePegoutTxHash tests
@@ -856,11 +841,13 @@ contract TestPegManager is Test, HelperContract {
         uint64 amount = 10000000; // 0.1 BTC
         uint256 amountInWei = BtcHelper.satoshiToWei(amount);
 
-        Stream memory stream = pm.getStream(uint64(amount));
+        Stream memory stream = streamManager.getStream(uint64(amount));
         uint64 packetNumber = 0;
         uint64 slotId = 0;
 
-        pm.setSlotHarness(stream.streamId, packetNumber, slotId, SlotState.FILLED, scriptPubKey, txId, amount);
+        streamManager.setSlotHarness(
+            stream.streamId, packetNumber, slotId, SlotState.FILLED, scriptPubKey, txId, amount
+        );
 
         // Execute pegout as part of the arrange
         pm.requestPegOut{value: amountInWei}(usrPubKey, false);

@@ -2,10 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
-import {CommitteeRegistry} from "src/CommitteeRegistry.sol";
-import {BitcoinManager} from "src/BitcoinManager.sol";
-import {PegManager} from "src/PegManager.sol";
-import {Stream} from "src/interfaces/IStreamManager.sol";
+import {Stream, StreamManager} from "src/StreamManager.sol";
 import {ChainIds} from "src/libraries/Network.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 
@@ -31,17 +28,17 @@ contract SetUpStreams is ScriptUtils {
         }
     }
 
-    function run(PegManager _pegManager) public {
+    function run(StreamManager _streamManager) public {
         setUp();
         vm.startBroadcast(getDeployerKey());
-        _pegManager.createPacketsAndSlots(committeePubKey);
+        _streamManager.createPacketsAndSlots(committeePubKey);
         vm.stopBroadcast();
-        uint256 streamLen = _pegManager.getStreamsLength();
+        uint256 streamLen = _streamManager.getStreamsLength();
         if (streamLen == 0) {
             revert("StreamManager streams not created");
         }
-        Stream memory stream = _pegManager.getStreamById(0);
-        (, bytes32 packetCommitteePubKey) = _pegManager.packets(stream.streamId, stream.peginPointer);
+        Stream memory stream = _streamManager.getStreamById(0);
+        (, bytes32 packetCommitteePubKey) = _streamManager.packets(stream.streamId, stream.peginPointer);
         if (committeePubKey != packetCommitteePubKey) {
             revert("StreamManager packets not created");
         }

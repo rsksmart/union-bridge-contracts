@@ -12,7 +12,7 @@ contract TestSecurityBond is Test, HelperContract {
     function setUp() external {
         runTestDeployScript();
         sb = new SecurityBond();
-        sb.initialize(pm);
+        sb.initialize(streamManager);
     }
 
     function test_getMinimumDeposit_Success() external view {
