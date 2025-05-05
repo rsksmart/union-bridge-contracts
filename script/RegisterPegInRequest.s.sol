@@ -7,8 +7,9 @@ import {IBitcoinManager, BtcTransaction, BtcTxIn, BtcTxOut} from "src/interfaces
 import {Stream, Packet} from "src/interfaces/IStreamManager.sol";
 import {OpCodes} from "src/libraries/OpCodes.sol";
 import {ChainIds} from "src/libraries/Network.sol";
+import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 
-contract RegisterPegInRequestScript is Script {
+contract RegisterPegInRequestScript is ScriptUtils {
     PegManager pegManager;
     IBitcoinManager bitcoinManager;
 
@@ -77,7 +78,7 @@ contract RegisterPegInRequestScript is Script {
             revert("PegInRequest already registered");
         }
         // register pegInRequest
-        vm.startBroadcast();
+        vm.startBroadcast(getDeployerKey());
         pegManager.registerPegInRequest(pegInRequestTxSPVProof);
         vm.stopBroadcast();
         // check if pegInRequest is registered

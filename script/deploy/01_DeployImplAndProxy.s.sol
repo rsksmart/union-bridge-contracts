@@ -10,9 +10,10 @@ import {RSK_BRIDGE_ADDRESS} from "src/interfaces/IBridge.sol";
 import {BtcNetwork} from "src/libraries/Network.sol";
 import {BridgeMock} from "test/helpers/BridgeMock.sol";
 import {ChainIds} from "src/libraries/Network.sol";
+import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 
 ///@dev We are using fundry-upgrades see https://github.com/OpenZeppelin/openzeppelin-foundry-upgrades
-contract DeployImplAndProxy is Script {
+contract DeployImplAndProxy is ScriptUtils {
     // Contracts to be deployed
     address public upgradableOwner;
     BtcNetwork public btcBtcNetwork;
@@ -47,7 +48,7 @@ contract DeployImplAndProxy is Script {
             upgradableOwner = vm.addr(777);
             btcBtcNetwork = BtcNetwork.REGTEST;
             // Set Bridge Mock
-            vm.startBroadcast();
+            vm.startBroadcast(getDeployerKey());
             BridgeMock bridgeMock = new BridgeMock();
             vm.stopBroadcast();
             bridgeAddress = payable(address(bridgeMock));
@@ -77,10 +78,12 @@ contract DeployImplAndProxy is Script {
             revert("PegManager bridge is not the bridge address");
         }
 
-        BridgeMock bridgeMock = BridgeMock(bridgeAddress);
-        vm.startBroadcast();
-        bridgeMock.setBtcTransactionConfirmations(10);
-        vm.stopBroadcast();
+        if (block.chainid == ChainIds.LOCAL) {
+            BridgeMock bridgeMock = BridgeMock(bridgeAddress);
+            vm.startBroadcast(getDeployerKey());
+            bridgeMock.setBtcTransactionConfirmations(10);
+            vm.stopBroadcast();
+        }
 
         return (committeeRegistry, bitcoinManager, pegManager, upgradableOwner, bridgeAddress);
     }
@@ -140,7 +143,7 @@ contract DeployImplAndProxy is Script {
         // See https://docs.openzeppelin.com/upgrades-plugins/faq#why-cant-i-use-external-libraries
         // Options memory opts;
         // opts.unsafeAllow = "unsafeAllowLinkedLibraries";
-        vm.startBroadcast();
+        vm.startBroadcast(getDeployerKey());
         // Deploy the upgradeable contract
         address proxyAddress = Upgrades.deployUUPSProxy(
             _contractName, //"MyUpgradeableToken.sol",

@@ -8,9 +8,9 @@ cd ..
 # set up environment variables
 source .env
 RPC=$LOCAL_RPC
-echo "================ SET MOCK BRIDGE CONFIRMATIONS TO $RPC ================"
+echo "================ REGISTER PEGIN REQUEST TO $RPC ================"
 forge script \
-    script/SetMockBridgeConfirmations.s.sol \
+    script/AddMemberSignaturePegOut.s.sol \
     --rpc-url $RPC \
     --legacy \
     --broadcast \

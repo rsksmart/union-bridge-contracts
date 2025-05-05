@@ -8,8 +8,9 @@ import {Stream, Packet} from "src/interfaces/IStreamManager.sol";
 import {OpCodes} from "src/libraries/OpCodes.sol";
 import {ChainIds} from "src/libraries/Network.sol";
 import {Constants} from "src/libraries/Constants.sol";
+import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 
-contract AcceptPegInRequestScript is Script {
+contract AcceptPegInRequestScript is ScriptUtils {
     PegManager pegManager;
     IBitcoinManager bitcoinManager;
 
@@ -78,7 +79,7 @@ contract AcceptPegInRequestScript is Script {
         console.logBytes32(pegInAcceptedTxHash);
 
         // accept pegInRequest
-        vm.startBroadcast();
+        vm.startBroadcast(getDeployerKey());
         pegManager.acceptPegInRequest(pegInAcceptedTxSPVProof);
         vm.stopBroadcast();
 

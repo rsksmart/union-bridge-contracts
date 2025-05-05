@@ -15,4 +15,3 @@ forge script \
     --legacy \
     --broadcast \
     -vvvv \
-    --interactives 1 

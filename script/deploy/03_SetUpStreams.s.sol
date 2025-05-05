@@ -7,9 +7,10 @@ import {BitcoinManager} from "src/BitcoinManager.sol";
 import {PegManager} from "src/PegManager.sol";
 import {Stream} from "src/interfaces/IStreamManager.sol";
 import {ChainIds} from "src/libraries/Network.sol";
+import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 
 ///@dev We are using fundry-upgrades see https://github.com/OpenZeppelin/openzeppelin-foundry-upgrades
-contract SetUpStreams is Script {
+contract SetUpStreams is ScriptUtils {
     // Contracts to be deployed
     bytes32 public committeePubKey;
 
@@ -32,7 +33,7 @@ contract SetUpStreams is Script {
 
     function run(PegManager _pegManager) public {
         setUp();
-        vm.startBroadcast();
+        vm.startBroadcast(getDeployerKey());
         _pegManager.createPacketsAndSlots(committeePubKey);
         vm.stopBroadcast();
         uint256 streamLen = _pegManager.getStreamsLength();

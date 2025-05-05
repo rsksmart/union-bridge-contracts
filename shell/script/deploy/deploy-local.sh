@@ -16,13 +16,11 @@ if [[ -z "${RPC_URL}" ]]; then
 else
   RPC=$RPC_URL
 fi
-echo "================ PRIVATE_KEY: $PRIVATE_KEY ================"
-if [[ -z "${PRIVATE_KEY}" ]]; then
+echo "================ MNEMONIC: $MNEMONIC ================"
+if [[ -z "${MNEMONIC}" ]]; then
   # Anvil Private Key
-  echo "YOU NEED TO DEFINE ENV VARIABLE PRIVATE_KEY"
+  echo "MNEMONIC STRING VARIABLE NEEDS TO BE DEFINED IN THE ENV FILE"
   exit 1
-else
-  DELPOY_PRIVATE_KEY=$PRIVATE_KEY
 fi
 echo "================ DEPLOY CONTRACTS TO $RPC ================"
 # deploy to local anvil
@@ -32,4 +30,3 @@ forge script \
     --legacy \
     --broadcast \
     -v \
-    --private-key $DELPOY_PRIVATE_KEY \

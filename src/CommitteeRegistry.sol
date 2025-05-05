@@ -38,11 +38,10 @@ contract CommitteeRegistry is ICommitteeRegistry, Initializable, BaseProxy {
         __BaseProxy_init(_initialOwner);
     }
 
-    function registerMemberWithAddress(
+    function registerMember(
         bytes32 _publicKey,
         StreamDenomination[] calldata requestedStreams,
-        Role[] calldata requestedRoles,
-        address _address
+        Role[] calldata requestedRoles
     ) public {
         // Check max Members
         if (members.length >= MAX_MEMBERS_SIZE) {
@@ -73,7 +72,7 @@ contract CommitteeRegistry is ICommitteeRegistry, Initializable, BaseProxy {
         Member storage m = members[members.length - 1]; // Get reference
         m.publicKey = _publicKey;
         // We save the position in the array + 1, to avoid 0 as a valid index, it is then substracted in getMemberPubKeyByAddress
-        memberIndexByAddress[_address] = uint16(members.length);
+        memberIndexByAddress[msg.sender] = uint16(members.length);
 
         // Set requested roles
         for (uint256 i = 0; i < requestedStreams.length; i++) {
@@ -89,14 +88,6 @@ contract CommitteeRegistry is ICommitteeRegistry, Initializable, BaseProxy {
         }
 
         emit newMember(_publicKey, requestedStreams, requestedRoles);
-    }
-
-    function registerMember(
-        bytes32 _publicKey,
-        StreamDenomination[] calldata requestedStreams,
-        Role[] calldata requestedRoles
-    ) public {
-        registerMemberWithAddress(_publicKey, requestedStreams, requestedRoles, msg.sender);
     }
 
     function registerCommittee(Committee calldata _committee) external {
