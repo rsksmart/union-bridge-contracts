@@ -3,16 +3,14 @@ pragma solidity ^0.8.20;
 
 import {Stream, Packet, Slot, SlotState, IStreamManager} from "./interfaces/IStreamManager.sol";
 import {BaseProxy} from "./BaseProxy.sol";
-import "forge-std/console.sol";
 
 /// @title Stream Manager
 /// @notice Manages streams
 contract StreamManager is IStreamManager, BaseProxy {
+    address public pegManager;
+    uint64 public constant MAX_DENOMINATIONS_SIZE = 10;
     Stream[] internal streams;
     uint64[] internal denominations;
-    uint64 internal constant SECURITY_BOND_MULTIPLYER = 2;
-    uint64 public constant MAX_DENOMINATIONS_SIZE = 10;
-    address public pegManager;
 
     // StreamId => Packet list
     mapping(uint64 => Packet[]) public packets;
@@ -39,7 +37,7 @@ contract StreamManager is IStreamManager, BaseProxy {
                     denomination: _denominations[i],
                     peginPointer: 0,
                     pegoutPointer: -1,
-                    securityBondValue: _denominations[i] * SECURITY_BOND_MULTIPLYER,
+                    securityBondValue: _denominations[i],
                     pegInConfirmations: uint8(i + 1)
                 })
             );

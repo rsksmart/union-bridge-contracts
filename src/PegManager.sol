@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import "forge-std/console.sol";
 import {BaseProxy} from "./BaseProxy.sol";
 import {Committee, CommitteeMember, ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
 import {PrevoutData, BtcTransaction, IBitcoinManager} from "./interfaces/IBitcoinManager.sol";

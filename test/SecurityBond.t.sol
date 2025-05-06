@@ -21,7 +21,7 @@ contract TestSecurityBond is Test, HelperContract {
         // Act
         uint64 minDeposit = sb.getMinimumDeposit(denomination);
         // Assert
-        assertEq(minDeposit, denomination * 2, "Error SecurityBond min deposit should be twice the denomination");
+        assertEq(minDeposit, denomination, "Error SecurityBond min deposit should be equal to the denomination");
     }
 
     function test_getMinimumDeposit_Revert_StreamNotFound() external {
@@ -54,7 +54,7 @@ contract TestSecurityBond is Test, HelperContract {
         // Arrange
         uint64 denomination = 100_000; // 0.001 BTC
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(SecurityBond.despositBondTooLow.selector, 0, denomination * 2));
+        vm.expectRevert(abi.encodeWithSelector(SecurityBond.despositBondTooLow.selector, 0, denomination));
         // Act
         sb.securityBondDeposit{value: 0}(denomination);
     }
