@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import "forge-std/console.sol";
 import {BaseProxy} from "./BaseProxy.sol";
 import {Committee, CommitteeMember, ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
 import {PrevoutData, BtcTransaction, IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
@@ -14,7 +13,7 @@ import {
     Signatures,
     IPegManager
 } from "./interfaces/IPegManager.sol";
-import {Slot, Stream, Packet, SlotState, StreamManager} from "./StreamManager.sol";
+import {Slot, Stream, Packet, SlotState, IStreamManager} from "./interfaces/IStreamManager.sol";
 import {ProofValidator} from "./ProofValidator.sol";
 import {BtcHelper} from "./libraries/BtcHelper.sol";
 import {Constants} from "./libraries/Constants.sol";
@@ -22,9 +21,10 @@ import {Constants} from "./libraries/Constants.sol";
 /// @title PegManager
 /// @notice Manages peg-in and peg-out operations between Bitcoin and Rootstock
 
-contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
+contract PegManager is IPegManager, ProofValidator, BaseProxy {
     ICommitteeRegistry public committeeRegistry;
     IBitcoinManager public bitcoinManager;
+    IStreamManager public streamManager;
 
     // Request PegIn Tx Hash => Stream Position (streamId, packetNumber, slotId, pegStatus)
     mapping(bytes32 btcRequestPegInTxHash => StreamPosition streamPosition) internal pegInRequests;
@@ -38,14 +38,16 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
         address _initialOwner,
         address payable _bridgeAddress,
         ICommitteeRegistry _committeeRegistry,
-        IBitcoinManager _bitcoinManager,
-        uint64[] memory _denominations
+        IBitcoinManager _bitcoinManager
     ) public virtual initializer {
         committeeRegistry = _committeeRegistry;
         bitcoinManager = _bitcoinManager;
-        StreamManager.initialize(_denominations);
         __ProofValidator_init(_bridgeAddress);
         __BaseProxy_init(_initialOwner);
+    }
+
+    function setStreamManager(IStreamManager _streamManager) external onlyOwner {
+        streamManager = _streamManager;
     }
 
     function getPegInRequest(bytes32 btcTxHash) external view returns (StreamPosition memory) {
@@ -62,10 +64,10 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
         returns (string memory bitcoinDepositAddress)
     {
         // Get the stream for this value
-        Stream memory stream = getStream(_value);
+        Stream memory stream = streamManager.getStream(_value);
 
         // Get the current packet's committee key
-        Packet memory currentPacket = packets[stream.streamId][stream.peginPointer];
+        Packet memory currentPacket = streamManager.getPacket(stream.streamId, stream.peginPointer);
         bytes32 committeeKey = currentPacket.committeePubKey;
 
         return bitcoinManager.getTemporaryPegInAddress(
@@ -94,7 +96,8 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
             bitcoinManager.getPegInOpReturnData(_pegInRequestTxSPVProof.btcTx.outputs[Constants.VOUT_INDEX_SPEED_UP]);
         // First transaction is the PegIn P2TR _pegInRequestTxSPVProof.btcTx.outputs[0]
         // Get corresponding stream for the amount if non found reverts
-        Stream memory stream = getStream(_pegInRequestTxSPVProof.btcTx.outputs[Constants.VOUT_INDEX_TAPTREE].amount);
+        Stream memory stream =
+            streamManager.getStream(_pegInRequestTxSPVProof.btcTx.outputs[Constants.VOUT_INDEX_TAPTREE].amount);
 
         // Validates that the Taproot Script has a Key Path for the committeePubKey
         // and has a timelock for btcReimbursementPubKey
@@ -103,7 +106,7 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
             stream.denomination,
             btcReimbursementPubKey,
             // getCommitteePubKey reverts if packet does not exist
-            getCommitteePubKey(stream.streamId, packetNumber),
+            streamManager.getCommitteePubKey(stream.streamId, packetNumber),
             _pegInRequestTxSPVProof.btcTx.outputs[Constants.VOUT_INDEX_TAPTREE]
         );
 
@@ -201,7 +204,7 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
         // not sure if this can be used as an attack tough
 
         requestTempInfo = pegInsTempInfo[requestPegInTxHash];
-        bytes32 committeePubKey = getCommitteePubKey(streamPosition.streamId, streamPosition.packetNumber);
+        bytes32 committeePubKey = streamManager.getCommitteePubKey(streamPosition.streamId, streamPosition.packetNumber);
         // validate the ouputs are the expected
         // taptree for pegout
         bitcoinManager.validateAcceptPegInP2TROutput(
@@ -225,7 +228,7 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
         // and that block is inside Bitcoin Mainchain
         // annd has enough confirmations
         verifyTxConfirmations(
-            streams[streamPosition.streamId].pegInConfirmations,
+            streamManager.getStreamById(streamPosition.streamId).pegInConfirmations,
             txHash,
             _pegInAcceptedTxSPVProof.blockHash,
             _pegInAcceptedTxSPVProof.merkleBranchPath,
@@ -234,7 +237,7 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
 
         // get the peg in request tx hash
         // Store Tx in pegInSlot as Filled
-        streamPosition.slotId = fillAcceptPegInTx(
+        streamPosition.slotId = streamManager.fillAcceptPegInTx(
             streamPosition.streamId,
             streamPosition.packetNumber,
             _pegInAcceptedTxSPVProof.btcTx.outputs[Constants.VOUT_INDEX_TAPTREE].amount,
@@ -290,8 +293,8 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
         // TODO: acount for batchFlag
 
         // Get first filled Slot
-        Stream memory stream = getStream(receivedAmount);
-        (Slot memory slot, uint64 packetNumber) = getFirstFilledSlot(stream.streamId);
+        Stream memory stream = streamManager.getStream(receivedAmount);
+        (Slot memory slot, uint64 packetNumber) = streamManager.getFirstFilledSlot(stream.streamId);
 
         // Prepare prevout data
         PrevoutData memory prevoutData = PrevoutData({
@@ -314,7 +317,7 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
         storePegOutAndInitSignatures(pegOutTxHash, stream.streamId, packetNumber, slot.slotId);
 
         // Lock the used slot
-        lockSlot(stream.streamId, packetNumber, slot.slotId);
+        streamManager.lockSlot(stream.streamId, packetNumber, slot.slotId);
 
         // TODO: return RBTC to the RSK Legacy Bridge following https://github.com/rsksmart/RSKIPs/pull/502
 
@@ -336,7 +339,7 @@ contract PegManager is IPegManager, StreamManager, ProofValidator, BaseProxy {
         pegOutTxHashes[key] = pegOutTxHash;
 
         // Get the committee key
-        bytes32 committeeKey = getCommitteePubKey(streamId, packetNumber);
+        bytes32 committeeKey = streamManager.getCommitteePubKey(streamId, packetNumber);
 
         // Get the members
         CommitteeMember[] memory members = committeeRegistry.getCommitteeMember(committeeKey);

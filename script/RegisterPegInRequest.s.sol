@@ -4,13 +4,14 @@ pragma solidity ^0.8.20;
 import "forge-std/Script.sol";
 import {PegManager, StreamPosition, BtcTxSPVProof, PegStatus} from "src/PegManager.sol";
 import {IBitcoinManager, BtcTransaction, BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
-import {Stream, Packet} from "src/interfaces/IStreamManager.sol";
+import {Stream, Packet, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {OpCodes} from "src/libraries/OpCodes.sol";
 import {ChainIds} from "src/libraries/Network.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 
 contract RegisterPegInRequestScript is ScriptUtils {
     PegManager pegManager;
+    IStreamManager streamManager;
     IBitcoinManager bitcoinManager;
 
     function setUp() internal returns (BtcTxSPVProof memory pegInRequestTxSPVProof) {
@@ -21,11 +22,12 @@ contract RegisterPegInRequestScript is ScriptUtils {
         pegManager = PegManager(0x0165878A594ca255338adfa4d48449f69242Eb8F);
         // =======================
         // Smart contract addresses
+        streamManager = IStreamManager(pegManager.streamManager());
         bitcoinManager = IBitcoinManager(pegManager.bitcoinManager());
         // Committee public key
-        Stream memory stream = pegManager.getStream(value);
+        Stream memory stream = streamManager.getStream(value);
         uint64 packetNumber = stream.peginPointer;
-        bytes32 committeePubKey = pegManager.getCommitteePubKey(stream.streamId, packetNumber);
+        bytes32 committeePubKey = streamManager.getCommitteePubKey(stream.streamId, packetNumber);
         // BtcTransaction to verify
         BtcTransaction memory btcTransaction =
             BtcTransaction({version: 2, inputs: new BtcTxIn[](1), outputs: new BtcTxOut[](2), locktime: 0});

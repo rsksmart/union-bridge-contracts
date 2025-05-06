@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import {console} from "forge-std/console.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {BaseProxy} from "./BaseProxy.sol";
 import {PrevoutData, BtcTransaction, BtcTxOut, IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
@@ -21,8 +20,8 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
     BtcNetwork public network;
 
     function initialize(address _initialOwner, BtcNetwork _network) public initializer {
-        __BaseProxy_init(_initialOwner);
         network = _network;
+        __BaseProxy_init(_initialOwner);
     }
 
     /// @dev Convert Tx to raw tx hex using Bitcoin format and then uses hash256 to get the txHash
