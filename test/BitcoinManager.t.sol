@@ -4,9 +4,10 @@ pragma solidity ^0.8.20;
 import "forge-std/Test.sol";
 import {HelperContract} from "./helpers/HelperContract.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
-import {BtcTxIn, BtcTxOut, BtcTransaction, IBitcoinManager} from "src/interfaces/IBitcoinManager.sol";
+import {BtcTxIn, BtcTxOut, BtcTransaction, IBitcoinManager, PrevoutData} from "src/interfaces/IBitcoinManager.sol";
 import {OpCodes} from "src/libraries/OpCodes.sol";
 import {Constants} from "src/libraries/Constants.sol";
+import {BtcTaproot} from "src/libraries/BtcTaproot.sol";
 
 contract TestBtcHelper is Test, HelperContract {
     function setUp() external {
@@ -222,5 +223,44 @@ contract TestBtcHelper is Test, HelperContract {
         );
         // Act
         bitcoinManager.validateSpeedUpOutput(speedUpPubKey, btcTxOut);
+    }
+
+    // ========================== REGISTER PEG OUT ==========================
+    function test_computePegOutTxHash() external view {
+        // Arrange
+        bytes32 p2tr_spk = 0x9687ca13c4fb3fa3ba05c2f9119dda026bfe66f0098dcf9b896a98ecb2e96702;
+        bytes memory usrPubKey = hex"027d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f";
+        bytes32 acceptPegInTx = 0x8cc94a32480857817b037792eb95556670c9e001981f36102b72b96a8e559789;
+        PrevoutData memory prevoutData = PrevoutData({
+            // txid: 0x8cc94a32480857817b037792eb95556670c9e001981f36102b72b96a8e559789,
+            // vout: 0,
+            value: 9365,
+            scriptPubKey: BtcTaproot.getP2TRScriptPubKey(p2tr_spk)
+        });
+
+        // The amount to be sent to the user
+        uint64 amount = prevoutData.value - (Constants.SPEED_UP_AMOUNT + Constants.P2TR_FEE); // 0.00008730 BTC
+
+        // Act
+        (bytes32 result,) =
+            bitcoinManager.computePegOutTxHash(usrPubKey, acceptPegInTx, prevoutData, amount, Constants.SPEED_UP_AMOUNT);
+
+        // ExpectedHash hash computed externally from a run of the pegout flow of the protocol builder
+        // using the following inputs and running on regtest
+        // required inputs:
+        // - usrPubKey = 027d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f
+        // - prevoutsData = [
+        //     {
+        //         "txid": "8cc94a32480857817b037792eb95556670c9e001981f36102b72b96a8e559789",
+        //         "vout": 0,
+        //         "value": 9365,
+        //         "scriptPubKey": P2TR script from (hex"0x9687ca13c4fb3fa3ba05c2f9119dda026bfe66f0098dcf9b896a98ecb2e96702")
+        //     }
+        // ]
+        // - amount = 9365 - (300 + 335);
+        bytes32 expectedHash = 0x78e1d97d2bae82ee61d183c20d612130e854f1254ef4f12455f29e3d8cc34872;
+
+        // Assert
+        assertEq(result, expectedHash, "Encoded data does not match expectedHash value");
     }
 }

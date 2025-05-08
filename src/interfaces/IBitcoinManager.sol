@@ -29,8 +29,6 @@ struct BtcTransaction {
 }
 
 struct PrevoutData {
-    bytes32 txid;
-    uint32 vout;
     uint64 value;
     bytes scriptPubKey;
 }
@@ -106,8 +104,16 @@ interface IBitcoinManager {
     /// @param _speedUpOut The Bitcoin transaction output containing the speed up output
     function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut calldata _speedUpOut) external pure;
 
+    /// @notice Computes the hash of a Bitcoin peg-out transaction
+    /// @param usrPubKey The user's public key that will receive the funds
+    /// @param acceptPegInTx The transaction hash of the accept peg-in tx being spent
+    /// @param prevoutData Data about the previous output being spent (amount and scriptPubKey)
+    /// @param amount The amount to send to the user in satoshis
+    /// @param speedUpAmount The amount to send as speed up fee in satoshis
+    /// @return the tagged hash and the encoded data before hashing
     function computePegOutTxHash(
         bytes memory usrPubKey,
+        bytes32 acceptPegInTx,
         PrevoutData memory prevoutData,
         uint64 amount,
         uint64 speedUpAmount

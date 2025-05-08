@@ -296,12 +296,7 @@ contract PegManager is IPegManager, ProofValidator, BaseProxy {
         (Slot memory slot, uint64 packetNumber) = streamManager.getFirstFilledSlot(stream.streamId);
 
         // Prepare prevout data
-        PrevoutData memory prevoutData = PrevoutData({
-            txid: slot.acceptPegInTx,
-            vout: 0,
-            value: slot.acceptPegInAmount,
-            scriptPubKey: slot.scriptPubKey
-        });
+        PrevoutData memory prevoutData = PrevoutData({value: slot.acceptPegInAmount, scriptPubKey: slot.scriptPubKey});
 
         // Calculate fee and speedUpAmount from amount
         // TODO: atm is returning hardcoded values, should be calculated
@@ -309,7 +304,7 @@ contract PegManager is IPegManager, ProofValidator, BaseProxy {
 
         // Compute the Bitcoin peg-out transaction hash
         (bytes32 pegOutTxHash, bytes memory digest) = bitcoinManager.computePegOutTxHash(
-            _usrPubKey, prevoutData, slot.acceptPegInAmount - speedUpAmount - fee, speedUpAmount
+            _usrPubKey, slot.acceptPegInTx, prevoutData, slot.acceptPegInAmount - (speedUpAmount + fee), speedUpAmount
         );
 
         // Store the peg-out transaction hash on-chain and initialize the signatures
