@@ -6,9 +6,10 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {BaseProxy} from "./BaseProxy.sol";
 import {Role, Member, CommitteeMember, Committee, ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
-import {StreamDenomination} from "./interfaces/IStreamManager.sol";
+import {StreamDenomination, IStreamManager} from "./interfaces/IStreamManager.sol";
+import {SecurityBond} from "./SecurityBond.sol";
 
-contract CommitteeRegistry is ICommitteeRegistry, Initializable, BaseProxy {
+contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
     uint256 public constant MAX_COMMITTEES_SIZE = 100;
     uint256 public constant MAX_MEMBERS_SIZE = 256;
     uint256 public constant MAX_MEMBERS_PER_COMMITTEE = 100;
@@ -40,7 +41,7 @@ contract CommitteeRegistry is ICommitteeRegistry, Initializable, BaseProxy {
         bytes32 _publicKey,
         StreamDenomination[] calldata requestedStreams,
         Role[] calldata requestedRoles
-    ) public {
+    ) external {
         // Check max Members
         if (members.length >= MAX_MEMBERS_SIZE) {
             revert tooManyMembers(MAX_MEMBERS_SIZE);

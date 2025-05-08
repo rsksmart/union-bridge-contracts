@@ -533,7 +533,7 @@ contract TestPegManager is Test, HelperContract {
         );
 
         // Act
-        pm.requestPegOut{value: amountInWei}(usrPubKey, false);
+        pm.requestPegOut{value: amountInWei}(usrPubKey);
 
         // Assert
         bytes32 pegOutTxHash = pm.getPegOutTxHash(keccak256(abi.encodePacked(stream.streamId, packetNumber, slotId)));
@@ -573,7 +573,7 @@ contract TestPegManager is Test, HelperContract {
         );
 
         // Act
-        pm.requestPegOut{value: amountInWei}(usrPubKey, false);
+        pm.requestPegOut{value: amountInWei}(usrPubKey);
 
         // Assert
         bytes32 result = pm.getPegOutTxHash(keccak256(abi.encodePacked(stream.streamId, packetNumber, slot.slotId)));
@@ -592,7 +592,7 @@ contract TestPegManager is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(IPegManager.InvalidPubKeyLength.selector, usrPubKey.length));
 
         // Act
-        pm.requestPegOut(usrPubKey, false);
+        pm.requestPegOut(usrPubKey);
     }
 
     function test_requestPegOut_Revert_StreamNotFoundByDenomination() external {
@@ -605,7 +605,7 @@ contract TestPegManager is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(IStreamManager.StreamNotFoundByDenomination.selector, amount));
 
         // Act
-        pm.requestPegOut{value: amountInWei}(usrPubKey, false);
+        pm.requestPegOut{value: amountInWei}(usrPubKey);
     }
 
     function test_requestPegOut_Revert_NoFilledSlot() external {
@@ -621,7 +621,7 @@ contract TestPegManager is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(IStreamManager.NoFilledSlot.selector, stream.streamId, packetNumber));
 
         // Act
-        pm.requestPegOut{value: amountInWei}(usrPubKey, false);
+        pm.requestPegOut{value: amountInWei}(usrPubKey);
     }
 
     // we only check the revert case since the success cases are being checked in the _addMemberSignaturePegoutTxHash tests
@@ -850,7 +850,7 @@ contract TestPegManager is Test, HelperContract {
         );
 
         // Execute pegout as part of the arrange
-        pm.requestPegOut{value: amountInWei}(usrPubKey, false);
+        pm.requestPegOut{value: amountInWei}(usrPubKey);
         bytes32 pegOutTxHash = pm.getPegOutTxHash(keccak256(abi.encodePacked(stream.streamId, packetNumber, slotId)));
 
         return (pegOutTxHash, stream.streamId, packetNumber, slotId);

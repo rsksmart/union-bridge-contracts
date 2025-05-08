@@ -117,8 +117,7 @@ interface IPegManager {
     // /// @notice Requests a peg-out to Bitcoin
     // /// @param _usrPubKey The user public key
     // /// @param _bitcoinUserAddress The Bitcoin user address
-    // /// @param _batchFlag The batch flag to indicate if the peg-out is part of a batch
-    function requestPegOut(bytes calldata _usrPubKey, bool _batchFlag) external payable;
+    function requestPegOut(bytes calldata _usrPubKey) external payable;
 
     // address indexed bitcoinUserAddress,
     event PegOutRequested(

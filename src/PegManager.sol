@@ -286,11 +286,10 @@ contract PegManager is IPegManager, ProofValidator, BaseProxy {
         // TODO: validate who can request a peg-out
     }
 
-    function requestPegOut(bytes calldata _usrPubKey, bool _batchFlag) external payable {
+    function requestPegOut(bytes calldata _usrPubKey) external payable {
         validatePegOutRequest(_usrPubKey, msg.value);
 
         uint64 receivedAmount = uint64(BtcHelper.weiToSatoshi(msg.value));
-        // TODO: acount for batchFlag
 
         // Get first filled Slot
         Stream memory stream = streamManager.getStream(receivedAmount);

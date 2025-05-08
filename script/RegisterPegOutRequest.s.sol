@@ -33,7 +33,7 @@ contract RegisterPegOutRequestScript is ScriptUtils {
 
         console.log("=== Request PegOut ===");
         vm.startBroadcast(getDeployerKey());
-        pegManager.requestPegOut{value: amountInWei}(usrPubKey, false);
+        pegManager.requestPegOut{value: amountInWei}(usrPubKey);
         vm.stopBroadcast();
 
         bytes32 key = keccak256(abi.encodePacked(stream.streamId, packetNumber, slot.slotId));

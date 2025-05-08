@@ -32,5 +32,7 @@ contract DeployScript is Script {
         // Set up streams
         SetUpStreams setUpStreams = new SetUpStreams();
         setUpStreams.run(streamManager);
+        // Set up streams inside committee registry
+        setUpCommittees.setStreamManager(committeeRegistry, streamManager);
     }
 }
