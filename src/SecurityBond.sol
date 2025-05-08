@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {IStreamManager} from "./interfaces/IStreamManager.sol";
 
-contract SecurityBond is Initializable {
+abstract contract SecurityBond {
     // Address of the Memeber => Amount provided
     mapping(address => uint256) public depositedSecurityBond;
     IStreamManager streamManager;
@@ -16,7 +16,7 @@ contract SecurityBond is Initializable {
     error outOfBound(uint256 sent, uint256 max);
     error failToSend(address to, uint256 value);
 
-    function initialize(IStreamManager _streamManager) public initializer {
+    function setStreamManager(IStreamManager _streamManager) public {
         streamManager = _streamManager;
     }
 

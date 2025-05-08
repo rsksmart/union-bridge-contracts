@@ -7,19 +7,15 @@ import {SecurityBond} from "src/SecurityBond.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
 
 contract TestSecurityBond is Test, HelperContract {
-    SecurityBond sb;
-
     function setUp() external {
         runTestDeployScript();
-        sb = new SecurityBond();
-        sb.initialize(streamManager);
     }
 
     function test_getMinimumDeposit_Success() external view {
         // Arrange
         uint64 denomination = 100_000; // 0.001 BTC
         // Act
-        uint64 minDeposit = sb.getMinimumDeposit(denomination);
+        uint64 minDeposit = registry.getMinimumDeposit(denomination);
         // Assert
         assertEq(minDeposit, denomination, "Error SecurityBond min deposit should be equal to the denomination");
     }
@@ -30,21 +26,21 @@ contract TestSecurityBond is Test, HelperContract {
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IStreamManager.StreamNotFoundByDenomination.selector, denomination));
         // Act
-        sb.getMinimumDeposit(denomination);
+        registry.getMinimumDeposit(denomination);
     }
 
     function test_securityBondDeposit_Success() public {
         // Arrange
         uint64 denomination = 100_000; // 0.001 BTC
-        uint256 balanceBefore = address(sb).balance;
+        uint256 balanceBefore = address(registry).balance;
         address sender = address(this);
-        uint256 depositBalanceBefore = sb.depositedSecurityBond(sender);
+        uint256 depositBalanceBefore = registry.depositedSecurityBond(sender);
         uint256 value = 1 ether;
         // Act
-        sb.securityBondDeposit{value: value}(denomination);
+        registry.securityBondDeposit{value: value}(denomination);
         // Assert
-        uint256 balanceAfter = address(sb).balance;
-        uint256 depositBalanceAfter = sb.depositedSecurityBond(sender);
+        uint256 balanceAfter = address(registry).balance;
+        uint256 depositBalanceAfter = registry.depositedSecurityBond(sender);
 
         assertEq(balanceAfter - balanceBefore, value, "expect security bond value increase of 1 ether");
         assertEq(depositBalanceAfter - depositBalanceBefore, value, "expect security bond mapping increase of 1 ether");
@@ -56,6 +52,6 @@ contract TestSecurityBond is Test, HelperContract {
         // Assert
         vm.expectRevert(abi.encodeWithSelector(SecurityBond.despositBondTooLow.selector, 0, denomination));
         // Act
-        sb.securityBondDeposit{value: 0}(denomination);
+        registry.securityBondDeposit{value: 0}(denomination);
     }
 }
