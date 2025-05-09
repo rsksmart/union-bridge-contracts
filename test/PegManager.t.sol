@@ -497,8 +497,8 @@ contract TestPegManager is Test, HelperContract {
         pm.requestPegOut{value: amountInWei}(usrPubKey);
 
         // Assert
-        bytes32 pegOutTxHash = pm.getPegOutTxHash(keccak256(abi.encodePacked(stream.streamId, packetNumber, slotId)));
-        assertEq(pegOutTxHash, expectedHash, "expected hash doesn't match the pegout computed one");
+        bytes32 pegOutSignatureHash = pm.getPegOutSignatureHash(stream.streamId, packetNumber, slotId);
+        assertEq(pegOutSignatureHash, expectedHash, "expected hash doesn't match the pegout computed one");
 
         // Assert
         Slot memory slot = streamManager.getSlot(stream.streamId, packetNumber, slotId);
@@ -537,7 +537,7 @@ contract TestPegManager is Test, HelperContract {
         pm.requestPegOut{value: amountInWei}(usrPubKey);
 
         // Assert
-        bytes32 result = pm.getPegOutTxHash(keccak256(abi.encodePacked(stream.streamId, packetNumber, slot.slotId)));
+        bytes32 result = pm.getPegOutSignatureHash(stream.streamId, packetNumber, slot.slotId);
         assertEq(result, expectedHash, "expected hash doesn't match the pegout computed one");
 
         // Assert
@@ -812,8 +812,8 @@ contract TestPegManager is Test, HelperContract {
 
         // Execute pegout as part of the arrange
         pm.requestPegOut{value: amountInWei}(usrPubKey);
-        bytes32 pegOutTxHash = pm.getPegOutTxHash(keccak256(abi.encodePacked(stream.streamId, packetNumber, slotId)));
+        bytes32 pegOutSignatureHash = pm.getPegOutSignatureHash(stream.streamId, packetNumber, slotId);
 
-        return (pegOutTxHash, stream.streamId, packetNumber, slotId);
+        return (pegOutSignatureHash, stream.streamId, packetNumber, slotId);
     }
 }

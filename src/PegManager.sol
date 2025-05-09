@@ -31,8 +31,8 @@ contract PegManager is IPegManager, ProofValidator, BaseProxy {
     // Request PegIn Tx Hash => PegIn Temp Info (value, rskDestinationAddress, btcReimbursementPubKey)
     mapping(bytes32 btcRequestPegInTxHash => RequestPegInTempInfo tempInfo) internal pegInsTempInfo;
     // key = keccak256(abi.encodePacked(streamId, packetNumber, slotId))
-    mapping(bytes32 key => bytes32 pegOutTxHash) internal pegOutTxHashes;
-    mapping(bytes32 pegOutTxHash => Signatures signatures) internal pegOutTxHashSignatures;
+    mapping(bytes32 key => bytes32 pegOutTxHash) internal pegOutSighashes;
+    mapping(bytes32 pegOutSignatureHash => Signatures signatures) internal pegOutSignatures;
 
     function initialize(
         address _initialOwner,
@@ -303,12 +303,12 @@ contract PegManager is IPegManager, ProofValidator, BaseProxy {
         (uint64 fee, uint64 speedUpAmount) = BtcHelper.calculateFeeAndSpeedUp(slot.acceptPegInAmount);
 
         // Compute the Bitcoin peg-out transaction hash
-        (bytes32 pegOutTxHash, bytes memory digest) = bitcoinManager.computePegOutTxHash(
+        (bytes32 pegOutSignatureHash, bytes memory commonSignatureMessage) = bitcoinManager.computePegOutSignatureHash(
             _usrPubKey, slot.acceptPegInTx, prevoutData, slot.acceptPegInAmount - (speedUpAmount + fee), speedUpAmount
         );
 
         // Store the peg-out transaction hash on-chain and initialize the signatures
-        storePegOutAndInitSignatures(pegOutTxHash, stream.streamId, packetNumber, slot.slotId);
+        storePegOutAndInitSignatures(pegOutSignatureHash, stream.streamId, packetNumber, slot.slotId);
 
         // Lock the used slot
         streamManager.lockSlot(stream.streamId, packetNumber, slot.slotId);
@@ -317,20 +317,34 @@ contract PegManager is IPegManager, ProofValidator, BaseProxy {
 
         // Emit an event
         emit PegOutRequested(
-            _usrPubKey, stream.denomination, pegOutTxHash, digest, stream.streamId, packetNumber, slot.slotId
+            _usrPubKey,
+            stream.denomination,
+            pegOutSignatureHash,
+            commonSignatureMessage,
+            stream.streamId,
+            packetNumber,
+            slot.slotId
         );
     }
 
-    function getPegOutTxHash(bytes32 key) public view returns (bytes32) {
-        return pegOutTxHashes[key];
+    function getPegOutSignatureHash(uint64 streamId, uint64 packetNumber, uint64 slotId)
+        external
+        view
+        returns (bytes32)
+    {
+        bytes32 key = keccak256(abi.encodePacked(streamId, packetNumber, slotId));
+        return pegOutSighashes[key];
     }
 
-    function storePegOutAndInitSignatures(bytes32 pegOutTxHash, uint64 streamId, uint64 packetNumber, uint64 slotId)
-        internal
-    {
+    function storePegOutAndInitSignatures(
+        bytes32 pegOutSignatureHash,
+        uint64 streamId,
+        uint64 packetNumber,
+        uint64 slotId
+    ) internal {
         // Store the peg-out transaction hash on-chain and initialize the signatures
         bytes32 key = keccak256(abi.encodePacked(streamId, packetNumber, slotId));
-        pegOutTxHashes[key] = pegOutTxHash;
+        pegOutSighashes[key] = pegOutSignatureHash;
 
         // Get the committee key
         bytes32 committeeKey = streamManager.getCommitteePubKey(streamId, packetNumber);
@@ -339,7 +353,7 @@ contract PegManager is IPegManager, ProofValidator, BaseProxy {
         CommitteeMember[] memory members = committeeRegistry.getCommitteeMember(committeeKey);
 
         // Initialize the signatures for each member
-        Signatures storage signatures = pegOutTxHashSignatures[pegOutTxHash];
+        Signatures storage signatures = pegOutSignatures[pegOutSignatureHash];
         for (uint256 i = 0; i < members.length; i++) {
             signatures.signaturesData.push(
                 SignatureData({
@@ -377,7 +391,7 @@ contract PegManager is IPegManager, ProofValidator, BaseProxy {
 
         // Store the signature and nonce for the member
         bool found = false;
-        Signatures storage signatures = pegOutTxHashSignatures[pegOutTxHash];
+        Signatures storage signatures = pegOutSignatures[pegOutTxHash];
         SignatureData[] storage signaturesData = signatures.signaturesData;
         for (uint256 i = 0; i < signaturesData.length; i++) {
             if (signaturesData[i].memberPublicKey == memberPubKey) {
@@ -397,7 +411,7 @@ contract PegManager is IPegManager, ProofValidator, BaseProxy {
         }
 
         // Check if all signatures are present
-        if (pegOutTxHashSignatures[pegOutTxHash].missingSignatures != 0) {
+        if (pegOutSignatures[pegOutTxHash].missingSignatures != 0) {
             return false;
         }
         emit AllSignaturesReady(pegOutTxHash, streamId, packetNumber, slotId);
@@ -412,7 +426,7 @@ contract PegManager is IPegManager, ProofValidator, BaseProxy {
         // Check if the peg-out transaction hash exists
         checkPegOutTxHashValidity(pegOutTxHash, streamId, packetNumber, slotId);
 
-        if (pegOutTxHashSignatures[pegOutTxHash].missingSignatures != 0) {
+        if (pegOutSignatures[pegOutTxHash].missingSignatures != 0) {
             return false;
         }
 
@@ -423,7 +437,7 @@ contract PegManager is IPegManager, ProofValidator, BaseProxy {
         public
         view
     {
-        if (getPegOutTxHash(keccak256(abi.encodePacked(streamId, packetNumber, slotId))) != pegOutTxHash) {
+        if (pegOutSighashes[keccak256(abi.encodePacked(streamId, packetNumber, slotId))] != pegOutTxHash) {
             revert PegOutRequestNotFound(pegOutTxHash, streamId, packetNumber, slotId);
         }
     }

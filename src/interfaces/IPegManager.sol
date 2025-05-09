@@ -123,8 +123,8 @@ interface IPegManager {
     event PegOutRequested(
         bytes indexed usrPubKey,
         uint64 amount,
-        bytes32 indexed pegOutTxHash,
-        bytes digest,
+        bytes32 indexed pegOutSignatureHash,
+        bytes commonSignatureMessage,
         uint64 streamId,
         uint64 packetNumber,
         uint64 slotId
