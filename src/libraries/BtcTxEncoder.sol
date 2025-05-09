@@ -105,12 +105,13 @@ library BtcTxEncoder {
         );
     }
 
-    /// @dev Encode the data to sign a Bitcoin transaction
-    function encodedDataToSign(PrevoutData[] memory prevoutDatas, BtcTransaction memory btcTx)
-        internal
-        pure
-        returns (bytes memory)
-    {
+    /// @dev Get the Common Signature Message to sign a Bitcoin transaction
+    /// see https://learnmeabitcoin.com/technical/upgrades/taproot/#common-signature-message
+    function encodeCommonSignatureMessage(
+        uint8 _hashType,
+        PrevoutData[] memory prevoutDatas,
+        BtcTransaction memory btcTx
+    ) internal pure returns (bytes memory) {
         // Prepare the inputs
         (bytes32 sha_prevouts, bytes32 sha_amounts, bytes32 sha_scriptPubKeys, bytes32 sha_sequences) =
             getInputsShaForSignature(prevoutDatas, btcTx.inputs);
@@ -121,7 +122,7 @@ library BtcTxEncoder {
         // Concatenate all the data
         return abi.encodePacked(
             uint8(0), // epoch
-            uint8(0x01), // hash_type
+            uint8(_hashType), // hash_type
             encodeVersion(btcTx.version), // nVersion
             encodeLocktime(btcTx.locktime), // nLockTime
             sha_prevouts,

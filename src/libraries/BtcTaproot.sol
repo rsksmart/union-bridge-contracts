@@ -29,6 +29,11 @@ library BtcTaproot {
     }
 
     /// @dev https://learnmeabitcoin.com/technical/upgrades/taproot/#tweak
+    function getSighash(bytes memory data) internal pure returns (bytes32) {
+        return taggedHash(TAP_SIGHASH, data);
+    }
+
+    /// @dev https://learnmeabitcoin.com/technical/upgrades/taproot/#tweak
     function getTweak(bytes memory data) internal pure returns (bytes32) {
         return taggedHash(TAP_TWEAK, data);
     }

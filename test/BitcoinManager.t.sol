@@ -242,8 +242,9 @@ contract TestBtcHelper is Test, HelperContract {
         uint64 amount = prevoutData.value - (Constants.SPEED_UP_AMOUNT + Constants.P2TR_FEE); // 0.00008730 BTC
 
         // Act
-        (bytes32 result,) =
-            bitcoinManager.computePegOutTxHash(usrPubKey, acceptPegInTx, prevoutData, amount, Constants.SPEED_UP_AMOUNT);
+        (bytes32 result,) = bitcoinManager.computePegOutSignatureHash(
+            usrPubKey, acceptPegInTx, prevoutData, amount, Constants.SPEED_UP_AMOUNT
+        );
 
         // ExpectedHash hash computed externally from a run of the pegout flow of the protocol builder
         // using the following inputs and running on regtest

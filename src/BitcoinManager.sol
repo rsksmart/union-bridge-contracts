@@ -227,7 +227,7 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         return BtcScriptParser.getP2WPKHScript(abi.encodePacked(uint8(0x02), _pubKey));
     }
 
-    function computePegOutTxHash(
+    function computePegOutSignatureHash(
         bytes memory usrPubKey,
         bytes32 acceptPegInTx,
         PrevoutData memory prevoutData,
@@ -260,18 +260,21 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
             outputs: btcOutputs
         });
         // Return the tagged hash and the encoded data before hashing
-        return taprootTxDataToSign(prevoutDatas, pegOutTx);
+        return taprootSignatureHash(Constants.SIGHASH_ALL, prevoutDatas, pegOutTx);
     }
 
-    function taprootTxDataToSign(PrevoutData[] memory prevoutDatas, BtcTransaction memory btcTx)
+    /// @dev Returns Signature Hash. The signature hash is the actual "message" that we sign when creating the signature.
+    /// @dev It's a tagged hash of the common signature message, along with a sighash epoch prefix and the optional extension:
+    /// @dev https://learnmeabitcoin.com/technical/upgrades/taproot/#signature-hash
+    function taprootSignatureHash(uint8 _hashType, PrevoutData[] memory _prevoutDatas, BtcTransaction memory _btcTx)
         internal
         pure
         returns (bytes32, bytes memory)
     {
         // Concatenate all the data
-        bytes memory encodedData = BtcTxEncoder.encodedDataToSign(prevoutDatas, btcTx);
+        bytes memory encodedData = BtcTxEncoder.encodeCommonSignatureMessage(_hashType, _prevoutDatas, _btcTx);
 
         // Return the tagged hash and the encoded data before hashing
-        return (BtcTaproot.taggedHash(BtcTaproot.TAP_SIGHASH, encodedData), encodedData);
+        return (BtcTaproot.getSighash(encodedData), encodedData);
     }
 }

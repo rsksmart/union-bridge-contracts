@@ -36,15 +36,14 @@ contract RegisterPegOutRequestScript is ScriptUtils {
         pegManager.requestPegOut{value: amountInWei}(usrPubKey);
         vm.stopBroadcast();
 
-        bytes32 key = keccak256(abi.encodePacked(stream.streamId, packetNumber, slot.slotId));
-        bytes32 pegOutTxHash = pegManager.getPegOutTxHash(key);
-        if (pegOutTxHash == bytes32(0)) {
+        bytes32 pegOutSignatureHash = pegManager.getPegOutSignatureHash(stream.streamId, packetNumber, slot.slotId);
+        if (pegOutSignatureHash == bytes32(0)) {
             revert("PegOutRequest not accepted");
         }
 
         console.log("=== PegOutRequest accepted successfully ===");
-        console.log("PegOutTxHash");
-        console.logBytes32(pegOutTxHash);
+        console.log("pegOutSignatureHash");
+        console.logBytes32(pegOutSignatureHash);
         console.log("Stream, Slot, Packet");
         console.log(stream.streamId, slot.slotId, packetNumber);
     }
