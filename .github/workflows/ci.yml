@@ -19,7 +19,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: v0.3.0
+          version: v1.1.0
 
       - name: Simulate deployment
         run: bash shell/script/deploy/simulate-deploy.sh

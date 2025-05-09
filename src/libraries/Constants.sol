@@ -7,8 +7,8 @@ library Constants {
     uint32 constant SEQUENCE = 0xFFFFFFFD;
     uint32 constant LOCKTIME = 0;
     uint32 constant BTC_TX_VERSION = 2;
-    uint64 constant VOUT_INDEX_TAPTREE = 0;
-    uint64 constant VOUT_INDEX_SPEED_UP = 1;
+    uint32 constant VOUT_INDEX_TAPTREE = 0;
+    uint32 constant VOUT_INDEX_SPEED_UP = 1;
     // Btc P2TR Fees in satoshis
     // TODO: Check if this is correct
     uint64 constant P2TR_FEE = 335;
