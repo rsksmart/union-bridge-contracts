@@ -81,6 +81,19 @@ interface IBitcoinManager {
         bytes32 _committeePubKey
     ) external pure returns (bytes memory);
 
+    /// @notice Get the hash to sign of a Bitcoin  accept peg-in transaction
+    /// @param _committeePubKey The committee's public key
+    /// @param _userXOnlyPubKey The user's public key (x-only, 32 bytes)
+    /// @param _registerPegInTx The transaction hash of the register peg-in tx being spent
+    /// @param _prevoutData Data about the previous output being spent (amount and scriptPubKey)
+    /// @return the tagged hash and the encoded data before hashing
+    function getAcceptPegInSignatureHash(
+        bytes32 _committeePubKey,
+        bytes32 _userXOnlyPubKey,
+        bytes32 _registerPegInTx,
+        PrevoutData memory _prevoutData
+    ) external pure returns (bytes32, bytes memory);
+
     /// @notice Generates a Taproot script pub key for the AcceptPegIn with both key spend and script spend paths
     /// @param _committeePubKey The committee's public key (x-only, 32 bytes)
     /// @return The Taproot script pub key
@@ -104,20 +117,15 @@ interface IBitcoinManager {
     /// @param _speedUpOut The Bitcoin transaction output containing the speed up output
     function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut calldata _speedUpOut) external pure;
 
-    /// @notice Computes the hash to sign of a Bitcoin peg-out transaction
-    /// @param usrPubKey The user's public key that will receive the funds
-    /// @param acceptPegInTx The transaction hash of the accept peg-in tx being spent
-    /// @param prevoutData Data about the previous output being spent (amount and scriptPubKey)
-    /// @param amount The amount to send to the user in satoshis
-    /// @param speedUpAmount The amount to send as speed up fee in satoshis
+    /// @notice Get the hash to sign of a Bitcoin peg-out transaction
+    /// @param _usrPubKey The user's public key in compact size that will receive the funds
+    /// @param _acceptPegInTx The transaction hash of the accept peg-in tx being spent
+    /// @param _prevoutData Data about the previous output being spent (amount and scriptPubKey)
     /// @return the tagged hash and the encoded data before hashing
-    function computePegOutSignatureHash(
-        bytes memory usrPubKey,
-        bytes32 acceptPegInTx,
-        PrevoutData memory prevoutData,
-        uint64 amount,
-        uint64 speedUpAmount
-    ) external pure returns (bytes32, bytes memory);
+    function getPegOutSignatureHash(bytes memory _usrPubKey, bytes32 _acceptPegInTx, PrevoutData memory _prevoutData)
+        external
+        pure
+        returns (bytes32, bytes memory);
 
     error InvalidOpReturnLength(uint256 actual, uint256 expected);
     error IncorrectlyFormedOpReturn(uint256 index);
