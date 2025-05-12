@@ -174,6 +174,52 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
     }
 
     // ========================== Peg In Accept ==========================
+    /// @dev Get the signature hash for a peg in accept transaction
+    function getAcceptPegInSignatureHash(
+        bytes32 _committeePubKey,
+        bytes32 _userXOnlyPubKey,
+        bytes32 _registerPegInTx,
+        PrevoutData memory _prevoutData
+    ) external pure returns (bytes32, bytes memory) {
+        // Prepare the inputs
+        BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
+        btcInputs[0] = BtcTxIn({
+            txId: _registerPegInTx,
+            vout: Constants.VOUT_INDEX_TAPTREE,
+            scriptSig: bytes(""),
+            sequence: Constants.SEQUENCE
+        });
+
+        // Add inputs previous output data
+        PrevoutData[] memory prevoutDatas = new PrevoutData[](1);
+        prevoutDatas[0] = _prevoutData;
+
+        // Prepare the outputs, committee and speed up
+        BtcTxOut[] memory btcOutputs = new BtcTxOut[](2);
+
+        // Calculate fee and speedUpAmount from amount
+        // TODO: atm is returning hardcoded values, should be calculated
+        (uint64 fee, uint64 speedUpAmount) = BtcHelper.calculateFeeAndSpeedUp(_prevoutData.value);
+
+        // Committee accept pegin
+        bytes memory scriptPubKey = getAcceptPegInP2TRScriptPub(_committeePubKey);
+        btcOutputs[0] = BtcTxOut({amount: _prevoutData.value - fee - speedUpAmount, scriptPubKey: scriptPubKey});
+
+        // Speed up
+        bytes memory speedUpScriptPubKey = getSpeedUpScriptPub(_userXOnlyPubKey);
+        btcOutputs[1] = BtcTxOut({amount: speedUpAmount, scriptPubKey: speedUpScriptPubKey});
+
+        // Prepare Btc Transaction
+        BtcTransaction memory pegInAcceptTx = BtcTransaction({
+            version: Constants.BTC_TX_VERSION,
+            locktime: Constants.LOCKTIME,
+            inputs: btcInputs,
+            outputs: btcOutputs
+        });
+        // Return the tagged hash and the encoded data before hashing
+        return taprootSignatureHash(Constants.SIGHASH_ALL, prevoutDatas, pegInAcceptTx);
+    }
+
     /// @dev Generates the PegInAccept Taproot output script pub key with both key spend and script spend paths
     function getAcceptPegInTweakedPublicKey(bytes32 _committeePubKey) internal pure returns (bytes32) {
         // TODO add necesary tap scripts for take0, take1, etc
@@ -227,31 +273,40 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         return BtcScriptParser.getP2WPKHScript(abi.encodePacked(uint8(0x02), _pubKey));
     }
 
-    function computePegOutSignatureHash(
-        bytes memory usrPubKey,
-        bytes32 acceptPegInTx,
-        PrevoutData memory prevoutData,
-        uint64 amount,
-        uint64 speedUpAmount
-    ) public pure returns (bytes32, bytes memory) {
+    // ========================== Peg Out Signature Hash ==========================
+    /// @dev Get the signature hash for a peg out transaction
+    function getPegOutSignatureHash(bytes memory _usrPubKey, bytes32 _acceptPegInTx, PrevoutData memory _prevoutData)
+        external
+        pure
+        returns (bytes32, bytes memory)
+    {
         // Prepare the inputs
         BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
         btcInputs[0] = BtcTxIn({
-            txId: acceptPegInTx,
+            txId: _acceptPegInTx,
             vout: Constants.VOUT_INDEX_TAPTREE,
             scriptSig: bytes(""),
             sequence: Constants.SEQUENCE
         });
+
         // Add inputs previous output data
         PrevoutData[] memory prevoutDatas = new PrevoutData[](1);
-        prevoutDatas[0] = prevoutData;
+        prevoutDatas[0] = _prevoutData;
+
         // Prepare the outputs, user and speed up
-        bytes memory scriptPubKey = BtcScriptParser.getP2WPKHScript(usrPubKey);
         BtcTxOut[] memory btcOutputs = new BtcTxOut[](2);
+
+        // Calculate fee and speedUpAmount from amount
+        // TODO: atm is returning hardcoded values, should be calculated
+        (uint64 fee, uint64 speedUpAmount) = BtcHelper.calculateFeeAndSpeedUp(_prevoutData.value);
+
         // User pegout
-        btcOutputs[0] = BtcTxOut({amount: amount, scriptPubKey: scriptPubKey});
+        bytes memory scriptPubKey = BtcScriptParser.getP2WPKHScript(_usrPubKey);
+        btcOutputs[0] = BtcTxOut({amount: _prevoutData.value - fee - speedUpAmount, scriptPubKey: scriptPubKey});
+
         // Speed up
         btcOutputs[1] = BtcTxOut({amount: speedUpAmount, scriptPubKey: scriptPubKey});
+
         // Prepare Btc Transaction
         BtcTransaction memory pegOutTx = BtcTransaction({
             version: Constants.BTC_TX_VERSION,

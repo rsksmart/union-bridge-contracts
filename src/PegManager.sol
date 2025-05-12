@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import {BaseProxy} from "./BaseProxy.sol";
 import {Committee, CommitteeMember, ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
-import {PrevoutData, BtcTransaction, IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
+import {PrevoutData, BtcTransaction, BtcTxOut, IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
 import {
     BtcTxSPVProof,
     StreamPosition,
@@ -30,9 +30,11 @@ contract PegManager is IPegManager, ProofValidator, BaseProxy {
     mapping(bytes32 btcRequestPegInTxHash => StreamPosition streamPosition) internal pegInRequests;
     // Request PegIn Tx Hash => PegIn Temp Info (value, rskDestinationAddress, btcReimbursementPubKey)
     mapping(bytes32 btcRequestPegInTxHash => RequestPegInTempInfo tempInfo) internal pegInsTempInfo;
+    mapping(bytes32 btcRequestPegInTxHash => bytes32 acceptPegInSignatureHash) internal accpetPegInSighashes;
     // key = keccak256(abi.encodePacked(streamId, packetNumber, slotId))
-    mapping(bytes32 key => bytes32 pegOutTxHash) internal pegOutSighashes;
-    mapping(bytes32 pegOutSignatureHash => Signatures signatures) internal pegOutSignatures;
+    mapping(bytes32 key => bytes32 pegOutSignatureHash) internal pegOutSighashes;
+    // Signatures waiting for the committee to sign
+    mapping(bytes32 signatureHash => Signatures signatures) internal committeeSignatures;
 
     function initialize(
         address _initialOwner,
@@ -99,14 +101,16 @@ contract PegManager is IPegManager, ProofValidator, BaseProxy {
         Stream memory stream =
             streamManager.getStream(_pegInRequestTxSPVProof.btcTx.outputs[Constants.VOUT_INDEX_TAPTREE].amount);
 
+        // getCommitteePubKey reverts if packet does not exist
+        bytes32 committeePubKey = streamManager.getCommitteePubKey(stream.streamId, packetNumber);
+
         // Validates that the Taproot Script has a Key Path for the committeePubKey
         // and has a timelock for btcReimbursementPubKey
         bitcoinManager.validatRequestPegInP2TROutput(
             rskDestinationAddress,
             stream.denomination,
             btcReimbursementPubKey,
-            // getCommitteePubKey reverts if packet does not exist
-            streamManager.getCommitteePubKey(stream.streamId, packetNumber),
+            committeePubKey,
             _pegInRequestTxSPVProof.btcTx.outputs[Constants.VOUT_INDEX_TAPTREE]
         );
 
@@ -137,7 +141,6 @@ contract PegManager is IPegManager, ProofValidator, BaseProxy {
             utxoScriptPubKey: _pegInRequestTxSPVProof.btcTx.outputs[Constants.VOUT_INDEX_TAPTREE].scriptPubKey
         });
 
-        // TODO Check if info emitted is enough or too much
         emit RegisteredPegInRequest(
             _pegInRequestTxSPVProof.blockHash,
             txHash,
@@ -298,14 +301,9 @@ contract PegManager is IPegManager, ProofValidator, BaseProxy {
         // Prepare prevout data
         PrevoutData memory prevoutData = PrevoutData({value: slot.acceptPegInAmount, scriptPubKey: slot.scriptPubKey});
 
-        // Calculate fee and speedUpAmount from amount
-        // TODO: atm is returning hardcoded values, should be calculated
-        (uint64 fee, uint64 speedUpAmount) = BtcHelper.calculateFeeAndSpeedUp(slot.acceptPegInAmount);
-
         // Compute the Bitcoin peg-out transaction hash
-        (bytes32 pegOutSignatureHash, bytes memory commonSignatureMessage) = bitcoinManager.computePegOutSignatureHash(
-            _usrPubKey, slot.acceptPegInTx, prevoutData, slot.acceptPegInAmount - (speedUpAmount + fee), speedUpAmount
-        );
+        (bytes32 pegOutSignatureHash, bytes memory commonSignatureMessage) =
+            bitcoinManager.getPegOutSignatureHash(_usrPubKey, slot.acceptPegInTx, prevoutData);
 
         // Store the peg-out transaction hash on-chain and initialize the signatures
         storePegOutAndInitSignatures(pegOutSignatureHash, stream.streamId, packetNumber, slot.slotId);
@@ -315,7 +313,6 @@ contract PegManager is IPegManager, ProofValidator, BaseProxy {
 
         // TODO: return RBTC to the RSK Legacy Bridge following https://github.com/rsksmart/RSKIPs/pull/502
 
-        // Emit an event
         emit PegOutRequested(
             _usrPubKey,
             stream.denomination,
@@ -353,7 +350,7 @@ contract PegManager is IPegManager, ProofValidator, BaseProxy {
         CommitteeMember[] memory members = committeeRegistry.getCommitteeMember(committeeKey);
 
         // Initialize the signatures for each member
-        Signatures storage signatures = pegOutSignatures[pegOutSignatureHash];
+        Signatures storage signatures = committeeSignatures[pegOutSignatureHash];
         for (uint256 i = 0; i < members.length; i++) {
             signatures.signaturesData.push(
                 SignatureData({
@@ -367,78 +364,65 @@ contract PegManager is IPegManager, ProofValidator, BaseProxy {
         signatures.missingSignatures = uint8(members.length);
     }
 
-    function addMemberSignaturePegoutTxHash(
-        bytes32 pegOutTxHash,
-        uint64 streamId,
-        uint64 packetNumber,
-        uint64 slotId,
-        bytes32 signature,
-        bytes memory nonce
-    ) external returns (bool) {
+    function addMemberSignature(bytes32 _signatureHash, bytes32 _signature, bytes memory _nonce)
+        external
+        returns (bool)
+    {
         // Check if the peg-out transaction hash exists
-        checkPegOutTxHashValidity(pegOutTxHash, streamId, packetNumber, slotId);
+        checkSignatureHashValidity(_signatureHash);
 
         // Check if caller is a valid member
-        bytes32 memberPubKey = committeeRegistry.getMemberPubKeyByAddress(msg.sender);
+        bytes32 memberPubKey = committeeRegistry.getMemberPubKeyByAddress(_msgSender());
         if (memberPubKey == bytes32(0)) {
-            revert MemberNotFound(msg.sender);
+            revert MemberNotFound(_msgSender());
         }
 
         // Check that nonce is 66 bytes
-        if (nonce.length != Constants.SIGNATURE_NONCE_LENGTH) {
-            revert InvalidNonceLength(nonce.length, Constants.SIGNATURE_NONCE_LENGTH);
+        if (_nonce.length != Constants.SIGNATURE_NONCE_LENGTH) {
+            revert InvalidNonceLength(_nonce.length, Constants.SIGNATURE_NONCE_LENGTH);
         }
 
         // Store the signature and nonce for the member
         bool found = false;
-        Signatures storage signatures = pegOutSignatures[pegOutTxHash];
+        Signatures storage signatures = committeeSignatures[_signatureHash];
         SignatureData[] storage signaturesData = signatures.signaturesData;
         for (uint256 i = 0; i < signaturesData.length; i++) {
             if (signaturesData[i].memberPublicKey == memberPubKey) {
                 if (signaturesData[i].signature != "") {
-                    revert MemberHasAlreadySigned(memberPubKey, msg.sender, pegOutTxHash);
+                    revert MemberHasAlreadySigned(memberPubKey, _msgSender(), _signatureHash);
                 }
-                signaturesData[i].signature = signature;
-                signaturesData[i].nonce = nonce;
+                signaturesData[i].signature = _signature;
+                signaturesData[i].nonce = _nonce;
                 found = true;
                 signatures.missingSignatures -= 1;
-                emit SignatureAdded(pegOutTxHash, streamId, packetNumber, slotId, memberPubKey, signature, nonce);
+                emit SignatureAdded(_signatureHash, memberPubKey, _signature, _nonce);
                 break;
             }
         }
         if (!found) {
-            revert MemberNotFoundInCommittee(memberPubKey, pegOutTxHash);
+            revert MemberNotFoundInCommittee(memberPubKey, _signatureHash);
         }
 
         // Check if all signatures are present
-        if (pegOutSignatures[pegOutTxHash].missingSignatures != 0) {
+        if (committeeSignatures[_signatureHash].missingSignatures != 0) {
             return false;
         }
-        emit AllSignaturesReady(pegOutTxHash, streamId, packetNumber, slotId);
+        emit AllSignaturesReady(_signatureHash);
         return true;
     }
 
-    function checkAllSignaturesReady(bytes32 pegOutTxHash, uint64 streamId, uint64 packetNumber, uint64 slotId)
-        public
-        view
-        returns (bool)
-    {
-        // Check if the peg-out transaction hash exists
-        checkPegOutTxHashValidity(pegOutTxHash, streamId, packetNumber, slotId);
-
-        if (pegOutSignatures[pegOutTxHash].missingSignatures != 0) {
+    function checkAllSignaturesReady(bytes32 _signatureHash) external view returns (bool) {
+        checkSignatureHashValidity(_signatureHash);
+        if (committeeSignatures[_signatureHash].missingSignatures != 0) {
             return false;
         }
-
         return true;
     }
 
-    function checkPegOutTxHashValidity(bytes32 pegOutTxHash, uint64 streamId, uint64 packetNumber, uint64 slotId)
-        public
-        view
-    {
-        if (pegOutSighashes[keccak256(abi.encodePacked(streamId, packetNumber, slotId))] != pegOutTxHash) {
-            revert PegOutRequestNotFound(pegOutTxHash, streamId, packetNumber, slotId);
+    function checkSignatureHashValidity(bytes32 _signatureHash) internal view {
+        // Check if the signature hash exists
+        if (committeeSignatures[_signatureHash].signaturesData.length == 0) {
+            revert SignatureHashNotFound(_signatureHash);
         }
     }
 }

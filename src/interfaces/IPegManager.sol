@@ -130,22 +130,17 @@ interface IPegManager {
         uint64 slotId
     );
 
-    event SignatureAdded(
-        bytes32 indexed pegOutTxHash,
-        uint64 streamId,
-        uint64 packetNumber,
-        uint64 slotId,
-        bytes32 indexed memberPubKey,
-        bytes32 signature,
-        bytes nonce
-    );
+    // ===================== Signature Request =====================
 
-    event AllSignaturesReady(bytes32 indexed pegOutTxHash, uint64 streamId, uint64 packetNumber, uint64 slotId);
+    function checkAllSignaturesReady(bytes32 _signatureHash) external view returns (bool);
+
+    event SignatureAdded(bytes32 indexed signatureHash, bytes32 indexed memberPubKey, bytes32 signature, bytes nonce);
+
+    event AllSignaturesReady(bytes32 indexed signatureHash);
 
     // ===================== Errors =====================
 
     error PegoutRequestAmountExceedsUint64Limit(uint256 amount);
-    error PegOutRequestNotFound(bytes32 pegOutTxHash, uint64 streamId, uint64 packetNumber, uint64 slotId);
     error MemberNotFound(address memberAddress);
     error MemberHasAlreadySigned(bytes32 memberPubKey, address memberAddress, bytes32 pegOutTxHash);
     error MemberNotFoundInCommittee(bytes32 memberPubKey, bytes32 pegOutTxHash);
@@ -161,4 +156,5 @@ interface IPegManager {
     error InvalidPubKeyLength(uint256 usrPubKeyLength);
     error InvalidLocktime(uint256 actual, uint256 expected);
     error InvalidBtcTxVersion(uint256 actual, uint256 expected);
+    error SignatureHashNotFound(bytes32 signatureHash);
 }

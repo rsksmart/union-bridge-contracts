@@ -506,11 +506,7 @@ contract TestPegManager is Test, HelperContract {
 
         // Assert
         // Check if the signatures struct was initialized by checking that the function doesn't revert, we expect false since it hasn't been signed yet
-        assertEq(
-            pm.checkAllSignaturesReady(expectedHash, stream.streamId, packetNumber, slotId),
-            false,
-            "Signatures struct hasn't been initialized"
-        );
+        assertEq(pm.checkAllSignaturesReady(expectedHash), false, "Signatures struct hasn't been initialized");
     }
 
     function test_requestPegOut_fromAcceptPegIn_Success() external {
@@ -585,29 +581,20 @@ contract TestPegManager is Test, HelperContract {
         pm.requestPegOut{value: amountInWei}(usrPubKey);
     }
 
-    // we only check the revert case since the success cases are being checked in the _addMemberSignaturePegoutTxHash tests
+    // we only check the revert case since the success cases are being checked in the _addMemberSignaturePegout tests
     function test_checkAllSignaturesReady_Revert_PegOutRequestNotFound() external {
         // Arrange
-        bytes32 pegOutTxHash = 0x0000000000000000000000000000000000000000000000000000000000000001;
-        uint64 streamId = 0;
-        uint64 packetNumber = 0;
-        uint64 slotId = 0;
+        bytes32 pegOutSignatureHash = 0x0000000000000000000000000000000000000000000000000000000000000001;
 
         // Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IPegManager.PegOutRequestNotFound.selector, pegOutTxHash, streamId, packetNumber, slotId
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(IPegManager.SignatureHashNotFound.selector, pegOutSignatureHash));
 
         // Act
-        pm.checkAllSignaturesReady(pegOutTxHash, streamId, packetNumber, slotId);
+        pm.checkAllSignaturesReady(pegOutSignatureHash);
     }
 
-    function test_addMemberSignaturePegoutTxHash_Success() external {
-        // This test has to perform all the steps of the pegout flow but we do not need the asserts
-        // since that is already being checked
-        (bytes32 pegOutTxHash, uint64 streamId, uint64 packetNumber, uint64 slotId) = helper_arrangeRequestPegout();
+    function test_addMemberSignature_Success() external {
+        bytes32 pegOutSignatureHash = helper_arrangeRequestPegout();
 
         // Arrange
         // The signature an nonce values are dummy values
@@ -619,15 +606,12 @@ contract TestPegManager is Test, HelperContract {
         // We emit the event we expect to see.
         bytes32 committeeMember0Pubkey = MEMBER_0_PUBKEY;
         vm.expectEmit(address(pm));
-        emit IPegManager.SignatureAdded(
-            pegOutTxHash, streamId, packetNumber, slotId, committeeMember0Pubkey, signature, nonce
-        );
+        emit IPegManager.SignatureAdded(pegOutSignatureHash, committeeMember0Pubkey, signature, nonce);
 
         // Act
         address committeeMember0adr = MEMBER_0_ADDRESS;
         vm.startPrank(committeeMember0adr);
-        bool allSignaturesReady =
-            pm.addMemberSignaturePegoutTxHash(pegOutTxHash, streamId, packetNumber, slotId, signature, nonce);
+        bool allSignaturesReady = pm.addMemberSignature(pegOutSignatureHash, signature, nonce);
         vm.stopPrank();
 
         // Assert
@@ -637,31 +621,25 @@ contract TestPegManager is Test, HelperContract {
         // We emit the event we expect to see.
         bytes32 committeeMember1Pubkey = MEMBER_1_PUBKEY;
         vm.expectEmit(address(pm));
-        emit IPegManager.SignatureAdded(
-            pegOutTxHash, streamId, packetNumber, slotId, committeeMember1Pubkey, signature, nonce
-        );
+        emit IPegManager.SignatureAdded(pegOutSignatureHash, committeeMember1Pubkey, signature, nonce);
 
         // We emit the event we expect to see.
         vm.expectEmit(address(pm));
-        emit IPegManager.AllSignaturesReady(pegOutTxHash, streamId, packetNumber, slotId);
+        emit IPegManager.AllSignaturesReady(pegOutSignatureHash);
 
         // Act
         address committeeMember2adr = MEMBER_1_ADDRESS;
         vm.startPrank(committeeMember2adr);
-        allSignaturesReady =
-            pm.addMemberSignaturePegoutTxHash(pegOutTxHash, streamId, packetNumber, slotId, signature, nonce);
+        allSignaturesReady = pm.addMemberSignature(pegOutSignatureHash, signature, nonce);
         vm.stopPrank();
 
         // Assert
         assertEq(allSignaturesReady, true, "Not all signatures should be ready at this point");
     }
 
-    function test_addMemberSignaturePegoutTxHash_Revert_PegOutRequestNotFound() external {
+    function test_addMemberSignature_Revert_PegOutRequestNotFound() external {
         // Arrange
-        bytes32 pegOutTxHash = 0x0000000000000000000000000000000000000000000000000000000000000001;
-        uint64 streamId = 0;
-        uint64 packetNumber = 0;
-        uint64 slotId = 0;
+        bytes32 pegOutSignatureHash = 0x0000000000000000000000000000000000000000000000000000000000000001;
 
         // The signature an nonce values are dummy values
         bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
@@ -669,20 +647,14 @@ contract TestPegManager is Test, HelperContract {
             hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
 
         // Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IPegManager.PegOutRequestNotFound.selector, pegOutTxHash, streamId, packetNumber, slotId
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(IPegManager.SignatureHashNotFound.selector, pegOutSignatureHash));
 
         // Act
-        pm.addMemberSignaturePegoutTxHash(pegOutTxHash, streamId, packetNumber, slotId, signature, nonce);
+        pm.addMemberSignature(pegOutSignatureHash, signature, nonce);
     }
 
-    function test_addMemberSignaturePegoutTxHash_Revert_MemberNotFound() external {
-        // This test has to perform all the steps of the pegout flow but we do not need the asserts
-        // since that is already being checked
-        (bytes32 pegOutTxHash, uint64 streamId, uint64 packetNumber, uint64 slotId) = helper_arrangeRequestPegout();
+    function test_addMemberSignature_Revert_MemberNotFound() external {
+        bytes32 pegOutSignatureHash = helper_arrangeRequestPegout();
 
         // The signature an nonce values are dummy values
         bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
@@ -694,14 +666,12 @@ contract TestPegManager is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(IPegManager.MemberNotFound.selector, memberAddress));
 
         vm.startPrank(memberAddress);
-        pm.addMemberSignaturePegoutTxHash(pegOutTxHash, streamId, packetNumber, slotId, signature, nonce);
+        pm.addMemberSignature(pegOutSignatureHash, signature, nonce);
         vm.stopPrank();
     }
 
-    function test_addMemberSignaturePegoutTxHash_Revert_MemberHasAlreadySigned() external {
-        // This test has to perform all the steps of the pegout flow but we do not need the asserts
-        // since that is already being checked
-        (bytes32 pegOutTxHash, uint64 streamId, uint64 packetNumber, uint64 slotId) = helper_arrangeRequestPegout();
+    function test_addMemberSignature_Revert_MemberHasAlreadySigned() external {
+        bytes32 pegOutSignatureHash = helper_arrangeRequestPegout();
 
         // Arrange
         // The signature an nonce values are dummy values
@@ -713,15 +683,12 @@ contract TestPegManager is Test, HelperContract {
         // We emit the event we expect to see.
         bytes32 committeeMember0Pubkey = MEMBER_0_PUBKEY;
         vm.expectEmit(address(pm));
-        emit IPegManager.SignatureAdded(
-            pegOutTxHash, streamId, packetNumber, slotId, committeeMember0Pubkey, signature, nonce
-        );
+        emit IPegManager.SignatureAdded(pegOutSignatureHash, committeeMember0Pubkey, signature, nonce);
 
         // Act
         address committeeMember0adr = MEMBER_0_ADDRESS;
         vm.startPrank(committeeMember0adr);
-        bool allSignaturesReady =
-            pm.addMemberSignaturePegoutTxHash(pegOutTxHash, streamId, packetNumber, slotId, signature, nonce);
+        bool allSignaturesReady = pm.addMemberSignature(pegOutSignatureHash, signature, nonce);
         vm.stopPrank();
 
         // Assert
@@ -730,21 +697,21 @@ contract TestPegManager is Test, HelperContract {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(
-                IPegManager.MemberHasAlreadySigned.selector, committeeMember0Pubkey, committeeMember0adr, pegOutTxHash
+                IPegManager.MemberHasAlreadySigned.selector,
+                committeeMember0Pubkey,
+                committeeMember0adr,
+                pegOutSignatureHash
             )
         );
 
         // Act sign a second time with the same committee member
         vm.startPrank(committeeMember0adr);
-        allSignaturesReady =
-            pm.addMemberSignaturePegoutTxHash(pegOutTxHash, streamId, packetNumber, slotId, signature, nonce);
+        allSignaturesReady = pm.addMemberSignature(pegOutSignatureHash, signature, nonce);
         vm.stopPrank();
     }
 
-    function test_addMemberSignaturePegoutTxHash_Revert_MemberNotFoundInCommittee() external {
-        // This test has to perform all the steps of the pegout flow but we do not need the asserts
-        // since that is already being checked
-        (bytes32 pegOutTxHash, uint64 streamId, uint64 packetNumber, uint64 slotId) = helper_arrangeRequestPegout();
+    function test_addMemberSignature_Revert_MemberNotFoundInCommittee() external {
+        bytes32 pegOutSignatureHash = helper_arrangeRequestPegout();
 
         // Arrange
         // The signature an nonce values are dummy values
@@ -754,23 +721,22 @@ contract TestPegManager is Test, HelperContract {
 
         bytes32 nonCommitteeMemberPubkey = MEMBER_2_PUBKEY;
 
+        // Assert
         vm.expectRevert(
             abi.encodeWithSelector(
-                IPegManager.MemberNotFoundInCommittee.selector, nonCommitteeMemberPubkey, pegOutTxHash
+                IPegManager.MemberNotFoundInCommittee.selector, nonCommitteeMemberPubkey, pegOutSignatureHash
             )
         );
 
         // Act
         address nonCommitteeMember = MEMBER_2_ADDRESS;
         vm.startPrank(nonCommitteeMember);
-        pm.addMemberSignaturePegoutTxHash(pegOutTxHash, streamId, packetNumber, slotId, signature, nonce);
+        pm.addMemberSignature(pegOutSignatureHash, signature, nonce);
         vm.stopPrank();
     }
 
-    function test_addMemberSignaturePegoutTxHash_Revert_InvalidNonceLength() external {
-        // This test has to perform all the steps of the pegout flow but we do not need the asserts
-        // since that is already being checked
-        (bytes32 pegOutTxHash, uint64 streamId, uint64 packetNumber, uint64 slotId) = helper_arrangeRequestPegout();
+    function test_addMemberSignature_Revert_InvalidNonceLength() external {
+        bytes32 pegOutSignatureHash = helper_arrangeRequestPegout();
 
         // Arrange
         // The signature an nonce values are dummy values
@@ -780,6 +746,7 @@ contract TestPegManager is Test, HelperContract {
 
         address CommitteeMember = MEMBER_0_ADDRESS;
 
+        // Assert
         vm.expectRevert(
             abi.encodeWithSelector(
                 IPegManager.InvalidNonceLength.selector, nonce.length, Constants.SIGNATURE_NONCE_LENGTH
@@ -788,11 +755,11 @@ contract TestPegManager is Test, HelperContract {
 
         // Act
         vm.startPrank(CommitteeMember);
-        pm.addMemberSignaturePegoutTxHash(pegOutTxHash, streamId, packetNumber, slotId, signature, nonce);
+        pm.addMemberSignature(pegOutSignatureHash, signature, nonce);
         vm.stopPrank();
     }
 
-    function helper_arrangeRequestPegout() internal returns (bytes32, uint64, uint64, uint64) {
+    function helper_arrangeRequestPegout() internal returns (bytes32) {
         // Arrange
         bytes memory usrPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
 
@@ -814,6 +781,6 @@ contract TestPegManager is Test, HelperContract {
         pm.requestPegOut{value: amountInWei}(usrPubKey);
         bytes32 pegOutSignatureHash = pm.getPegOutSignatureHash(stream.streamId, packetNumber, slotId);
 
-        return (pegOutSignatureHash, stream.streamId, packetNumber, slotId);
+        return (pegOutSignatureHash);
     }
 }

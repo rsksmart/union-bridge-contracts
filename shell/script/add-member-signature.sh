@@ -8,9 +8,9 @@ cd ..
 # set up environment variables
 source .env
 RPC=$LOCAL_RPC
-echo "================ REGISTER PEGIN REQUEST TO $RPC ================"
+echo "================ ADD MEMBER SIGNATURE TO $RPC ================"
 forge script \
-    script/AddMemberSignaturePegOut.s.sol \
+    script/AddMemberSignature.s.sol \
     --rpc-url $RPC \
     --legacy \
     --broadcast \
