@@ -48,4 +48,6 @@ interface ICommitteeRegistry {
     function getMemberPubKeyByAddress(address _address) external view returns (bytes32);
 
     function getMemberPubKeyByIndex(uint16 _memberIndex) external view returns (bytes32);
+
+    function selectCommittee(uint64) external view returns (bytes32);
 }

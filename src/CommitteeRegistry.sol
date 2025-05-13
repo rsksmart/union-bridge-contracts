@@ -151,4 +151,9 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
         // Substract 1 to get the correct index
         return members[memberIndex - 1].publicKey;
     }
+
+    function selectCommittee(uint64) external view returns (bytes32) {
+        // TODO: implement algorithm to select the members for a new committee or choose an existing one
+        return committees[0];
+    }
 }

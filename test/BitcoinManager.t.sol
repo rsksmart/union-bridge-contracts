@@ -94,21 +94,25 @@ contract TestBtcHelper is Test, HelperContract {
 
     function test_getPegInOpReturnData_Success() external view {
         // Arrange
-        BtcTxOut memory btcTxOut = getPegInRequestOpReturnOut();
+        uint64 packetNumber = 1; //using 1 because 0 would not test for endianess
+        address rskDestinationAddress = getPegInRskDestinationAddress();
+        bytes32 btcReimbursementPubKey = getPegInBtcReimbursementPubKey();
+        BtcTxOut memory btcTxOut =
+            getPegInRequestOpReturnOut(packetNumber, rskDestinationAddress, btcReimbursementPubKey);
         // Act
-        (uint64 packetNumber, address rskDestinationAddress, bytes32 btcReimbursementPubKey) =
+        (uint64 resPacketNumber, address resRskDestinationAddress, bytes32 resBtcReimbursementPubKey) =
             bitcoinManager.getPegInOpReturnData(btcTxOut);
         // Assert
-        assertEq(packetNumber, getPegInRequestPacket(), "OP_RETURN packet number should be correct  ");
+        assertEq(packetNumber, resPacketNumber, "OP_RETURN parsed packet number does not match the expected");
         assertEq(
             rskDestinationAddress,
-            getPegInRskDestinationAddress(),
-            "OP_RETURN RSK destination address should be correct"
+            resRskDestinationAddress,
+            "OP_RETURN parsed RSK destination address does not match the expected"
         );
         assertEq(
             btcReimbursementPubKey,
-            getPegInBtcReimbursementPubKey(),
-            "OP_RETURN BTC reimbursement public key should be correct"
+            resBtcReimbursementPubKey,
+            "OP_RETURN parsed BTC reimbursement public key does not match the expected"
         );
     }
 

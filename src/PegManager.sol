@@ -116,7 +116,7 @@ contract PegManager is IPegManager, ProofValidator, BaseProxy {
 
         // Verify the txHash part of the Merkle Root of Tx of a Block
         // and that block is inside Bitcoin Mainchain
-        // annd has enough confirmations
+        // and has enough confirmations
         verifyTxConfirmations(
             stream.pegInConfirmations,
             txHash,
@@ -249,6 +249,17 @@ contract PegManager is IPegManager, ProofValidator, BaseProxy {
         );
         // Update the peg in request status to ACCEPTED
         streamPosition.pegStatus = PegStatus.ACCEPTED;
+
+        // Check if we need a new packet
+        if (streamPosition.slotId == Constants.SLOT_USAGE_THRESHOLD - 1) {
+            bytes32 committeePubKey = committeeRegistry.selectCommittee(streamPosition.streamId);
+            streamManager.createNewPacket(streamPosition.streamId, committeePubKey);
+        }
+
+        // Check if we need to move the packet pointer
+        if (streamPosition.slotId == Constants.SLOTS_PER_PACKET - 1) {
+            streamManager.incrementPacketPeginPointer(streamPosition.streamId);
+        }
 
         // === TODO STORE ACCEPT VALUE INTO THE SLOT SO ITS USED FOR THE PEG OUT ===
 
@@ -424,5 +435,9 @@ contract PegManager is IPegManager, ProofValidator, BaseProxy {
         if (committeeSignatures[_signatureHash].signaturesData.length == 0) {
             revert SignatureHashNotFound(_signatureHash);
         }
+    }
+
+    function getPacketPeginPointer(uint64 _streamId) internal view returns (uint64) {
+        return streamManager.getPacketPeginPointer(_streamId);
     }
 }
