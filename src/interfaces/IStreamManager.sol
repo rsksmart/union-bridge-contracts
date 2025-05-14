@@ -56,6 +56,11 @@ interface IStreamManager {
     /// @param _committeePubKey The public key of the committee
     function createPacketsAndSlots(bytes32 _committeePubKey) external;
 
+    /// @notice Adds a packet to a specific stream with the committee public key
+    /// @param _streamId The index in the array of streams
+    /// @param _committeePubKey The public key of the selected committee for the packet
+    function createNewPacket(uint64 _streamId, bytes32 _committeePubKey) external;
+
     /// @notice Allows users to get the Stream information for a given denomination
     /// @param _denomination The value to peg in used by the stream in satoshi
     /// @return Stream The stream information
@@ -121,6 +126,15 @@ interface IStreamManager {
     /// @param _packetNumber The index in the array of packets
     /// @return bytes32 The committee public key
     function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes32);
+
+    /// @notice Allows the pegManager to increment the pegin pointer for a given stream
+    /// @param _streamId The index in the array of streams
+    function incrementPacketPeginPointer(uint64 _streamId) external;
+
+    /// @notice Allows the pegManager to get the pegin pointer for a given stream
+    /// @param _streamId The index in the array of streams
+    /// @return uint64 The pegin pointer
+    function getPacketPeginPointer(uint64 _streamId) external view returns (uint64);
 
     event StreamCreated(uint64 streamId, uint64 denomination);
     event PacketCreated(uint64 streamId, uint64 packetNumber);

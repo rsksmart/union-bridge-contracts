@@ -17,6 +17,7 @@ import {RSK_BRIDGE_ADDRESS, IBridge} from "src/interfaces/IBridge.sol";
 import {BridgeMock} from "./BridgeMock.sol";
 import {TestUtils} from "./TestUtils.sol";
 import {Constants} from "src/libraries/Constants.sol";
+import {OpCodes} from "src/libraries/OpCodes.sol";
 
 abstract contract HelperContract is Test, TestUtils {
     // Mock keys
@@ -97,13 +98,16 @@ abstract contract HelperContract is Test, TestUtils {
     }
 
     // ========================== Peg In Request ==========================
-    function getPegInRequestTxIn() internal pure returns (BtcTxIn memory) {
-        return BtcTxIn({
-            txId: 0x360b81785dc7c2f40627fea364676dbb73e6276683caffd9f906b0e0bd36b3d2,
-            vout: 1694,
-            sequence: Constants.SEQUENCE,
-            scriptSig: hex""
-        });
+    // This counter is added to the txId from getPegInRequestTxIn to avoid collisions when doing multiple pegin's
+    uint256 internal txIdCounter = 0;
+
+    function helper_incrementTxIdCounter() public {
+        txIdCounter++;
+    }
+
+    function getPegInRequestTxIn() internal view returns (BtcTxIn memory) {
+        uint256 txId = uint256(0x360b81785dc7c2f40627fea364676dbb73e6276683caffd9f906b0e0bd36b3d2) + txIdCounter;
+        return BtcTxIn({txId: bytes32(txId), vout: 1694, sequence: Constants.SEQUENCE, scriptSig: hex""});
     }
 
     function getPegInRequestP2TROut() internal pure returns (BtcTxOut memory) {
@@ -128,20 +132,34 @@ abstract contract HelperContract is Test, TestUtils {
         return 0x7d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f;
     }
 
-    function getPegInRequestOpReturnOut() internal pure returns (BtcTxOut memory) {
-        return BtcTxOut({
-            amount: 0,
-            scriptPubKey: hex"6a4552534b5f504547494e00000000000000007ac5496aee77c1ba1f0854206a26dda82a81d6d87d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f"
-        });
+    function getPegInRequestOpReturnOut(
+        uint64 _packetNumber,
+        address _rskDestinationAddress,
+        bytes32 _btcReimbursementPubKey
+    ) internal pure returns (BtcTxOut memory) {
+        bytes memory script = abi.encodePacked(
+            OpCodes.OP_RETURN, // (1 byte)
+            OpCodes.OP_PUSHBYTES_69, // (1 byte)
+            "RSK_PEGIN", // (9 bytes)
+            _packetNumber, // (8 bytes)
+            _rskDestinationAddress, // (20 bytes)
+            _btcReimbursementPubKey // (32 bytes)
+        );
+
+        // Return the constructed output
+        return BtcTxOut({amount: 0, scriptPubKey: script});
     }
 
-    function getBtcPegInRequestTx() internal pure returns (BtcTransaction memory) {
+    function getBtcPegInRequestTx() internal view returns (BtcTransaction memory) {
         BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
         btcInputs[0] = getPegInRequestTxIn();
         // Output
         BtcTxOut[] memory btcOutputs = new BtcTxOut[](2);
         btcOutputs[0] = getPegInRequestP2TROut();
-        btcOutputs[1] = getPegInRequestOpReturnOut();
+        uint64 packetNumber = streamManager.getPacketPeginPointer(streamManager.getStream(VALUE).streamId);
+        address rskDestinationAddress = getPegInRskDestinationAddress();
+        bytes32 btcReimbursementPubKey = getPegInBtcReimbursementPubKey();
+        btcOutputs[1] = getPegInRequestOpReturnOut(packetNumber, rskDestinationAddress, btcReimbursementPubKey);
         return BtcTransaction({
             version: Constants.BTC_TX_VERSION,
             inputs: btcInputs,
@@ -150,12 +168,12 @@ abstract contract HelperContract is Test, TestUtils {
         });
     }
 
-    function getExpectedPegInRequestTxHash() internal pure returns (bytes32) {
+    function getExpectedPegInRequestTxHash() internal view returns (bytes32) {
         return BtcHelper.hash256(BtcTxEncoder.encodeTx(getBtcPegInRequestTx()));
     }
 
     // ========================== Peg In Accept ==========================
-    function getBtcAcceptPegInTx() internal pure returns (BtcTransaction memory) {
+    function getBtcAcceptPegInTx() internal view returns (BtcTransaction memory) {
         BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
         btcInputs[0] = getAcceptPegInTxIn();
         // Output
@@ -171,11 +189,11 @@ abstract contract HelperContract is Test, TestUtils {
         });
     }
 
-    function getExpectedAcceptPegInTxHash() internal pure returns (bytes32) {
+    function getExpectedAcceptPegInTxHash() internal view returns (bytes32) {
         return BtcHelper.hash256(BtcTxEncoder.encodeTx(getBtcAcceptPegInTx()));
     }
 
-    function getAcceptPegInTxIn() internal pure returns (BtcTxIn memory) {
+    function getAcceptPegInTxIn() internal view returns (BtcTxIn memory) {
         return BtcTxIn({txId: getExpectedPegInRequestTxHash(), vout: 0, sequence: Constants.SEQUENCE, scriptSig: hex""});
     }
 

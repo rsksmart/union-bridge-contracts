@@ -44,12 +44,12 @@ contract TestPegManager is Test, HelperContract {
                 || testSelector == this.test_acceptPegInRequest_Revert_Revert_NotEnoughConfirmations.selector
         ) {
             beforeTestCalldata = new bytes[](1);
-            beforeTestCalldata[0] = abi.encodePacked(this.test_registerPegInRequest_Success.selector);
+            beforeTestCalldata[0] = abi.encodePacked(this.requestPeginFlow.selector);
         }
         if (testSelector == this.test_requestPegOut_fromAcceptPegIn_Success.selector) {
             beforeTestCalldata = new bytes[](2);
-            beforeTestCalldata[0] = abi.encodePacked(this.test_registerPegInRequest_Success.selector);
-            beforeTestCalldata[1] = abi.encodePacked(this.test_acceptPegInRequest_Success.selector);
+            beforeTestCalldata[0] = abi.encodePacked(this.requestPeginFlow.selector);
+            beforeTestCalldata[1] = abi.encodePacked(this.acceptPeginFlow.selector);
         }
     }
 
@@ -240,6 +240,92 @@ contract TestPegManager is Test, HelperContract {
 
         // Act
         pm.acceptPegInRequest(pegInAcceptedTxSPVProof);
+    }
+
+    function test_acceptPegInRequest_newPacketCreated() external {
+        // Arrange
+        // Create pegins until the new packet threshold is reached
+        multipleRequestAndAcceptPeginFlows(Constants.SLOT_USAGE_THRESHOLD - 1);
+
+        // Arrange
+        requestPeginFlow();
+        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx();
+        // Create PegIn accepted tx struct information
+        BtcTxSPVProof memory pegInAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
+
+        // Assert
+        vm.expectEmit(address(streamManager));
+        emit IStreamManager.PacketCreated(0, 1);
+        // Act
+        pm.acceptPegInRequest(pegInAcceptedTxSPVProof);
+    }
+
+    function test_acceptPegInRequest_newPacketUsed() external {
+        // Arrange
+        // Create pegins until the new packet treshold is reached
+        multipleRequestAndAcceptPeginFlows(Constants.SLOTS_PER_PACKET);
+
+        // Arrange
+        requestPeginFlow();
+        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx();
+        // Create PegIn accepted tx struct information
+        BtcTxSPVProof memory pegInAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
+
+        // Assert
+        vm.expectEmit(address(pm));
+        // We emit the event we expect to see.
+        bytes32 pegInRequestTxHash = pegInAcceptedTxSPVProof.btcTx.inputs[0].txId;
+        bytes32 acceptPegInTxHash = getExpectedAcceptPegInTxHash();
+        uint64 streamId = 0;
+        uint64 packetId = 1;
+        uint64 slotId = 0;
+        emit IPegManager.AcceptedPegInRequest(
+            pegInAcceptedTxSPVProof.blockHash,
+            acceptPegInTxHash,
+            pegInRequestTxHash,
+            0, //vout
+            StreamPosition({streamId: streamId, packetNumber: packetId, slotId: slotId, pegStatus: PegStatus.ACCEPTED}),
+            BTC_REIMBURSEMENT_PUBKEY,
+            RSK_DESTINATION_ADDRESS,
+            satoshiToWei(btcTransaction.outputs[0].amount), // Rbtc amount
+            btcTransaction.outputs[0].scriptPubKey
+        );
+        // Act
+        pm.acceptPegInRequest(pegInAcceptedTxSPVProof);
+    }
+
+    function multipleRequestAndAcceptPeginFlows(uint256 numberOfPegIns) internal {
+        for (uint256 i = 0; i < numberOfPegIns; i++) {
+            requestPeginFlow();
+            acceptPeginFlow();
+        }
+    }
+
+    function acceptPeginFlow() public {
+        // Arrange
+        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx();
+        // Set Mock Bridge state
+        bridgeMock.setBtcTransactionConfirmations(10);
+        // Create PegIn accepted tx struct information
+        BtcTxSPVProof memory pegInAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
+
+        // Act
+        pm.acceptPegInRequest(pegInAcceptedTxSPVProof);
+
+        // This counter is added to the txId from the helper contract to avoid collisions when doing multiple pegin's
+        helper_incrementTxIdCounter();
+    }
+
+    function requestPeginFlow() public {
+        // Arrange
+        BtcTransaction memory btcTransaction = getBtcPegInRequestTx();
+        // Set Mock Bridge state
+        bridgeMock.setBtcTransactionConfirmations(10);
+        // Create PegIn struct information
+        BtcTxSPVProof memory pegInRequestTxSPVProof = createBtcTxSPVProof(btcTransaction);
+
+        // Act
+        pm.registerPegInRequest(pegInRequestTxSPVProof);
     }
 
     function test_acceptPegInRequest_Success() external {

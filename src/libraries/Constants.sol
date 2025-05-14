@@ -20,4 +20,6 @@ library Constants {
     // TODO: this should be a parameter not a constant
     uint8 constant TIMELOCK_BLOCKS = 1;
     uint8 constant SIGNATURE_NONCE_LENGTH = 66;
+    uint8 constant SLOTS_PER_PACKET = 100;
+    uint8 constant SLOT_USAGE_THRESHOLD = 80;
 }

@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import {Stream, Packet, Slot, SlotState, IStreamManager} from "./interfaces/IStreamManager.sol";
 import {BaseProxy} from "./BaseProxy.sol";
+import {Constants} from "./libraries/Constants.sol";
 
 /// @title Stream Manager
 /// @notice Manages streams
@@ -46,31 +47,38 @@ contract StreamManager is IStreamManager, BaseProxy {
         __BaseProxy_init(_initialOwner);
     }
 
+    function createNewPacket(uint64 _streamId, bytes32 _committeePubKey) public {
+        uint64 packetNumber = uint64(packets[_streamId].length);
+        packets[_streamId].push(Packet({packetNumber: packetNumber, committeePubKey: _committeePubKey}));
+        // Initialize slots directly in storage
+        generateSlots(_streamId, packetNumber);
+        emit PacketCreated(_streamId, packetNumber);
+    }
+
+    function generateSlots(uint64 _streamId, uint64 _packetNumber) internal {
+        for (uint64 i = 0; i < Constants.SLOTS_PER_PACKET; i++) {
+            slots[_streamId][_packetNumber].push(
+                Slot({
+                    slotId: i,
+                    state: SlotState.PREPARED,
+                    scriptPubKey: "",
+                    acceptPegInTx: "",
+                    acceptPegInAmount: 0,
+                    take0Tx: "",
+                    take1Tx: ""
+                })
+            );
+            emit SlotCreated(_streamId, _packetNumber, i);
+        }
+    }
+
     /// @dev Adds one packet per stream and creates a 100 slots given committee
     function createPacketsAndSlots(bytes32 _committeePubKey) external onlyOwner {
         uint256 length = denominations.length;
         for (uint64 i = 0; i < length; i++) {
             uint64 streamId = streams[i].streamId;
-            // Add a new packet
-            uint64 packetNumber = uint64(packets[streamId].length);
-            packets[streamId].push(Packet({packetNumber: packetNumber, committeePubKey: _committeePubKey}));
-            emit PacketCreated(streamId, packetNumber);
-
-            // Initialize slots directly in storage
-            for (uint64 j = 0; j < 100; j++) {
-                slots[i][packetNumber].push(
-                    Slot({
-                        slotId: j,
-                        state: SlotState.PREPARED,
-                        scriptPubKey: "",
-                        acceptPegInTx: "",
-                        acceptPegInAmount: 0,
-                        take0Tx: "",
-                        take1Tx: ""
-                    })
-                );
-                emit SlotCreated(streamId, packetNumber, j);
-            }
+            // Add a new packet with 100 slots for each stream
+            createNewPacket(streamId, _committeePubKey);
         }
     }
 
@@ -159,6 +167,15 @@ contract StreamManager is IStreamManager, BaseProxy {
 
     function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes32) {
         return getPacket(_streamId, _packetNumber).committeePubKey;
+    }
+
+    function incrementPacketPeginPointer(uint64 _streamId) external onlyPegManager {
+        Stream storage stream = streams[_streamId];
+        stream.peginPointer++;
+    }
+
+    function getPacketPeginPointer(uint64 _streamId) public view returns (uint64) {
+        return streams[_streamId].peginPointer;
     }
 
     modifier onlyPegManager() {
