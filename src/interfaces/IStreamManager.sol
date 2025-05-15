@@ -44,17 +44,18 @@ struct Stream {
     // Packet[] packets; // A dynamic array to store the packets of the stream
     // Arrays should not be in scruct otherwise they are too havy on memory and cause a stack too deep exception
     // uint8 packetLength; // Length of the array (redundant but can be stored if needed)
-    uint8 peginPointer; // An index for the packets array. It points to the next available slot to register a peg-in request
-    int8 pegoutPointer; // Another index for the packets array. It points to the first peg-out that will be processed when requested
+    uint64 peginPacketPointer; // An index for the packets array. It points to the current packet with space to a slot to register a peg-in request
+    uint64 pegoutPacketPointer; // Another index for the packets array. It points to the current packet that should have a slot filled for a peg-out request
+    uint16 pegoutSlotPointer; // An index for the slots array. It points to the first slot in the pegoutPacketPointer that should be processed when requested (if it's filled)
     uint8 pegInConfirmations; // A generic number
     //uint8 pegOutConfirmations; // Another generic number
     uint64 securityBondValue; // The required bond (in satoshis) that each member of the committee needs to deposit to secure a packet
 }
 
 interface IStreamManager {
-    /// @notice Allows users to create packets and slots
+    /// @notice Allows users to create packets
     /// @param _committeePubKey The public key of the committee
-    function createPacketsAndSlots(bytes32 _committeePubKey) external;
+    function createInitialPackets(bytes32 _committeePubKey) external;
 
     /// @notice Adds a packet to a specific stream with the committee public key
     /// @param _streamId The index in the array of streams
@@ -81,17 +82,11 @@ interface IStreamManager {
     /// @return Packet The packet information
     function getPacket(uint64 _streamId, uint64 _packetNumber) external view returns (Packet memory);
 
-    /// @notice Allows users to get the first prepared Slot information for a given packet index at a stream
-    /// @param _streamId The index in the array of streams
-    /// @param _packetNumber The index in the array of packets
-    /// @return uint64 The slotId of the first prepared slot information
-    function getPreparedSlotId(uint64 _streamId, uint64 _packetNumber) external view returns (uint64);
-
-    /// @notice Allows users to get the first filled Slot information for a given packet index at a stream
+    /// @notice Allows users to get the first filled Slot information for a given packet index at a stream and lock slot
     /// @param _streamId The index in the array of streams
     /// @return slot The slot of the first filled slot information
     /// @return packetNumber The packet number of the first filled slot information
-    function getFirstFilledSlot(uint64 _streamId) external view returns (Slot memory slot, uint64 packetNumber);
+    function lockSlot(uint64 _streamId) external returns (Slot memory, uint64 packetNumber);
 
     /// @notice Allows users to get the Slot information for a given slot index at a packet index at a stream
     /// @param _streamId The index in the array of streams
@@ -99,12 +94,6 @@ interface IStreamManager {
     /// @param _slotNumber The index in the array of slots
     /// @return Slot The slot information
     function getSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotNumber) external view returns (Slot memory);
-
-    /// @notice Allows users to lock a slot
-    /// @param _streamId The index in the array of streams
-    /// @param _packetNumber The index in the array of packets
-    /// @param _slotId The index in the array of slots
-    function lockSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) external;
 
     /// @notice Allows users to fill the accept peg-in transaction for a given slot
     /// @param _streamId The index in the array of streams
@@ -127,15 +116,6 @@ interface IStreamManager {
     /// @return bytes32 The committee public key
     function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes32);
 
-    /// @notice Allows the pegManager to increment the pegin pointer for a given stream
-    /// @param _streamId The index in the array of streams
-    function incrementPacketPeginPointer(uint64 _streamId) external;
-
-    /// @notice Allows the pegManager to get the pegin pointer for a given stream
-    /// @param _streamId The index in the array of streams
-    /// @return uint64 The pegin pointer
-    function getPacketPeginPointer(uint64 _streamId) external view returns (uint64);
-
     event StreamCreated(uint64 streamId, uint64 denomination);
     event PacketCreated(uint64 streamId, uint64 packetNumber);
     event SlotCreated(uint64 streamId, uint64 packetNumber, uint64 slotId);
@@ -144,7 +124,12 @@ interface IStreamManager {
     error PacketOutOfBound(uint256 packetNumber);
     error NoEmptySlot(uint256 streamId, uint256 packetNumber);
     error tooManyDenominations(uint256 maxDenominationsSize);
-    error NoFilledSlot(uint256 streamId, uint256 packetNumber);
+    error NoFilledSlot(uint256 streamId, uint256 packetNumber, uint256 slotId);
+    error PacketNotFound(uint256 streamId, uint256 packetNumber);
+    error InconsistentPegoutPointer(uint256 streamId, uint256 packetNumber, uint256 slotPointer);
+    error InconsistentSlotsPerPacket(uint256 streamId, uint256 packetNumber, uint256 slotsPerPacket);
+    error InvalidPeginPacketNumber(uint256 streamId, uint256 packetNumber);
     error NonExistentSlot(uint256 streamId, uint256 packetNumber, uint256 slotId);
     error UnauthorizedAccount(address sender);
+    error StreamAlreadyInitialized(uint256 streamId);
 }

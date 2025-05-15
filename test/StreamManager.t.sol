@@ -5,27 +5,65 @@ import "forge-std/Test.sol";
 import "forge-std/console.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
 import {SlotState, Slot, Packet, IStreamManager} from "src/interfaces/IStreamManager.sol";
+import {Constants} from "src/libraries/Constants.sol";
 
 contract TestStreamManager is Test, HelperContract {
     function setUp() external {
         runTestDeployScript();
     }
 
-    function test_getFirstFilledSlot_Success() external {
+    function test_lockSlot_Success() external {
         // Arrange
-        streamManager.setSlotHarness(0, 0, 0, SlotState.FILLED, hex"00", 0, 0);
+        streamManager.setSlotHarness(0, 0, hex"00", 0, 0);
 
+        vm.prank(address(pm));
         // Act
-        (Slot memory slot,) = streamManager.getFirstFilledSlot(0);
-        assertEq(uint64(slot.state), uint64(SlotState.FILLED), "Incorrect slot state");
+        (Slot memory slot,) = streamManager.lockSlot(0);
+        assertEq(uint64(slot.state), uint64(SlotState.LOCKED), "Incorrect slot state");
     }
 
-    function test_getFirstFilledSlot_NoFilledSlot() external {
+    function test_lockSlot_NonExistentSlot() external {
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IStreamManager.NoFilledSlot.selector, 0, 0));
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.NonExistentSlot.selector, 0, 0, 0));
 
+        vm.prank(address(pm));
         // Act
-        streamManager.getFirstFilledSlot(0);
+        streamManager.lockSlot(0);
+    }
+
+    function test_lockSlot_InconsistentPegoutPointer() external {
+        streamManager.pushSlots(0, 0, Constants.SLOTS_PER_PACKET + 1, SlotState.FILLED);
+        streamManager.setPegoutPointers(0, 0, Constants.SLOTS_PER_PACKET);
+
+        uint256 slotsLength = streamManager.getSlotsLength(0, 0);
+        assertEq(slotsLength, Constants.SLOTS_PER_PACKET + 1, "Incorrect slots length");
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.InconsistentPegoutPointer.selector, 0, 0, 101));
+        vm.prank(address(pm));
+        streamManager.lockSlot(0);
+    }
+
+    function test_lockSlot_NoFilledSlot() external {
+        streamManager.pushSlots(0, 0, 1, SlotState.LOCKED);
+
+        uint256 slotsLength = streamManager.getSlotsLength(0, 0);
+        assertEq(slotsLength, 1, "Incorrect slots length");
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.NoFilledSlot.selector, 0, 0, 0));
+        vm.prank(address(pm));
+        streamManager.lockSlot(0);
+    }
+
+    function test_pushSlot_InconsistentSlotsPerPacket() external {
+        streamManager.pushSlots(0, 0, Constants.SLOTS_PER_PACKET, SlotState.FILLED);
+
+        uint256 slotsLength = streamManager.getSlotsLength(0, 0);
+        assertEq(slotsLength, Constants.SLOTS_PER_PACKET, "Incorrect slots length");
+
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.InconsistentSlotsPerPacket.selector, 0, 0, 101));
+        streamManager.setSlotHarness(0, 0, hex"00", 0, 0);
     }
 
     function test_createNewPacket_Success() external {
@@ -40,6 +78,7 @@ contract TestStreamManager is Test, HelperContract {
 
         emit IStreamManager.PacketCreated(streamId, expectedPacketNumber);
 
+        vm.prank(address(pm));
         // Act
         streamManager.createNewPacket(streamId, committeePubKey);
 

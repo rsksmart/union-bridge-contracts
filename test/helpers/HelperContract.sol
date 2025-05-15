@@ -18,6 +18,7 @@ import {BridgeMock} from "./BridgeMock.sol";
 import {TestUtils} from "./TestUtils.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {OpCodes} from "src/libraries/OpCodes.sol";
+import {Stream} from "src/interfaces/IStreamManager.sol";
 
 abstract contract HelperContract is Test, TestUtils {
     // Mock keys
@@ -156,7 +157,10 @@ abstract contract HelperContract is Test, TestUtils {
         // Output
         BtcTxOut[] memory btcOutputs = new BtcTxOut[](2);
         btcOutputs[0] = getPegInRequestP2TROut();
-        uint64 packetNumber = streamManager.getPacketPeginPointer(streamManager.getStream(VALUE).streamId);
+
+        Stream memory stream = streamManager.getStream(VALUE);
+        uint64 packetNumber = stream.peginPacketPointer;
+
         address rskDestinationAddress = getPegInRskDestinationAddress();
         bytes32 btcReimbursementPubKey = getPegInBtcReimbursementPubKey();
         btcOutputs[1] = getPegInRequestOpReturnOut(packetNumber, rskDestinationAddress, btcReimbursementPubKey);

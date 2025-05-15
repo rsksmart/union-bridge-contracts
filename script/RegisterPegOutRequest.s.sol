@@ -29,14 +29,15 @@ contract RegisterPegOutRequestScript is ScriptUtils {
 
         // Get first filled Slot
         Stream memory stream = streamManager.getStream(amount);
-        (Slot memory slot, uint64 packetNumber) = streamManager.getFirstFilledSlot(stream.streamId);
+        uint64 packetNumber = stream.pegoutPacketPointer;
+        uint64 slotId = stream.pegoutSlotPointer;
 
         console.log("=== Request PegOut ===");
         vm.startBroadcast(getDeployerKey());
         pegManager.requestPegOut{value: amountInWei}(usrPubKey);
         vm.stopBroadcast();
 
-        bytes32 pegOutSignatureHash = pegManager.getPegOutSignatureHash(stream.streamId, packetNumber, slot.slotId);
+        bytes32 pegOutSignatureHash = pegManager.getPegOutSignatureHash(stream.streamId, packetNumber, slotId);
         if (pegOutSignatureHash == bytes32(0)) {
             revert("PegOutRequest not accepted");
         }
@@ -45,6 +46,6 @@ contract RegisterPegOutRequestScript is ScriptUtils {
         console.log("pegOutSignatureHash");
         console.logBytes32(pegOutSignatureHash);
         console.log("Stream, Slot, Packet");
-        console.log(stream.streamId, slot.slotId, packetNumber);
+        console.log(stream.streamId, slotId, packetNumber);
     }
 }

@@ -30,7 +30,6 @@ contract PegManager is IPegManager, ProofValidator, BaseProxy {
     mapping(bytes32 btcRequestPegInTxHash => StreamPosition streamPosition) internal pegInRequests;
     // Request PegIn Tx Hash => PegIn Temp Info (value, rskDestinationAddress, btcReimbursementPubKey)
     mapping(bytes32 btcRequestPegInTxHash => RequestPegInTempInfo tempInfo) internal pegInsTempInfo;
-    mapping(bytes32 btcRequestPegInTxHash => bytes32 acceptPegInSignatureHash) internal accpetPegInSighashes;
     // key = keccak256(abi.encodePacked(streamId, packetNumber, slotId))
     mapping(bytes32 key => bytes32 pegOutSignatureHash) internal pegOutSighashes;
     // Signatures waiting for the committee to sign
@@ -69,7 +68,7 @@ contract PegManager is IPegManager, ProofValidator, BaseProxy {
         Stream memory stream = streamManager.getStream(_value);
 
         // Get the current packet's committee key
-        Packet memory currentPacket = streamManager.getPacket(stream.streamId, stream.peginPointer);
+        Packet memory currentPacket = streamManager.getPacket(stream.streamId, stream.peginPacketPointer);
         bytes32 committeeKey = currentPacket.committeePubKey;
 
         return bitcoinManager.getTemporaryPegInAddress(
@@ -256,11 +255,6 @@ contract PegManager is IPegManager, ProofValidator, BaseProxy {
             streamManager.createNewPacket(streamPosition.streamId, committeePubKey);
         }
 
-        // Check if we need to move the packet pointer
-        if (streamPosition.slotId == Constants.SLOTS_PER_PACKET - 1) {
-            streamManager.incrementPacketPeginPointer(streamPosition.streamId);
-        }
-
         // === TODO STORE ACCEPT VALUE INTO THE SLOT SO ITS USED FOR THE PEG OUT ===
 
         // TODO should we use the tempInfo.outputAmount or the acceptPegInAmount
@@ -307,7 +301,7 @@ contract PegManager is IPegManager, ProofValidator, BaseProxy {
 
         // Get first filled Slot
         Stream memory stream = streamManager.getStream(receivedAmount);
-        (Slot memory slot, uint64 packetNumber) = streamManager.getFirstFilledSlot(stream.streamId);
+        (Slot memory slot, uint64 packetNumber) = streamManager.lockSlot(stream.streamId);
 
         // Prepare prevout data
         PrevoutData memory prevoutData = PrevoutData({value: slot.acceptPegInAmount, scriptPubKey: slot.scriptPubKey});
@@ -318,9 +312,6 @@ contract PegManager is IPegManager, ProofValidator, BaseProxy {
 
         // Store the peg-out transaction hash on-chain and initialize the signatures
         storePegOutAndInitSignatures(pegOutSignatureHash, stream.streamId, packetNumber, slot.slotId);
-
-        // Lock the used slot
-        streamManager.lockSlot(stream.streamId, packetNumber, slot.slotId);
 
         // TODO: return RBTC to the RSK Legacy Bridge following https://github.com/rsksmart/RSKIPs/pull/502
 
@@ -435,9 +426,5 @@ contract PegManager is IPegManager, ProofValidator, BaseProxy {
         if (committeeSignatures[_signatureHash].signaturesData.length == 0) {
             revert SignatureHashNotFound(_signatureHash);
         }
-    }
-
-    function getPacketPeginPointer(uint64 _streamId) internal view returns (uint64) {
-        return streamManager.getPacketPeginPointer(_streamId);
     }
 }

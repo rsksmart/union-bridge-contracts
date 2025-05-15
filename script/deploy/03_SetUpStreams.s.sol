@@ -31,14 +31,14 @@ contract SetUpStreams is ScriptUtils {
     function run(StreamManager _streamManager) public {
         setUp();
         vm.startBroadcast(getDeployerKey());
-        _streamManager.createPacketsAndSlots(committeePubKey);
+        _streamManager.createInitialPackets(committeePubKey);
         vm.stopBroadcast();
         uint256 streamLen = _streamManager.getStreamsLength();
         if (streamLen == 0) {
             revert("StreamManager streams not created");
         }
         Stream memory stream = _streamManager.getStreamById(0);
-        (, bytes32 packetCommitteePubKey) = _streamManager.packets(stream.streamId, stream.peginPointer);
+        (, bytes32 packetCommitteePubKey) = _streamManager.packets(stream.streamId, stream.peginPacketPointer);
         if (committeePubKey != packetCommitteePubKey) {
             revert("StreamManager packets not created");
         }

@@ -569,9 +569,7 @@ contract TestPegManager is Test, HelperContract {
         uint64 packetNumber = 0;
         uint64 slotId = 0;
 
-        streamManager.setSlotHarness(
-            stream.streamId, packetNumber, slotId, SlotState.FILLED, scriptPubKey, txId, amount
-        );
+        streamManager.setSlotHarness(stream.streamId, packetNumber, scriptPubKey, txId, amount);
 
         // Assert
         vm.expectEmit(address(pm));
@@ -607,23 +605,24 @@ contract TestPegManager is Test, HelperContract {
         uint256 amountInWei = BtcHelper.satoshiToWei(amount);
 
         Stream memory stream = streamManager.getStream(uint64(amount));
-        (Slot memory slot, uint64 packetNumber) = streamManager.getFirstFilledSlot(stream.streamId);
+        uint64 slotId = stream.pegoutSlotPointer;
+        uint64 packetNumber = stream.pegoutPacketPointer;
 
         // Assert
         vm.expectEmit(address(pm));
         emit IPegManager.PegOutRequested(
-            usrPubKey, amount, expectedHash, expectedDigest, stream.streamId, packetNumber, slot.slotId
+            usrPubKey, amount, expectedHash, expectedDigest, stream.streamId, packetNumber, slotId
         );
 
         // Act
         pm.requestPegOut{value: amountInWei}(usrPubKey);
 
         // Assert
-        bytes32 result = pm.getPegOutSignatureHash(stream.streamId, packetNumber, slot.slotId);
+        bytes32 result = pm.getPegOutSignatureHash(stream.streamId, packetNumber, slotId);
         assertEq(result, expectedHash, "expected hash doesn't match the pegout computed one");
 
         // Assert
-        slot = streamManager.getSlot(stream.streamId, packetNumber, slot.slotId);
+        Slot memory slot = streamManager.getSlot(stream.streamId, packetNumber, slotId);
         assertEq(uint64(slot.state), uint64(SlotState.LOCKED), "Slot was not locked");
     }
 
@@ -651,17 +650,19 @@ contract TestPegManager is Test, HelperContract {
         pm.requestPegOut{value: amountInWei}(usrPubKey);
     }
 
-    function test_requestPegOut_Revert_NoFilledSlot() external {
+    function test_requestPegOut_Revert_NonExistentSlot() external {
         // Arrange
         bytes memory usrPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
         uint64 amount = 100000; // 0.1 BTC
         uint256 amountInWei = BtcHelper.satoshiToWei(amount);
 
         Stream memory stream = streamManager.getStream(uint64(amount));
-        uint64 packetNumber = 0;
+        uint64 packetNumber = stream.pegoutPacketPointer;
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IStreamManager.NoFilledSlot.selector, stream.streamId, packetNumber));
+        vm.expectRevert(
+            abi.encodeWithSelector(IStreamManager.NonExistentSlot.selector, stream.streamId, packetNumber, 0)
+        );
 
         // Act
         pm.requestPegOut{value: amountInWei}(usrPubKey);
@@ -857,11 +858,8 @@ contract TestPegManager is Test, HelperContract {
 
         Stream memory stream = streamManager.getStream(uint64(amount));
         uint64 packetNumber = 0;
-        uint64 slotId = 0;
 
-        streamManager.setSlotHarness(
-            stream.streamId, packetNumber, slotId, SlotState.FILLED, scriptPubKey, txId, amount
-        );
+        uint64 slotId = streamManager.setSlotHarness(stream.streamId, packetNumber, scriptPubKey, txId, amount);
 
         // Execute pegout as part of the arrange
         pm.requestPegOut{value: amountInWei}(usrPubKey);

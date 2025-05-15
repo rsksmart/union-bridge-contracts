@@ -26,7 +26,7 @@ contract RegisterPegInRequestScript is ScriptUtils {
         bitcoinManager = IBitcoinManager(pegManager.bitcoinManager());
         // Committee public key
         Stream memory stream = streamManager.getStream(value);
-        uint64 packetNumber = stream.peginPointer;
+        uint64 packetNumber = stream.peginPacketPointer;
         bytes32 committeePubKey = streamManager.getCommitteePubKey(stream.streamId, packetNumber);
         // BtcTransaction to verify
         BtcTransaction memory btcTransaction =

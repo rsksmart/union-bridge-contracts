@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import {Stream, Packet, Slot, SlotState, IStreamManager} from "./interfaces/IStreamManager.sol";
 import {BaseProxy} from "./BaseProxy.sol";
-import {Constants} from "./libraries/Constants.sol";
+import {Constants} from "src/libraries/Constants.sol";
 
 /// @title Stream Manager
 /// @notice Manages streams
@@ -25,6 +25,7 @@ contract StreamManager is IStreamManager, BaseProxy {
         virtual
         initializer
     {
+        require(_pegManager != address(0), "PegManager cannot be zero address");
         pegManager = _pegManager;
         uint256 length = _denominations.length;
         if (length > MAX_DENOMINATIONS_SIZE) {
@@ -36,8 +37,9 @@ contract StreamManager is IStreamManager, BaseProxy {
                 Stream({
                     streamId: i,
                     denomination: _denominations[i],
-                    peginPointer: 0,
-                    pegoutPointer: -1,
+                    peginPacketPointer: 0,
+                    pegoutPacketPointer: 0,
+                    pegoutSlotPointer: 0,
                     securityBondValue: _denominations[i],
                     pegInConfirmations: uint8(i + 1)
                 })
@@ -47,39 +49,27 @@ contract StreamManager is IStreamManager, BaseProxy {
         __BaseProxy_init(_initialOwner);
     }
 
-    function createNewPacket(uint64 _streamId, bytes32 _committeePubKey) public {
+    /// @dev Adds one packet per stream
+    function createInitialPackets(bytes32 _committeePubKey) external onlyOwner {
+        uint256 length = denominations.length;
+        for (uint256 i = 0; i < length; i++) {
+            uint64 streamId = streams[i].streamId;
+            if (packets[streamId].length > 0) {
+                revert StreamAlreadyInitialized(streamId);
+            }
+            // Add a new packet for each stream
+            _createNewPacket(streamId, _committeePubKey);
+        }
+    }
+
+    function createNewPacket(uint64 _streamId, bytes32 _committeePubKey) external onlyPegManager {
+        _createNewPacket(_streamId, _committeePubKey);
+    }
+
+    function _createNewPacket(uint64 _streamId, bytes32 _committeePubKey) internal {
         uint64 packetNumber = uint64(packets[_streamId].length);
         packets[_streamId].push(Packet({packetNumber: packetNumber, committeePubKey: _committeePubKey}));
-        // Initialize slots directly in storage
-        generateSlots(_streamId, packetNumber);
         emit PacketCreated(_streamId, packetNumber);
-    }
-
-    function generateSlots(uint64 _streamId, uint64 _packetNumber) internal {
-        for (uint64 i = 0; i < Constants.SLOTS_PER_PACKET; i++) {
-            slots[_streamId][_packetNumber].push(
-                Slot({
-                    slotId: i,
-                    state: SlotState.PREPARED,
-                    scriptPubKey: "",
-                    acceptPegInTx: "",
-                    acceptPegInAmount: 0,
-                    take0Tx: "",
-                    take1Tx: ""
-                })
-            );
-            emit SlotCreated(_streamId, _packetNumber, i);
-        }
-    }
-
-    /// @dev Adds one packet per stream and creates a 100 slots given committee
-    function createPacketsAndSlots(bytes32 _committeePubKey) external onlyOwner {
-        uint256 length = denominations.length;
-        for (uint64 i = 0; i < length; i++) {
-            uint64 streamId = streams[i].streamId;
-            // Add a new packet with 100 slots for each stream
-            createNewPacket(streamId, _committeePubKey);
-        }
     }
 
     function getStream(uint64 _denomination) external view returns (Stream memory) {
@@ -107,30 +97,77 @@ contract StreamManager is IStreamManager, BaseProxy {
         return packets[_streamId][_packetNumber];
     }
 
-    function getPreparedSlotId(uint64 _streamId, uint64 _packetNumber) public view returns (uint64) {
-        Slot[] memory slotList = slots[_streamId][_packetNumber];
-        uint256 length = slotList.length;
-        for (uint64 i = 0; i < length; i++) {
-            if (slotList[i].state == SlotState.PREPARED) {
-                return i;
-            }
+    function fillSlot(uint64 _streamId, uint64 _packetNumber, Slot memory slot) internal returns (uint64 slotId) {
+        Stream storage stream = streams[_streamId];
+
+        // Force state to FILLED;
+        slot.state = SlotState.FILLED;
+
+        // If packet does not match with current packet being processed
+        if (_packetNumber != stream.peginPacketPointer) {
+            revert InvalidPeginPacketNumber(_streamId, _packetNumber);
         }
-        // If i couldn't find any
-        revert NoEmptySlot(_streamId, _packetNumber);
+
+        slotId = uint64(slots[_streamId][_packetNumber].length);
+        slot.slotId = slotId;
+        slots[_streamId][_packetNumber].push(slot);
+        emit SlotCreated(_streamId, _packetNumber, slotId);
+
+        if (slots[_streamId][_packetNumber].length > Constants.SLOTS_PER_PACKET) {
+            revert InconsistentSlotsPerPacket(_streamId, _packetNumber, slots[_streamId][_packetNumber].length);
+        }
+
+        // Update the stream pegIn pointer
+        if (slots[_streamId][_packetNumber].length == Constants.SLOTS_PER_PACKET) {
+            // NOTE: Check max amount of packets and/or overflow
+            stream.peginPacketPointer++;
+        }
+
+        return slotId;
     }
 
-    //TODO optimize lookup with a pointer to the first packet with ready to peg-out slot
-    function getFirstFilledSlot(uint64 _streamId) external view returns (Slot memory slot, uint64 packetNumber) {
+    /// @dev Returns the first filled slot, lock it and updates the pegout pointers
+    function lockSlot(uint64 _streamId) external onlyPegManager returns (Slot memory, uint64 packetNumber) {
         uint256 packetCount = packets[_streamId].length;
-        for (uint64 i = 0; i < packetCount; i++) {
-            uint256 slotCount = slots[_streamId][i].length;
-            for (uint64 j = 0; j < slotCount; j++) {
-                if (slots[_streamId][i][j].state == SlotState.FILLED) {
-                    return (slots[_streamId][i][j], i);
-                }
-            }
+        // No packets created yet
+        if (packetCount == 0) {
+            revert PacketNotFound(_streamId, 0);
         }
-        revert NoFilledSlot(_streamId, 0);
+
+        Stream storage stream = streams[_streamId];
+        // Save packet number to return
+        packetNumber = stream.pegoutPacketPointer;
+
+        // No new packets created since last pegout
+        if (packetNumber >= packetCount) {
+            revert PacketNotFound(_streamId, packetNumber);
+        }
+
+        // All slots are pegged out.
+        if (stream.pegoutSlotPointer >= slots[_streamId][packetNumber].length) {
+            revert NonExistentSlot(_streamId, packetNumber, stream.pegoutSlotPointer);
+        }
+
+        Slot storage slot = slots[_streamId][packetNumber][stream.pegoutSlotPointer];
+        if (slot.state != SlotState.FILLED) {
+            revert NoFilledSlot(_streamId, packetNumber, stream.pegoutSlotPointer);
+        }
+
+        // If the slot is filled, we return it
+        slot.state = SlotState.LOCKED;
+
+        // Update the stream pegout pointers
+        stream.pegoutSlotPointer++;
+        if (stream.pegoutSlotPointer > Constants.SLOTS_PER_PACKET) {
+            revert InconsistentPegoutPointer(_streamId, packetNumber, stream.pegoutSlotPointer);
+        }
+
+        if (stream.pegoutSlotPointer == Constants.SLOTS_PER_PACKET) {
+            stream.pegoutPacketPointer++;
+            stream.pegoutSlotPointer = 0;
+        }
+
+        return (slot, packetNumber);
     }
 
     function getSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotNumber) external view returns (Slot memory) {
@@ -143,11 +180,6 @@ contract StreamManager is IStreamManager, BaseProxy {
         return slots[_streamId][_packetNumber][_slotNumber];
     }
 
-    function lockSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) external onlyPegManager {
-        Slot storage slot = slots[_streamId][_packetNumber][_slotId];
-        slot.state = SlotState.LOCKED;
-    }
-
     /// @dev Looks for the first empty slot and asigns the PegIn Tx in prepared state
     function fillAcceptPegInTx(
         uint64 _streamId,
@@ -156,26 +188,23 @@ contract StreamManager is IStreamManager, BaseProxy {
         bytes32 _acceptPegInTx,
         bytes memory _scriptPubKey
     ) external onlyPegManager returns (uint64) {
-        uint64 slotId = getPreparedSlotId(_streamId, _packetNumber);
-        Slot storage slot = slots[_streamId][_packetNumber][slotId];
-        slot.state = SlotState.FILLED;
-        slot.acceptPegInTx = _acceptPegInTx;
-        slot.acceptPegInAmount = _acceptPegInAmount;
-        slot.scriptPubKey = _scriptPubKey;
-        return slotId;
+        return fillSlot(
+            _streamId,
+            _packetNumber,
+            Slot({
+                slotId: 0,
+                state: SlotState.FILLED,
+                acceptPegInTx: _acceptPegInTx,
+                acceptPegInAmount: _acceptPegInAmount,
+                scriptPubKey: _scriptPubKey,
+                take0Tx: "",
+                take1Tx: ""
+            })
+        );
     }
 
     function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes32) {
         return getPacket(_streamId, _packetNumber).committeePubKey;
-    }
-
-    function incrementPacketPeginPointer(uint64 _streamId) external onlyPegManager {
-        Stream storage stream = streams[_streamId];
-        stream.peginPointer++;
-    }
-
-    function getPacketPeginPointer(uint64 _streamId) public view returns (uint64) {
-        return streams[_streamId].peginPointer;
     }
 
     modifier onlyPegManager() {

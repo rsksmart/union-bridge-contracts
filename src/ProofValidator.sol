@@ -85,18 +85,4 @@ abstract contract ProofValidator is Initializable {
             revert NotEnoughConfirmations(confirmations, _minConfirmations);
         }
     }
-
-    function requestRbtc(uint256 _amount) internal {
-        // We receive the amount of RBTC in our contract
-        int256 confirmations = bridge.requestUnionRBTC(_amount);
-        if (confirmations == -1) {
-            revert BridgeUnauthorizedCaller();
-        }
-        if (confirmations == -2) {
-            revert BridgeExceededLockingCap(_amount);
-        }
-        if (confirmations < 0) {
-            revert BridgeBtcUnknownError(confirmations);
-        }
-    }
 }
