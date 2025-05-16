@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 import {IStreamManager} from "src/interfaces/IStreamManager.sol";
-import {SecurityBond} from "src/SecurityBond.sol";
+import {SecurityBond, MemberBalance} from "src/SecurityBond.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 
@@ -39,13 +39,13 @@ contract TestSecurityBond is Test, HelperContract {
         uint64 denomination = 100_000; // 0.001 BTC
         uint256 balanceBefore = address(registry).balance;
         address sender = address(this);
-        uint256 depositBalanceBefore = registry.depositedSecurityBond(sender);
-        uint256 value = registry.getMinimumDeposit(denomination);
+        uint256 depositBalanceBefore = registry.getMemberBalance(sender).total;
+        uint256 value = 1 ether;
         // Act
         registry.securityBondDeposit{value: value}(denomination);
         // Assert
         uint256 balanceAfter = address(registry).balance;
-        uint256 depositBalanceAfter = registry.depositedSecurityBond(sender);
+        uint256 depositBalanceAfter = registry.getMemberBalance(sender).total;
 
         assertEq(balanceAfter - balanceBefore, value, "expect security bond value increase of 1 ether");
         assertEq(depositBalanceAfter - depositBalanceBefore, value, "expect security bond mapping increase of 1 ether");

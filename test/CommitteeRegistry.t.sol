@@ -9,19 +9,7 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 
 contract TestCommitteeRegistry is Test, HelperContract {
     function setUp() external {
-        setUpCommittees();
-
-        CommitteeRegistry registryImpl = new CommitteeRegistry();
-        address upgradableOwner = msg.sender;
-        ERC1967Proxy proxy =
-            new ERC1967Proxy(address(registryImpl), abi.encodeCall(CommitteeRegistry.initialize, (upgradableOwner)));
-        registry = CommitteeRegistry(address(proxy));
-
-        // Register members with their mock keys
-        registry.registerMember(generatePubKey(0), requestedStreams, requestedRoles);
-        registry.registerMember(generatePubKey(1), requestedStreams, requestedRoles);
-
-        registry.registerCommittee(committee1);
+        runTestDeployScript();
     }
 
     function test_getCommittee_Success() external view {
@@ -56,7 +44,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Arrange
         uint256 previousLength = registry.getCommitteesLength();
         // Act
-        registry.registerMember(generatePubKey(2), requestedStreams, requestedRoles);
+        // registry.registerMember(generatePubKey(2), requestedStreams, requestedRoles);
         registry.registerMember(generatePubKey(3), requestedStreams, requestedRoles);
         registry.registerCommittee(committee2);
         // Assert
@@ -87,9 +75,11 @@ contract TestCommitteeRegistry is Test, HelperContract {
         Committee memory aCommittee;
         uint256 MAX_MEMBERS_PER_COMMITTEE = registry.MAX_MEMBERS_PER_COMMITTEE();
         CommitteeMember[] memory committee2Members = new CommitteeMember[](MAX_MEMBERS_PER_COMMITTEE + 1);
-        // We start at 2 as we already have 2 members registered in the setup
-        for (uint8 i = 2; i < committee2Members.length; i++) {
+        // We start at 3 as we already have 3 members registered in the setup
+        for (uint8 i = 3; i < committee2Members.length; i++) {
+            vm.startBroadcast(uint256(i));
             registry.registerMember(bytes32(uint256(i)), requestedStreams, requestedRoles);
+            vm.stopBroadcast();
             committee2Members[i] = CommitteeMember({index: i, role: Role.Operator});
         }
         aCommittee = Committee({internalKey: committee2Key, memberIndexesAndRoles: committee2Members, leaderIndex: 0});
@@ -134,15 +124,23 @@ contract TestCommitteeRegistry is Test, HelperContract {
     }
 
     function test_registerMember_Revert_AlreadyRegistered() external {
+        // Arrange
+        vm.startBroadcast(uint256(generatePubKey(10)));
+        registry.registerMember(generatePubKey(10), requestedStreams, requestedRoles);
+        vm.stopBroadcast();
+
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(CommitteeRegistry.alreadyRegisteredMember.selector, generatePubKey(0)));
+        vm.expectRevert(abi.encodeWithSelector(CommitteeRegistry.alreadyRegisteredMember.selector, generatePubKey(10)));
+
         // Act
-        registry.registerMember(generatePubKey(0), requestedStreams, requestedRoles);
+        vm.startBroadcast(uint256(generatePubKey(10)));
+        registry.registerMember(generatePubKey(10), requestedStreams, requestedRoles);
+        vm.stopBroadcast();
     }
 
     function test_registerCommittee_Revert_nonRegisteredMember() external {
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(CommitteeRegistry.nonRegisteredMember.selector, 2));
+        vm.expectRevert(abi.encodeWithSelector(CommitteeRegistry.nonRegisteredMember.selector, 3));
         // Act
         registry.registerCommittee(committee2);
     }
@@ -150,9 +148,11 @@ contract TestCommitteeRegistry is Test, HelperContract {
     function test_registerMember_Revert_TooManyMembers() external {
         // Arrange
         uint256 MAX_MEMBERS_SIZE = registry.MAX_MEMBERS_SIZE();
-        // -2 because we already have 2 members registered in the setup
-        for (uint16 i = 2; i < MAX_MEMBERS_SIZE; i++) {
+        // 3 because we already have 3 members registered in the setup
+        for (uint16 i = 3; i < MAX_MEMBERS_SIZE; i++) {
+            vm.startBroadcast(uint256(i));
             registry.registerMember(bytes32(uint256(i)), requestedStreams, requestedRoles);
+            vm.stopBroadcast();
         }
 
         // Assert

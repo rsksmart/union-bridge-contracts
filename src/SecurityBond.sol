@@ -3,9 +3,14 @@ pragma solidity ^0.8.20;
 
 import {IStreamManager} from "./interfaces/IStreamManager.sol";
 
+struct MemberBalance {
+    uint256 total;
+    uint256 staked;
+}
+
 abstract contract SecurityBond {
     // Address of the Memeber => Amount provided
-    mapping(address => uint256) public depositedSecurityBond;
+    mapping(address => MemberBalance) public memberBalances;
     IStreamManager streamManager;
 
     event newSecurityBondDeposit(address indexed sender, uint64 indexed denomination, uint256 amount);
@@ -32,7 +37,7 @@ abstract contract SecurityBond {
             revert outOfBound(msg.value, type(uint64).max);
         }
 
-        depositedSecurityBond[msg.sender] = depositedSecurityBond[msg.sender] + msg.value;
+        memberBalances[msg.sender].total += msg.value;
         emit newSecurityBondDeposit(msg.sender, _denomination, msg.value);
     }
 
@@ -43,7 +48,7 @@ abstract contract SecurityBond {
         // but he should be able to withdraw more if he deposited more
         uint256 securityBondValue = getMinimumDeposit(_denomination);
 
-        depositedSecurityBond[msg.sender] = depositedSecurityBond[msg.sender] - securityBondValue;
+        memberBalances[msg.sender].total -= securityBondValue;
 
         emit newSecurityBondWithdraw(msg.sender, _denomination, securityBondValue);
 
@@ -52,5 +57,13 @@ abstract contract SecurityBond {
         if (!sent) {
             revert failToSend(msg.sender, securityBondValue);
         }
+    }
+
+    function getMemberBalance(address _member) external view returns (MemberBalance memory) {
+        return memberBalances[_member];
+    }
+
+    function getMemberAvailableBalance(address _member) external view returns (uint256) {
+        return memberBalances[_member].total - memberBalances[_member].staked;
     }
 }

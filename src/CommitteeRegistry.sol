@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
+import "forge-std/console.sol";
+
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -18,6 +20,7 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
     // Committee key => Committee
     mapping(bytes32 => Committee) internal committeesByKey;
     mapping(address => uint16) internal memberIndexByAddress;
+    mapping(StreamDenomination denomination => CommitteeMember[]) internal committeesCandidates;
 
     event newCommittee(bytes32 indexed internalKey, Committee _committee);
     event newMember(bytes32 indexed publicKey, StreamDenomination[] requestedStreams, Role[] requestedRoles);
@@ -47,13 +50,15 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
             revert tooManyMembers(MAX_MEMBERS_SIZE);
         }
 
-        // TODO: this cold be checked using the address-to-index mapping
+        console.log("registerMember:");
+        console.log("msg.sender");
+        console.logAddress(msg.sender);
+        console.log("publicKey");
+        console.logBytes32(_publicKey);
+
         // Check if exists
-        uint256 memberLength = members.length;
-        for (uint256 i = 0; i < memberLength; i++) {
-            if (members[i].publicKey == _publicKey) {
-                revert alreadyRegisteredMember(_publicKey);
-            }
+        if (memberIndexByAddress[msg.sender] != 0) {
+            revert alreadyRegisteredMember(getMemberPubKeyByAddress(msg.sender));
         }
 
         // Check if the roles and streams are the same length
@@ -153,6 +158,18 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
 
         // Substract 1 to get the correct index
         return memberIndex - 1;
+    }
+
+    function getMemberPubKeyByAddress(address _address) public view returns (bytes32) {
+        uint16 memberIndex = memberIndexByAddress[_address];
+
+        // 0 is reserved for non registered members
+        if (memberIndex == 0) {
+            return 0x00;
+        }
+
+        // Substract 1 to get the correct index
+        return members[memberIndex - 1].publicKey;
     }
 
     function selectCommittee(uint64) external view returns (bytes32) {
