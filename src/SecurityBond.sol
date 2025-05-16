@@ -11,7 +11,7 @@ abstract contract SecurityBond {
     event newSecurityBondDeposit(address indexed sender, uint64 indexed denomination, uint256 amount);
     event newSecurityBondWithdraw(address indexed sender, uint64 indexed denomination, uint256 amount);
 
-    error despositBondTooLow(uint256 sent, uint64 minDeposit);
+    error despositBondTooLow(uint256 sent, uint256 minDeposit);
     error outOfBound(uint256 sent, uint256 max);
     error failToSend(address to, uint256 value);
 
@@ -19,12 +19,12 @@ abstract contract SecurityBond {
         streamManager = _streamManager;
     }
 
-    function getMinimumDeposit(uint64 _denomination) public view returns (uint64) {
+    function getMinimumDeposit(uint64 _denomination) public view returns (uint256) {
         return streamManager.getStream(_denomination).securityBondValue;
     }
 
     function securityBondDeposit(uint64 _denomination) external payable {
-        uint64 securityBondValue = getMinimumDeposit(_denomination);
+        uint256 securityBondValue = getMinimumDeposit(_denomination);
         if (msg.value < securityBondValue) {
             revert despositBondTooLow(msg.value, securityBondValue);
         }
@@ -41,7 +41,7 @@ abstract contract SecurityBond {
 
         // TODO we are considering that he withdraws the minimum deposit
         // but he should be able to withdraw more if he deposited more
-        uint64 securityBondValue = getMinimumDeposit(_denomination);
+        uint256 securityBondValue = getMinimumDeposit(_denomination);
 
         depositedSecurityBond[msg.sender] = depositedSecurityBond[msg.sender] - securityBondValue;
 

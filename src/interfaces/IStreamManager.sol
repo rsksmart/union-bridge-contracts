@@ -49,7 +49,7 @@ struct Stream {
     uint16 pegoutSlotPointer; // An index for the slots array. It points to the first slot in the pegoutPacketPointer that should be processed when requested (if it's filled)
     uint8 pegInConfirmations; // A generic number
     //uint8 pegOutConfirmations; // Another generic number
-    uint64 securityBondValue; // The required bond (in satoshis) that each member of the committee needs to deposit to secure a packet
+    uint256 securityBondValue; // The required bond (in wei) that each member of the committee needs to deposit to secure a packet
 }
 
 interface IStreamManager {
@@ -115,6 +115,12 @@ interface IStreamManager {
     /// @param _packetNumber The index in the array of packets
     /// @return bytes32 The committee public key
     function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes32);
+
+    /// @notice Allows contract owner to set the security bond value for a given stream
+    /// @param _streamId The index in the array of streams
+    /// @param _securityBondValue The value of the security bond expresed in RBTC in wei
+    /// @dev The security bond is the amount of RBTC that each committee member needs to deposit to secure a packet
+    function setSecurityBond(uint64 _streamId, uint256 _securityBondValue) external;
 
     event StreamCreated(uint64 streamId, uint64 denomination);
     event PacketCreated(uint64 streamId, uint64 packetNumber);

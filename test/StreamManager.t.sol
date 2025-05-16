@@ -6,6 +6,7 @@ import "forge-std/console.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
 import {SlotState, Slot, Packet, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {Constants} from "src/libraries/Constants.sol";
+import {BtcHelper} from "src/libraries/BtcHelper.sol";
 
 contract TestStreamManager is Test, HelperContract {
     function setUp() external {
@@ -88,5 +89,57 @@ contract TestStreamManager is Test, HelperContract {
         // Assert
         assertEq(packet.packetNumber, expectedPacketNumber, "packetNumber was not set correctly");
         assertEq(packet.committeePubKey, committeePubKey, "committeePubKey was not set correctly");
+    }
+
+    function test_setSecurityBond_Success() external {
+        // Arrange
+        uint64 streamId = 0;
+        // More than 10 percent
+        uint256 securityBond = BtcHelper.satoshiToWei(streamManager.getStreamById(streamId).denomination) * 11 / 100;
+
+        assertNotEq(
+            streamManager.getStreamById(streamId).securityBondValue,
+            securityBond,
+            "securityBond was initialized incorrectly"
+        );
+
+        vm.prank(address(streamManager.owner()));
+        // Act
+        streamManager.setSecurityBond(streamId, securityBond);
+
+        // Assert
+        assertEq(
+            streamManager.getStreamById(streamId).securityBondValue, securityBond, "securityBond was not set correctly"
+        );
+    }
+
+    function test_setSecurityBond_RequireGreaterThanZero() external {
+        // Arrange
+        uint64 streamId = 0;
+        uint256 securityBond = 0;
+
+        assertNotEq(
+            streamManager.getStreamById(streamId).securityBondValue,
+            securityBond,
+            "securityBond was initialized incorrectly"
+        );
+
+        vm.prank(address(streamManager.owner()));
+
+        vm.expectRevert(bytes("Security bond value must be greater than 0"));
+        // Act
+        streamManager.setSecurityBond(streamId, securityBond);
+    }
+
+    function test_setSecurityBond_InvalidStreamId() external {
+        // Arrange
+        uint64 streamId = 10;
+        uint256 securityBond = 1000;
+
+        vm.prank(address(streamManager.owner()));
+
+        vm.expectRevert(bytes("Stream does not exist"));
+        // Act
+        streamManager.setSecurityBond(streamId, securityBond);
     }
 }

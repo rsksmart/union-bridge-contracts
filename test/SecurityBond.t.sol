@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 import {IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {SecurityBond} from "src/SecurityBond.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
+import {BtcHelper} from "src/libraries/BtcHelper.sol";
 
 contract TestSecurityBond is Test, HelperContract {
     function setUp() external {
@@ -15,9 +16,13 @@ contract TestSecurityBond is Test, HelperContract {
         // Arrange
         uint64 denomination = 100_000; // 0.001 BTC
         // Act
-        uint64 minDeposit = registry.getMinimumDeposit(denomination);
+        uint256 minDeposit = registry.getMinimumDeposit(denomination);
         // Assert
-        assertEq(minDeposit, denomination, "Error SecurityBond min deposit should be equal to the denomination");
+        assertEq(
+            minDeposit,
+            BtcHelper.satoshiToWei(denomination) / 10,
+            "Error SecurityBond min deposit should be equal to the denomination"
+        );
     }
 
     function test_getMinimumDeposit_Revert_StreamNotFound() external {
@@ -35,7 +40,7 @@ contract TestSecurityBond is Test, HelperContract {
         uint256 balanceBefore = address(registry).balance;
         address sender = address(this);
         uint256 depositBalanceBefore = registry.depositedSecurityBond(sender);
-        uint256 value = 1 ether;
+        uint256 value = registry.getMinimumDeposit(denomination);
         // Act
         registry.securityBondDeposit{value: value}(denomination);
         // Assert
@@ -49,9 +54,15 @@ contract TestSecurityBond is Test, HelperContract {
     function test_securityBondDeposit_Revert_DespositBondTooLow() public {
         // Arrange
         uint64 denomination = 100_000; // 0.001 BTC
+        uint256 securityBond = registry.getMinimumDeposit(denomination) - 1;
+
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(SecurityBond.despositBondTooLow.selector, 0, denomination));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                SecurityBond.despositBondTooLow.selector, securityBond, BtcHelper.satoshiToWei(denomination) / 10
+            )
+        );
         // Act
-        registry.securityBondDeposit{value: 0}(denomination);
+        registry.securityBondDeposit{value: securityBond}(denomination);
     }
 }

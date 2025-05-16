@@ -43,13 +43,19 @@ bash shell/test.sh
 bash shell/gas-snapshot.sh
 ```
 
-4. Run [Slither](https://github.com/crytic/slither) in a docker image:
+4. [Run pegin/pegout flow](#run-peginpegout-flow):
+
+```sh
+bash ./shell/script/run-peg-flow.sh
+```
+
+5. Run [Slither](https://github.com/crytic/slither) in a docker image:
 
 ```sh
 bash shell/slither.sh
 ```
 
-5. Use [deployment script](https://book.getfoundry.sh/guides/scripting-with-solidity#deploying-our-contract) to run a simulation:
+6. Use [deployment script](https://book.getfoundry.sh/guides/scripting-with-solidity#deploying-our-contract) to run a simulation:
 
 ```sh
 bash shell/sscript/deploy/simulate-deploy.sh
@@ -149,6 +155,25 @@ Then run:
 
 ```sh
 bash shell/script/register-pegout-request.sh
+```
+
+### Run Pegin/Pegout Flow
+
+For easier testing of the complete pegin/pegout flow, we provide a script that automates the entire sequence. The script performs the following steps:
+
+1. Terminates any existing `anvil` instance
+2. Starts a fresh `anvil` instance (local Ethereum node)
+3. Deploys all required contracts
+4. Simulates a complete pegin/pegout cycle:
+   - Registers a pegin request (user deposits BTC)
+   - Accepts the pegin request (committee confirms BTC deposit)
+   - Registers a pegout request (user requests BTC withdrawal) 
+   - Adds committee member signatures (to authorize BTC withdrawal)
+
+
+To run the automated flow:
+```sh
+bash ./shell/script/run-peg-flow.sh
 ```
 
 

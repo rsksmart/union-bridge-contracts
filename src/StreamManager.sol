@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import {Stream, Packet, Slot, SlotState, IStreamManager} from "./interfaces/IStreamManager.sol";
 import {BaseProxy} from "./BaseProxy.sol";
 import {Constants} from "src/libraries/Constants.sol";
+import {BtcHelper} from "src/libraries/BtcHelper.sol";
 
 /// @title Stream Manager
 /// @notice Manages streams
@@ -40,7 +41,7 @@ contract StreamManager is IStreamManager, BaseProxy {
                     peginPacketPointer: 0,
                     pegoutPacketPointer: 0,
                     pegoutSlotPointer: 0,
-                    securityBondValue: _denominations[i],
+                    securityBondValue: BtcHelper.satoshiToWei(_denominations[i]) / 10,
                     pegInConfirmations: uint8(i + 1)
                 })
             );
@@ -205,6 +206,13 @@ contract StreamManager is IStreamManager, BaseProxy {
 
     function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes32) {
         return getPacket(_streamId, _packetNumber).committeePubKey;
+    }
+
+    function setSecurityBond(uint64 _streamId, uint256 _securityBondValue) external onlyOwner {
+        require(_streamId < streams.length, "Stream does not exist");
+        require(_securityBondValue > 0, "Security bond value must be greater than 0");
+
+        streams[_streamId].securityBondValue = _securityBondValue;
     }
 
     modifier onlyPegManager() {
