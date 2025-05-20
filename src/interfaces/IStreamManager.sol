@@ -135,6 +135,7 @@ interface IStreamManager is IAccessControl {
     event SlotCreated(uint64 streamId, uint64 packetNumber, uint64 slotId);
 
     error StreamNotFoundByDenomination(uint256 denomination);
+    error StreamNotFoundById(uint256 streamId);
     error PacketOutOfBound(uint256 packetNumber);
     error NoEmptySlot(uint256 streamId, uint256 packetNumber);
     error tooManyDenominations(uint256 maxDenominationsSize);
@@ -145,4 +146,6 @@ interface IStreamManager is IAccessControl {
     error InvalidPeginPacketNumber(uint256 streamId, uint256 packetNumber);
     error NonExistentSlot(uint256 streamId, uint256 packetNumber, uint256 slotId);
     error StreamAlreadyInitialized(uint256 streamId);
+    error InvalidPeginConfirmations(uint8 confirmations);
+    error InvalidSecurityBondValue(uint256 securityBond);
 }
