@@ -46,7 +46,7 @@ bash shell/gas-snapshot.sh
 4. [Run pegin/pegout flow](#run-peginpegout-flow):
 
 ```sh
-bash ./shell/script/run-peg-flow.sh
+bash ./shell/script/local-peg-full-flow.sh
 ```
 
 5. Run [Slither](https://github.com/crytic/slither) in a docker image:
@@ -173,7 +173,7 @@ For easier testing of the complete pegin/pegout flow, we provide a script that a
 
 To run the automated flow:
 ```sh
-bash ./shell/script/run-peg-flow.sh
+bash ./shell/script/local-peg-full-flow.sh
 ```
 
 

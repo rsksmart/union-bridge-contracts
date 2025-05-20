@@ -33,26 +33,6 @@ contract TestPegManager is Test, HelperContract {
     uint64 internal constant PACKET_NUMBER = 0;
     address internal constant RSK_DESTINATION_ADDRESS = 0x7Ac5496aee77c1bA1F0854206A26DdA82A81d6d8;
 
-    // For more info about this see: https://book.getfoundry.sh/forge/writing-tests#before-test-setups
-    function beforeTestSetup(bytes4 testSelector) public pure returns (bytes[] memory beforeTestCalldata) {
-        if (
-            testSelector == this.test_acceptPegInRequest_Success.selector
-                || testSelector == this.test_acceptPegInRequest_Revert_AlreadyRegisteredAcceptPegIn.selector
-                || testSelector == this.test_acceptPegInRequest_Revert_IncorrectInputsNumber.selector
-                || testSelector == this.test_acceptPegInRequest_Revert_IncorrectOutputsNumber.selector
-                || testSelector == this.test_acceptPegInRequest_Revert_InvalidVout.selector
-                || testSelector == this.test_acceptPegInRequest_Revert_Revert_NotEnoughConfirmations.selector
-        ) {
-            beforeTestCalldata = new bytes[](1);
-            beforeTestCalldata[0] = abi.encodePacked(this.requestPeginFlow.selector);
-        }
-        if (testSelector == this.test_requestPegOut_fromAcceptPegIn_Success.selector) {
-            beforeTestCalldata = new bytes[](2);
-            beforeTestCalldata[0] = abi.encodePacked(this.requestPeginFlow.selector);
-            beforeTestCalldata[1] = abi.encodePacked(this.acceptPeginFlow.selector);
-        }
-    }
-
     function setUp() external {
         runTestDeployScript();
     }
@@ -82,7 +62,7 @@ contract TestPegManager is Test, HelperContract {
         // We emit the event we expect to see.
         emit IPegManager.RegisteredPegInRequest(
             pegInRequestTxSPVProof.blockHash,
-            getExpectedPegInRequestTxHash(),
+            getBtcTxHash(btcTransaction),
             0,
             VALUE,
             PACKET_NUMBER,
@@ -95,7 +75,7 @@ contract TestPegManager is Test, HelperContract {
         pm.registerPegInRequest(pegInRequestTxSPVProof);
 
         // Assert
-        bytes32 txHash = getExpectedPegInRequestTxHash();
+        bytes32 txHash = getBtcTxHash(btcTransaction);
         // Registered Peg In
         StreamPosition memory streamPosition = pm.getPegInRequest(txHash);
         assertEq(streamPosition.streamId, 0, "Incorrect streamId registered");
@@ -134,7 +114,7 @@ contract TestPegManager is Test, HelperContract {
 
         // Assert
         vm.expectRevert(
-            abi.encodeWithSelector(IPegManager.AlreadyRegisteredPegInRequest.selector, getExpectedPegInRequestTxHash())
+            abi.encodeWithSelector(IPegManager.AlreadyRegisteredPegInRequest.selector, getBtcTxHash(btcTransaction))
         );
 
         // Act Register Second Peg In Request
@@ -173,7 +153,7 @@ contract TestPegManager is Test, HelperContract {
         vm.expectRevert(
             abi.encodeWithSelector(
                 ProofValidator.BridgeBtcTxInvalidMerkleBranch.selector,
-                getExpectedPegInRequestTxHash(),
+                getBtcTxHash(btcTransaction),
                 pegInRequestTxSPVProof.merkleBranchPath,
                 pegInRequestTxSPVProof.merkleBranchHashes
             )
@@ -226,8 +206,10 @@ contract TestPegManager is Test, HelperContract {
 
     // ========================== ACCEPT PEG IN ==========================
     function test_acceptPegInRequest_Revert_UnregisteredPegInRequest() external {
+        BtcTransaction memory btcTx = HelperContract.getBtcPegInRequestTx();
+
         // Arrange
-        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx();
+        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx(btcTx);
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(10);
         // Create PegIn struct information
@@ -245,11 +227,11 @@ contract TestPegManager is Test, HelperContract {
     function test_acceptPegInRequest_newPacketCreated() external {
         // Arrange
         // Create pegins until the new packet threshold is reached
-        multipleRequestAndAcceptPeginFlows(Constants.SLOT_USAGE_THRESHOLD - 1);
+        setup_multipleRequestAndAcceptPeginFlows(Constants.SLOT_USAGE_THRESHOLD - 1);
 
         // Arrange
-        requestPeginFlow();
-        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx();
+        BtcTransaction memory peginTx = setup_requestPeginFlow();
+        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx(peginTx);
         // Create PegIn accepted tx struct information
         BtcTxSPVProof memory pegInAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
@@ -263,11 +245,11 @@ contract TestPegManager is Test, HelperContract {
     function test_acceptPegInRequest_newPacketUsed() external {
         // Arrange
         // Create pegins until the new packet treshold is reached
-        multipleRequestAndAcceptPeginFlows(Constants.SLOTS_PER_PACKET);
+        setup_multipleRequestAndAcceptPeginFlows(Constants.SLOTS_PER_PACKET);
 
         // Arrange
-        requestPeginFlow();
-        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx();
+        BtcTransaction memory peginTx = setup_requestPeginFlow();
+        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx(peginTx);
         // Create PegIn accepted tx struct information
         BtcTxSPVProof memory pegInAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
@@ -275,7 +257,7 @@ contract TestPegManager is Test, HelperContract {
         vm.expectEmit(address(pm));
         // We emit the event we expect to see.
         bytes32 pegInRequestTxHash = pegInAcceptedTxSPVProof.btcTx.inputs[0].txId;
-        bytes32 acceptPegInTxHash = getExpectedAcceptPegInTxHash();
+        bytes32 acceptPegInTxHash = HelperContract.getBtcTxHash(btcTransaction);
         uint64 streamId = 0;
         uint64 packetId = 1;
         uint64 slotId = 0;
@@ -294,44 +276,13 @@ contract TestPegManager is Test, HelperContract {
         pm.acceptPegInRequest(pegInAcceptedTxSPVProof);
     }
 
-    function multipleRequestAndAcceptPeginFlows(uint256 numberOfPegIns) internal {
-        for (uint256 i = 0; i < numberOfPegIns; i++) {
-            requestPeginFlow();
-            acceptPeginFlow();
-        }
-    }
-
-    function acceptPeginFlow() public {
-        // Arrange
-        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx();
-        // Set Mock Bridge state
-        bridgeMock.setBtcTransactionConfirmations(10);
-        // Create PegIn accepted tx struct information
-        BtcTxSPVProof memory pegInAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
-
-        // Act
-        pm.acceptPegInRequest(pegInAcceptedTxSPVProof);
-
-        // This counter is added to the txId from the helper contract to avoid collisions when doing multiple pegin's
-        helper_incrementTxIdCounter();
-    }
-
-    function requestPeginFlow() public {
-        // Arrange
-        BtcTransaction memory btcTransaction = getBtcPegInRequestTx();
-        // Set Mock Bridge state
-        bridgeMock.setBtcTransactionConfirmations(10);
-        // Create PegIn struct information
-        BtcTxSPVProof memory pegInRequestTxSPVProof = createBtcTxSPVProof(btcTransaction);
-
-        // Act
-        pm.registerPegInRequest(pegInRequestTxSPVProof);
-    }
-
     function test_acceptPegInRequest_Success() external {
+        setup_requestPeginFlow();
+
         // ===  Before test setup  is run for this  test ===
+        BtcTransaction memory peginTx = setup_requestPeginFlow();
         // Arrange
-        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx();
+        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx(peginTx);
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(10);
         // Create PegIn struct information
@@ -342,7 +293,7 @@ contract TestPegManager is Test, HelperContract {
 
         // We emit the event we expect to see.
         bytes32 pegInRequestTxHash = pegInAcceptedTxSPVProof.btcTx.inputs[0].txId;
-        bytes32 acceptPegInTxHash = getExpectedAcceptPegInTxHash();
+        bytes32 acceptPegInTxHash = getBtcTxHash(btcTransaction);
         uint64 streamId = 0;
         uint64 slotId = 0;
         emit IPegManager.AcceptedPegInRequest(
@@ -393,9 +344,12 @@ contract TestPegManager is Test, HelperContract {
     }
 
     function test_acceptPegInRequest_Revert_AlreadyRegisteredAcceptPegIn() external {
+        setup_requestPeginFlow();
+
         // ===  Before test setup  is run for this  test ===
+        BtcTransaction memory peginTx = setup_requestPeginFlow();
         // Arrange
-        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx();
+        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx(peginTx);
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(10);
         // Create PegIn struct information
@@ -415,8 +369,9 @@ contract TestPegManager is Test, HelperContract {
 
     function test_acceptPegInRequest_Revert_IncorrectBtcTxVersion() external {
         // ===  Before test setup  is run for this  test ===
+        BtcTransaction memory peginTx = setup_requestPeginFlow();
         // Arrange
-        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx();
+        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx(peginTx);
         btcTransaction.version = 1;
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(10);
@@ -436,8 +391,9 @@ contract TestPegManager is Test, HelperContract {
 
     function test_acceptPegInRequest_Revert_IncorrectLocktime() external {
         // ===  Before test setup  is run for this  test ===
+        BtcTransaction memory peginTx = setup_requestPeginFlow();
         // Arrange
-        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx();
+        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx(peginTx);
         btcTransaction.locktime = 1;
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(10);
@@ -455,8 +411,9 @@ contract TestPegManager is Test, HelperContract {
 
     function test_acceptPegInRequest_Revert_IncorrectSequence() external {
         // ===  Before test setup  is run for this  test ===
+        BtcTransaction memory peginTx = setup_requestPeginFlow();
         // Arrange
-        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx();
+        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx(peginTx);
         btcTransaction.inputs[0].sequence = 0;
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(10);
@@ -475,9 +432,12 @@ contract TestPegManager is Test, HelperContract {
     }
 
     function test_acceptPegInRequest_Revert_IncorrectInputsNumber() external {
+        setup_requestPeginFlow();
+
         // ===  Before test setup  is run for this  test ===
+        BtcTransaction memory peginTx = setup_requestPeginFlow();
         // Arrange
-        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx();
+        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx(peginTx);
         btcTransaction.inputs = new BtcTxIn[](0);
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(10);
@@ -494,9 +454,12 @@ contract TestPegManager is Test, HelperContract {
     }
 
     function test_acceptPegInRequest_Revert_IncorrectOutputsNumber() external {
+        setup_requestPeginFlow();
+
         // ===  Before test setup  is run for this  test ===
+        BtcTransaction memory peginTx = setup_requestPeginFlow();
         // Arrange
-        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx();
+        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx(peginTx);
         btcTransaction.outputs = new BtcTxOut[](0);
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(10);
@@ -513,9 +476,12 @@ contract TestPegManager is Test, HelperContract {
     }
 
     function test_acceptPegInRequest_Revert_InvalidVout() external {
+        setup_requestPeginFlow();
+
         // ===  Before test setup  is run for this  test ===
+        BtcTransaction memory peginTx = setup_requestPeginFlow();
         // Arrange
-        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx();
+        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx(peginTx);
         btcTransaction.inputs[0].vout = 1;
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(10);
@@ -531,8 +497,9 @@ contract TestPegManager is Test, HelperContract {
 
     function test_acceptPegInRequest_Revert_Revert_NotEnoughConfirmations() external {
         // ===  Before test setup  is run for this  test ===
+        BtcTransaction memory peginTx = setup_requestPeginFlow();
         // Arrange
-        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx();
+        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx(peginTx);
         int256 actualConfirmations = 0;
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(actualConfirmations);
@@ -550,321 +517,47 @@ contract TestPegManager is Test, HelperContract {
         pm.acceptPegInRequest(pegInAcceptedTxSPVProof);
     }
 
-    // ================= Request PegOut =================
-    function test_requestPegOut_Success() external {
-        // Arrange
-        bytes32 expectedHash = 0xf48100e48109fb0e00c7d4e826b0509347f64fd2874bca28cff17d3d31e8bb9a;
-        bytes memory expectedDigest =
-            hex"00010200000000000000234337e863e00e6ff45f167a14f3963bea912bc0d739c2b402d04f376e814ae2e247139cedddd1ee740814e7de2e771c3745091bbb7af21d4122087c8bc17a36a0c6dbc3091625a23fd870bf8d09182484c12fa63a5c29045a431cf445f153e523e9829bfb4e23fbd3c4848baa035af15d73bcb83e510f7f097f90a21a4280d2006bb47323a1d7550c68619b10ffa4748cae2dc9f58375cfb06ae22cc8020e530000000000";
+    function test_peginFlow_RequestMultiplePegin_Revert_IncorrectPacketNumber() external {
+        // Left just one empty slot in packet
+        setup_multipleRequestAndAcceptPeginFlows(Constants.SLOTS_PER_PACKET - 1);
 
-        bytes memory usrPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+        // Send 2 more pegins to fill the packet
+        BtcTransaction memory peginTxN = setup_requestPeginFlow();
+        BtcTransaction memory peginTxN_1 = setup_requestPeginFlow();
 
-        bytes32 txId = 0xb24858ade3e5be49ae63facb93524ddf460d0771f093525dae328b6c435516a2;
-        bytes memory scriptPubKey = hex"02f519f51e435c20d38af683ea86862f4591ce8cda248077c2d9a72a76b62f32";
+        assertNotEq(peginTxN.inputs[0].txId, peginTxN_1.inputs[0].txId, "PegIn txId should be different for each pegIn");
 
-        uint64 amount = 10000000; // 0.1 BTC
-        uint256 amountInWei = BtcHelper.satoshiToWei(amount);
+        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx(peginTxN);
+        bytes32 pegInRequestTxHash = HelperContract.getBtcTxHash(peginTxN);
+        bytes32 acceptPegInTxHash = HelperContract.getBtcTxHash(btcTransaction);
+        BtcTxSPVProof memory pegInAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
-        Stream memory stream = streamManager.getStream(uint64(amount));
-        uint64 packetNumber = 0;
-        uint64 slotId = 0;
-
-        streamManager.setSlotHarness(stream.streamId, packetNumber, scriptPubKey, txId, amount);
-
-        // Assert
         vm.expectEmit(address(pm));
-        emit IPegManager.PegOutRequested(
-            usrPubKey, amount, expectedHash, expectedDigest, stream.streamId, packetNumber, slotId
+        emit IPegManager.AcceptedPegInRequest(
+            pegInAcceptedTxSPVProof.blockHash,
+            acceptPegInTxHash,
+            pegInRequestTxHash,
+            0, //vout
+            StreamPosition({
+                streamId: 0,
+                packetNumber: 0,
+                slotId: Constants.SLOTS_PER_PACKET - 1,
+                pegStatus: PegStatus.ACCEPTED
+            }),
+            BTC_REIMBURSEMENT_PUBKEY,
+            RSK_DESTINATION_ADDRESS,
+            satoshiToWei(btcTransaction.outputs[0].amount), // Rbtc amount
+            btcTransaction.outputs[0].scriptPubKey
         );
-
-        // Act
-        pm.requestPegOut{value: amountInWei}(usrPubKey);
-
-        // Assert
-        bytes32 pegOutSignatureHash = pm.getPegOutSignatureHash(stream.streamId, packetNumber, slotId);
-        assertEq(pegOutSignatureHash, expectedHash, "expected hash doesn't match the pegout computed one");
-
-        // Assert
-        Slot memory slot = streamManager.getSlot(stream.streamId, packetNumber, slotId);
-        assertEq(uint64(slot.state), uint64(SlotState.LOCKED), "Slot was not locked");
-
-        // Assert
-        // Check if the signatures struct was initialized by checking that the function doesn't revert, we expect false since it hasn't been signed yet
-        assertEq(pm.checkAllSignaturesReady(expectedHash), false, "Signatures struct hasn't been initialized");
-    }
-
-    function test_requestPegOut_fromAcceptPegIn_Success() external {
-        // Arrange
-        bytes32 expectedHash = 0x99befc0d4167efaf7e3ec5e8067a1a7c3a90ec85c1f9a792ce309b7eca630999;
-        bytes memory expectedDigest =
-            hex"00010200000000000000cf72c080d473fbab8c45b1c13be4215e216bb20171c0fd659632ce0779df8bc7b223ac0e009cf54402b2529ea4312214616df58c903ec7fd399c12fb08e8e675be45ad9e08ae96e42d7fd1f70a454432049ebd6a625fa377ffa22033fd8692d623e9829bfb4e23fbd3c4848baa035af15d73bcb83e510f7f097f90a21a4280d2cca26f66149c86d9940e70592f0e9c8b07b8cb01d0aabb7782c9d6b17bc12e270000000000";
-
-        bytes memory usrPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
-
-        uint64 amount = VALUE;
-        uint256 amountInWei = BtcHelper.satoshiToWei(amount);
-
-        Stream memory stream = streamManager.getStream(uint64(amount));
-        uint64 slotId = stream.pegoutSlotPointer;
-        uint64 packetNumber = stream.pegoutPacketPointer;
-
-        // Assert
-        vm.expectEmit(address(pm));
-        emit IPegManager.PegOutRequested(
-            usrPubKey, amount, expectedHash, expectedDigest, stream.streamId, packetNumber, slotId
-        );
-
-        // Act
-        pm.requestPegOut{value: amountInWei}(usrPubKey);
-
-        // Assert
-        bytes32 result = pm.getPegOutSignatureHash(stream.streamId, packetNumber, slotId);
-        assertEq(result, expectedHash, "expected hash doesn't match the pegout computed one");
-
-        // Assert
-        Slot memory slot = streamManager.getSlot(stream.streamId, packetNumber, slotId);
-        assertEq(uint64(slot.state), uint64(SlotState.LOCKED), "Slot was not locked");
-    }
-
-    function test_requestPegOut_Revert_InvalidPublicKeyLength() external {
-        // Arrange
-        bytes memory usrPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b00";
-
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegManager.InvalidPubKeyLength.selector, usrPubKey.length));
-
-        // Act
-        pm.requestPegOut(usrPubKey);
-    }
-
-    function test_requestPegOut_Revert_StreamNotFoundByDenomination() external {
-        // Arrange
-        bytes memory usrPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
-        uint64 amount = 5;
-        uint256 amountInWei = BtcHelper.satoshiToWei(amount);
-
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(IStreamManager.StreamNotFoundByDenomination.selector, amount));
-
-        // Act
-        pm.requestPegOut{value: amountInWei}(usrPubKey);
-    }
-
-    function test_requestPegOut_Revert_NonExistentSlot() external {
-        // Arrange
-        bytes memory usrPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
-        uint64 amount = 100000; // 0.1 BTC
-        uint256 amountInWei = BtcHelper.satoshiToWei(amount);
-
-        Stream memory stream = streamManager.getStream(uint64(amount));
-        uint64 packetNumber = stream.pegoutPacketPointer;
-
-        // Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(IStreamManager.NonExistentSlot.selector, stream.streamId, packetNumber, 0)
-        );
-
-        // Act
-        pm.requestPegOut{value: amountInWei}(usrPubKey);
-    }
-
-    // we only check the revert case since the success cases are being checked in the _addMemberSignaturePegout tests
-    function test_checkAllSignaturesReady_Revert_PegOutRequestNotFound() external {
-        // Arrange
-        bytes32 pegOutSignatureHash = 0x0000000000000000000000000000000000000000000000000000000000000001;
-
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegManager.SignatureHashNotFound.selector, pegOutSignatureHash));
-
-        // Act
-        pm.checkAllSignaturesReady(pegOutSignatureHash);
-    }
-
-    function test_addMemberSignature_Success() external {
-        bytes32 pegOutSignatureHash = helper_arrangeRequestPegout();
-
-        // Arrange
-        // The signature an nonce values are dummy values
-        bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
-        bytes memory nonce =
-            hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
-
-        // Assert
-        // We emit the event we expect to see.
-        bytes32 committeeMember0Pubkey = MEMBER_0_PUBKEY;
-        vm.expectEmit(address(pm));
-        emit IPegManager.SignatureAdded(pegOutSignatureHash, committeeMember0Pubkey, signature, nonce);
-
-        // Act
-        address committeeMember0adr = MEMBER_0_ADDRESS;
-        vm.startPrank(committeeMember0adr);
-        bool allSignaturesReady = pm.addMemberSignature(pegOutSignatureHash, signature, nonce);
-        vm.stopPrank();
-
-        // Assert
-        assertEq(allSignaturesReady, false, "Not all signatures should be ready at this point");
-
-        // Assert
-        // We emit the event we expect to see.
-        bytes32 committeeMember1Pubkey = MEMBER_1_PUBKEY;
-        vm.expectEmit(address(pm));
-        emit IPegManager.SignatureAdded(pegOutSignatureHash, committeeMember1Pubkey, signature, nonce);
-
-        // We emit the event we expect to see.
-        vm.expectEmit(address(pm));
-        emit IPegManager.AllSignaturesReady(pegOutSignatureHash);
-
-        // Act
-        address committeeMember2adr = MEMBER_1_ADDRESS;
-        vm.startPrank(committeeMember2adr);
-        allSignaturesReady = pm.addMemberSignature(pegOutSignatureHash, signature, nonce);
-        vm.stopPrank();
-
-        // Assert
-        assertEq(allSignaturesReady, true, "Not all signatures should be ready at this point");
-    }
-
-    function test_addMemberSignature_Revert_PegOutRequestNotFound() external {
-        // Arrange
-        bytes32 pegOutSignatureHash = 0x0000000000000000000000000000000000000000000000000000000000000001;
-
-        // The signature an nonce values are dummy values
-        bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
-        bytes memory nonce =
-            hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
-
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegManager.SignatureHashNotFound.selector, pegOutSignatureHash));
-
-        // Act
-        pm.addMemberSignature(pegOutSignatureHash, signature, nonce);
-    }
-
-    function test_addMemberSignature_Revert_MemberNotFound() external {
-        bytes32 pegOutSignatureHash = helper_arrangeRequestPegout();
-
-        // The signature an nonce values are dummy values
-        bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
-        bytes memory nonce =
-            hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
-
-        // Assert
-        address memberAddress = address(0);
-        vm.expectRevert(abi.encodeWithSelector(IPegManager.MemberNotFound.selector, memberAddress));
-
-        vm.startPrank(memberAddress);
-        pm.addMemberSignature(pegOutSignatureHash, signature, nonce);
-        vm.stopPrank();
-    }
-
-    function test_addMemberSignature_Revert_MemberHasAlreadySigned() external {
-        bytes32 pegOutSignatureHash = helper_arrangeRequestPegout();
-
-        // Arrange
-        // The signature an nonce values are dummy values
-        bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
-        bytes memory nonce =
-            hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
-
-        // Assert that the first signature is added
-        // We emit the event we expect to see.
-        bytes32 committeeMember0Pubkey = MEMBER_0_PUBKEY;
-        vm.expectEmit(address(pm));
-        emit IPegManager.SignatureAdded(pegOutSignatureHash, committeeMember0Pubkey, signature, nonce);
-
-        // Act
-        address committeeMember0adr = MEMBER_0_ADDRESS;
-        vm.startPrank(committeeMember0adr);
-        bool allSignaturesReady = pm.addMemberSignature(pegOutSignatureHash, signature, nonce);
-        vm.stopPrank();
-
-        // Assert
-        assertEq(allSignaturesReady, false, "Not all signatures should be ready at this point");
-
-        // Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IPegManager.MemberHasAlreadySigned.selector,
-                committeeMember0Pubkey,
-                committeeMember0adr,
-                pegOutSignatureHash
-            )
-        );
-
-        // Act sign a second time with the same committee member
-        vm.startPrank(committeeMember0adr);
-        allSignaturesReady = pm.addMemberSignature(pegOutSignatureHash, signature, nonce);
-        vm.stopPrank();
-    }
-
-    function test_addMemberSignature_Revert_MemberNotFoundInCommittee() external {
-        bytes32 pegOutSignatureHash = helper_arrangeRequestPegout();
-
-        // Arrange
-        // The signature an nonce values are dummy values
-        bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
-        bytes memory nonce =
-            hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
-
-        bytes32 nonCommitteeMemberPubkey = MEMBER_2_PUBKEY;
-
-        // Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IPegManager.MemberNotFoundInCommittee.selector, nonCommitteeMemberPubkey, pegOutSignatureHash
-            )
-        );
-
-        // Act
-        address nonCommitteeMember = MEMBER_2_ADDRESS;
-        vm.startPrank(nonCommitteeMember);
-        pm.addMemberSignature(pegOutSignatureHash, signature, nonce);
-        vm.stopPrank();
-    }
-
-    function test_addMemberSignature_Revert_InvalidNonceLength() external {
-        bytes32 pegOutSignatureHash = helper_arrangeRequestPegout();
-
-        // Arrange
-        // The signature an nonce values are dummy values
-        bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
-        bytes memory nonce =
-            hex"fff8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
-
-        address CommitteeMember = MEMBER_0_ADDRESS;
-
-        // Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IPegManager.InvalidNonceLength.selector, nonce.length, Constants.SIGNATURE_NONCE_LENGTH
-            )
-        );
-
-        // Act
-        vm.startPrank(CommitteeMember);
-        pm.addMemberSignature(pegOutSignatureHash, signature, nonce);
-        vm.stopPrank();
-    }
-
-    function helper_arrangeRequestPegout() internal returns (bytes32) {
-        // Arrange
-        bytes memory usrPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
-
-        bytes32 txId = 0xb24858ade3e5be49ae63facb93524ddf460d0771f093525dae328b6c435516a2;
-        bytes memory scriptPubKey = hex"02f519f51e435c20d38af683ea86862f4591ce8cda248077c2d9a72a76b62f32";
-
-        uint64 amount = 10000000; // 0.1 BTC
-        uint256 amountInWei = BtcHelper.satoshiToWei(amount);
-
-        Stream memory stream = streamManager.getStream(uint64(amount));
-        uint64 packetNumber = 0;
-
-        uint64 slotId = streamManager.setSlotHarness(stream.streamId, packetNumber, scriptPubKey, txId, amount);
-
-        // Execute pegout as part of the arrange
-        pm.requestPegOut{value: amountInWei}(usrPubKey);
-        bytes32 pegOutSignatureHash = pm.getPegOutSignatureHash(stream.streamId, packetNumber, slotId);
-
-        return (pegOutSignatureHash);
+        pm.acceptPegInRequest(pegInAcceptedTxSPVProof);
+
+        btcTransaction = getBtcAcceptPegInTx(peginTxN_1);
+        pegInRequestTxHash = HelperContract.getBtcTxHash(peginTxN_1);
+        acceptPegInTxHash = HelperContract.getBtcTxHash(btcTransaction);
+        pegInAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
+
+        // This should revert because this pegin was linked to packet 0 and now we are in packet 1
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.InvalidPeginPacketNumber.selector, 0, 0));
+        pm.acceptPegInRequest(pegInAcceptedTxSPVProof);
     }
 }

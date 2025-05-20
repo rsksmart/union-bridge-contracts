@@ -102,13 +102,13 @@ abstract contract HelperContract is Test, TestUtils {
     // This counter is added to the txId from getPegInRequestTxIn to avoid collisions when doing multiple pegin's
     uint256 internal txIdCounter = 0;
 
-    function helper_incrementTxIdCounter() public {
-        txIdCounter++;
-    }
-
-    function getPegInRequestTxIn() internal view returns (BtcTxIn memory) {
-        uint256 txId = uint256(0x360b81785dc7c2f40627fea364676dbb73e6276683caffd9f906b0e0bd36b3d2) + txIdCounter;
-        return BtcTxIn({txId: bytes32(txId), vout: 1694, sequence: Constants.SEQUENCE, scriptSig: hex""});
+    function getPegInRequestTxIn() internal returns (BtcTxIn memory) {
+        return BtcTxIn({
+            txId: bytes32(uint256(0x360b81785dc7c2f40627fea364676dbb73e6276683caffd9f906b0e0bd36b3d2) + txIdCounter++),
+            vout: 1694,
+            sequence: Constants.SEQUENCE,
+            scriptSig: hex""
+        });
     }
 
     function getPegInRequestP2TROut() internal pure returns (BtcTxOut memory) {
@@ -151,7 +151,7 @@ abstract contract HelperContract is Test, TestUtils {
         return BtcTxOut({amount: 0, scriptPubKey: script});
     }
 
-    function getBtcPegInRequestTx() internal view returns (BtcTransaction memory) {
+    function getBtcPegInRequestTx() internal returns (BtcTransaction memory) {
         BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
         btcInputs[0] = getPegInRequestTxIn();
         // Output
@@ -172,14 +172,14 @@ abstract contract HelperContract is Test, TestUtils {
         });
     }
 
-    function getExpectedPegInRequestTxHash() internal view returns (bytes32) {
-        return BtcHelper.hash256(BtcTxEncoder.encodeTx(getBtcPegInRequestTx()));
+    function getBtcTxHash(BtcTransaction memory _tx) internal pure returns (bytes32) {
+        return BtcHelper.hash256(BtcTxEncoder.encodeTx(_tx));
     }
 
     // ========================== Peg In Accept ==========================
-    function getBtcAcceptPegInTx() internal view returns (BtcTransaction memory) {
+    function getBtcAcceptPegInTx(BtcTransaction memory _tx) internal pure returns (BtcTransaction memory) {
         BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
-        btcInputs[0] = getAcceptPegInTxIn();
+        btcInputs[0] = getAcceptPegInTxIn(_tx);
         // Output
         BtcTxOut[] memory btcOutputs = new BtcTxOut[](2);
         btcOutputs[0] = getAcceptPegInP2TROut();
@@ -193,12 +193,8 @@ abstract contract HelperContract is Test, TestUtils {
         });
     }
 
-    function getExpectedAcceptPegInTxHash() internal view returns (bytes32) {
-        return BtcHelper.hash256(BtcTxEncoder.encodeTx(getBtcAcceptPegInTx()));
-    }
-
-    function getAcceptPegInTxIn() internal view returns (BtcTxIn memory) {
-        return BtcTxIn({txId: getExpectedPegInRequestTxHash(), vout: 0, sequence: Constants.SEQUENCE, scriptSig: hex""});
+    function getAcceptPegInTxIn(BtcTransaction memory _tx) internal pure returns (BtcTxIn memory) {
+        return BtcTxIn({txId: getBtcTxHash(_tx), vout: 0, sequence: Constants.SEQUENCE, scriptSig: hex""});
     }
 
     function getBtcSpeedUpOut() internal pure returns (BtcTxOut memory) {
@@ -231,5 +227,42 @@ abstract contract HelperContract is Test, TestUtils {
         });
         btcTxSPVProof.merkleBranchHashes[0] = 0x480fd40f2e47eeea8edeef2f7f3e2c680642f748c989ed2e542fe5d28164da51;
         return btcTxSPVProof;
+    }
+
+    function setup_multipleRequestAndAcceptPeginFlows(uint256 numberOfPegIns) internal {
+        for (uint256 i = 0; i < numberOfPegIns; i++) {
+            BtcTransaction memory btcTx = setup_requestPeginFlow();
+            setup_acceptPeginFlow(btcTx);
+        }
+    }
+
+    function setup_acceptPeginFlow(BtcTransaction memory _tx) public {
+        // Arrange
+        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx(_tx);
+        // Set Mock Bridge state
+        bridgeMock.setBtcTransactionConfirmations(10);
+        // Create PegIn accepted tx struct information
+        BtcTxSPVProof memory pegInAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
+
+        // Act
+        pm.acceptPegInRequest(pegInAcceptedTxSPVProof);
+    }
+
+    function setup_requestPeginFlow() public returns (BtcTransaction memory) {
+        // Arrange
+        BtcTransaction memory btcTransaction = getBtcPegInRequestTx();
+        // Set Mock Bridge state
+        bridgeMock.setBtcTransactionConfirmations(10);
+        // Create PegIn struct information
+        BtcTxSPVProof memory pegInRequestTxSPVProof = createBtcTxSPVProof(btcTransaction);
+
+        // Act
+        pm.registerPegInRequest(pegInRequestTxSPVProof);
+        return btcTransaction;
+    }
+
+    function setup_requestAndAcceptPeginFlow() public {
+        BtcTransaction memory peginTx = setup_requestPeginFlow();
+        setup_acceptPeginFlow(peginTx);
     }
 }
