@@ -49,7 +49,7 @@ struct Stream {
     uint64 peginPacketPointer; // An index for the packets array. It points to the current packet with space to a slot to register a peg-in request
     uint64 pegoutPacketPointer; // Another index for the packets array. It points to the current packet that should have a slot filled for a peg-out request
     uint16 pegoutSlotPointer; // An index for the slots array. It points to the first slot in the pegoutPacketPointer that should be processed when requested (if it's filled)
-    uint8 pegInConfirmations; // A generic number
+    uint8 peginConfirmations; // A generic number
     //uint8 pegOutConfirmations; // Another generic number
     uint256 securityBondValue; // The required bond (in wei) that each member of the committee needs to deposit to secure a packet
 }
@@ -123,6 +123,12 @@ interface IStreamManager is IAccessControl {
     /// @param _securityBondValue The value of the security bond expresed in RBTC in wei
     /// @dev The security bond is the amount of RBTC that each committee member needs to deposit to secure a packet
     function setSecurityBond(uint64 _streamId, uint256 _securityBondValue) external;
+
+    /// @notice Allows contract owner to set the peg-in confirmations for a given stream
+    /// @param _streamId The index in the array of streams
+    /// @param _confirmations The number of confirmations required for a peg-in transaction
+    /// @dev The peg-in confirmations is the number of confirmations required for a peg-in transaction to be considered valid
+    function setPeginConfirmations(uint64 _streamId, uint8 _confirmations) external;
 
     event StreamCreated(uint64 streamId, uint64 denomination);
     event PacketCreated(uint64 streamId, uint64 packetNumber);

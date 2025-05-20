@@ -39,7 +39,7 @@ contract StreamManager is IStreamManager, AccessControl {
                     pegoutPacketPointer: 0,
                     pegoutSlotPointer: 0,
                     securityBondValue: BtcHelper.satoshiToWei(_denominations[i]) / 10,
-                    pegInConfirmations: uint8(i + 1)
+                    peginConfirmations: Constants.PEGIN_CONFIRMATION_DEFAULT
                 })
             );
             emit StreamCreated(i, _denominations[i]);
@@ -211,4 +211,12 @@ contract StreamManager is IStreamManager, AccessControl {
 
         streams[_streamId].securityBondValue = _securityBondValue;
     }
+
+    function setPeginConfirmations(uint64 _streamId, uint8 _confirmations) external onlyOwner {
+        require(_streamId < streams.length, "Stream does not exist");
+        require(_confirmations > 0, "Confirmations must be greater than 0");
+
+        streams[_streamId].peginConfirmations = _confirmations;
+    }
+
 }

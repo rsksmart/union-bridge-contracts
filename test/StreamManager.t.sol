@@ -142,4 +142,46 @@ contract TestStreamManager is Test, HelperContract {
         // Act
         streamManager.setSecurityBond(streamId, securityBond);
     }
+
+    function test_setPeginConfirmations_Success() external {
+        uint64 streamId = 0;
+        // Add 2 confirmations
+        uint8 peginConfirmations = streamManager.getStreamById(streamId).peginConfirmations + 2;
+
+        assertNotEq(
+            streamManager.getStreamById(streamId).peginConfirmations,
+            peginConfirmations,
+            "Old and new peginConfirmations should not match"
+        );
+
+        vm.prank(address(streamManager.owner()));
+        streamManager.setPeginConfirmations(streamId, peginConfirmations);
+
+        // Assert
+        assertEq(
+            streamManager.getStreamById(streamId).peginConfirmations,
+            peginConfirmations,
+            "peginConfirmations was not set correctly"
+        );
+    }
+
+    function test_setPeginConfirmations_RequireGreaterThanZero() external {
+        // Arrange
+        uint64 streamId = 0;
+
+        vm.prank(address(streamManager.owner()));
+        vm.expectRevert(bytes("Confirmations must be greater than 0"));
+        // Act
+        streamManager.setPeginConfirmations(streamId, 0);
+    }
+
+    function test_setPeginConfirmations_InvalidStreamId() external {
+        // Arrange
+        uint64 streamId = 10;
+
+        vm.prank(address(streamManager.owner()));
+        vm.expectRevert(bytes("Stream does not exist"));
+        // Act
+        streamManager.setPeginConfirmations(streamId, 100);
+    }
 }
