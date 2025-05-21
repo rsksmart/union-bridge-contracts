@@ -39,7 +39,7 @@ contract StreamManager is IStreamManager, AccessControl {
                     pegoutPacketPointer: 0,
                     pegoutSlotPointer: 0,
                     securityBondValue: BtcHelper.satoshiToWei(_denominations[i]) / 10,
-                    pegInConfirmations: uint8(i + 1)
+                    peginConfirmations: Constants.PEGIN_CONFIRMATION_DEFAULT
                 })
             );
             emit StreamCreated(i, _denominations[i]);
@@ -205,10 +205,26 @@ contract StreamManager is IStreamManager, AccessControl {
         return getPacket(_streamId, _packetNumber).committeePubKey;
     }
 
-    function setSecurityBond(uint64 _streamId, uint256 _securityBondValue) external onlyOwner {
-        require(_streamId < streams.length, "Stream does not exist");
-        require(_securityBondValue > 0, "Security bond value must be greater than 0");
+    function setSecurityBond(uint64 _streamId, uint256 _securityBondValue) external streamExists(_streamId) onlyOwner {
+        if (_securityBondValue == 0) {
+            revert InvalidSecurityBondValue(_securityBondValue);
+        }
 
         streams[_streamId].securityBondValue = _securityBondValue;
+    }
+
+    function setPeginConfirmations(uint64 _streamId, uint8 _confirmations) external streamExists(_streamId) onlyOwner {
+        if (_confirmations == 0) {
+            revert InvalidPeginConfirmations(_confirmations);
+        }
+
+        streams[_streamId].peginConfirmations = _confirmations;
+    }
+
+    modifier streamExists(uint64 _streamId) {
+        if (_streamId >= streams.length) {
+            revert StreamNotFoundById(_streamId);
+        }
+        _;
     }
 }

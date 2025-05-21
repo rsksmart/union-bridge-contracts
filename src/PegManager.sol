@@ -130,7 +130,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         // and that block is inside Bitcoin Mainchain
         // and has enough confirmations
         verifyTxConfirmations(
-            stream.pegInConfirmations,
+            stream.peginConfirmations,
             txHash,
             _pegInRequestTxSPVProof.blockHash,
             _pegInRequestTxSPVProof.merkleBranchPath,
@@ -243,7 +243,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         // and that block is inside Bitcoin Mainchain
         // annd has enough confirmations
         verifyTxConfirmations(
-            streamManager.getStreamById(streamPosition.streamId).pegInConfirmations,
+            streamManager.getStreamById(streamPosition.streamId).peginConfirmations,
             txHash,
             _pegInAcceptedTxSPVProof.blockHash,
             _pegInAcceptedTxSPVProof.merkleBranchPath,

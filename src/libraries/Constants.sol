@@ -24,4 +24,6 @@ library Constants {
     // NOTE: SLOTS_PER_PACKET should be smaller than 2^16 to avoid overflow of Stream.pegoutSlotPointer
     uint8 constant SLOTS_PER_PACKET = 100;
     uint8 constant SLOT_USAGE_THRESHOLD = 80;
+
+    uint8 constant PEGIN_CONFIRMATION_DEFAULT = 10;
 }

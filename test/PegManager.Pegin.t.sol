@@ -126,7 +126,7 @@ contract TestPegManager is Test, HelperContract {
         Stream memory stream = streamManager.getStream(VALUE);
         vm.expectRevert(
             abi.encodeWithSelector(
-                ProofValidator.NotEnoughConfirmations.selector, actualConfirmations, stream.pegInConfirmations
+                ProofValidator.NotEnoughConfirmations.selector, actualConfirmations, stream.peginConfirmations
             )
         );
         // Act
@@ -501,7 +501,7 @@ contract TestPegManager is Test, HelperContract {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(
-                ProofValidator.NotEnoughConfirmations.selector, actualConfirmations, stream.pegInConfirmations
+                ProofValidator.NotEnoughConfirmations.selector, actualConfirmations, stream.peginConfirmations
             )
         );
 

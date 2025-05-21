@@ -7,6 +7,7 @@ import {HelperContract} from "test/helpers/HelperContract.sol";
 import {SlotState, Slot, Packet, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract TestStreamManager is Test, HelperContract {
     function setUp() external {
@@ -113,7 +114,7 @@ contract TestStreamManager is Test, HelperContract {
         );
     }
 
-    function test_setSecurityBond_RequireGreaterThanZero() external {
+    function test_setSecurityBond_Revert_RequireGreaterThanZero() external {
         // Arrange
         uint64 streamId = 0;
         uint256 securityBond = 0;
@@ -126,20 +127,81 @@ contract TestStreamManager is Test, HelperContract {
 
         vm.prank(address(streamManager.owner()));
 
-        vm.expectRevert(bytes("Security bond value must be greater than 0"));
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.InvalidSecurityBondValue.selector, 0));
         // Act
         streamManager.setSecurityBond(streamId, securityBond);
     }
 
-    function test_setSecurityBond_InvalidStreamId() external {
+    function test_setSecurityBond_Revert_InvalidStreamId() external {
         // Arrange
         uint64 streamId = 10;
         uint256 securityBond = 1000;
 
         vm.prank(address(streamManager.owner()));
 
-        vm.expectRevert(bytes("Stream does not exist"));
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.StreamNotFoundById.selector, streamId));
         // Act
         streamManager.setSecurityBond(streamId, securityBond);
+    }
+
+    function test_setSecurityBond_Revert_NotOwner() external {
+        // Arrange
+        uint64 streamId = 0;
+        uint256 securityBond = 1000;
+
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, this));
+        // Act
+        streamManager.setSecurityBond(streamId, securityBond);
+    }
+
+    function test_setPeginConfirmations_Success() external {
+        uint64 streamId = 0;
+        // Add 2 confirmations
+        uint8 peginConfirmations = streamManager.getStreamById(streamId).peginConfirmations + 2;
+
+        assertEq(
+            streamManager.getStreamById(streamId).peginConfirmations,
+            Constants.PEGIN_CONFIRMATION_DEFAULT,
+            "Pegin confirmation should be default"
+        );
+
+        vm.prank(address(streamManager.owner()));
+        streamManager.setPeginConfirmations(streamId, peginConfirmations);
+
+        // Assert
+        assertEq(
+            streamManager.getStreamById(streamId).peginConfirmations,
+            peginConfirmations,
+            "peginConfirmations was not set correctly"
+        );
+    }
+
+    function test_setPeginConfirmations_Revert_RequireGreaterThanZero() external {
+        // Arrange
+        uint64 streamId = 0;
+
+        vm.prank(address(streamManager.owner()));
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.InvalidPeginConfirmations.selector, 0));
+        // Act
+        streamManager.setPeginConfirmations(streamId, 0);
+    }
+
+    function test_setPeginConfirmations_Rever_InvalidStreamId() external {
+        // Arrange
+        uint64 streamId = 10;
+
+        vm.prank(address(streamManager.owner()));
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.StreamNotFoundById.selector, streamId));
+        // Act
+        streamManager.setPeginConfirmations(streamId, 100);
+    }
+
+    function test_setPeginConfirmations_Revert_NotOwner() external {
+        // Arrange
+        uint64 streamId = 0;
+
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, this));
+        // Act
+        streamManager.setPeginConfirmations(streamId, 10);
     }
 }
