@@ -88,6 +88,19 @@ contract TestSignatureManager is Test, HelperContract {
 
         // Assert
         assertEq(allSignaturesReady, false, "Not all signatures should be ready at this point");
+        (uint8 missingSignatures, uint8 missingNonces, bytes32 aggregatedKey) =
+            signatureManager.getSignaturesStatus(signatureHash);
+        assertEq(missingSignatures, 1, "missingSignatures should be equal to 1");
+        assertEq(missingNonces, 0, "missingNonces should be equal to 1");
+        assertEq(aggregatedKey, COMMITEE_1_PUB_KEY, "aggregatedKey should be equal to the committee key");
+        SignatureData[] memory signatures = signatureManager.getPartialSignatures(signatureHash);
+        assertEq(signatures.length, 2, "signatures length should be equal to 2");
+        assertEq(
+            signatures[0].memberPublicKey,
+            committeeMember0Pubkey,
+            "signatures[0].memberPublicKey should be equal to the committee member key"
+        );
+        assertEq(signatures[0].signature, signature, "signatures[0].signature should be equal to the signature");
 
         // Assert
         // We emit the event we expect to see.
@@ -106,6 +119,18 @@ contract TestSignatureManager is Test, HelperContract {
 
         // Assert
         assertEq(allSignaturesReady, true, "Not all signatures should be ready at this point");
+        (missingSignatures, missingNonces, aggregatedKey) = signatureManager.getSignaturesStatus(signatureHash);
+        assertEq(missingSignatures, 0, "missingSignatures should be equal to 0");
+        assertEq(missingNonces, 0, "missingNonces should be equal to 0");
+        assertEq(aggregatedKey, COMMITEE_1_PUB_KEY, "aggregatedKey should be equal to the committee key");
+        signatures = signatureManager.getPartialSignatures(signatureHash);
+        assertEq(signatures.length, 2, "signatures length should be equal to 2");
+        assertEq(
+            signatures[1].memberPublicKey,
+            committeeMember1Pubkey,
+            "signatures[1].memberPublicKey should be equal to the committee member key"
+        );
+        assertEq(signatures[1].signature, signature, "signatures[1].signature should be equal to the signature");
     }
 
     function test_addMemberNonce_Revert_SignatureHashNotFound() external {
@@ -139,7 +164,7 @@ contract TestSignatureManager is Test, HelperContract {
         signatureManager.addMemberSignature(signatureHash, signature);
     }
 
-    function test_addMemberNonce_Revert_MemberNotFound() external {
+    function test_addMemberNonce_Revert_MemberNotRegistered() external {
         bytes32 signatureHash = setup_initSignatures();
 
         // The nonce values are dummy values
@@ -148,13 +173,13 @@ contract TestSignatureManager is Test, HelperContract {
 
         // Assert
         address memberAddress = address(0);
-        vm.expectRevert(abi.encodeWithSelector(ISignatureManager.MemberNotFound.selector, memberAddress));
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.MemberNotRegistered.selector, memberAddress));
 
         vm.prank(memberAddress);
         signatureManager.addMemberNonce(signatureHash, nonce);
     }
 
-    function test_addMemberSignature_Revert_MemberNotFound() external {
+    function test_addMemberSignature_Revert_MemberNotRegistered() external {
         // Init signatures and add all nonces
         bytes32 signatureHash = setup_initSignatures();
         setup_addAllNonces(signatureHash);
@@ -164,7 +189,7 @@ contract TestSignatureManager is Test, HelperContract {
 
         // Assert
         address memberAddress = address(0);
-        vm.expectRevert(abi.encodeWithSelector(ISignatureManager.MemberNotFound.selector, memberAddress));
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.MemberNotRegistered.selector, memberAddress));
 
         vm.prank(memberAddress);
         signatureManager.addMemberSignature(signatureHash, signature);
@@ -233,17 +258,20 @@ contract TestSignatureManager is Test, HelperContract {
         bytes memory nonce =
             hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
 
+        address nonCommitteeMember = MEMBER_2_ADDRESS;
         bytes32 nonCommitteeMemberPubkey = MEMBER_2_PUBKEY;
 
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(
-                ISignatureManager.MemberNotFoundInCommittee.selector, nonCommitteeMemberPubkey, signatureHash
+                ISignatureManager.MemberNotFoundInCommittee.selector,
+                nonCommitteeMemberPubkey,
+                nonCommitteeMember,
+                signatureHash
             )
         );
 
         // Act
-        address nonCommitteeMember = MEMBER_2_ADDRESS;
         vm.prank(nonCommitteeMember);
         signatureManager.addMemberNonce(signatureHash, nonce);
     }
@@ -256,18 +284,20 @@ contract TestSignatureManager is Test, HelperContract {
         // Arrange
         // The signature an nonce values are dummy values
         bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
-
+        address nonCommitteeMember = MEMBER_2_ADDRESS;
         bytes32 nonCommitteeMemberPubkey = MEMBER_2_PUBKEY;
 
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(
-                ISignatureManager.MemberNotFoundInCommittee.selector, nonCommitteeMemberPubkey, signatureHash
+                ISignatureManager.MemberNotFoundInCommittee.selector,
+                nonCommitteeMemberPubkey,
+                nonCommitteeMember,
+                signatureHash
             )
         );
 
         // Act
-        address nonCommitteeMember = MEMBER_2_ADDRESS;
         vm.prank(nonCommitteeMember);
         signatureManager.addMemberSignature(signatureHash, signature);
     }
@@ -307,25 +337,28 @@ contract TestSignatureManager is Test, HelperContract {
         signatureManager.initSignatures(signatureHash, committeeKey);
 
         // Assert
-        Signatures memory signatures = signatureManager.getSignatures(signatureHash);
+        (uint8 missingSignatures, uint8 missingNonces, bytes32 aggregatedKey) =
+            signatureManager.getSignaturesStatus(signatureHash);
         assertEq(
-            signatures.missingSignatures,
-            committeeMemberCount,
-            "Missing signatures should be equal to the committee member count"
+            missingSignatures, committeeMemberCount, "missingSignatures should be equal to the committee member count"
+        );
+        assertEq(missingNonces, committeeMemberCount, "missingNonces should be equal to the committee member count");
+        assertEq(aggregatedKey, committeeKey, "aggregatedKey should be equal to the committee key");
+
+        SignatureData[] memory signatures = signatureManager.getPartialSignatures(signatureHash);
+        assertEq(
+            signatures.length, committeeMemberCount, "signatures length should be equal to the committee member count"
         );
         assertEq(
-            signatures.missingSignatures,
-            committeeMemberCount,
-            "Missing signatures should be equal to the committee member count"
+            signatures[0].memberPublicKey,
+            committeeMember0Pubkey,
+            "signatures[0].memberPublicKey should be equal to the committee member key"
         );
-        SignatureData[] memory signaturesData = signatures.signaturesData;
         assertEq(
-            signaturesData.length,
-            committeeMemberCount,
-            "SignaturesData Length should be equal to the committee member count"
+            signatures[1].memberPublicKey,
+            committeeMember1Pubkey,
+            "signatures[1].memberPublicKey should be equal to the committee member key"
         );
-        assertEq(signaturesData[0].memberPublicKey, committeeMember0Pubkey, "SignaturesData[0] should be initialized");
-        assertEq(signaturesData[1].memberPublicKey, committeeMember1Pubkey, "SignaturesData[1] should be initialized");
     }
 
     function test_initSignatures_Revert_InvalidSignatureHash() external {

@@ -45,9 +45,13 @@ interface ICommitteeRegistry {
 
     function getNextAvailableCommittee() external view returns (Committee calldata);
 
-    function getMemberPubKeyByAddress(address _address) external view returns (bytes32);
-
     function getMemberPubKeyByIndex(uint16 _memberIndex) external view returns (bytes32);
 
+    function getMemberIndexByAddress(address _address) external view returns (uint16);
+
     function selectCommittee(uint64) external view returns (bytes32);
+
+    // Errors
+    error MemberNotRegistered(address memberAddress);
+    error MemberIndexNotFound(uint16 memberIndex);
 }

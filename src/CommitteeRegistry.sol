@@ -136,20 +136,23 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
     }
 
     function getMemberPubKeyByIndex(uint16 _memberIndex) external view returns (bytes32) {
-        //TODO: check if needed
-        return members[_memberIndex].publicKey;
+        bytes32 publicKey = members[_memberIndex].publicKey;
+        if (publicKey == "") {
+            revert MemberIndexNotFound(_memberIndex);
+        }
+        return publicKey;
     }
 
-    function getMemberPubKeyByAddress(address _address) external view returns (bytes32) {
+    function getMemberIndexByAddress(address _address) external view returns (uint16) {
         uint16 memberIndex = memberIndexByAddress[_address];
 
         // 0 is reserved for non registered members
         if (memberIndex == 0) {
-            return 0x00;
+            revert MemberNotRegistered(_address);
         }
 
         // Substract 1 to get the correct index
-        return members[memberIndex - 1].publicKey;
+        return memberIndex - 1;
     }
 
     function selectCommittee(uint64) external view returns (bytes32) {
