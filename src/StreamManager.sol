@@ -2,14 +2,13 @@
 pragma solidity ^0.8.20;
 
 import {Stream, Packet, Slot, SlotState, IStreamManager} from "./interfaces/IStreamManager.sol";
-import {BaseProxy} from "./BaseProxy.sol";
+import {AccessControl} from "./AccessControl.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 
 /// @title Stream Manager
 /// @notice Manages streams
-contract StreamManager is IStreamManager, BaseProxy {
-    address public pegManager;
+contract StreamManager is IStreamManager, AccessControl {
     uint64 public constant MAX_DENOMINATIONS_SIZE = 10;
     Stream[] internal streams;
     uint64[] internal denominations;
@@ -26,8 +25,6 @@ contract StreamManager is IStreamManager, BaseProxy {
         virtual
         initializer
     {
-        require(_pegManager != address(0), "PegManager cannot be zero address");
-        pegManager = _pegManager;
         uint256 length = _denominations.length;
         if (length > MAX_DENOMINATIONS_SIZE) {
             revert tooManyDenominations(MAX_DENOMINATIONS_SIZE);
@@ -47,7 +44,7 @@ contract StreamManager is IStreamManager, BaseProxy {
             );
             emit StreamCreated(i, _denominations[i]);
         }
-        __BaseProxy_init(_initialOwner);
+        __AccessControl_init(_initialOwner, _pegManager);
     }
 
     /// @dev Adds one packet per stream
@@ -213,19 +210,5 @@ contract StreamManager is IStreamManager, BaseProxy {
         require(_securityBondValue > 0, "Security bond value must be greater than 0");
 
         streams[_streamId].securityBondValue = _securityBondValue;
-    }
-
-    modifier onlyPegManager() {
-        _checkPegManager();
-        _;
-    }
-
-    /**
-     * @dev Throws if the sender is not the pegManager.
-     */
-    function _checkPegManager() internal view virtual {
-        if (pegManager != msg.sender) {
-            revert UnauthorizedAccount(msg.sender);
-        }
     }
 }

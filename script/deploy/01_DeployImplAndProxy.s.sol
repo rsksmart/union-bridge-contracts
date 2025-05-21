@@ -7,6 +7,7 @@ import {CommitteeRegistry} from "src/CommitteeRegistry.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
 import {PegManager} from "src/PegManager.sol";
 import {StreamManager} from "src/StreamManager.sol";
+import {SignatureManager} from "src/SignatureManager.sol";
 import {RSK_BRIDGE_ADDRESS} from "src/interfaces/IBridge.sol";
 import {BtcNetwork} from "src/libraries/Network.sol";
 import {BridgeMock} from "test/helpers/BridgeMock.sol";
@@ -52,11 +53,21 @@ contract DeployImplAndProxy is ScriptUtils {
 
     function run()
         public
-        returns (CommitteeRegistry, BitcoinManager, PegManager, StreamManager, address, address payable)
+        returns (
+            CommitteeRegistry,
+            BitcoinManager,
+            PegManager,
+            StreamManager,
+            SignatureManager,
+            address,
+            address payable
+        )
     {
         setUp();
         printAddress(upgradableOwner, "upgradableOwner");
         printAddress(bridgeAddress, "Bridge");
+
+        // Deploy contracts
         CommitteeRegistry committeeRegistry = deployCommitteeRegistry(upgradableOwner);
         if (committeeRegistry.owner() != upgradableOwner) {
             revert("CommitteeRegistry owner is not the upgradable owner");
@@ -82,8 +93,25 @@ contract DeployImplAndProxy is ScriptUtils {
             revert("StreamManager pegManager is not the pegManager address");
         }
 
+        SignatureManager signatureManager =
+            deploySignatureManager(upgradableOwner, address(pegManager), committeeRegistry);
+        if (signatureManager.owner() != upgradableOwner) {
+            revert("SignatureManager owner is not the upgradable owner");
+        }
+        if (signatureManager.pegManager() != address(pegManager)) {
+            revert("SignatureManager pegManager is not the pegManager address");
+        }
+        if (address(signatureManager.committeeRegistry()) != address(committeeRegistry)) {
+            revert("SignatureManager committeeRegistry is not the committeeRegistry address");
+        }
+
+        // Set contracts references
         vm.startBroadcast(getDeployerKey());
         pegManager.setStreamManager(streamManager);
+        vm.stopBroadcast();
+
+        vm.startBroadcast(getDeployerKey());
+        pegManager.setSignatureManager(signatureManager);
         vm.stopBroadcast();
 
         if (block.chainid == ChainIds.LOCAL) {
@@ -92,7 +120,15 @@ contract DeployImplAndProxy is ScriptUtils {
             vm.stopBroadcast();
         }
 
-        return (committeeRegistry, bitcoinManager, pegManager, streamManager, upgradableOwner, bridgeAddress);
+        return (
+            committeeRegistry,
+            bitcoinManager,
+            pegManager,
+            streamManager,
+            signatureManager,
+            upgradableOwner,
+            bridgeAddress
+        );
     }
 
     function deployCommitteeRegistry(address _upgradableOwner) public returns (CommitteeRegistry) {
@@ -140,6 +176,17 @@ contract DeployImplAndProxy is ScriptUtils {
             contractName, abi.encodeCall(StreamManager.initialize, (_upgradableOwner, _pegManager, _denominations))
         );
         return StreamManager(proxyAdddress);
+    }
+
+    function deploySignatureManager(address _upgradableOwner, address _pegManager, CommitteeRegistry _committeeRegistry)
+        public
+        returns (SignatureManager)
+    {
+        (, address proxyAdddress) = deployContractAndUUPSProxy(
+            "SignatureManager.sol",
+            abi.encodeCall(SignatureManager.initialize, (_upgradableOwner, _pegManager, _committeeRegistry))
+        );
+        return SignatureManager(proxyAdddress);
     }
 
     /**

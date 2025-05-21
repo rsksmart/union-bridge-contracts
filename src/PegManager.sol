@@ -2,16 +2,11 @@
 pragma solidity ^0.8.20;
 
 import {BaseProxy} from "./BaseProxy.sol";
-import {Committee, CommitteeMember, ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
+import {ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
+import {ISignatureManager} from "./interfaces/ISignatureManager.sol";
 import {PrevoutData, BtcTransaction, BtcTxOut, IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
 import {
-    BtcTxSPVProof,
-    StreamPosition,
-    RequestPegInTempInfo,
-    PegStatus,
-    SignatureData,
-    Signatures,
-    IPegManager
+    BtcTxSPVProof, StreamPosition, RequestPegInTempInfo, PegStatus, IPegManager
 } from "./interfaces/IPegManager.sol";
 import {Slot, Stream, Packet, SlotState, IStreamManager} from "./interfaces/IStreamManager.sol";
 import {ProofValidator} from "./ProofValidator.sol";
@@ -21,10 +16,11 @@ import {Constants} from "./libraries/Constants.sol";
 /// @title PegManager
 /// @notice Manages peg-in and peg-out operations between Bitcoin and Rootstock
 
-contract PegManager is IPegManager, ProofValidator, BaseProxy {
-    ICommitteeRegistry public committeeRegistry;
+contract PegManager is IPegManager, BaseProxy, ProofValidator {
     IBitcoinManager public bitcoinManager;
     IStreamManager public streamManager;
+    ICommitteeRegistry public committeeRegistry;
+    ISignatureManager public signatureManager;
 
     // Request PegIn Tx Hash => Stream Position (streamId, packetNumber, slotId, pegStatus)
     mapping(bytes32 btcRequestPegInTxHash => StreamPosition streamPosition) internal pegInRequests;
@@ -32,8 +28,6 @@ contract PegManager is IPegManager, ProofValidator, BaseProxy {
     mapping(bytes32 btcRequestPegInTxHash => RequestPegInTempInfo tempInfo) internal pegInsTempInfo;
     // key = keccak256(abi.encodePacked(streamId, packetNumber, slotId))
     mapping(bytes32 key => bytes32 pegOutSignatureHash) internal pegOutSighashes;
-    // Signatures waiting for the committee to sign
-    mapping(bytes32 signatureHash => Signatures signatures) internal committeeSignatures;
 
     function initialize(
         address _initialOwner,
@@ -41,14 +35,33 @@ contract PegManager is IPegManager, ProofValidator, BaseProxy {
         ICommitteeRegistry _committeeRegistry,
         IBitcoinManager _bitcoinManager
     ) public virtual initializer {
-        committeeRegistry = _committeeRegistry;
+        // Validate that the bitcoin manager is not zero address
+        if (address(_bitcoinManager) == address(0)) {
+            revert BitcoinManagerAddressZero();
+        }
         bitcoinManager = _bitcoinManager;
-        __ProofValidator_init(_bridgeAddress);
+
+        if (address(_committeeRegistry) == address(0)) {
+            revert CommitteeRegistryAddressZero();
+        }
+        committeeRegistry = _committeeRegistry;
+
         __BaseProxy_init(_initialOwner);
+        __ProofValidator_init(_bridgeAddress);
     }
 
     function setStreamManager(IStreamManager _streamManager) external onlyOwner {
+        if (address(_streamManager) == address(0)) {
+            revert StreamManagerAddressZero();
+        }
         streamManager = _streamManager;
+    }
+
+    function setSignatureManager(ISignatureManager _signatureManager) external onlyOwner {
+        if (address(_signatureManager) == address(0)) {
+            revert SignatureManagerAddressZero();
+        }
+        signatureManager = _signatureManager;
     }
 
     function getPegInRequest(bytes32 btcTxHash) external view returns (StreamPosition memory) {
@@ -336,95 +349,19 @@ contract PegManager is IPegManager, ProofValidator, BaseProxy {
     }
 
     function storePegOutAndInitSignatures(
-        bytes32 pegOutSignatureHash,
-        uint64 streamId,
-        uint64 packetNumber,
-        uint64 slotId
+        bytes32 _pegOutSignatureHash,
+        uint64 _streamId,
+        uint64 _packetNumber,
+        uint64 _slotId
     ) internal {
         // Store the peg-out transaction hash on-chain and initialize the signatures
-        bytes32 key = keccak256(abi.encodePacked(streamId, packetNumber, slotId));
-        pegOutSighashes[key] = pegOutSignatureHash;
+        bytes32 key = keccak256(abi.encodePacked(_streamId, _packetNumber, _slotId));
+        pegOutSighashes[key] = _pegOutSignatureHash;
 
         // Get the committee key
-        bytes32 committeeKey = streamManager.getCommitteePubKey(streamId, packetNumber);
-
-        // Get the members
-        CommitteeMember[] memory members = committeeRegistry.getCommitteeMember(committeeKey);
+        bytes32 committeeKey = streamManager.getCommitteePubKey(_streamId, _packetNumber);
 
         // Initialize the signatures for each member
-        Signatures storage signatures = committeeSignatures[pegOutSignatureHash];
-        for (uint256 i = 0; i < members.length; i++) {
-            signatures.signaturesData.push(
-                SignatureData({
-                    memberPublicKey: committeeRegistry.getMemberPubKeyByIndex(members[i].index),
-                    signature: "",
-                    nonce: ""
-                })
-            );
-        }
-        // Initialize missing signatures counter
-        signatures.missingSignatures = uint8(members.length);
-    }
-
-    function addMemberSignature(bytes32 _signatureHash, bytes32 _signature, bytes memory _nonce)
-        external
-        returns (bool)
-    {
-        // Check if the peg-out transaction hash exists
-        checkSignatureHashValidity(_signatureHash);
-
-        // Check if caller is a valid member
-        bytes32 memberPubKey = committeeRegistry.getMemberPubKeyByAddress(_msgSender());
-        if (memberPubKey == bytes32(0)) {
-            revert MemberNotFound(_msgSender());
-        }
-
-        // Check that nonce is 66 bytes
-        if (_nonce.length != Constants.SIGNATURE_NONCE_LENGTH) {
-            revert InvalidNonceLength(_nonce.length, Constants.SIGNATURE_NONCE_LENGTH);
-        }
-
-        // Store the signature and nonce for the member
-        bool found = false;
-        Signatures storage signatures = committeeSignatures[_signatureHash];
-        SignatureData[] storage signaturesData = signatures.signaturesData;
-        for (uint256 i = 0; i < signaturesData.length; i++) {
-            if (signaturesData[i].memberPublicKey == memberPubKey) {
-                if (signaturesData[i].signature != "") {
-                    revert MemberHasAlreadySigned(memberPubKey, _msgSender(), _signatureHash);
-                }
-                signaturesData[i].signature = _signature;
-                signaturesData[i].nonce = _nonce;
-                found = true;
-                signatures.missingSignatures -= 1;
-                emit SignatureAdded(_signatureHash, memberPubKey, _signature, _nonce);
-                break;
-            }
-        }
-        if (!found) {
-            revert MemberNotFoundInCommittee(memberPubKey, _signatureHash);
-        }
-
-        // Check if all signatures are present
-        if (committeeSignatures[_signatureHash].missingSignatures != 0) {
-            return false;
-        }
-        emit AllSignaturesReady(_signatureHash);
-        return true;
-    }
-
-    function checkAllSignaturesReady(bytes32 _signatureHash) external view returns (bool) {
-        checkSignatureHashValidity(_signatureHash);
-        if (committeeSignatures[_signatureHash].missingSignatures != 0) {
-            return false;
-        }
-        return true;
-    }
-
-    function checkSignatureHashValidity(bytes32 _signatureHash) internal view {
-        // Check if the signature hash exists
-        if (committeeSignatures[_signatureHash].signaturesData.length == 0) {
-            revert SignatureHashNotFound(_signatureHash);
-        }
+        signatureManager.initSignatures(_pegOutSignatureHash, committeeKey);
     }
 }

@@ -12,6 +12,7 @@ abstract contract BaseProxy is UUPSUpgradeable, OwnableUpgradeable {
     }
 
     function __BaseProxy_init(address _initialOwner) public initializer {
+        // Validaton that the initial owner is not zero address is done in OwnableUpgradeable
         __Ownable_init_unchained(_initialOwner);
     }
 

@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import {BtcTransaction} from "./IBitcoinManager.sol";
 import {IStreamManager} from "./IStreamManager.sol";
+import {ISignatureManager} from "./ISignatureManager.sol";
 
 struct BtcTxSPVProof {
     bytes32 blockHash; // The Bitcoin Block Hash where the tx happened
@@ -40,20 +41,9 @@ struct RequestPegInTempInfo {
     bytes utxoScriptPubKey;
 }
 
-struct SignatureData {
-    bytes32 memberPublicKey;
-    bytes32 signature;
-    bytes nonce; // Should be 66 bytes
-}
-
-struct Signatures {
-    SignatureData[] signaturesData;
-    uint8 missingSignatures;
-}
-
 interface IPegManager {
     function setStreamManager(IStreamManager _streamManager) external;
-
+    function setSignatureManager(ISignatureManager _signatureManager) external;
     // ===================== Peg-in Request=====================
 
     /// @notice Allows users generate a temporary Bitcoin address to perform a peg-in.
@@ -130,21 +120,12 @@ interface IPegManager {
         uint64 slotId
     );
 
-    // ===================== Signature Request =====================
-
-    function checkAllSignaturesReady(bytes32 _signatureHash) external view returns (bool);
-
-    event SignatureAdded(bytes32 indexed signatureHash, bytes32 indexed memberPubKey, bytes32 signature, bytes nonce);
-
-    event AllSignaturesReady(bytes32 indexed signatureHash);
-
     // ===================== Errors =====================
-
+    error BitcoinManagerAddressZero();
+    error CommitteeRegistryAddressZero();
+    error SignatureManagerAddressZero();
+    error StreamManagerAddressZero();
     error PegoutRequestAmountExceedsUint64Limit(uint256 amount);
-    error MemberNotFound(address memberAddress);
-    error MemberHasAlreadySigned(bytes32 memberPubKey, address memberAddress, bytes32 pegOutTxHash);
-    error MemberNotFoundInCommittee(bytes32 memberPubKey, bytes32 pegOutTxHash);
-    error InvalidNonceLength(uint256 actual, uint8 expected);
     error AlreadyRegisteredPegIn(bytes32 btcTxHash);
     error AlreadyRegisteredPegInRequest(bytes32 btcTxHash);
     error UnregisteredPegInRequest(bytes32 btcTxHash);
@@ -156,5 +137,4 @@ interface IPegManager {
     error InvalidPubKeyLength(uint256 usrPubKeyLength);
     error InvalidLocktime(uint256 actual, uint256 expected);
     error InvalidBtcTxVersion(uint256 actual, uint256 expected);
-    error SignatureHashNotFound(bytes32 signatureHash);
 }

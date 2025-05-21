@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNKNOWN
 pragma solidity ^0.8.20;
 
+import {IAccessControl} from "./IAccessControl.sol";
+
 enum StreamDenomination { //TODO integrate this enum into StreamManager logic
     _0_001BTC,
     _0_01BTC,
@@ -52,7 +54,7 @@ struct Stream {
     uint256 securityBondValue; // The required bond (in wei) that each member of the committee needs to deposit to secure a packet
 }
 
-interface IStreamManager {
+interface IStreamManager is IAccessControl {
     /// @notice Allows users to create packets
     /// @param _committeePubKey The public key of the committee
     function createInitialPackets(bytes32 _committeePubKey) external;
@@ -136,6 +138,5 @@ interface IStreamManager {
     error InconsistentSlotsPerPacket(uint256 streamId, uint256 packetNumber, uint256 slotsPerPacket);
     error InvalidPeginPacketNumber(uint256 streamId, uint256 packetNumber);
     error NonExistentSlot(uint256 streamId, uint256 packetNumber, uint256 slotId);
-    error UnauthorizedAccount(address sender);
     error StreamAlreadyInitialized(uint256 streamId);
 }

@@ -14,6 +14,7 @@ import {
 } from "src/interfaces/IPegManager.sol";
 import {BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
 import {Slot, SlotState, Packet, Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
+import {ISignatureManager} from "src/interfaces/ISignatureManager.sol";
 import {BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE} from "src/interfaces/IBridge.sol";
 import {ProofValidator} from "src/ProofValidator.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
@@ -76,8 +77,10 @@ contract TestPegManager is Test, HelperContract {
         assertEq(uint64(slot.state), uint64(SlotState.LOCKED), "Slot was not locked");
 
         // Assert
-        // Check if the signatures struct was initialized by checking that the function doesn't revert, we expect false since it hasn't been signed yet
-        assertEq(pm.checkAllSignaturesReady(expectedHash), false, "Signatures struct hasn't been initialized");
+        // Check if the signatures struct was initialized by checking that the function doesn't revert, we expect false since it hasn't been signed yet;
+        assertEq(
+            signatureManager.checkAllSignaturesReady(expectedHash), false, "Signatures struct hasn't been initialized"
+        );
     }
 
     function test_requestPegOut_fromAcceptPegIn_Success() external {
@@ -117,6 +120,12 @@ contract TestPegManager is Test, HelperContract {
         // Assert
         Slot memory slot = streamManager.getSlot(stream.streamId, packetNumber, slotId);
         assertEq(uint64(slot.state), uint64(SlotState.LOCKED), "Slot was not locked");
+
+        // Assert
+        // Check if the signatures struct was initialized by checking that the function doesn't revert, we expect false since it hasn't been signed yet;
+        assertEq(
+            signatureManager.checkAllSignaturesReady(expectedHash), false, "Signatures struct hasn't been initialized"
+        );
     }
 
     function test_requestPegOut_FromNextPacket_Success() external {
@@ -208,175 +217,10 @@ contract TestPegManager is Test, HelperContract {
         bytes32 pegOutSignatureHash = 0x0000000000000000000000000000000000000000000000000000000000000001;
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegManager.SignatureHashNotFound.selector, pegOutSignatureHash));
+        vm.expectRevert(abi.encodeWithSelector(ISignatureManager.SignatureHashNotFound.selector, pegOutSignatureHash));
 
         // Act
-        pm.checkAllSignaturesReady(pegOutSignatureHash);
-    }
-
-    function test_addMemberSignature_Success() external {
-        bytes32 pegOutSignatureHash = setup_arrangeRequestPegOut();
-
-        // Arrange
-        // The signature an nonce values are dummy values
-        bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
-        bytes memory nonce =
-            hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
-
-        // Assert
-        // We emit the event we expect to see.
-        bytes32 committeeMember0Pubkey = MEMBER_0_PUBKEY;
-        vm.expectEmit(address(pm));
-        emit IPegManager.SignatureAdded(pegOutSignatureHash, committeeMember0Pubkey, signature, nonce);
-
-        // Act
-        address committeeMember0adr = MEMBER_0_ADDRESS;
-        vm.startPrank(committeeMember0adr);
-        bool allSignaturesReady = pm.addMemberSignature(pegOutSignatureHash, signature, nonce);
-        vm.stopPrank();
-
-        // Assert
-        assertEq(allSignaturesReady, false, "Not all signatures should be ready at this point");
-
-        // Assert
-        // We emit the event we expect to see.
-        bytes32 committeeMember1Pubkey = MEMBER_1_PUBKEY;
-        vm.expectEmit(address(pm));
-        emit IPegManager.SignatureAdded(pegOutSignatureHash, committeeMember1Pubkey, signature, nonce);
-
-        // We emit the event we expect to see.
-        vm.expectEmit(address(pm));
-        emit IPegManager.AllSignaturesReady(pegOutSignatureHash);
-
-        // Act
-        address committeeMember2adr = MEMBER_1_ADDRESS;
-        vm.startPrank(committeeMember2adr);
-        allSignaturesReady = pm.addMemberSignature(pegOutSignatureHash, signature, nonce);
-        vm.stopPrank();
-
-        // Assert
-        assertEq(allSignaturesReady, true, "Not all signatures should be ready at this point");
-    }
-
-    function test_addMemberSignature_Revert_PegOutRequestNotFound() external {
-        // Arrange
-        bytes32 pegOutSignatureHash = 0x0000000000000000000000000000000000000000000000000000000000000001;
-
-        // The signature an nonce values are dummy values
-        bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
-        bytes memory nonce =
-            hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
-
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegManager.SignatureHashNotFound.selector, pegOutSignatureHash));
-
-        // Act
-        pm.addMemberSignature(pegOutSignatureHash, signature, nonce);
-    }
-
-    function test_addMemberSignature_Revert_MemberNotFound() external {
-        bytes32 pegOutSignatureHash = setup_arrangeRequestPegOut();
-
-        // The signature an nonce values are dummy values
-        bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
-        bytes memory nonce =
-            hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
-
-        // Assert
-        address memberAddress = address(0);
-        vm.expectRevert(abi.encodeWithSelector(IPegManager.MemberNotFound.selector, memberAddress));
-
-        vm.startPrank(memberAddress);
-        pm.addMemberSignature(pegOutSignatureHash, signature, nonce);
-        vm.stopPrank();
-    }
-
-    function test_addMemberSignature_Revert_MemberHasAlreadySigned() external {
-        bytes32 pegOutSignatureHash = setup_arrangeRequestPegOut();
-
-        // Arrange
-        // The signature an nonce values are dummy values
-        bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
-        bytes memory nonce =
-            hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
-
-        // Assert that the first signature is added
-        // We emit the event we expect to see.
-        bytes32 committeeMember0Pubkey = MEMBER_0_PUBKEY;
-        vm.expectEmit(address(pm));
-        emit IPegManager.SignatureAdded(pegOutSignatureHash, committeeMember0Pubkey, signature, nonce);
-
-        // Act
-        address committeeMember0adr = MEMBER_0_ADDRESS;
-        vm.startPrank(committeeMember0adr);
-        bool allSignaturesReady = pm.addMemberSignature(pegOutSignatureHash, signature, nonce);
-        vm.stopPrank();
-
-        // Assert
-        assertEq(allSignaturesReady, false, "Not all signatures should be ready at this point");
-
-        // Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IPegManager.MemberHasAlreadySigned.selector,
-                committeeMember0Pubkey,
-                committeeMember0adr,
-                pegOutSignatureHash
-            )
-        );
-
-        // Act sign a second time with the same committee member
-        vm.startPrank(committeeMember0adr);
-        allSignaturesReady = pm.addMemberSignature(pegOutSignatureHash, signature, nonce);
-        vm.stopPrank();
-    }
-
-    function test_addMemberSignature_Revert_MemberNotFoundInCommittee() external {
-        bytes32 pegOutSignatureHash = setup_arrangeRequestPegOut();
-
-        // Arrange
-        // The signature an nonce values are dummy values
-        bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
-        bytes memory nonce =
-            hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
-
-        bytes32 nonCommitteeMemberPubkey = MEMBER_2_PUBKEY;
-
-        // Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IPegManager.MemberNotFoundInCommittee.selector, nonCommitteeMemberPubkey, pegOutSignatureHash
-            )
-        );
-
-        // Act
-        address nonCommitteeMember = MEMBER_2_ADDRESS;
-        vm.startPrank(nonCommitteeMember);
-        pm.addMemberSignature(pegOutSignatureHash, signature, nonce);
-        vm.stopPrank();
-    }
-
-    function test_addMemberSignature_Revert_InvalidNonceLength() external {
-        bytes32 pegOutSignatureHash = setup_arrangeRequestPegOut();
-
-        // Arrange
-        // The signature an nonce values are dummy values
-        bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
-        bytes memory nonce =
-            hex"fff8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
-
-        address CommitteeMember = MEMBER_0_ADDRESS;
-
-        // Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IPegManager.InvalidNonceLength.selector, nonce.length, Constants.SIGNATURE_NONCE_LENGTH
-            )
-        );
-
-        // Act
-        vm.prank(CommitteeMember);
-        pm.addMemberSignature(pegOutSignatureHash, signature, nonce);
+        signatureManager.checkAllSignaturesReady(pegOutSignatureHash);
     }
 
     function setup_arrangeRequestPegOut() internal returns (bytes32) {
