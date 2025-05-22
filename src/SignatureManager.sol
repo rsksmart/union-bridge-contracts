@@ -12,7 +12,7 @@ contract SignatureManager is ISignatureManager, AccessControl {
     ICommitteeRegistry public committeeRegistry;
 
     // Signatures waiting for the committee to sign
-    mapping(bytes32 signatureHash => Signatures signatures) internal committeeSignatures;
+    mapping(bytes32 hashToSign => Signatures signatures) internal committeeSignatures;
 
     function initialize(address _initialOwner, address _pegManager, ICommitteeRegistry _committeeRegistry)
         public
@@ -37,7 +37,7 @@ contract SignatureManager is ISignatureManager, AccessControl {
         return memberInCommittee;
     }
 
-    function addMemberNonce(bytes32 _signatureHash, bytes memory _nonce) external returns (bool) {
+    function addMemberNonce(bytes32 _hashToSign, bytes memory _nonce) external returns (bool) {
         // Check that nonce is 66 bytes
         if (_nonce.length != Constants.SIGNATURE_NONCE_LENGTH) {
             revert InvalidNonceLength(_nonce.length, Constants.SIGNATURE_NONCE_LENGTH);
@@ -45,10 +45,10 @@ contract SignatureManager is ISignatureManager, AccessControl {
 
         // Get the sender's public key if it's a valid member and the signature data
         (uint16 memberIndex, bytes32 memberPubKey) = _getMemberIndex(msg.sender);
-        Signatures storage signatures = _getSignatures(_signatureHash);
+        Signatures storage signatures = _getSignatures(_hashToSign);
         // Check if the member is in the committee
         if (!_isMemberInCommittee(signatures.aggregatedKey, memberIndex)) {
-            revert MemberNotFoundInCommittee(memberPubKey, msg.sender, _signatureHash);
+            revert MemberNotFoundInCommittee(memberPubKey, msg.sender, _hashToSign);
         }
 
         SignatureData storage memberSignatureData = signatures.partialSignaturesData[memberIndex];
@@ -58,22 +58,22 @@ contract SignatureManager is ISignatureManager, AccessControl {
         }
         // Store the  nonce for the member
         memberSignatureData.nonce = _nonce;
-        emit NonceAdded(_signatureHash, memberPubKey, _nonce);
+        emit NonceAdded(_hashToSign, memberPubKey, _nonce);
 
         // Check if all nonces are present
         signatures.missingNonces -= 1;
         if (signatures.missingNonces != 0) {
             return false;
         }
-        emit AllNoncesReady(_signatureHash);
+        emit AllNoncesReady(_hashToSign);
         return true;
     }
 
-    function addMemberSignature(bytes32 _signatureHash, bytes32 _signature) external returns (bool) {
+    function addMemberSignature(bytes32 _hashToSign, bytes32 _signature) external returns (bool) {
         // Check if all nonces are present
-        Signatures storage signatures = _getSignatures(_signatureHash);
+        Signatures storage signatures = _getSignatures(_hashToSign);
         if (signatures.missingNonces != 0) {
-            revert AllNoncesAreNotPresent(_signatureHash);
+            revert AllNoncesAreNotPresent(_hashToSign);
         }
         // Check if the signature is valid
         if (_signature == "") {
@@ -83,35 +83,35 @@ contract SignatureManager is ISignatureManager, AccessControl {
         (uint16 memberIndex, bytes32 memberPubKey) = _getMemberIndex(msg.sender);
         // Check if the member is in the committee
         if (!_isMemberInCommittee(signatures.aggregatedKey, memberIndex)) {
-            revert MemberNotFoundInCommittee(memberPubKey, msg.sender, _signatureHash);
+            revert MemberNotFoundInCommittee(memberPubKey, msg.sender, _hashToSign);
         }
 
         SignatureData storage memberSignatureData = signatures.partialSignaturesData[memberIndex];
         // Check if the member has already added a signature
         if (memberSignatureData.signature != "") {
-            revert MemberHasAlreadySigned(memberPubKey, msg.sender, _signatureHash);
+            revert MemberHasAlreadySigned(memberPubKey, msg.sender, _hashToSign);
         }
         // Store the signature and nonce for the member
         memberSignatureData.signature = _signature;
         memberSignatureData.memberPublicKey = memberPubKey;
-        emit SignatureAdded(_signatureHash, memberPubKey, _signature);
+        emit SignatureAdded(_hashToSign, memberPubKey, _signature);
 
         // Check if all signatures are present
         signatures.missingSignatures -= 1;
         if (signatures.missingSignatures != 0) {
             return false;
         }
-        emit AllSignaturesReady(_signatureHash);
+        emit AllSignaturesReady(_hashToSign);
         return true;
     }
 
-    function checkAllSignaturesReady(bytes32 _signatureHash) external view returns (bool) {
-        Signatures storage signatures = _getSignatures(_signatureHash);
+    function checkAllSignaturesReady(bytes32 _hashToSign) external view returns (bool) {
+        Signatures storage signatures = _getSignatures(_hashToSign);
         return signatures.aggregatedKey != "" && signatures.missingSignatures == 0;
     }
 
-    function getPartialSignatures(bytes32 _signatureHash) external view returns (SignatureData[] memory) {
-        Signatures storage signatures = _getSignatures(_signatureHash);
+    function getPartialSignatures(bytes32 _hashToSign) external view returns (SignatureData[] memory) {
+        Signatures storage signatures = _getSignatures(_hashToSign);
         CommitteeMember[] memory members = committeeRegistry.getCommitteeMember(signatures.aggregatedKey);
         uint8 memberCount = uint8(members.length);
         SignatureData[] memory partialSignaturesData = new SignatureData[](memberCount);
@@ -125,17 +125,17 @@ contract SignatureManager is ISignatureManager, AccessControl {
         return partialSignaturesData;
     }
 
-    function getSignaturesStatus(bytes32 _signatureHash) external view returns (uint8, uint8, bytes32) {
-        Signatures storage signatures = _getSignatures(_signatureHash);
+    function getSignaturesStatus(bytes32 _hashToSign) external view returns (uint8, uint8, bytes32) {
+        Signatures storage signatures = _getSignatures(_hashToSign);
         return (signatures.missingSignatures, signatures.missingNonces, signatures.aggregatedKey);
     }
 
-    function _getSignatures(bytes32 _signatureHash) internal view returns (Signatures storage) {
+    function _getSignatures(bytes32 _hashToSign) internal view returns (Signatures storage) {
         // Check if the signature hash exists
-        if (committeeSignatures[_signatureHash].aggregatedKey == "") {
-            revert SignatureHashNotFound(_signatureHash);
+        if (committeeSignatures[_hashToSign].aggregatedKey == "") {
+            revert HashToSignNotFound(_hashToSign);
         }
-        return committeeSignatures[_signatureHash];
+        return committeeSignatures[_hashToSign];
     }
 
     function _getMemberIndex(address _memberAddress) internal view returns (uint16, bytes32) {
@@ -146,15 +146,15 @@ contract SignatureManager is ISignatureManager, AccessControl {
         return (memberIndex, memberPubKey);
     }
 
-    function initSignatures(bytes32 _signatureHash, bytes32 _committeeKey) external onlyPegManager {
+    function initSignatures(bytes32 _hashToSign, bytes32 _committeeKey) external onlyPegManager {
         // Check if the signature hash is not empty
-        if (_signatureHash == "") {
-            revert InvalidSignatureHash(_signatureHash);
+        if (_hashToSign == "") {
+            revert InvalidHashToSign(_hashToSign);
         }
         // Check if the signatures are already initialized
-        Signatures storage signatures = committeeSignatures[_signatureHash];
+        Signatures storage signatures = committeeSignatures[_hashToSign];
         if (signatures.aggregatedKey != "") {
-            revert SignaturesAlreadyInitialized(_signatureHash);
+            revert SignaturesAlreadyInitialized(_hashToSign);
         }
 
         // Get the members
