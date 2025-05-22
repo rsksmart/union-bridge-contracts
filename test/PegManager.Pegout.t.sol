@@ -217,7 +217,7 @@ contract TestPegManager is Test, HelperContract {
         bytes32 pegOutSignatureHash = 0x0000000000000000000000000000000000000000000000000000000000000001;
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(ISignatureManager.SignatureHashNotFound.selector, pegOutSignatureHash));
+        vm.expectRevert(abi.encodeWithSelector(ISignatureManager.HashToSignNotFound.selector, pegOutSignatureHash));
 
         // Act
         signatureManager.checkAllSignaturesReady(pegOutSignatureHash);

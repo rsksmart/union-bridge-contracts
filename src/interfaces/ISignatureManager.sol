@@ -10,37 +10,43 @@ struct SignatureData {
 }
 
 struct Signatures {
-    SignatureData[] signaturesData;
+    mapping(uint256 memberIndex => SignatureData) partialSignaturesData;
     uint8 missingSignatures;
     uint8 missingNonces;
+    bytes32 aggregatedKey;
 }
 
 interface ISignatureManager is IAccessControl {
-    function initSignatures(bytes32 _signatureHash, bytes32 _committeeKey) external;
+    function initSignatures(bytes32 _hashToSign, bytes32 _committeeKey) external;
 
-    function addMemberNonce(bytes32 _signatureHash, bytes memory _nonce) external returns (bool);
+    function addMemberNonce(bytes32 _hashToSign, bytes memory _nonce) external returns (bool);
 
-    function addMemberSignature(bytes32 _signatureHash, bytes32 _signature) external returns (bool);
+    function addMemberSignature(bytes32 _hashToSign, bytes32 _signature) external returns (bool);
 
-    function checkAllSignaturesReady(bytes32 _signatureHash) external view returns (bool);
+    function checkAllSignaturesReady(bytes32 _hashToSign) external view returns (bool);
 
-    function getSignatures(bytes32 _signatureHash) external view returns (Signatures memory);
+    function getPartialSignatures(bytes32 _hashToSign) external view returns (SignatureData[] memory);
 
-    event NonceAdded(bytes32 indexed signatureHash, bytes32 indexed memberPubKey, bytes nonce);
-    event AllNoncesReady(bytes32 indexed signatureHash);
-    event SignatureAdded(bytes32 indexed signatureHash, bytes32 indexed memberPubKey, bytes32 signature);
-    event AllSignaturesReady(bytes32 indexed signatureHash);
+    function getSignaturesStatus(bytes32 _hashToSign)
+        external
+        view
+        returns (uint8 missingSignatures, uint8 missingNonces, bytes32 aggregatedKey);
+
+    event NonceAdded(bytes32 indexed hashToSign, bytes32 indexed memberPubKey, bytes nonce);
+    event AllNoncesReady(bytes32 indexed hashToSign);
+    event SignatureAdded(bytes32 indexed hashToSign, bytes32 indexed memberPubKey, bytes32 signature);
+    event AllSignaturesReady(bytes32 indexed hashToSign);
 
     error CommitteeRegistryAddressZero();
-    error SignatureHashNotFound(bytes32 signatureHash);
+    error HashToSignNotFound(bytes32 hashToSign);
     error InvalidNonceLength(uint256 actual, uint8 expected);
     error MemberAlreadyAddedNonce(bytes32 memberPubKey, address memberAddress, bytes nonce);
-    error AllNoncesAreNotPresent(bytes32 signatureHash);
+    error AllNoncesAreNotPresent(bytes32 hashToSign);
     error InvalidSignature();
     error MemberHasAlreadySigned(bytes32 memberPubKey, address memberAddress, bytes32 pegOutTxHash);
     error MemberNotFound(address memberAddress);
-    error MemberNotFoundInCommittee(bytes32 memberPubKey, bytes32 signatureHash);
-    error InvalidSignatureHash(bytes32 signatureHash);
-    error SignaturesAlreadyInitialized(bytes32 signatureHash);
+    error MemberNotFoundInCommittee(bytes32 memberPubKey, address memberAddress, bytes32 hashToSign);
+    error InvalidHashToSign(bytes32 hashToSign);
+    error SignaturesAlreadyInitialized(bytes32 hashToSign);
     error InvalidCommittee(bytes32 committeeKey);
 }
