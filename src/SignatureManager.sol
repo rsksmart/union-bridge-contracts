@@ -91,7 +91,7 @@ contract SignatureManager is ISignatureManager, AccessControl {
         if (memberSignatureData.signature != "") {
             revert MemberHasAlreadySigned(memberPubKey, msg.sender, _hashToSign);
         }
-        // Store the signature and nonce for the member
+        // Store the signature for the member
         memberSignatureData.signature = _signature;
         memberSignatureData.memberPublicKey = memberPubKey;
         emit SignatureAdded(_hashToSign, memberPubKey, _signature);
@@ -139,7 +139,6 @@ contract SignatureManager is ISignatureManager, AccessControl {
     }
 
     function _getMemberIndex(address _memberAddress) internal view returns (uint16, bytes32) {
-        // Check if caller is a valid member
         uint16 memberIndex = committeeRegistry.getMemberIndexByAddress(_memberAddress);
         bytes32 memberPubKey = committeeRegistry.getMemberPubKeyByIndex(memberIndex);
 
