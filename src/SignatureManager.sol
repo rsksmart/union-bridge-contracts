@@ -169,16 +169,4 @@ contract SignatureManager is ISignatureManager, AccessControl {
         signatures.aggregatedKey = _committeeKey;
         signatures.timestamp = block.timestamp;
     }
-
-    function cleanSignatures(bytes32 _hashToSign) external onlyPegManager {
-        Signatures storage signatures = committeeSignatures[_hashToSign];
-        CommitteeMember[] memory members = committeeRegistry.getCommitteeMember(signatures.aggregatedKey);
-        for (uint256 i = 0; i < members.length; i++) {
-            delete signatures.partialSignaturesData[members[i].index];
-        }
-        signatures.aggregatedKey = "";
-        signatures.timestamp = 0;
-        signatures.missingSignatures = 0;
-        signatures.missingNonces = 0;
-    }
 }

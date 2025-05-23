@@ -294,23 +294,8 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             _acceptPeginTxOutput.scriptPubKey
         );
 
-        // Clean the accept peg in temp info
-        _cleanAcceptPegIn(requestTempInfo);
-
         // TODO mint the peg in tokens
         //requestRbtc(rskDestinationAddress, rbtcAmount);
-    }
-
-    /// @notice Clean the accept peg in temp info and signatures
-    /// @param _requestTempInfo The request temp info to clean
-    function _cleanAcceptPegIn(RequestPegInTempInfo storage _requestTempInfo) internal {
-        // Get gas refund for deleteing since we have the accept peg in tx it is not needed anymore
-        signatureManager.cleanSignatures(_requestTempInfo.acceptPeginSignatureHash);
-        _requestTempInfo.outputAmount = 0;
-        _requestTempInfo.btcReimbursementPubKey = "";
-        _requestTempInfo.acceptPeginSignatureHash = "";
-        _requestTempInfo.rskDestinationAddress = address(0);
-        _requestTempInfo.utxoScriptPubKey = "";
     }
 
     function validatePegOutRequest(bytes calldata _usrPubKey, uint256 amountInWei) internal pure {

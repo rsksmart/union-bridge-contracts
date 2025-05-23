@@ -315,18 +315,6 @@ contract TestPegManager is Test, HelperContract {
         assertEq(streamPosition.packetNumber, PACKET_NUMBER, "Incorrect packetNumber registered");
         assertEq(streamPosition.slotId, 0, "Incorrect slotId registered");
         assertEq(uint256(streamPosition.pegStatus), uint256(PegStatus.ACCEPTED), "PegIn Request was not accepted");
-        // Registered Peg In Temp info should be deleted
-        RequestPegInTempInfo memory pegInTempInfo = pm.getRequestPegInTempInfo(pegInRequestTxHash);
-        assertEq(pegInTempInfo.outputAmount, 0, "Peg in temp info outputAmount should be deleted");
-        assertEq(
-            pegInTempInfo.rskDestinationAddress, address(0), "Peg in temp info destinationAddress should be deleted"
-        );
-        assertEq(
-            pegInTempInfo.btcReimbursementPubKey,
-            bytes32(0),
-            "Peg in temp info btcReimbursementPubKey should be deleted"
-        );
-        assertEq(pegInTempInfo.utxoScriptPubKey, hex"", "Peg in temp info utxoScriptPubKey should be deleted");
         // Registered Peg In Slot
         Slot memory slot = streamManager.getSlot(streamId, PACKET_NUMBER, slotId);
         assertEq(uint256(slot.state), uint256(SlotState.FILLED), "Slot should be filled");
