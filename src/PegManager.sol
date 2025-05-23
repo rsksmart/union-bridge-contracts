@@ -176,8 +176,8 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         PrevoutData memory _prevoutData
     ) internal {
         // Compute the Bitcoin accept peg-in transaction signature hash
-        (bytes32 acceptPeginSignatureHash, bytes memory acceptPeginSignatureMessage) = bitcoinManager
-            .getAcceptPegInSignatureHash(_committeePubKey, _userXOnlyPubKey, _registerPegInTx, _prevoutData);
+        (bytes32 acceptPeginTxHash, bytes32 acceptPeginSignatureHash, bytes memory acceptPeginSignatureMessage) =
+        bitcoinManager.getAcceptPegInSignatureHash(_committeePubKey, _userXOnlyPubKey, _registerPegInTx, _prevoutData);
 
         // Store pegIn info needed for acceptPegIn
         pegInTempInfo[_registerPegInTx] = RequestPegInTempInfo({
@@ -185,6 +185,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             btcReimbursementPubKey: _userXOnlyPubKey,
             rskDestinationAddress: _rskDestinationAddress,
             acceptPeginSignatureHash: acceptPeginSignatureHash,
+            acceptPeginTxHash: acceptPeginTxHash,
             utxoScriptPubKey: _prevoutData.scriptPubKey
         });
 
@@ -201,9 +202,6 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         // Get the peg in request temp info
         RequestPegInTempInfo storage requestTempInfo = pegInTempInfo[requestPegInTxHash];
 
-        // As this transaction is signed by the whole committee, we can trust the outputs and inputs are correct
-        // We just need to validate the input is the request peg in tx and the output is the committee key
-
         // Validate the peg in request tx exists and the status
         StreamPosition storage streamPosition = pegInRequests[requestPegInTxHash];
         if (streamPosition.pegStatus == PegStatus.NOT_REGISTERED) {
@@ -212,27 +210,14 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         if (streamPosition.pegStatus != PegStatus.REGISTERED) {
             revert AlreadyRegisteredAcceptPegIn(requestPegInTxHash);
         }
-        // Only 2 outputs, peg out and speed up (child pays for parent)
-        if (_pegInAcceptedTxSPVProof.btcTx.outputs.length != 2) {
-            revert IncorrectOutputsNumber(_pegInAcceptedTxSPVProof.btcTx.outputs.length, 2);
-        }
-
-        bytes32 committeePubKey = streamManager.getCommitteePubKey(streamPosition.streamId, streamPosition.packetNumber);
-        // validate the ouputs are the expected
-        // taptree for pegout
-        bitcoinManager.validateAcceptPegInP2TROutput(
-            committeePubKey,
-            requestTempInfo.outputAmount,
-            _pegInAcceptedTxSPVProof.btcTx.outputs[Constants.VOUT_INDEX_TAPTREE]
-        );
-        // spped up (child pays for parent)
-        bitcoinManager.validateSpeedUpOutput(
-            requestTempInfo.btcReimbursementPubKey,
-            _pegInAcceptedTxSPVProof.btcTx.outputs[Constants.VOUT_INDEX_SPEED_UP]
-        );
 
         // Calculate txHash from BtcTransaction
         bytes32 txHash = bitcoinManager.getBtcTxHash(_pegInAcceptedTxSPVProof.btcTx);
+
+        // Validate the txhash is the same calculated at request peg in tx
+        if (requestTempInfo.acceptPeginTxHash != txHash) {
+            revert InvalidAcceptPegInTxHash(requestTempInfo.acceptPeginTxHash, txHash);
+        }
 
         // Verify the txHash part of the Merkle Root of Tx of a Block
         // and that block is inside Bitcoin Mainchain
@@ -245,7 +230,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             _pegInAcceptedTxSPVProof.merkleBranchHashes
         );
 
-        _executeAcceptPegIn(
+        _storePegInAndInitSignatures(
             requestPegInTxHash,
             streamPosition,
             requestTempInfo,
@@ -255,7 +240,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         );
     }
 
-    function _executeAcceptPegIn(
+    function _storePegInAndInitSignatures(
         bytes32 _requestPegInTxHash,
         StreamPosition storage streamPosition,
         RequestPegInTempInfo storage requestTempInfo,

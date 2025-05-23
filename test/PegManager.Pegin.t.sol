@@ -347,15 +347,16 @@ contract TestPegManager is Test, HelperContract {
         pm.acceptPegInRequest(pegInAcceptedTxSPVProof);
     }
 
-    function test_acceptPegInRequest_Revert_IncorrectOutputScript() external {
+    function test_acceptPegInRequest_Revert_InvalidAcceptPegInTxHash() external {
         setup_requestPeginFlow();
 
         // ===  Before test setup  is run for this  test ===
         BtcTransaction memory peginTx = setup_requestPeginFlow();
         // Arrange
         BtcTransaction memory btcTransaction = getBtcAcceptPegInTx(peginTx);
-        bytes memory expectedScriptPubKey = btcTransaction.outputs[0].scriptPubKey;
+        bytes32 expectedAcceptPegInTxHash = bitcoinManager.getBtcTxHash(btcTransaction);
         btcTransaction.outputs[0].scriptPubKey = hex"111111b4045c40a133ee361f766ceae4d82398fc5058";
+        bytes32 actualAcceptPegInTxHash = bitcoinManager.getBtcTxHash(btcTransaction);
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(10);
         // Create PegIn accepted tx struct information
@@ -364,32 +365,8 @@ contract TestPegManager is Test, HelperContract {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(
-                IBitcoinManager.IncorrectOutputScript.selector,
-                btcTransaction.outputs[0].scriptPubKey,
-                expectedScriptPubKey
+                IPegManager.InvalidAcceptPegInTxHash.selector, expectedAcceptPegInTxHash, actualAcceptPegInTxHash
             )
-        );
-
-        // Act
-        pm.acceptPegInRequest(pegInAcceptedTxSPVProof);
-    }
-
-    function test_acceptPegInRequest_Revert_IncorrectOutputsNumber() external {
-        setup_requestPeginFlow();
-
-        // ===  Before test setup  is run for this  test ===
-        BtcTransaction memory peginTx = setup_requestPeginFlow();
-        // Arrange
-        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx(peginTx);
-        btcTransaction.outputs = new BtcTxOut[](0);
-        // Set Mock Bridge state
-        bridgeMock.setBtcTransactionConfirmations(10);
-        // Create PegIn accepted tx struct information
-        BtcTxSPVProof memory pegInAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
-
-        // Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(IPegManager.IncorrectOutputsNumber.selector, btcTransaction.outputs.length, 2)
         );
 
         // Act

@@ -38,6 +38,7 @@ struct RequestPegInTempInfo {
     address rskDestinationAddress;
     bytes32 btcReimbursementPubKey;
     bytes32 acceptPeginSignatureHash;
+    bytes32 acceptPeginTxHash;
     bytes utxoScriptPubKey;
 }
 
@@ -136,6 +137,7 @@ interface IPegManager {
     error AlreadyRegisteredPegIn(bytes32 btcTxHash);
     error AlreadyRegisteredPegInRequest(bytes32 btcTxHash);
     error UnregisteredPegInRequest(bytes32 btcTxHash);
+    error InvalidAcceptPegInTxHash(bytes32 expected, bytes32 actual);
     error AlreadyRegisteredAcceptPegIn(bytes32 btcTxHash);
     error IncorrectInputsNumber(uint256 actual, uint256 expected);
     error IncorrectOutputsNumber(uint256 actual, uint256 expected);
