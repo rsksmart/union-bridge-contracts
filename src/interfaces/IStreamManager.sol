@@ -21,8 +21,6 @@ enum SlotState {
 struct Slot {
     uint64 slotId; // Unique ID
     SlotState state; // The state of the slot
-    // TBD drp;                        // Dispute Resolution Protocol information
-    // TBD otk;                        // Dispute Resolution Protocol one-time-keys
     bytes scriptPubKey; // The scriptPubKey of the Accept Peg-in Output UTXO
     bytes32 acceptPegInTx; // Transaction id of the committee peg-in transaction
     uint64 acceptPegInAmount; // The value of the accept peg-in transaction P2TR utxo

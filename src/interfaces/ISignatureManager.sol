@@ -14,6 +14,7 @@ struct Signatures {
     uint8 missingSignatures;
     uint8 missingNonces;
     bytes32 aggregatedKey;
+    uint256 timestamp;
 }
 
 interface ISignatureManager is IAccessControl {
@@ -31,6 +32,8 @@ interface ISignatureManager is IAccessControl {
         external
         view
         returns (uint8 missingSignatures, uint8 missingNonces, bytes32 aggregatedKey);
+
+    function cleanSignatures(bytes32 _hashToSign) external;
 
     event NonceAdded(bytes32 indexed hashToSign, bytes32 indexed memberPubKey, bytes nonce);
     event AllNoncesReady(bytes32 indexed hashToSign);

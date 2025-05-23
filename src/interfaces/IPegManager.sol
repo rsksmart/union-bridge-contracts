@@ -19,13 +19,12 @@ struct BtcTxSPVProof {
 enum PegStatus {
     NOT_REGISTERED,
     REGISTERED,
-    ACCEPTED,
-    USER_TAKEN, // User take: Key spend (everybody signs)
-    TAKE_0, // Undispute advancement of funds
-    TAKE_1, // Take Signal
-    TAKE_2 // Disputed peg-out (Kick Off BitVMX)
-
+    ACCEPTED
 }
+// USER_TAKEN, // User take: Key spend (everybody signs)
+// TAKE_0, // Undispute advancement of funds
+// TAKE_1, // Take Signal
+// TAKE_2 // Disputed peg-out (Kick Off BitVMX)
 
 struct StreamPosition {
     uint64 streamId;
@@ -38,6 +37,7 @@ struct RequestPegInTempInfo {
     uint64 outputAmount;
     address rskDestinationAddress;
     bytes32 btcReimbursementPubKey;
+    bytes32 acceptPeginSignatureHash;
     bytes utxoScriptPubKey;
 }
 
@@ -55,7 +55,7 @@ interface IPegManager {
         external
         returns (string memory temporaryPegInAddress);
 
-    function getPegInRequest(bytes32 btcTxHash) external view returns (StreamPosition calldata);
+    function getPegInRequest(bytes32 btcTxHash) external view returns (StreamPosition memory);
 
     /// @notice Register a peg-in request transaction from Bitcoin
     /// @param _pegInRequestTxSPVProof The BTC SPV proof of Request the peg-in transaction
@@ -72,7 +72,14 @@ interface IPegManager {
         bytes utxoScriptPubKey
     );
 
-    function getRequestPegInTempInfo(bytes32 btcTxHash) external view returns (RequestPegInTempInfo calldata);
+    event InitAcceptPegin(
+        bytes32 indexed committeePubKey,
+        bytes32 indexed requestPeginTxHash,
+        bytes32 acceptPeginSignatureHash,
+        bytes acceptPeginSignatureMessage
+    );
+
+    function getRequestPegInTempInfo(bytes32 btcTxHash) external view returns (RequestPegInTempInfo memory);
 
     // ===================== Accept Peg-in Request =====================
 
@@ -132,8 +139,6 @@ interface IPegManager {
     error AlreadyRegisteredAcceptPegIn(bytes32 btcTxHash);
     error IncorrectInputsNumber(uint256 actual, uint256 expected);
     error IncorrectOutputsNumber(uint256 actual, uint256 expected);
-    error InvalidVout(uint256 actual, uint256 expected);
-    error InvalidSequence(uint256 actual, uint256 expected);
     error InvalidPubKeyLength(uint256 usrPubKeyLength);
     error InvalidLocktime(uint256 actual, uint256 expected);
     error InvalidBtcTxVersion(uint256 actual, uint256 expected);
