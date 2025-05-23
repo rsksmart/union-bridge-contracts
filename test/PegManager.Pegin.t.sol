@@ -73,9 +73,13 @@ contract TestPegManager is Test, HelperContract {
         assertEq(streamPosition.streamId, 0, "Incorrect streamId registered");
         assertEq(streamPosition.packetNumber, 0, "Incorrect packetNumber registered");
         assertEq(uint256(streamPosition.pegStatus), uint256(PegStatus.REGISTERED), "PegIn Request was not registered");
+
+        BtcTransaction memory acceptPegInTx = getBtcAcceptPegInTx(btcTransaction);
         // Registered Peg In Temp info
         RequestPegInTempInfo memory pegInTempInfo = pm.getRequestPegInTempInfo(txHash);
-        assertEq(pegInTempInfo.outputAmount, VALUE, "Incorrect peg in temp info value");
+        assertEq(
+            pegInTempInfo.acceptPeginTxHash, getBtcTxHash(acceptPegInTx), "Incorrect peg in temp info acceptPeginTxHash"
+        );
         assertEq(
             pegInTempInfo.rskDestinationAddress,
             RSK_DESTINATION_ADDRESS,
@@ -85,11 +89,6 @@ contract TestPegManager is Test, HelperContract {
             pegInTempInfo.btcReimbursementPubKey,
             BTC_REIMBURSEMENT_PUBKEY,
             "Incorrect peg in temp info btcReimbursementPubKey"
-        );
-        assertEq(
-            pegInTempInfo.utxoScriptPubKey,
-            btcTransaction.outputs[0].scriptPubKey,
-            "Incorrect peg in temp info utxo script pub key"
         );
     }
 

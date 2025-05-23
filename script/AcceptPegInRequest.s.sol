@@ -51,8 +51,9 @@ contract AcceptPegInRequestScript is ScriptUtils {
         });
 
         // PegIn P2TR output
+        Stream memory stream = streamManager.getStreamById(streamPosition.streamId);
         btcTransaction.outputs[0] = BtcTxOut({
-            amount: requestPegInTempInfo.outputAmount - Constants.P2TR_FEE - Constants.SPEED_UP_AMOUNT,
+            amount: stream.denomination - Constants.P2TR_FEE - Constants.SPEED_UP_AMOUNT,
             scriptPubKey: bitcoinManager.getAcceptPegInP2TRScriptPub(committeePubKey)
         });
 

@@ -181,12 +181,10 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
 
         // Store pegIn info needed for acceptPegIn
         pegInTempInfo[_registerPegInTx] = RequestPegInTempInfo({
-            outputAmount: _prevoutData.value,
-            btcReimbursementPubKey: _userXOnlyPubKey,
             rskDestinationAddress: _rskDestinationAddress,
+            btcReimbursementPubKey: _userXOnlyPubKey,
             acceptPeginSignatureHash: acceptPeginSignatureHash,
-            acceptPeginTxHash: acceptPeginTxHash,
-            utxoScriptPubKey: _prevoutData.scriptPubKey
+            acceptPeginTxHash: acceptPeginTxHash
         });
 
         emit InitAcceptPegin(_committeePubKey, _registerPegInTx, acceptPeginSignatureHash, acceptPeginSignatureMessage);

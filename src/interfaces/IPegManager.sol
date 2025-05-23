@@ -34,12 +34,10 @@ struct StreamPosition {
 }
 
 struct RequestPegInTempInfo {
-    uint64 outputAmount;
     address rskDestinationAddress;
     bytes32 btcReimbursementPubKey;
     bytes32 acceptPeginSignatureHash;
     bytes32 acceptPeginTxHash;
-    bytes utxoScriptPubKey;
 }
 
 interface IPegManager {
