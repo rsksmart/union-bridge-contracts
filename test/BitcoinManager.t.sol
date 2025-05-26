@@ -8,6 +8,7 @@ import {BtcTxIn, BtcTxOut, BtcTransaction, IBitcoinManager, PrevoutData} from "s
 import {OpCodes} from "src/libraries/OpCodes.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {BtcTaproot} from "src/libraries/BtcTaproot.sol";
+import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
 
 contract TestBtcHelper is Test, HelperContract {
     function setUp() external {
@@ -147,6 +148,22 @@ contract TestBtcHelper is Test, HelperContract {
     }
 
     // ========================== REGISTER ACCEPT PEG IN ==========================
+    function test_getAcceptPegInP2TRScriptPub_Success() external view {
+        // Arrange
+        bytes32 committeePubKey = 0xd1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d;
+        // Act
+        bytes memory scriptPubKey = bitcoinManager.getAcceptPegInP2TRScriptPub(committeePubKey);
+        // Assert
+        assertEq(
+            scriptPubKey,
+            abi.encodePacked(
+                OpCodes.OP_1,
+                OpCodes.OP_PUSHBYTES_32,
+                bytes32(0x9687ca13c4fb3fa3ba05c2f9119dda026bfe66f0098dcf9b896a98ecb2e96702)
+            ),
+            "The P2TR script pub key should be correct at BitcoinManager"
+        );
+    }
 
     function test_validateAcceptPegInP2TROutput_Success() external {
         BtcTransaction memory btcTx = HelperContract.getBtcPegInRequestTx();
@@ -195,6 +212,19 @@ contract TestBtcHelper is Test, HelperContract {
         );
         // Act
         bitcoinManager.validateAcceptPegInP2TROutput(committeePubKey, VALUE, btcTxOut);
+    }
+
+    function test_getSpeedUpScriptPub_Success() external view {
+        // Arrange
+        bytes32 pubKey = generatePubKey(1);
+        // Act
+        bytes memory script = bitcoinManager.getSpeedUpScriptPub(pubKey);
+        // Assert
+        assertEq(
+            script,
+            BtcScriptParser.getP2WPKHScript(abi.encodePacked(uint8(0x02), pubKey)),
+            "getSpeedUpScriptPub should be correct"
+        );
     }
 
     function test_validateSpeedUpOutput_Success() external view {

@@ -11,7 +11,6 @@ import {BtcHelper} from "src/libraries/BtcHelper.sol";
 contract StreamManager is IStreamManager, AccessControl {
     uint64 public constant MAX_DENOMINATIONS_SIZE = 10;
     Stream[] internal streams;
-    uint64[] internal denominations;
 
     // StreamId => Packet list
     mapping(uint64 => Packet[]) public packets;
@@ -29,7 +28,6 @@ contract StreamManager is IStreamManager, AccessControl {
         if (length > MAX_DENOMINATIONS_SIZE) {
             revert tooManyDenominations(MAX_DENOMINATIONS_SIZE);
         }
-        denominations = _denominations;
         for (uint64 i = 0; i < length; i++) {
             streams.push(
                 Stream({
@@ -49,7 +47,7 @@ contract StreamManager is IStreamManager, AccessControl {
 
     /// @dev Adds one packet per stream
     function createInitialPackets(bytes32 _committeePubKey) external onlyOwner {
-        uint256 length = denominations.length;
+        uint256 length = streams.length;
         for (uint256 i = 0; i < length; i++) {
             uint64 streamId = streams[i].streamId;
             if (packets[streamId].length > 0) {
@@ -71,7 +69,7 @@ contract StreamManager is IStreamManager, AccessControl {
     }
 
     function getStream(uint64 _denomination) external view returns (Stream memory) {
-        uint256 length = denominations.length;
+        uint256 length = streams.length;
         for (uint256 i = 0; i < length; i++) {
             if (streams[i].denomination == _denomination) {
                 return streams[i];

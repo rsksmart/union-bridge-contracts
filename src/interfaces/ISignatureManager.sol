@@ -14,6 +14,7 @@ struct Signatures {
     uint8 missingSignatures;
     uint8 missingNonces;
     bytes32 aggregatedKey;
+    uint256 timestamp;
 }
 
 interface ISignatureManager is IAccessControl {

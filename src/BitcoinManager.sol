@@ -26,6 +26,10 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
 
     /// @dev Convert Tx to raw tx hex using Bitcoin format and then uses hash256 to get the txHash
     function getBtcTxHash(BtcTransaction calldata _btcTx) external pure returns (bytes32) {
+        return _getBtcTxHash(_btcTx);
+    }
+
+    function _getBtcTxHash(BtcTransaction memory _btcTx) internal pure returns (bytes32) {
         return BtcHelper.hash256(BtcTxEncoder.encodeTx(_btcTx));
     }
 
@@ -180,7 +184,7 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         bytes32 _userXOnlyPubKey,
         bytes32 _registerPegInTx,
         PrevoutData memory _prevoutData
-    ) external pure returns (bytes32, bytes memory) {
+    ) external pure returns (bytes32, bytes32, bytes memory) {
         // Prepare the inputs
         BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
         btcInputs[0] = BtcTxIn({
@@ -216,8 +220,11 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
             inputs: btcInputs,
             outputs: btcOutputs
         });
+        bytes32 txHash = _getBtcTxHash(pegInAcceptTx);
         // Return the tagged hash and the encoded data before hashing
-        return taprootSignatureHash(Constants.SIGHASH_ALL, prevoutDatas, pegInAcceptTx);
+        (bytes32 acceptPeginSignatureHash, bytes memory acceptPeginSignatureMessage) =
+            taprootSignatureHash(Constants.SIGHASH_ALL, prevoutDatas, pegInAcceptTx);
+        return (txHash, acceptPeginSignatureHash, acceptPeginSignatureMessage);
     }
 
     /// @dev Generates the PegInAccept Taproot output script pub key with both key spend and script spend paths

@@ -92,7 +92,7 @@ interface IBitcoinManager {
         bytes32 _userXOnlyPubKey,
         bytes32 _registerPegInTx,
         PrevoutData memory _prevoutData
-    ) external pure returns (bytes32, bytes memory);
+    ) external pure returns (bytes32, bytes32, bytes memory);
 
     /// @notice Generates a Taproot script pub key for the AcceptPegIn with both key spend and script spend paths
     /// @param _committeePubKey The committee's public key (x-only, 32 bytes)

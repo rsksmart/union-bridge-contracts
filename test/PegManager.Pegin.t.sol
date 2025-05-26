@@ -12,7 +12,7 @@ import {
     PegStatus,
     IPegManager
 } from "src/interfaces/IPegManager.sol";
-import {BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
+import {BtcTxIn, BtcTxOut, IBitcoinManager} from "src/interfaces/IBitcoinManager.sol";
 import {Slot, SlotState, Packet, Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE} from "src/interfaces/IBridge.sol";
 import {ProofValidator} from "src/ProofValidator.sol";
@@ -73,9 +73,13 @@ contract TestPegManager is Test, HelperContract {
         assertEq(streamPosition.streamId, 0, "Incorrect streamId registered");
         assertEq(streamPosition.packetNumber, 0, "Incorrect packetNumber registered");
         assertEq(uint256(streamPosition.pegStatus), uint256(PegStatus.REGISTERED), "PegIn Request was not registered");
+
+        BtcTransaction memory acceptPegInTx = getBtcAcceptPegInTx(btcTransaction);
         // Registered Peg In Temp info
         RequestPegInTempInfo memory pegInTempInfo = pm.getRequestPegInTempInfo(txHash);
-        assertEq(pegInTempInfo.outputAmount, VALUE, "Incorrect peg in temp info value");
+        assertEq(
+            pegInTempInfo.acceptPeginTxHash, getBtcTxHash(acceptPegInTx), "Incorrect peg in temp info acceptPeginTxHash"
+        );
         assertEq(
             pegInTempInfo.rskDestinationAddress,
             RSK_DESTINATION_ADDRESS,
@@ -85,11 +89,6 @@ contract TestPegManager is Test, HelperContract {
             pegInTempInfo.btcReimbursementPubKey,
             BTC_REIMBURSEMENT_PUBKEY,
             "Incorrect peg in temp info btcReimbursementPubKey"
-        );
-        assertEq(
-            pegInTempInfo.utxoScriptPubKey,
-            btcTransaction.outputs[0].scriptPubKey,
-            "Incorrect peg in temp info utxo script pub key"
         );
     }
 
@@ -315,18 +314,6 @@ contract TestPegManager is Test, HelperContract {
         assertEq(streamPosition.packetNumber, PACKET_NUMBER, "Incorrect packetNumber registered");
         assertEq(streamPosition.slotId, 0, "Incorrect slotId registered");
         assertEq(uint256(streamPosition.pegStatus), uint256(PegStatus.ACCEPTED), "PegIn Request was not accepted");
-        // Registered Peg In Temp info should be deleted
-        RequestPegInTempInfo memory pegInTempInfo = pm.getRequestPegInTempInfo(pegInRequestTxHash);
-        assertEq(pegInTempInfo.outputAmount, 0, "Peg in temp info outputAmount should be deleted");
-        assertEq(
-            pegInTempInfo.rskDestinationAddress, address(0), "Peg in temp info destinationAddress should be deleted"
-        );
-        assertEq(
-            pegInTempInfo.btcReimbursementPubKey,
-            bytes32(0),
-            "Peg in temp info btcReimbursementPubKey should be deleted"
-        );
-        assertEq(pegInTempInfo.utxoScriptPubKey, hex"", "Peg in temp info utxoScriptPubKey should be deleted");
         // Registered Peg In Slot
         Slot memory slot = streamManager.getSlot(streamId, PACKET_NUMBER, slotId);
         assertEq(uint256(slot.state), uint256(SlotState.FILLED), "Slot should be filled");
@@ -359,129 +346,27 @@ contract TestPegManager is Test, HelperContract {
         pm.acceptPegInRequest(pegInAcceptedTxSPVProof);
     }
 
-    function test_acceptPegInRequest_Revert_IncorrectBtcTxVersion() external {
+    function test_acceptPegInRequest_Revert_InvalidAcceptPegInTxHash() external {
+        setup_requestPeginFlow();
+
         // ===  Before test setup  is run for this  test ===
         BtcTransaction memory peginTx = setup_requestPeginFlow();
         // Arrange
         BtcTransaction memory btcTransaction = getBtcAcceptPegInTx(peginTx);
-        btcTransaction.version = 1;
+        bytes32 expectedAcceptPegInTxHash = bitcoinManager.getBtcTxHash(btcTransaction);
+        btcTransaction.outputs[0].scriptPubKey = hex"111111b4045c40a133ee361f766ceae4d82398fc5058";
+        bytes32 actualAcceptPegInTxHash = bitcoinManager.getBtcTxHash(btcTransaction);
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(10);
-        // Create PegIn struct information
+        // Create PegIn accepted tx struct information
         BtcTxSPVProof memory pegInAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(
-                IPegManager.InvalidBtcTxVersion.selector, btcTransaction.version, Constants.BTC_TX_VERSION
+                IPegManager.InvalidAcceptPegInTxHash.selector, expectedAcceptPegInTxHash, actualAcceptPegInTxHash
             )
         );
-
-        // Act
-        pm.acceptPegInRequest(pegInAcceptedTxSPVProof);
-    }
-
-    function test_acceptPegInRequest_Revert_IncorrectLocktime() external {
-        // ===  Before test setup  is run for this  test ===
-        BtcTransaction memory peginTx = setup_requestPeginFlow();
-        // Arrange
-        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx(peginTx);
-        btcTransaction.locktime = 1;
-        // Set Mock Bridge state
-        bridgeMock.setBtcTransactionConfirmations(10);
-        // Create PegIn struct information
-        BtcTxSPVProof memory pegInAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
-
-        // Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(IPegManager.InvalidLocktime.selector, btcTransaction.locktime, Constants.LOCKTIME)
-        );
-
-        // Act
-        pm.acceptPegInRequest(pegInAcceptedTxSPVProof);
-    }
-
-    function test_acceptPegInRequest_Revert_IncorrectSequence() external {
-        // ===  Before test setup  is run for this  test ===
-        BtcTransaction memory peginTx = setup_requestPeginFlow();
-        // Arrange
-        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx(peginTx);
-        btcTransaction.inputs[0].sequence = 0;
-        // Set Mock Bridge state
-        bridgeMock.setBtcTransactionConfirmations(10);
-        // Create PegIn struct information
-        BtcTxSPVProof memory pegInAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
-
-        // Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IPegManager.InvalidSequence.selector, btcTransaction.inputs[0].sequence, Constants.SEQUENCE
-            )
-        );
-
-        // Act
-        pm.acceptPegInRequest(pegInAcceptedTxSPVProof);
-    }
-
-    function test_acceptPegInRequest_Revert_IncorrectInputsNumber() external {
-        setup_requestPeginFlow();
-
-        // ===  Before test setup  is run for this  test ===
-        BtcTransaction memory peginTx = setup_requestPeginFlow();
-        // Arrange
-        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx(peginTx);
-        btcTransaction.inputs = new BtcTxIn[](0);
-        // Set Mock Bridge state
-        bridgeMock.setBtcTransactionConfirmations(10);
-        // Create PegIn accepted tx struct information
-        BtcTxSPVProof memory pegInAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
-
-        // Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(IPegManager.IncorrectInputsNumber.selector, btcTransaction.inputs.length, 1)
-        );
-
-        // Act
-        pm.acceptPegInRequest(pegInAcceptedTxSPVProof);
-    }
-
-    function test_acceptPegInRequest_Revert_IncorrectOutputsNumber() external {
-        setup_requestPeginFlow();
-
-        // ===  Before test setup  is run for this  test ===
-        BtcTransaction memory peginTx = setup_requestPeginFlow();
-        // Arrange
-        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx(peginTx);
-        btcTransaction.outputs = new BtcTxOut[](0);
-        // Set Mock Bridge state
-        bridgeMock.setBtcTransactionConfirmations(10);
-        // Create PegIn accepted tx struct information
-        BtcTxSPVProof memory pegInAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
-
-        // Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(IPegManager.IncorrectOutputsNumber.selector, btcTransaction.outputs.length, 2)
-        );
-
-        // Act
-        pm.acceptPegInRequest(pegInAcceptedTxSPVProof);
-    }
-
-    function test_acceptPegInRequest_Revert_InvalidVout() external {
-        setup_requestPeginFlow();
-
-        // ===  Before test setup  is run for this  test ===
-        BtcTransaction memory peginTx = setup_requestPeginFlow();
-        // Arrange
-        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx(peginTx);
-        btcTransaction.inputs[0].vout = 1;
-        // Set Mock Bridge state
-        bridgeMock.setBtcTransactionConfirmations(10);
-        // Create PegIn accepted tx struct information
-        BtcTxSPVProof memory pegInAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
-
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegManager.InvalidVout.selector, btcTransaction.inputs[0].vout, 0));
 
         // Act
         pm.acceptPegInRequest(pegInAcceptedTxSPVProof);

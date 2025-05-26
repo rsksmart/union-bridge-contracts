@@ -167,5 +167,6 @@ contract SignatureManager is ISignatureManager, AccessControl {
         signatures.missingSignatures = memberCount;
         signatures.missingNonces = memberCount;
         signatures.aggregatedKey = _committeeKey;
+        signatures.timestamp = block.timestamp;
     }
 }

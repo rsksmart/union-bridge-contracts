@@ -188,4 +188,22 @@ contract TestBtcScriptParser is Test, TestUtils {
         i += 32;
         assertEq(_script[i], OpCodes.OP_CHECKSIG, "Seventh part should be OP_CHECKSIG");
     }
+
+    function test_getP2WPKHScript_Success() external pure {
+        // Arrange
+        bytes memory pubKey = abi.encodePacked(uint8(0x02), generatePubKey(1));
+        // Act
+        bytes memory script = BtcScriptParser.getP2WPKHScript(pubKey);
+        // Assert
+        uint256 i = 0;
+        assertEq(script[i], OpCodes.OP_0, "getP2WPKH first part should be OP_0");
+        i++;
+        assertEq(script[i], OpCodes.OP_PUSHBYTES_20, "getP2WPKH second part should be OP_PUSHBYTES_20");
+        i++;
+        assertEq(
+            bytes20(BytesHelper.bytesToAddress(script, i)),
+            BtcHelper.hash160(pubKey),
+            "getP2WPKH third part should be the Hash160 of the public key"
+        );
+    }
 }
