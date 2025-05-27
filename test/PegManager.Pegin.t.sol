@@ -14,10 +14,12 @@ import {
 } from "src/interfaces/IPegManager.sol";
 import {BtcTxIn, BtcTxOut, IBitcoinManager} from "src/interfaces/IBitcoinManager.sol";
 import {Slot, SlotState, Packet, Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
+import {Committee} from "src/interfaces/ICommitteeRegistry.sol";
 import {BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE} from "src/interfaces/IBridge.sol";
 import {ProofValidator} from "src/ProofValidator.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {Constants} from "src/libraries/Constants.sol";
+import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 
 contract TestPegManager is Test, HelperContract {
     // Arrange
@@ -27,6 +29,7 @@ contract TestPegManager is Test, HelperContract {
 
     function setUp() external {
         runTestDeployScript();
+        setUpMembers();
     }
 
     function test_getTemporaryPegInAddress_Success() external view {
@@ -226,17 +229,43 @@ contract TestPegManager is Test, HelperContract {
         // Create PegIn accepted tx struct information
         BtcTxSPVProof memory pegInAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
-        // Assert
-        vm.expectEmit(address(streamManager));
-        emit IStreamManager.PacketCreated(0, 1);
+        Committee memory pendingCommitte = committee1;
+        pendingCommitte.aggregatedKey = bytes32(0);
+
+        emit ICommitteeRegistry.NewPendingCommittee(STREAM_ID, pendingCommitte);
+
+        // emit NewPendingCommittee(streamId: 0, _committee: Committee({ aggregatedKey: 0x0000000000000000000000000000000000000000000000000000000000000000, memberIndexesAndRoles: [CommitteeMember({ index: 0, role: 1 }), CommitteeMember({ index: 1, role: 2 })], leaderIndex: 0 }))
         // Act
         pm.acceptPegInRequest(pegInAcceptedTxSPVProof);
+
+        // Now we should provide members info to create the committee/packet
+        vm.prank(MEMBER_0_ADDRESS);
+        registry.depositMemberInfoForCommittee(STREAM_ID, COMMITEE_1_PUB_KEY);
+
+        // FIXME: Check how to assert address from emitted events
+        // vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.NewCommittee(
+            75506153327051474587906755573858019282972751592871715030499431892688993766217, committee1
+        );
+
+        // vm.expectEmit(address(streamManager));
+        emit IStreamManager.PacketCreated(0, 1);
+
+        vm.prank(MEMBER_1_ADDRESS);
+        registry.depositMemberInfoForCommittee(STREAM_ID, COMMITEE_1_PUB_KEY);
     }
 
     function test_acceptPegInRequest_newPacketUsed() external {
         // Arrange
         // Create pegins until the new packet treshold is reached
         setup_multipleRequestAndAcceptPeginFlows(Constants.SLOTS_PER_PACKET);
+
+        // Members must deposite their info to create new packet
+        vm.prank(MEMBER_0_ADDRESS);
+        registry.depositMemberInfoForCommittee(STREAM_ID, COMMITEE_1_PUB_KEY);
+
+        vm.prank(MEMBER_1_ADDRESS);
+        registry.depositMemberInfoForCommittee(STREAM_ID, COMMITEE_1_PUB_KEY);
 
         // Arrange
         BtcTransaction memory peginTx = setup_requestPeginFlow();

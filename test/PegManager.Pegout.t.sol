@@ -36,6 +36,8 @@ contract TestPegManager is Test, HelperContract {
 
     function setUp() external {
         runTestDeployScript();
+        registry.registerCommittee(committee1Id, committee1);
+        setUpMembers();
     }
 
     // ================= Request PegOut =================

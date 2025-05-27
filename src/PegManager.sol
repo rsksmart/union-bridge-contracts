@@ -2,8 +2,8 @@
 pragma solidity ^0.8.20;
 
 import {BaseProxy} from "./BaseProxy.sol";
-import {ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
-import {ISignatureManager} from "./interfaces/ISignatureManager.sol";
+import {ICommitteeRegistry, CommitteeMember} from "./interfaces/ICommitteeRegistry.sol";
+import {ISignatureManager, Signatures, SignatureData} from "./interfaces/ISignatureManager.sol";
 import {PrevoutData, BtcTransaction, BtcTxOut, IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
 import {
     BtcTxSPVProof, RequestPegInTempInfo, StreamPosition, PegStatus, IPegManager
@@ -257,10 +257,16 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             _acceptPeginTxOutput.scriptPubKey
         );
 
-        // Check if we need a new packet
+        // Check if we need a new packet/committee
+        // NOTE: Compare directly with Constants.SLOT_USAGE_THRESHOLD. It is not mathematically correct but it's functionally the same
         if (streamPosition.slotId == Constants.SLOT_USAGE_THRESHOLD - 1) {
-            bytes32 committeePubKey = committeeRegistry.selectCommittee(streamPosition.streamId);
-            streamManager.createNewPacket(streamPosition.streamId, committeePubKey);
+            committeeRegistry.createNewCommittee(streamPosition.streamId);
+        }
+
+        if (streamPosition.slotId >= Constants.SLOT_USAGE_THRESHOLD) {
+            if (committeeRegistry.isPendingCommitteeExpired(streamPosition.streamId)) {
+                committeeRegistry.createNewCommittee(streamPosition.streamId);
+            }
         }
 
         uint256 rbtcAmount = BtcHelper.satoshiToWei(_acceptPeginTxOutput.amount);
@@ -346,9 +352,9 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         pegOutSighashes[key] = _pegOutSignatureHash;
 
         // Get the committee key
-        bytes32 committeeKey = streamManager.getCommitteePubKey(_streamId, _packetNumber);
+        uint256 committeeId = streamManager.getCommitteeId(_streamId, _packetNumber);
 
         // Initialize the signatures for each member
-        signatureManager.initSignatures(_pegOutSignatureHash, committeeKey);
+        signatureManager.initSignatures(_pegOutSignatureHash, committeeId);
     }
 }

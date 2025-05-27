@@ -114,6 +114,10 @@ contract DeployImplAndProxy is ScriptUtils {
         pegManager.setSignatureManager(signatureManager);
         vm.stopBroadcast();
 
+        vm.startBroadcast(getDeployerKey());
+        committeeRegistry.setPegManager(pegManager);
+        vm.stopBroadcast();
+
         if (block.chainid == ChainIds.LOCAL) {
             vm.startBroadcast(getDeployerKey());
             BridgeMock(bridgeAddress).setBtcTransactionConfirmations(10);

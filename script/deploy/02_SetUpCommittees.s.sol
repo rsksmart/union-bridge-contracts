@@ -50,17 +50,17 @@ contract SetUpCommittees is ScriptUtils, TestUtils {
 
         if (block.chainid == ChainIds.RSK_MAINNET) {
             // RSK Mainnet
-            committeesParams[0].committee.internalKey =
+            committeesParams[0].committee.aggregatedKey =
                 0x924c163b385af7093440184af6fd6244936d1288cbb41cc3812286d3f83a3329;
         } else if (block.chainid == ChainIds.RSK_TESTNET) {
             // RSK Testnet
             // Obtained from transactions repository
-            committeesParams[0].committee.internalKey =
+            committeesParams[0].committee.aggregatedKey =
                 0xd1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d;
         } else if (block.chainid == ChainIds.LOCAL) {
             // Foundry local chainid
             // Obtained from transactions repository
-            committeesParams[0].committee.internalKey =
+            committeesParams[0].committee.aggregatedKey =
                 0xd1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d;
         } else {
             revert("Blockchain is not RSK");
@@ -69,47 +69,47 @@ contract SetUpCommittees is ScriptUtils, TestUtils {
 
     function run(CommitteeRegistry _committeeRegistry) public {
         setUp();
-        registerMembers(_committeeRegistry);
-        registerCommittees(_committeeRegistry, committeesParams);
+        // registerMembers(_committeeRegistry);
+        // registerCommittees(_committeeRegistry, committeesParams);
     }
 
-    function registerMembers(CommitteeRegistry _committeeRegistry) public {
-        for (uint32 i = 0; i < REQUIRED_MEMBERS_AMOUNT; i++) {
-            registerMember(_committeeRegistry, getMemberKey(i));
-        }
-    }
+    // function registerMembers(CommitteeRegistry _committeeRegistry) public {
+    //     for (uint32 i = 0; i < REQUIRED_MEMBERS_AMOUNT; i++) {
+    //         registerMember(_committeeRegistry, getMemberKey(i));
+    //     }
+    // }
 
-    function registerMember(CommitteeRegistry _committeeRegistry, uint256 _privKey) public {
-        RegisterMemberParams memory params = getMemberParams(_privKey);
-        vm.startBroadcast(_privKey);
-        _committeeRegistry.registerMember(params.publicKey, params.requestedStreams, params.requestedRoles);
-        vm.stopBroadcast();
-    }
+    // function registerMember(CommitteeRegistry _committeeRegistry, uint256 _privKey) public {
+    //     RegisterMemberParams memory params = getMemberParams(_privKey);
+    //     vm.startBroadcast(_privKey);
+    //     _committeeRegistry.registerMember(params.publicKey, params.requestedStreams, params.requestedRoles);
+    //     vm.stopBroadcast();
+    // }
 
-    function registerCommittees(
-        CommitteeRegistry _committeeRegistry,
-        RegisterCommitteeParams[] memory _registerCommitteesParams
-    ) public {
-        uint256 length = _registerCommitteesParams.length;
-        for (uint256 i = 0; i < length; i++) {
-            registerCommittee(_committeeRegistry, _registerCommitteesParams[i].committee);
-        }
-        if (_committeeRegistry.getCommitteesLength() != length) {
-            revert("CommitteeRegistry committees length is not the same as the number of committees");
-        }
-        if (
-            _committeeRegistry.getCommitteeByIndex(length - 1)
-                != _registerCommitteesParams[length - 1].committee.internalKey
-        ) {
-            revert("CommitteeRegistry last committee is not the same as the last committee in the array");
-        }
-    }
+    // function registerCommittees(
+    //     CommitteeRegistry _committeeRegistry,
+    //     RegisterCommitteeParams[] memory _registerCommitteesParams
+    // ) public {
+    //     uint256 length = _registerCommitteesParams.length;
+    // for (uint256 i = 0; i < length; i++) {
+    //     registerCommittee(_committeeRegistry, _registerCommitteesParams[i].committee);
+    // }
+    // if (_committeeRegistry.getCommitteesLength() != length) {
+    //     revert("CommitteeRegistry committees length is not the same as the number of committees");
+    // }
+    // if (
+    //     _committeeRegistry.getCommitteeByIndex(length - 1)
+    //         != _registerCommitteesParams[length - 1].committee.aggregatedKey
+    // ) {
+    //     revert("CommitteeRegistry last committee is not the same as the last committee in the array");
+    // }
+    // }
 
-    function registerCommittee(CommitteeRegistry _committeeRegistry, Committee memory _commitee) public {
-        vm.startBroadcast(getDeployerKey());
-        _committeeRegistry.registerCommittee(_commitee);
-        vm.stopBroadcast();
-    }
+    // function registerCommittee(CommitteeRegistry _committeeRegistry, Committee memory _commitee) public {
+    //     vm.startBroadcast(getDeployerKey());
+    //     // _committeeRegistry.registerCommittee(_commitee);
+    //     vm.stopBroadcast();
+    // }
 
     function getMemberParams(uint256 _privKey) public view returns (RegisterMemberParams memory) {
         bytes32 pubKey = BtcHelper.hash256(abi.encode(_privKey));

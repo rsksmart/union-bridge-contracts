@@ -12,10 +12,17 @@ abstract contract TestUtils is Test {
         string memory testName
     ) internal pure {
         assertEq(
-            actualCommittee.internalKey,
-            expectedCommittee.internalKey,
-            string(abi.encodePacked("expect", testName, "to have  same internalKey"))
+            actualCommittee.aggregatedKey,
+            expectedCommittee.aggregatedKey,
+            string(abi.encodePacked("expect", testName, "to have  same aggregatedKey"))
         );
+
+        assertEq(
+            actualCommittee.memberIndexesAndRoles.length,
+            expectedCommittee.memberIndexesAndRoles.length,
+            string(abi.encodePacked("expect", testName, "to have  same memberIndices length"))
+        );
+
         for (uint256 i = 0; i < actualCommittee.memberIndexesAndRoles.length; i++) {
             assertEq(
                 actualCommittee.memberIndexesAndRoles[i].index,
@@ -62,6 +69,6 @@ abstract contract TestUtils is Test {
     }
 
     function generatePubKey(uint256 i) internal pure returns (bytes32) {
-        return bytes32(i);
+        return bytes32(i + 1);
     }
 }
