@@ -31,7 +31,7 @@ struct PendingCommittee {
     Committee committee;
     uint256 expireAt;
     uint16 missingData;
-    mapping(bytes32 => PendingCommitteeData) data;
+    mapping(bytes32 memberPubKey => PendingCommitteeData) data;
 }
 
 struct PendingCommitteeData {
@@ -61,22 +61,22 @@ interface ICommitteeRegistry {
     // Errors
     error MemberNotRegistered(address memberAddress);
     error MemberIndexNotFound(uint16 memberIndex);
-    // /// @notice Select a committee for a stream
-    // /// @param _streamId The stream id to select a committee for
-    // /// @dev This function is called when a new packet is created
-    // /// @return The committee public key for the stream
-    // function selectCommittee(uint64 _streamId) external view returns (bytes32);
 
     /// @notice Create a new committee for a stream
     /// @param _streamId The stream id to create a new committee for
     /// @dev This function is called when the slot usage threshold is reached
     /// TODO: This function should choose committee members based on the stream id/denomination
     /// once the committee is ready, it should be registered with the registerCommittee function
-    function createNewCommittee(uint64 _streamId) external;
+    function createCommittee(uint64 _streamId) external;
 
     /// @notice Return true if there is a pending committee for the stream and it's expired
     /// @param _streamId The stream id to check for a pending committee
     function isPendingCommitteeExpired(uint64 _streamId) external view returns (bool);
+
+    function getPendingCommittee(uint64 _streamId)
+        external
+        view
+        returns (Committee memory committee, uint256 expiredAt, uint256 missingData);
 
     function setPegManager(IPegManager _pegManager) external;
 
@@ -90,7 +90,7 @@ interface ICommitteeRegistry {
     error RequestedNoRoles();
     error RequestedNoneRoleForStream(StreamDenomination stream);
     error RequestedMultipleRolesForStream(StreamDenomination stream, Role role1, Role role2);
-    error AlreadyRegisteredMember(bytes32 memberPubKey);
+    error AlreadyRegisteredMember(address memberAddress);
     error NonRegisteredMember(uint16 memberIndex);
     error TooManyMembers(uint256 maxMemebers);
     error TooManyMembersPerComitee(uint256 maxMemebersPerCommittee);
@@ -104,6 +104,7 @@ interface ICommitteeRegistry {
     error PendingCommitteeTimelockNotExpired(uint256 expireAt, uint256 currentTime);
     error MemberNotInCommittee(bytes32);
     error MemberAlreadyUpdated(bytes32);
+    error CommitteeNotFound(uint256 committeeId);
 
     // Unified this error in some file
     error UnauthorizedAccount(address account);

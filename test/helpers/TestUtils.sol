@@ -14,26 +14,26 @@ abstract contract TestUtils is Test {
         assertEq(
             actualCommittee.aggregatedKey,
             expectedCommittee.aggregatedKey,
-            string(abi.encodePacked("expect", testName, "to have  same aggregatedKey"))
+            string(abi.encodePacked("expect ", testName, " to have  same aggregatedKey"))
         );
 
         assertEq(
             actualCommittee.memberIndexesAndRoles.length,
             expectedCommittee.memberIndexesAndRoles.length,
-            string(abi.encodePacked("expect", testName, "to have  same memberIndices length"))
+            string(abi.encodePacked("expect ", testName, " to have  same memberIndices length"))
         );
 
         for (uint256 i = 0; i < actualCommittee.memberIndexesAndRoles.length; i++) {
             assertEq(
                 actualCommittee.memberIndexesAndRoles[i].index,
                 expectedCommittee.memberIndexesAndRoles[i].index,
-                string(abi.encodePacked("expect", testName, "to have  same memberIndices[", Strings.toString(i), "]"))
+                string(abi.encodePacked("expect ", testName, " to have  same memberIndices[", Strings.toString(i), "]"))
             );
         }
         assertEq(
             actualCommittee.leaderIndex,
             expectedCommittee.leaderIndex,
-            string(abi.encodePacked("expect", testName, "to have same leader"))
+            string(abi.encodePacked("expect ", testName, " to have same leader"))
         );
     }
 
@@ -51,7 +51,7 @@ abstract contract TestUtils is Test {
             assertEq(
                 actualMembers[i].index,
                 expectedMembers[i].index,
-                string(abi.encodePacked("expect", testName, " memeber[", Strings.toString(i), "] to have same address"))
+                string(abi.encodePacked("expect", testName, " member[", Strings.toString(i), "] to have same address"))
             );
         }
     }

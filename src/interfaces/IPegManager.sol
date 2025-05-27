@@ -126,11 +126,6 @@ interface IPegManager {
         uint64 slotId
     );
 
-    // ===================== Signature Request =====================
-
-    event SignatureAdded(bytes32 indexed signatureHash, bytes32 indexed memberPubKey, bytes32 signature, bytes nonce);
-    event AllSignaturesReady(bytes32 indexed signatureHash);
-
     // ===================== Errors =====================
     error BitcoinManagerAddressZero();
     error CommitteeRegistryAddressZero();

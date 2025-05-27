@@ -145,6 +145,8 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             pegStatus: PegStatus.REGISTERED
         });
 
+        uint256 committeeId = streamManager.getCommitteeId(stream.streamId, packetNumber);
+
         emit RegisteredPegInRequest(
             _pegInRequestTxSPVProof.blockHash,
             txHash,
@@ -157,6 +159,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         );
 
         _initAcceptPegin(
+            committeeId,
             committeePubKey,
             btcReimbursementPubKey,
             txHash,
@@ -169,6 +172,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
     }
 
     function _initAcceptPegin(
+        uint256 _committeeId,
         bytes32 _committeePubKey,
         bytes32 _userXOnlyPubKey,
         bytes32 _registerPegInTx,
@@ -190,7 +194,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         emit InitAcceptPegin(_committeePubKey, _registerPegInTx, acceptPeginSignatureHash, acceptPeginSignatureMessage);
 
         // Initialize the signatures needed for a given aggregated key
-        signatureManager.initSignatures(acceptPeginSignatureHash, _committeePubKey);
+        signatureManager.initSignatures(acceptPeginSignatureHash, _committeeId);
     }
 
     function acceptPegInRequest(BtcTxSPVProof calldata _pegInAcceptedTxSPVProof) external {
@@ -260,12 +264,12 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         // Check if we need a new packet/committee
         // NOTE: Compare directly with Constants.SLOT_USAGE_THRESHOLD. It is not mathematically correct but it's functionally the same
         if (streamPosition.slotId == Constants.SLOT_USAGE_THRESHOLD - 1) {
-            committeeRegistry.createNewCommittee(streamPosition.streamId);
+            committeeRegistry.createCommittee(streamPosition.streamId);
         }
 
         if (streamPosition.slotId >= Constants.SLOT_USAGE_THRESHOLD) {
             if (committeeRegistry.isPendingCommitteeExpired(streamPosition.streamId)) {
-                committeeRegistry.createNewCommittee(streamPosition.streamId);
+                committeeRegistry.createCommittee(streamPosition.streamId);
             }
         }
 

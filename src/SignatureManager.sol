@@ -132,6 +132,7 @@ contract SignatureManager is ISignatureManager, AccessControl {
 
     function _getSignatures(bytes32 _hashToSign) internal view returns (Signatures storage) {
         // Check if the signature hash exists
+        // slither-disable-next-line timestamp
         if (committeeSignatures[_hashToSign].committeeId == 0) {
             revert HashToSignNotFound(_hashToSign);
         }
@@ -166,7 +167,6 @@ contract SignatureManager is ISignatureManager, AccessControl {
         // Initialize missing signatures counter
         signatures.missingSignatures = memberCount;
         signatures.missingNonces = memberCount;
-        signatures.aggregatedKey = _committeeKey;
         signatures.timestamp = block.timestamp;
         signatures.committeeId = _committeeId;
     }

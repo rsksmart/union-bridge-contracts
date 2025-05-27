@@ -54,7 +54,7 @@ contract StreamManager is IStreamManager, AccessControl {
             if (packets[streamId].length > 0) {
                 revert StreamAlreadyInitialized(streamId);
             }
-            // FIXME: Force packets to be assigned to committeeId 1 
+            // FIXME: Force packets to be assigned to committeeId 1
             uint256 committeeId = 1;
             // Add a new packet for each stream
             _createNewPacket(streamId, committeeId, _committeePubKey);

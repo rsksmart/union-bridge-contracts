@@ -13,7 +13,6 @@ struct Signatures {
     mapping(uint256 memberIndex => SignatureData) partialSignaturesData;
     uint8 missingSignatures;
     uint8 missingNonces;
-    bytes32 aggregatedKey;
     uint256 timestamp;
     uint256 committeeId;
 }

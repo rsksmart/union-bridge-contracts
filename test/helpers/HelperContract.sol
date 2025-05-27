@@ -29,11 +29,16 @@ abstract contract HelperContract is Test, TestUtils {
     address constant MEMBER_1_ADDRESS = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
     bytes32 constant MEMBER_2_PUBKEY = 0x1976ee2a061feb3976914ed2526369c7141b5490f48d5623485e833c2e9c5819;
     address constant MEMBER_2_ADDRESS = 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC;
+    bytes32 constant MEMBER_3_PUBKEY = 0x445787646b92cfbfdbe6bdd722431134923983b24e8ce4765c4eabdf7250a42c;
+    address constant MEMBER_3_ADDRESS = 0x90F79bf6EB2c4f870365E785982E1f101E93b906;
 
     // Mock keys
     bytes32 constant COMMITEE_1_PUB_KEY = 0xd1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d;
+    uint256 constant COMMITTEE_1_ID = 1;
     bytes32 constant COMMITEE_2_PUB_KEY = 0x1908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785ec;
+    uint256 constant COMMITTEE_2_ID = 2;
     bytes32 constant COMMITEE_3_PUB_KEY = 0x2908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785ed;
+    uint256 constant COMMITTEE_3_ID = 3;
     bytes32 internal constant BTC_REIMBURSEMENT_PUBKEY =
         0x7d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f;
 
@@ -43,18 +48,15 @@ abstract contract HelperContract is Test, TestUtils {
 
     BitcoinManager internal bitcoinManager;
     CommitteeRegistry internal registry;
+
     Committee internal committee1;
     Committee internal committee2;
     Committee internal committee3;
-    bytes32 internal committee1Key;
-    bytes32 internal committee2Key;
-    bytes32 internal committee3Key;
-    uint256 internal committee1Id;
-    uint256 internal committee2Id;
-    uint256 internal committee3Id;
+
     CommitteeMember[] internal committee1Members;
     CommitteeMember[] internal committee2Members;
     CommitteeMember[] internal committee3Members;
+
     PegManager internal pm;
     StreamManagerHarness internal streamManager;
     BridgeMock internal bridgeMock;
@@ -70,14 +72,6 @@ abstract contract HelperContract is Test, TestUtils {
         requestedStreams[0] = StreamDenomination._0_001BTC;
         requestedRoles[0] = Role.Operator;
 
-        committee1Key = COMMITEE_1_PUB_KEY;
-        committee2Key = COMMITEE_2_PUB_KEY;
-        committee3Key = COMMITEE_3_PUB_KEY;
-
-        committee1Id = 1;
-        committee2Id = 2;
-        committee3Id = 3;
-
         committee1Members.push(CommitteeMember({index: 0, role: Role.Operator}));
         committee1Members.push(CommitteeMember({index: 1, role: Role.Watchtower}));
 
@@ -87,29 +81,17 @@ abstract contract HelperContract is Test, TestUtils {
         committee3Members.push(CommitteeMember({index: 0, role: Role.Operator}));
         committee3Members.push(CommitteeMember({index: 2, role: Role.Operator}));
 
-        committee1.aggregatedKey = committee1Key;
+        committee1.aggregatedKey = COMMITEE_1_PUB_KEY;
         committee1.memberIndexesAndRoles = committee1Members;
         committee1.leaderIndex = 0;
 
-        committee2.aggregatedKey = committee2Key;
+        committee2.aggregatedKey = COMMITEE_2_PUB_KEY;
         committee2.memberIndexesAndRoles = committee2Members;
         committee2.leaderIndex = 0;
 
-        committee3.aggregatedKey = committee3Key;
+        committee3.aggregatedKey = COMMITEE_3_PUB_KEY;
         committee3.memberIndexesAndRoles = committee3Members;
         committee3.leaderIndex = 0;
-    }
-
-    function setUpMembers() internal {
-        // Register members with their mock keys
-        vm.prank(MEMBER_0_ADDRESS);
-        registry.registerMember(MEMBER_0_PUBKEY, requestedStreams, requestedRoles);
-
-        vm.prank(MEMBER_1_ADDRESS);
-        registry.registerMember(MEMBER_1_PUBKEY, requestedStreams, requestedRoles);
-
-        vm.prank(MEMBER_2_ADDRESS);
-        registry.registerMember(MEMBER_2_PUBKEY, requestedStreams, requestedRoles);
     }
 
     function runTestDeployScript() internal {
@@ -268,12 +250,8 @@ abstract contract HelperContract is Test, TestUtils {
                 numberOfPegIns > Constants.SLOTS_PER_PACKET
                     && (i % Constants.SLOTS_PER_PACKET) == Constants.SLOT_USAGE_THRESHOLD
             ) {
-                // Members must deposite their info to create new packet
-                vm.prank(MEMBER_0_ADDRESS);
-                registry.depositMemberInfoForCommittee(STREAM_ID, COMMITEE_1_PUB_KEY);
-
-                vm.prank(MEMBER_1_ADDRESS);
-                registry.depositMemberInfoForCommittee(STREAM_ID, COMMITEE_1_PUB_KEY);
+                setup_depositMemberInfo(STREAM_ID, MEMBER_0_ADDRESS);
+                setup_depositMemberInfo(STREAM_ID, MEMBER_1_ADDRESS);
             }
         }
     }
@@ -306,5 +284,15 @@ abstract contract HelperContract is Test, TestUtils {
     function setup_requestAndAcceptPeginFlow() public {
         BtcTransaction memory peginTx = setup_requestPeginFlow();
         setup_acceptPeginFlow(peginTx);
+    }
+
+    function setup_createCommittee(uint64 _streamId) internal {
+        vm.prank(address(pm));
+        registry.createCommittee(_streamId);
+    }
+
+    function setup_depositMemberInfo(uint64 _streamId, address _memberAddress) internal {
+        vm.prank(_memberAddress);
+        registry.depositMemberInfoForCommittee(_streamId, COMMITEE_1_PUB_KEY);
     }
 }

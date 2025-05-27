@@ -29,7 +29,6 @@ contract TestPegManager is Test, HelperContract {
 
     function setUp() external {
         runTestDeployScript();
-        setUpMembers();
     }
 
     function test_getTemporaryPegInAddress_Success() external view {
@@ -242,13 +241,12 @@ contract TestPegManager is Test, HelperContract {
         vm.prank(MEMBER_0_ADDRESS);
         registry.depositMemberInfoForCommittee(STREAM_ID, COMMITEE_1_PUB_KEY);
 
-        // FIXME: Check how to assert address from emitted events
-        // vm.expectEmit(address(registry));
+        vm.expectEmit(address(registry));
         emit ICommitteeRegistry.NewCommittee(
             75506153327051474587906755573858019282972751592871715030499431892688993766217, committee1
         );
 
-        // vm.expectEmit(address(streamManager));
+        vm.expectEmit(address(streamManager));
         emit IStreamManager.PacketCreated(0, 1);
 
         vm.prank(MEMBER_1_ADDRESS);

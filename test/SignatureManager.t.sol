@@ -12,10 +12,6 @@ import {Constants} from "src/libraries/Constants.sol";
 contract TestSignatureManager is Test, HelperContract {
     function setUp() public {
         runTestDeployScript();
-        registry.registerCommittee(committee1Id, committee1);
-        setUpMembers();
-        // registry.registerCommittee(committee2Id, committee2);
-        // registry.registerCommittee(committee3Id, committee3);
     }
 
     // we only check the revert case since the success cases are being checked in the _addMemberSignaturePegout tests
@@ -96,7 +92,8 @@ contract TestSignatureManager is Test, HelperContract {
             signatureManager.getSignaturesStatus(hashToSign);
         assertEq(missingSignatures, 1, "missingSignatures should be equal to 1");
         assertEq(missingNonces, 0, "missingNonces should be equal to 1");
-        // assertEq(aggregatedKey, COMMITEE_1_PUB_KEY, "aggregatedKey should be equal to the committee key");
+        // firt committee ID is temporary hardcoded in StreamManager.createInitialPackets
+        assertEq(committeeId, 1, "committeeId should be equal to the committee id that was created initially");
         SignatureData[] memory signatures = signatureManager.getPartialSignatures(hashToSign);
         assertEq(signatures.length, 2, "signatures length should be equal to 2");
         assertEq(
