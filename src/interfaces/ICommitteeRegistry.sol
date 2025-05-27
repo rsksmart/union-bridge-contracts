@@ -27,6 +27,20 @@ struct Committee {
 }
 
 interface ICommitteeRegistry {
+    error RequestedDifferentStreamsAndRolesLength(uint256 streamsLength, uint256 rolesLength);
+    error RequestedNoRoles();
+    error RequestedNoneRoleForStream(StreamDenomination stream);
+    error RequestedMultipleRolesForStream(StreamDenomination stream, Role role1, Role role2);
+    error AlreadyRegisteredMember(bytes32 memberPubKey);
+    error NonRegisteredMember(uint16 memberIndex);
+    error TooManyMembers(uint256 maxMembers);
+    error TooManyMembersPerCommittee(uint256 maxMembersPerCommittee);
+    error TooManyCommittees(uint256 maxCommitteeSize);
+    error AlreadyRegisteredCommittee(bytes32 committeeKey);
+    error NotEnoughWatchtowers(uint256 required, uint256 available);
+    error NotEnoughOperators(uint256 required, uint256 available);
+    error NotEnoughMembers(uint256 required, uint256 available);
+
     function registerMember(
         bytes32 _publicKey,
         StreamDenomination[] memory requestedStreams,
@@ -49,9 +63,14 @@ interface ICommitteeRegistry {
 
     function getMemberIndexByAddress(address _address) external view returns (uint16);
 
-    function selectCommittee(uint64) external view returns (bytes32);
+    function createCommittee(uint64 _streamId) external view returns (bytes32);
 
-    // Errors
-    error MemberNotRegistered(address memberAddress);
-    error MemberIndexNotFound(uint16 memberIndex);
+    function selectCommittee(uint64 _streamId) external view returns (CommitteeMember[] memory);
+
+    function addCommitteeCandidate(StreamDenomination _denomination, CommitteeMember memory _member) external;
+
+    function getCommitteeCandidates(StreamDenomination _denomination)
+        external
+        view
+        returns (CommitteeMember[] memory);
 }

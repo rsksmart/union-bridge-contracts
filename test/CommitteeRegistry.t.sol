@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 import {Role, Member, CommitteeMember, Committee, CommitteeRegistry} from "src/CommitteeRegistry.sol";
+import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
@@ -64,13 +65,13 @@ contract TestCommitteeRegistry is Test, HelperContract {
     function test_registerCommittee_Revert_AlreadyRegistered() external {
         // Assert
         vm.expectRevert(
-            abi.encodeWithSelector(CommitteeRegistry.alreadyRegisteredCommittee.selector, committee1.internalKey)
+            abi.encodeWithSelector(ICommitteeRegistry.AlreadyRegisteredCommittee.selector, committee1.internalKey)
         );
         // Act
         registry.registerCommittee(committee1);
     }
 
-    function test_registerCommittee_Revert_TooManyMembersPerComitee() external {
+    function test_registerCommittee_Revert_TooManyMembersPerCommittee() external {
         // Arrange
         Committee memory aCommittee;
         uint256 MAX_MEMBERS_PER_COMMITTEE = registry.MAX_MEMBERS_PER_COMMITTEE();
@@ -86,7 +87,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Assert
         vm.expectRevert(
-            abi.encodeWithSelector(CommitteeRegistry.tooManyMembersPerComitee.selector, MAX_MEMBERS_PER_COMMITTEE)
+            abi.encodeWithSelector(ICommitteeRegistry.TooManyMembersPerCommittee.selector, MAX_MEMBERS_PER_COMMITTEE)
         );
         // Act
         registry.registerCommittee(aCommittee);
@@ -118,7 +119,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         aCommittee = Committee({internalKey: aCommitteeKey, memberIndexesAndRoles: aCommitteeMembers, leaderIndex: 0});
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(CommitteeRegistry.tooManyCommittees.selector, MAX_COMMITTEES_SIZE));
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.TooManyCommittees.selector, MAX_COMMITTEES_SIZE));
         // Act
         registry.registerCommittee(aCommittee);
     }
@@ -130,7 +131,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         vm.stopBroadcast();
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(CommitteeRegistry.alreadyRegisteredMember.selector, generatePubKey(10)));
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.AlreadyRegisteredMember.selector, generatePubKey(10)));
 
         // Act
         vm.startBroadcast(uint256(generatePubKey(10)));
@@ -140,23 +141,23 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_registerCommittee_Revert_nonRegisteredMember() external {
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(CommitteeRegistry.nonRegisteredMember.selector, 3));
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.NonRegisteredMember.selector, 62));
         // Act
-        registry.registerCommittee(committee2);
+        registry.registerCommittee(invalidCommittee);
     }
 
     function test_registerMember_Revert_TooManyMembers() external {
         // Arrange
         uint256 MAX_MEMBERS_SIZE = registry.MAX_MEMBERS_SIZE();
-        // 3 because we already have 3 members registered in the setup
-        for (uint16 i = 3; i < MAX_MEMBERS_SIZE; i++) {
+        // we already have 48 members registered in the setup
+        for (uint16 i = 48; i < MAX_MEMBERS_SIZE; i++) {
             vm.startBroadcast(uint256(i));
             registry.registerMember(bytes32(uint256(i)), requestedStreams, requestedRoles);
             vm.stopBroadcast();
         }
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(CommitteeRegistry.tooManyMembers.selector, MAX_MEMBERS_SIZE));
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.TooManyMembers.selector, MAX_MEMBERS_SIZE));
         // Act
         registry.registerMember(generatePubKey(MAX_MEMBERS_SIZE), requestedStreams, requestedRoles);
     }
@@ -164,7 +165,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
     function test_registerMember_Revert_RequestedDifferentStreamsAndRolesLength() external {
         // Assert
         vm.expectRevert(
-            abi.encodeWithSelector(CommitteeRegistry.requestedDifferentStreamsAndRolesLength.selector, 1, 2)
+            abi.encodeWithSelector(ICommitteeRegistry.RequestedDifferentStreamsAndRolesLength.selector, 1, 2)
         );
         // Act
         registry.registerMember(generatePubKey(10), new StreamDenomination[](1), new Role[](2));
@@ -172,7 +173,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_registerMember_Revert_RequestedNoRoles() external {
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(CommitteeRegistry.requestedNoRoles.selector));
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.RequestedNoRoles.selector));
         // Act
         registry.registerMember(generatePubKey(10), new StreamDenomination[](0), new Role[](0));
     }
@@ -180,7 +181,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
     function test_registerMember_Revert_RequestedNoneRoleForStream() external {
         // Assert
         vm.expectRevert(
-            abi.encodeWithSelector(CommitteeRegistry.requestedNoneRoleForStream.selector, StreamDenomination._0_001BTC)
+            abi.encodeWithSelector(ICommitteeRegistry.RequestedNoneRoleForStream.selector, StreamDenomination._0_001BTC)
         );
         // Act
         // Role.None is default for Role
@@ -191,7 +192,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(
-                CommitteeRegistry.requestedMultipleRolesForStream.selector,
+                ICommitteeRegistry.RequestedMultipleRolesForStream.selector,
                 StreamDenomination._0_001BTC,
                 Role.Operator,
                 Role.Watchtower
@@ -203,5 +204,72 @@ contract TestCommitteeRegistry is Test, HelperContract {
         roles[1] = Role.Watchtower;
         // StreamDenomination._0_001BTC is default for StreamDenomination
         registry.registerMember(generatePubKey(10), new StreamDenomination[](2), roles);
+    }
+
+    function test_selectCommittee_Success() external {
+        // Act
+        CommitteeMember[] memory selectedMembers = registry.selectCommittee(0);
+
+        // Assert - Verify committee has correct size
+        assertEq(selectedMembers.length, 10, "Committee should have 10 members");
+
+        // Count roles in selection
+        uint256 watchtowerCount = 0;
+        uint256 operatorCount = 0;
+        for (uint256 i = 0; i < selectedMembers.length; i++) {
+            if (selectedMembers[i].role == Role.Watchtower) watchtowerCount++;
+            else if (selectedMembers[i].role == Role.Operator) operatorCount++;
+        }
+
+        // Verify correct role distribution
+        assertEq(watchtowerCount, 3, "Committee should have 3 watchtowers");
+        assertEq(operatorCount, 7, "Committee should have 7 operators");
+    }
+
+    function test_selectCommittee_ReturnsDifferentCommittees() external {
+        // First selection with timestamp 1
+        vm.warp(1);
+        CommitteeMember[] memory selectedMembers1 = registry.selectCommittee(0);
+
+        // Second selection with different timestamp
+        vm.warp(1000);
+        CommitteeMember[] memory selectedMembers2 = registry.selectCommittee(0);
+
+        // Verify both selections have correct size
+        assertEq(selectedMembers1.length, 10, "First committee should have 10 members");
+        assertEq(selectedMembers2.length, 10, "Second committee should have 10 members");
+
+        // Verify selections are different (at least one member is in a different position)
+        bool isDifferent = false;
+        for (uint256 i = 0; i < selectedMembers1.length; i++) {
+            if (selectedMembers1[i].index != selectedMembers2[i].index) {
+                isDifferent = true;
+                break;
+            }
+        }
+        assertTrue(isDifferent, "Selections should be different with different timestamps");
+    }
+
+    function test_selectCommittee_Revert_NotEnoughWatchtowers() external {
+        // Assert that selectCommittee reverts with NotEnoughWatchtowers error
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.NotEnoughWatchtowers.selector, 3, 2));
+
+        // Act - try to select committee for the test denomination (streamId 1 = _0_01BTC)
+        registry.selectCommittee(1);
+    }
+
+    function test_selectCommittee_Revert_NotEnoughOperators() external {
+        // Assert that selectCommittee reverts with NotEnoughOperators error
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.NotEnoughOperators.selector, 3, 2));
+
+        // Act - try to select committee for the test denomination (streamId 2 = _0_1BTC)
+        registry.selectCommittee(2);
+    }
+
+    function test_registerMember_Revert_NotEnoughMembers() external {
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.NotEnoughMembers.selector, 10, 6));
+        // Act
+        registry.selectCommittee(3);
     }
 }

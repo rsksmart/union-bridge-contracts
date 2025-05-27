@@ -259,7 +259,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
 
         // Check if we need a new packet
         if (streamPosition.slotId == Constants.SLOT_USAGE_THRESHOLD - 1) {
-            bytes32 committeePubKey = committeeRegistry.selectCommittee(streamPosition.streamId);
+            bytes32 committeePubKey = committeeRegistry.createCommittee(streamPosition.streamId);
             streamManager.createNewPacket(streamPosition.streamId, committeePubKey);
         }
 

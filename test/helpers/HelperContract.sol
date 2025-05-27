@@ -45,10 +45,10 @@ abstract contract HelperContract is Test, TestUtils {
     CommitteeRegistry internal registry;
     Committee internal committee1;
     Committee internal committee2;
-    Committee internal committee3;
+    Committee internal invalidCommittee;
     bytes32 internal committee1Key;
     bytes32 internal committee2Key;
-    bytes32 internal committee3Key;
+    bytes32 internal invalidCommitteeKey;
     CommitteeMember[] internal committee1Members;
     CommitteeMember[] internal committee2Members;
     CommitteeMember[] internal committee3Members;
@@ -60,7 +60,46 @@ abstract contract HelperContract is Test, TestUtils {
     // Arrange
     uint64 internal constant VALUE = 100_000; // 0.001 BTC
 
+    // Counter to track unique member indices across all setUpCommitteeMembers calls
+    uint16 internal memberCounter = 0;
+
+    function setUpCommitteeMembers(uint16 numWatchtowers, uint16 numOperators, StreamDenomination denomination)
+        internal
+    {
+        uint16 totalMembers = numWatchtowers + numOperators;
+        uint16 startingIndex = memberCounter; // Store the starting index for this call
+
+        for (uint16 i = 0; i < totalMembers; i++) {
+            uint16 memberIndex = startingIndex + i;
+            bytes32 pubKey = generatePubKey(memberIndex);
+            StreamDenomination[] memory streams = new StreamDenomination[](1);
+            Role[] memory roles = new Role[](1);
+            streams[0] = denomination;
+
+            // First numWatchtowers members are watchtowers, the rest are operators
+            roles[0] = i < numWatchtowers ? Role.Watchtower : Role.Operator;
+
+            // Register member in the registry using unique address
+            vm.prank(address(uint160(memberIndex + 1))); // Use a different address for each member
+            registry.registerMember(pubKey, streams, roles);
+
+            // Add member to committee candidates using the actual member index from registry
+            // TODO this would normally be done in the registerMember function in the real contract
+            // But we're adding it here for the test
+            CommitteeMember memory member = CommitteeMember({index: memberIndex, role: roles[0]});
+            registry.addCommitteeCandidate(denomination, member);
+        }
+
+        // Update the member counter for the next call
+        memberCounter += totalMembers;
+    }
+
     function setUpCommittees() internal {
+        setUpCommitteeMembers(6, 14, StreamDenomination._0_001BTC);
+        setUpCommitteeMembers(2, 10, StreamDenomination._0_01BTC);
+        setUpCommitteeMembers(5, 2, StreamDenomination._0_1BTC);
+        setUpCommitteeMembers(3, 3, StreamDenomination._1BTC);
+
         requestedStreams = new StreamDenomination[](1);
         requestedRoles = new Role[](1);
         requestedStreams[0] = StreamDenomination._0_001BTC;
@@ -68,16 +107,17 @@ abstract contract HelperContract is Test, TestUtils {
 
         committee1Key = COMMITEE_1_PUB_KEY;
         committee2Key = COMMITEE_2_PUB_KEY;
-        committee3Key = COMMITEE_3_PUB_KEY;
+        invalidCommitteeKey = COMMITEE_3_PUB_KEY;
 
         committee1Members.push(CommitteeMember({index: 0, role: Role.Operator}));
         committee1Members.push(CommitteeMember({index: 1, role: Role.Operator}));
 
+        // Create a committee with a non-existent member index
         committee2Members.push(CommitteeMember({index: 2, role: Role.Operator}));
         committee2Members.push(CommitteeMember({index: 3, role: Role.Operator}));
 
-        committee3Members.push(CommitteeMember({index: 4, role: Role.Operator}));
-        committee3Members.push(CommitteeMember({index: 5, role: Role.Operator}));
+        committee3Members.push(CommitteeMember({index: 62, role: Role.Operator}));
+        committee3Members.push(CommitteeMember({index: 63, role: Role.Operator}));
 
         committee1.internalKey = committee1Key;
         committee1.memberIndexesAndRoles = committee1Members;
@@ -87,9 +127,9 @@ abstract contract HelperContract is Test, TestUtils {
         committee2.memberIndexesAndRoles = committee2Members;
         committee2.leaderIndex = 0;
 
-        committee3.internalKey = committee3Key;
-        committee3.memberIndexesAndRoles = committee3Members;
-        committee3.leaderIndex = 0;
+        invalidCommittee.internalKey = invalidCommitteeKey;
+        invalidCommittee.memberIndexesAndRoles = committee3Members;
+        invalidCommittee.leaderIndex = 0;
     }
 
     function runTestDeployScript() internal {
