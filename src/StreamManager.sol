@@ -9,7 +9,6 @@ import {BtcHelper} from "src/libraries/BtcHelper.sol";
 /// @title Stream Manager
 /// @notice Manages streams
 contract StreamManager is IStreamManager, AccessControl {
-    uint64 public constant MAX_DENOMINATIONS_SIZE = 10;
     Stream[] internal streams;
 
     // StreamId => Packet list
@@ -25,8 +24,8 @@ contract StreamManager is IStreamManager, AccessControl {
         initializer
     {
         uint256 length = _denominations.length;
-        if (length > MAX_DENOMINATIONS_SIZE) {
-            revert tooManyDenominations(MAX_DENOMINATIONS_SIZE);
+        if (length > Constants.MAX_DENOMINATIONS_SIZE) {
+            revert tooManyDenominations(Constants.MAX_DENOMINATIONS_SIZE);
         }
         for (uint64 i = 0; i < length; i++) {
             streams.push(

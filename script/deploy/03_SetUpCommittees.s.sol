@@ -19,23 +19,19 @@ struct RegisterCommitteeParams {
 
 struct RegisterMemberParams {
     bytes32 publicKey;
-    StreamDenomination[] requestedStreams;
-    Role[] requestedRoles;
+    StreamDenomination requestedStream;
+    Role requestedRole;
 }
 
 contract SetUpCommittees is ScriptUtils, TestUtils {
     /// @notice parameters for each chain
     /// like https://github.com/defi-wonderland/solidity-foundry-boilerplate/blob/main/script/Deploy.sol
     RegisterCommitteeParams[] public committeesParams;
-    StreamDenomination[] defaultRequestedStreams = new StreamDenomination[](1);
-    Role[] defaultRequestedRoles = new Role[](1);
+    StreamDenomination defaultRequestedStream = StreamDenomination._0_001BTC;
+    Role defaultRequestedRole = Role.Operator;
 
     function setUp() internal {
         require(REQUIRED_MEMBERS_AMOUNT <= 10, "REQUIRED_MEMBERS_AMOUNT must be less than or equal to 10");
-
-        // Fill default streams and roles
-        defaultRequestedStreams[0] = StreamDenomination._0_001BTC;
-        defaultRequestedRoles[0] = Role.Operator;
 
         // Map memebers to comittee
         CommitteeMember[] memory members = new CommitteeMember[](2);
@@ -80,9 +76,18 @@ contract SetUpCommittees is ScriptUtils, TestUtils {
     }
 
     function registerMember(CommitteeRegistry _committeeRegistry, uint256 _privKey) public {
+        // Add balance to the user
+        address user = vm.addr(_privKey);
         RegisterMemberParams memory params = getMemberParams(_privKey);
+
+        uint256 minimumDeposit = _committeeRegistry.getMinimumDepositById(params.requestedStream);
+
+        vm.deal(user, minimumDeposit);
+
         vm.startBroadcast(_privKey);
-        _committeeRegistry.registerMember(params.publicKey, params.requestedStreams, params.requestedRoles);
+        _committeeRegistry.depositBond{value: minimumDeposit}(
+            params.publicKey, params.requestedStream, params.requestedRole
+        );
         vm.stopBroadcast();
     }
 
@@ -113,7 +118,7 @@ contract SetUpCommittees is ScriptUtils, TestUtils {
 
     function getMemberParams(uint256 _privKey) public view returns (RegisterMemberParams memory) {
         bytes32 pubKey = BtcHelper.hash256(abi.encode(_privKey));
-        return RegisterMemberParams(pubKey, defaultRequestedStreams, defaultRequestedRoles);
+        return RegisterMemberParams(pubKey, defaultRequestedStream, defaultRequestedRole);
     }
 
     function setStreamManager(CommitteeRegistry _committeeRegistry, StreamManager _streamManager) public {

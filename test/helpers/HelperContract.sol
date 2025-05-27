@@ -38,8 +38,8 @@ abstract contract HelperContract is Test, TestUtils {
         0x7d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f;
 
     // Dummy requested roles and streams for the members
-    StreamDenomination[] internal requestedStreams;
-    Role[] internal requestedRoles;
+    StreamDenomination internal constant defaultStream = StreamDenomination._0_001BTC;
+    Role internal constant defaultRole = Role.Operator;
 
     BitcoinManager internal bitcoinManager;
     CommitteeRegistry internal registry;
@@ -72,22 +72,16 @@ abstract contract HelperContract is Test, TestUtils {
         for (uint16 i = 0; i < totalMembers; i++) {
             uint16 memberIndex = startingIndex + i;
             bytes32 pubKey = generatePubKey(memberIndex);
-            StreamDenomination[] memory streams = new StreamDenomination[](1);
-            Role[] memory roles = new Role[](1);
-            streams[0] = denomination;
+            uint256 minimumDeposit = registry.getMinimumDepositById(denomination);
+            address user = address(uint160(memberIndex + 1)); // Use a different address for each member
+            vm.deal(user, minimumDeposit);
 
             // First numWatchtowers members are watchtowers, the rest are operators
-            roles[0] = i < numWatchtowers ? Role.Watchtower : Role.Operator;
+            Role role = i < numWatchtowers ? Role.Watchtower : Role.Operator;
 
             // Register member in the registry using unique address
-            vm.prank(address(uint160(memberIndex + 1))); // Use a different address for each member
-            registry.registerMember(pubKey, streams, roles);
-
-            // Add member to committee candidates using the actual member index from registry
-            // TODO this would normally be done in the registerMember function in the real contract
-            // But we're adding it here for the test
-            CommitteeMember memory member = CommitteeMember({index: memberIndex, role: roles[0]});
-            registry.addCommitteeCandidate(denomination, member);
+            vm.prank(user); // Use a different address for each member
+            registry.depositBond{value: minimumDeposit}(pubKey, denomination, role);
         }
 
         // Update the member counter for the next call
@@ -99,11 +93,6 @@ abstract contract HelperContract is Test, TestUtils {
         setUpCommitteeMembers(2, 10, StreamDenomination._0_01BTC);
         setUpCommitteeMembers(5, 2, StreamDenomination._0_1BTC);
         setUpCommitteeMembers(3, 3, StreamDenomination._1BTC);
-
-        requestedStreams = new StreamDenomination[](1);
-        requestedRoles = new Role[](1);
-        requestedStreams[0] = StreamDenomination._0_001BTC;
-        requestedRoles[0] = Role.Operator;
 
         committee1Key = COMMITEE_1_PUB_KEY;
         committee2Key = COMMITEE_2_PUB_KEY;

@@ -33,36 +33,4 @@ contract TestSecurityBond is Test, HelperContract {
         // Act
         registry.getMinimumDeposit(denomination);
     }
-
-    function test_securityBondDeposit_Success() public {
-        // Arrange
-        uint64 denomination = 100_000; // 0.001 BTC
-        uint256 balanceBefore = address(registry).balance;
-        address sender = address(this);
-        uint256 depositBalanceBefore = registry.getMemberBalance(sender).total;
-        uint256 value = 1 ether;
-        // Act
-        registry.securityBondDeposit{value: value}(denomination);
-        // Assert
-        uint256 balanceAfter = address(registry).balance;
-        uint256 depositBalanceAfter = registry.getMemberBalance(sender).total;
-
-        assertEq(balanceAfter - balanceBefore, value, "expect security bond value increase of 1 ether");
-        assertEq(depositBalanceAfter - depositBalanceBefore, value, "expect security bond mapping increase of 1 ether");
-    }
-
-    function test_securityBondDeposit_Revert_DespositBondTooLow() public {
-        // Arrange
-        uint64 denomination = 100_000; // 0.001 BTC
-        uint256 securityBond = registry.getMinimumDeposit(denomination) - 1;
-
-        // Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                SecurityBond.despositBondTooLow.selector, securityBond, BtcHelper.satoshiToWei(denomination) / 10
-            )
-        );
-        // Act
-        registry.securityBondDeposit{value: securityBond}(denomination);
-    }
 }

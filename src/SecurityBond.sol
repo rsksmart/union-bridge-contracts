@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import {IStreamManager} from "./interfaces/IStreamManager.sol";
+import {IStreamManager, StreamDenomination} from "./interfaces/IStreamManager.sol";
+import {Member, Role, Balance} from "./interfaces/ICommitteeRegistry.sol";
 
 struct MemberBalance {
     uint256 total;
@@ -11,14 +12,18 @@ struct MemberBalance {
 abstract contract SecurityBond {
     // Address of the Memeber => Amount provided
     mapping(address => MemberBalance) public memberBalances;
+    Member[] internal members;
+
     IStreamManager streamManager;
 
-    event newSecurityBondDeposit(address indexed sender, uint64 indexed denomination, uint256 amount);
-    event newSecurityBondWithdraw(address indexed sender, uint64 indexed denomination, uint256 amount);
+    event newSecurityBondDeposit(
+        address indexed sender, StreamDenomination requestedStream, Role requestedRole, uint256 amount
+    );
+    event newSecurityBondWithdraw(address indexed sender, uint256 amount);
+    event newAvailableBalance(address indexed sender, uint256 amount);
+    event availableBalanceRetrieved(address indexed sender, uint256 amount);
 
     error despositBondTooLow(uint256 sent, uint256 minDeposit);
-    error outOfBound(uint256 sent, uint256 max);
-    error failToSend(address to, uint256 value);
 
     function setStreamManager(IStreamManager _streamManager) public {
         streamManager = _streamManager;
@@ -28,42 +33,18 @@ abstract contract SecurityBond {
         return streamManager.getStream(_denomination).securityBondValue;
     }
 
-    function securityBondDeposit(uint64 _denomination) external payable {
-        uint256 securityBondValue = getMinimumDeposit(_denomination);
-        if (msg.value < securityBondValue) {
-            revert despositBondTooLow(msg.value, securityBondValue);
-        }
-        if (msg.value > type(uint64).max) {
-            revert outOfBound(msg.value, type(uint64).max);
-        }
-
-        memberBalances[msg.sender].total += msg.value;
-        emit newSecurityBondDeposit(msg.sender, _denomination, msg.value);
+    function getMinimumDepositById(StreamDenomination _denomination) public view returns (uint256) {
+        return streamManager.getStreamById(uint8(_denomination)).securityBondValue;
     }
 
-    function securityBondWithdraw(uint64 _denomination) external {
-        // TODO should check that he is not part of the committee any more
-
-        // TODO we are considering that he withdraws the minimum deposit
-        // but he should be able to withdraw more if he deposited more
-        uint256 securityBondValue = getMinimumDeposit(_denomination);
-
-        memberBalances[msg.sender].total -= securityBondValue;
-
-        emit newSecurityBondWithdraw(msg.sender, _denomination, securityBondValue);
-
-        // Call returns a boolean value indicating success or failure.
-        (bool sent,) = msg.sender.call{value: securityBondValue}("");
-        if (!sent) {
-            revert failToSend(msg.sender, securityBondValue);
+    function initMemberBalance(Member storage _member) internal {
+        _member.balance.available = 0;
+        _member.balance.preStaked = new uint256[](streamManager.getStreamsLength());
+        for (uint64 i = 0; i < streamManager.getStreamsLength(); i++) {
+            _member.balance.preStaked[i] = 0;
         }
-    }
-
-    function getMemberBalance(address _member) external view returns (MemberBalance memory) {
-        return memberBalances[_member];
-    }
-
-    function getMemberAvailableBalance(address _member) external view returns (uint256) {
-        return memberBalances[_member].total - memberBalances[_member].staked;
+        for (uint256 i = 0; i < streamManager.getStreamsLength(); i++) {
+            _member.balance.staked.push();
+        }
     }
 }

@@ -9,9 +9,16 @@ enum Role {
     Watchtower
 }
 
+struct Balance {
+    uint256 available;
+    uint256[] preStaked;
+    mapping(uint64 packetNumber => uint256 amount)[] staked; // denominationIndex => (packetId => amount)
+}
+
 struct Member {
     bytes32 publicKey;
     mapping(StreamDenomination => Role) requestedRoles;
+    Balance balance;
     mapping(string key => string value) data;
 }
 
@@ -27,12 +34,8 @@ struct Committee {
 }
 
 interface ICommitteeRegistry {
-    error RequestedDifferentStreamsAndRolesLength(uint256 streamsLength, uint256 rolesLength);
-    error RequestedNoRoles();
     error RequestedNoneRoleForStream(StreamDenomination stream);
-    error RequestedMultipleRolesForStream(StreamDenomination stream, Role role1, Role role2);
-    error AlreadyRegisteredMember(bytes32 memberPubKey);
-    error NonRegisteredMember(uint16 memberIndex);
+    error NonRegisteredMember(address memberAddress);
     error TooManyMembers(uint256 maxMembers);
     error TooManyMembersPerCommittee(uint256 maxMembersPerCommittee);
     error TooManyCommittees(uint256 maxCommitteeSize);
@@ -40,12 +43,42 @@ interface ICommitteeRegistry {
     error NotEnoughWatchtowers(uint256 required, uint256 available);
     error NotEnoughOperators(uint256 required, uint256 available);
     error NotEnoughMembers(uint256 required, uint256 available);
+    error MemberAlreadyRegisteredForStream(
+        address memberAddress, StreamDenomination requestedStream, Role requestedRole, Role currentRole
+    );
+    error MemberIsNotCandidateForStream(address member, StreamDenomination stream);
+    error NoAvailableBalanceToWithdraw(address member);
+    error MemberIndexNotFound(uint16 memberIndex);
+    error MemberNotRegistered(address memberAddress);
 
-    function registerMember(
-        bytes32 _publicKey,
-        StreamDenomination[] memory requestedStreams,
-        Role[] memory requestedRoles
-    ) external;
+    function depositBond(bytes32 _publicKey, StreamDenomination _requestedStream, Role _requestedRole)
+        external
+        payable;
+
+    function unsuscribeFromStream(StreamDenomination _stream) external;
+
+    function withdrawAvailableBalance() external;
+
+    function getMemberPublicKey(address _address) external view returns (bytes32);
+
+    function getMemberRequestedRole(address _address, StreamDenomination _denomination) external view returns (Role);
+
+    function getMemberAvailableBalance(address _address) external view returns (uint256);
+
+    function getMemberPreStakedBalance(address _address, StreamDenomination _denomination)
+        external
+        view
+        returns (uint256);
+
+    function getMemberStakedBalance(address _address, StreamDenomination _denomination, uint64 _packetNumber)
+        external
+        view
+        returns (uint256 amount);
+
+    function getCommitteeCandidates(StreamDenomination _denomination)
+        external
+        view
+        returns (CommitteeMember[] memory);
 
     function registerCommittee(Committee calldata _committee) external;
 
@@ -66,11 +99,4 @@ interface ICommitteeRegistry {
     function createCommittee(uint64 _streamId) external view returns (bytes32);
 
     function selectCommittee(uint64 _streamId) external view returns (CommitteeMember[] memory);
-
-    function addCommitteeCandidate(StreamDenomination _denomination, CommitteeMember memory _member) external;
-
-    function getCommitteeCandidates(StreamDenomination _denomination)
-        external
-        view
-        returns (CommitteeMember[] memory);
 }
