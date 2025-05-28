@@ -135,8 +135,8 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Arrange
         uint256 MAX_MEMBERS_SIZE = registry.MAX_MEMBERS_SIZE();
         uint256 minimumDeposit = registry.getMinimumDepositById(defaultStream);
-        // we already have 48 members registered in the setup
-        for (uint16 i = 48; i < MAX_MEMBERS_SIZE; i++) {
+        // we already have 3 members registered in the setup
+        for (uint16 i = 3; i < MAX_MEMBERS_SIZE; i++) {
             uint256 privKey = uint256(i);
             // Add balance to the user
             address user = vm.addr(privKey);
@@ -510,12 +510,19 @@ contract TestCommitteeRegistry is Test, HelperContract {
         );
     }
 
-    function test_selectCommittee_Success() external {
+    function test_selectCommittee_Success_3OP_7WT() external {
+        // Arrange
+        StreamDenomination denomination = StreamDenomination._0_01BTC;
+        uint64 streamId = 1;
+        setUpCommitteeMembers(
+            registry.MIN_COMMITTEE_MEMBERS() - registry.MIN_OPERATORS(), registry.MIN_OPERATORS(), denomination
+        );
+
         // Act
-        CommitteeMember[] memory selectedMembers = registry.selectCommittee(0);
+        CommitteeMember[] memory selectedMembers = registry.selectCommittee(streamId);
 
         // Assert - Verify committee has correct size
-        assertEq(selectedMembers.length, 10, "Committee should have 10 members");
+        assertEq(selectedMembers.length, registry.MIN_COMMITTEE_MEMBERS(), "Committee should have 10 members");
 
         // Count roles in selection
         uint256 watchtowerCount = 0;
@@ -526,22 +533,78 @@ contract TestCommitteeRegistry is Test, HelperContract {
         }
 
         // Verify correct role distribution
-        assertEq(watchtowerCount, 3, "Committee should have 3 watchtowers");
-        assertEq(operatorCount, 7, "Committee should have 7 operators");
+        assertEq(
+            watchtowerCount,
+            registry.MIN_COMMITTEE_MEMBERS() - registry.MIN_OPERATORS(),
+            "Committee should have 7 watchtowers"
+        );
+        assertEq(operatorCount, registry.MIN_OPERATORS(), "Committee should have 7 operators");
+
+        assertUniqueMembers(selectedMembers);
+    }
+
+    function assertUniqueMembers(CommitteeMember[] memory selectedMembers) internal pure {
+        for (uint256 i = 0; i < selectedMembers.length; i++) {
+            for (uint256 j = i + 1; j < selectedMembers.length; j++) {
+                assertNotEq(
+                    selectedMembers[i].index, selectedMembers[j].index, "There is a repeated member in selected members"
+                );
+            }
+        }
+    }
+
+    function test_selectCommittee_Success_7OP_3WT() external {
+        // Arrange
+        StreamDenomination denomination = StreamDenomination._0_01BTC;
+        uint64 streamId = 1;
+        setUpCommitteeMembers(
+            registry.MIN_WATCHTOWERS(), registry.MIN_COMMITTEE_MEMBERS() - registry.MIN_WATCHTOWERS(), denomination
+        );
+
+        // Act
+        CommitteeMember[] memory selectedMembers = registry.selectCommittee(streamId);
+
+        // Assert - Verify committee has correct size
+        assertEq(selectedMembers.length, registry.MIN_COMMITTEE_MEMBERS(), "Committee should have 10 members");
+
+        // Count roles in selection
+        uint256 watchtowerCount = 0;
+        uint256 operatorCount = 0;
+        for (uint256 i = 0; i < selectedMembers.length; i++) {
+            if (selectedMembers[i].role == Role.Watchtower) watchtowerCount++;
+            else if (selectedMembers[i].role == Role.Operator) operatorCount++;
+        }
+
+        // Verify correct role distribution
+        assertEq(watchtowerCount, registry.MIN_WATCHTOWERS(), "Committee should have 3 watchtowers");
+        assertEq(
+            operatorCount,
+            registry.MIN_COMMITTEE_MEMBERS() - registry.MIN_WATCHTOWERS(),
+            "Committee should have 7 operators"
+        );
+
+        assertUniqueMembers(selectedMembers);
     }
 
     function test_selectCommittee_ReturnsDifferentCommittees() external {
+        // Arrange
+        StreamDenomination denomination = StreamDenomination._0_01BTC;
+        uint64 streamId = 1;
+        setUpCommitteeMembers(registry.MIN_COMMITTEE_MEMBERS(), registry.MIN_COMMITTEE_MEMBERS(), denomination);
+
         // First selection with timestamp 1
         vm.warp(1);
-        CommitteeMember[] memory selectedMembers1 = registry.selectCommittee(0);
+        CommitteeMember[] memory selectedMembers1 = registry.selectCommittee(streamId);
+        assertUniqueMembers(selectedMembers1);
 
         // Second selection with different timestamp
         vm.warp(1000);
-        CommitteeMember[] memory selectedMembers2 = registry.selectCommittee(0);
+        CommitteeMember[] memory selectedMembers2 = registry.selectCommittee(streamId);
+        assertUniqueMembers(selectedMembers2);
 
         // Verify both selections have correct size
-        assertEq(selectedMembers1.length, 10, "First committee should have 10 members");
-        assertEq(selectedMembers2.length, 10, "Second committee should have 10 members");
+        assertEq(selectedMembers1.length, registry.MIN_COMMITTEE_MEMBERS(), "First committee should have 10 members");
+        assertEq(selectedMembers2.length, registry.MIN_COMMITTEE_MEMBERS(), "Second committee should have 10 members");
 
         // Verify selections are different (at least one member is in a different position)
         bool isDifferent = false;
@@ -555,25 +618,59 @@ contract TestCommitteeRegistry is Test, HelperContract {
     }
 
     function test_selectCommittee_Revert_NotEnoughWatchtowers() external {
-        // Assert that selectCommittee reverts with NotEnoughWatchtowers error
-        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.NotEnoughWatchtowers.selector, 3, 2));
+        // Arrange
+        StreamDenomination denomination = StreamDenomination._0_01BTC;
+        uint64 streamId = 1;
+        setUpCommitteeMembers(
+            registry.MIN_WATCHTOWERS() - 1,
+            registry.MIN_COMMITTEE_MEMBERS() - registry.MIN_WATCHTOWERS() + 1,
+            denomination
+        );
 
-        // Act - try to select committee for the test denomination (streamId 1 = _0_01BTC)
-        registry.selectCommittee(1);
+        // Assert that selectCommittee reverts with NotEnoughWatchtowers error
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ICommitteeRegistry.NotEnoughWatchtowers.selector,
+                registry.MIN_WATCHTOWERS(),
+                registry.MIN_WATCHTOWERS() - 1
+            )
+        );
+
+        registry.selectCommittee(streamId);
     }
 
     function test_selectCommittee_Revert_NotEnoughOperators() external {
-        // Assert that selectCommittee reverts with NotEnoughOperators error
-        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.NotEnoughOperators.selector, 3, 2));
+        // Arrange
+        StreamDenomination denomination = StreamDenomination._0_01BTC;
+        uint64 streamId = 1;
+        setUpCommitteeMembers(
+            registry.MIN_COMMITTEE_MEMBERS() - registry.MIN_OPERATORS() + 1, registry.MIN_OPERATORS() - 1, denomination
+        );
 
-        // Act - try to select committee for the test denomination (streamId 2 = _0_1BTC)
-        registry.selectCommittee(2);
+        // Assert that selectCommittee reverts with NotEnoughOperators error
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ICommitteeRegistry.NotEnoughOperators.selector, registry.MIN_OPERATORS(), registry.MIN_OPERATORS() - 1
+            )
+        );
+
+        registry.selectCommittee(streamId);
     }
 
     function test_selectCommittee_Revert_NotEnoughMembers() external {
+        // Arrange
+        StreamDenomination denomination = StreamDenomination._0_01BTC;
+        uint64 streamId = 1;
+        setUpCommitteeMembers(registry.MIN_WATCHTOWERS(), registry.MIN_OPERATORS(), denomination);
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.NotEnoughMembers.selector, 10, 6));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ICommitteeRegistry.NotEnoughMembers.selector,
+                registry.MIN_COMMITTEE_MEMBERS(),
+                registry.MIN_OPERATORS() + registry.MIN_WATCHTOWERS()
+            )
+        );
         // Act
-        registry.selectCommittee(3);
+        registry.selectCommittee(streamId);
     }
 }

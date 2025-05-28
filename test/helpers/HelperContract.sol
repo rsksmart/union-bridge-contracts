@@ -61,16 +61,16 @@ abstract contract HelperContract is Test, TestUtils {
     uint64 internal constant VALUE = 100_000; // 0.001 BTC
 
     // Counter to track unique member indices across all setUpCommitteeMembers calls
-    uint16 internal memberCounter = 0;
+    uint256 internal memberCounter = 0;
 
-    function setUpCommitteeMembers(uint16 numWatchtowers, uint16 numOperators, StreamDenomination denomination)
+    function setUpCommitteeMembers(uint256 numWatchtowers, uint256 numOperators, StreamDenomination denomination)
         internal
     {
-        uint16 totalMembers = numWatchtowers + numOperators;
-        uint16 startingIndex = memberCounter; // Store the starting index for this call
+        uint256 totalMembers = numWatchtowers + numOperators;
+        uint256 startingIndex = memberCounter; // Store the starting index for this call
 
-        for (uint16 i = 0; i < totalMembers; i++) {
-            uint16 memberIndex = startingIndex + i;
+        for (uint256 i = 0; i < totalMembers; i++) {
+            uint256 memberIndex = startingIndex + i;
             bytes32 pubKey = generatePubKey(memberIndex);
             uint256 minimumDeposit = registry.getMinimumDepositById(denomination);
             address user = address(uint160(memberIndex + 1)); // Use a different address for each member
@@ -89,11 +89,6 @@ abstract contract HelperContract is Test, TestUtils {
     }
 
     function setUpCommittees() internal {
-        setUpCommitteeMembers(6, 14, StreamDenomination._0_001BTC);
-        setUpCommitteeMembers(2, 10, StreamDenomination._0_01BTC);
-        setUpCommitteeMembers(5, 2, StreamDenomination._0_1BTC);
-        setUpCommitteeMembers(3, 3, StreamDenomination._1BTC);
-
         committee1Key = COMMITEE_1_PUB_KEY;
         committee2Key = COMMITEE_2_PUB_KEY;
         invalidCommitteeKey = COMMITEE_3_PUB_KEY;
