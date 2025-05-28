@@ -35,6 +35,7 @@ struct Packet {
     // Arrays should not be in scruct otherwise they are too havy on memory and cause a stack too deep exception
     // uint256 slotLength; // Length of the array (redundant but can be stored if needed)
     // uint256 committeeId; // Unique committee ID // Not Necessary
+    uint256 committeeId; // The committee ID
     bytes32 committeePubKey; // The internal key of the committee
 }
 
@@ -55,12 +56,14 @@ struct Stream {
 interface IStreamManager is IAccessControl {
     /// @notice Allows users to create packets
     /// @param _committeePubKey The public key of the committee
+    /// FIXME: This function will we removed soon.
     function createInitialPackets(bytes32 _committeePubKey) external;
 
     /// @notice Adds a packet to a specific stream with the committee public key
     /// @param _streamId The index in the array of streams
+    /// @param _committeeId The id of the committee for the packet
     /// @param _committeePubKey The public key of the selected committee for the packet
-    function createNewPacket(uint64 _streamId, bytes32 _committeePubKey) external;
+    function createNewPacket(uint64 _streamId, uint256 _committeeId, bytes32 _committeePubKey) external;
 
     /// @notice Allows users to get the Stream information for a given denomination
     /// @param _denomination The value to peg in used by the stream in satoshi
@@ -75,6 +78,10 @@ interface IStreamManager is IAccessControl {
     /// @notice Get the number of streams
     /// @return uint64 The number of streams
     function getStreamsLength() external view returns (uint64);
+
+    /// @notice Get the number of packets for a given stream
+    /// @param _streamId The index in the array of streams
+    function getPacketsLength(uint64 _streamId) external view returns (uint64);
 
     /// @notice Allows users to get the packet information for a given packet index at a stream
     /// @param _streamId The index in the array of streams
@@ -109,6 +116,12 @@ interface IStreamManager is IAccessControl {
         bytes32 _acceptPegInTx,
         bytes memory _scriptPubKey
     ) external returns (uint64);
+
+    /// @notice Allows users to get the committee id for a given packet index at a stream
+    /// @param _streamId The index in the array of streams
+    /// @param _packetNumber The index in the array of packets
+    /// @return uint256 The committee id
+    function getCommitteeId(uint64 _streamId, uint64 _packetNumber) external view returns (uint256);
 
     /// @notice Allows users to get the committee public key for a given packet index at a stream
     /// @param _streamId The index in the array of streams

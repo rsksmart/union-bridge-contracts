@@ -45,6 +45,7 @@ contract StreamManager is IStreamManager, AccessControl {
     }
 
     /// @dev Adds one packet per stream
+    // FIXME: This is a temporary function to create initial packets and should be removed soon
     function createInitialPackets(bytes32 _committeePubKey) external onlyOwner {
         uint256 length = streams.length;
         for (uint256 i = 0; i < length; i++) {
@@ -52,18 +53,23 @@ contract StreamManager is IStreamManager, AccessControl {
             if (packets[streamId].length > 0) {
                 revert StreamAlreadyInitialized(streamId);
             }
+            // FIXME: Force packets to be assigned to committeeId 1
+            uint256 committeeId = 1;
             // Add a new packet for each stream
-            _createNewPacket(streamId, _committeePubKey);
+            _createNewPacket(streamId, committeeId, _committeePubKey);
         }
     }
 
-    function createNewPacket(uint64 _streamId, bytes32 _committeePubKey) external onlyPegManager {
-        _createNewPacket(_streamId, _committeePubKey);
+    // FIXME: This should be called just from CommitteeRegistry
+    function createNewPacket(uint64 _streamId, uint256 _committeeId, bytes32 _committeePubKey) external {
+        _createNewPacket(_streamId, _committeeId, _committeePubKey);
     }
 
-    function _createNewPacket(uint64 _streamId, bytes32 _committeePubKey) internal {
+    function _createNewPacket(uint64 _streamId, uint256 _committeeId, bytes32 _committeePubKey) internal {
         uint64 packetNumber = uint64(packets[_streamId].length);
-        packets[_streamId].push(Packet({packetNumber: packetNumber, committeePubKey: _committeePubKey}));
+        packets[_streamId].push(
+            Packet({packetNumber: packetNumber, committeeId: _committeeId, committeePubKey: _committeePubKey})
+        );
         emit PacketCreated(_streamId, packetNumber);
     }
 
@@ -85,8 +91,16 @@ contract StreamManager is IStreamManager, AccessControl {
         return uint64(streams.length);
     }
 
+    function getPacketsLength(uint64 _streamId) external view returns (uint64) {
+        return uint64(packets[_streamId].length);
+    }
+
     function getPacket(uint64 _streamId, uint64 _packetNumber) public view returns (Packet memory) {
-        if (packets[_streamId].length < _packetNumber) {
+        if (streams.length <= _streamId) {
+            revert StreamNotFoundById(_streamId);
+        }
+
+        if (packets[_streamId].length <= _packetNumber) {
             revert PacketOutOfBound(_packetNumber);
         }
         return packets[_streamId][_packetNumber];
@@ -196,6 +210,10 @@ contract StreamManager is IStreamManager, AccessControl {
                 take1Tx: ""
             })
         );
+    }
+
+    function getCommitteeId(uint64 _streamId, uint64 _packetNumber) external view returns (uint256) {
+        return getPacket(_streamId, _packetNumber).committeeId;
     }
 
     function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes32) {

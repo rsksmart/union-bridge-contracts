@@ -29,11 +29,16 @@ abstract contract HelperContract is Test, TestUtils {
     address constant MEMBER_1_ADDRESS = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
     bytes32 constant MEMBER_2_PUBKEY = 0x1976ee2a061feb3976914ed2526369c7141b5490f48d5623485e833c2e9c5819;
     address constant MEMBER_2_ADDRESS = 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC;
+    bytes32 constant MEMBER_3_PUBKEY = 0x445787646b92cfbfdbe6bdd722431134923983b24e8ce4765c4eabdf7250a42c;
+    address constant MEMBER_3_ADDRESS = 0x90F79bf6EB2c4f870365E785982E1f101E93b906;
 
     // Mock keys
     bytes32 constant COMMITEE_1_PUB_KEY = 0xd1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d;
+    uint256 constant COMMITTEE_1_ID = 1;
     bytes32 constant COMMITEE_2_PUB_KEY = 0x1908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785ec;
+    uint256 constant COMMITTEE_2_ID = 2;
     bytes32 constant COMMITEE_3_PUB_KEY = 0x2908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785ed;
+    uint256 constant COMMITTEE_3_ID = 3;
     bytes32 internal constant BTC_REIMBURSEMENT_PUBKEY =
         0x7d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f;
 
@@ -43,15 +48,15 @@ abstract contract HelperContract is Test, TestUtils {
 
     BitcoinManager internal bitcoinManager;
     CommitteeRegistry internal registry;
+
     Committee internal committee1;
     Committee internal committee2;
-    Committee internal invalidCommittee;
-    bytes32 internal committee1Key;
-    bytes32 internal committee2Key;
-    bytes32 internal invalidCommitteeKey;
+    Committee internal committee3;
+
     CommitteeMember[] internal committee1Members;
     CommitteeMember[] internal committee2Members;
     CommitteeMember[] internal committee3Members;
+
     PegManager internal pm;
     StreamManagerHarness internal streamManager;
     BridgeMock internal bridgeMock;
@@ -59,6 +64,7 @@ abstract contract HelperContract is Test, TestUtils {
     address upgradeOwner = vm.addr(777);
     // Arrange
     uint64 internal constant VALUE = 100_000; // 0.001 BTC
+    uint64 internal constant STREAM_ID = 0;
 
     // Counter to track unique member indices across all setUpCommitteeMembers calls
     uint256 internal memberCounter = 0;
@@ -89,31 +95,26 @@ abstract contract HelperContract is Test, TestUtils {
     }
 
     function setUpCommittees() internal {
-        committee1Key = COMMITEE_1_PUB_KEY;
-        committee2Key = COMMITEE_2_PUB_KEY;
-        invalidCommitteeKey = COMMITEE_3_PUB_KEY;
-
         committee1Members.push(CommitteeMember({index: 0, role: Role.Operator}));
-        committee1Members.push(CommitteeMember({index: 1, role: Role.Operator}));
+        committee1Members.push(CommitteeMember({index: 1, role: Role.Watchtower}));
 
-        // Create a committee with a non-existent member index
+        committee2Members.push(CommitteeMember({index: 1, role: Role.Operator}));
         committee2Members.push(CommitteeMember({index: 2, role: Role.Operator}));
-        committee2Members.push(CommitteeMember({index: 3, role: Role.Operator}));
 
-        committee3Members.push(CommitteeMember({index: 62, role: Role.Operator}));
-        committee3Members.push(CommitteeMember({index: 63, role: Role.Operator}));
+        committee3Members.push(CommitteeMember({index: 0, role: Role.Operator}));
+        committee3Members.push(CommitteeMember({index: 2, role: Role.Operator}));
 
-        committee1.internalKey = committee1Key;
+        committee1.aggregatedKey = COMMITEE_1_PUB_KEY;
         committee1.memberIndexesAndRoles = committee1Members;
         committee1.leaderIndex = 0;
 
-        committee2.internalKey = committee2Key;
+        committee2.aggregatedKey = COMMITEE_2_PUB_KEY;
         committee2.memberIndexesAndRoles = committee2Members;
         committee2.leaderIndex = 0;
 
-        invalidCommittee.internalKey = invalidCommitteeKey;
-        invalidCommittee.memberIndexesAndRoles = committee3Members;
-        invalidCommittee.leaderIndex = 0;
+        committee3.aggregatedKey = COMMITEE_3_PUB_KEY;
+        committee3.memberIndexesAndRoles = committee3Members;
+        committee3.leaderIndex = 0;
     }
 
     function runTestDeployScript() internal {
@@ -267,6 +268,14 @@ abstract contract HelperContract is Test, TestUtils {
         for (uint256 i = 0; i < numberOfPegIns; i++) {
             BtcTransaction memory btcTx = setup_requestPeginFlow();
             setup_acceptPeginFlow(btcTx);
+
+            if (
+                numberOfPegIns > Constants.SLOTS_PER_PACKET
+                    && (i % Constants.SLOTS_PER_PACKET) == Constants.SLOT_USAGE_THRESHOLD
+            ) {
+                setup_depositMemberInfo(STREAM_ID, MEMBER_0_ADDRESS);
+                setup_depositMemberInfo(STREAM_ID, MEMBER_1_ADDRESS);
+            }
         }
     }
 
@@ -298,5 +307,15 @@ abstract contract HelperContract is Test, TestUtils {
     function setup_requestAndAcceptPeginFlow() public {
         BtcTransaction memory peginTx = setup_requestPeginFlow();
         setup_acceptPeginFlow(peginTx);
+    }
+
+    function setup_createCommittee(uint64 _streamId) internal {
+        vm.prank(address(pm));
+        registry.createCommittee(_streamId);
+    }
+
+    function setup_depositMemberInfo(uint64 _streamId, address _memberAddress) internal {
+        vm.prank(_memberAddress);
+        registry.depositMemberInfoForCommittee(_streamId, COMMITEE_1_PUB_KEY);
     }
 }

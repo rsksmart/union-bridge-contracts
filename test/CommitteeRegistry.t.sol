@@ -5,7 +5,8 @@ import "forge-std/Test.sol";
 import {Role, Member, CommitteeMember, Committee, CommitteeRegistry} from "src/CommitteeRegistry.sol";
 import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {SecurityBond} from "src/SecurityBond.sol";
-import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
+import {StreamDenomination, IStreamManager} from "src/interfaces/IStreamManager.sol";
+import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
@@ -16,119 +17,41 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_getCommittee_Success() external view {
         // Act
-        Committee memory aCommittee = registry.getCommittee(committee1Key);
+        Committee memory aCommittee = registry.getCommittee(COMMITTEE_1_ID);
         // Assert
         assertEqCommittee(aCommittee, committee1, "getted committee1");
     }
 
-    function test_getCommitteeMemberIndices_Success() external view {
+    function test_getCommitteeMembers_Success() external view {
         // Act
-        CommitteeMember[] memory members = registry.getCommitteeMember(committee1Key);
+        CommitteeMember[] memory members = registry.getCommitteeMembers(COMMITTEE_1_ID);
         // Assert
         assertEqCommitteeMembers(members, committee1Members, "getted committee1 members");
     }
 
-    function test_getCommitteesLength_Success() external view {
-        // Act
-        uint256 length = registry.getCommitteesLength();
-        // Assert
-        assertEq(length, 1, "expected committees length should be 1");
-    }
-
-    function test_getCommitteeByIndex_Success() external view {
-        // Act
-        bytes32 aCommitteeKey = registry.getCommitteeByIndex(0);
-        // Assert
-        assertEq(aCommitteeKey, committee1Key, "expected obtained key by index to be the same as the setup committee1");
-    }
-
     function test_registerCommittee_Success() external {
-        // Arrange
-        uint256 previousLength = registry.getCommitteesLength();
-        uint256 minimumDeposit = registry.getMinimumDepositById(defaultStream);
-        registry.depositBond{value: minimumDeposit}(generatePubKey(3), defaultStream, defaultRole);
+        // Assert
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.NewCommittee(COMMITTEE_2_ID, committee2);
+
         // Act
-        registry.registerCommittee(committee2);
+        registry.registerCommittee(COMMITTEE_2_ID, committee2);
+
         // Assert
         // Committee
-        uint256 actualLength = registry.getCommitteesLength();
-        assertEq(actualLength, previousLength + 1, "expected committees length should be previous + 1");
-        Committee memory aCommittee = registry.getCommittee(committee2Key);
-        assertEqCommittee(aCommittee, committee2, "registered committee1");
-        bytes32 actualKey = registry.getCommitteeByIndex(previousLength);
-        assertEq(actualKey, committee2Key, "expected obtained key by index to be the same as the registered committee1");
+        Committee memory aCommittee = registry.getCommittee(COMMITTEE_2_ID);
+        assertEqCommittee(aCommittee, committee2, "registered committee2");
 
         // Members
-        CommitteeMember[] memory members = registry.getCommitteeMember(committee2Key);
-        assertEqCommitteeMembers(members, committee2Members, "registered committee1");
+        CommitteeMember[] memory members = registry.getCommitteeMembers(COMMITTEE_2_ID);
+        assertEqCommitteeMembers(members, committee2Members, "registered committee2");
     }
 
     function test_registerCommittee_Revert_AlreadyRegistered() external {
         // Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(ICommitteeRegistry.AlreadyRegisteredCommittee.selector, committee1.internalKey)
-        );
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.AlreadyRegisteredCommittee.selector, COMMITTEE_1_ID));
         // Act
-        registry.registerCommittee(committee1);
-    }
-
-    function test_registerCommittee_Revert_TooManyMembersPerCommittee() external {
-        // Arrange
-        uint256 minimumDeposit = registry.getMinimumDepositById(defaultStream);
-        Committee memory aCommittee;
-        uint256 MAX_MEMBERS_PER_COMMITTEE = registry.MAX_MEMBERS_PER_COMMITTEE();
-        CommitteeMember[] memory committee2Members = new CommitteeMember[](MAX_MEMBERS_PER_COMMITTEE + 1);
-        // We start at 3 as we already have 3 members registered in the setup
-        for (uint8 i = 3; i < committee2Members.length; i++) {
-            uint256 privKey = uint256(i);
-            // Add balance to the user
-            address user = vm.addr(privKey);
-            vm.deal(user, minimumDeposit);
-
-            vm.startBroadcast(privKey);
-            registry.depositBond{value: minimumDeposit}(bytes32(privKey), defaultStream, defaultRole);
-            vm.stopBroadcast();
-            committee2Members[i] = CommitteeMember({index: i, role: Role.Operator});
-        }
-        aCommittee = Committee({internalKey: committee2Key, memberIndexesAndRoles: committee2Members, leaderIndex: 0});
-
-        // Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(ICommitteeRegistry.TooManyMembersPerCommittee.selector, MAX_MEMBERS_PER_COMMITTEE)
-        );
-        // Act
-        registry.registerCommittee(aCommittee);
-    }
-
-    function test_registerCommittee_Revert_TooManyCommittees() external {
-        // Arrange
-        uint256 MAX_COMMITTEES_SIZE = registry.MAX_COMMITTEES_SIZE();
-        bytes32 aCommitteeKey;
-        Committee memory aCommittee;
-        CommitteeMember[] memory aCommitteeMembers;
-
-        // We start at 1 as we already have a committee registered at set
-        for (uint256 i = 1; i < MAX_COMMITTEES_SIZE; i++) {
-            aCommitteeMembers = new CommitteeMember[](2);
-            aCommitteeMembers[0] = CommitteeMember({index: 0, role: Role.Operator});
-            aCommitteeMembers[1] = CommitteeMember({index: 1, role: Role.Operator});
-            aCommitteeKey = uintToBytes32(i);
-            aCommittee =
-                Committee({internalKey: aCommitteeKey, memberIndexesAndRoles: aCommitteeMembers, leaderIndex: 0});
-
-            registry.registerCommittee(aCommittee);
-        }
-
-        aCommitteeMembers = new CommitteeMember[](2);
-        aCommitteeMembers[0] = CommitteeMember({index: 0, role: Role.Operator});
-        aCommitteeMembers[1] = CommitteeMember({index: 1, role: Role.Operator});
-        aCommitteeKey = uintToBytes32(MAX_COMMITTEES_SIZE);
-        aCommittee = Committee({internalKey: aCommitteeKey, memberIndexesAndRoles: aCommitteeMembers, leaderIndex: 0});
-
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.TooManyCommittees.selector, MAX_COMMITTEES_SIZE));
-        // Act
-        registry.registerCommittee(aCommittee);
+        registry.registerCommittee(COMMITTEE_1_ID, committee1);
     }
 
     function test_depositBond_Revert_TooManyMembers() external {
@@ -672,5 +595,179 @@ contract TestCommitteeRegistry is Test, HelperContract {
         );
         // Act
         registry.selectCommittee(streamId);
+    }
+
+    function test_getMemberPubKeyByIndex_Revert_MemberIndexNotFound() external {
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.MemberIndexNotFound.selector, 3));
+        // Act
+        registry.getMemberPubKeyByIndex(3);
+    }
+
+    function test_getMemberPubKeyByIndex_Success() external view {
+        // Act
+        bytes32 pubKey = registry.getMemberPubKeyByIndex(1);
+
+        // Assert
+        assertEq(pubKey, MEMBER_1_PUBKEY, "getted member1 pubkey by index 1");
+    }
+
+    function test_getMemberIndexByAddress_Success() external view {
+        // Act
+        uint16 memberIndex = registry.getMemberIndexByAddress(MEMBER_1_ADDRESS);
+
+        // Assert
+        assertEq(memberIndex, 1, "getted member1 index by address");
+    }
+
+    function test_getMemberIndexByAddress_Revert_MemberNotRegistered() external {
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.MemberNotRegistered.selector, MEMBER_3_ADDRESS));
+
+        // Act
+        registry.getMemberIndexByAddress(MEMBER_3_ADDRESS);
+    }
+
+    function test_getPendingCommittee_Revert_CommitteeIsNotPending() external {
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.CommitteeIsNotPending.selector, STREAM_ID));
+        // Act
+        registry.getPendingCommittee(STREAM_ID);
+    }
+
+    function test_createCommittee_Success() external {
+        // Arrange
+        Committee memory pendingCommittee = committee1;
+        pendingCommittee.aggregatedKey = bytes32(0);
+
+        // Assert
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.NewPendingCommittee(STREAM_ID, pendingCommittee);
+
+        // Act
+        // This should create a committee as pending
+        vm.prank(address(pm));
+        registry.createCommittee(STREAM_ID);
+    }
+
+    function test_getPendingCommittee_Success() external {
+        // Arrange
+        setup_createCommittee(STREAM_ID);
+        Committee memory expectedPendingCommittee = committee1;
+        expectedPendingCommittee.aggregatedKey = bytes32(0);
+
+        // Act
+        (Committee memory committee, uint256 expiredAt, uint256 missingData) = registry.getPendingCommittee(STREAM_ID);
+
+        // Assert
+        assertEqCommittee(committee, expectedPendingCommittee, "get pending committee");
+        assertNotEq(expiredAt, 0);
+        assertEq(missingData, 2);
+    }
+
+    function test_depositMemberInfoForCommittee_Success() external {
+        // Arrange
+        setup_createCommittee(STREAM_ID);
+
+        // Act
+        vm.prank(MEMBER_0_ADDRESS);
+        registry.depositMemberInfoForCommittee(STREAM_ID, COMMITEE_1_PUB_KEY);
+
+        // Assert
+        (Committee memory committee, uint256 expiredAt, uint256 missingData) = registry.getPendingCommittee(STREAM_ID);
+        assertEqCommittee(committee, committee1, "get pending committee");
+        assertNotEq(expiredAt, 0);
+        assertEq(missingData, 1);
+    }
+
+    function test_depositMemberInfoForCommittee_WrongCommitteeKey() external {
+        // Arrange
+        setup_createCommittee(STREAM_ID);
+        setup_depositMemberInfo(STREAM_ID, MEMBER_0_ADDRESS);
+        Committee memory expectedPendingCommittee = committee1;
+        expectedPendingCommittee.aggregatedKey = bytes32(0);
+
+        // Assert
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.NewPendingCommittee(STREAM_ID, expectedPendingCommittee);
+
+        // Act
+        // Second member deposit wrong committee aggregated key, so discard current pending committee a create a new one.
+        vm.prank(MEMBER_1_ADDRESS);
+        registry.depositMemberInfoForCommittee(STREAM_ID, COMMITEE_2_PUB_KEY);
+
+        // Assert
+        (Committee memory committee, uint256 expiredAt, uint256 missingData) = registry.getPendingCommittee(STREAM_ID);
+        assertEqCommittee(committee, expectedPendingCommittee, "get pending committee");
+        assertNotEq(expiredAt, 0);
+        assertEq(missingData, 2);
+    }
+
+    function test_depositMemberInfoForCommittee_CompleteCommittee_Success() external {
+        // Arrange
+        setup_createCommittee(STREAM_ID);
+        setup_depositMemberInfo(STREAM_ID, MEMBER_0_ADDRESS);
+
+        // Assert
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.NewCommittee(
+            75506153327051474587906755573858019282972751592871715030499431892688993766217, committee1
+        );
+
+        // Act
+        vm.prank(MEMBER_1_ADDRESS);
+        registry.depositMemberInfoForCommittee(STREAM_ID, COMMITEE_1_PUB_KEY);
+    }
+
+    function test_getPendingCommittee_Revert_CommitteeIsNotPending_AfterCompleteCommittee() external {
+        // Arrange
+        setup_createCommittee(STREAM_ID);
+        setup_depositMemberInfo(STREAM_ID, MEMBER_0_ADDRESS);
+        setup_depositMemberInfo(STREAM_ID, MEMBER_1_ADDRESS);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.CommitteeIsNotPending.selector, STREAM_ID));
+        // Act
+        registry.getPendingCommittee(STREAM_ID);
+    }
+
+    function test_isPendingCommitteeExpired_False_BeforeCreateCommittee() external view {
+        // Act
+        bool isCommitteePendingExpired = registry.isPendingCommitteeExpired(STREAM_ID);
+        // Assert
+        // There is no pending committee so it's not expired
+        assertFalse(isCommitteePendingExpired, "pending committee is expired");
+    }
+
+    function test_isPendingCommitteeExpired_False_AfterCreateCommittee() external {
+        // Arrange
+        setup_createCommittee(STREAM_ID);
+
+        // Act
+        bool isCommitteePendingExpired = registry.isPendingCommitteeExpired(STREAM_ID);
+        // Assert
+        // There is pending committee and it's not expired
+        assertFalse(isCommitteePendingExpired, "pending committee is expired");
+    }
+
+    function test_isPendingCommitteeExpired_True() external {
+        // Arrange
+        setup_createCommittee(STREAM_ID);
+        uint256 timelock = registry.pendingCommitteeTimelock();
+        vm.warp(block.timestamp + timelock + 1 seconds); // warp time to make committee expired
+
+        // Act
+        bool isCommitteePendingExpired = registry.isPendingCommitteeExpired(STREAM_ID);
+        // Assert
+        // There is pending committee and it's expired
+        assertTrue(isCommitteePendingExpired, "pending committee is not expired");
+    }
+
+    function test_createCommittee_UnauthorizedAccount() external {
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.UnauthorizedAccount.selector, address(this)));
+
+        // Act
+        registry.createCommittee(STREAM_ID);
     }
 }

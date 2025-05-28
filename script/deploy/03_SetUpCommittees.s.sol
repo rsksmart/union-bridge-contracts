@@ -46,17 +46,17 @@ contract SetUpCommittees is ScriptUtils, TestUtils {
 
         if (block.chainid == ChainIds.RSK_MAINNET) {
             // RSK Mainnet
-            committeesParams[0].committee.internalKey =
+            committeesParams[0].committee.aggregatedKey =
                 0x924c163b385af7093440184af6fd6244936d1288cbb41cc3812286d3f83a3329;
         } else if (block.chainid == ChainIds.RSK_TESTNET) {
             // RSK Testnet
             // Obtained from transactions repository
-            committeesParams[0].committee.internalKey =
+            committeesParams[0].committee.aggregatedKey =
                 0xd1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d;
         } else if (block.chainid == ChainIds.LOCAL) {
             // Foundry local chainid
             // Obtained from transactions repository
-            committeesParams[0].committee.internalKey =
+            committeesParams[0].committee.aggregatedKey =
                 0xd1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d;
         } else {
             revert("Blockchain is not RSK");
@@ -97,22 +97,40 @@ contract SetUpCommittees is ScriptUtils, TestUtils {
     ) public {
         uint256 length = _registerCommitteesParams.length;
         for (uint256 i = 0; i < length; i++) {
-            registerCommittee(_committeeRegistry, _registerCommitteesParams[i].committee);
-        }
-        if (_committeeRegistry.getCommitteesLength() != length) {
-            revert("CommitteeRegistry committees length is not the same as the number of committees");
-        }
-        if (
-            _committeeRegistry.getCommitteeByIndex(length - 1)
-                != _registerCommitteesParams[length - 1].committee.internalKey
-        ) {
-            revert("CommitteeRegistry last committee is not the same as the last committee in the array");
+            Committee memory committee = _registerCommitteesParams[i].committee;
+            registerCommittee(_committeeRegistry, i + 1, committee);
+            _compareCommittees(_committeeRegistry.getCommittee(i + 1), committee);
         }
     }
 
-    function registerCommittee(CommitteeRegistry _committeeRegistry, Committee memory _commitee) public {
+    function _compareCommittees(Committee memory _contractCommittee, Committee memory _committee) internal pure {
+        if (_contractCommittee.aggregatedKey != _committee.aggregatedKey) {
+            revert("CommitteeRegistry committee registered has not the same aggregated key as the one in the contract");
+        }
+
+        if (_contractCommittee.memberIndexesAndRoles.length != _committee.memberIndexesAndRoles.length) {
+            revert("CommitteeRegistry committee registered has not same member length as the one in the contract");
+        }
+
+        for (uint256 i = 0; i < _committee.memberIndexesAndRoles.length; i++) {
+            if (_contractCommittee.memberIndexesAndRoles[i].index != _committee.memberIndexesAndRoles[i].index) {
+                revert("CommitteeRegistry committee registered has a different index member as the one in the contract");
+            }
+            if (_contractCommittee.memberIndexesAndRoles[i].role != _committee.memberIndexesAndRoles[i].role) {
+                revert("CommitteeRegistry committee registered has a different role member as the one in the contract");
+            }
+        }
+
+        if (_contractCommittee.leaderIndex != _committee.leaderIndex) {
+            revert("CommitteeRegistry committee registered has a different leaderIndex as the one in the contract");
+        }
+    }
+
+    function registerCommittee(CommitteeRegistry _committeeRegistry, uint256 _committeeId, Committee memory _commitee)
+        public
+    {
         vm.startBroadcast(getDeployerKey());
-        _committeeRegistry.registerCommittee(_commitee);
+        _committeeRegistry.registerCommittee(_committeeId, _commitee);
         vm.stopBroadcast();
     }
 

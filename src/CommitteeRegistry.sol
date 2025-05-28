@@ -7,8 +7,17 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {BaseProxy} from "./BaseProxy.sol";
-import {Role, Member, CommitteeMember, Committee, ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
+import {
+    Role,
+    Member,
+    CommitteeMember,
+    Committee,
+    ICommitteeRegistry,
+    PendingCommittee,
+    PendingCommitteeData
+} from "./interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination, IStreamManager} from "./interfaces/IStreamManager.sol";
+import {IPegManager} from "./interfaces/IPegManager.sol";
 import {SecurityBond} from "./SecurityBond.sol";
 
 contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
@@ -22,18 +31,40 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
     // NOTE: Should fit condition MIN_COMMITTEE_MEMBERS > MIN_WATCHTOWERS + MIN_OPERATORS
     uint256 public constant MIN_COMMITTEE_MEMBERS = 10;
 
-    bytes32[] internal committees;
-    // Committee key => Committee
-    mapping(bytes32 => Committee) internal committeesByKey;
+    mapping(uint64 => PendingCommittee) internal pendingCommittees;
+    mapping(uint256 => Committee) internal committeesByKey;
     mapping(address => uint16) internal memberIndexByAddress;
+    address pegManager;
+
+    // TODO: This will be tackle later on in another story
+    uint256 public constant pendingCommitteeTimelock = 1 days;
+
     mapping(StreamDenomination denomination => CommitteeMember[]) internal committeesCandidates;
 
-    event newCommittee(bytes32 indexed internalKey, Committee _committee);
     event newMember(bytes32 indexed publicKey);
     event memberUnsubscribedFromStream(address indexed member, StreamDenomination stream);
 
     function initialize(address _initialOwner) public initializer {
         __BaseProxy_init(_initialOwner);
+    }
+
+    // FIXME: Temporary function to register a committee, should be deleted when createCommittee is called in setup
+    function registerCommittee(uint256 _committeeId, Committee calldata _committee) external {
+        if (committeesByKey[_committeeId].memberIndexesAndRoles.length != 0) {
+            revert AlreadyRegisteredCommittee(_committeeId);
+        }
+
+        committeesByKey[_committeeId] = _committee;
+        emit NewCommittee(_committeeId, _committee);
+    }
+
+    function _getMemberPubKeyByAddress(address _address) internal view returns (bytes32) {
+        uint16 memberIndex = memberIndexByAddress[_address];
+        if (memberIndex == 0) {
+            return bytes32(0);
+        }
+        // Substract 1 to get the correct index
+        return members[memberIndex - 1].publicKey;
     }
 
     function depositBond(bytes32 _publicKey, StreamDenomination _requestedStream, Role _requestedRole)
@@ -148,58 +179,40 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
         emit newMember(_publicKey);
     }
 
-    function registerCommittee(Committee calldata _committee) external {
+    function _registerCommittee(uint256 _committeeId, Committee storage _committee) internal {
         // Check if exists
-        if (committeesByKey[_committee.internalKey].internalKey != bytes32(0)) {
-            revert AlreadyRegisteredCommittee(_committee.internalKey);
-        }
-        // Check max Committees
-        if (committees.length >= MAX_COMMITTEES_SIZE) {
-            revert TooManyCommittees(MAX_COMMITTEES_SIZE);
-        }
-        // Check max Members for the committee
-        if (_committee.memberIndexesAndRoles.length > MAX_MEMBERS_PER_COMMITTEE) {
-            revert TooManyMembersPerCommittee(MAX_MEMBERS_PER_COMMITTEE);
+        // NOTE: Could we ignore this check due to committeeId being unique?
+        if (committeesByKey[_committeeId].aggregatedKey != bytes32(0)) {
+            return;
         }
 
-        // Set up Committee
-        committees.push(_committee.internalKey);
-        committeesByKey[_committee.internalKey] = _committee;
-        emit newCommittee(_committee.internalKey, _committee);
+        committeesByKey[_committeeId] = _committee;
+        emit NewCommittee(_committeeId, _committee);
     }
 
-    function getCommitteeByIndex(uint256 _committeeIndex) external view returns (bytes32) {
-        return committees[_committeeIndex];
-    }
+    function getCommittee(uint256 _committeeId) external view returns (Committee memory) {
+        Committee memory committee = committeesByKey[_committeeId];
+        if (committee.memberIndexesAndRoles.length == 0) {
+            revert CommitteeNotFound(_committeeId);
+        }
 
-    function getCommitteesLength() external view returns (uint256) {
-        return committees.length;
+        return committee;
     }
 
     function getMembersLength() external view returns (uint256) {
         return members.length;
     }
 
-    function getCommittee(bytes32 _committeeKey) external view returns (Committee memory) {
-        return committeesByKey[_committeeKey];
-    }
-
-    function getCommitteeMember(bytes32 _committeeKey) external view returns (CommitteeMember[] memory) {
-        return committeesByKey[_committeeKey].memberIndexesAndRoles;
-    }
-
-    function getNextAvailableCommittee() external view returns (Committee memory) {
-        // For now, always return the first committee
-        return committeesByKey[committees[0]];
+    function getCommitteeMembers(uint256 _committeeId) external view returns (CommitteeMember[] memory) {
+        return committeesByKey[_committeeId].memberIndexesAndRoles;
     }
 
     // TODO: check if this is needed
     function getMemberPubKeyByIndex(uint16 _memberIndex) external view returns (bytes32) {
-        bytes32 publicKey = members[_memberIndex].publicKey;
-        if (publicKey == "") {
+        if (_memberIndex >= members.length) {
             revert MemberIndexNotFound(_memberIndex);
         }
-        return publicKey;
+        return members[_memberIndex].publicKey;
     }
 
     // TODO: check if this is needed
@@ -207,24 +220,12 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
         uint16 memberIndex = memberIndexByAddress[_address];
 
         // 0 is reserved for non registered members
-        if (memberIndex == 0) {
+        if (memberIndex == 0 || memberIndex > members.length) {
             revert MemberNotRegistered(_address);
         }
 
         // Substract 1 to get the correct index
         return memberIndex - 1;
-    }
-
-    function getMemberPubKeyByAddress(address _address) public view returns (bytes32) {
-        uint16 memberIndex = memberIndexByAddress[_address];
-
-        // 0 is reserved for non registered members
-        if (memberIndex == 0) {
-            return 0x00;
-        }
-
-        // Substract 1 to get the correct index
-        return members[memberIndex - 1].publicKey;
     }
 
     function getMemberPublicKey(address _address) external view returns (bytes32) {
@@ -267,9 +268,171 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
         return members[memberIndex - 1];
     }
 
-    function createCommittee(uint64 _streamId) external view returns (bytes32) {
-        // For now, just return the first committee key for backwards compatibility with existing tests.
-        return committees[0];
+    function createCommittee(uint64 _streamId) external onlyPegManager {
+        // TODO: Validate if the streamId is valid
+        // TODO: Validate who can call this function. PegManager and external or in setup.
+        // If it's called externally we should check that we really need to create a new committee.
+        // Or maybe validate that there is a pending committee that it's expired
+
+        PendingCommittee storage pendingCommittee = pendingCommittees[_streamId];
+        if (pendingCommittee.expireAt != 0) {
+            // slither-disable-next-line timestamp
+            if (block.timestamp < pendingCommittee.expireAt) {
+                // This is called from the pegManager, so we should not revert.
+                return;
+            }
+
+            _slashCommittee();
+            _deletePendingCommittee(_streamId);
+        }
+        _createCommittee(_streamId);
+    }
+
+    function _createCommittee(uint64 _streamId) internal returns (bool) {
+        CommitteeMember[] memory committeeMembers = _selectCommittee(_streamId);
+        if (committeeMembers.length == 0) {
+            // This is called from the pegManager, so we should not revert.
+            return false;
+        }
+
+        pendingCommittees[_streamId].expireAt = block.timestamp + pendingCommitteeTimelock;
+        pendingCommittees[_streamId].missingData = uint16(committeeMembers.length);
+
+        // Initialize the committee members here.
+        // No need to initialize aggregatedKey, since it will be set by the members.
+        for (uint256 i = 0; i < committeeMembers.length; i++) {
+            // Copy committee members from memory to storage
+            pendingCommittees[_streamId].committee.memberIndexesAndRoles.push(committeeMembers[i]);
+
+            bytes32 memberPubKey = members[committeeMembers[i].index].publicKey;
+            // Initialize committee users pending data
+            pendingCommittees[_streamId].data[memberPubKey] =
+                PendingCommitteeData({inCommittee: true, aggregatedKey: bytes32(0)});
+        }
+        emit NewPendingCommittee(_streamId, pendingCommittees[_streamId].committee);
+        return true;
+    }
+
+    function depositMemberInfoForCommittee(uint64 _streamId, bytes32 _aggregatedKey) external {
+        PendingCommittee storage pendingCommittee = pendingCommittees[_streamId];
+        if (pendingCommittee.expireAt == 0) {
+            revert CommitteeIsNotPending(_streamId);
+        }
+
+        if (_aggregatedKey == bytes32(0)) {
+            revert InvalidAgregatedKey();
+        }
+
+        bytes32 memberPubKey = _getCurrentMemberPubKey();
+        if (!pendingCommittee.data[memberPubKey].inCommittee) {
+            revert MemberNotInCommittee(memberPubKey);
+        }
+
+        if (pendingCommittee.data[memberPubKey].aggregatedKey != bytes32(0)) {
+            revert MemberAlreadyUpdated(memberPubKey);
+        }
+
+        pendingCommittee.data[memberPubKey].aggregatedKey = _aggregatedKey;
+
+        if (pendingCommittee.committee.aggregatedKey == bytes32(0)) {
+            // Save the agregated key for the committee
+            pendingCommittee.committee.aggregatedKey = _aggregatedKey;
+        } else {
+            if (pendingCommittee.committee.aggregatedKey != _aggregatedKey) {
+                _deletePendingCommittee(_streamId);
+                _createCommittee(_streamId); // Ignoring checks
+                return;
+            }
+        }
+
+        pendingCommittee.missingData--;
+        if (pendingCommittee.missingData != 0) {
+            // Committee is not completed yet
+            return;
+        }
+
+        // Create unique committee id associated to the streamId and packetNumber.
+        uint256 committeeId = uint256(keccak256(abi.encode(_streamId, streamManager.getPacketsLength(_streamId))));
+        _registerCommittee(committeeId, pendingCommittee.committee);
+        // create new packet
+        streamManager.createNewPacket(_streamId, committeeId, pendingCommittee.committee.aggregatedKey);
+        _deletePendingCommittee(_streamId);
+    }
+
+    function _slashCommittee() internal {
+        // TODO: slash the members. Sasasaaa.
+    }
+
+    function getPendingCommittee(uint64 _streamId)
+        public
+        view
+        returns (Committee memory committee, uint256 expiredAt, uint256 missingData)
+    {
+        PendingCommittee storage pendingCommittee = pendingCommittees[_streamId];
+        if (pendingCommittee.expireAt == 0) {
+            revert CommitteeIsNotPending(_streamId);
+        }
+        committee = pendingCommittee.committee;
+        expiredAt = pendingCommittee.expireAt;
+        missingData = pendingCommittee.missingData;
+    }
+
+    function _selectCommittee(uint64 _streamId) internal pure returns (CommitteeMember[] memory) {
+        // WIP: This is being implemented by Agustin
+        CommitteeMember[] memory committeeMembers = new CommitteeMember[](2);
+        // Index are tied at how it's added in tests now.
+        committeeMembers[0] = CommitteeMember({index: 0, role: Role.Operator});
+        committeeMembers[1] = CommitteeMember({index: 1, role: Role.Watchtower});
+        return committeeMembers;
+    }
+
+    function _getCurrentMemberPubKey() internal view returns (bytes32) {
+        bytes32 memberPubKey = _getMemberPubKeyByAddress(msg.sender);
+        if (memberPubKey == bytes32(0)) {
+            revert MemberNotFound(msg.sender);
+        }
+        return memberPubKey;
+    }
+
+    function isPendingCommitteeExpired(uint64 _streamId) external view returns (bool) {
+        uint256 expireAt = pendingCommittees[_streamId].expireAt;
+        // If no pending committee in proccess we return false
+        if (expireAt == 0) {
+            return false;
+        }
+        // slither-disable-next-line timestamp
+        return block.timestamp > expireAt;
+    }
+
+    function _deletePendingCommittee(uint64 _streamId) internal {
+        CommitteeMember[] storage committeeMembers = pendingCommittees[_streamId].committee.memberIndexesAndRoles;
+        for (uint256 i = 0; i < committeeMembers.length; i++) {
+            bytes32 memberPubKey = members[committeeMembers[i].index].publicKey;
+            delete pendingCommittees[_streamId].data[memberPubKey];
+        }
+        //slither-disable-next-line mapping-deletion
+        delete pendingCommittees[_streamId];
+    }
+
+    function setPegManager(IPegManager _pegManager) external onlyOwner {
+        if (address(_pegManager) == address(0)) {
+            revert InvalidZeroAddress();
+        }
+        pegManager = address(_pegManager);
+    }
+
+    modifier onlyPegManager() {
+        _checkPegManager();
+        _;
+    }
+
+    /**
+     * @dev Throws if the sender is not the pegManager.
+     */
+    function _checkPegManager() internal view virtual {
+        if (pegManager != msg.sender) {
+            revert UnauthorizedAccount(msg.sender);
+        }
     }
 
     function getCommitteeCandidates(StreamDenomination _denomination)
