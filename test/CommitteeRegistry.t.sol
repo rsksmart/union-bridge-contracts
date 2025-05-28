@@ -546,12 +546,6 @@ contract TestCommitteeRegistry is Test, HelperContract {
     function assertUniqueMembers(CommitteeMember[] memory selectedMembers) internal pure {
         for (uint256 i = 0; i < selectedMembers.length; i++) {
             for (uint256 j = i + 1; j < selectedMembers.length; j++) {
-                if (selectedMembers[i].index == selectedMembers[j].index) {
-                    console2.log("i:", i);
-                    console2.log("j:", j);
-                    console2.log("selectedMembers[i].index:", selectedMembers[i].index);
-                    console2.log("selectedMembers[j].index:", selectedMembers[j].index);
-                }
                 assertNotEq(
                     selectedMembers[i].index, selectedMembers[j].index, "There is a repeated member in selected members"
                 );

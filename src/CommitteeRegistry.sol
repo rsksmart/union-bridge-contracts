@@ -344,37 +344,26 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
         // We use Fisher-Yates shuffle because it guarantees each index is selected exactly once.
         // This way we avoid index collisions and infinite loops.
 
-        // NOTE: `lastPos` need to be an int for the border case that it goes to -1 until in break the for.
-        // This happen when having MIN_COMMITTEE_MEMBERS - MIN_WATCHTOWERS == operatorCount
-
         // Select random operators
-        for (
-            int256 lastPos = int256(operatorCount - 1);
-            lastPos >= int256(operatorCount - operatorsCommitteeAmount);
-            lastPos--
-        ) {
-            int256 randomPos = int256(uint256(keccak256(abi.encode(block.timestamp, lastPos))) % uint256(lastPos + 1));
+        for (uint256 length = operatorCount; length > operatorCount - operatorsCommitteeAmount; length--) {
+            uint256 randomPos = uint256(keccak256(abi.encode(block.timestamp, length))) % length;
 
             // This indexing will be simplified when `candidates` array is split in `watchtowers` and `operators` arrays
-            selectedMembers[committeeMembersCounter++] = candidates[operatorIndices[uint256(randomPos)]];
+            selectedMembers[committeeMembersCounter++] = candidates[operatorIndices[randomPos]];
 
             // Just move last position to replace random position. There is no need to swap values now.
-            operatorIndices[uint256(randomPos)] = operatorIndices[uint256(lastPos)];
+            operatorIndices[randomPos] = operatorIndices[length - 1];
         }
 
         // Select random watchtowers
-        for (
-            int256 lastPos = int256(watchtowerCount - 1);
-            lastPos >= int256(watchtowerCount - watchtowerCommitteeAmount);
-            lastPos--
-        ) {
-            int256 randomPos = int256(uint256(keccak256(abi.encode(block.timestamp, lastPos))) % uint256(lastPos + 1));
+        for (uint256 length = watchtowerCount; length > watchtowerCount - watchtowerCommitteeAmount; length--) {
+            uint256 randomPos = uint256(keccak256(abi.encode(block.timestamp, length))) % length;
 
             // This indexing will be simplified when `candidates` array is split in `watchtowers` and `operators` arrays
-            selectedMembers[committeeMembersCounter++] = candidates[watchtowerIndices[uint256(randomPos)]];
+            selectedMembers[committeeMembersCounter++] = candidates[watchtowerIndices[randomPos]];
 
             // Just move last position to replace random position. There is no need to swap values now.
-            watchtowerIndices[uint256(randomPos)] = watchtowerIndices[uint256(lastPos)];
+            watchtowerIndices[randomPos] = watchtowerIndices[length - 1];
         }
 
         return selectedMembers;
