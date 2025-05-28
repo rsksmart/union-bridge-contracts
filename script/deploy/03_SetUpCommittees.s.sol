@@ -28,7 +28,7 @@ contract SetUpCommittees is ScriptUtils, TestUtils {
     /// like https://github.com/defi-wonderland/solidity-foundry-boilerplate/blob/main/script/Deploy.sol
     RegisterCommitteeParams[] public committeesParams;
     StreamDenomination defaultRequestedStream = StreamDenomination._0_001BTC;
-    Role defaultRequestedRole = Role.Operator;
+    Role defaultRequestedRole = Role.Watchtower;
 
     function setUp() internal {
         require(REQUIRED_MEMBERS_AMOUNT <= 10, "REQUIRED_MEMBERS_AMOUNT must be less than or equal to 10");
@@ -36,7 +36,7 @@ contract SetUpCommittees is ScriptUtils, TestUtils {
         // Map memebers to comittee
         CommitteeMember[] memory members = new CommitteeMember[](2);
         members[0] = CommitteeMember({index: 0, role: Role.Operator});
-        members[1] = CommitteeMember({index: 1, role: Role.Operator});
+        members[1] = CommitteeMember({index: 1, role: Role.Watchtower});
 
         // Committee setup
         committeesParams.push();

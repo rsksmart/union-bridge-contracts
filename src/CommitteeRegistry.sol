@@ -19,6 +19,7 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
     // Committee selection constants
     uint256 public constant MIN_WATCHTOWERS = 3;
     uint256 public constant MIN_OPERATORS = 3;
+    // NOTE: Should fit condition MIN_COMMITTEE_MEMBERS > MIN_WATCHTOWERS + MIN_OPERATORS
     uint256 public constant MIN_COMMITTEE_MEMBERS = 10;
 
     bytes32[] internal committees;
@@ -327,41 +328,53 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
             revert NotEnoughMembers(MIN_COMMITTEE_MEMBERS, totalAvailableMembers);
         }
 
+        // Amount of each members per role in the committee
+        // NOTE: Here assumme that MIN_COMMITTEE_MEMBERS > MIN_WATCHTOWERS + MIN_OPERATORS
+        uint256 operatorsCommitteeAmount = (MIN_COMMITTEE_MEMBERS - MIN_WATCHTOWERS > operatorCount)
+            ? operatorCount
+            : MIN_COMMITTEE_MEMBERS - MIN_WATCHTOWERS;
+        uint256 watchtowerCommitteeAmount = MIN_COMMITTEE_MEMBERS - operatorsCommitteeAmount;
+        uint256 committeeMembersCounter = 0;
+
+        // Create the final committee with MIN_COMMITTEE_MEMBERS members
+        CommitteeMember[] memory selectedMembers = new CommitteeMember[](MIN_COMMITTEE_MEMBERS);
+
         // True randomness is not required here. We only need enough unpredictability to ensure
         // different committee members get selected across multiple runs.
         // We use Fisher-Yates shuffle because it guarantees each index is selected exactly once.
         // This way we avoid index collisions and infinite loops.
 
-        // Shuffle watchtowers
-        for (uint256 i = watchtowerCount - 1; i > 0; i--) {
-            uint256 j = uint256(keccak256(abi.encodePacked(block.timestamp, "watchtower", i))) % (i + 1);
-            uint256 temp = watchtowerIndices[i];
-            watchtowerIndices[i] = watchtowerIndices[j];
-            watchtowerIndices[j] = temp;
+        // NOTE: `lastPos` need to be an int for the border case that it goes to -1 until in break the for.
+        // This happen when having MIN_COMMITTEE_MEMBERS - MIN_WATCHTOWERS == operatorCount
+
+        // Select random operators
+        for (
+            int256 lastPos = int256(operatorCount - 1);
+            lastPos >= int256(operatorCount - operatorsCommitteeAmount);
+            lastPos--
+        ) {
+            int256 randomPos = int256(uint256(keccak256(abi.encode(block.timestamp, lastPos))) % uint256(lastPos + 1));
+
+            // This indexing will be simplified when `candidates` array is split in `watchtowers` and `operators` arrays
+            selectedMembers[committeeMembersCounter++] = candidates[operatorIndices[uint256(randomPos)]];
+
+            // Just move last position to replace random position. There is no need to swap values now.
+            operatorIndices[uint256(randomPos)] = operatorIndices[uint256(lastPos)];
         }
 
-        // Shuffle operators
-        for (uint256 i = operatorCount - 1; i > 0; i--) {
-            uint256 j = uint256(keccak256(abi.encodePacked(block.timestamp, "operator", i))) % (i + 1);
-            uint256 temp = operatorIndices[i];
-            operatorIndices[i] = operatorIndices[j];
-            operatorIndices[j] = temp;
-        }
+        // Select random watchtowers
+        for (
+            int256 lastPos = int256(watchtowerCount - 1);
+            lastPos >= int256(watchtowerCount - watchtowerCommitteeAmount);
+            lastPos--
+        ) {
+            int256 randomPos = int256(uint256(keccak256(abi.encode(block.timestamp, lastPos))) % uint256(lastPos + 1));
 
-        // Create the final committee with MIN_COMMITTEE_MEMBERS members
-        CommitteeMember[] memory selectedMembers = new CommitteeMember[](MIN_COMMITTEE_MEMBERS);
+            // This indexing will be simplified when `candidates` array is split in `watchtowers` and `operators` arrays
+            selectedMembers[committeeMembersCounter++] = candidates[watchtowerIndices[uint256(randomPos)]];
 
-        // Take MIN_WATCHTOWERS watchtowers using indices
-        for (uint256 i = 0; i < MIN_WATCHTOWERS; i++) {
-            selectedMembers[i] = candidates[watchtowerIndices[i]];
-        }
-
-        // Calculate remaining slots for operators
-        uint256 remainingSlots = MIN_COMMITTEE_MEMBERS - MIN_WATCHTOWERS;
-
-        // Take operators for remaining slots (should be at least MIN_OPERATORS)
-        for (uint256 i = 0; i < remainingSlots; i++) {
-            selectedMembers[i + MIN_WATCHTOWERS] = candidates[operatorIndices[i]];
+            // Just move last position to replace random position. There is no need to swap values now.
+            watchtowerIndices[uint256(randomPos)] = watchtowerIndices[uint256(lastPos)];
         }
 
         return selectedMembers;
