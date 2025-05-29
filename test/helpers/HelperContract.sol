@@ -333,7 +333,7 @@ abstract contract HelperContract is Test, TestUtils {
         registry.createCommittee(streamId);
     }
 
-    function setup_expectedRandomCommittee() internal returns (Committee memory) {
+    function setup_expectedRandomCommittee() internal view returns (Committee memory) {
         // NOTE: This function is tied to the initial setup of members that it's just 3 members
         Committee memory committee = Committee({
             aggregatedKey: bytes32(0),

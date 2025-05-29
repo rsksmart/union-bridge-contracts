@@ -9,7 +9,7 @@ contract CommitteeRegistryHarness is CommitteeRegistry {
         CommitteeRegistry.initialize(_initialOwner);
     }
 
-    function selectCommittee(uint64 _denomination) public returns (CommitteeMember[] memory) {
+    function selectCommittee(uint64 _denomination) public view returns (CommitteeMember[] memory) {
         return _selectCommittee(_denomination);
     }
 }

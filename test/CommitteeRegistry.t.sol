@@ -719,7 +719,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_getPendingCommittee_Revert_CommitteeIsNotPending_AfterCompleteCommittee() external {
         // Arrange
-        (Committee memory expectedCommittee, uint64 streamId) = setup_createCommittee();
+        (, uint64 streamId) = setup_createCommittee();
         setup_depositMemberInfo_MultipleMembers(streamId, 0, registry.MIN_COMMITTEE_MEMBERS() - 1);
 
         // Assert
@@ -751,7 +751,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_isPendingCommitteeExpired_True() external {
         // Arrange
-        (Committee memory expectedCommittee, uint64 streamId) = setup_createCommittee();
+        (, uint64 streamId) = setup_createCommittee();
         uint256 timelock = registry.pendingCommitteeTimelock();
         vm.warp(block.timestamp + timelock + 1 seconds); // warp time to make committee expired
 

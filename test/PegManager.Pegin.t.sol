@@ -253,7 +253,7 @@ contract TestPegManager is Test, HelperContract {
 
     function test_acceptPegInRequest_newPacketUsed() external {
         // Arrange
-        (Committee memory expectedCommittee, uint64 streamId) = setup_committee();
+        (, uint64 streamId) = setup_committee();
 
         // Create pegins until the new packet treshold is reached
         setup_multipleRequestAndAcceptPeginFlows(Constants.SLOTS_PER_PACKET, streamId);
@@ -416,7 +416,7 @@ contract TestPegManager is Test, HelperContract {
     }
 
     function test_peginFlow_RequestMultiplePegin_Revert_IncorrectPacketNumber() external {
-        (Committee memory expectedCommittee, uint64 streamId) = setup_committee();
+        (, uint64 streamId) = setup_committee();
 
         // Left just one empty slot in packet
         setup_multipleRequestAndAcceptPeginFlows(Constants.SLOTS_PER_PACKET - 1, streamId);

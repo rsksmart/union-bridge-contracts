@@ -123,7 +123,7 @@ contract TestPegManager is Test, HelperContract {
 
     function test_requestPegOut_FromNextPacket_Success() external {
         // Setup
-        (Committee memory expectedCommittee, uint64 streamId) = setup_committee();
+        (, uint64 streamId) = setup_committee();
         uint256 pegoutAmount = Constants.SLOTS_PER_PACKET + 10;
         setup_multipleRequestAndAcceptPeginFlows(pegoutAmount, streamId);
 
