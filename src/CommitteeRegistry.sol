@@ -33,6 +33,8 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
 
     mapping(uint64 => PendingCommittee) internal pendingCommittees;
     mapping(uint256 => Committee) internal committeesByKey;
+
+    // NOTE: This is a mapping of the members, where the key is the address and the value is the index in the members array + 1
     mapping(address => uint16) internal memberIndexByAddress;
     address pegManager;
 
@@ -44,7 +46,7 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
     event newMember(bytes32 indexed publicKey);
     event memberUnsubscribedFromStream(address indexed member, StreamDenomination stream);
 
-    function initialize(address _initialOwner) public initializer {
+    function initialize(address _initialOwner) public virtual initializer {
         __BaseProxy_init(_initialOwner);
     }
 
@@ -105,7 +107,9 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
         member.balance.preStaked[uint8(_stream)] = _amount;
         member.requestedRoles[_stream] = _role;
 
-        committeesCandidates[_stream].push(CommitteeMember({index: memberIndexByAddress[_memberAddress], role: _role}));
+        committeesCandidates[_stream].push(
+            CommitteeMember({index: _getMemberIndexByAddress(_memberAddress), role: _role})
+        );
     }
 
     function unsuscribeFromStream(StreamDenomination _stream) external {
@@ -135,10 +139,13 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
 
         // Remove from candidates
         CommitteeMember[] storage candidates = committeesCandidates[_stream];
+        uint16 memberIndex = getMemberIndexByAddress(_memberAddress);
+        uint256 length = candidates.length;
+
         // NOTE: This efectively moves forward in the list the last candidate, and might be not very gas efficient
-        for (uint256 i = 0; i < candidates.length; i++) {
-            if (candidates[i].index == memberIndexByAddress[_memberAddress]) {
-                candidates[i] = candidates[candidates.length - 1];
+        for (uint256 i = 0; i < length; i++) {
+            if (candidates[i].index == memberIndex) {
+                candidates[i] = candidates[length - 1];
                 candidates.pop();
                 break;
             }
@@ -215,8 +222,11 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
         return members[_memberIndex].publicKey;
     }
 
-    // TODO: check if this is needed
-    function getMemberIndexByAddress(address _address) external view returns (uint16) {
+    function getMemberIndexByAddress(address _address) public view returns (uint16) {
+        return _getMemberIndexByAddress(_address);
+    }
+
+    function _getMemberIndexByAddress(address _address) internal view returns (uint16) {
         uint16 memberIndex = memberIndexByAddress[_address];
 
         // 0 is reserved for non registered members
@@ -377,15 +387,6 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
         missingData = pendingCommittee.missingData;
     }
 
-    function _selectCommittee(uint64 _streamId) internal pure returns (CommitteeMember[] memory) {
-        // WIP: This is being implemented by Agustin
-        CommitteeMember[] memory committeeMembers = new CommitteeMember[](2);
-        // Index are tied at how it's added in tests now.
-        committeeMembers[0] = CommitteeMember({index: 0, role: Role.Operator});
-        committeeMembers[1] = CommitteeMember({index: 1, role: Role.Watchtower});
-        return committeeMembers;
-    }
-
     function _getCurrentMemberPubKey() internal view returns (bytes32) {
         bytes32 memberPubKey = _getMemberPubKeyByAddress(msg.sender);
         if (memberPubKey == bytes32(0)) {
@@ -453,7 +454,7 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
      * @return An array of MIN_COMMITTEE_MEMBERS CommitteeMembers containing the selected members.
      *
      */
-    function selectCommittee(uint64 _streamId) external view returns (CommitteeMember[] memory) {
+    function _selectCommittee(uint64 _streamId) internal view returns (CommitteeMember[] memory) {
         // Get the stream denomination for the streamId
         StreamDenomination denomination = StreamDenomination(_streamId);
 
@@ -509,6 +510,7 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
 
         // Select random operators
         for (uint256 length = operatorCount; length > operatorCount - operatorsCommitteeAmount; length--) {
+            // slither-disable-next-line weak-prng
             uint256 randomPos = uint256(keccak256(abi.encode(block.timestamp, length))) % length;
 
             // This indexing will be simplified when `candidates` array is split in `watchtowers` and `operators` arrays
@@ -520,6 +522,7 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
 
         // Select random watchtowers
         for (uint256 length = watchtowerCount; length > watchtowerCount - watchtowerCommitteeAmount; length--) {
+            // slither-disable-next-line weak-prng
             uint256 randomPos = uint256(keccak256(abi.encode(block.timestamp, length))) % length;
 
             // This indexing will be simplified when `candidates` array is split in `watchtowers` and `operators` arrays

@@ -119,6 +119,7 @@ contract SignatureManager is ISignatureManager, AccessControl {
         for (uint256 i = 0; i < memberCount; i++) {
             partialSignaturesData[i] = signatures.partialSignaturesData[members[i].index];
             if (partialSignaturesData[i].memberPublicKey == "") {
+                // slither-disable-next-line calls-inside-a-loop
                 partialSignaturesData[i].memberPublicKey = committeeRegistry.getMemberPubKeyByIndex(members[i].index);
             }
         }
@@ -132,7 +133,7 @@ contract SignatureManager is ISignatureManager, AccessControl {
 
     function _getSignatures(bytes32 _hashToSign) internal view returns (Signatures storage) {
         // Check if the signature hash exists
-        // slither-disable-next-line timestamp
+        // slither-disable-next-line incorrect-equality timestamp
         if (committeeSignatures[_hashToSign].committeeId == 0) {
             revert HashToSignNotFound(_hashToSign);
         }
