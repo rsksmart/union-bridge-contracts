@@ -38,12 +38,13 @@ abstract contract SecurityBond {
     }
 
     function initMemberBalance(Member storage _member) internal {
+        uint64 streams = streamManager.getStreamsLength();
         _member.balance.available = 0;
-        _member.balance.preStaked = new uint256[](streamManager.getStreamsLength());
-        for (uint64 i = 0; i < streamManager.getStreamsLength(); i++) {
+        _member.balance.preStaked = new uint256[](streams);
+        for (uint64 i = 0; i < streams; i++) {
             _member.balance.preStaked[i] = 0;
         }
-        for (uint256 i = 0; i < streamManager.getStreamsLength(); i++) {
+        for (uint256 i = 0; i < streams; i++) {
             _member.balance.staked.push();
         }
     }

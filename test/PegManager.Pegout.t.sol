@@ -19,6 +19,7 @@ import {BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE} from "src
 import {ProofValidator} from "src/ProofValidator.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {Constants} from "src/libraries/Constants.sol";
+import {Committee} from "src/interfaces/ICommitteeRegistry.sol";
 
 contract TestPegManager is Test, HelperContract {
     // Arrange
@@ -80,12 +81,12 @@ contract TestPegManager is Test, HelperContract {
         setup_requestAndAcceptPeginFlow();
 
         // Arrange
-        bytes32 expectedHash = 0x99befc0d4167efaf7e3ec5e8067a1a7c3a90ec85c1f9a792ce309b7eca630999;
+        bytes32 expectedHash = 0x2d481d49aa6db0b972aa3bd0362586ef57b24e50f0e9574f758e7ea32892f2db;
 
         // These values are attached to txIdCounter value in HelperContract.getPegInRequestTxIn().
         // Counter should start in 0, otherwise the test will fail or expectedDigestc and usrPubKey should be updated.
         bytes memory expectedDigest =
-            hex"00010200000000000000cf72c080d473fbab8c45b1c13be4215e216bb20171c0fd659632ce0779df8bc7b223ac0e009cf54402b2529ea4312214616df58c903ec7fd399c12fb08e8e675be45ad9e08ae96e42d7fd1f70a454432049ebd6a625fa377ffa22033fd8692d623e9829bfb4e23fbd3c4848baa035af15d73bcb83e510f7f097f90a21a4280d2cca26f66149c86d9940e70592f0e9c8b07b8cb01d0aabb7782c9d6b17bc12e270000000000";
+            hex"000102000000000000005ef78f9036240a4786781297f6948d64e29693a6bdacf08ce3be4735cd047d8b88ded5110527d28e1ec7e99eb5e0292efb561a926b954918acc0492495244dcbbe45ad9e08ae96e42d7fd1f70a454432049ebd6a625fa377ffa22033fd8692d623e9829bfb4e23fbd3c4848baa035af15d73bcb83e510f7f097f90a21a4280d259b22a5698c2f1292b6f5a6ce99656354fd1191aeb5ed63f498d35005230c0f40000000000";
 
         bytes memory usrPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
 
@@ -122,8 +123,9 @@ contract TestPegManager is Test, HelperContract {
 
     function test_requestPegOut_FromNextPacket_Success() external {
         // Setup
+        (, uint64 streamId) = setup_committee();
         uint256 pegoutAmount = Constants.SLOTS_PER_PACKET + 10;
-        setup_multipleRequestAndAcceptPeginFlows(pegoutAmount);
+        setup_multipleRequestAndAcceptPeginFlows(pegoutAmount, streamId);
 
         bytes memory usrPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
         uint64 amount = VALUE;
