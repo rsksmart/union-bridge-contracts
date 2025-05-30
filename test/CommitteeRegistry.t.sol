@@ -57,7 +57,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
     function test_depositBond_Revert_TooManyMembers() external {
         // Arrange
         uint256 MAX_MEMBERS_SIZE = registry.MAX_MEMBERS_SIZE();
-        uint256 minimumDeposit = registry.getMinimumDepositById(defaultStream);
+        uint256 minimumDeposit = registry.getMinimumDepositById(DEFAULT_STREAM);
         // we already have 3 members registered in the setup
         for (uint16 i = 3; i < MAX_MEMBERS_SIZE; i++) {
             uint256 privKey = uint256(i);
@@ -66,24 +66,24 @@ contract TestCommitteeRegistry is Test, HelperContract {
             vm.deal(user, minimumDeposit);
 
             vm.startBroadcast(privKey);
-            registry.depositBond{value: minimumDeposit}(bytes32(privKey), defaultStream, defaultRole);
+            registry.depositBond{value: minimumDeposit}(bytes32(privKey), DEFAULT_STREAM, DEFAULT_ROLE);
             vm.stopBroadcast();
         }
 
         // Assert
         vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.TooManyMembers.selector, MAX_MEMBERS_SIZE));
         // Act
-        registry.depositBond{value: minimumDeposit}(generatePubKey(MAX_MEMBERS_SIZE), defaultStream, defaultRole);
+        registry.depositBond{value: minimumDeposit}(generatePubKey(MAX_MEMBERS_SIZE), DEFAULT_STREAM, DEFAULT_ROLE);
     }
 
     function test_depositBond_Success() external {
         // Arrange
         uint256 privKey = uint256(1);
         address user = vm.addr(privKey);
-        uint256 minimumDeposit = registry.getMinimumDepositById(defaultStream);
+        uint256 minimumDeposit = registry.getMinimumDepositById(DEFAULT_STREAM);
         vm.deal(user, minimumDeposit);
 
-        CommitteeMember[] memory committeesCandidates = registry.getCommitteeCandidates(defaultStream);
+        CommitteeMember[] memory committeesCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM);
         uint256 candidatesAmountBefore = committeesCandidates.length;
 
         // Assert member registered
@@ -92,11 +92,11 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Assert assert deposited bond
         vm.expectEmit(address(registry));
-        emit ICommitteeRegistry.NewSecurityBondDeposit(user, defaultStream, defaultRole, minimumDeposit);
+        emit ICommitteeRegistry.NewSecurityBondDeposit(user, DEFAULT_STREAM, DEFAULT_ROLE, minimumDeposit);
 
         // Act
         vm.prank(user);
-        registry.depositBond{value: minimumDeposit}(bytes32(privKey), defaultStream, defaultRole);
+        registry.depositBond{value: minimumDeposit}(bytes32(privKey), DEFAULT_STREAM, DEFAULT_ROLE);
 
         // Assert
         // Member memory member = registry.getMemberByAddress(user);
@@ -104,21 +104,21 @@ contract TestCommitteeRegistry is Test, HelperContract {
             registry.getMemberPublicKey(user), bytes32(privKey), "member public key should match the deposited key"
         );
         assertTrue(
-            registry.getMemberRequestedRole(user, defaultStream) == defaultRole,
+            registry.getMemberRequestedRole(user, DEFAULT_STREAM) == DEFAULT_ROLE,
             "member requested role should match the requested role"
         );
         assertEq(registry.getMemberAvailableBalance(user), 0, "member available balance should be 0");
         assertEq(
-            registry.getMemberPreStakedBalance(user, defaultStream),
+            registry.getMemberPreStakedBalance(user, DEFAULT_STREAM),
             minimumDeposit,
             "member pre-staked should match the minimum deposit"
         );
 
-        committeesCandidates = registry.getCommitteeCandidates(defaultStream);
+        committeesCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM);
         uint256 candidatesAmountAfter = committeesCandidates.length;
         assertEq(candidatesAmountBefore + 1, candidatesAmountAfter, "candidates amount should increase by 1");
         assertEq(
-            (committeesCandidates[candidatesAmountAfter - 1].role == defaultRole),
+            (committeesCandidates[candidatesAmountAfter - 1].role == DEFAULT_ROLE),
             true,
             "candidate role should match requested role"
         );
@@ -128,12 +128,12 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Arrange
         uint256 privKey = uint256(1);
         address user = vm.addr(privKey);
-        uint256 minimumDeposit = registry.getMinimumDepositById(defaultStream);
+        uint256 minimumDeposit = registry.getMinimumDepositById(DEFAULT_STREAM);
         vm.deal(user, minimumDeposit);
 
         // Act
         vm.prank(user);
-        registry.depositBond{value: minimumDeposit}(bytes32(privKey), defaultStream, Role.Operator);
+        registry.depositBond{value: minimumDeposit}(bytes32(privKey), DEFAULT_STREAM, Role.Operator);
 
         // Arrange
         vm.deal(user, minimumDeposit);
@@ -143,7 +143,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
             abi.encodeWithSelector(
                 ICommitteeRegistry.MemberAlreadyRegisteredForStream.selector,
                 user,
-                defaultStream,
+                DEFAULT_STREAM,
                 Role.Watchtower,
                 Role.Operator
             )
@@ -151,29 +151,29 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Act
         vm.prank(user);
-        registry.depositBond{value: minimumDeposit}(bytes32(privKey), defaultStream, Role.Watchtower);
+        registry.depositBond{value: minimumDeposit}(bytes32(privKey), DEFAULT_STREAM, Role.Watchtower);
     }
 
     function test_depositBond_Revert_requestedNoneRoleForStream() external {
         // Arrange
         uint256 privKey = uint256(1);
         address user = vm.addr(privKey);
-        uint256 minimumDeposit = registry.getMinimumDepositById(defaultStream);
+        uint256 minimumDeposit = registry.getMinimumDepositById(DEFAULT_STREAM);
         vm.deal(user, minimumDeposit);
 
         // Assert requested none role for stream
-        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.RequestedNoneRoleForStream.selector, defaultStream));
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.RequestedNoneRoleForStream.selector, DEFAULT_STREAM));
 
         // Act
         vm.prank(user);
-        registry.depositBond{value: minimumDeposit}(bytes32(privKey), defaultStream, Role.None);
+        registry.depositBond{value: minimumDeposit}(bytes32(privKey), DEFAULT_STREAM, Role.None);
     }
 
     function test_depositBond_Revert_despositBondTooLow() external {
         // Arrange
         uint256 privKey = uint256(1);
         address user = vm.addr(privKey);
-        uint256 minimumDeposit = registry.getMinimumDepositById(defaultStream);
+        uint256 minimumDeposit = registry.getMinimumDepositById(DEFAULT_STREAM);
         vm.deal(user, minimumDeposit - 1);
 
         // Assert deposit bond too low
@@ -183,29 +183,29 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Act
         vm.prank(user);
-        registry.depositBond{value: minimumDeposit - 1}(bytes32(privKey), defaultStream, defaultRole);
+        registry.depositBond{value: minimumDeposit - 1}(bytes32(privKey), DEFAULT_STREAM, DEFAULT_ROLE);
     }
 
     function test_unsubscribeFromStream_Success() external {
         // Arrange
         uint256 privKey = uint256(1);
         address user = vm.addr(privKey);
-        uint256 minimumDeposit = registry.getMinimumDepositById(defaultStream);
+        uint256 minimumDeposit = registry.getMinimumDepositById(DEFAULT_STREAM);
         vm.deal(user, minimumDeposit);
         vm.prank(user);
-        registry.depositBond{value: minimumDeposit}(bytes32(privKey), defaultStream, Role.Operator);
-        CommitteeMember[] memory committeesCandidates = registry.getCommitteeCandidates(defaultStream);
+        registry.depositBond{value: minimumDeposit}(bytes32(privKey), DEFAULT_STREAM, Role.Operator);
+        CommitteeMember[] memory committeesCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM);
         uint256 candidatesAmountBefore = committeesCandidates.length;
 
         // Assert
         vm.expectEmit(address(registry));
-        emit ICommitteeRegistry.MemberUnsubscribedFromStream(user, defaultStream);
+        emit ICommitteeRegistry.MemberUnsubscribedFromStream(user, DEFAULT_STREAM);
         vm.expectEmit(address(registry));
         emit ICommitteeRegistry.NewAvailableBalance(user, minimumDeposit);
 
         // Act
         vm.prank(user);
-        registry.unsubscribeFromStream(defaultStream);
+        registry.unsubscribeFromStream(DEFAULT_STREAM);
 
         // Assert
         assertEq(
@@ -214,13 +214,15 @@ contract TestCommitteeRegistry is Test, HelperContract {
             "member available balance should match the minimum deposit"
         );
         assertEq(
-            registry.getMemberPreStakedBalance(user, defaultStream), 0, "member pre-staked should be 0 after unsuscribe"
+            registry.getMemberPreStakedBalance(user, DEFAULT_STREAM),
+            0,
+            "member pre-staked should be 0 after unsuscribe"
         );
         assertTrue(
-            registry.getMemberRequestedRole(user, defaultStream) == Role.None,
+            registry.getMemberRequestedRole(user, DEFAULT_STREAM) == Role.None,
             "member requested role should be None after unsuscribe"
         );
-        committeesCandidates = registry.getCommitteeCandidates(defaultStream);
+        committeesCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM);
         uint256 candidatesAmountAfter = committeesCandidates.length;
         assertEq(candidatesAmountBefore - 1, candidatesAmountAfter, "candidates amount should decrease by 1");
     }
@@ -256,19 +258,19 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Act
         vm.prank(user);
-        registry.unsubscribeFromStream(defaultStream);
+        registry.unsubscribeFromStream(DEFAULT_STREAM);
     }
 
     function test_withdrawAvailableBalance_Success() external {
         // Arrange
         uint256 privKey = uint256(1);
         address user = vm.addr(privKey);
-        uint256 minimumDeposit = registry.getMinimumDepositById(defaultStream);
+        uint256 minimumDeposit = registry.getMinimumDepositById(DEFAULT_STREAM);
         vm.deal(user, minimumDeposit);
 
         vm.startBroadcast(user);
-        registry.depositBond{value: minimumDeposit}(bytes32(privKey), defaultStream, defaultRole);
-        registry.unsubscribeFromStream(defaultStream);
+        registry.depositBond{value: minimumDeposit}(bytes32(privKey), DEFAULT_STREAM, DEFAULT_ROLE);
+        registry.unsubscribeFromStream(DEFAULT_STREAM);
         vm.stopBroadcast();
 
         uint256 amount = registry.getMemberAvailableBalance(user);
@@ -296,12 +298,12 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Arrange
         uint256 privKey = uint256(1);
         address user = vm.addr(privKey);
-        uint256 minimumDeposit = registry.getMinimumDepositById(defaultStream);
+        uint256 minimumDeposit = registry.getMinimumDepositById(DEFAULT_STREAM);
         vm.deal(user, minimumDeposit);
 
         vm.startBroadcast(user);
-        registry.depositBond{value: minimumDeposit}(bytes32(privKey), defaultStream, defaultRole);
-        registry.unsubscribeFromStream(defaultStream);
+        registry.depositBond{value: minimumDeposit}(bytes32(privKey), DEFAULT_STREAM, DEFAULT_ROLE);
+        registry.unsubscribeFromStream(DEFAULT_STREAM);
         vm.stopBroadcast();
         vm.prank(user);
         registry.withdrawAvailableBalance();

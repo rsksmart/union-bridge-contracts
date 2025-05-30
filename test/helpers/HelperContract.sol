@@ -44,8 +44,8 @@ abstract contract HelperContract is Test, TestUtils {
         0x7d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f;
 
     // Dummy requested roles and streams for the members
-    StreamDenomination internal constant defaultStream = StreamDenomination._0_001BTC;
-    Role internal constant defaultRole = Role.Operator;
+    StreamDenomination internal constant DEFAULT_STREAM = StreamDenomination._0_001BTC;
+    Role internal constant DEFAULT_ROLE = Role.Operator;
 
     BitcoinManager internal bitcoinManager;
     CommitteeRegistryHarness internal registry;
