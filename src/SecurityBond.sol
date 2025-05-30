@@ -16,13 +16,6 @@ abstract contract SecurityBond {
 
     IStreamManager streamManager;
 
-    event newSecurityBondDeposit(
-        address indexed sender, StreamDenomination requestedStream, Role requestedRole, uint256 amount
-    );
-    event newSecurityBondWithdraw(address indexed sender, uint256 amount);
-    event newAvailableBalance(address indexed sender, uint256 amount);
-    event availableBalanceRetrieved(address indexed sender, uint256 amount);
-
     error despositBondTooLow(uint256 sent, uint256 minDeposit);
 
     function setStreamManager(IStreamManager _streamManager) public {

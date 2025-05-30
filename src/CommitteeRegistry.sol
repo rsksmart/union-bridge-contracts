@@ -43,9 +43,6 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
 
     mapping(StreamDenomination denomination => CommitteeMember[]) internal committeesCandidates;
 
-    event newMember(bytes32 indexed publicKey);
-    event memberUnsubscribedFromStream(address indexed member, StreamDenomination stream);
-
     function initialize(address _initialOwner) public virtual initializer {
         __BaseProxy_init(_initialOwner);
     }
@@ -95,7 +92,7 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
 
         _registerCandidateToStream(msg.sender, _requestedStream, _requestedRole, msg.value);
 
-        emit newSecurityBondDeposit(msg.sender, _requestedStream, _requestedRole, msg.value);
+        emit NewSecurityBondDeposit(msg.sender, _requestedStream, _requestedRole, msg.value);
     }
 
     // NOTE: This function intends to keep many different structures in sync, be careful when modifying it
@@ -120,8 +117,8 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
         }
 
         uint256 available = _removeStreamCandidate(msg.sender, _stream);
-        emit memberUnsubscribedFromStream(msg.sender, _stream);
-        emit newAvailableBalance(msg.sender, available);
+        emit MemberUnsubscribedFromStream(msg.sender, _stream);
+        emit NewAvailableBalance(msg.sender, available);
     }
 
     // NOTE: This function intends to keep many different structures in sync, be careful when modifying it
@@ -162,7 +159,7 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
         (bool sent,) = msg.sender.call{value: amount}("");
         require(sent, "Failed to send RSK");
         member.balance.available = 0;
-        emit availableBalanceRetrieved(msg.sender, amount);
+        emit AvailableBalanceRetrieved(msg.sender, amount);
     }
 
     function isAlreadyMember(address _address) internal view returns (bool) {
@@ -183,7 +180,7 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
         // We save the position in the array + 1, to avoid 0 as a valid index, it is then substracted in getMemberPubKeyByAddress
         memberIndexByAddress[msg.sender] = uint16(members.length);
 
-        emit newMember(_publicKey);
+        emit NewMember(_publicKey);
     }
 
     function _registerCommittee(uint256 _committeeId, Committee storage _committee) internal {

@@ -107,6 +107,13 @@ interface ICommitteeRegistry {
     /// ===================== Events =========================
     event NewCommittee(uint256 indexed committeeId, Committee _committee);
     event NewPendingCommittee(uint256 indexed streamId, Committee _committee);
+    event NewMember(bytes32 indexed publicKey);
+    event MemberUnsubscribedFromStream(address indexed member, StreamDenomination stream);
+    event NewAvailableBalance(address indexed sender, uint256 amount);
+    event AvailableBalanceRetrieved(address indexed sender, uint256 amount);
+    event NewSecurityBondDeposit(
+        address indexed sender, StreamDenomination requestedStream, Role requestedRole, uint256 amount
+    );
 
     /// ==================== Errors =====================
     error RequestedDifferentStreamsAndRolesLength(uint256 streamsLength, uint256 rolesLength);

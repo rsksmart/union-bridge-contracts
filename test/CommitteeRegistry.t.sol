@@ -88,11 +88,11 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Assert member registered
         vm.expectEmit(address(registry));
-        emit CommitteeRegistry.newMember(bytes32(privKey));
+        emit ICommitteeRegistry.NewMember(bytes32(privKey));
 
         // Assert assert deposited bond
         vm.expectEmit(address(registry));
-        emit SecurityBond.newSecurityBondDeposit(user, defaultStream, defaultRole, minimumDeposit);
+        emit ICommitteeRegistry.NewSecurityBondDeposit(user, defaultStream, defaultRole, minimumDeposit);
 
         // Act
         vm.prank(user);
@@ -199,9 +199,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Assert
         vm.expectEmit(address(registry));
-        emit CommitteeRegistry.memberUnsubscribedFromStream(user, defaultStream);
+        emit ICommitteeRegistry.MemberUnsubscribedFromStream(user, defaultStream);
         vm.expectEmit(address(registry));
-        emit SecurityBond.newAvailableBalance(user, minimumDeposit);
+        emit ICommitteeRegistry.NewAvailableBalance(user, minimumDeposit);
 
         // Act
         vm.prank(user);
@@ -277,7 +277,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Assert
         vm.expectEmit(address(registry));
-        emit SecurityBond.availableBalanceRetrieved(user, amount);
+        emit ICommitteeRegistry.AvailableBalanceRetrieved(user, amount);
 
         // Act
         vm.prank(user);
