@@ -71,8 +71,8 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
         payable
     {
         // Check if the member is already registered
-        if (!isAlreadyMember(msg.sender)) {
-            registerMember(_publicKey);
+        if (!_isAlreadyMember(msg.sender)) {
+            _registerMember(_publicKey);
         }
 
         Member storage member = _getMemberByAddress(msg.sender);
@@ -162,11 +162,11 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
         emit AvailableBalanceRetrieved(msg.sender, amount);
     }
 
-    function isAlreadyMember(address _address) internal view returns (bool) {
+    function _isAlreadyMember(address _address) internal view returns (bool) {
         return memberIndexByAddress[_address] != 0;
     }
 
-    function registerMember(bytes32 _publicKey) internal {
+    function _registerMember(bytes32 _publicKey) internal {
         // Check max Members
         if (members.length >= MAX_MEMBERS_SIZE) {
             revert TooManyMembers(MAX_MEMBERS_SIZE);
@@ -176,7 +176,7 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
         members.push(); // Expand the array
         Member storage member = members[members.length - 1]; // Get reference
         member.publicKey = _publicKey;
-        initMemberBalance(member);
+        _initMemberBalance(member);
         // We save the position in the array + 1, to avoid 0 as a valid index, it is then substracted in getMemberPubKeyByAddress
         memberIndexByAddress[msg.sender] = uint16(members.length);
 

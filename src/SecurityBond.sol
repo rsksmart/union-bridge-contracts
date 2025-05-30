@@ -30,7 +30,7 @@ abstract contract SecurityBond {
         return streamManager.getStreamById(uint8(_denomination)).securityBondValue;
     }
 
-    function initMemberBalance(Member storage _member) internal {
+    function _initMemberBalance(Member storage _member) internal {
         uint64 streams = streamManager.getStreamsLength();
         _member.balance.available = 0;
         _member.balance.preStaked = new uint256[](streams);
