@@ -186,7 +186,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         registry.depositBond{value: minimumDeposit - 1}(bytes32(privKey), defaultStream, defaultRole);
     }
 
-    function test_unsuscribeFromStream_Success() external {
+    function test_unsubscribeFromStream_Success() external {
         // Arrange
         uint256 privKey = uint256(1);
         address user = vm.addr(privKey);
@@ -205,7 +205,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Act
         vm.prank(user);
-        registry.unsuscribeFromStream(defaultStream);
+        registry.unsubscribeFromStream(defaultStream);
 
         // Assert
         assertEq(
@@ -225,7 +225,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         assertEq(candidatesAmountBefore - 1, candidatesAmountAfter, "candidates amount should decrease by 1");
     }
 
-    function test_unsuscribeFromStream_Revert_memberIsNotCandidateForStream() external {
+    function test_unsubscribeFromStream_Revert_memberIsNotCandidateForStream() external {
         // Arrange
         uint256 privKey = uint256(1);
         address user = vm.addr(privKey);
@@ -243,10 +243,10 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Act
         vm.prank(user);
-        registry.unsuscribeFromStream(StreamDenomination._0_01BTC);
+        registry.unsubscribeFromStream(StreamDenomination._0_01BTC);
     }
 
-    function test_unsuscribeFromStream_Revert_nonRegisteredMember() external {
+    function test_unsubscribeFromStream_Revert_nonRegisteredMember() external {
         // Arrange
         uint256 privKey = uint256(1);
         address user = vm.addr(privKey);
@@ -256,7 +256,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Act
         vm.prank(user);
-        registry.unsuscribeFromStream(defaultStream);
+        registry.unsubscribeFromStream(defaultStream);
     }
 
     function test_withdrawAvailableBalance_Success() external {
@@ -268,7 +268,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         vm.startBroadcast(user);
         registry.depositBond{value: minimumDeposit}(bytes32(privKey), defaultStream, defaultRole);
-        registry.unsuscribeFromStream(defaultStream);
+        registry.unsubscribeFromStream(defaultStream);
         vm.stopBroadcast();
 
         uint256 amount = registry.getMemberAvailableBalance(user);
@@ -301,7 +301,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         vm.startBroadcast(user);
         registry.depositBond{value: minimumDeposit}(bytes32(privKey), defaultStream, defaultRole);
-        registry.unsuscribeFromStream(defaultStream);
+        registry.unsubscribeFromStream(defaultStream);
         vm.stopBroadcast();
         vm.prank(user);
         registry.withdrawAvailableBalance();
@@ -314,8 +314,8 @@ contract TestCommitteeRegistry is Test, HelperContract {
         registry.withdrawAvailableBalance();
     }
 
-    // The following test checks the integration of depositBond, unsuscribeFromStream, and withdrawAvailableBalance
-    function test_Integration_depositBond_unsuscribeFromStream_withdrawAvailableBalance_every_stream() external {
+    // The following test checks the integration of depositBond, unsubscribeFromStream, and withdrawAvailableBalance
+    function test_Integration_depositBond_unsubscribeFromStream_withdrawAvailableBalance_every_stream() external {
         // Arrange
         uint256 privKey = uint256(1);
         address user = vm.addr(privKey);
@@ -378,7 +378,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
             // Act
             vm.prank(user);
-            registry.unsuscribeFromStream(stream);
+            registry.unsubscribeFromStream(stream);
 
             // Assert that preStaked[streamIndex] is now 0
             assertEq(

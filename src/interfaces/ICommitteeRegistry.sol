@@ -51,7 +51,7 @@ interface ICommitteeRegistry {
         external
         payable;
 
-    function unsuscribeFromStream(StreamDenomination _stream) external;
+    function unsubscribeFromStream(StreamDenomination _stream) external;
 
     function withdrawAvailableBalance() external;
 

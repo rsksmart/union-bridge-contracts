@@ -99,17 +99,15 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
     function _registerCandidateToStream(address _memberAddress, StreamDenomination _stream, Role _role, uint256 _amount)
         internal
     {
-        Member storage member = _getMemberByAddress(_memberAddress);
+        Member storage member = _getMemberByAddress(msg.sender);
 
-        member.balance.preStaked[uint8(_stream)] = _amount;
+        member.balance.preStaked[uint8(_stream)] = msg.value;
         member.requestedRoles[_stream] = _role;
 
-        committeesCandidates[_stream].push(
-            CommitteeMember({index: _getMemberIndexByAddress(_memberAddress), role: _role})
-        );
+        committeesCandidates[_stream].push(CommitteeMember({index: _getMemberIndexByAddress(msg.sender), role: _role}));
     }
 
-    function unsuscribeFromStream(StreamDenomination _stream) external {
+    function unsubscribeFromStream(StreamDenomination _stream) external {
         Member storage member = _getMemberByAddress(msg.sender);
 
         if (member.requestedRoles[_stream] == Role.None) {
@@ -139,7 +137,7 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
         uint16 memberIndex = getMemberIndexByAddress(_memberAddress);
         uint256 length = candidates.length;
 
-        // NOTE: This efectively moves forward in the list the last candidate, and might be not very gas efficient
+        // NOTE: This effectively brings the last candidate forward in the list by replacing the removed member
         for (uint256 i = 0; i < length; i++) {
             if (candidates[i].index == memberIndex) {
                 candidates[i] = candidates[length - 1];
