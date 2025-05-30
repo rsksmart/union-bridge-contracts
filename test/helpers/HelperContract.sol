@@ -223,6 +223,25 @@ abstract contract HelperContract is Test, TestUtils {
         });
     }
 
+    // ========================== Peg out ==========================
+    function getPegOutTx() internal pure returns (BtcTransaction memory) {
+        // Input
+        BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
+        btcInputs[0] = BtcTxIn({
+            txId: 0x30b6a2cae94d89540a99e0dfa39cf88e6de40dca9142810fdce7a95c00faff47,
+            vout: 0,
+            sequence: 0xfffffffd,
+            scriptSig: hex""
+        });
+
+        // Outputs
+        BtcTxOut[] memory btcOutputs = new BtcTxOut[](2);
+        btcOutputs[0] = BtcTxOut({amount: 98730, scriptPubKey: hex"0014298a0fe992f755152a81ee64bdc4cc96d3bb8969"});
+        btcOutputs[1] = BtcTxOut({amount: 300, scriptPubKey: hex"0014298a0fe992f755152a81ee64bdc4cc96d3bb8969"});
+
+        return BtcTransaction({version: Constants.BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
+    }
+
     function satoshiToWei(uint256 _amount) internal pure returns (uint256) {
         return _amount * 10 ** 10;
     }

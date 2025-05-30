@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {BaseProxy} from "./BaseProxy.sol";
+import {console} from "forge-std/console.sol";
 import {ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
 import {ISignatureManager} from "./interfaces/ISignatureManager.sol";
 import {PrevoutData, BtcTransaction, BtcTxOut, IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
@@ -16,6 +17,15 @@ import {Constants} from "./libraries/Constants.sol";
 /// @title PegManager
 /// @notice Manages peg-in and peg-out operations between Bitcoin and Rootstock
 
+struct PegOutTxInfo {
+    bytes userPubKey;
+    uint64 streamId;
+    uint64 packetNumber;
+    uint64 slotId;
+    bytes32 acceptPegInTxHash;
+    bool isRegistered;
+}
+
 contract PegManager is IPegManager, BaseProxy, ProofValidator {
     IBitcoinManager public bitcoinManager;
     IStreamManager public streamManager;
@@ -28,6 +38,9 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
 
     // key = keccak256(abi.encodePacked(streamId, packetNumber, slotId))
     mapping(bytes32 key => bytes32 pegOutSignatureHash) internal pegOutSighashes;
+
+    // Mapping from accept peg-in transaction hash to pegout transaction info
+    mapping(bytes32 acceptPegInTxHash => PegOutTxInfo pegOutInfo) internal pegOutTxs;
 
     function initialize(
         address _initialOwner,
@@ -70,6 +83,10 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
 
     function getRequestPegInTempInfo(bytes32 _btcTxHash) external view returns (RequestPegInTempInfo memory) {
         return pegInTempInfo[_btcTxHash];
+    }
+
+    function getPegOutTxInfo(bytes32 _pegOutTxHash) external view returns (PegOutTxInfo memory) {
+        return pegOutTxs[_pegOutTxHash];
     }
 
     function getTemporaryPegInAddress(address _rootstockDepositAddress, uint64 _value, bytes32 _btcReimbursementPubKey)
@@ -306,9 +323,19 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         // Prepare prevout data
         PrevoutData memory prevoutData = PrevoutData({value: slot.acceptPegInAmount, scriptPubKey: slot.scriptPubKey});
 
-        // Compute the Bitcoin peg-out transaction hash
+        // Compute the Bitcoin peg-out transaction hash and signature hash
         (bytes32 pegOutSignatureHash, bytes memory commonSignatureMessage) =
             bitcoinManager.getPegOutSignatureHash(_usrPubKey, slot.acceptPegInTx, prevoutData);
+
+        // Store the pegout transaction info for efficient lookup during registration
+        pegOutTxs[slot.acceptPegInTx] = PegOutTxInfo({
+            userPubKey: _usrPubKey,
+            streamId: stream.streamId,
+            packetNumber: packetNumber,
+            slotId: slot.slotId,
+            acceptPegInTxHash: slot.acceptPegInTx,
+            isRegistered: false
+        });
 
         // Store the peg-out transaction hash on-chain and initialize the signatures
         storePegOutAndInitSignatures(pegOutSignatureHash, stream.streamId, packetNumber, slot.slotId);
@@ -324,6 +351,82 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             packetNumber,
             slot.slotId
         );
+    }
+
+    /// @notice Register a peg-out transaction from Bitcoin
+    /// @param _pegOutTxSPVProof The BTC SPV proof of the peg-out transaction
+    function registerPegout(BtcTxSPVProof calldata _pegOutTxSPVProof) external {
+        // Get the accept peg-in tx hash from the first input (this is what gets spent)
+        bytes32 acceptPegInTxHash = _pegOutTxSPVProof.btcTx.inputs[0].txId;
+        console.log("acceptPegInTxHash");
+        console.logBytes32(acceptPegInTxHash);
+        uint32 vout = _pegOutTxSPVProof.btcTx.inputs[0].vout;
+        console.log("vout");
+        console.log(vout);
+
+        // Look up the pegout transaction info using the accept peg-in transaction hash
+        PegOutTxInfo storage pegOutInfo = pegOutTxs[acceptPegInTxHash];
+
+        // TODO Validate that this pegout transaction was requested
+
+        // Validate that this pegout hasn't been registered already
+        // if (pegOutInfo.isRegistered) {
+        //     revert AlreadyRegisteredPegOut(acceptPegInTxHash);
+        // }
+
+        // Get the slot and validate it's in LOCKED state
+        Slot memory slot = streamManager.getSlot(pegOutInfo.streamId, pegOutInfo.packetNumber, pegOutInfo.slotId);
+        if (slot.state != SlotState.LOCKED) {
+            revert InvalidSlotState(slot.state, SlotState.LOCKED);
+        }
+
+        // Validate that the first input references the correct accept peg-in transaction
+        if (slot.acceptPegInTx != acceptPegInTxHash) {
+            revert InvalidAcceptPegInTxHash(slot.acceptPegInTx, acceptPegInTxHash);
+        }
+
+        // Validate that the vout is correct (should be 0 for the P2TR output)
+        // TODO is this the right CONSTANT to check against?
+        if (vout != Constants.VOUT_INDEX_TAPTREE) {
+            revert IncorrectVout(vout, Constants.VOUT_INDEX_TAPTREE);
+        }
+
+        // Calculate the transaction hash for verification
+        bytes32 txHash = bitcoinManager.getBtcTxHash(_pegOutTxSPVProof.btcTx);
+
+        // Get the stream to check confirmations
+        Stream memory stream = streamManager.getStreamById(pegOutInfo.streamId);
+
+        // Verify the txHash is part of the Merkle Root and has enough confirmations
+        verifyTxConfirmations(
+            stream.peginConfirmations, // Using same confirmations as peg-in for now
+            txHash,
+            _pegOutTxSPVProof.blockHash,
+            _pegOutTxSPVProof.merkleBranchPath,
+            _pegOutTxSPVProof.merkleBranchHashes
+        );
+
+        // TODO: Validate that the output is P2WPKH for the user
+
+        // Mark the slot as PAID and update the registration status
+        _markSlotAsPaid(pegOutInfo.streamId, pegOutInfo.packetNumber, pegOutInfo.slotId);
+        pegOutInfo.isRegistered = true;
+
+        emit PegOutRegistered(
+            _pegOutTxSPVProof.blockHash,
+            txHash,
+            acceptPegInTxHash,
+            pegOutInfo.streamId,
+            pegOutInfo.packetNumber,
+            pegOutInfo.slotId
+        );
+    }
+
+    function _markSlotAsPaid(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) internal {
+        emit SlotMarkedAsPaid(_streamId, _packetNumber, _slotId);
+
+        // TODO: Implement proper slot state management in StreamManager
+        // streamManager.markSlotAsPaid(_streamId, _packetNumber, _slotId);
     }
 
     function getPegOutSignatureHash(uint64 streamId, uint64 packetNumber, uint64 slotId)

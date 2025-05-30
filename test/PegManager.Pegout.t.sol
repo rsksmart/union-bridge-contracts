@@ -12,6 +12,7 @@ import {
     PegStatus,
     IPegManager
 } from "src/interfaces/IPegManager.sol";
+import {PegOutTxInfo} from "src/PegManager.sol";
 import {BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
 import {Slot, SlotState, Packet, Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {ISignatureManager} from "src/interfaces/ISignatureManager.sol";
@@ -243,5 +244,65 @@ contract TestPegManager is Test, HelperContract {
         bytes32 pegOutSignatureHash = pm.getPegOutSignatureHash(stream.streamId, packetNumber, slotId);
 
         return (pegOutSignatureHash);
+    }
+
+    function test_registerPegout_success() external {
+        // ================= MANUAL SLOT SETUP =================
+        // Create a simple slot setup without complex flows
+        uint64 amount = VALUE; // 0.001 BTC
+        Stream memory stream = streamManager.getStream(amount);
+        uint64 packetNumber = 0;
+
+        // Mock accept peg-in transaction hash (this is what the peg-out tx should spend)
+        bytes32 acceptPegInTxHash = 0x30b6a2cae94d89540a99e0dfa39cf88e6de40dca9142810fdce7a95c00faff47;
+
+        // Set up the slot manually in FILLED state
+        uint64 slotId = streamManager.setSlotHarness(
+            stream.streamId,
+            packetNumber,
+            hex"02f519f51e435c20d38af683ea86862f4591ce8cda248077c2d9a72a76b62f32", // scriptPubKey
+            acceptPegInTxHash, // acceptPegInTx (this is what peg-out should spend)
+            amount
+        );
+
+        // Directly set the slot state to LOCKED (bypassing requestPegOut entirely)
+        streamManager.setSlotStateHarness(stream.streamId, packetNumber, slotId, SlotState.LOCKED);
+
+        // Verify the slot is properly set up and locked
+        Slot memory slot = streamManager.getSlot(stream.streamId, packetNumber, slotId);
+        assertEq(uint64(slot.state), uint64(SlotState.LOCKED), "Slot should be locked");
+        assertEq(slot.acceptPegInTx, acceptPegInTxHash, "Accept peg-in tx hash should match");
+
+        // ================= PREPARE PEGOUT TRANSACTION =================
+        // Create a peg-out transaction that spends the accept peg-in UTXO
+        BtcTransaction memory pegOutTx = getPegOutTx();
+
+        // Update the peg-out transaction to reference the correct accept peg-in transaction
+        pegOutTx.inputs[0].txId = acceptPegInTxHash;
+        pegOutTx.inputs[0].vout = 0; // P2TR output is at index 0
+
+        // Create SPV proof for the peg-out transaction
+        BtcTxSPVProof memory pegOutTxSPVProof = createBtcTxSPVProof(pegOutTx);
+
+        // Set mock bridge confirmations
+        bridgeMock.setBtcTransactionConfirmations(10);
+
+        // ================= TEST REGISTERPEGOUT =================
+        // Calculate the expected transaction hash
+        bytes32 expectedTxHash = bitcoinManager.getBtcTxHash(pegOutTx);
+
+        // Expect the PegOutRegistered event
+        vm.expectEmit(address(pm));
+        emit IPegManager.PegOutRegistered(
+            pegOutTxSPVProof.blockHash, expectedTxHash, acceptPegInTxHash, stream.streamId, packetNumber, slotId
+        );
+
+        // Act - Register the peg-out transaction
+        pm.registerPegout(pegOutTxSPVProof);
+
+        // ================= VERIFY RESULTS =================
+        // Verify the PegOutTxInfo was updated
+        PegOutTxInfo memory pegOutInfo = pm.getPegOutTxInfo(acceptPegInTxHash);
+        assertTrue(pegOutInfo.isRegistered, "PegOut should be marked as registered");
     }
 }

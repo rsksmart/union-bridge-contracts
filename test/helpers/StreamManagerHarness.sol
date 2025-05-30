@@ -61,6 +61,16 @@ contract StreamManagerHarness is StreamManager {
         return slots[_streamId][_packet].length;
     }
 
+    function setSlotStateHarness(uint64 _streamId, uint64 _packet, uint64 _slotId, SlotState _state) external {
+        if (_packet >= packets[_streamId].length) {
+            revert NoPackets(_streamId, _packet);
+        }
+        if (_slotId >= slots[_streamId][_packet].length) {
+            revert NoSlots(_streamId, _packet, _slotId);
+        }
+        slots[_streamId][_packet][_slotId].state = _state;
+    }
+
     error NoPackets(uint64 streamId, uint64 packet);
     error NoSlots(uint64 streamId, uint64 packet, uint64 slot);
 }

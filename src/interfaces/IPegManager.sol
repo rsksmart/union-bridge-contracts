@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {BtcTransaction} from "./IBitcoinManager.sol";
-import {IStreamManager} from "./IStreamManager.sol";
+import {IStreamManager, SlotState} from "./IStreamManager.sol";
 import {ISignatureManager} from "./ISignatureManager.sol";
 
 struct BtcTxSPVProof {
@@ -126,6 +126,17 @@ interface IPegManager {
         uint64 slotId
     );
 
+    event PegOutRegistered(
+        bytes32 indexed blockHash,
+        bytes32 indexed txHash,
+        bytes32 indexed acceptPegInTxHash,
+        uint64 streamId,
+        uint64 packetNumber,
+        uint64 slotId
+    );
+
+    event SlotMarkedAsPaid(uint64 indexed streamId, uint64 indexed packetNumber, uint64 indexed slotId);
+
     // ===================== Errors =====================
     error BitcoinManagerAddressZero();
     error CommitteeRegistryAddressZero();
@@ -142,4 +153,7 @@ interface IPegManager {
     error InvalidPubKeyLength(uint256 usrPubKeyLength);
     error InvalidLocktime(uint256 actual, uint256 expected);
     error InvalidBtcTxVersion(uint256 actual, uint256 expected);
+    error InvalidSlotState(SlotState actual, SlotState expected);
+    error IncorrectVout(uint32 actual, uint32 expected);
+    error SlotNotFound(bytes32 acceptPegInTxHash);
 }
