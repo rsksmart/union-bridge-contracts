@@ -4,16 +4,7 @@ pragma solidity ^0.8.20;
 import {IStreamManager, StreamDenomination} from "./interfaces/IStreamManager.sol";
 import {Member, Role, Balance} from "./interfaces/ICommitteeRegistry.sol";
 
-struct MemberBalance {
-    uint256 total;
-    uint256 staked;
-}
-
 abstract contract SecurityBond {
-    // Address of the Memeber => Amount provided
-    mapping(address => MemberBalance) public memberBalances;
-    Member[] internal members;
-
     IStreamManager streamManager;
 
     error despositBondTooLow(uint256 sent, uint256 minDeposit);

@@ -21,6 +21,9 @@ import {IPegManager} from "./interfaces/IPegManager.sol";
 import {SecurityBond} from "./SecurityBond.sol";
 
 contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
+    // Address of the Memeber => Amount provided
+    Member[] internal members;
+
     uint256 public constant MAX_COMMITTEES_SIZE = 100;
     uint256 public constant MAX_MEMBERS_SIZE = 256;
     uint256 public constant MAX_MEMBERS_PER_COMMITTEE = 100;

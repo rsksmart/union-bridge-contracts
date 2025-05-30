@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 import {IStreamManager} from "src/interfaces/IStreamManager.sol";
-import {SecurityBond, MemberBalance} from "src/SecurityBond.sol";
+import {SecurityBond} from "src/SecurityBond.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 
