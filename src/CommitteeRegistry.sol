@@ -153,10 +153,10 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
         if (amount == 0) {
             revert NoAvailableBalanceToWithdraw(msg.sender);
         }
+        member.balance.available = 0;
 
         (bool sent,) = msg.sender.call{value: amount}("");
         require(sent, "Failed to send RSK");
-        member.balance.available = 0;
         emit AvailableBalanceRetrieved(msg.sender, amount);
     }
 
