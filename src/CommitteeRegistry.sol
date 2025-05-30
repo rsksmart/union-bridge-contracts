@@ -66,10 +66,7 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
         return members[memberIndex - 1].publicKey;
     }
 
-    function depositBond(bytes32 _publicKey, StreamDenomination _requestedStream, Role _requestedRole)
-        external
-        payable
-    {
+    function depositBond(bytes32 _publicKey, StreamDenomination _stream, Role _role) external payable {
         // Check if the member is already registered
         if (!_isAlreadyMember(msg.sender)) {
             _registerMember(_publicKey);
@@ -77,22 +74,20 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
 
         Member storage member = _getMemberByAddress(msg.sender);
 
-        if (_requestedRole == Role.None) {
-            revert RequestedNoneRoleForStream(_requestedStream);
+        if (_role == Role.None) {
+            revert RequestedNoneRoleForStream(_stream);
         }
-        if (member.requestedRoles[_requestedStream] != Role.None) {
-            revert MemberAlreadyRegisteredForStream(
-                msg.sender, _requestedStream, _requestedRole, member.requestedRoles[_requestedStream]
-            );
+        if (member.requestedRoles[_stream] != Role.None) {
+            revert MemberAlreadyRegisteredForStream(msg.sender, _stream, _role, member.requestedRoles[_stream]);
         }
-        uint256 minDeposit = getMinimumDepositById(_requestedStream);
+        uint256 minDeposit = getMinimumDepositById(_stream);
         if (msg.value < minDeposit) {
             revert despositBondTooLow(msg.value, minDeposit);
         }
 
-        _registerCandidateToStream(msg.sender, _requestedStream, _requestedRole, msg.value);
+        _registerCandidateToStream(msg.sender, _stream, _role, msg.value);
 
-        emit NewSecurityBondDeposit(msg.sender, _requestedStream, _requestedRole, msg.value);
+        emit NewSecurityBondDeposit(msg.sender, _stream, _role, msg.value);
     }
 
     // NOTE: This function intends to keep many different structures in sync, be careful when modifying it
