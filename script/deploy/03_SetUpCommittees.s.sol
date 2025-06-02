@@ -82,7 +82,9 @@ contract SetUpCommittees is ScriptUtils, TestUtils {
 
         uint256 minimumDeposit = _committeeRegistry.getMinimumDeposit(params.requestedStream);
 
-        vm.deal(user, minimumDeposit);
+        if (block.chainid == ChainIds.LOCAL) {
+            vm.deal(user, minimumDeposit);
+        }
 
         vm.startBroadcast(_privKey);
         _committeeRegistry.depositBond{value: minimumDeposit}(
