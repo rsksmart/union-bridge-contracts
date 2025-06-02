@@ -175,7 +175,9 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         emit AvailableBalanceRetrieved(msg.sender, amount);
 
         (bool sent,) = msg.sender.call{value: amount}("");
-        require(sent, "Failed to send RSK");
+        if (!sent) {
+            revert FailedToSendRSK(msg.sender, amount);
+        }
     }
 
     function _isAlreadyMember(address _address) internal view returns (bool) {
