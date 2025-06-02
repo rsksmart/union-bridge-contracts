@@ -96,7 +96,7 @@ contract StreamManager is IStreamManager, AccessControl {
     }
 
     function getPacket(uint64 _streamId, uint64 _packetNumber) public view returns (Packet memory) {
-        if (streams.length <= _streamId) {
+        if (_streamId >= streams.length) {
             revert StreamNotFoundById(_streamId);
         }
 
