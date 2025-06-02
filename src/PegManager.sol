@@ -2,12 +2,16 @@
 pragma solidity ^0.8.20;
 
 import {BaseProxy} from "./BaseProxy.sol";
-import {console} from "forge-std/console.sol";
 import {ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
 import {ISignatureManager} from "./interfaces/ISignatureManager.sol";
 import {PrevoutData, BtcTransaction, BtcTxOut, IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
 import {
-    BtcTxSPVProof, RequestPegInTempInfo, StreamPosition, PegStatus, IPegManager
+    BtcTxSPVProof,
+    RequestPegInTempInfo,
+    PegOutInfo,
+    StreamPosition,
+    PegStatus,
+    IPegManager
 } from "./interfaces/IPegManager.sol";
 import {Slot, Stream, Packet, SlotState, IStreamManager} from "./interfaces/IStreamManager.sol";
 import {ProofValidator} from "./ProofValidator.sol";
@@ -18,14 +22,6 @@ import {BtcScriptParser} from "./libraries/BtcScriptParser.sol";
 
 /// @title PegManager
 /// @notice Manages peg-in and peg-out operations between Bitcoin and Rootstock
-
-struct PegOutTxInfo {
-    bytes userPubKey;
-    uint64 streamId;
-    uint64 packetNumber;
-    uint64 slotId;
-    bytes32 acceptPegInTxHash;
-}
 
 contract PegManager is IPegManager, BaseProxy, ProofValidator {
     IBitcoinManager public bitcoinManager;
@@ -40,8 +36,8 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
     // key = keccak256(abi.encodePacked(streamId, packetNumber, slotId))
     mapping(bytes32 key => bytes32 pegOutSignatureHash) internal pegOutSighashes;
 
-    // Mapping from accept peg-in transaction hash to pegout transaction info
-    mapping(bytes32 acceptPegInTxHash => PegOutTxInfo pegOutInfo) internal pegOutTxs;
+    // Mapping from accept peg-in transaction hash to pegout info
+    mapping(bytes32 acceptPegInTxHash => PegOutInfo pegOutInfo) internal pegOuts;
 
     function initialize(
         address _initialOwner,
@@ -86,8 +82,8 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         return pegInTempInfo[_btcTxHash];
     }
 
-    function getPegOutTxInfo(bytes32 _pegOutTxHash) external view returns (PegOutTxInfo memory) {
-        return pegOutTxs[_pegOutTxHash];
+    function getPegOutInfo(bytes32 _pegOutTxHash) external view returns (PegOutInfo memory) {
+        return pegOuts[_pegOutTxHash];
     }
 
     function getTemporaryPegInAddress(address _rootstockDepositAddress, uint64 _value, bytes32 _btcReimbursementPubKey)
@@ -329,7 +325,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             bitcoinManager.getPegOutSignatureHash(_usrPubKey, slot.acceptPegInTx, prevoutData);
 
         // Store the pegout transaction info for efficient lookup during registration
-        pegOutTxs[slot.acceptPegInTx] = PegOutTxInfo({
+        pegOuts[slot.acceptPegInTx] = PegOutInfo({
             userPubKey: _usrPubKey,
             streamId: stream.streamId,
             packetNumber: packetNumber,
@@ -358,24 +354,12 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
     function registerPegout(BtcTxSPVProof calldata _pegOutTxSPVProof) external {
         // Get the accept peg-in tx hash from the first input (this is what gets spent)
         bytes32 acceptPegInTxHash = _pegOutTxSPVProof.btcTx.inputs[0].txId;
-        console.log("acceptPegInTxHash");
-        console.logBytes32(acceptPegInTxHash);
         uint32 vout = _pegOutTxSPVProof.btcTx.inputs[0].vout;
-        console.log("vout");
-        console.log(vout);
 
         // Look up the pegout transaction info using the accept peg-in transaction hash
-        PegOutTxInfo storage pegOutInfo = pegOutTxs[acceptPegInTxHash];
-        console.log("pegOutInfo fields:");
-        console.log("streamId:", pegOutInfo.streamId);
-        console.log("packetNumber:", pegOutInfo.packetNumber);
-        console.log("slotId:", pegOutInfo.slotId);
-        console.log("userPubKey:");
-        console.logBytes(pegOutInfo.userPubKey);
-        console.log("acceptPegInTxHash:");
-        console.logBytes32(pegOutInfo.acceptPegInTxHash);
+        PegOutInfo memory pegOutInfo = pegOuts[acceptPegInTxHash];
 
-        // Get the slot and validate it's in LOCKED state
+        // Get the slot and validate it's LOCKED
         Slot memory slot = streamManager.getSlot(pegOutInfo.streamId, pegOutInfo.packetNumber, pegOutInfo.slotId);
         if (slot.state != SlotState.LOCKED) {
             revert InvalidSlotState(slot.state, SlotState.LOCKED);
@@ -386,8 +370,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             revert InvalidAcceptPegInTxHash(slot.acceptPegInTx, acceptPegInTxHash);
         }
 
-        // Validate that the vout is correct (should be 0 for the P2TR output)
-        // TODO is this the right CONSTANT to check against?
+        // Validate that the vout is correct
         if (vout != Constants.VOUT_INDEX_TAPTREE) {
             revert IncorrectVout(vout, Constants.VOUT_INDEX_TAPTREE);
         }
@@ -400,7 +383,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
 
         // Verify the txHash is part of the Merkle Root and has enough confirmations
         verifyTxConfirmations(
-            stream.peginConfirmations, // Using same confirmations as peg-in for now
+            stream.pegOutConfirmations,
             txHash,
             _pegOutTxSPVProof.blockHash,
             _pegOutTxSPVProof.merkleBranchPath,
@@ -455,19 +438,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
     }
 
     function _validatePegOutUserOutput(BtcTxOut memory _userOutput, bytes memory _userPubKey) internal pure {
-        console.log("userOutput");
-        console.logBytes(_userOutput.scriptPubKey);
-        // Add logging to debug the validation
-        console.log("User pubkey:");
-        console.logBytes(_userPubKey);
-
-        // Generate the expected P2WPKH script for the user's public key
         bytes memory expectedScriptPubKey = BtcScriptParser.getP2WPKHScript(_userPubKey);
-
-        console.log("Expected script:");
-        console.logBytes(expectedScriptPubKey);
-        console.log("Actual script:");
-        console.logBytes(_userOutput.scriptPubKey);
 
         // Validate that the output script matches the expected P2WPKH script
         if (!BytesHelper.compare(_userOutput.scriptPubKey, expectedScriptPubKey)) {

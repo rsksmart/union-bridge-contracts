@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {PegManager, PegOutTxInfo} from "src/PegManager.sol";
+import {PegManager, PegOutInfo} from "src/PegManager.sol";
 import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {IBitcoinManager} from "src/interfaces/IBitcoinManager.sol";
 
@@ -23,7 +23,7 @@ contract PegManagerHarness is PegManager {
         uint64 _packetNumber,
         uint64 _slotId
     ) external {
-        pegOutTxs[_acceptPegInTxHash] = PegOutTxInfo({
+        pegOuts[_acceptPegInTxHash] = PegOutInfo({
             userPubKey: _userPubKey,
             streamId: _streamId,
             packetNumber: _packetNumber,

@@ -329,7 +329,7 @@ abstract contract HelperContract is Test, TestUtils {
             amount
         );
 
-        // Set the slot state to LOCKED by default
+        // Set the slot state to LOCKED
         streamManager.setSlotStateHarness(setup.stream.streamId, setup.packetNumber, setup.slotId, SlotState.LOCKED);
 
         // Set up the pegOutTxs mapping
@@ -339,9 +339,6 @@ abstract contract HelperContract is Test, TestUtils {
 
         // Create SPV proof for the peg-out transaction
         setup.pegOutTxSPVProof = createBtcTxSPVProof(setup.pegOutTx);
-
-        // Set mock bridge confirmations
-        bridgeMock.setBtcTransactionConfirmations(10);
 
         // Calculate the expected transaction hash
         setup.expectedTxHash = bitcoinManager.getBtcTxHash(setup.pegOutTx);

@@ -40,6 +40,14 @@ struct RequestPegInTempInfo {
     bytes32 acceptPeginTxHash;
 }
 
+struct PegOutInfo {
+    bytes userPubKey;
+    uint64 streamId;
+    uint64 packetNumber;
+    uint64 slotId;
+    bytes32 acceptPegInTxHash;
+}
+
 interface IPegManager {
     function setStreamManager(IStreamManager _streamManager) external;
     function setSignatureManager(ISignatureManager _signatureManager) external;

@@ -48,7 +48,7 @@ struct Stream {
     uint64 pegoutPacketPointer; // Another index for the packets array. It points to the current packet that should have a slot filled for a peg-out request
     uint16 pegoutSlotPointer; // An index for the slots array. It points to the first slot in the pegoutPacketPointer that should be processed when requested (if it's filled)
     uint8 peginConfirmations; // A generic number
-    //uint8 pegOutConfirmations; // Another generic number
+    uint8 pegOutConfirmations; // Another generic number
     uint256 securityBondValue; // The required bond (in wei) that each member of the committee needs to deposit to secure a packet
 }
 
@@ -134,6 +134,12 @@ interface IStreamManager is IAccessControl {
     /// @dev The peg-in confirmations is the number of confirmations required for a peg-in transaction to be considered valid
     function setPeginConfirmations(uint64 _streamId, uint8 _confirmations) external;
 
+    /// @notice Allows contract owner to set the peg-out confirmations for a given stream
+    /// @param _streamId The index in the array of streams
+    /// @param _confirmations The number of confirmations required for a peg-out transaction
+    /// @dev The peg-out confirmations is the number of confirmations required for a peg-out transaction to be considered valid
+    function setPegoutConfirmations(uint64 _streamId, uint8 _confirmations) external;
+
     event StreamCreated(uint64 streamId, uint64 denomination);
     event PacketCreated(uint64 streamId, uint64 packetNumber);
     event SlotCreated(uint64 streamId, uint64 packetNumber, uint64 slotId);
@@ -151,5 +157,6 @@ interface IStreamManager is IAccessControl {
     error NonExistentSlot(uint256 streamId, uint256 packetNumber, uint256 slotId);
     error StreamAlreadyInitialized(uint256 streamId);
     error InvalidPeginConfirmations(uint8 confirmations);
+    error InvalidPegoutConfirmations(uint8 confirmations);
     error InvalidSecurityBondValue(uint256 securityBond);
 }
