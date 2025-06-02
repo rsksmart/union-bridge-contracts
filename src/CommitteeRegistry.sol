@@ -97,9 +97,9 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
     function _registerCandidateToStream(address _memberAddress, StreamDenomination _stream, Role _role, uint256 _amount)
         internal
     {
-        Member storage member = _getMemberByAddress(msg.sender);
+        Member storage member = _getMemberByAddress(_memberAddress);
 
-        member.balance.preStaked[uint8(_stream)] = msg.value;
+        member.balance.preStaked[uint8(_stream)] = _amount;
         member.requestedRoles[_stream] = _role;
 
         committeesCandidates[_stream].push(CommitteeMember({index: _getMemberIndexByAddress(msg.sender), role: _role}));
@@ -132,7 +132,7 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
 
         // Remove from candidates
         CommitteeMember[] storage candidates = committeesCandidates[_stream];
-        uint16 memberIndex = getMemberIndexByAddress(_memberAddress);
+        uint16 memberIndex = _getMemberIndexByAddress(_memberAddress);
         uint256 length = candidates.length;
 
         // NOTE: This effectively brings the last candidate forward in the list by replacing the removed member
@@ -152,10 +152,10 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
             revert NoAvailableBalanceToWithdraw(msg.sender);
         }
         member.balance.available = 0;
+        emit AvailableBalanceRetrieved(msg.sender, amount);
 
         (bool sent,) = msg.sender.call{value: amount}("");
         require(sent, "Failed to send RSK");
-        emit AvailableBalanceRetrieved(msg.sender, amount);
     }
 
     function _isAlreadyMember(address _address) internal view returns (bool) {
@@ -215,7 +215,7 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
         return members[_memberIndex].publicKey;
     }
 
-    function getMemberIndexByAddress(address _address) public view returns (uint16) {
+    function getMemberIndexByAddress(address _address) external view returns (uint16) {
         return _getMemberIndexByAddress(_address);
     }
 

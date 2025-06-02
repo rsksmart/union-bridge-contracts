@@ -354,4 +354,12 @@ abstract contract HelperContract is Test, TestUtils {
 
         return committee;
     }
+
+    function setup_registerMember(uint256 privKey) internal {
+        bytes32 pubKey = generatePubKey(privKey);
+        address user = vm.addr(privKey);
+
+        vm.prank(user);
+        registry.registerMember(pubKey);
+    }
 }
