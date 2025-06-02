@@ -249,79 +249,34 @@ contract TestPegManager is Test, HelperContract {
     }
 
     function test_registerPegout_success() external {
-        // Create a peg-out transaction that spends the accept peg-in UTXO
-        BtcTransaction memory pegOutTx = getPegOutTx();
-
-        // Create a slot
-        uint64 amount = VALUE; // 0.001 BTC
-        Stream memory stream = streamManager.getStream(amount);
-        uint64 packetNumber = 0;
-        bytes32 acceptPegInTxHash = pegOutTx.inputs[0].txId;
-        bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
-
-        uint64 slotId = streamManager.setSlotHarness(
-            stream.streamId,
-            packetNumber,
-            hex"00143fd2e14f4b448a071e074e1e1879318447f2a266",
-            acceptPegInTxHash, // this is what peg-out should spend
-            amount
-        );
-
-        // set the slot state to LOCKED
-        streamManager.setSlotStateHarness(stream.streamId, packetNumber, slotId, SlotState.LOCKED);
-
-        // Set up the pegOutTxs mapping
-        pegManagerHarness.setPegOutTxInfoHarness(acceptPegInTxHash, userPubKey, stream.streamId, packetNumber, slotId);
-
-        // Create SPV proof for the peg-out transaction
-        BtcTxSPVProof memory pegOutTxSPVProof = createBtcTxSPVProof(pegOutTx);
-
-        // Set mock bridge confirmations
-        bridgeMock.setBtcTransactionConfirmations(10);
-
-        // Calculate the expected transaction hash
-        bytes32 expectedTxHash = bitcoinManager.getBtcTxHash(pegOutTx);
+        // Setup common scenario
+        RegisterPegoutSetup memory setup = setup_registerPegoutScenario();
 
         // Expect the PegOutRegistered event
         vm.expectEmit(address(pm));
         emit IPegManager.PegOutRegistered(
-            pegOutTxSPVProof.blockHash, expectedTxHash, acceptPegInTxHash, stream.streamId, packetNumber, slotId
+            setup.pegOutTxSPVProof.blockHash,
+            setup.expectedTxHash,
+            setup.acceptPegInTxHash,
+            setup.stream.streamId,
+            setup.packetNumber,
+            setup.slotId
         );
 
         // Register the peg-out transaction
-        pm.registerPegout(pegOutTxSPVProof);
+        pm.registerPegout(setup.pegOutTxSPVProof);
 
         // Verify the slot was marked as PAID
-        Slot memory updatedSlot = streamManager.getSlot(stream.streamId, packetNumber, slotId);
+        Slot memory updatedSlot = streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId);
         assertEq(uint256(updatedSlot.state), uint256(SlotState.PAID), "Slot should be marked as PAID");
     }
 
     function test_registerPegout_Revert_InvalidSlotState() external {
-        // Create a peg-out transaction that spends the accept peg-in UTXO
-        BtcTransaction memory pegOutTx = getPegOutTx();
+        // Setup common scenario
+        RegisterPegoutSetup memory setup = setup_registerPegoutScenario();
 
-        // Create a slot
-        uint64 amount = VALUE; // 0.001 BTC
-        Stream memory stream = streamManager.getStream(amount);
-        uint64 packetNumber = 0;
-        bytes32 acceptPegInTxHash = pegOutTx.inputs[0].txId;
-        bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
-
-        uint64 slotId = streamManager.setSlotHarness(
-            stream.streamId, packetNumber, hex"00143fd2e14f4b448a071e074e1e1879318447f2a266", acceptPegInTxHash, amount
-        );
-
-        // Set the slot state to FILLED instead of LOCKED
-        streamManager.setSlotStateHarness(stream.streamId, packetNumber, slotId, SlotState.FILLED);
-
-        // Set up the pegOutTxs mapping
-        pegManagerHarness.setPegOutTxInfoHarness(acceptPegInTxHash, userPubKey, stream.streamId, packetNumber, slotId);
-
-        // Create SPV proof for the peg-out transaction
-        BtcTxSPVProof memory pegOutTxSPVProof = createBtcTxSPVProof(pegOutTx);
-
-        // Set mock bridge confirmations
-        bridgeMock.setBtcTransactionConfirmations(10);
+        // Override the slot state to FILLED instead of LOCKED
+        streamManager.setSlotStateHarness(setup.stream.streamId, setup.packetNumber, setup.slotId, SlotState.FILLED);
 
         // Expect revert for invalid slot state
         vm.expectRevert(
@@ -329,7 +284,7 @@ contract TestPegManager is Test, HelperContract {
         );
 
         // Register the peg-out transaction
-        pm.registerPegout(pegOutTxSPVProof);
+        pm.registerPegout(setup.pegOutTxSPVProof);
     }
 
     function test_registerPegout_Revert_InvalidAcceptPegInTxHash() external {
@@ -374,32 +329,10 @@ contract TestPegManager is Test, HelperContract {
     }
 
     function test_registerPegout_Revert_IncorrectVout() external {
-        // Create a peg-out transaction that spends the accept peg-in UTXO with incorrect vout
-        BtcTransaction memory pegOutTx = getPegOutTx();
-        pegOutTx.inputs[0].vout = 1; // Should be 0
-
-        // Create a slot
-        uint64 amount = VALUE; // 0.001 BTC
-        Stream memory stream = streamManager.getStream(amount);
-        uint64 packetNumber = 0;
-        bytes32 acceptPegInTxHash = pegOutTx.inputs[0].txId;
-        bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
-
-        uint64 slotId = streamManager.setSlotHarness(
-            stream.streamId, packetNumber, hex"00143fd2e14f4b448a071e074e1e1879318447f2a266", acceptPegInTxHash, amount
-        );
-
-        // Set the slot state to LOCKED
-        streamManager.setSlotStateHarness(stream.streamId, packetNumber, slotId, SlotState.LOCKED);
-
-        // Set up the pegOutTxs mapping
-        pegManagerHarness.setPegOutTxInfoHarness(acceptPegInTxHash, userPubKey, stream.streamId, packetNumber, slotId);
-
-        // Create SPV proof for the peg-out transaction
-        BtcTxSPVProof memory pegOutTxSPVProof = createBtcTxSPVProof(pegOutTx);
-
-        // Set mock bridge confirmations
-        bridgeMock.setBtcTransactionConfirmations(10);
+        // Setup common scenario but modify the peg-out transaction vout
+        RegisterPegoutSetup memory setup = setup_registerPegoutScenario();
+        setup.pegOutTx.inputs[0].vout = 1; // Should be 0
+        setup.pegOutTxSPVProof = createBtcTxSPVProof(setup.pegOutTx);
 
         // Expect revert for incorrect vout
         vm.expectRevert(
@@ -407,32 +340,12 @@ contract TestPegManager is Test, HelperContract {
         );
 
         // Register the peg-out transaction
-        pm.registerPegout(pegOutTxSPVProof);
+        pm.registerPegout(setup.pegOutTxSPVProof);
     }
 
     function test_registerPegout_Revert_NotEnoughConfirmations() external {
-        // Create a peg-out transaction that spends the accept peg-in UTXO
-        BtcTransaction memory pegOutTx = getPegOutTx();
-
-        // Create a slot
-        uint64 amount = VALUE; // 0.001 BTC
-        Stream memory stream = streamManager.getStream(amount);
-        uint64 packetNumber = 0;
-        bytes32 acceptPegInTxHash = pegOutTx.inputs[0].txId;
-        bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
-
-        uint64 slotId = streamManager.setSlotHarness(
-            stream.streamId, packetNumber, hex"00143fd2e14f4b448a071e074e1e1879318447f2a266", acceptPegInTxHash, amount
-        );
-
-        // Set the slot state to LOCKED
-        streamManager.setSlotStateHarness(stream.streamId, packetNumber, slotId, SlotState.LOCKED);
-
-        // Set up the pegOutTxs mapping
-        pegManagerHarness.setPegOutTxInfoHarness(acceptPegInTxHash, userPubKey, stream.streamId, packetNumber, slotId);
-
-        // Create SPV proof for the peg-out transaction
-        BtcTxSPVProof memory pegOutTxSPVProof = createBtcTxSPVProof(pegOutTx);
+        // Setup common scenario
+        RegisterPegoutSetup memory setup = setup_registerPegoutScenario();
 
         // Set mock bridge confirmations to insufficient amount
         int256 actualConfirmations = 0;
@@ -441,88 +354,46 @@ contract TestPegManager is Test, HelperContract {
         // Expect revert for not enough confirmations
         vm.expectRevert(
             abi.encodeWithSelector(
-                ProofValidator.NotEnoughConfirmations.selector, actualConfirmations, stream.peginConfirmations
+                ProofValidator.NotEnoughConfirmations.selector, actualConfirmations, setup.stream.peginConfirmations
             )
         );
 
         // Register the peg-out transaction
-        pm.registerPegout(pegOutTxSPVProof);
+        pm.registerPegout(setup.pegOutTxSPVProof);
     }
 
     function test_registerPegout_Revert_IncorrectOutputScript() external {
-        // Create a peg-out transaction with incorrect output script
-        BtcTransaction memory pegOutTx = getPegOutTx();
+        // Setup common scenario but modify the output script
+        RegisterPegoutSetup memory setup = setup_registerPegoutScenario();
         // Change the first output to have an incorrect script (not P2WPKH for the user's pubkey)
-        pegOutTx.outputs[0].scriptPubKey = hex"001499999999999999999999999999999999999999"; // Wrong script
-
-        // Create a slot
-        uint64 amount = VALUE; // 0.001 BTC
-        Stream memory stream = streamManager.getStream(amount);
-        uint64 packetNumber = 0;
-        bytes32 acceptPegInTxHash = pegOutTx.inputs[0].txId;
-        bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
-
-        uint64 slotId = streamManager.setSlotHarness(
-            stream.streamId, packetNumber, hex"00143fd2e14f4b448a071e074e1e1879318447f2a266", acceptPegInTxHash, amount
-        );
-
-        // Set the slot state to LOCKED
-        streamManager.setSlotStateHarness(stream.streamId, packetNumber, slotId, SlotState.LOCKED);
-
-        // Set up the pegOutTxs mapping
-        pegManagerHarness.setPegOutTxInfoHarness(acceptPegInTxHash, userPubKey, stream.streamId, packetNumber, slotId);
-
-        // Create SPV proof for the peg-out transaction
-        BtcTxSPVProof memory pegOutTxSPVProof = createBtcTxSPVProof(pegOutTx);
-
-        // Set mock bridge confirmations
-        bridgeMock.setBtcTransactionConfirmations(10);
+        setup.pegOutTx.outputs[0].scriptPubKey = hex"001499999999999999999999999999999999999999"; // Wrong script
+        setup.pegOutTxSPVProof = createBtcTxSPVProof(setup.pegOutTx);
 
         // Calculate expected script for user's pubkey
-        bytes memory expectedScript = BtcScriptParser.getP2WPKHScript(userPubKey);
+        bytes memory expectedScript = BtcScriptParser.getP2WPKHScript(setup.userPubKey);
 
         // Expect revert for incorrect output script
         vm.expectRevert(
             abi.encodeWithSelector(
-                IPegManager.IncorrectOutputScript.selector, pegOutTx.outputs[0].scriptPubKey, expectedScript
+                IPegManager.IncorrectOutputScript.selector, setup.pegOutTx.outputs[0].scriptPubKey, expectedScript
             )
         );
 
         // Register the peg-out transaction
-        pm.registerPegout(pegOutTxSPVProof);
+        pm.registerPegout(setup.pegOutTxSPVProof);
     }
 
     function test_registerPegout_Revert_AlreadyPaid() external {
-        // Create a peg-out transaction that spends the accept peg-in UTXO
-        BtcTransaction memory pegOutTx = getPegOutTx();
-
-        // Create a slot
-        uint64 amount = VALUE; // 0.001 BTC
-        Stream memory stream = streamManager.getStream(amount);
-        uint64 packetNumber = 0;
-        bytes32 acceptPegInTxHash = pegOutTx.inputs[0].txId;
-        bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
-
-        uint64 slotId = streamManager.setSlotHarness(
-            stream.streamId, packetNumber, hex"00143fd2e14f4b448a071e074e1e1879318447f2a266", acceptPegInTxHash, amount
-        );
+        // Setup common scenario
+        RegisterPegoutSetup memory setup = setup_registerPegoutScenario();
 
         // Set the slot state to PAID (already processed)
-        streamManager.setSlotStateHarness(stream.streamId, packetNumber, slotId, SlotState.PAID);
-
-        // Set up the pegOutTxs mapping
-        pegManagerHarness.setPegOutTxInfoHarness(acceptPegInTxHash, userPubKey, stream.streamId, packetNumber, slotId);
-
-        // Create SPV proof for the peg-out transaction
-        BtcTxSPVProof memory pegOutTxSPVProof = createBtcTxSPVProof(pegOutTx);
-
-        // Set mock bridge confirmations
-        bridgeMock.setBtcTransactionConfirmations(10);
+        streamManager.setSlotStateHarness(setup.stream.streamId, setup.packetNumber, setup.slotId, SlotState.PAID);
 
         // Expect revert for slot already paid
         vm.expectRevert(abi.encodeWithSelector(IPegManager.InvalidSlotState.selector, SlotState.PAID, SlotState.LOCKED));
 
         // Register the peg-out transaction
-        pm.registerPegout(pegOutTxSPVProof);
+        pm.registerPegout(setup.pegOutTxSPVProof);
     }
 }
