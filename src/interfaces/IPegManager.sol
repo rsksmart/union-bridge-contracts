@@ -135,8 +135,6 @@ interface IPegManager {
         uint64 slotId
     );
 
-    event SlotMarkedAsPaid(uint64 indexed streamId, uint64 indexed packetNumber, uint64 indexed slotId);
-
     // ===================== Errors =====================
     error BitcoinManagerAddressZero();
     error CommitteeRegistryAddressZero();
@@ -156,4 +154,5 @@ interface IPegManager {
     error InvalidSlotState(SlotState actual, SlotState expected);
     error IncorrectVout(uint32 actual, uint32 expected);
     error SlotNotFound(bytes32 acceptPegInTxHash);
+    error IncorrectOutputScript(bytes actual, bytes expected);
 }

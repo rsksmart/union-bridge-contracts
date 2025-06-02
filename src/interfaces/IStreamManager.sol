@@ -116,6 +116,12 @@ interface IStreamManager is IAccessControl {
     /// @return bytes32 The committee public key
     function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes32);
 
+    /// @notice Marks a slot as paid, updating its state to PAID
+    /// @param _streamId The index in the array of streams
+    /// @param _packetNumber The index in the array of packets
+    /// @param _slotId The index in the array of slots
+    function markSlotAsPaid(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) external;
+
     /// @notice Allows contract owner to set the security bond value for a given stream
     /// @param _streamId The index in the array of streams
     /// @param _securityBondValue The value of the security bond expresed in RBTC in wei

@@ -12,7 +12,9 @@ import {
 import {Slot, Stream, Packet, SlotState, IStreamManager} from "./interfaces/IStreamManager.sol";
 import {ProofValidator} from "./ProofValidator.sol";
 import {BtcHelper} from "./libraries/BtcHelper.sol";
+import {BytesHelper} from "./libraries/BytesHelper.sol";
 import {Constants} from "./libraries/Constants.sol";
+import {BtcScriptParser} from "./libraries/BtcScriptParser.sol";
 
 /// @title PegManager
 /// @notice Manages peg-in and peg-out operations between Bitcoin and Rootstock
@@ -23,7 +25,6 @@ struct PegOutTxInfo {
     uint64 packetNumber;
     uint64 slotId;
     bytes32 acceptPegInTxHash;
-    bool isRegistered;
 }
 
 contract PegManager is IPegManager, BaseProxy, ProofValidator {
@@ -333,8 +334,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             streamId: stream.streamId,
             packetNumber: packetNumber,
             slotId: slot.slotId,
-            acceptPegInTxHash: slot.acceptPegInTx,
-            isRegistered: false
+            acceptPegInTxHash: slot.acceptPegInTx
         });
 
         // Store the peg-out transaction hash on-chain and initialize the signatures
@@ -366,13 +366,14 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
 
         // Look up the pegout transaction info using the accept peg-in transaction hash
         PegOutTxInfo storage pegOutInfo = pegOutTxs[acceptPegInTxHash];
-
-        // TODO Validate that this pegout transaction was requested
-
-        // Validate that this pegout hasn't been registered already
-        // if (pegOutInfo.isRegistered) {
-        //     revert AlreadyRegisteredPegOut(acceptPegInTxHash);
-        // }
+        console.log("pegOutInfo fields:");
+        console.log("streamId:", pegOutInfo.streamId);
+        console.log("packetNumber:", pegOutInfo.packetNumber);
+        console.log("slotId:", pegOutInfo.slotId);
+        console.log("userPubKey:");
+        console.logBytes(pegOutInfo.userPubKey);
+        console.log("acceptPegInTxHash:");
+        console.logBytes32(pegOutInfo.acceptPegInTxHash);
 
         // Get the slot and validate it's in LOCKED state
         Slot memory slot = streamManager.getSlot(pegOutInfo.streamId, pegOutInfo.packetNumber, pegOutInfo.slotId);
@@ -406,11 +407,11 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             _pegOutTxSPVProof.merkleBranchHashes
         );
 
-        // TODO: Validate that the output is P2WPKH for the user
+        // Validate that the first output is a P2WPKH paying the user
+        _validatePegOutUserOutput(_pegOutTxSPVProof.btcTx.outputs[0], pegOutInfo.userPubKey);
 
-        // Mark the slot as PAID and update the registration status
+        // Update slot status
         _markSlotAsPaid(pegOutInfo.streamId, pegOutInfo.packetNumber, pegOutInfo.slotId);
-        pegOutInfo.isRegistered = true;
 
         emit PegOutRegistered(
             _pegOutTxSPVProof.blockHash,
@@ -423,10 +424,8 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
     }
 
     function _markSlotAsPaid(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) internal {
-        emit SlotMarkedAsPaid(_streamId, _packetNumber, _slotId);
-
-        // TODO: Implement proper slot state management in StreamManager
-        // streamManager.markSlotAsPaid(_streamId, _packetNumber, _slotId);
+        // Mark the slot as PAID in the StreamManager
+        streamManager.markSlotAsPaid(_streamId, _packetNumber, _slotId);
     }
 
     function getPegOutSignatureHash(uint64 streamId, uint64 packetNumber, uint64 slotId)
@@ -453,5 +452,26 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
 
         // Initialize the signatures for each member
         signatureManager.initSignatures(_pegOutSignatureHash, committeeKey);
+    }
+
+    function _validatePegOutUserOutput(BtcTxOut memory _userOutput, bytes memory _userPubKey) internal pure {
+        console.log("userOutput");
+        console.logBytes(_userOutput.scriptPubKey);
+        // Add logging to debug the validation
+        console.log("User pubkey:");
+        console.logBytes(_userPubKey);
+
+        // Generate the expected P2WPKH script for the user's public key
+        bytes memory expectedScriptPubKey = BtcScriptParser.getP2WPKHScript(_userPubKey);
+
+        console.log("Expected script:");
+        console.logBytes(expectedScriptPubKey);
+        console.log("Actual script:");
+        console.logBytes(_userOutput.scriptPubKey);
+
+        // Validate that the output script matches the expected P2WPKH script
+        if (!BytesHelper.compare(_userOutput.scriptPubKey, expectedScriptPubKey)) {
+            revert IncorrectOutputScript(_userOutput.scriptPubKey, expectedScriptPubKey);
+        }
     }
 }

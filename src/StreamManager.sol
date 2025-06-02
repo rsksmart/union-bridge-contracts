@@ -203,6 +203,23 @@ contract StreamManager is IStreamManager, AccessControl {
         return getPacket(_streamId, _packetNumber).committeePubKey;
     }
 
+    function markSlotAsPaid(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) external onlyPegManager {
+        // TODO what else shold this function do
+
+        // Validate that the packet exists
+        if (_packetNumber >= packets[_streamId].length) {
+            revert NonExistentSlot(_streamId, _packetNumber, _slotId);
+        }
+
+        // Validate that the slot exists
+        if (_slotId >= slots[_streamId][_packetNumber].length) {
+            revert NonExistentSlot(_streamId, _packetNumber, _slotId);
+        }
+
+        // Update the slot state to PAID
+        slots[_streamId][_packetNumber][_slotId].state = SlotState.PAID;
+    }
+
     function setSecurityBond(uint64 _streamId, uint256 _securityBondValue) external streamExists(_streamId) onlyOwner {
         if (_securityBondValue == 0) {
             revert InvalidSecurityBondValue(_securityBondValue);

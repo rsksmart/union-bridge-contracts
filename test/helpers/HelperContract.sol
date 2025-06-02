@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
 import {DeployScript} from "script/deploy/DeployScript.s.sol";
 import {PegManager, BtcTxSPVProof} from "src/PegManager.sol";
+import {PegManagerHarness} from "test/helpers/PegManagerHarness.sol";
 import {StreamManagerHarness} from "test/helpers/StreamManagerHarness.sol";
 import {SignatureManager} from "src/SignatureManager.sol";
 import {Role, Member, CommitteeMember, Committee, CommitteeRegistry} from "src/CommitteeRegistry.sol";
@@ -53,6 +54,7 @@ abstract contract HelperContract is Test, TestUtils {
     CommitteeMember[] internal committee2Members;
     CommitteeMember[] internal committee3Members;
     PegManager internal pm;
+    PegManagerHarness internal pegManagerHarness;
     StreamManagerHarness internal streamManager;
     BridgeMock internal bridgeMock;
     SignatureManager internal signatureManager;
@@ -100,6 +102,7 @@ abstract contract HelperContract is Test, TestUtils {
         bitcoinManager = deployScript.bitcoinManager();
         registry = deployScript.committeeRegistry();
         pm = deployScript.pegManager();
+        pegManagerHarness = PegManagerHarness(address(deployScript.pegManager()));
         streamManager = StreamManagerHarness(address(deployScript.streamManager()));
         // Set up bridge mock at bridge precompiled address
         bridgeMock = BridgeMock(deployScript.bridgeAddress());
@@ -236,8 +239,8 @@ abstract contract HelperContract is Test, TestUtils {
 
         // Outputs
         BtcTxOut[] memory btcOutputs = new BtcTxOut[](2);
-        btcOutputs[0] = BtcTxOut({amount: 98730, scriptPubKey: hex"0014298a0fe992f755152a81ee64bdc4cc96d3bb8969"});
-        btcOutputs[1] = BtcTxOut({amount: 300, scriptPubKey: hex"0014298a0fe992f755152a81ee64bdc4cc96d3bb8969"});
+        btcOutputs[0] = BtcTxOut({amount: 98730, scriptPubKey: hex"00143fd2e14f4b448a071e074e1e1879318447f2a266"});
+        btcOutputs[1] = BtcTxOut({amount: 300, scriptPubKey: hex"00143fd2e14f4b448a071e074e1e1879318447f2a266"});
 
         return BtcTransaction({version: Constants.BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
     }
