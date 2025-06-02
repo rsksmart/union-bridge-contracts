@@ -73,7 +73,7 @@ abstract contract HelperContract is Test, TestUtils {
 
         for (uint256 memberIndex = 1; memberIndex <= totalMembers; memberIndex++) {
             bytes32 pubKey = generatePubKey(memberIndex);
-            uint256 minimumDeposit = registry.getMinimumDepositById(denomination);
+            uint256 minimumDeposit = registry.getMinimumDeposit(denomination);
             address user = vm.addr(memberIndex); // Use a different address for each member
             vm.deal(user, minimumDeposit);
 

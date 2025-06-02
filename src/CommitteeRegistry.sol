@@ -18,9 +18,8 @@ import {
 } from "./interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination, IStreamManager} from "./interfaces/IStreamManager.sol";
 import {IPegManager} from "./interfaces/IPegManager.sol";
-import {SecurityBond} from "./SecurityBond.sol";
 
-contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
+contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     // Address of the Memeber => Amount provided
     Member[] internal members;
 
@@ -39,6 +38,7 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
 
     // NOTE: This is a mapping of the members, where the key is the address and the value is the index in the members array + 1
     mapping(address => uint16) internal memberIndexByAddress;
+    IStreamManager streamManager;
     address pegManager;
 
     // TODO: This will be tackle later on in another story
@@ -48,6 +48,26 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
 
     function initialize(address _initialOwner) public virtual initializer {
         __BaseProxy_init(_initialOwner);
+    }
+
+    function setStreamManager(IStreamManager _streamManager) public {
+        streamManager = _streamManager;
+    }
+
+    function getMinimumDeposit(StreamDenomination _denomination) public view returns (uint256) {
+        return streamManager.getStreamById(uint8(_denomination)).securityBondValue;
+    }
+
+    function _initMemberBalance(Member storage _member) internal {
+        uint64 streams = streamManager.getStreamsLength();
+        _member.balance.available = 0;
+        _member.balance.preStaked = new uint256[](streams);
+        for (uint64 i = 0; i < streams; i++) {
+            _member.balance.preStaked[i] = 0;
+        }
+        for (uint256 i = 0; i < streams; i++) {
+            _member.balance.staked.push();
+        }
     }
 
     // FIXME: Temporary function to register a committee, should be deleted when createCommittee is called in setup
@@ -83,9 +103,9 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
         if (member.requestedRoles[_stream] != Role.None) {
             revert MemberAlreadyRegisteredForStream(msg.sender, _stream, _role, member.requestedRoles[_stream]);
         }
-        uint256 minDeposit = getMinimumDepositById(_stream);
+        uint256 minDeposit = getMinimumDeposit(_stream);
         if (msg.value < minDeposit) {
-            revert despositBondTooLow(msg.value, minDeposit);
+            revert DespositBondTooLow(msg.value, minDeposit);
         }
 
         _registerCandidateToStream(msg.sender, _stream, _role, msg.value);
@@ -226,8 +246,8 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
         if (memberIndex == 0) {
             revert MemberNotRegistered(_address);
         }
-        if ( memberIndex > members.length) {
-            revert _MemberIndexOutOfBounds(_address);
+        if (memberIndex > members.length) {
+            revert _MemberIndexOutOfBounds(memberIndex);
         }
 
         // Substract 1 to get the correct index

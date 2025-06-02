@@ -4,10 +4,10 @@ pragma solidity ^0.8.20;
 import "forge-std/Test.sol";
 import {Role, Member, CommitteeMember, Committee, CommitteeRegistry} from "src/CommitteeRegistry.sol";
 import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
-import {SecurityBond} from "src/SecurityBond.sol";
 import {StreamDenomination, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
+import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract TestCommitteeRegistry is Test, HelperContract {
@@ -57,7 +57,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
     function test_depositBond_Revert_TooManyMembers() external {
         // Arrange
         uint256 MAX_MEMBERS_SIZE = registry.MAX_MEMBERS_SIZE();
-        uint256 minimumDeposit = registry.getMinimumDepositById(DEFAULT_STREAM);
+        uint256 minimumDeposit = registry.getMinimumDeposit(DEFAULT_STREAM);
         // we already have 3 members registered in the setup
         for (uint16 i = 3; i < MAX_MEMBERS_SIZE; i++) {
             uint256 privKey = uint256(i);
@@ -82,7 +82,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         uint256 privKey = uint256(1);
         bytes32 pubKey = generatePubKey(privKey);
         address user = vm.addr(privKey);
-        uint256 minimumDeposit = registry.getMinimumDepositById(DEFAULT_STREAM);
+        uint256 minimumDeposit = registry.getMinimumDeposit(DEFAULT_STREAM);
         vm.deal(user, minimumDeposit);
 
         CommitteeMember[] memory committeesCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM);
@@ -155,7 +155,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         uint256 privKey = uint256(1);
         bytes32 pubKey = generatePubKey(privKey);
         address user = vm.addr(privKey);
-        uint256 minimumDeposit = registry.getMinimumDepositById(DEFAULT_STREAM);
+        uint256 minimumDeposit = registry.getMinimumDeposit(DEFAULT_STREAM);
         vm.deal(user, minimumDeposit);
 
         vm.prank(user);
@@ -184,7 +184,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         uint256 privKey = uint256(1);
         bytes32 pubKey = generatePubKey(privKey);
         address user = vm.addr(privKey);
-        uint256 minimumDeposit = registry.getMinimumDepositById(DEFAULT_STREAM);
+        uint256 minimumDeposit = registry.getMinimumDeposit(DEFAULT_STREAM);
         vm.deal(user, minimumDeposit);
 
         // Assert requested none role for stream
@@ -200,12 +200,12 @@ contract TestCommitteeRegistry is Test, HelperContract {
         uint256 privKey = uint256(1);
         bytes32 pubKey = generatePubKey(privKey);
         address user = vm.addr(privKey);
-        uint256 minimumDeposit = registry.getMinimumDepositById(DEFAULT_STREAM);
+        uint256 minimumDeposit = registry.getMinimumDeposit(DEFAULT_STREAM);
         vm.deal(user, minimumDeposit - 1);
 
         // Assert deposit bond too low
         vm.expectRevert(
-            abi.encodeWithSelector(SecurityBond.despositBondTooLow.selector, minimumDeposit - 1, minimumDeposit)
+            abi.encodeWithSelector(ICommitteeRegistry.DespositBondTooLow.selector, minimumDeposit - 1, minimumDeposit)
         );
 
         // Act
@@ -218,7 +218,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         uint256 privKey = uint256(1);
         bytes32 pubKey = generatePubKey(privKey);
         address user = vm.addr(privKey);
-        uint256 minimumDeposit = registry.getMinimumDepositById(DEFAULT_STREAM);
+        uint256 minimumDeposit = registry.getMinimumDeposit(DEFAULT_STREAM);
         vm.deal(user, minimumDeposit);
         vm.prank(user);
         registry.depositBond{value: minimumDeposit}(pubKey, DEFAULT_STREAM, Role.Operator);
@@ -260,7 +260,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         uint256 privKey = uint256(1);
         bytes32 pubKey = generatePubKey(privKey);
         address user = vm.addr(privKey);
-        uint256 minimumDeposit = registry.getMinimumDepositById(StreamDenomination._0_001BTC);
+        uint256 minimumDeposit = registry.getMinimumDeposit(StreamDenomination._0_001BTC);
         vm.deal(user, minimumDeposit);
         vm.prank(user);
         registry.depositBond{value: minimumDeposit}(pubKey, StreamDenomination._0_001BTC, Role.Operator);
@@ -295,7 +295,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         uint256 privKey = uint256(1);
         bytes32 pubKey = generatePubKey(privKey);
         address user = vm.addr(privKey);
-        uint256 minimumDeposit = registry.getMinimumDepositById(DEFAULT_STREAM);
+        uint256 minimumDeposit = registry.getMinimumDeposit(DEFAULT_STREAM);
         vm.deal(user, minimumDeposit);
 
         vm.startBroadcast(user);
@@ -335,7 +335,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         uint256 privKey = uint256(1);
         bytes32 pubKey = generatePubKey(privKey);
         address user = vm.addr(privKey);
-        uint256 minimumDeposit = registry.getMinimumDepositById(DEFAULT_STREAM);
+        uint256 minimumDeposit = registry.getMinimumDeposit(DEFAULT_STREAM);
         vm.deal(user, minimumDeposit);
 
         vm.startBroadcast(user);
@@ -360,8 +360,8 @@ contract TestCommitteeRegistry is Test, HelperContract {
         CommitteeMember[] memory committeesCandidates = registry.getCommitteeCandidates(stream);
         uint256 candidatesAmountBeforeDeposit = committeesCandidates.length;
 
-        // Determine the minimum bond required (getMinimumDepositById(stream))
-        uint256 minimumDeposit = registry.getMinimumDepositById(stream);
+        // Determine the minimum bond required (getMinimumDeposit(stream))
+        uint256 minimumDeposit = registry.getMinimumDeposit(stream);
         vm.deal(user, minimumDeposit);
 
         // Act
@@ -914,7 +914,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         uint256 privKey = uint256(1);
         setup_registerMember(privKey);
         address user = vm.addr(privKey);
-        uint256 minimumDeposit = registry.getMinimumDepositById(DEFAULT_STREAM);
+        uint256 minimumDeposit = registry.getMinimumDeposit(DEFAULT_STREAM);
 
         // Act
         vm.prank(user);
@@ -963,7 +963,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Arrange
         uint256 privKey = uint256(1);
         address user = vm.addr(privKey);
-        uint256 minimumDeposit = registry.getMinimumDepositById(DEFAULT_STREAM);
+        uint256 minimumDeposit = registry.getMinimumDeposit(DEFAULT_STREAM);
         vm.deal(user, minimumDeposit);
 
         // Assert
@@ -972,5 +972,29 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Act
         vm.prank(user);
         registry.registerCandidateToStream(user, DEFAULT_STREAM, DEFAULT_ROLE, minimumDeposit);
+    }
+
+    function test_getMinimumDeposit_Success() external view {
+        // Arrange
+        uint64[5] memory denominations = [
+            uint64(100_000), // 0.001 BTC
+            uint64(1_000_000), // 0.01 BTC
+            uint64(10_000_000), // 0.1 BTC
+            uint64(100_000_000), // 1 BTC
+            uint64(1_000_000_000) // 10 BTC
+        ];
+
+        for (uint8 i = 0; i < uint8(StreamDenomination._10BTC); i++) {
+            // Act
+            uint256 minDeposit = registry.getMinimumDeposit(StreamDenomination(i));
+
+            // Assert
+            uint64 denomination = denominations[i];
+            assertEq(
+                minDeposit,
+                BtcHelper.satoshiToWei(denomination) / 10,
+                "Error SecurityBond min deposit should be equal to the denomination"
+            );
+        }
     }
 }

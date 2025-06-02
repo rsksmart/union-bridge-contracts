@@ -80,7 +80,7 @@ contract SetUpCommittees is ScriptUtils, TestUtils {
         address user = vm.addr(_privKey);
         RegisterMemberParams memory params = getMemberParams(_privKey);
 
-        uint256 minimumDeposit = _committeeRegistry.getMinimumDepositById(params.requestedStream);
+        uint256 minimumDeposit = _committeeRegistry.getMinimumDeposit(params.requestedStream);
 
         vm.deal(user, minimumDeposit);
 
