@@ -227,20 +227,32 @@ abstract contract HelperContract is Test, TestUtils {
     }
 
     // ========================== Peg out ==========================
-    function getPegOutTx() internal pure returns (BtcTransaction memory) {
-        // Input
+    function createPegOutTx(bytes32 _acceptPegInTxHash, bytes memory _userPubKey, uint64 _amount)
+        internal
+        pure
+        returns (BtcTransaction memory)
+    {
+        // Input: spend the accept peg-in UTXO
         BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
         btcInputs[0] = BtcTxIn({
-            txId: 0x30b6a2cae94d89540a99e0dfa39cf88e6de40dca9142810fdce7a95c00faff47,
-            vout: 0,
+            txId: _acceptPegInTxHash,
+            vout: 0, // P2TR output is at index 0
             sequence: 0xfffffffd,
             scriptSig: hex""
         });
 
         // Outputs
         BtcTxOut[] memory btcOutputs = new BtcTxOut[](2);
-        btcOutputs[0] = BtcTxOut({amount: 98730, scriptPubKey: hex"00143fd2e14f4b448a071e074e1e1879318447f2a266"});
-        btcOutputs[1] = BtcTxOut({amount: 300, scriptPubKey: hex"00143fd2e14f4b448a071e074e1e1879318447f2a266"});
+
+        // user output amount
+        uint64 userAmount = _amount - 1000; // Subtract fee
+        bytes memory userScriptPubKey = BtcScriptParser.getP2WPKHScript(_userPubKey);
+
+        // pay to user's P2WPKH
+        btcOutputs[0] = BtcTxOut({amount: userAmount, scriptPubKey: userScriptPubKey});
+
+        // speedup
+        btcOutputs[1] = BtcTxOut({amount: 300, scriptPubKey: userScriptPubKey});
 
         return BtcTransaction({version: Constants.BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
     }
@@ -311,15 +323,16 @@ abstract contract HelperContract is Test, TestUtils {
     }
 
     function setup_registerPegoutScenario() public returns (RegisterPegoutSetup memory setup) {
-        // Create a peg-out transaction that spends the accept peg-in UTXO
-        setup.pegOutTx = getPegOutTx();
-
-        // Create a slot
         uint64 amount = VALUE; // 0.001 BTC
         setup.stream = streamManager.getStream(amount);
         setup.packetNumber = 0;
-        setup.acceptPegInTxHash = setup.pegOutTx.inputs[0].txId;
         setup.userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+
+        // peg-in tx hash
+        setup.acceptPegInTxHash = 0x30b6a2cae94d89540a99e0dfa39cf88e6de40dca9142810fdce7a95c00faff47;
+
+        // Create a peg-out transaction that spends the accept peg-in UTXO
+        setup.pegOutTx = createPegOutTx(setup.acceptPegInTxHash, setup.userPubKey, amount);
 
         setup.slotId = streamManager.setSlotHarness(
             setup.stream.streamId,

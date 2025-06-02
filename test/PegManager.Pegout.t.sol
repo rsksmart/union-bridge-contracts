@@ -286,15 +286,15 @@ contract TestPegManager is Test, HelperContract {
 
     function test_registerPegout_Revert_InvalidAcceptPegInTxHash() external {
         // Create a peg-out transaction that spends the accept peg-in UTXO
-        BtcTransaction memory pegOutTx = getPegOutTx();
+        bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+        uint64 amount = VALUE; // 0.001 BTC
+        bytes32 acceptPegInTxHash = 0x30b6a2cae94d89540a99e0dfa39cf88e6de40dca9142810fdce7a95c00faff47;
+        BtcTransaction memory pegOutTx = createPegOutTx(acceptPegInTxHash, userPubKey, amount);
 
         // Create a slot
-        uint64 amount = VALUE; // 0.001 BTC
         Stream memory stream = streamManager.getStream(amount);
         uint64 packetNumber = 0;
-        bytes32 acceptPegInTxHash = pegOutTx.inputs[0].txId;
         bytes32 differentTxHash = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
-        bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
 
         uint64 slotId = streamManager.setSlotHarness(
             stream.streamId,
@@ -459,37 +459,5 @@ contract TestPegManager is Test, HelperContract {
         assertEq(pegOutInfo.packetNumber, expectedPacketNumber, "Packet number should match");
         assertEq(pegOutInfo.slotId, expectedSlotId, "Slot ID should match");
         assertEq(pegOutInfo.acceptPegInTxHash, acceptPegInTxHash, "Accept peg-in tx hash should match");
-    }
-
-    function createPegOutTx(bytes32 _acceptPegInTxHash, bytes memory _userPubKey, uint64 _amount)
-        internal
-        pure
-        returns (BtcTransaction memory)
-    {
-        // Input: spend the accept peg-in UTXO
-        BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
-        btcInputs[0] = BtcTxIn({
-            txId: _acceptPegInTxHash,
-            vout: 0, // P2TR output is at index 0
-            sequence: 0xfffffffd,
-            scriptSig: hex""
-        });
-
-        // Outputs: pay to user's P2WPKH and include change/fee output
-        BtcTxOut[] memory btcOutputs = new BtcTxOut[](2);
-
-        // Calculate user output amount (subtract fees)
-        uint64 userAmount = _amount - 1000; // Subtract fee
-
-        // Output 0: Pay to user's P2WPKH
-        btcOutputs[0] = BtcTxOut({amount: userAmount, scriptPubKey: BtcScriptParser.getP2WPKHScript(_userPubKey)});
-
-        // Output 1: Change/fee output (minimal amount)
-        btcOutputs[1] = BtcTxOut({
-            amount: 300,
-            scriptPubKey: hex"00143fd2e14f4b448a071e074e1e1879318447f2a266" // Some valid P2WPKH script
-        });
-
-        return BtcTransaction({version: Constants.BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
     }
 }
