@@ -223,8 +223,11 @@ contract CommitteeRegistry is ICommitteeRegistry, SecurityBond, BaseProxy {
         uint16 memberIndex = memberIndexByAddress[_address];
 
         // 0 is reserved for non registered members
-        if (memberIndex == 0 || memberIndex > members.length) {
+        if (memberIndex == 0) {
             revert MemberNotRegistered(_address);
+        }
+        if ( memberIndex > members.length) {
+            revert _MemberIndexOutOfBounds(_address);
         }
 
         // Substract 1 to get the correct index

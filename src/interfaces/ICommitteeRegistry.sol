@@ -146,4 +146,6 @@ interface ICommitteeRegistry {
     error NoAvailableBalanceToWithdraw(address member);
     error MemberIndexNotFound(uint16 memberIndex);
     error MemberNotRegistered(address memberAddress);
+
+    error _MemberIndexOutOfBounds(uint16 memberIndex);
 }
