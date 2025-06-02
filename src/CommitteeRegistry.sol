@@ -190,7 +190,6 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
             revert TooManyMembers(MAX_MEMBERS_SIZE);
         }
 
-        // TODO: check if we need to ask for the uncompressed public key and check it against the sender address
         members.push(); // Expand the array
         Member storage member = members[members.length - 1]; // Get reference
         member.publicKey = _publicKey;
@@ -229,7 +228,6 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         return committeesByKey[_committeeId].memberIndexesAndRoles;
     }
 
-    // TODO: check if this is needed
     function getMemberPubKeyByIndex(uint16 _memberIndex) external view returns (bytes32) {
         if (_memberIndex >= members.length) {
             revert MemberIndexNotFound(_memberIndex);
