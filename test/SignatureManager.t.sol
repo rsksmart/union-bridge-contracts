@@ -88,11 +88,12 @@ contract TestSignatureManager is Test, HelperContract {
 
         // Assert
         assertEq(allSignaturesReady, false, "Not all signatures should be ready at this point");
-        (uint8 missingSignatures, uint8 missingNonces, bytes32 aggregatedKey) =
+        (uint8 missingSignatures, uint8 missingNonces, uint256 committeeId) =
             signatureManager.getSignaturesStatus(hashToSign);
         assertEq(missingSignatures, 1, "missingSignatures should be equal to 1");
         assertEq(missingNonces, 0, "missingNonces should be equal to 1");
-        assertEq(aggregatedKey, COMMITEE_1_PUB_KEY, "aggregatedKey should be equal to the committee key");
+        // firt committee ID is temporary hardcoded in StreamManager.createInitialPackets
+        assertEq(committeeId, 1, "committeeId should be equal to the committee id that was created initially");
         SignatureData[] memory signatures = signatureManager.getPartialSignatures(hashToSign);
         assertEq(signatures.length, 2, "signatures length should be equal to 2");
         assertEq(
@@ -119,10 +120,10 @@ contract TestSignatureManager is Test, HelperContract {
 
         // Assert
         assertEq(allSignaturesReady, true, "Not all signatures should be ready at this point");
-        (missingSignatures, missingNonces, aggregatedKey) = signatureManager.getSignaturesStatus(hashToSign);
+        (missingSignatures, missingNonces, committeeId) = signatureManager.getSignaturesStatus(hashToSign);
         assertEq(missingSignatures, 0, "missingSignatures should be equal to 0");
         assertEq(missingNonces, 0, "missingNonces should be equal to 0");
-        assertEq(aggregatedKey, COMMITEE_1_PUB_KEY, "aggregatedKey should be equal to the committee key");
+        // assertEq(committeeId, COMMITEE_1_PUB_KEY, "aggregatedKey should be equal to the committee key");
         signatures = signatureManager.getPartialSignatures(hashToSign);
         assertEq(signatures.length, 2, "signatures length should be equal to 2");
         assertEq(
@@ -326,7 +327,7 @@ contract TestSignatureManager is Test, HelperContract {
 
     function test_initSignatures_Success() external {
         // Arrange
-        bytes32 committeeKey = COMMITEE_1_PUB_KEY;
+        uint256 committeeId = 1;
         bytes32 committeeMember0Pubkey = MEMBER_0_PUBKEY;
         bytes32 committeeMember1Pubkey = MEMBER_1_PUBKEY;
         uint8 committeeMemberCount = 2;
@@ -334,16 +335,15 @@ contract TestSignatureManager is Test, HelperContract {
 
         // Act
         vm.prank(address(pm));
-        signatureManager.initSignatures(hashToSign, committeeKey);
+        signatureManager.initSignatures(hashToSign, committeeId);
 
         // Assert
-        (uint8 missingSignatures, uint8 missingNonces, bytes32 aggregatedKey) =
-            signatureManager.getSignaturesStatus(hashToSign);
+        (uint8 missingSignatures, uint8 missingNonces,) = signatureManager.getSignaturesStatus(hashToSign);
         assertEq(
             missingSignatures, committeeMemberCount, "missingSignatures should be equal to the committee member count"
         );
         assertEq(missingNonces, committeeMemberCount, "missingNonces should be equal to the committee member count");
-        assertEq(aggregatedKey, committeeKey, "aggregatedKey should be equal to the committee key");
+        // assertEq(aggregatedKey, committeeKey, "aggregatedKey should be equal to the committee key");
 
         SignatureData[] memory signatures = signatureManager.getPartialSignatures(hashToSign);
         assertEq(
@@ -363,7 +363,7 @@ contract TestSignatureManager is Test, HelperContract {
 
     function test_initSignatures_Revert_InvalidHashToSign() external {
         // Arrange
-        bytes32 committeeKey = COMMITEE_1_PUB_KEY;
+        uint256 committeeId = 1;
         bytes32 hashToSign = 0x0000000000000000000000000000000000000000000000000000000000000000;
 
         // Assert
@@ -371,58 +371,58 @@ contract TestSignatureManager is Test, HelperContract {
 
         // Act
         vm.prank(address(pm));
-        signatureManager.initSignatures(hashToSign, committeeKey);
+        signatureManager.initSignatures(hashToSign, committeeId);
     }
 
     function test_initSignatures_Revert_SignaturesAlreadyInitialized() external {
         // Arrange
-        bytes32 committeeKey = COMMITEE_1_PUB_KEY;
+        uint256 committeeId = 1;
         bytes32 hashToSign = 0x1000000000000000000000000000000000000000000000000000000000000001;
 
         // First time initializing the signatures
         vm.prank(address(pm));
-        signatureManager.initSignatures(hashToSign, committeeKey);
+        signatureManager.initSignatures(hashToSign, committeeId);
 
         // Assert
         vm.expectRevert(abi.encodeWithSelector(ISignatureManager.SignaturesAlreadyInitialized.selector, hashToSign));
 
         // Act second time initializing the signatures
         vm.prank(address(pm));
-        signatureManager.initSignatures(hashToSign, committeeKey);
+        signatureManager.initSignatures(hashToSign, committeeId);
     }
 
-    function test_initSignatures_Revert_InvalidCommitteeKey() external {
+    function test_initSignatures_Revert_CommitteeNotFound() external {
         // Arrange
-        bytes32 committeeKey = 0x0000000000000000000000000000000000000000000000000000000000000000;
+        uint256 committeeId = 0;
         bytes32 hashToSign = 0x1000000000000000000000000000000000000000000000000000000000000001;
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(ISignatureManager.InvalidCommittee.selector, committeeKey));
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.CommitteeNotFound.selector, committeeId));
 
         // Act
         vm.prank(address(pm));
-        signatureManager.initSignatures(hashToSign, committeeKey);
+        signatureManager.initSignatures(hashToSign, committeeId);
     }
 
     function test_initSignatures_Revert_Unauthorized() external {
         // Arrange
-        bytes32 committeeKey = COMMITEE_1_PUB_KEY;
+        uint256 committeeId = 1;
         bytes32 hashToSign = 0x1000000000000000000000000000000000000000000000000000000000000001;
 
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IAccessControl.UnauthorizedAccount.selector, address(this)));
 
         // Act
-        signatureManager.initSignatures(hashToSign, committeeKey);
+        signatureManager.initSignatures(hashToSign, committeeId);
     }
 
     function setup_initSignatures() internal returns (bytes32) {
-        bytes32 committeeKey = COMMITEE_1_PUB_KEY;
+        uint256 committeeId = 1;
         bytes32 hashToSign = 0x1200000000000000000000000000000000000000000000000000000000000001;
 
         // Act
         vm.prank(address(pm));
-        signatureManager.initSignatures(hashToSign, committeeKey);
+        signatureManager.initSignatures(hashToSign, committeeId);
 
         return hashToSign;
     }

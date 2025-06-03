@@ -2,8 +2,8 @@
 pragma solidity ^0.8.20;
 
 import {BaseProxy} from "./BaseProxy.sol";
-import {ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
-import {ISignatureManager} from "./interfaces/ISignatureManager.sol";
+import {ICommitteeRegistry, CommitteeMember} from "./interfaces/ICommitteeRegistry.sol";
+import {ISignatureManager, Signatures, SignatureData} from "./interfaces/ISignatureManager.sol";
 import {PrevoutData, BtcTransaction, BtcTxOut, IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
 import {
     BtcTxSPVProof, RequestPegInTempInfo, StreamPosition, PegStatus, IPegManager
@@ -145,6 +145,8 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             pegStatus: PegStatus.REGISTERED
         });
 
+        uint256 committeeId = streamManager.getCommitteeId(stream.streamId, packetNumber);
+
         emit RegisteredPegInRequest(
             _pegInRequestTxSPVProof.blockHash,
             txHash,
@@ -157,6 +159,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         );
 
         _initAcceptPegin(
+            committeeId,
             committeePubKey,
             btcReimbursementPubKey,
             txHash,
@@ -169,6 +172,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
     }
 
     function _initAcceptPegin(
+        uint256 _committeeId,
         bytes32 _committeePubKey,
         bytes32 _userXOnlyPubKey,
         bytes32 _registerPegInTx,
@@ -190,7 +194,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         emit InitAcceptPegin(_committeePubKey, _registerPegInTx, acceptPeginSignatureHash, acceptPeginSignatureMessage);
 
         // Initialize the signatures needed for a given aggregated key
-        signatureManager.initSignatures(acceptPeginSignatureHash, _committeePubKey);
+        signatureManager.initSignatures(acceptPeginSignatureHash, _committeeId);
     }
 
     function acceptPegInRequest(BtcTxSPVProof calldata _pegInAcceptedTxSPVProof) external {
@@ -257,10 +261,16 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             _acceptPeginTxOutput.scriptPubKey
         );
 
-        // Check if we need a new packet
+        // Check if we need a new packet/committee
+        // NOTE: Compare directly with Constants.SLOT_USAGE_THRESHOLD. It is not mathematically correct but it's functionally the same
         if (streamPosition.slotId == Constants.SLOT_USAGE_THRESHOLD - 1) {
-            bytes32 committeePubKey = committeeRegistry.selectCommittee(streamPosition.streamId);
-            streamManager.createNewPacket(streamPosition.streamId, committeePubKey);
+            committeeRegistry.createCommittee(streamPosition.streamId);
+        }
+
+        if (streamPosition.slotId >= Constants.SLOT_USAGE_THRESHOLD) {
+            if (committeeRegistry.isPendingCommitteeExpired(streamPosition.streamId)) {
+                committeeRegistry.createCommittee(streamPosition.streamId);
+            }
         }
 
         uint256 rbtcAmount = BtcHelper.satoshiToWei(_acceptPeginTxOutput.amount);
@@ -346,9 +356,9 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         pegOutSighashes[key] = _pegOutSignatureHash;
 
         // Get the committee key
-        bytes32 committeeKey = streamManager.getCommitteePubKey(_streamId, _packetNumber);
+        uint256 committeeId = streamManager.getCommitteeId(_streamId, _packetNumber);
 
         // Initialize the signatures for each member
-        signatureManager.initSignatures(_pegOutSignatureHash, committeeKey);
+        signatureManager.initSignatures(_pegOutSignatureHash, committeeId);
     }
 }
