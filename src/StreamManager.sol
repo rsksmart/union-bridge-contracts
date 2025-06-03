@@ -204,9 +204,13 @@ contract StreamManager is IStreamManager, AccessControl {
         return getPacket(_streamId, _packetNumber).committeePubKey;
     }
 
-    function markSlotAsPaid(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) external onlyPegManager {
-        // TODO what else shold this function do
-
+    function markSlotAsPaid(
+        uint64 _streamId,
+        uint64 _packetNumber,
+        uint64 _slotId,
+        bytes32 _acceptPegInTxHash,
+        bytes32 _take0Tx
+    ) external onlyPegManager {
         // Validate that the packet exists
         if (_packetNumber >= packets[_streamId].length) {
             revert NonExistentSlot(_streamId, _packetNumber, _slotId);
@@ -217,8 +221,21 @@ contract StreamManager is IStreamManager, AccessControl {
             revert NonExistentSlot(_streamId, _packetNumber, _slotId);
         }
 
-        // Update the slot state to PAID
-        slots[_streamId][_packetNumber][_slotId].state = SlotState.PAID;
+        Slot storage slot = slots[_streamId][_packetNumber][_slotId];
+
+        // Validate that the slot state is LOCKED
+        if (slot.state != SlotState.LOCKED) {
+            revert InvalidSlotState(slot.state, SlotState.LOCKED);
+        }
+
+        // Validate that the first input references the correct accept peg-in transaction
+        if (slot.acceptPegInTx != _acceptPegInTxHash) {
+            revert InvalidAcceptPegInTxHash(slot.acceptPegInTx, _acceptPegInTxHash);
+        }
+
+        // Update the slot state to PAID and store the take0Tx
+        slot.state = SlotState.PAID;
+        slot.take0Tx = _take0Tx;
     }
 
     function setSecurityBond(uint64 _streamId, uint256 _securityBondValue) external streamExists(_streamId) onlyOwner {

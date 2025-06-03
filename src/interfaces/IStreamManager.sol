@@ -120,7 +120,15 @@ interface IStreamManager is IAccessControl {
     /// @param _streamId The index in the array of streams
     /// @param _packetNumber The index in the array of packets
     /// @param _slotId The index in the array of slots
-    function markSlotAsPaid(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) external;
+    /// @param _acceptPegInTxHash The expected accept peg-in transaction hash for validation
+    /// @param _take0Tx The transaction id of the peg-out without dispute transaction
+    function markSlotAsPaid(
+        uint64 _streamId,
+        uint64 _packetNumber,
+        uint64 _slotId,
+        bytes32 _acceptPegInTxHash,
+        bytes32 _take0Tx
+    ) external;
 
     /// @notice Allows contract owner to set the security bond value for a given stream
     /// @param _streamId The index in the array of streams
@@ -159,4 +167,6 @@ interface IStreamManager is IAccessControl {
     error InvalidPeginConfirmations(uint8 confirmations);
     error InvalidPegoutConfirmations(uint8 confirmations);
     error InvalidSecurityBondValue(uint256 securityBond);
+    error InvalidSlotState(SlotState actual, SlotState expected);
+    error InvalidAcceptPegInTxHash(bytes32 expected, bytes32 actual);
 }

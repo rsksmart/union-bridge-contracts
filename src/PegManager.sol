@@ -359,17 +359,6 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         // Look up the pegout transaction info using the accept peg-in transaction hash
         PegOutInfo memory pegOutInfo = pegOuts[acceptPegInTxHash];
 
-        // Get the slot and validate it's LOCKED
-        Slot memory slot = streamManager.getSlot(pegOutInfo.streamId, pegOutInfo.packetNumber, pegOutInfo.slotId);
-        if (slot.state != SlotState.LOCKED) {
-            revert InvalidSlotState(slot.state, SlotState.LOCKED);
-        }
-
-        // Validate that the first input references the correct accept peg-in transaction
-        if (slot.acceptPegInTx != acceptPegInTxHash) {
-            revert InvalidAcceptPegInTxHash(slot.acceptPegInTx, acceptPegInTxHash);
-        }
-
         // Validate that the vout is correct
         if (vout != Constants.VOUT_INDEX_TAPTREE) {
             revert IncorrectVout(vout, Constants.VOUT_INDEX_TAPTREE);
@@ -394,7 +383,9 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         _validatePegOutUserOutput(_pegOutTxSPVProof.btcTx.outputs[0], pegOutInfo.userPubKey);
 
         // Update slot status
-        _markSlotAsPaid(pegOutInfo.streamId, pegOutInfo.packetNumber, pegOutInfo.slotId);
+        streamManager.markSlotAsPaid(
+            pegOutInfo.streamId, pegOutInfo.packetNumber, pegOutInfo.slotId, acceptPegInTxHash, txHash
+        );
 
         emit PegOutRegistered(
             _pegOutTxSPVProof.blockHash,
@@ -404,11 +395,6 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             pegOutInfo.packetNumber,
             pegOutInfo.slotId
         );
-    }
-
-    function _markSlotAsPaid(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) internal {
-        // Mark the slot as PAID in the StreamManager
-        streamManager.markSlotAsPaid(_streamId, _packetNumber, _slotId);
     }
 
     function getPegOutSignatureHash(uint64 streamId, uint64 packetNumber, uint64 slotId)
