@@ -86,6 +86,8 @@ interface ICommitteeRegistry {
 
     function getMemberIndexByAddress(address _address) external view returns (uint16);
 
+    function getMinimumDeposit(StreamDenomination _denomination) external view returns (uint256);
+
     /// @notice Create a new committee for a stream
     /// @param _streamId The stream id to create a new committee for
     /// @dev This function is called when the slot usage threshold is reached
