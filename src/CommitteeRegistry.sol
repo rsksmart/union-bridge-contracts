@@ -97,6 +97,9 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
 
         Member storage member = _getMemberByAddress(msg.sender);
 
+        if (member.publicKey != _publicKey) {
+            revert PublicKeyMismatch(member.publicKey, _publicKey);
+        }
         if (_role == Role.None) {
             revert RequestedNoneRoleForStream(_stream);
         }

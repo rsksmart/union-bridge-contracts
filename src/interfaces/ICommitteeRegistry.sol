@@ -148,6 +148,7 @@ interface ICommitteeRegistry {
     error MemberNotRegistered(address memberAddress);
     error DespositBondTooLow(uint256 sent, uint256 minDeposit);
     error FailedToSendRSK(address memberAddress, uint256 amount);
+    error PublicKeyMismatch(bytes32 currentPubKey, bytes32 newPubKey);
 
     /// ================ Internal Errors =================
     error _MemberIndexOutOfBounds(uint16 memberIndex);

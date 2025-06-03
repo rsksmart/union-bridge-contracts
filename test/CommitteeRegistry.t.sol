@@ -150,6 +150,28 @@ contract TestCommitteeRegistry is Test, HelperContract {
         step_depositBondForStream(user2, pubKey2, DEFAULT_STREAM, Role.Operator);
     }
 
+    function test_depositBond_Revert_PublicKeyMismatch() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        bytes32 pubKey = generatePubKey(privKey);
+        bytes32 differentPubKey = generatePubKey(privKey + 1);
+        address user = vm.addr(privKey);
+        uint256 minimumDeposit = registry.getMinimumDeposit(DEFAULT_STREAM);
+        vm.deal(user, minimumDeposit);
+
+        vm.prank(user);
+        registry.depositBond{value: minimumDeposit}(pubKey, DEFAULT_STREAM, Role.Operator);
+
+        vm.deal(user, minimumDeposit);
+
+        // Assert member already registered for stream
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.PublicKeyMismatch.selector, pubKey, differentPubKey));
+
+        // Act
+        vm.prank(user);
+        registry.depositBond{value: minimumDeposit}(differentPubKey, StreamDenomination._0_01BTC, Role.Watchtower);
+    }
+
     function test_depositBond_Revert_memberAlreadyRegisteredForStream() external {
         // Arrange
         uint256 privKey = uint256(1);
