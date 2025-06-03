@@ -391,13 +391,13 @@ contract TestSignatureManager is Test, HelperContract {
         signatureManager.initSignatures(hashToSign, committeeId);
     }
 
-    function test_initSignatures_Revert_InvalidCommitteeId() external {
+    function test_initSignatures_Revert_CommitteeNotFound() external {
         // Arrange
         uint256 committeeId = 0;
         bytes32 hashToSign = 0x1000000000000000000000000000000000000000000000000000000000000001;
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(ISignatureManager.InvalidCommittee.selector, committeeId));
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.CommitteeNotFound.selector, committeeId));
 
         // Act
         vm.prank(address(pm));

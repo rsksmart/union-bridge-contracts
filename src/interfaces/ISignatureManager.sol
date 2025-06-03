@@ -49,5 +49,4 @@ interface ISignatureManager is IAccessControl {
     error MemberNotFoundInCommittee(bytes32 memberPubKey, address memberAddress, bytes32 hashToSign);
     error InvalidHashToSign(bytes32 hashToSign);
     error SignaturesAlreadyInitialized(bytes32 hashToSign);
-    error InvalidCommittee(uint256 committeeId);
 }

@@ -161,9 +161,6 @@ contract SignatureManager is ISignatureManager, AccessControl {
         // Get the members
         CommitteeMember[] memory members = committeeRegistry.getCommitteeMembers(_committeeId);
         uint8 memberCount = uint8(members.length);
-        if (memberCount == 0) {
-            revert InvalidCommittee(_committeeId);
-        }
 
         // Initialize missing signatures counter
         signatures.missingSignatures = memberCount;

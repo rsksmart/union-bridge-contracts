@@ -211,12 +211,11 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         emit NewCommittee(_committeeId, _committee);
     }
 
-    function getCommittee(uint256 _committeeId) external view returns (Committee memory) {
+    function getCommittee(uint256 _committeeId) public view returns (Committee memory) {
         Committee memory committee = committeesByKey[_committeeId];
         if (committee.memberIndexesAndRoles.length == 0) {
             revert CommitteeNotFound(_committeeId);
         }
-
         return committee;
     }
 
@@ -225,7 +224,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     }
 
     function getCommitteeMembers(uint256 _committeeId) external view returns (CommitteeMember[] memory) {
-        return committeesByKey[_committeeId].memberIndexesAndRoles;
+        return getCommittee(_committeeId).memberIndexesAndRoles;
     }
 
     function getMemberPubKeyByIndex(uint16 _memberIndex) external view returns (bytes32) {
