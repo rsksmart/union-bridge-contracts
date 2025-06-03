@@ -89,7 +89,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         return members[memberIndex - 1].publicKey;
     }
 
-    function depositBond(bytes32 _publicKey, StreamDenomination _stream, Role _role) external payable {
+    function applyToStream(bytes32 _publicKey, StreamDenomination _stream, Role _role) external payable {
         // Check if the member is already registered
         if (!_isAlreadyMember(msg.sender)) {
             _registerMember(_publicKey);

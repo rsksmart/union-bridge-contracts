@@ -87,7 +87,7 @@ contract SetUpCommittees is ScriptUtils, TestUtils {
         }
 
         vm.startBroadcast(_privKey);
-        _committeeRegistry.depositBond{value: minimumDeposit}(
+        _committeeRegistry.applyToStream{value: minimumDeposit}(
             params.publicKey, params.requestedStream, params.requestedRole
         );
         vm.stopBroadcast();

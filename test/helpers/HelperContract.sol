@@ -82,7 +82,7 @@ abstract contract HelperContract is Test, TestUtils {
 
             // Register member in the registry using unique address
             vm.prank(user); // Use a different address for each member
-            registry.depositBond{value: minimumDeposit}(pubKey, denomination, role);
+            registry.applyToStream{value: minimumDeposit}(pubKey, denomination, role);
         }
     }
 

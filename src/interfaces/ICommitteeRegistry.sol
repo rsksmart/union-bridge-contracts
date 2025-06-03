@@ -47,7 +47,7 @@ struct PendingCommitteeData {
 }
 
 interface ICommitteeRegistry {
-    function depositBond(bytes32 _publicKey, StreamDenomination _requestedStream, Role _requestedRole)
+    function applyToStream(bytes32 _publicKey, StreamDenomination _requestedStream, Role _requestedRole)
         external
         payable;
 
