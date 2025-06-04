@@ -204,7 +204,7 @@ contract StreamManager is IStreamManager, AccessControl {
         return getPacket(_streamId, _packetNumber).committeePubKey;
     }
 
-    function markSlotAsPaid(
+    function paidSlot(
         uint64 _streamId,
         uint64 _packetNumber,
         uint64 _slotId,
@@ -216,17 +216,12 @@ contract StreamManager is IStreamManager, AccessControl {
             revert NonExistentSlot(_streamId, _packetNumber, _slotId);
         }
 
-        // Validate that the slot exists
-        if (_slotId >= slots[_streamId][_packetNumber].length) {
-            revert NonExistentSlot(_streamId, _packetNumber, _slotId);
+        // Validate that the slot exists and is in LOCKED state
+        if (slots[_streamId][_packetNumber][_slotId].state != SlotState.LOCKED) {
+            revert InvalidSlotState(slots[_streamId][_packetNumber][_slotId].state, SlotState.LOCKED);
         }
 
         Slot storage slot = slots[_streamId][_packetNumber][_slotId];
-
-        // Validate that the slot state is LOCKED
-        if (slot.state != SlotState.LOCKED) {
-            revert InvalidSlotState(slot.state, SlotState.LOCKED);
-        }
 
         // Validate that the first input references the correct accept peg-in transaction
         if (slot.acceptPegInTx != _acceptPegInTxHash) {

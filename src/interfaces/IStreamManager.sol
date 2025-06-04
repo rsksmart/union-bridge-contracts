@@ -122,7 +122,7 @@ interface IStreamManager is IAccessControl {
     /// @param _slotId The index in the array of slots
     /// @param _acceptPegInTxHash The expected accept peg-in transaction hash for validation
     /// @param _take0Tx The transaction id of the peg-out without dispute transaction
-    function markSlotAsPaid(
+    function paidSlot(
         uint64 _streamId,
         uint64 _packetNumber,
         uint64 _slotId,

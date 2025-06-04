@@ -308,7 +308,7 @@ contract TestPegManager is Test, HelperContract {
         streamManager.setSlotStateHarness(stream.streamId, packetNumber, slotId, SlotState.LOCKED);
 
         // Set up the pegOutTxs mapping
-        pegManagerHarness.setPegOutTxInfoHarness(acceptPegInTxHash, userPubKey, stream.streamId, packetNumber, slotId);
+        pm.setPegOutTxInfoHarness(acceptPegInTxHash, userPubKey, stream.streamId, packetNumber, slotId);
 
         // Create SPV proof for the peg-out transaction
         BtcTxSPVProof memory pegOutTxSPVProof = createBtcTxSPVProof(pegOutTx);
@@ -389,23 +389,13 @@ contract TestPegManager is Test, HelperContract {
     }
 
     function test_fullPegOutFlow() external {
-        // =================== 1. Request Peg-In ===================
-        BtcTransaction memory pegInRequestTx = getBtcPegInRequestTx();
-        bridgeMock.setBtcTransactionConfirmations(10);
-        BtcTxSPVProof memory pegInRequestTxSPVProof = createBtcTxSPVProof(pegInRequestTx);
-
-        pm.registerPegInRequest(pegInRequestTxSPVProof);
-
-        // =================== 2. Accept Peg-In ===================
-        BtcTransaction memory pegInAcceptTx = getBtcAcceptPegInTx(pegInRequestTx);
-        BtcTxSPVProof memory pegInAcceptTxSPVProof = createBtcTxSPVProof(pegInAcceptTx);
-
-        pm.acceptPegInRequest(pegInAcceptTxSPVProof);
+        // =========== Request Peg-In & Accept Peg-In ============
+        BtcTransaction memory acceptPegInTx = setup_requestAndAcceptPeginFlow();
 
         // Get the accept peg-in tx hash that will be spent in the peg-out
-        bytes32 acceptPegInTxHash = bitcoinManager.getBtcTxHash(pegInAcceptTx);
+        bytes32 acceptPegInTxHash = bitcoinManager.getBtcTxHash(acceptPegInTx);
 
-        // =================== 3. Request Peg-Out ===================
+        // =================== Request Peg-Out ===================
         bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
         uint64 pegOutAmount = VALUE; // Same amount as peg-in
         uint256 pegOutAmountInWei = BtcHelper.satoshiToWei(pegOutAmount);
@@ -423,7 +413,7 @@ contract TestPegManager is Test, HelperContract {
         assertEq(uint256(slot.state), uint256(SlotState.LOCKED), "Slot should be locked after peg-out request");
         assertEq(slot.acceptPegInTx, acceptPegInTxHash, "Slot should reference the correct accept peg-in tx");
 
-        // =================== 4. Register Peg-Out ===================
+        // =================== Register Peg-Out ===================
         BtcTransaction memory pegOutTx = createPegOutTx(acceptPegInTxHash, userPubKey, slot.acceptPegInAmount);
         BtcTxSPVProof memory pegOutTxSPVProof = createBtcTxSPVProof(pegOutTx);
 

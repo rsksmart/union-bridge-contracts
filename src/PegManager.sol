@@ -320,7 +320,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         // Prepare prevout data
         PrevoutData memory prevoutData = PrevoutData({value: slot.acceptPegInAmount, scriptPubKey: slot.scriptPubKey});
 
-        // Compute the Bitcoin peg-out transaction hash and signature hash
+        // Compute the Bitcoin peg-out signature hash
         (bytes32 pegOutSignatureHash, bytes memory commonSignatureMessage) =
             bitcoinManager.getPegOutSignatureHash(_usrPubKey, slot.acceptPegInTx, prevoutData);
 
@@ -383,7 +383,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         _validatePegOutUserOutput(_pegOutTxSPVProof.btcTx.outputs[0], pegOutInfo.userPubKey);
 
         // Update slot status
-        streamManager.markSlotAsPaid(
+        streamManager.paidSlot(
             pegOutInfo.streamId, pegOutInfo.packetNumber, pegOutInfo.slotId, acceptPegInTxHash, txHash
         );
 

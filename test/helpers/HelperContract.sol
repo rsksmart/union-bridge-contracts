@@ -53,8 +53,7 @@ abstract contract HelperContract is Test, TestUtils {
     CommitteeMember[] internal committee1Members;
     CommitteeMember[] internal committee2Members;
     CommitteeMember[] internal committee3Members;
-    PegManager internal pm;
-    PegManagerHarness internal pegManagerHarness;
+    PegManagerHarness internal pm;
     StreamManagerHarness internal streamManager;
     BridgeMock internal bridgeMock;
     SignatureManager internal signatureManager;
@@ -101,8 +100,7 @@ abstract contract HelperContract is Test, TestUtils {
         deployScript.run();
         bitcoinManager = deployScript.bitcoinManager();
         registry = deployScript.committeeRegistry();
-        pm = deployScript.pegManager();
-        pegManagerHarness = PegManagerHarness(address(deployScript.pegManager()));
+        pm = PegManagerHarness(address(deployScript.pegManager()));
         streamManager = StreamManagerHarness(address(deployScript.streamManager()));
         // Set up bridge mock at bridge precompiled address
         bridgeMock = BridgeMock(deployScript.bridgeAddress());
@@ -280,7 +278,7 @@ abstract contract HelperContract is Test, TestUtils {
         }
     }
 
-    function setup_acceptPeginFlow(BtcTransaction memory _tx) public {
+    function setup_acceptPeginFlow(BtcTransaction memory _tx) public returns (BtcTransaction memory) {
         // Arrange
         BtcTransaction memory btcTransaction = getBtcAcceptPegInTx(_tx);
         // Set Mock Bridge state
@@ -290,6 +288,8 @@ abstract contract HelperContract is Test, TestUtils {
 
         // Act
         pm.acceptPegInRequest(pegInAcceptedTxSPVProof);
+
+        return btcTransaction;
     }
 
     function setup_requestPeginFlow() public returns (BtcTransaction memory) {
@@ -305,9 +305,9 @@ abstract contract HelperContract is Test, TestUtils {
         return btcTransaction;
     }
 
-    function setup_requestAndAcceptPeginFlow() public {
+    function setup_requestAndAcceptPeginFlow() public returns (BtcTransaction memory) {
         BtcTransaction memory peginTx = setup_requestPeginFlow();
-        setup_acceptPeginFlow(peginTx);
+        return setup_acceptPeginFlow(peginTx);
     }
 
     // ========================== Register Pegout Setup ==========================
@@ -346,7 +346,7 @@ abstract contract HelperContract is Test, TestUtils {
         streamManager.setSlotStateHarness(setup.stream.streamId, setup.packetNumber, setup.slotId, SlotState.LOCKED);
 
         // Set up the pegOutTxs mapping
-        pegManagerHarness.setPegOutTxInfoHarness(
+        pm.setPegOutTxInfoHarness(
             setup.acceptPegInTxHash, setup.userPubKey, setup.stream.streamId, setup.packetNumber, setup.slotId
         );
 
