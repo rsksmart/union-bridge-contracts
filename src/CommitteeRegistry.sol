@@ -6,6 +6,7 @@ import "forge-std/console.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {BaseProxy} from "./BaseProxy.sol";
 import {
     Role,
@@ -224,16 +225,23 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
                 revert InvalidZeroSignature(i, _publicKeys[i]);
             }
 
-            // Use uncompressed public key as the message
+            // Use the uncompressed public key as the message
             bytes memory uncompressedPublicKey = abi.encodePacked(_publicKeys[i].publicKeyX, _publicKeys[i].publicKeyY);
-            bytes32 signedMessageHash = keccak256(uncompressedPublicKey);
+            bytes32 messageHash = keccak256(uncompressedPublicKey);
 
             // Validate the signature for the message is valid
+            // * The `ecrecover` EVM precompile allows for malleable (non-unique) signatures:
+            // * this function rejects them by requiring the `s` value to be in the lower
+            // * half order, and the `v` value to be either 27 or 28.
             address recoveredSignerAddress =
-                ecrecover(signedMessageHash, _publicKeys[i].v, _publicKeys[i].r, _publicKeys[i].s);
-            address signerAddress = _getAddressFromPublicKey(uncompressedPublicKey);
-            if (recoveredSignerAddress != signerAddress) {
-                revert InvalidSignature(i, _publicKeys[i], recoveredSignerAddress, signerAddress);
+                ECDSA.recover(messageHash, _publicKeys[i].v, _publicKeys[i].r, _publicKeys[i].s);
+
+            // Get the expectedsigner address from the uncompressed public key
+            address expectedSignerAddress = _getAddressFromPublicKey(uncompressedPublicKey);
+
+            // Validate the recovered signer address is the same as the expected signer address
+            if (recoveredSignerAddress != expectedSignerAddress) {
+                revert InvalidSignature(i, _publicKeys[i], recoveredSignerAddress, expectedSignerAddress);
             }
         }
     }
