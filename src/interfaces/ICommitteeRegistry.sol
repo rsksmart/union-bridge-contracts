@@ -28,8 +28,23 @@ struct ApplicationData {
     uint256 preStaked;
 }
 
+enum PublicKeyIndex {
+    Take,
+    Dag,
+    Communication
+}
+
+struct PublicKeyRegistration {
+    bytes32 publicKeyX;
+    bytes32 publicKeyY;
+    uint8 v;
+    bytes32 r;
+    bytes32 s;
+}
+
 struct Member {
-    bytes32 publicKey;
+    bytes32[3] publicKeys; // [takePubKey, dagPubKey, comPubKey]
+    mapping(StreamDenomination => Role) requestedRoles;
     Balance balance;
     mapping(string key => string value) data;
 }
@@ -58,15 +73,17 @@ struct PendingCommitteeData {
 }
 
 interface ICommitteeRegistry {
-    function applyToStream(bytes32 _publicKey, StreamDenomination _requestedStream, Role _requestedRole)
-        external
-        payable;
+    function applyToStream(
+        StreamDenomination _requestedStream,
+        Role _requestedRole,
+        PublicKeyRegistration[] calldata _publicKeys
+    ) external payable;
 
     function unsubscribeFromStream(StreamDenomination _stream) external;
 
     function withdrawAvailableBalance() external;
 
-    function getMemberPublicKey(address _address) external view returns (bytes32);
+    function getMemberPublicKeys(address _address) external view returns (bytes32[3] memory publicKeys);
 
     function getMemberRequestedRole(address _address, StreamDenomination _denomination) external view returns (Role);
 
@@ -130,7 +147,7 @@ interface ICommitteeRegistry {
     /// ===================== Events =========================
     event NewCommittee(uint256 indexed committeeId, Committee _committee);
     event NewPendingCommittee(uint256 indexed streamId, Committee _committee);
-    event NewMember(bytes32 indexed publicKey);
+    event NewMember(bytes32[3] indexed publicKeys);
     event MemberUnsubscribedFromStream(address indexed member, StreamDenomination stream);
     event NewAvailableBalance(address indexed sender, uint256 availableBalance, uint256 preStakedBalance);
     event AvailableBalanceRetrieved(address indexed sender, uint256 amount);
@@ -152,6 +169,15 @@ interface ICommitteeRegistry {
     error CommitteeIsNotPending(uint64 streamId);
     error PendingCommitteeNotExpired(uint64 streamId, uint256 createdAt, uint256 expireAt);
     error InvalidAgregatedKey();
+    error RepeatedPublicKeys(bytes32 takePubKey, bytes32 dagPubKey, bytes32 comPubKey);
+    error InvalidZeroPublicKey(uint256 index, bytes32 publicKeyX, bytes32 publicKeyY);
+    error InvalidPublicKeysLength(uint256 publicKeysLength, uint256 expectedLength);
+    error PublicKeyMismatch(uint256 index, bytes32 currentPubKey, bytes32 newPubKey);
+    error InvalidZeroSignature(uint256 index, PublicKeyRegistration publicKey);
+    error InvalidSignature(
+        uint256 index, PublicKeyRegistration publicKey, address recoveredSignerAddress, address signerAddress
+    );
+    error InvalidOddYPoint(uint256 index, bytes32 publicKeyY);
     error NoCommitteeMembers();
     error MemberNotInCommittee(bytes32);
     error MemberAlreadyUpdated(bytes32);
@@ -173,7 +199,6 @@ interface ICommitteeRegistry {
     error MemberNotRegistered(address memberAddress);
     error DespositBondTooLow(uint256 sent, uint256 minDeposit);
     error FailedToSendRSK(address memberAddress, uint256 amount);
-    error PublicKeyMismatch(bytes32 currentPubKey, bytes32 newPubKey);
 
     /// ================ Internal Errors =================
     error _MemberIndexOutOfBounds(uint16 memberIndex);
