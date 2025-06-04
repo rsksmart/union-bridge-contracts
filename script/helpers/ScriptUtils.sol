@@ -16,4 +16,9 @@ abstract contract ScriptUtils is Script {
         // The deploy contracts scripts use members from 1 to 10 we map them to 0 to 9
         return vm.deriveKey(vm.envString("MNEMONIC"), index);
     }
+
+    function generatePubKeyKeccak256(uint256 privKey) public pure returns (bytes32) {
+        // Generate a deterministic 'public key' from the private key
+        return bytes32(keccak256(abi.encodePacked(privKey)));
+    }
 }
