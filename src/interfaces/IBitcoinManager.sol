@@ -127,6 +127,11 @@ interface IBitcoinManager {
         pure
         returns (bytes32, bytes memory);
 
+    /// @notice Validates that the peg-out transaction output is a P2WPKH paying the user
+    /// @param _pegOutOutput The Bitcoin transaction output to validate
+    /// @param _userPubKey The user's public key that should receive the funds
+    function validatePegOutUserOutput(BtcTxOut calldata _pegOutOutput, bytes memory _userPubKey) external pure;
+
     error InvalidOpReturnLength(uint256 actual, uint256 expected);
     error IncorrectlyFormedOpReturn(uint256 index);
     error IncorrectOutputScript(bytes actual, bytes expected);

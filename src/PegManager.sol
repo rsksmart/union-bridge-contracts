@@ -379,7 +379,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
 
         // Validate that the first output is a P2WPKH paying the user
         bytes memory userPubKey = pegOutTempInfo[acceptPegInTxHash].userPubKey;
-        _validatePegOutUserOutput(_pegOutTxSPVProof.btcTx.outputs[0], userPubKey);
+        bitcoinManager.validatePegOutUserOutput(_pegOutTxSPVProof.btcTx.outputs[0], userPubKey);
 
         // Update slot status
         streamManager.paidSlot(
@@ -427,14 +427,5 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
 
         // Initialize the signatures for each member
         signatureManager.initSignatures(_pegOutSignatureHash, committeeKey);
-    }
-
-    function _validatePegOutUserOutput(BtcTxOut memory _userOutput, bytes memory _userPubKey) internal pure {
-        bytes memory expectedScriptPubKey = BtcScriptParser.getP2WPKHScript(_userPubKey);
-
-        // Validate that the output script matches the expected P2WPKH script
-        if (!BytesHelper.compare(_userOutput.scriptPubKey, expectedScriptPubKey)) {
-            revert IncorrectOutputScript(_userOutput.scriptPubKey, expectedScriptPubKey);
-        }
     }
 }

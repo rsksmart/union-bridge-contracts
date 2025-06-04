@@ -177,6 +177,15 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         return BtcTaproot.getP2TRScriptPubKey(tweakedPublicKey);
     }
 
+    function validatePegOutUserOutput(BtcTxOut calldata _userOutput, bytes memory _userPubKey) external pure {
+        bytes memory expectedScriptPubKey = BtcScriptParser.getP2WPKHScript(_userPubKey);
+
+        // Validate that the output script matches the expected P2WPKH script
+        if (!BytesHelper.compare(_userOutput.scriptPubKey, expectedScriptPubKey)) {
+            revert IncorrectOutputScript(_userOutput.scriptPubKey, expectedScriptPubKey);
+        }
+    }
+
     // ========================== Peg In Accept ==========================
     /// @dev Get the signature hash for a peg in accept transaction
     function getAcceptPegInSignatureHash(
