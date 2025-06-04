@@ -41,13 +41,13 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     IStreamManager streamManager;
     address pegManager;
 
-    // TODO: This will be tackle later on in another story
-    uint256 public constant pendingCommitteeTimelock = 1 days;
+    uint256 public pendingCommitteeTimeout;
 
     mapping(StreamDenomination denomination => CommitteeMember[]) internal committeesCandidates;
 
     function initialize(address _initialOwner) public virtual initializer {
         __BaseProxy_init(_initialOwner);
+        pendingCommitteeTimeout = 1 days; // Default timeout for pending committees
     }
 
     function setStreamManager(IStreamManager _streamManager) public {
@@ -296,16 +296,28 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         return members[memberIndex - 1];
     }
 
-    function createCommittee(uint64 _streamId) external onlyPegManager {
-        // TODO: Validate if the streamId is valid
-        // TODO: Validate who can call this function. PegManager and external or in setup.
-        // If it's called externally we should check that we really need to create a new committee.
-        // Or maybe validate that there is a pending committee that it's expired
+    function restartPendingCommittee(uint64 _streamId) external {
+        uint256 createdAt = pendingCommittees[_streamId].createdAt;
+        if (createdAt == 0) {
+            revert CommitteeIsNotPending(_streamId);
+        }
 
-        PendingCommittee storage pendingCommittee = pendingCommittees[_streamId];
-        if (pendingCommittee.expireAt != 0) {
+        // slither-disable-next-line timestamp
+        if (block.timestamp < createdAt + pendingCommitteeTimeout) {
+            // This is called from the pegManager, so we should not revert.
+            revert PendingCommitteeNotExpired(_streamId, createdAt, createdAt + pendingCommitteeTimeout);
+        }
+
+        _slashCommittee();
+        _deletePendingCommittee(_streamId);
+        _createCommittee(_streamId);
+    }
+
+    function createCommittee(uint64 _streamId) external onlyPegManager {
+        uint256 createdAt = pendingCommittees[_streamId].createdAt;
+        if (createdAt != 0) {
             // slither-disable-next-line timestamp
-            if (block.timestamp < pendingCommittee.expireAt) {
+            if (block.timestamp < createdAt + pendingCommitteeTimeout) {
                 // This is called from the pegManager, so we should not revert.
                 return;
             }
@@ -323,7 +335,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
             return false;
         }
 
-        pendingCommittees[_streamId].expireAt = block.timestamp + pendingCommitteeTimelock;
+        pendingCommittees[_streamId].createdAt = block.timestamp;
         pendingCommittees[_streamId].missingData = uint16(committeeMembers.length);
 
         // Initialize the committee members here.
@@ -343,7 +355,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
 
     function depositMemberInfoForCommittee(uint64 _streamId, bytes32 _aggregatedKey) external {
         PendingCommittee storage pendingCommittee = pendingCommittees[_streamId];
-        if (pendingCommittee.expireAt == 0) {
+        if (pendingCommittee.createdAt == 0) {
             revert CommitteeIsNotPending(_streamId);
         }
 
@@ -394,14 +406,14 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     function getPendingCommittee(uint64 _streamId)
         public
         view
-        returns (Committee memory committee, uint256 expiredAt, uint256 missingData)
+        returns (Committee memory committee, uint256 createdAt, uint256 missingData)
     {
         PendingCommittee storage pendingCommittee = pendingCommittees[_streamId];
-        if (pendingCommittee.expireAt == 0) {
+        if (pendingCommittee.createdAt == 0) {
             revert CommitteeIsNotPending(_streamId);
         }
         committee = pendingCommittee.committee;
-        expiredAt = pendingCommittee.expireAt;
+        createdAt = pendingCommittee.createdAt;
         missingData = pendingCommittee.missingData;
     }
 
@@ -414,13 +426,13 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     }
 
     function isPendingCommitteeExpired(uint64 _streamId) external view returns (bool) {
-        uint256 expireAt = pendingCommittees[_streamId].expireAt;
+        uint256 createdAt = pendingCommittees[_streamId].createdAt;
         // If no pending committee in proccess we return false
-        if (expireAt == 0) {
+        if (createdAt == 0) {
             return false;
         }
         // slither-disable-next-line timestamp
-        return block.timestamp > expireAt;
+        return block.timestamp >= createdAt + pendingCommitteeTimeout;
     }
 
     function _deletePendingCommittee(uint64 _streamId) internal {
@@ -551,5 +563,12 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         }
 
         return selectedMembers;
+    }
+
+    function setPendingCommitteeTimeout(uint256 _timeout) external onlyOwner {
+        if (_timeout == 0) {
+            revert InvalidZeroTimeout();
+        }
+        pendingCommitteeTimeout = _timeout;
     }
 }

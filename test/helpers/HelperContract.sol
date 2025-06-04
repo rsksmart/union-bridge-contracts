@@ -333,6 +333,14 @@ abstract contract HelperContract is Test, TestUtils {
         registry.createCommittee(streamId);
     }
 
+    function setup_createCommitteeAndExpire() internal returns (Committee memory expectedCommittee, uint64 streamId) {
+        (, streamId) = setup_createCommittee();
+        // Modifying this timeout will change committee member order in setup_expectedCommitteeAfterExpired()
+        uint256 timeout = 7 days;
+        vm.warp(block.timestamp + timeout); // warp time to make committee expired
+        expectedCommittee = setup_expectedCommitteeAfterExpired();
+    }
+
     function setup_expectedRandomCommittee() internal view returns (Committee memory) {
         // NOTE: This function is tied to the initial setup of members that it's just 3 members
         Committee memory committee = Committee({
@@ -361,5 +369,27 @@ abstract contract HelperContract is Test, TestUtils {
 
         vm.prank(user);
         registry.registerMember(pubKey);
+    }
+
+    function setup_expectedCommitteeAfterExpired() internal view returns (Committee memory) {
+        // NOTE: member order is tied to the timeout used in setup_createCommitteeAndExpire()
+        Committee memory committee = Committee({
+            aggregatedKey: bytes32(0),
+            memberIndexesAndRoles: new CommitteeMember[](registry.MIN_COMMITTEE_MEMBERS()),
+            leaderIndex: 0
+        });
+
+        committee.memberIndexesAndRoles[0] = CommitteeMember({index: 10, role: Role.Operator});
+        committee.memberIndexesAndRoles[1] = CommitteeMember({index: 11, role: Role.Operator});
+        committee.memberIndexesAndRoles[2] = CommitteeMember({index: 12, role: Role.Operator});
+        committee.memberIndexesAndRoles[3] = CommitteeMember({index: 8, role: Role.Operator});
+        committee.memberIndexesAndRoles[4] = CommitteeMember({index: 9, role: Role.Operator});
+        committee.memberIndexesAndRoles[5] = CommitteeMember({index: 5, role: Role.Watchtower});
+        committee.memberIndexesAndRoles[6] = CommitteeMember({index: 6, role: Role.Watchtower});
+        committee.memberIndexesAndRoles[7] = CommitteeMember({index: 7, role: Role.Watchtower});
+        committee.memberIndexesAndRoles[8] = CommitteeMember({index: 3, role: Role.Watchtower});
+        committee.memberIndexesAndRoles[9] = CommitteeMember({index: 4, role: Role.Watchtower});
+
+        return committee;
     }
 }

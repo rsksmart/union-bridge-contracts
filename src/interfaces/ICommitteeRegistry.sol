@@ -36,7 +36,7 @@ struct Committee {
 
 struct PendingCommittee {
     Committee committee;
-    uint256 expireAt;
+    uint256 createdAt;
     uint16 missingData;
     mapping(bytes32 memberPubKey => PendingCommitteeData) data;
 }
@@ -76,6 +76,7 @@ interface ICommitteeRegistry {
         view
         returns (CommitteeMember[] memory);
 
+    // FIXME: This function will be removed soon.
     function registerCommittee(uint256 _committeeId, Committee calldata _committee) external;
 
     function getCommittee(uint256 _committeeId) external view returns (Committee calldata);
@@ -91,20 +92,30 @@ interface ICommitteeRegistry {
     /// @notice Create a new committee for a stream
     /// @param _streamId The stream id to create a new committee for
     /// @dev This function is called when the slot usage threshold is reached
-    /// TODO: This function should choose committee members based on the stream id/denomination
-    /// once the committee is ready, it should be registered with the registerCommittee function
     function createCommittee(uint64 _streamId) external;
 
     /// @notice Return true if there is a pending committee for the stream and it's expired
     /// @param _streamId The stream id to check for a pending committee
     function isPendingCommitteeExpired(uint64 _streamId) external view returns (bool);
 
+    /// @notice Returns the pending committee for the stream
+    /// @param _streamId The stream id to get the pending committee for
+    /// @return committee The pending committee
+    /// @return createdAt The timestamp when the pending committee was created
+    /// @return missingData The number of members that have not provided their data yet
+    /// @dev This function should be called after the pending committee is created it will revert if the committee is not pending
     function getPendingCommittee(uint64 _streamId)
         external
         view
-        returns (Committee memory committee, uint256 expiredAt, uint256 missingData);
+        returns (Committee memory committee, uint256 createdAt, uint256 missingData);
 
+    /// @notice Set Peg Manager address
+    /// @param _pegManager The address of the Peg Manager contract
     function setPegManager(IPegManager _pegManager) external;
+
+    /// @notice Set the pending committee timeout
+    /// @param _timeout The timeout in seconds for the pending committee
+    function setPendingCommitteeTimeout(uint256 _timeout) external;
 
     /// ===================== Events =========================
     event NewCommittee(uint256 indexed committeeId, Committee _committee);
@@ -126,10 +137,9 @@ interface ICommitteeRegistry {
     error AlreadyRegisteredCommittee(uint256 committeeId);
     error MemberNotFound(address memberAddress);
     error CommitteeIsNotPending(uint64 streamId);
+    error PendingCommitteeNotExpired(uint64 streamId, uint256 createdAt, uint256 expireAt);
     error InvalidAgregatedKey();
-    error InvalidHashDrp();
     error NoCommitteeMembers();
-    error PendingCommitteeTimelockNotExpired(uint256 expireAt, uint256 currentTime);
     error MemberNotInCommittee(bytes32);
     error MemberAlreadyUpdated(bytes32);
     error CommitteeNotFound(uint256 committeeId);
@@ -154,4 +164,5 @@ interface ICommitteeRegistry {
 
     /// ================ Internal Errors =================
     error _MemberIndexOutOfBounds(uint16 memberIndex);
+    error InvalidZeroTimeout();
 }

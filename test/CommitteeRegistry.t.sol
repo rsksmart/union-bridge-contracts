@@ -2,13 +2,16 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import {Role, Member, CommitteeMember, Committee, CommitteeRegistry} from "src/CommitteeRegistry.sol";
+import {
+    Role, Member, CommitteeMember, Committee, CommitteeRegistry, PendingCommittee
+} from "src/CommitteeRegistry.sol";
 import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract TestCommitteeRegistry is Test, HelperContract {
     function setUp() external {
@@ -717,6 +720,44 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // This should create a committee as pending
         vm.prank(address(pm));
         registry.createCommittee(streamId);
+
+        (Committee memory committee, uint256 createdAt, uint256 missingData) = registry.getPendingCommittee(streamId);
+        // Assert
+        assertEqCommittee(expectedCommittee, committee, "Committee should be equeals");
+        assertNotEq(createdAt, 0, "Created at should not be 0");
+        assertEq(missingData, registry.MIN_COMMITTEE_MEMBERS(), "Missing data should be equal to MIN_COMMITTEE_MEMBERS");
+    }
+
+    function test_createCommittee_Success_AlreadyPendingButNotExpired() external {
+        // Arrange
+        (, uint64 streamId) = setup_createCommittee();
+        (Committee memory pendingCommittee, uint256 createdAt, uint256 missingData) =
+            registry.getPendingCommittee(streamId);
+        vm.recordLogs();
+
+        // createCommittee called by pegManager should do nothing if pending committee is not expired
+        // Act
+        vm.prank(address(pm));
+        registry.createCommittee(streamId);
+
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+        assertEq(logs.length, 0, "Expected no events to be emitted");
+
+        (Committee memory pendingCommitteeAfterCall, uint256 createdAtAfterCall, uint256 missingDataAfterCall) =
+            registry.getPendingCommittee(streamId);
+
+        assertEq(createdAt, createdAtAfterCall, "Pending committee should not change");
+        assertEq(missingData, missingDataAfterCall, "Pending committee should not change");
+        assertEq(
+            pendingCommittee.aggregatedKey,
+            pendingCommitteeAfterCall.aggregatedKey,
+            "Pending committee should not change"
+        );
+        assertEqCommitteeMembers(
+            pendingCommittee.memberIndexesAndRoles,
+            pendingCommitteeAfterCall.memberIndexesAndRoles,
+            "Create committee should not change members"
+        );
     }
 
     function test_getPendingCommittee_Success() external {
@@ -748,6 +789,18 @@ contract TestCommitteeRegistry is Test, HelperContract {
         assertEq(missingData, registry.MIN_COMMITTEE_MEMBERS() - 1);
     }
 
+    function test_depositMemberInfoForCommittee_Revert_InvalidAgregatedKey() external {
+        // Arrange
+        (, uint64 streamId) = setup_createCommittee();
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.InvalidAgregatedKey.selector));
+
+        // Act
+        vm.prank(vm.addr(1));
+        registry.depositMemberInfoForCommittee(streamId, bytes32(0));
+    }
+
     function test_depositMemberInfoForCommittee_WrongCommitteeKey() external {
         // Arrange
         (Committee memory expectedCommittee, uint64 streamId) = setup_createCommittee();
@@ -769,7 +822,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         assertEq(missingData, registry.MIN_COMMITTEE_MEMBERS());
     }
 
-    function test_depositMemberInfoForCommittee_CompleteCommittee_Success() external {
+    function test_depositMemberInfoForCommittee_Success_CompleteCommittee() external {
         // Arrange
         (Committee memory expectedCommittee, uint64 streamId) = setup_createCommittee();
         expectedCommittee.aggregatedKey = COMMITEE_1_PUB_KEY;
@@ -814,22 +867,132 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Act
         bool isCommitteePendingExpired = registry.isPendingCommitteeExpired(streamId);
+
         // Assert
         // There is pending committee and it's not expired
         assertFalse(isCommitteePendingExpired, "pending committee is expired");
     }
 
-    function test_isPendingCommitteeExpired_True() external {
+    function test_isPendingCommitteeExpired_False_AfterSomeSeconds() external {
         // Arrange
-        (, uint64 streamId) = setup_createCommittee();
-        uint256 timelock = registry.pendingCommitteeTimelock();
-        vm.warp(block.timestamp + timelock + 1 seconds); // warp time to make committee expired
+        (Committee memory expectedCommittee, uint64 streamId) = setup_createCommittee();
+        expectedCommittee.aggregatedKey = COMMITEE_1_PUB_KEY;
+        setup_depositMemberInfo(streamId, vm.addr(1));
+        vm.warp(block.timestamp + 60 seconds); // warp time but amount of time is not enough to expire the committee
 
         // Act
         bool isCommitteePendingExpired = registry.isPendingCommitteeExpired(streamId);
+
+        // Assert
+        // There is pending committee and it's not expired
+        assertFalse(isCommitteePendingExpired, "pending committee is expired");
+    }
+
+    function test_isPendingCommitteeExpired_True_ChangingTimeout() external {
+        // Arrange
+        (, uint64 streamId) = setup_createCommittee();
+        vm.warp(block.timestamp + 60 seconds); // warp time to make committee expired
+
+        // Act
+        vm.prank(address(registry.owner()));
+        registry.setPendingCommitteeTimeout(30 seconds);
+
+        // Assert
+        bool isCommitteePendingExpired = registry.isPendingCommitteeExpired(streamId);
+        assertTrue(isCommitteePendingExpired, "pending committee is not expired");
+    }
+
+    function test_isPendingCommitteeExpired_True_AfterTimeout() external {
+        // Arrange
+        (, uint64 streamId) = setup_createCommittee();
+        uint256 timeout = registry.pendingCommitteeTimeout();
+        vm.warp(block.timestamp + timeout + 1 seconds); // warp time to make committee expired
+
+        // Act
+        bool isCommitteePendingExpired = registry.isPendingCommitteeExpired(streamId);
+
         // Assert
         // There is pending committee and it's expired
         assertTrue(isCommitteePendingExpired, "pending committee is not expired");
+    }
+
+    function test_createCommittee_Success_AfterExpiredCommittee() external {
+        // Arrange
+        (Committee memory expectedCommittee, uint64 streamId) = setup_createCommitteeAndExpire();
+
+        // Assert
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.NewPendingCommittee(streamId, expectedCommittee);
+
+        // Act
+        vm.prank(address(pm));
+        registry.createCommittee(streamId);
+
+        // Assert
+        (Committee memory committee, uint256 expiredAt, uint256 missingData) = registry.getPendingCommittee(streamId);
+        assertEqCommittee(committee, expectedCommittee, "get pending committee");
+        assertNotEq(expiredAt, 0);
+        assertEq(missingData, registry.MIN_COMMITTEE_MEMBERS());
+    }
+
+    function test_depositMemberInfoForCommittee_Success_CompleteCommitteeOnExpiredCommittee() external {
+        // Having an expired committee does not prevent members to still deposit their data
+        // Arrange
+        (Committee memory expectedCommittee, uint64 streamId) = setup_createCommittee();
+        uint256 timeout = registry.pendingCommitteeTimeout();
+        vm.warp(block.timestamp + timeout + 1 seconds); // warp time to make committee expired
+        expectedCommittee.aggregatedKey = COMMITEE_1_PUB_KEY;
+        setup_depositMemberInfo_MultipleMembers(streamId, 0, registry.MIN_COMMITTEE_MEMBERS() - 2);
+
+        // Assert
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.NewCommittee(
+            92458281274488595289803937127152923398167637295201432141969818930235769911599, expectedCommittee
+        );
+
+        // Act
+        // Member address is vm.address(memberIndex + 1);
+        vm.prank(vm.addr(registry.MIN_COMMITTEE_MEMBERS()));
+        registry.depositMemberInfoForCommittee(streamId, COMMITEE_1_PUB_KEY);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.CommitteeIsNotPending.selector, streamId));
+        // Act
+        registry.getPendingCommittee(streamId);
+    }
+
+    function test_setPendingCommitteeTimeout_Success() external {
+        // Arrange
+        uint256 newTimeout = registry.pendingCommitteeTimeout() / 2;
+
+        // Act
+        vm.prank(address(registry.owner()));
+        registry.setPendingCommitteeTimeout(newTimeout);
+
+        // Assert
+        assertEq(registry.pendingCommitteeTimeout(), newTimeout, "Pending committee timeout should be updated");
+    }
+
+    function test_setPendingCommitteeTimeout_Revert_OwnableUnauthorizedAccount() external {
+        // Arrange
+        uint256 newTimeout = registry.pendingCommitteeTimeout() / 2;
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+
+        // Act
+        registry.setPendingCommitteeTimeout(newTimeout);
+    }
+
+    function test_setPendingCommitteeTimeout_Revert_InvalidZeroTimeout() external {
+        address owner = registry.owner();
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.InvalidZeroTimeout.selector));
+
+        // Act
+        vm.prank(address(owner));
+        registry.setPendingCommitteeTimeout(0);
     }
 
     function test_createCommittee_UnauthorizedAccount() external {
@@ -1018,5 +1181,45 @@ contract TestCommitteeRegistry is Test, HelperContract {
                 "Error SecurityBond min deposit should be equal to the denomination"
             );
         }
+    }
+
+    function test_restartPendingCommittee_Revert_CommitteeIsNotPending() external {
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.CommitteeIsNotPending.selector, 0));
+
+        // Act
+        registry.restartPendingCommittee(0);
+    }
+
+    function test_restartPendingCommittee_Revert_PendingCommitteeNotExpired() external {
+        // Arrange
+        (, uint64 streamId) = setup_createCommittee();
+        setup_depositMemberInfo(streamId, vm.addr(1));
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(ICommitteeRegistry.PendingCommitteeNotExpired.selector, streamId, 1000, 87400)
+        );
+
+        // Act
+        registry.restartPendingCommittee(streamId);
+    }
+
+    function test_restartPendingCommittee_Success() external {
+        // Arrange
+        (Committee memory expectedCommittee, uint64 streamId) = setup_createCommitteeAndExpire();
+
+        // Assert
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.NewPendingCommittee(streamId, expectedCommittee);
+
+        // Act
+        registry.restartPendingCommittee(streamId);
+
+        // Assert
+        (Committee memory committee, uint256 createdAt, uint256 missingData) = registry.getPendingCommittee(streamId);
+        assertEqCommittee(committee, expectedCommittee, "get pending committee after restart");
+        assertNotEq(createdAt, 0);
+        assertEq(missingData, registry.MIN_COMMITTEE_MEMBERS(), "missing data should be equal to min committee members");
     }
 }
