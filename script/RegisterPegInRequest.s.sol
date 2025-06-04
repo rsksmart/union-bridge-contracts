@@ -75,7 +75,7 @@ contract RegisterPegInRequestScript is ScriptUtils {
         console.log("pegInRequestTxHash");
         console.logBytes32(pegInRequestTxHash);
         // check if pegInRequest is already registered
-        StreamPosition memory streamPosition = pegManager.getPegInRequest(pegInRequestTxHash);
+        StreamPosition memory streamPosition = pegManager.getStreamPosition(pegInRequestTxHash);
         if (streamPosition.pegStatus != PegStatus.NOT_REGISTERED) {
             revert("PegInRequest already registered");
         }
@@ -84,7 +84,7 @@ contract RegisterPegInRequestScript is ScriptUtils {
         pegManager.registerPegInRequest(pegInRequestTxSPVProof);
         vm.stopBroadcast();
         // check if pegInRequest is registered
-        streamPosition = pegManager.getPegInRequest(pegInRequestTxHash);
+        streamPosition = pegManager.getStreamPosition(pegInRequestTxHash);
         if (streamPosition.pegStatus != PegStatus.REGISTERED) {
             revert("PegInRequest not registered");
         }

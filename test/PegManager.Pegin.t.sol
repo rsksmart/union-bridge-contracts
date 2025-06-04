@@ -69,7 +69,7 @@ contract TestPegManager is Test, HelperContract {
         // Assert
         bytes32 txHash = getBtcTxHash(btcTransaction);
         // Registered Peg In
-        StreamPosition memory streamPosition = pm.getPegInRequest(txHash);
+        StreamPosition memory streamPosition = pm.getStreamPosition(txHash);
         assertEq(streamPosition.streamId, 0, "Incorrect streamId registered");
         assertEq(streamPosition.packetNumber, 0, "Incorrect packetNumber registered");
         assertEq(uint256(streamPosition.pegStatus), uint256(PegStatus.REGISTERED), "PegIn Request was not registered");
@@ -309,7 +309,7 @@ contract TestPegManager is Test, HelperContract {
 
         // Assert
         // Registered Peg In Stream Position
-        StreamPosition memory streamPosition = pm.getPegInRequest(pegInRequestTxHash);
+        StreamPosition memory streamPosition = pm.getStreamPosition(pegInRequestTxHash);
         assertEq(streamPosition.streamId, streamId, "Incorrect streamId registered");
         assertEq(streamPosition.packetNumber, PACKET_NUMBER, "Incorrect packetNumber registered");
         assertEq(streamPosition.slotId, 0, "Incorrect slotId registered");

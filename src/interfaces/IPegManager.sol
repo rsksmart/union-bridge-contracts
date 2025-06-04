@@ -19,7 +19,8 @@ struct BtcTxSPVProof {
 enum PegStatus {
     NOT_REGISTERED,
     REGISTERED,
-    ACCEPTED
+    ACCEPTED,
+    PAID
 }
 // USER_TAKEN, // User take: Key spend (everybody signs)
 // TAKE_0, // Undispute advancement of funds
@@ -40,12 +41,8 @@ struct RequestPegInTempInfo {
     bytes32 acceptPeginTxHash;
 }
 
-struct PegOutInfo {
+struct PegOutTempInfo {
     bytes userPubKey;
-    uint64 streamId;
-    uint64 packetNumber;
-    uint64 slotId;
-    bytes32 acceptPegInTxHash;
 }
 
 interface IPegManager {
@@ -62,7 +59,7 @@ interface IPegManager {
         external
         returns (string memory temporaryPegInAddress);
 
-    function getPegInRequest(bytes32 btcTxHash) external view returns (StreamPosition memory);
+    function getStreamPosition(bytes32 btcTxHash) external view returns (StreamPosition memory);
 
     /// @notice Register a peg-in request transaction from Bitcoin
     /// @param _pegInRequestTxSPVProof The BTC SPV proof of Request the peg-in transaction

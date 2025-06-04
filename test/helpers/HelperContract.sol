@@ -305,9 +305,9 @@ abstract contract HelperContract is Test, TestUtils {
         return btcTransaction;
     }
 
-    function setup_requestAndAcceptPeginFlow() public returns (BtcTransaction memory) {
+    function setup_requestAndAcceptPeginFlow() public returns (BtcTransaction memory, BtcTransaction memory) {
         BtcTransaction memory peginTx = setup_requestPeginFlow();
-        return setup_acceptPeginFlow(peginTx);
+        return (peginTx, setup_acceptPeginFlow(peginTx));
     }
 
     // ========================== Register Pegout Setup ==========================
@@ -346,9 +346,7 @@ abstract contract HelperContract is Test, TestUtils {
         streamManager.setSlotStateHarness(setup.stream.streamId, setup.packetNumber, setup.slotId, SlotState.LOCKED);
 
         // Set up the pegOutTxs mapping
-        pm.setPegOutTxInfoHarness(
-            setup.acceptPegInTxHash, setup.userPubKey, setup.stream.streamId, setup.packetNumber, setup.slotId
-        );
+        pm.setPegOutTempInfoHarness(setup.acceptPegInTxHash, setup.userPubKey);
 
         // Create SPV proof for the peg-out transaction
         setup.pegOutTxSPVProof = createBtcTxSPVProof(setup.pegOutTx);

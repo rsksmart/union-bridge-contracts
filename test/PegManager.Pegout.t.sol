@@ -12,7 +12,7 @@ import {
     PegStatus,
     IPegManager
 } from "src/interfaces/IPegManager.sol";
-import {PegOutInfo} from "src/PegManager.sol";
+import {PegOutTempInfo} from "src/PegManager.sol";
 import {BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
 import {Slot, SlotState, Packet, Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {ISignatureManager} from "src/interfaces/ISignatureManager.sol";
@@ -308,7 +308,7 @@ contract TestPegManager is Test, HelperContract {
         streamManager.setSlotStateHarness(stream.streamId, packetNumber, slotId, SlotState.LOCKED);
 
         // Set up the pegOutTxs mapping
-        pm.setPegOutTxInfoHarness(acceptPegInTxHash, userPubKey, stream.streamId, packetNumber, slotId);
+        pm.setPegOutTempInfoHarness(acceptPegInTxHash, userPubKey);
 
         // Create SPV proof for the peg-out transaction
         BtcTxSPVProof memory pegOutTxSPVProof = createBtcTxSPVProof(pegOutTx);
@@ -390,7 +390,7 @@ contract TestPegManager is Test, HelperContract {
 
     function test_fullPegOutFlow() external {
         // =========== Request Peg-In & Accept Peg-In ============
-        BtcTransaction memory acceptPegInTx = setup_requestAndAcceptPeginFlow();
+        (BtcTransaction memory requestPegInTx, BtcTransaction memory acceptPegInTx) = setup_requestAndAcceptPeginFlow();
 
         // Get the accept peg-in tx hash that will be spent in the peg-out
         bytes32 acceptPegInTxHash = bitcoinManager.getBtcTxHash(acceptPegInTx);
@@ -434,7 +434,21 @@ contract TestPegManager is Test, HelperContract {
         // Register peg-out transaction
         pm.registerPegout(pegOutTxSPVProof);
 
-        // Verify the slot was marked as PAID
+        // Validate the full peg-out flow, avoiding stack too deep error
+        _validateFullPegOutFlow(
+            requestPegInTx, acceptPegInTxHash, stream, expectedPacketNumber, expectedSlotId, userPubKey
+        );
+    }
+
+    function _validateFullPegOutFlow(
+        BtcTransaction memory requestPegInTx,
+        bytes32 acceptPegInTxHash,
+        Stream memory stream,
+        uint64 expectedPacketNumber,
+        uint64 expectedSlotId,
+        bytes memory userPubKey
+    ) internal {
+        // slot should be PAID
         Slot memory finalSlot = streamManager.getSlot(stream.streamId, expectedPacketNumber, expectedSlotId);
         assertEq(
             uint256(finalSlot.state),
@@ -442,12 +456,16 @@ contract TestPegManager is Test, HelperContract {
             "Slot should be marked as PAID after peg-out registration"
         );
 
-        // Verify the pegOutTxs mapping was properly set during request
-        PegOutInfo memory pegOutInfo = pm.getPegOutInfo(acceptPegInTxHash);
+        bytes32 requestPegInTxHash = bitcoinManager.getBtcTxHash(requestPegInTx);
+        PegOutTempInfo memory pegOutInfo = pm.getPegTempOutInfo(acceptPegInTxHash);
+        StreamPosition memory streamPosition = pm.getStreamPosition(requestPegInTxHash);
+
+        // internal state should be consistent
+        assertEq(uint256(streamPosition.pegStatus), uint256(PegStatus.PAID), "Peg status should be PAID");
         assertEq(pegOutInfo.userPubKey, userPubKey, "User public key should match");
-        assertEq(pegOutInfo.streamId, stream.streamId, "Stream ID should match");
-        assertEq(pegOutInfo.packetNumber, expectedPacketNumber, "Packet number should match");
-        assertEq(pegOutInfo.slotId, expectedSlotId, "Slot ID should match");
-        assertEq(pegOutInfo.acceptPegInTxHash, acceptPegInTxHash, "Accept peg-in tx hash should match");
+        assertEq(streamPosition.streamId, stream.streamId, "Stream ID should match");
+        assertEq(streamPosition.packetNumber, expectedPacketNumber, "Packet number should match");
+        assertEq(streamPosition.slotId, expectedSlotId, "Slot ID should match");
+        assertEq(pm.getPegInRequest(requestPegInTxHash), acceptPegInTxHash, "Accept peg-in tx hash should match");
     }
 }
