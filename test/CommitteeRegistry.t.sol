@@ -470,12 +470,12 @@ contract TestCommitteeRegistry is Test, HelperContract {
         Role requestedRole = Role.Operator;
 
         // 1. Deposit in All Streams
-        for (uint8 i = 0; i < uint8(StreamDenomination._10BTC); i++) {
+        for (uint8 i = 0; i <= uint8(StreamDenomination._10BTC); i++) {
             totalDeposited += step_applyToStreamForStream(user, pubKey, StreamDenomination(i), requestedRole);
         }
 
         // 2. Unsubscribe from All Streams
-        for (uint8 i = 0; i < uint8(StreamDenomination._10BTC); i++) {
+        for (uint8 i = 0; i <= uint8(StreamDenomination._10BTC); i++) {
             step_unsubscribeFromStream(user, StreamDenomination(i));
         }
 
@@ -1076,7 +1076,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         assertEq(registry.getMemberPublicKey(user), pubKey, "member public key should match the registered key");
         assertEq(registry.getMemberIndexByAddress(user), 3, "member index should be 3 after registration");
         assertEq(registry.getMemberAvailableBalance(user), 0, "member available balance should be 0 after registration");
-        for (uint64 i = 0; i < uint8(StreamDenomination._10BTC); i++) {
+        for (uint64 i = 0; i <= uint8(StreamDenomination._10BTC); i++) {
             assertEq(
                 registry.getMemberPreStakedBalance(user, StreamDenomination(i)),
                 0,
@@ -1112,7 +1112,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
             minimumDeposit,
             "member pre-staked should match the minimum deposit for stream"
         );
-        for (uint64 i = 0; i < uint8(StreamDenomination._10BTC); i++) {
+        for (uint64 i = 0; i <= uint8(StreamDenomination._10BTC); i++) {
             if (i == uint8(DEFAULT_STREAM)) {
                 assertTrue(
                     registry.getMemberRequestedRole(user, StreamDenomination(i)) == DEFAULT_ROLE,
@@ -1169,7 +1169,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
             uint64(1_000_000_000) // 10 BTC
         ];
 
-        for (uint8 i = 0; i < uint8(StreamDenomination._10BTC); i++) {
+        for (uint8 i = 0; i <= uint8(StreamDenomination._10BTC); i++) {
             // Act
             uint256 minDeposit = registry.getMinimumDeposit(StreamDenomination(i));
 
