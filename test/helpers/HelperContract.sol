@@ -346,7 +346,8 @@ abstract contract HelperContract is Test, TestUtils {
     }
 
     function setup_registerPegoutScenario() public returns (RegisterPegoutSetup memory setup) {
-        uint64 amount = VALUE; // 0.001 BTC
+        uint64 amount = 100_000;
+
         setup.stream = streamManager.getStream(amount);
         setup.packetNumber = 0;
         setup.userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";

@@ -289,7 +289,7 @@ contract TestPegManager is Test, HelperContract {
     function test_registerPegout_Revert_InvalidAcceptPegInTxHash() external {
         // Create a peg-out transaction that spends the accept peg-in UTXO
         bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
-        uint64 amount = VALUE; // 0.001 BTC
+        uint64 amount = 100_000; // 0.001 BTC
         bytes32 acceptPegInTxHash = 0x30b6a2cae94d89540a99e0dfa39cf88e6de40dca9142810fdce7a95c00faff47;
         BtcTransaction memory pegOutTx = createPegOutTx(acceptPegInTxHash, userPubKey, amount);
 
