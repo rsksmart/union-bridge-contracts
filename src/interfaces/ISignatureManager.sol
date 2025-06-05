@@ -13,12 +13,12 @@ struct Signatures {
     mapping(uint256 memberIndex => SignatureData) partialSignaturesData;
     uint8 missingSignatures;
     uint8 missingNonces;
-    bytes32 aggregatedKey;
     uint256 timestamp;
+    uint256 committeeId;
 }
 
 interface ISignatureManager is IAccessControl {
-    function initSignatures(bytes32 _hashToSign, bytes32 _committeeKey) external;
+    function initSignatures(bytes32 _hashToSign, uint256 _committeeId) external;
 
     function addMemberNonce(bytes32 _hashToSign, bytes memory _nonce) external returns (bool);
 
@@ -31,7 +31,7 @@ interface ISignatureManager is IAccessControl {
     function getSignaturesStatus(bytes32 _hashToSign)
         external
         view
-        returns (uint8 missingSignatures, uint8 missingNonces, bytes32 aggregatedKey);
+        returns (uint8 missingSignatures, uint8 missingNonces, uint256 committeeId);
 
     event NonceAdded(bytes32 indexed hashToSign, bytes32 indexed memberPubKey, bytes nonce);
     event AllNoncesReady(bytes32 indexed hashToSign);
@@ -49,5 +49,4 @@ interface ISignatureManager is IAccessControl {
     error MemberNotFoundInCommittee(bytes32 memberPubKey, address memberAddress, bytes32 hashToSign);
     error InvalidHashToSign(bytes32 hashToSign);
     error SignaturesAlreadyInitialized(bytes32 hashToSign);
-    error InvalidCommittee(bytes32 committeeKey);
 }

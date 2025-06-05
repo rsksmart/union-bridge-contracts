@@ -114,6 +114,10 @@ contract DeployImplAndProxy is ScriptUtils {
         pegManager.setSignatureManager(signatureManager);
         vm.stopBroadcast();
 
+        vm.startBroadcast(getDeployerKey());
+        committeeRegistry.setPegManager(pegManager);
+        vm.stopBroadcast();
+
         if (block.chainid == ChainIds.LOCAL) {
             vm.startBroadcast(getDeployerKey());
             BridgeMock(bridgeAddress).setBtcTransactionConfirmations(10);
@@ -132,9 +136,12 @@ contract DeployImplAndProxy is ScriptUtils {
     }
 
     function deployCommitteeRegistry(address _upgradableOwner) public returns (CommitteeRegistry) {
-        (, address proxyAdddress) = deployContractAndUUPSProxy(
-            "CommitteeRegistry.sol", abi.encodeCall(CommitteeRegistry.initialize, (_upgradableOwner))
-        );
+        string memory contractName = "CommitteeRegistry.sol";
+        if (vm.isContext(VmSafe.ForgeContext.TestGroup)) {
+            contractName = "CommitteeRegistryHarness.sol";
+        }
+        (, address proxyAdddress) =
+            deployContractAndUUPSProxy(contractName, abi.encodeCall(CommitteeRegistry.initialize, (_upgradableOwner)));
         return CommitteeRegistry(proxyAdddress);
     }
 

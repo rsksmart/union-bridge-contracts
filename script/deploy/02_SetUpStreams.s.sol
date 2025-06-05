@@ -38,7 +38,7 @@ contract SetUpStreams is ScriptUtils {
             revert("StreamManager streams not created");
         }
         Stream memory stream = _streamManager.getStreamById(0);
-        (, bytes32 packetCommitteePubKey) = _streamManager.packets(stream.streamId, stream.peginPacketPointer);
+        (,, bytes32 packetCommitteePubKey) = _streamManager.packets(stream.streamId, stream.peginPacketPointer);
         if (committeePubKey != packetCommitteePubKey) {
             revert("StreamManager packets not created");
         }

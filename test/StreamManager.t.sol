@@ -74,6 +74,7 @@ contract TestStreamManager is Test, HelperContract {
         // we expect the packet number to be 1 since the first packet is being created in the setup function
         uint64 expectedPacketNumber = 1;
         bytes32 committeePubKey = bytes32(uint256(1));
+        uint256 committeeId = 1;
 
         // Assert
         vm.expectEmit(address(streamManager));
@@ -82,7 +83,7 @@ contract TestStreamManager is Test, HelperContract {
 
         vm.prank(address(pm));
         // Act
-        streamManager.createNewPacket(streamId, committeePubKey);
+        streamManager.createNewPacket(streamId, committeeId, committeePubKey);
 
         // Assert
         Packet memory packet = streamManager.getPacket(streamId, expectedPacketNumber);

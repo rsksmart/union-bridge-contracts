@@ -19,28 +19,24 @@ struct RegisterCommitteeParams {
 
 struct RegisterMemberParams {
     bytes32 publicKey;
-    StreamDenomination[] requestedStreams;
-    Role[] requestedRoles;
+    StreamDenomination requestedStream;
+    Role requestedRole;
 }
 
 contract SetUpCommittees is ScriptUtils, TestUtils {
     /// @notice parameters for each chain
     /// like https://github.com/defi-wonderland/solidity-foundry-boilerplate/blob/main/script/Deploy.sol
     RegisterCommitteeParams[] public committeesParams;
-    StreamDenomination[] defaultRequestedStreams = new StreamDenomination[](1);
-    Role[] defaultRequestedRoles = new Role[](1);
+    StreamDenomination defaultRequestedStream = StreamDenomination._0_001BTC;
+    Role defaultRequestedRole = Role.Watchtower;
 
     function setUp() internal {
         require(REQUIRED_MEMBERS_AMOUNT <= 10, "REQUIRED_MEMBERS_AMOUNT must be less than or equal to 10");
 
-        // Fill default streams and roles
-        defaultRequestedStreams[0] = StreamDenomination._0_001BTC;
-        defaultRequestedRoles[0] = Role.Operator;
-
         // Map memebers to comittee
         CommitteeMember[] memory members = new CommitteeMember[](2);
         members[0] = CommitteeMember({index: 0, role: Role.Operator});
-        members[1] = CommitteeMember({index: 1, role: Role.Operator});
+        members[1] = CommitteeMember({index: 1, role: Role.Watchtower});
 
         // Committee setup
         committeesParams.push();
@@ -50,17 +46,17 @@ contract SetUpCommittees is ScriptUtils, TestUtils {
 
         if (block.chainid == ChainIds.RSK_MAINNET) {
             // RSK Mainnet
-            committeesParams[0].committee.internalKey =
+            committeesParams[0].committee.aggregatedKey =
                 0x924c163b385af7093440184af6fd6244936d1288cbb41cc3812286d3f83a3329;
         } else if (block.chainid == ChainIds.RSK_TESTNET) {
             // RSK Testnet
             // Obtained from transactions repository
-            committeesParams[0].committee.internalKey =
+            committeesParams[0].committee.aggregatedKey =
                 0xd1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d;
         } else if (block.chainid == ChainIds.LOCAL) {
             // Foundry local chainid
             // Obtained from transactions repository
-            committeesParams[0].committee.internalKey =
+            committeesParams[0].committee.aggregatedKey =
                 0xd1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d;
         } else {
             revert("Blockchain is not RSK");
@@ -80,9 +76,20 @@ contract SetUpCommittees is ScriptUtils, TestUtils {
     }
 
     function registerMember(CommitteeRegistry _committeeRegistry, uint256 _privKey) public {
+        // Add balance to the user
+        address user = vm.addr(_privKey);
         RegisterMemberParams memory params = getMemberParams(_privKey);
+
+        uint256 minimumDeposit = _committeeRegistry.getMinimumDeposit(params.requestedStream);
+
+        if (block.chainid == ChainIds.LOCAL) {
+            vm.deal(user, minimumDeposit);
+        }
+
         vm.startBroadcast(_privKey);
-        _committeeRegistry.registerMember(params.publicKey, params.requestedStreams, params.requestedRoles);
+        _committeeRegistry.applyToStream{value: minimumDeposit}(
+            params.publicKey, params.requestedStream, params.requestedRole
+        );
         vm.stopBroadcast();
     }
 
@@ -92,28 +99,46 @@ contract SetUpCommittees is ScriptUtils, TestUtils {
     ) public {
         uint256 length = _registerCommitteesParams.length;
         for (uint256 i = 0; i < length; i++) {
-            registerCommittee(_committeeRegistry, _registerCommitteesParams[i].committee);
-        }
-        if (_committeeRegistry.getCommitteesLength() != length) {
-            revert("CommitteeRegistry committees length is not the same as the number of committees");
-        }
-        if (
-            _committeeRegistry.getCommitteeByIndex(length - 1)
-                != _registerCommitteesParams[length - 1].committee.internalKey
-        ) {
-            revert("CommitteeRegistry last committee is not the same as the last committee in the array");
+            Committee memory committee = _registerCommitteesParams[i].committee;
+            registerCommittee(_committeeRegistry, i + 1, committee);
+            _compareCommittees(_committeeRegistry.getCommittee(i + 1), committee);
         }
     }
 
-    function registerCommittee(CommitteeRegistry _committeeRegistry, Committee memory _commitee) public {
+    function _compareCommittees(Committee memory _contractCommittee, Committee memory _committee) internal pure {
+        if (_contractCommittee.aggregatedKey != _committee.aggregatedKey) {
+            revert("CommitteeRegistry committee registered has not the same aggregated key as the one in the contract");
+        }
+
+        if (_contractCommittee.memberIndexesAndRoles.length != _committee.memberIndexesAndRoles.length) {
+            revert("CommitteeRegistry committee registered has not same member length as the one in the contract");
+        }
+
+        for (uint256 i = 0; i < _committee.memberIndexesAndRoles.length; i++) {
+            if (_contractCommittee.memberIndexesAndRoles[i].index != _committee.memberIndexesAndRoles[i].index) {
+                revert("CommitteeRegistry committee registered has a different index member as the one in the contract");
+            }
+            if (_contractCommittee.memberIndexesAndRoles[i].role != _committee.memberIndexesAndRoles[i].role) {
+                revert("CommitteeRegistry committee registered has a different role member as the one in the contract");
+            }
+        }
+
+        if (_contractCommittee.leaderIndex != _committee.leaderIndex) {
+            revert("CommitteeRegistry committee registered has a different leaderIndex as the one in the contract");
+        }
+    }
+
+    function registerCommittee(CommitteeRegistry _committeeRegistry, uint256 _committeeId, Committee memory _commitee)
+        public
+    {
         vm.startBroadcast(getDeployerKey());
-        _committeeRegistry.registerCommittee(_commitee);
+        _committeeRegistry.registerCommittee(_committeeId, _commitee);
         vm.stopBroadcast();
     }
 
     function getMemberParams(uint256 _privKey) public view returns (RegisterMemberParams memory) {
         bytes32 pubKey = BtcHelper.hash256(abi.encode(_privKey));
-        return RegisterMemberParams(pubKey, defaultRequestedStreams, defaultRequestedRoles);
+        return RegisterMemberParams(pubKey, defaultRequestedStream, defaultRequestedRole);
     }
 
     function setStreamManager(CommitteeRegistry _committeeRegistry, StreamManager _streamManager) public {
