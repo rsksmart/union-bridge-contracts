@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import {CommitteeRegistry, CommitteeMember} from "src/CommitteeRegistry.sol";
 import {Role} from "src/interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
+import {PendingCommitteeStatus} from "src/interfaces/ICommitteeRegistry.sol";
 
 /// @notice Wrapper for testing CommitteeRegistry
 contract CommitteeRegistryHarness is CommitteeRegistry {
@@ -11,17 +12,28 @@ contract CommitteeRegistryHarness is CommitteeRegistry {
         CommitteeRegistry.initialize(_initialOwner);
     }
 
-    function selectCommittee(uint64 _denomination) public view returns (CommitteeMember[] memory) {
+    function selectCommittee(uint64 _denomination) public returns (CommitteeMember[] memory, PendingCommitteeStatus) {
         return _selectCommittee(_denomination);
     }
 
-    function registerCandidateToStream(address _memberAddress, StreamDenomination _stream, Role _role, uint256 _amount)
-        public
-    {
+    function registerCandidateToStreamHarness(
+        address _memberAddress,
+        StreamDenomination _stream,
+        Role _role,
+        uint256 _amount
+    ) public {
         _registerCandidateToStream(_memberAddress, _stream, _role, _amount);
     }
 
-    function registerMember(bytes32 _publicKey) public {
+    function registerMemberHarness(bytes32 _publicKey) public {
         _registerMember(_publicKey);
+    }
+
+    function createCommitteeAfterApplyToStreamHarness(StreamDenomination _denomination) public {
+        _createCommitteeAfterApplyToStream(_denomination);
+    }
+
+    function createCommitteeHarness(uint64 _streamId) public {
+        _createCommittee(_streamId);
     }
 }

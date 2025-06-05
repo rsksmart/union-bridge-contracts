@@ -14,21 +14,30 @@ import {
 } from "src/interfaces/IPegManager.sol";
 import {BtcTxIn, BtcTxOut, IBitcoinManager} from "src/interfaces/IBitcoinManager.sol";
 import {Slot, SlotState, Packet, Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
-import {Committee} from "src/interfaces/ICommitteeRegistry.sol";
 import {BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE} from "src/interfaces/IBridge.sol";
 import {ProofValidator} from "src/ProofValidator.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {Constants} from "src/libraries/Constants.sol";
-import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
+import {ICommitteeRegistry, Committee} from "src/interfaces/ICommitteeRegistry.sol";
 
 contract TestPegManager is Test, HelperContract {
     // Arrange
     // https://www.blockchain.com/explorer/blocks/btc/879500
     uint64 internal constant PACKET_NUMBER = 0;
     address internal constant RSK_DESTINATION_ADDRESS = 0x7Ac5496aee77c1bA1F0854206A26DdA82A81d6d8;
+    uint64 internal setupStreamId;
+    Committee internal setupExpectedCommittee;
 
     function setUp() external {
         runTestDeployScript();
+        (Committee memory expectedCommittee, uint64 streamId) = setup_completeCommittee();
+
+        setupExpectedCommittee.aggregatedKey = expectedCommittee.aggregatedKey;
+        setupExpectedCommittee.leaderIndex = expectedCommittee.leaderIndex;
+        for (uint64 i = 0; i < expectedCommittee.memberIndexesAndRoles.length; i++) {
+            setupExpectedCommittee.memberIndexesAndRoles.push(expectedCommittee.memberIndexesAndRoles[i]);
+        }
+        setupStreamId = streamId;
     }
 
     function test_getTemporaryPegInAddress_Success() external view {
@@ -219,10 +228,9 @@ contract TestPegManager is Test, HelperContract {
 
     function test_acceptPegInRequest_newPacketCreated() external {
         // Arrange
-        (Committee memory expectedCommittee, uint64 streamId) = setup_committee();
-
         // Create pegins until the new packet threshold is reached
-        setup_multipleRequestAndAcceptPeginFlows(Constants.SLOT_USAGE_THRESHOLD - 1, streamId);
+        setup_multipleRequestAndAcceptPeginFlows(Constants.SLOT_USAGE_THRESHOLD - 1, setupStreamId);
+        Committee memory expectedCommittee = setupExpectedCommittee;
 
         // Arrange
         BtcTransaction memory peginTx = setup_requestPeginFlow();
@@ -230,35 +238,30 @@ contract TestPegManager is Test, HelperContract {
         // Create PegIn accepted tx struct information
         BtcTxSPVProof memory pegInAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
-        emit ICommitteeRegistry.NewPendingCommittee(streamId, expectedCommittee);
+        emit ICommitteeRegistry.NewPendingCommittee(setupStreamId, expectedCommittee);
 
         // Act
         pm.acceptPegInRequest(pegInAcceptedTxSPVProof);
 
         // Now we should provide members info to create the committee/packet
-        setup_depositMemberInfo_MultipleMembers(streamId, 0, registry.MIN_COMMITTEE_MEMBERS() - 2);
-        expectedCommittee.aggregatedKey = COMMITEE_1_PUB_KEY;
+        setup_depositMemberInfo_MultipleMembers(setupStreamId, 0, registry.MIN_COMMITTEE_MEMBERS() - 2);
 
         vm.expectEmit(address(registry));
-        emit ICommitteeRegistry.NewCommittee(
-            92458281274488595289803937127152923398167637295201432141969818930235769911599, expectedCommittee
-        );
+        emit ICommitteeRegistry.NewCommittee(COMMITTEE_ID_STREAM_1_PACKET_1, expectedCommittee);
 
         vm.expectEmit(address(streamManager));
-        emit IStreamManager.PacketCreated(streamId, 1);
+        emit IStreamManager.PacketCreated(setupStreamId, 1);
 
         vm.prank(vm.addr(registry.MIN_COMMITTEE_MEMBERS()));
-        registry.depositMemberInfoForCommittee(streamId, COMMITEE_1_PUB_KEY);
+        registry.depositMemberInfoForCommittee(setupStreamId, COMMITTEE_PUB_KEY_STREAM_1_PACKET_0);
     }
 
     function test_acceptPegInRequest_newPacketUsed() external {
         // Arrange
-        (, uint64 streamId) = setup_committee();
-
         // Create pegins until the new packet treshold is reached
-        setup_multipleRequestAndAcceptPeginFlows(Constants.SLOTS_PER_PACKET, streamId);
+        setup_multipleRequestAndAcceptPeginFlows(Constants.SLOTS_PER_PACKET, setupStreamId);
         // Members must deposite their info to create new packet
-        setup_depositMemberInfo_MultipleMembers(streamId, 0, registry.MIN_COMMITTEE_MEMBERS() - 1);
+        setup_depositMemberInfo_MultipleMembers(setupStreamId, 0, registry.MIN_COMMITTEE_MEMBERS() - 1);
 
         // Arrange
         BtcTransaction memory peginTx = setup_requestPeginFlow();
@@ -278,7 +281,12 @@ contract TestPegManager is Test, HelperContract {
             acceptPegInTxHash,
             pegInRequestTxHash,
             0, //vout
-            StreamPosition({streamId: streamId, packetNumber: packetId, slotId: slotId, pegStatus: PegStatus.ACCEPTED}),
+            StreamPosition({
+                streamId: setupStreamId,
+                packetNumber: packetId,
+                slotId: slotId,
+                pegStatus: PegStatus.ACCEPTED
+            }),
             BTC_REIMBURSEMENT_PUBKEY,
             RSK_DESTINATION_ADDRESS,
             satoshiToWei(btcTransaction.outputs[0].amount), // Rbtc amount
@@ -416,10 +424,9 @@ contract TestPegManager is Test, HelperContract {
     }
 
     function test_peginFlow_RequestMultiplePegin_Revert_IncorrectPacketNumber() external {
-        (, uint64 streamId) = setup_committee();
-
+        // Arrange
         // Left just one empty slot in packet
-        setup_multipleRequestAndAcceptPeginFlows(Constants.SLOTS_PER_PACKET - 1, streamId);
+        setup_multipleRequestAndAcceptPeginFlows(Constants.SLOTS_PER_PACKET - 1, setupStreamId);
 
         // Send 2 more pegins to fill the packet
         BtcTransaction memory peginTxN = setup_requestPeginFlow();
@@ -439,7 +446,7 @@ contract TestPegManager is Test, HelperContract {
             pegInRequestTxHash,
             0, //vout
             StreamPosition({
-                streamId: streamId,
+                streamId: setupStreamId,
                 packetNumber: 0,
                 slotId: Constants.SLOTS_PER_PACKET - 1,
                 pegStatus: PegStatus.ACCEPTED
@@ -457,7 +464,7 @@ contract TestPegManager is Test, HelperContract {
         pegInAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
         // This should revert because this pegin was linked to packet 0 and now we are in packet 1
-        vm.expectRevert(abi.encodeWithSelector(IStreamManager.InvalidPeginPacketNumber.selector, streamId, 0));
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.InvalidPeginPacketNumber.selector, setupStreamId, 0));
         pm.acceptPegInRequest(pegInAcceptedTxSPVProof);
     }
 }

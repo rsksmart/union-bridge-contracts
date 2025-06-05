@@ -123,7 +123,7 @@ contract TestBtcHelper is Test, HelperContract {
         uint64 value = VALUE;
         address rskDestinationAddress = getPegInRskDestinationAddress();
         bytes32 btcReimbursementPubKey = getPegInBtcReimbursementPubKey();
-        bytes32 committeePubKey = COMMITEE_1_PUB_KEY;
+        bytes32 committeePubKey = COMMITTEE_PUB_KEY_STREAM_1_PACKET_0;
         // Act
         bitcoinManager.validatRequestPegInP2TROutput(
             rskDestinationAddress, value, btcReimbursementPubKey, committeePubKey, btcTxOut
@@ -138,7 +138,7 @@ contract TestBtcHelper is Test, HelperContract {
         uint64 value = VALUE;
         address rskDestinationAddress = getPegInRskDestinationAddress();
         bytes32 btcReimbursementPubKey = getPegInBtcReimbursementPubKey();
-        bytes32 committeePubKey = COMMITEE_1_PUB_KEY;
+        bytes32 committeePubKey = COMMITTEE_PUB_KEY_STREAM_1_PACKET_0;
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IBitcoinManager.InvalidOutputAmount.selector, btcTxOut.amount, value));
         // Act
@@ -171,7 +171,7 @@ contract TestBtcHelper is Test, HelperContract {
         // Arrange
         BtcTxOut memory btcTxOut = getBtcAcceptPegInTx(btcTx).outputs[0];
         uint64 value = VALUE;
-        bytes32 committeePubKey = COMMITEE_1_PUB_KEY;
+        bytes32 committeePubKey = COMMITTEE_PUB_KEY_STREAM_1_PACKET_0;
         // Act
         bitcoinManager.validateAcceptPegInP2TROutput(committeePubKey, value, btcTxOut);
         // Assert if not reverts everything is ok
@@ -183,7 +183,7 @@ contract TestBtcHelper is Test, HelperContract {
         // Arrange
         BtcTxOut memory btcTxOut = getBtcAcceptPegInTx(btcTx).outputs[0];
         btcTxOut.amount = VALUE - (Constants.P2TR_FEE + Constants.SPEED_UP_AMOUNT + 1);
-        bytes32 committeePubKey = COMMITEE_1_PUB_KEY;
+        bytes32 committeePubKey = COMMITTEE_PUB_KEY_STREAM_1_PACKET_0;
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -203,7 +203,7 @@ contract TestBtcHelper is Test, HelperContract {
         BtcTxOut memory btcTxOut = getBtcAcceptPegInTx(btcTx).outputs[0];
         bytes memory expectedScriptPubKey = btcTxOut.scriptPubKey;
         btcTxOut.scriptPubKey = hex"0014d3b4045c40a133ee361f766ceae4d82398fc5058";
-        bytes32 committeePubKey = COMMITEE_1_PUB_KEY;
+        bytes32 committeePubKey = COMMITTEE_PUB_KEY_STREAM_1_PACKET_0;
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(

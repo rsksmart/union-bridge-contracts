@@ -54,11 +54,6 @@ struct Stream {
 }
 
 interface IStreamManager is IAccessControl {
-    /// @notice Allows users to create packets
-    /// @param _committeePubKey The public key of the committee
-    /// FIXME: This function will we removed soon.
-    function createInitialPackets(bytes32 _committeePubKey) external;
-
     /// @notice Adds a packet to a specific stream with the committee public key
     /// @param _streamId The index in the array of streams
     /// @param _committeeId The id of the committee for the packet
@@ -161,6 +156,12 @@ interface IStreamManager is IAccessControl {
     /// @dev The peg-out confirmations is the number of confirmations required for a peg-out transaction to be considered valid
     function setPegoutConfirmations(uint64 _streamId, uint8 _confirmations) external;
 
+    /// @notice Allows users to get the current packet committee id for a given stream
+    /// @param _streamId The index in the array of streams
+    /// @return uint256 The current packet committee id
+    /// @dev This functions return 0 if the stream does not have a current packet (i.e. no packets created yet or last packet run out of slots)
+    function getCurrentPacketCommitteeId(uint64 _streamId) external view returns (uint256);
+
     event StreamCreated(uint64 streamId, uint64 denomination);
     event PacketCreated(uint64 streamId, uint64 packetNumber);
     event SlotCreated(uint64 streamId, uint64 packetNumber, uint64 slotId);
@@ -182,4 +183,5 @@ interface IStreamManager is IAccessControl {
     error InvalidSecurityBondValue(uint256 securityBond);
     error InvalidSlotState(SlotState actual, SlotState expected);
     error InvalidAcceptPegInTxHash(bytes32 expected, bytes32 actual);
+    error InvalidZeroAddress();
 }

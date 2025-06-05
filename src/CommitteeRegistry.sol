@@ -14,7 +14,8 @@ import {
     Committee,
     ICommitteeRegistry,
     PendingCommittee,
-    PendingCommitteeData
+    PendingCommitteeData,
+    PendingCommitteeStatus
 } from "./interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination, IStreamManager} from "./interfaces/IStreamManager.sol";
 import {IPegManager} from "./interfaces/IPegManager.sol";
@@ -33,13 +34,14 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     // NOTE: Should fit condition MIN_COMMITTEE_MEMBERS > MIN_WATCHTOWERS + MIN_OPERATORS
     uint256 public constant MIN_COMMITTEE_MEMBERS = 10;
 
-    mapping(uint64 => PendingCommittee) internal pendingCommittees;
-    mapping(uint256 => Committee) internal committeesByKey;
+    mapping(uint64 streamId => PendingCommittee) internal pendingCommittees;
+    mapping(uint256 committeeId => Committee) internal committeesByKey;
+    mapping(uint64 streamId => bool createCommittee) internal shouldCreateCommittee;
 
     // NOTE: This is a mapping of the members, where the key is the address and the value is the index in the members array + 1
     mapping(address => uint16) internal memberIndexByAddress;
     IStreamManager streamManager;
-    address pegManager;
+    IPegManager pegManager;
 
     uint256 public pendingCommitteeTimeout;
 
@@ -48,14 +50,13 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     function initialize(address _initialOwner) public virtual initializer {
         __BaseProxy_init(_initialOwner);
         pendingCommitteeTimeout = 1 days; // Default timeout for pending committees
-    }
-
-    function setStreamManager(IStreamManager _streamManager) public {
-        streamManager = _streamManager;
+        for (uint64 i = 0; i <= uint64(StreamDenomination._10BTC); i++) {
+            shouldCreateCommittee[i] = true;
+        }
     }
 
     function getMinimumDeposit(StreamDenomination _denomination) public view returns (uint256) {
-        return streamManager.getStreamById(uint8(_denomination)).securityBondValue;
+        return streamManager.getStreamById(uint64(_denomination)).securityBondValue;
     }
 
     function _initMemberBalance(Member storage _member) internal {
@@ -68,16 +69,6 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         for (uint256 i = 0; i < streams; i++) {
             _member.balance.staked.push();
         }
-    }
-
-    // FIXME: Temporary function to register a committee, should be deleted when createCommittee is called in setup
-    function registerCommittee(uint256 _committeeId, Committee calldata _committee) external {
-        if (committeesByKey[_committeeId].memberIndexesAndRoles.length != 0) {
-            revert AlreadyRegisteredCommittee(_committeeId);
-        }
-
-        committeesByKey[_committeeId] = _committee;
-        emit NewCommittee(_committeeId, _committee);
     }
 
     function _getMemberPubKeyByAddress(address _address) internal view returns (bytes32) {
@@ -112,8 +103,9 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         }
 
         _registerCandidateToStream(msg.sender, _stream, _role, msg.value);
-
         emit NewSecurityBondDeposit(msg.sender, _stream, _role, msg.value);
+
+        _createCommitteeAfterApplyToStream(_stream);
     }
 
     // NOTE: This function intends to keep many different structures in sync, be careful when modifying it
@@ -204,12 +196,6 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     }
 
     function _registerCommittee(uint256 _committeeId, Committee storage _committee) internal {
-        // Check if exists
-        // NOTE: Could we ignore this check due to committeeId being unique?
-        if (committeesByKey[_committeeId].aggregatedKey != bytes32(0)) {
-            return;
-        }
-
         committeesByKey[_committeeId] = _committee;
         emit NewCommittee(_committeeId, _committee);
     }
@@ -314,11 +300,12 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     }
 
     function createCommittee(uint64 _streamId) external onlyPegManager {
+        // NOTE: This method is called from the pegManager, so we should not revert.
+
         uint256 createdAt = pendingCommittees[_streamId].createdAt;
         if (createdAt != 0) {
             // slither-disable-next-line timestamp
             if (block.timestamp < createdAt + pendingCommitteeTimeout) {
-                // This is called from the pegManager, so we should not revert.
                 return;
             }
 
@@ -328,11 +315,46 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         _createCommittee(_streamId);
     }
 
-    function _createCommittee(uint64 _streamId) internal returns (bool) {
-        CommitteeMember[] memory committeeMembers = _selectCommittee(_streamId);
-        if (committeeMembers.length == 0) {
-            // This is called from the pegManager, so we should not revert.
+    function _createCommitteeAfterApplyToStream(StreamDenomination _denomination) internal {
+        // Cases where we should execute:
+        // - Pending committee is expired
+        // - Current packet pointer has not a committee
+        uint64 streamId = uint64(_denomination);
+
+        if (_createCommitteeIfPending(streamId)) {
+            // If there is a pending committee, we should not create a new one at least it's expired
+            return;
+        }
+
+        if (shouldCreateCommittee[streamId]) {
+            _createCommittee(streamId);
+        }
+    }
+
+    function _createCommitteeIfPending(uint64 _streamId) internal returns (bool) {
+        // This function return true if there is a pending committee
+        // If there is a pending committee, we should not create a new one at least it's expired
+        uint256 createdAt = pendingCommittees[_streamId].createdAt;
+        if (createdAt == 0) {
             return false;
+        }
+
+        // slither-disable-next-line timestamp
+        if (block.timestamp >= createdAt + pendingCommitteeTimeout) {
+            _slashCommittee();
+            _deletePendingCommittee(_streamId);
+            _createCommittee(_streamId);
+        }
+
+        return true;
+    }
+
+    function _createCommittee(uint64 _streamId) internal returns (PendingCommitteeStatus) {
+        // NOTE: This method is called from the pegManager, so we should not revert.
+        (CommitteeMember[] memory committeeMembers, PendingCommitteeStatus status) = _selectCommittee(_streamId);
+        if (status != PendingCommitteeStatus.Success) {
+            shouldCreateCommittee[_streamId] = true;
+            return status;
         }
 
         pendingCommittees[_streamId].createdAt = block.timestamp;
@@ -350,7 +372,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
                 PendingCommitteeData({inCommittee: true, aggregatedKey: bytes32(0)});
         }
         emit NewPendingCommittee(_streamId, pendingCommittees[_streamId].committee);
-        return true;
+        return PendingCommitteeStatus.Success;
     }
 
     function depositMemberInfoForCommittee(uint64 _streamId, bytes32 _aggregatedKey) external {
@@ -445,27 +467,6 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         delete pendingCommittees[_streamId];
     }
 
-    function setPegManager(IPegManager _pegManager) external onlyOwner {
-        if (address(_pegManager) == address(0)) {
-            revert InvalidZeroAddress();
-        }
-        pegManager = address(_pegManager);
-    }
-
-    modifier onlyPegManager() {
-        _checkPegManager();
-        _;
-    }
-
-    /**
-     * @dev Throws if the sender is not the pegManager.
-     */
-    function _checkPegManager() internal view virtual {
-        if (pegManager != msg.sender) {
-            revert UnauthorizedAccount(msg.sender);
-        }
-    }
-
     function getCommitteeCandidates(StreamDenomination _denomination)
         external
         view
@@ -484,7 +485,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
      * @return An array of MIN_COMMITTEE_MEMBERS CommitteeMembers containing the selected members.
      *
      */
-    function _selectCommittee(uint64 _streamId) internal view returns (CommitteeMember[] memory) {
+    function _selectCommittee(uint64 _streamId) internal returns (CommitteeMember[] memory, PendingCommitteeStatus) {
         // Get the stream denomination for the streamId
         StreamDenomination denomination = StreamDenomination(_streamId);
 
@@ -510,16 +511,20 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
 
         // Ensure we have enough candidates
         if (watchtowerCount < MIN_WATCHTOWERS) {
-            revert NotEnoughWatchtowers(MIN_WATCHTOWERS, watchtowerCount);
+            emit MissingWatchtowers(denomination, MIN_WATCHTOWERS, MIN_WATCHTOWERS - watchtowerCount);
+            return (new CommitteeMember[](0), PendingCommitteeStatus.NotEnoughWatchtowers);
         }
+
         if (operatorCount < MIN_OPERATORS) {
-            revert NotEnoughOperators(MIN_OPERATORS, operatorCount);
+            emit MissingOperators(denomination, MIN_OPERATORS, MIN_OPERATORS - operatorCount);
+            return (new CommitteeMember[](0), PendingCommitteeStatus.NotEnoughOperators);
         }
 
         // Check if we have enough total members for the committee
         uint256 totalAvailableMembers = watchtowerCount + operatorCount;
         if (totalAvailableMembers < MIN_COMMITTEE_MEMBERS) {
-            revert NotEnoughMembers(MIN_COMMITTEE_MEMBERS, totalAvailableMembers);
+            emit MissingMembers(denomination, MIN_COMMITTEE_MEMBERS, MIN_COMMITTEE_MEMBERS - totalAvailableMembers);
+            return (new CommitteeMember[](0), PendingCommitteeStatus.NotEnoughMembers);
         }
 
         // Amount of each members per role in the committee
@@ -562,7 +567,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
             watchtowerIndices[randomPos] = watchtowerIndices[length - 1];
         }
 
-        return selectedMembers;
+        return (selectedMembers, PendingCommitteeStatus.Success);
     }
 
     function setPendingCommitteeTimeout(uint256 _timeout) external onlyOwner {
@@ -570,5 +575,27 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
             revert InvalidZeroTimeout();
         }
         pendingCommitteeTimeout = _timeout;
+    }
+
+    function setStreamManager(IStreamManager _streamManager) public onlyOwner {
+        if (address(_streamManager) == address(0)) {
+            revert InvalidZeroAddress();
+        }
+        streamManager = _streamManager;
+    }
+
+    function setPegManager(IPegManager _pegManager) external onlyOwner {
+        if (address(_pegManager) == address(0)) {
+            revert InvalidZeroAddress();
+        }
+        pegManager = _pegManager;
+    }
+
+    /// ==== Modifiers ====
+    modifier onlyPegManager() {
+        if (address(pegManager) != msg.sender) {
+            revert UnauthorizedAccount(msg.sender);
+        }
+        _;
     }
 }

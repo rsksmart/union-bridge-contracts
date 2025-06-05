@@ -13,6 +13,8 @@ import {BtcNetwork} from "src/libraries/Network.sol";
 import {BridgeMock} from "test/helpers/BridgeMock.sol";
 import {ChainIds} from "src/libraries/Network.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
+import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
+import {IPegManager} from "src/interfaces/IPegManager.sol";
 
 ///@dev We are using fundry-upgrades see https://github.com/OpenZeppelin/openzeppelin-foundry-upgrades
 contract DeployImplAndProxy is ScriptUtils {
@@ -85,7 +87,7 @@ contract DeployImplAndProxy is ScriptUtils {
             revert("PegManager bridge is not the bridge address");
         }
 
-        StreamManager streamManager = deployStreamManager(upgradableOwner, address(pegManager), denominations);
+        StreamManager streamManager = deployStreamManager(upgradableOwner, pegManager, committeeRegistry, denominations);
         if (streamManager.owner() != upgradableOwner) {
             revert("StreamManager owner is not the upgradable owner");
         }
@@ -108,20 +110,20 @@ contract DeployImplAndProxy is ScriptUtils {
         // Set contracts references
         vm.startBroadcast(getDeployerKey());
         pegManager.setStreamManager(streamManager);
-        vm.stopBroadcast();
-
-        vm.startBroadcast(getDeployerKey());
         pegManager.setSignatureManager(signatureManager);
-        vm.stopBroadcast();
-
-        vm.startBroadcast(getDeployerKey());
         committeeRegistry.setPegManager(pegManager);
+        committeeRegistry.setStreamManager(streamManager);
         vm.stopBroadcast();
 
         if (block.chainid == ChainIds.LOCAL) {
             vm.startBroadcast(getDeployerKey());
             BridgeMock(bridgeAddress).setBtcTransactionConfirmations(10);
             vm.stopBroadcast();
+        }
+
+        uint256 streamLen = streamManager.getStreamsLength();
+        if (streamLen == 0) {
+            revert("StreamManager streams not created");
         }
 
         return (
@@ -175,17 +177,22 @@ contract DeployImplAndProxy is ScriptUtils {
         return PegManager(proxyAdddress);
     }
 
-    function deployStreamManager(address _upgradableOwner, address _pegManager, uint64[] memory _denominations)
-        public
-        returns (StreamManager)
-    {
+    function deployStreamManager(
+        address _upgradableOwner,
+        IPegManager _pegManager,
+        ICommitteeRegistry _committeeRegistry,
+        uint64[] memory _denominations
+    ) public returns (StreamManager) {
         string memory contractName = "StreamManager.sol";
         if (vm.isContext(VmSafe.ForgeContext.TestGroup)) {
             contractName = "StreamManagerHarness.sol";
         }
 
         (, address proxyAdddress) = deployContractAndUUPSProxy(
-            contractName, abi.encodeCall(StreamManager.initialize, (_upgradableOwner, _pegManager, _denominations))
+            contractName,
+            abi.encodeCall(
+                StreamManager.initialize, (_upgradableOwner, _pegManager, _committeeRegistry, _denominations)
+            )
         );
         return StreamManager(proxyAdddress);
     }

@@ -8,8 +8,6 @@ import {PegManager} from "src/PegManager.sol";
 import {StreamManager} from "src/StreamManager.sol";
 import {SignatureManager} from "src/SignatureManager.sol";
 import {DeployImplAndProxy} from "./01_DeployImplAndProxy.s.sol";
-import {SetUpStreams} from "./02_SetUpStreams.s.sol";
-import {SetUpCommittees} from "./03_SetUpCommittees.s.sol";
 
 contract DeployScript is Script {
     // Contracts to be deployed
@@ -29,15 +27,5 @@ contract DeployScript is Script {
         DeployImplAndProxy deploy = new DeployImplAndProxy();
         (committeeRegistry, bitcoinManager, pegManager, streamManager, signatureManager, upgradableOwner, bridgeAddress)
         = deploy.run();
-
-        // Set up streams
-        SetUpStreams setUpStreams = new SetUpStreams();
-        setUpStreams.run(streamManager);
-
-        SetUpCommittees setUpCommittees = new SetUpCommittees();
-        // Set up streams inside committee registry
-        setUpCommittees.setStreamManager(committeeRegistry, streamManager);
-        // Set up committees
-        setUpCommittees.run(committeeRegistry);
     }
 }

@@ -37,24 +37,34 @@ contract TestPegManager is Test, HelperContract {
     // https://www.blockchain.com/explorer/blocks/btc/879500
     uint64 internal constant PACKET_NUMBER = 0;
     address internal constant RSK_DESTINATION_ADDRESS = 0x7Ac5496aee77c1bA1F0854206A26DdA82A81d6d8;
+    uint64 internal setupStreamId;
+    Committee internal setupExpectedCommittee;
 
     function setUp() external {
         runTestDeployScript();
+        (Committee memory expectedCommittee, uint64 streamId) = setup_completeCommittee();
+
+        setupExpectedCommittee.aggregatedKey = expectedCommittee.aggregatedKey;
+        setupExpectedCommittee.leaderIndex = expectedCommittee.leaderIndex;
+        for (uint64 i = 0; i < expectedCommittee.memberIndexesAndRoles.length; i++) {
+            setupExpectedCommittee.memberIndexesAndRoles.push(expectedCommittee.memberIndexesAndRoles[i]);
+        }
+        setupStreamId = streamId;
     }
 
     // ================= Request PegOut =================
     function test_requestPegOut_Success() external {
         // Arrange
-        bytes32 expectedHash = 0xf48100e48109fb0e00c7d4e826b0509347f64fd2874bca28cff17d3d31e8bb9a;
+        bytes32 expectedHash = 0xdfdfbe00b8a563bd5ceb2279c14b33763ed5305301ad1240378ad376384375c3;
         bytes memory expectedDigest =
-            hex"00010200000000000000234337e863e00e6ff45f167a14f3963bea912bc0d739c2b402d04f376e814ae2e247139cedddd1ee740814e7de2e771c3745091bbb7af21d4122087c8bc17a36a0c6dbc3091625a23fd870bf8d09182484c12fa63a5c29045a431cf445f153e523e9829bfb4e23fbd3c4848baa035af15d73bcb83e510f7f097f90a21a4280d2006bb47323a1d7550c68619b10ffa4748cae2dc9f58375cfb06ae22cc8020e530000000000";
+            hex"00010200000000000000234337e863e00e6ff45f167a14f3963bea912bc0d739c2b402d04f376e814ae24f973621fe8403b6facae9abab80d863a847d3fb007ba2f9830f8e16e6e9b4d4a0c6dbc3091625a23fd870bf8d09182484c12fa63a5c29045a431cf445f153e523e9829bfb4e23fbd3c4848baa035af15d73bcb83e510f7f097f90a21a4280d2f21ec17ae04c101c88a29ad8d6312f5ff2e7a66e2274cc47cc1e9fb2327f857e0000000000";
 
         bytes memory usrPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
 
         bytes32 txId = 0xb24858ade3e5be49ae63facb93524ddf460d0771f093525dae328b6c435516a2;
         bytes memory scriptPubKey = hex"02f519f51e435c20d38af683ea86862f4591ce8cda248077c2d9a72a76b62f32";
 
-        uint64 amount = 10000000; // 0.1 BTC
+        uint64 amount = 1000000; // 0.01 BTC
         uint256 amountInWei = BtcHelper.satoshiToWei(amount);
 
         Stream memory stream = streamManager.getStream(uint64(amount));
@@ -134,9 +144,8 @@ contract TestPegManager is Test, HelperContract {
 
     function test_requestPegOut_FromNextPacket_Success() external {
         // Setup
-        (, uint64 streamId) = setup_committee();
         uint256 pegoutAmount = Constants.SLOTS_PER_PACKET + 10;
-        setup_multipleRequestAndAcceptPeginFlows(pegoutAmount, streamId);
+        setup_multipleRequestAndAcceptPeginFlows(pegoutAmount, setupStreamId);
 
         bytes memory usrPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
         uint64 amount = VALUE;
@@ -201,7 +210,7 @@ contract TestPegManager is Test, HelperContract {
     function test_requestPegOut_Revert_NonExistentSlot() external {
         // Arrange
         bytes memory usrPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
-        uint64 amount = 100000; // 0.1 BTC
+        uint64 amount = 1000000; // 0.01 BTC
         uint256 amountInWei = BtcHelper.satoshiToWei(amount);
 
         Stream memory stream = streamManager.getStream(uint64(amount));
@@ -289,12 +298,11 @@ contract TestPegManager is Test, HelperContract {
     function test_registerPegout_Revert_InvalidAcceptPegInTxHash() external {
         // Create a peg-out transaction that spends the accept peg-in UTXO
         bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
-        uint64 amount = 100_000; // 0.001 BTC
         bytes32 acceptPegInTxHash = 0x30b6a2cae94d89540a99e0dfa39cf88e6de40dca9142810fdce7a95c00faff47;
-        BtcTransaction memory pegOutTx = createPegOutTx(acceptPegInTxHash, userPubKey, amount);
+        BtcTransaction memory pegOutTx = createPegOutTx(acceptPegInTxHash, userPubKey, VALUE);
 
         // Create a slot
-        Stream memory stream = streamManager.getStream(amount);
+        Stream memory stream = streamManager.getStream(VALUE);
         uint64 packetNumber = 0;
         bytes32 differentTxHash = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
 
@@ -303,7 +311,7 @@ contract TestPegManager is Test, HelperContract {
             packetNumber,
             hex"00143fd2e14f4b448a071e074e1e1879318447f2a266",
             differentTxHash, // Different from what the peg-out transaction references
-            amount
+            VALUE
         );
 
         // Set the slot state to LOCKED
@@ -311,6 +319,7 @@ contract TestPegManager is Test, HelperContract {
 
         // Set up the pegOutTxs mapping
         pm.setPegOutTempInfoHarness(acceptPegInTxHash, userPubKey);
+        pm.setStreamPositionHarness(acceptPegInTxHash, stream.streamId, packetNumber, slotId, PegStatus.ACCEPTED);
 
         // Create SPV proof for the peg-out transaction
         BtcTxSPVProof memory pegOutTxSPVProof = createBtcTxSPVProof(pegOutTx);
@@ -380,13 +389,15 @@ contract TestPegManager is Test, HelperContract {
     }
 
     function test_registerPegout_Revert_AlreadyPaid() external {
+        // Arrange
         RegisterPegoutSetup memory setup = setup_registerPegoutScenario();
-
         // Set the slot state to PAID (already processed)
         streamManager.setSlotStateHarness(setup.stream.streamId, setup.packetNumber, setup.slotId, SlotState.PAID);
 
+        // Assert
         vm.expectRevert(abi.encodeWithSelector(IPegManager.InvalidSlotState.selector, SlotState.PAID, SlotState.LOCKED));
 
+        // Act
         pm.registerPegout(setup.pegOutTxSPVProof);
     }
 

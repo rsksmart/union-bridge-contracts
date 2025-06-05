@@ -364,6 +364,10 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         // get the stream data for this pegout
         StreamPosition memory streamInfo = streamPosition[acceptPegInTxHash];
 
+        if (streamInfo.pegStatus == PegStatus.NOT_REGISTERED) {
+            revert UnregisteredPegInRequest(acceptPegInTxHash);
+        }
+
         // Validate that the vout is correct
         if (vout != Constants.VOUT_INDEX_TAPTREE) {
             revert IncorrectVout(vout, Constants.VOUT_INDEX_TAPTREE);

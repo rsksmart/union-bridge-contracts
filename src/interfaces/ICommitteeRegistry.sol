@@ -10,6 +10,13 @@ enum Role {
     Watchtower
 }
 
+enum PendingCommitteeStatus {
+    Success,
+    NotEnoughMembers,
+    NotEnoughOperators,
+    NotEnoughWatchtowers
+}
+
 struct Balance {
     uint256 available;
     uint256[] preStaked;
@@ -76,9 +83,6 @@ interface ICommitteeRegistry {
         view
         returns (CommitteeMember[] memory);
 
-    // FIXME: This function will be removed soon.
-    function registerCommittee(uint256 _committeeId, Committee calldata _committee) external;
-
     function getCommittee(uint256 _committeeId) external view returns (Committee calldata);
 
     function getCommitteeMembers(uint256 _committeeId) external view returns (CommitteeMember[] memory);
@@ -127,6 +131,9 @@ interface ICommitteeRegistry {
     event NewSecurityBondDeposit(
         address indexed sender, StreamDenomination requestedStream, Role requestedRole, uint256 amount
     );
+    event MissingWatchtowers(StreamDenomination denomination, uint256 required, uint256 missing);
+    event MissingOperators(StreamDenomination denomination, uint256 required, uint256 missing);
+    event MissingMembers(StreamDenomination denomination, uint256 required, uint256 missing);
 
     /// ==================== Errors =====================
     error RequestedDifferentStreamsAndRolesLength(uint256 streamsLength, uint256 rolesLength);
@@ -148,9 +155,9 @@ interface ICommitteeRegistry {
     error RequestedNoneRoleForStream(StreamDenomination stream);
     error NonRegisteredMember(address memberAddress);
     error TooManyMembers(uint256 maxMembers);
-    error NotEnoughWatchtowers(uint256 required, uint256 available);
-    error NotEnoughOperators(uint256 required, uint256 available);
-    error NotEnoughMembers(uint256 required, uint256 available);
+    error NotEnoughWatchtowers(uint64 streamId);
+    error NotEnoughOperators(uint64 streamId);
+    error NotEnoughMembers(uint64 streamId);
     error MemberAlreadyRegisteredForStream(
         address memberAddress, StreamDenomination requestedStream, Role requestedRole, Role currentRole
     );
@@ -164,5 +171,6 @@ interface ICommitteeRegistry {
 
     /// ================ Internal Errors =================
     error _MemberIndexOutOfBounds(uint16 memberIndex);
+    error _FailedToCreateCommittee(uint64 streamId, PendingCommitteeStatus status);
     error InvalidZeroTimeout();
 }

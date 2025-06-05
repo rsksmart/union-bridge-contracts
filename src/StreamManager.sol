@@ -5,24 +5,24 @@ import {Stream, Packet, Slot, SlotState, IStreamManager} from "./interfaces/IStr
 import {AccessControl} from "./AccessControl.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
+import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
+import {IPegManager} from "src/interfaces/IPegManager.sol";
 
 /// @title Stream Manager
 /// @notice Manages streams
 contract StreamManager is IStreamManager, AccessControl {
     Stream[] internal streams;
-
-    // StreamId => Packet list
-    mapping(uint64 => Packet[]) public packets;
-    // StreamId => Packet.packetNumber => SlotId
-    mapping(uint64 => mapping(uint64 => Slot[])) internal slots;
-    // TODO check if we can use another key or a hash for the slots and packets as they are not unique through the streams
+    mapping(uint64 streamId => Packet[]) public packets;
+    mapping(uint64 streamId => mapping(uint64 packerNumber => Slot[])) internal slots;
+    ICommitteeRegistry public committeeRegistry;
 
     /// @dev Initializes the streams with their denominations and parameters
-    function initialize(address _initialOwner, address _pegManager, uint64[] memory _denominations)
-        public
-        virtual
-        initializer
-    {
+    function initialize(
+        address _initialOwner,
+        IPegManager _pegManager,
+        ICommitteeRegistry _committeeRegistry,
+        uint64[] memory _denominations
+    ) public virtual initializer {
         uint256 length = _denominations.length;
         if (length > Constants.MAX_DENOMINATIONS_SIZE) {
             revert tooManyDenominations(Constants.MAX_DENOMINATIONS_SIZE);
@@ -42,27 +42,19 @@ contract StreamManager is IStreamManager, AccessControl {
             );
             emit StreamCreated(i, _denominations[i]);
         }
-        __AccessControl_init(_initialOwner, _pegManager);
-    }
+        __AccessControl_init(_initialOwner, address(_pegManager));
 
-    /// @dev Adds one packet per stream
-    // FIXME: This is a temporary function to create initial packets and should be removed soon
-    function createInitialPackets(bytes32 _committeePubKey) external onlyOwner {
-        uint256 length = streams.length;
-        for (uint256 i = 0; i < length; i++) {
-            uint64 streamId = streams[i].streamId;
-            if (packets[streamId].length > 0) {
-                revert StreamAlreadyInitialized(streamId);
-            }
-            // FIXME: Force packets to be assigned to committeeId 1
-            uint256 committeeId = 1;
-            // Add a new packet for each stream
-            _createNewPacket(streamId, committeeId, _committeePubKey);
+        // TODO: Should we move this to a CommitteeRegistryControl?
+        if (address(_committeeRegistry) == address(0)) {
+            revert InvalidZeroAddress();
         }
+        committeeRegistry = _committeeRegistry;
     }
 
-    // FIXME: This should be called just from CommitteeRegistry
-    function createNewPacket(uint64 _streamId, uint256 _committeeId, bytes32 _committeePubKey) external {
+    function createNewPacket(uint64 _streamId, uint256 _committeeId, bytes32 _committeePubKey)
+        external
+        onlyCommitteeRegistry
+    {
         _createNewPacket(_streamId, _committeeId, _committeePubKey);
     }
 
@@ -105,6 +97,14 @@ contract StreamManager is IStreamManager, AccessControl {
             revert PacketOutOfBound(_packetNumber);
         }
         return packets[_streamId][_packetNumber];
+    }
+
+    function getCurrentPacketCommitteeId(uint64 _streamId) external view returns (uint256) {
+        Stream storage stream = streams[_streamId];
+        if (stream.peginPacketPointer >= packets[_streamId].length) {
+            return 0;
+        }
+        return packets[_streamId][stream.peginPacketPointer].committeeId;
     }
 
     function fillSlot(uint64 _streamId, uint64 _packetNumber, Slot memory slot) internal returns (uint64 slotId) {
@@ -278,9 +278,23 @@ contract StreamManager is IStreamManager, AccessControl {
         streams[_streamId].pegOutConfirmations = _confirmations;
     }
 
+    function setCommitteeRegistry(ICommitteeRegistry _committeeRegistry) external onlyOwner {
+        if (address(_committeeRegistry) == address(0)) {
+            revert InvalidZeroAddress();
+        }
+        committeeRegistry = _committeeRegistry;
+    }
+
     modifier streamExists(uint64 _streamId) {
         if (_streamId >= streams.length) {
             revert StreamNotFoundById(_streamId);
+        }
+        _;
+    }
+
+    modifier onlyCommitteeRegistry() {
+        if (address(committeeRegistry) != msg.sender) {
+            revert UnauthorizedAccount(msg.sender);
         }
         _;
     }
