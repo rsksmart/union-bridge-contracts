@@ -49,7 +49,7 @@ struct Stream {
     uint64 pegoutPacketPointer; // Another index for the packets array. It points to the current packet that should have a slot filled for a peg-out request
     uint16 pegoutSlotPointer; // An index for the slots array. It points to the first slot in the pegoutPacketPointer that should be processed when requested (if it's filled)
     uint8 peginConfirmations; // A generic number
-    //uint8 pegOutConfirmations; // Another generic number
+    uint8 pegOutConfirmations; // Another generic number
     uint256 securityBondValue; // The required bond (in wei) that each member of the committee needs to deposit to secure a packet
 }
 
@@ -129,6 +129,20 @@ interface IStreamManager is IAccessControl {
     /// @return bytes32 The committee public key
     function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes32);
 
+    /// @notice Marks a slot as paid, updating its state to PAID
+    /// @param _streamId The index in the array of streams
+    /// @param _packetNumber The index in the array of packets
+    /// @param _slotId The index in the array of slots
+    /// @param _acceptPegInTxHash The expected accept peg-in transaction hash for validation
+    /// @param _take0Tx The transaction id of the peg-out without dispute transaction
+    function paidSlot(
+        uint64 _streamId,
+        uint64 _packetNumber,
+        uint64 _slotId,
+        bytes32 _acceptPegInTxHash,
+        bytes32 _take0Tx
+    ) external;
+
     /// @notice Allows contract owner to set the security bond value for a given stream
     /// @param _streamId The index in the array of streams
     /// @param _securityBondValue The value of the security bond expresed in RBTC in wei
@@ -140,6 +154,12 @@ interface IStreamManager is IAccessControl {
     /// @param _confirmations The number of confirmations required for a peg-in transaction
     /// @dev The peg-in confirmations is the number of confirmations required for a peg-in transaction to be considered valid
     function setPeginConfirmations(uint64 _streamId, uint8 _confirmations) external;
+
+    /// @notice Allows contract owner to set the peg-out confirmations for a given stream
+    /// @param _streamId The index in the array of streams
+    /// @param _confirmations The number of confirmations required for a peg-out transaction
+    /// @dev The peg-out confirmations is the number of confirmations required for a peg-out transaction to be considered valid
+    function setPegoutConfirmations(uint64 _streamId, uint8 _confirmations) external;
 
     event StreamCreated(uint64 streamId, uint64 denomination);
     event PacketCreated(uint64 streamId, uint64 packetNumber);
@@ -158,5 +178,8 @@ interface IStreamManager is IAccessControl {
     error NonExistentSlot(uint256 streamId, uint256 packetNumber, uint256 slotId);
     error StreamAlreadyInitialized(uint256 streamId);
     error InvalidPeginConfirmations(uint8 confirmations);
+    error InvalidPegoutConfirmations(uint8 confirmations);
     error InvalidSecurityBondValue(uint256 securityBond);
+    error InvalidSlotState(SlotState actual, SlotState expected);
+    error InvalidAcceptPegInTxHash(bytes32 expected, bytes32 actual);
 }

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {BtcTransaction} from "./IBitcoinManager.sol";
-import {IStreamManager} from "./IStreamManager.sol";
+import {IStreamManager, SlotState} from "./IStreamManager.sol";
 import {ISignatureManager} from "./ISignatureManager.sol";
 
 struct BtcTxSPVProof {
@@ -19,7 +19,8 @@ struct BtcTxSPVProof {
 enum PegStatus {
     NOT_REGISTERED,
     REGISTERED,
-    ACCEPTED
+    ACCEPTED,
+    PAID
 }
 // USER_TAKEN, // User take: Key spend (everybody signs)
 // TAKE_0, // Undispute advancement of funds
@@ -40,6 +41,10 @@ struct RequestPegInTempInfo {
     bytes32 acceptPeginTxHash;
 }
 
+struct PegOutTempInfo {
+    bytes userPubKey;
+}
+
 interface IPegManager {
     function setStreamManager(IStreamManager _streamManager) external;
     function setSignatureManager(ISignatureManager _signatureManager) external;
@@ -54,7 +59,7 @@ interface IPegManager {
         external
         returns (string memory temporaryPegInAddress);
 
-    function getPegInRequest(bytes32 btcTxHash) external view returns (StreamPosition memory);
+    function getStreamPosition(bytes32 btcTxHash) external view returns (StreamPosition memory);
 
     /// @notice Register a peg-in request transaction from Bitcoin
     /// @param _pegInRequestTxSPVProof The BTC SPV proof of Request the peg-in transaction
@@ -126,6 +131,15 @@ interface IPegManager {
         uint64 slotId
     );
 
+    event PegOutRegistered(
+        bytes32 indexed blockHash,
+        bytes32 indexed txHash,
+        bytes32 indexed acceptPegInTxHash,
+        uint64 streamId,
+        uint64 packetNumber,
+        uint64 slotId
+    );
+
     // ===================== Errors =====================
     error BitcoinManagerAddressZero();
     error CommitteeRegistryAddressZero();
@@ -142,4 +156,7 @@ interface IPegManager {
     error InvalidPubKeyLength(uint256 usrPubKeyLength);
     error InvalidLocktime(uint256 actual, uint256 expected);
     error InvalidBtcTxVersion(uint256 actual, uint256 expected);
+    error InvalidSlotState(SlotState actual, SlotState expected);
+    error IncorrectVout(uint32 actual, uint32 expected);
+    error IncorrectOutputScript(bytes actual, bytes expected);
 }

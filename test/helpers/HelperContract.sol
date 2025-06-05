@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
 import {DeployScript} from "script/deploy/DeployScript.s.sol";
 import {PegManager, BtcTxSPVProof} from "src/PegManager.sol";
+import {PegManagerHarness} from "test/helpers/PegManagerHarness.sol";
 import {StreamManagerHarness} from "test/helpers/StreamManagerHarness.sol";
 import {SignatureManager} from "src/SignatureManager.sol";
 import {Role, Member, CommitteeMember, Committee, CommitteeRegistry} from "src/CommitteeRegistry.sol";
@@ -19,7 +20,7 @@ import {BridgeMock} from "./BridgeMock.sol";
 import {TestUtils} from "./TestUtils.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {OpCodes} from "src/libraries/OpCodes.sol";
-import {Stream} from "src/interfaces/IStreamManager.sol";
+import {Stream, SlotState} from "src/interfaces/IStreamManager.sol";
 import {CommitteeRegistryHarness} from "./CommitteeRegistryHarness.sol";
 
 abstract contract HelperContract is Test, TestUtils {
@@ -48,20 +49,19 @@ abstract contract HelperContract is Test, TestUtils {
     Role internal constant DEFAULT_ROLE = Role.Operator;
 
     BitcoinManager internal bitcoinManager;
+    BridgeMock internal bridgeMock;
     CommitteeRegistryHarness internal registry;
+    PegManagerHarness internal pm;
+    SignatureManager internal signatureManager;
+    StreamManagerHarness internal streamManager;
 
     Committee internal committee1;
     Committee internal committee2;
     Committee internal committee3;
-
     CommitteeMember[] internal committee1Members;
     CommitteeMember[] internal committee2Members;
     CommitteeMember[] internal committee3Members;
 
-    PegManager internal pm;
-    StreamManagerHarness internal streamManager;
-    BridgeMock internal bridgeMock;
-    SignatureManager internal signatureManager;
     address upgradeOwner = vm.addr(777);
     // Arrange
     uint64 internal constant VALUE = 1_000_000; // 0.01 BTC
@@ -116,7 +116,7 @@ abstract contract HelperContract is Test, TestUtils {
         deployScript.run();
         bitcoinManager = deployScript.bitcoinManager();
         registry = CommitteeRegistryHarness(address(deployScript.committeeRegistry()));
-        pm = deployScript.pegManager();
+        pm = PegManagerHarness(address(deployScript.pegManager()));
         streamManager = StreamManagerHarness(address(deployScript.streamManager()));
         // Set up bridge mock at bridge precompiled address
         bridgeMock = BridgeMock(deployScript.bridgeAddress());
@@ -240,6 +240,37 @@ abstract contract HelperContract is Test, TestUtils {
         });
     }
 
+    // ========================== Peg out ==========================
+    function createPegOutTx(bytes32 _acceptPegInTxHash, bytes memory _userPubKey, uint64 _amount)
+        internal
+        pure
+        returns (BtcTransaction memory)
+    {
+        // Input: spend the accept peg-in UTXO
+        BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
+        btcInputs[0] = BtcTxIn({
+            txId: _acceptPegInTxHash,
+            vout: 0, // P2TR output is at index 0
+            sequence: 0xfffffffd,
+            scriptSig: hex""
+        });
+
+        // Outputs
+        BtcTxOut[] memory btcOutputs = new BtcTxOut[](2);
+
+        // user output amount
+        uint64 userAmount = _amount - 1000; // Subtract fee
+        bytes memory userScriptPubKey = BtcScriptParser.getP2WPKHScript(_userPubKey);
+
+        // pay to user's P2WPKH
+        btcOutputs[0] = BtcTxOut({amount: userAmount, scriptPubKey: userScriptPubKey});
+
+        // speedup
+        btcOutputs[1] = BtcTxOut({amount: 300, scriptPubKey: userScriptPubKey});
+
+        return BtcTransaction({version: Constants.BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
+    }
+
     function satoshiToWei(uint256 _amount) internal pure returns (uint256) {
         return _amount * 10 ** 10;
     }
@@ -270,7 +301,7 @@ abstract contract HelperContract is Test, TestUtils {
         }
     }
 
-    function setup_acceptPeginFlow(BtcTransaction memory _tx) public {
+    function setup_acceptPeginFlow(BtcTransaction memory _tx) public returns (BtcTransaction memory) {
         // Arrange
         BtcTransaction memory btcTransaction = getBtcAcceptPegInTx(_tx);
         // Set Mock Bridge state
@@ -280,6 +311,8 @@ abstract contract HelperContract is Test, TestUtils {
 
         // Act
         pm.acceptPegInRequest(pegInAcceptedTxSPVProof);
+
+        return btcTransaction;
     }
 
     function setup_requestPeginFlow() public returns (BtcTransaction memory) {
@@ -295,9 +328,57 @@ abstract contract HelperContract is Test, TestUtils {
         return btcTransaction;
     }
 
-    function setup_requestAndAcceptPeginFlow() public {
+    function setup_requestAndAcceptPeginFlow() public returns (BtcTransaction memory, BtcTransaction memory) {
         BtcTransaction memory peginTx = setup_requestPeginFlow();
-        setup_acceptPeginFlow(peginTx);
+        return (peginTx, setup_acceptPeginFlow(peginTx));
+    }
+
+    // ========================== Register Pegout Setup ==========================
+    struct RegisterPegoutSetup {
+        BtcTransaction pegOutTx;
+        BtcTxSPVProof pegOutTxSPVProof;
+        Stream stream;
+        uint64 packetNumber;
+        uint64 slotId;
+        bytes32 acceptPegInTxHash;
+        bytes userPubKey;
+        bytes32 expectedTxHash;
+    }
+
+    function setup_registerPegoutScenario() public returns (RegisterPegoutSetup memory setup) {
+        uint64 amount = 100_000;
+
+        setup.stream = streamManager.getStream(amount);
+        setup.packetNumber = 0;
+        setup.userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+
+        // peg-in tx hash
+        setup.acceptPegInTxHash = 0x30b6a2cae94d89540a99e0dfa39cf88e6de40dca9142810fdce7a95c00faff47;
+
+        // Create a peg-out transaction that spends the accept peg-in UTXO
+        setup.pegOutTx = createPegOutTx(setup.acceptPegInTxHash, setup.userPubKey, amount);
+
+        setup.slotId = streamManager.setSlotHarness(
+            setup.stream.streamId,
+            setup.packetNumber,
+            hex"00143fd2e14f4b448a071e074e1e1879318447f2a266",
+            setup.acceptPegInTxHash,
+            amount
+        );
+
+        // Set the slot state to LOCKED
+        streamManager.setSlotStateHarness(setup.stream.streamId, setup.packetNumber, setup.slotId, SlotState.LOCKED);
+
+        // Set up the pegOutTxs mapping
+        pm.setPegOutTempInfoHarness(setup.acceptPegInTxHash, setup.userPubKey);
+
+        // Create SPV proof for the peg-out transaction
+        setup.pegOutTxSPVProof = createBtcTxSPVProof(setup.pegOutTx);
+
+        // Calculate the expected transaction hash
+        setup.expectedTxHash = bitcoinManager.getBtcTxHash(setup.pegOutTx);
+
+        return setup;
     }
 
     function setup_depositMemberInfo(uint64 _streamId, address _memberAddress) internal {

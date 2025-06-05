@@ -26,5 +26,6 @@ library Constants {
     uint8 constant SLOT_USAGE_THRESHOLD = 80;
 
     uint8 constant PEGIN_CONFIRMATION_DEFAULT = 10;
+    uint8 constant PEGOUT_CONFIRMATION_DEFAULT = 10;
     uint64 constant MAX_DENOMINATIONS_SIZE = 10;
 }

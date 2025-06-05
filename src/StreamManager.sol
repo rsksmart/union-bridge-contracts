@@ -36,7 +36,8 @@ contract StreamManager is IStreamManager, AccessControl {
                     pegoutPacketPointer: 0,
                     pegoutSlotPointer: 0,
                     securityBondValue: BtcHelper.satoshiToWei(_denominations[i]) / 10,
-                    peginConfirmations: Constants.PEGIN_CONFIRMATION_DEFAULT
+                    peginConfirmations: Constants.PEGIN_CONFIRMATION_DEFAULT,
+                    pegOutConfirmations: Constants.PEGOUT_CONFIRMATION_DEFAULT
                 })
             );
             emit StreamCreated(i, _denominations[i]);
@@ -220,6 +221,35 @@ contract StreamManager is IStreamManager, AccessControl {
         return getPacket(_streamId, _packetNumber).committeePubKey;
     }
 
+    function paidSlot(
+        uint64 _streamId,
+        uint64 _packetNumber,
+        uint64 _slotId,
+        bytes32 _acceptPegInTxHash,
+        bytes32 _take0Tx
+    ) external onlyPegManager {
+        // Validate that the packet exists
+        if (_packetNumber >= packets[_streamId].length) {
+            revert NonExistentSlot(_streamId, _packetNumber, _slotId);
+        }
+
+        // Validate that the slot exists and is in LOCKED state
+        if (slots[_streamId][_packetNumber][_slotId].state != SlotState.LOCKED) {
+            revert InvalidSlotState(slots[_streamId][_packetNumber][_slotId].state, SlotState.LOCKED);
+        }
+
+        Slot storage slot = slots[_streamId][_packetNumber][_slotId];
+
+        // Validate that the first input references the correct accept peg-in transaction
+        if (slot.acceptPegInTx != _acceptPegInTxHash) {
+            revert InvalidAcceptPegInTxHash(slot.acceptPegInTx, _acceptPegInTxHash);
+        }
+
+        // Update the slot state to PAID and store the take0Tx
+        slot.state = SlotState.PAID;
+        slot.take0Tx = _take0Tx;
+    }
+
     function setSecurityBond(uint64 _streamId, uint256 _securityBondValue) external streamExists(_streamId) onlyOwner {
         if (_securityBondValue == 0) {
             revert InvalidSecurityBondValue(_securityBondValue);
@@ -234,6 +264,18 @@ contract StreamManager is IStreamManager, AccessControl {
         }
 
         streams[_streamId].peginConfirmations = _confirmations;
+    }
+
+    function setPegoutConfirmations(uint64 _streamId, uint8 _confirmations)
+        external
+        streamExists(_streamId)
+        onlyOwner
+    {
+        if (_confirmations == 0) {
+            revert InvalidPegoutConfirmations(_confirmations);
+        }
+
+        streams[_streamId].pegOutConfirmations = _confirmations;
     }
 
     modifier streamExists(uint64 _streamId) {
