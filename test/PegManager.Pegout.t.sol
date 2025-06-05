@@ -449,7 +449,7 @@ contract TestPegManager is Test, HelperContract {
         uint64 expectedPacketNumber,
         uint64 expectedSlotId,
         bytes memory userPubKey
-    ) internal {
+    ) internal view {
         // slot should be PAID
         Slot memory finalSlot = streamManager.getSlot(stream.streamId, expectedPacketNumber, expectedSlotId);
         assertEq(

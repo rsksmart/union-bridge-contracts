@@ -158,6 +158,5 @@ interface IPegManager {
     error InvalidBtcTxVersion(uint256 actual, uint256 expected);
     error InvalidSlotState(SlotState actual, SlotState expected);
     error IncorrectVout(uint32 actual, uint32 expected);
-    error SlotNotFound(bytes32 acceptPegInTxHash);
     error IncorrectOutputScript(bytes actual, bytes expected);
 }
