@@ -11,7 +11,8 @@ set -e  # exit on error
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+bash "$SCRIPT_DIR/packet-creation-flow.sh"
 bash "$SCRIPT_DIR/register-pegin-request.sh"
 bash "$SCRIPT_DIR/accept-pegin-request.sh"
 bash "$SCRIPT_DIR/register-pegout-request.sh"
-bash "$SCRIPT_DIR/add-member-signature.sh"
+bash "$SCRIPT_DIR/add-every-member-nonce-and-signature.sh"

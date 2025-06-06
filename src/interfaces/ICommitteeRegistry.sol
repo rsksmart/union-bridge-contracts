@@ -93,6 +93,8 @@ interface ICommitteeRegistry {
 
     function getMinimumDeposit(StreamDenomination _denomination) external view returns (uint256);
 
+    function depositMemberInfoForCommittee(uint64 _streamId, bytes32 _aggregatedKey) external;
+
     /// @notice Create a new committee for a stream
     /// @param _streamId The stream id to create a new committee for
     /// @dev This function is called when the slot usage threshold is reached

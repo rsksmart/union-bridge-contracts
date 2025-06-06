@@ -10,7 +10,7 @@ contract ApplyToStreamScript is ScriptUtils {
     ICommitteeRegistry committeeRegistry;
     uint256 minimumDeposit;
     uint256 mnemonicIndex;
-    uint256 stream;
+    uint256 streamId;
     uint256 role;
     uint256 privKey;
     address user;
@@ -18,14 +18,13 @@ contract ApplyToStreamScript is ScriptUtils {
 
     function setUp(uint16 _mnemonicIndex, uint16 _streamIndex, uint16 _roleIndex) internal {
         committeeRegistry = ICommitteeRegistry(0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0);
-
         // Read args from command line / env
         mnemonicIndex = _mnemonicIndex;
         if (mnemonicIndex > 9) {
             revert("MNEMONIC_INDEX must be between 0 and 9");
         }
-        stream = _streamIndex;
-        if (stream > 4) {
+        streamId = _streamIndex;
+        if (streamId > 4) {
             revert("STREAM_INDEX must be between 0 and 4");
         }
         role = _roleIndex;
@@ -33,7 +32,7 @@ contract ApplyToStreamScript is ScriptUtils {
             revert("ROLE_INDEX must be between 0 and 2");
         }
 
-        minimumDeposit = committeeRegistry.getMinimumDeposit(StreamDenomination(stream));
+        minimumDeposit = committeeRegistry.getMinimumDeposit(StreamDenomination(streamId));
         privKey = getMemberKey(uint32(mnemonicIndex));
         user = vm.addr(privKey);
         pubKey = generatePubKeyKeccak256(privKey);
@@ -47,7 +46,7 @@ contract ApplyToStreamScript is ScriptUtils {
         setUp(_mnemonicIndex, _streamIndex, _roleIndex);
 
         vm.startBroadcast(privKey);
-        committeeRegistry.applyToStream{value: minimumDeposit}(pubKey, StreamDenomination(stream), Role(role));
+        committeeRegistry.applyToStream{value: minimumDeposit}(pubKey, StreamDenomination(streamId), Role(role));
         vm.stopBroadcast();
 
         if (committeeRegistry.getMemberPublicKey(user) != pubKey) {
@@ -57,7 +56,7 @@ contract ApplyToStreamScript is ScriptUtils {
         console.log("=== User applied to stream successfully ===");
         console.log("Mnemonic Index:", mnemonicIndex);
         console.log("User:", user);
-        console.log("Stream:", stream);
+        console.log("Stream:", streamId);
         console.log("Role:", role);
         console.log("Deposit:", minimumDeposit);
     }
