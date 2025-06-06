@@ -357,6 +357,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
             return status;
         }
 
+        shouldCreateCommittee[_streamId] = false;
         pendingCommittees[_streamId].createdAt = block.timestamp;
         pendingCommittees[_streamId].missingData = uint16(committeeMembers.length);
 
