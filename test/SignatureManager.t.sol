@@ -4,7 +4,13 @@ pragma solidity ^0.8.20;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
-import {ICommitteeRegistry, StreamDenomination, Role, CommitteeMember} from "src/interfaces/ICommitteeRegistry.sol";
+import {
+    ICommitteeRegistry,
+    StreamDenomination,
+    Role,
+    CommitteeMember,
+    PublicKeyRegistration
+} from "src/interfaces/ICommitteeRegistry.sol";
 import {IAccessControl} from "src/interfaces/IAccessControl.sol";
 import {Signatures, SignatureData, ISignatureManager} from "src/interfaces/ISignatureManager.sol";
 import {Constants} from "src/libraries/Constants.sol";
@@ -317,8 +323,11 @@ contract TestSignatureManager is Test, HelperContract {
         // Arrange
         bytes32 hashToSign = setup_initSignatures();
         address nonCommitteeMember = vm.addr(registry.MIN_COMMITTEE_MEMBERS() + 1);
-        bytes32 nonCommitteeMemberPubkey = generatePubKey(registry.MIN_COMMITTEE_MEMBERS() + 1);
-        setup_registerMember(nonCommitteeMember, nonCommitteeMemberPubkey, Role.Operator, StreamDenomination._0_01BTC);
+        PublicKeyRegistration[] memory nonCommitteeMemberPubKeysRegistration =
+            generatePublicKeysRegistration(registry.MIN_COMMITTEE_MEMBERS() + 1);
+        setup_registerMember(
+            nonCommitteeMember, Role.Operator, StreamDenomination._0_01BTC, nonCommitteeMemberPubKeysRegistration
+        );
         // The nonce values are dummy values
         bytes memory nonce =
             hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
@@ -327,7 +336,7 @@ contract TestSignatureManager is Test, HelperContract {
         vm.expectRevert(
             abi.encodeWithSelector(
                 ISignatureManager.MemberNotFoundInCommittee.selector,
-                nonCommitteeMemberPubkey,
+                nonCommitteeMemberPubKeysRegistration[0].publicKeyX,
                 nonCommitteeMember,
                 hashToSign
             )
@@ -345,15 +354,18 @@ contract TestSignatureManager is Test, HelperContract {
         setup_addAllNonces(hashToSign);
 
         address nonCommitteeMember = vm.addr(registry.MIN_COMMITTEE_MEMBERS() + 1);
-        bytes32 nonCommitteeMemberPubkey = generatePubKey(registry.MIN_COMMITTEE_MEMBERS() + 1);
-        setup_registerMember(nonCommitteeMember, nonCommitteeMemberPubkey, Role.Operator, StreamDenomination._0_01BTC);
+        PublicKeyRegistration[] memory nonCommitteeMemberPubKeysRegistration =
+            generatePublicKeysRegistration(registry.MIN_COMMITTEE_MEMBERS() + 1);
+        setup_registerMember(
+            nonCommitteeMember, Role.Operator, StreamDenomination._0_01BTC, nonCommitteeMemberPubKeysRegistration
+        );
         bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
 
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(
                 ISignatureManager.MemberNotFoundInCommittee.selector,
-                nonCommitteeMemberPubkey,
+                nonCommitteeMemberPubKeysRegistration[0].publicKeyX,
                 nonCommitteeMember,
                 hashToSign
             )

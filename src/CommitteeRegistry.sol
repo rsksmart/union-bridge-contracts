@@ -19,6 +19,7 @@ import {
     PendingCommitteeStatus,
     PublicKeyIndex,
     PublicKeyRegistration,
+    PUBLIC_KEYS_INDEX_LENGTH,
     ApplicationData
 } from "./interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination, IStreamManager} from "./interfaces/IStreamManager.sol";
@@ -73,6 +74,10 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         }
     }
 
+    function _getMemberTakePubKeyByIndex(uint16 _memberIndex) internal view returns (bytes32) {
+        return members[_memberIndex].publicKeys[uint8(PublicKeyIndex.Take)];
+    }
+
     function _getMemberPubKeyByAddress(address _address) internal view returns (bytes32) {
         uint16 memberIndex = memberIndexByAddress[_address];
         if (memberIndex == 0) {
@@ -82,31 +87,39 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         return members[memberIndex - 1].publicKeys[uint8(PublicKeyIndex.Take)];
     }
 
-    function applyToStream(StreamDenomination _stream, Role _role, PublicKeyRegistration[] calldata _publicKeys)
-        external
-        payable
+    function _getOrRegisterMember(address _address, PublicKeyRegistration[] calldata _publicKeys)
+        internal
+        returns (Member storage)
     {
-        uint256 publicKeysLength = _publicKeys.length;
-        uint8 enumLength = uint8(PublicKeyIndex.Communication) + 1;
-        // If the public keys length is not the same as the enum length revert
-        if (publicKeysLength != enumLength) {
-            revert InvalidPublicKeysLength(publicKeysLength, enumLength);
-        }
-
-        uint16 memberIndex = memberIndexByAddress[msg.sender];
+        uint16 memberIndex = memberIndexByAddress[_address];
         Member storage member;
         // Check if the member is already registered
         if (memberIndex == 0) {
             member = _registerMember(_publicKeys);
         } else {
+            // Already exists, get the member from the members array
             member = members[memberIndex - 1];
             // Check if the public keys are the same as the stored member's public keys
-            for (uint8 i = 0; i < enumLength; i++) {
+            for (uint8 i = 0; i < PUBLIC_KEYS_INDEX_LENGTH; i++) {
                 if (member.publicKeys[i] != _publicKeys[i].publicKeyX) {
                     revert PublicKeyMismatch(i, member.publicKeys[i], _publicKeys[i].publicKeyX);
                 }
             }
         }
+        return member;
+    }
+
+    function applyToStream(StreamDenomination _stream, Role _role, PublicKeyRegistration[] calldata _publicKeys)
+        external
+        payable
+    {
+        uint256 publicKeysLength = _publicKeys.length;
+        // If the public keys length is not the same as the enum length revert
+        if (publicKeysLength != PUBLIC_KEYS_INDEX_LENGTH) {
+            revert InvalidPublicKeysLength(publicKeysLength, PUBLIC_KEYS_INDEX_LENGTH);
+        }
+
+        Member storage member = _getOrRegisterMember(msg.sender, _publicKeys);
 
         if (_role == Role.None) {
             revert RequestedNoneRoleForStream(_stream);
@@ -226,7 +239,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
             }
 
             // Use the uncompressed public key as the message
-            bytes memory uncompressedPublicKey = abi.encodePacked(_publicKeys[i].publicKeyX, _publicKeys[i].publicKeyY);
+            bytes memory uncompressedPublicKey = abi.encode(_publicKeys[i].publicKeyX, _publicKeys[i].publicKeyY);
             bytes32 messageHash = keccak256(uncompressedPublicKey);
 
             // Validate the signature for the message is valid
@@ -290,11 +303,11 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         return getCommittee(_committeeId).memberIndexesAndRoles;
     }
 
-    function getMemberPubKeyByIndex(uint16 _memberIndex) external view returns (bytes32) {
+    function getMemberTakePubKeyByIndex(uint16 _memberIndex) external view returns (bytes32) {
         if (_memberIndex >= members.length) {
             revert MemberIndexNotFound(_memberIndex);
         }
-        return members[_memberIndex].publicKeys[uint8(PublicKeyIndex.Take)];
+        return _getMemberTakePubKeyByIndex(_memberIndex);
     }
 
     function getMemberIndexByAddress(address _address) external view returns (uint16) {
@@ -316,9 +329,13 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         return memberIndex - 1;
     }
 
-    function getMemberPublicKeys(address _address) external view returns (bytes32[3] memory publicKeys) {
+    function getMemberPublicKeys(address _address) external view returns (bytes32[] memory publicKeys) {
         Member storage member = _getMemberByAddress(_address);
-        return member.publicKeys;
+        publicKeys = new bytes32[](PUBLIC_KEYS_INDEX_LENGTH);
+        for (uint8 i = 0; i < PUBLIC_KEYS_INDEX_LENGTH; i++) {
+            publicKeys[i] = member.publicKeys[i];
+        }
+        return publicKeys;
     }
 
     function getMemberRequestedRole(address _address, StreamDenomination _denomination) external view returns (Role) {
@@ -442,7 +459,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
             // Copy committee members from memory to storage
             pendingCommittees[_streamId].committee.memberIndexesAndRoles.push(committeeMembers[i]);
 
-            bytes32 memberPubKey = _getMemberPubKeyByIndex(committeeMembers[i].index);
+            bytes32 memberPubKey = _getMemberTakePubKeyByIndex(committeeMembers[i].index);
             // Initialize committee users pending data
             pendingCommittees[_streamId].data[memberPubKey] =
                 PendingCommitteeData({inCommittee: true, aggregatedKey: bytes32(0)});
@@ -537,7 +554,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     function _deletePendingCommittee(uint64 _streamId) internal {
         CommitteeMember[] storage committeeMembers = pendingCommittees[_streamId].committee.memberIndexesAndRoles;
         for (uint256 i = 0; i < committeeMembers.length; i++) {
-            bytes32 memberPubKey = _getMemberPubKeyByIndex(committeeMembers[i].index);
+            bytes32 memberPubKey = _getMemberTakePubKeyByIndex(committeeMembers[i].index);
             delete pendingCommittees[_streamId].data[memberPubKey];
         }
         //slither-disable-next-line mapping-deletion

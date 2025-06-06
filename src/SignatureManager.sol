@@ -120,7 +120,8 @@ contract SignatureManager is ISignatureManager, AccessControl {
             partialSignaturesData[i] = signatures.partialSignaturesData[members[i].index];
             if (partialSignaturesData[i].memberPublicKey == "") {
                 // slither-disable-next-line calls-inside-a-loop
-                partialSignaturesData[i].memberPublicKey = committeeRegistry.getMemberPubKeyByIndex(members[i].index);
+                partialSignaturesData[i].memberPublicKey =
+                    committeeRegistry.getMemberTakePubKeyByIndex(members[i].index);
             }
         }
         return partialSignaturesData;
@@ -142,7 +143,7 @@ contract SignatureManager is ISignatureManager, AccessControl {
 
     function _getMemberIndex(address _memberAddress) internal view returns (uint16, bytes32) {
         uint16 memberIndex = committeeRegistry.getMemberIndexByAddress(_memberAddress);
-        bytes32 memberPubKey = committeeRegistry.getMemberPubKeyByIndex(memberIndex);
+        bytes32 memberPubKey = committeeRegistry.getMemberTakePubKeyByIndex(memberIndex);
 
         return (memberIndex, memberPubKey);
     }

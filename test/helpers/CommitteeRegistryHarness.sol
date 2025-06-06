@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {CommitteeRegistry, CommitteeMember} from "src/CommitteeRegistry.sol";
+import {CommitteeRegistry, CommitteeMember, PublicKeyRegistration} from "src/CommitteeRegistry.sol";
 import {Role} from "src/interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
 import {PendingCommitteeStatus} from "src/interfaces/ICommitteeRegistry.sol";
@@ -25,8 +25,8 @@ contract CommitteeRegistryHarness is CommitteeRegistry {
         _registerCandidateToStream(_memberAddress, _stream, _role, _amount);
     }
 
-    function registerMemberHarness(bytes32 _publicKey) public {
-        _registerMember(_publicKey);
+    function registerMemberHarness(PublicKeyRegistration[] calldata _publicKeysRegistration) public {
+        _registerMember(_publicKeysRegistration);
     }
 
     function createCommitteeAfterApplyToStreamHarness(StreamDenomination _denomination) public {
