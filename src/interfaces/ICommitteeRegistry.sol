@@ -78,10 +78,10 @@ interface ICommitteeRegistry {
         view
         returns (uint256 amount);
 
-    function getCommitteeCandidates(StreamDenomination _denomination)
+    function getCommitteeCandidates(StreamDenomination _denomination, Role _role)
         external
         view
-        returns (CommitteeMember[] memory);
+        returns (uint16[] memory);
 
     function getCommittee(uint256 _committeeId) external view returns (Committee calldata);
 
@@ -126,7 +126,7 @@ interface ICommitteeRegistry {
     event NewPendingCommittee(uint256 indexed streamId, Committee _committee);
     event NewMember(bytes32 indexed publicKey);
     event MemberUnsubscribedFromStream(address indexed member, StreamDenomination stream);
-    event NewAvailableBalance(address indexed sender, uint256 amount);
+    event NewAvailableBalance(address indexed sender, uint256 balance, uint256 preStakedBalance);
     event AvailableBalanceRetrieved(address indexed sender, uint256 amount);
     event NewSecurityBondDeposit(
         address indexed sender, StreamDenomination requestedStream, Role requestedRole, uint256 amount
