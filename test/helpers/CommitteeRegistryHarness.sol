@@ -36,4 +36,8 @@ contract CommitteeRegistryHarness is CommitteeRegistry {
     function createCommitteeHarness(uint64 _streamId) public {
         _createCommittee(_streamId);
     }
+
+    function shouldCreateCommitteeHarness(uint64 _streamId) public view returns (bool) {
+        return shouldCreateCommittee[_streamId];
+    }
 }

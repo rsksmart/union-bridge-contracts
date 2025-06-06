@@ -19,14 +19,35 @@ contract TestCommitteeRegistry is Test, HelperContract {
         runTestDeployScript();
     }
 
+    function test_shouldCreateCommittee_AfterInit() external {
+        for (uint64 i = 0; i <= uint64(StreamDenomination._10BTC); i++) {
+            assertTrue(
+                registry.shouldCreateCommitteeHarness(i), "shouldCreateCommittee should be true after initialization"
+            );
+        }
+    }
+
     function test_getCommittee_Success() external {
         // Arrange
-        (Committee memory expectedCommittee,) = setup_completeCommittee();
+        (Committee memory expectedCommittee, uint64 streamId) = setup_completeCommittee();
 
         // Act
         Committee memory committee = registry.getCommittee(COMMITTEE_ID_STREAM_1_PACKET_0);
         // Assert
         assertEqCommittee(expectedCommittee, committee, "Committees are not equal");
+        assertFalse(
+            registry.shouldCreateCommitteeHarness(streamId),
+            "shouldCreateCommittee should be false after setup completeCommittee call"
+        );
+
+        for (uint64 i = 0; i <= uint64(StreamDenomination._10BTC); i++) {
+            if (i != streamId) {
+                assertTrue(
+                    registry.shouldCreateCommitteeHarness(i),
+                    "shouldCreateCommittee should be true after initialization"
+                );
+            }
+        }
     }
 
     function test_getCommitteeMembers_Success() external {
@@ -618,6 +639,10 @@ contract TestCommitteeRegistry is Test, HelperContract {
             "Committee selection should fail due to not enough watchtowers"
         );
         assertEq(members.length, 0, "No members should be selected due to not enough members");
+        assertTrue(
+            registry.shouldCreateCommitteeHarness(streamId),
+            "Should be able to create committee after not enough watchtowers"
+        );
     }
 
     function test_selectCommittee_Revert_NotEnoughOperators() external {
@@ -640,6 +665,10 @@ contract TestCommitteeRegistry is Test, HelperContract {
             "Committee selection should fail due to not enough operators"
         );
         assertEq(members.length, 0, "No members should be selected due to not enough members");
+        assertTrue(
+            registry.shouldCreateCommitteeHarness(streamId),
+            "Should be able to create committee after not enough watchtowers"
+        );
     }
 
     function test_selectCommittee_Revert_NotEnoughMembers() external {
@@ -664,6 +693,10 @@ contract TestCommitteeRegistry is Test, HelperContract {
             "Committee selection should fail due to not enough members"
         );
         assertEq(members.length, 0, "No members should be selected due to not enough members");
+        assertTrue(
+            registry.shouldCreateCommitteeHarness(streamId),
+            "Should be able to create committee after not enough watchtowers"
+        );
     }
 
     function test_getMemberPubKeyByIndex_Revert_MemberIndexNotFound() external {
@@ -726,6 +759,10 @@ contract TestCommitteeRegistry is Test, HelperContract {
         expectedCommittee.aggregatedKey = bytes32(0);
 
         // Assert
+        assertFalse(
+            registry.shouldCreateCommitteeHarness(streamId),
+            "Flag should be false before createCommittee call from pegManager"
+        );
         vm.expectEmit(address(registry));
         emit ICommitteeRegistry.NewPendingCommittee(streamId, expectedCommittee);
 
@@ -739,6 +776,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
         assertEqCommittee(expectedCommittee, committee, "Committee should be equeals");
         assertNotEq(createdAt, 0, "Created at should not be 0");
         assertEq(missingData, registry.MIN_COMMITTEE_MEMBERS(), "Missing data should be equal to MIN_COMMITTEE_MEMBERS");
+        assertFalse(
+            registry.shouldCreateCommitteeHarness(streamId), "Should not create committee after committee created"
+        );
     }
 
     function test_createCommittee_Success_AlreadyPendingButNotExpired() external {
@@ -747,6 +787,12 @@ contract TestCommitteeRegistry is Test, HelperContract {
         (Committee memory pendingCommittee, uint256 createdAt, uint256 missingData) =
             registry.getPendingCommittee(streamId);
         vm.recordLogs();
+
+        // Assert
+        assertFalse(
+            registry.shouldCreateCommitteeHarness(streamId),
+            "Flag should be false before createCommittee call from pegManager"
+        );
 
         // createCommittee called by pegManager should do nothing if pending committee is not expired
         // Act
@@ -770,6 +816,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
             pendingCommittee.memberIndexesAndRoles,
             pendingCommitteeAfterCall.memberIndexesAndRoles,
             "Create committee should not change members"
+        );
+        assertFalse(
+            registry.shouldCreateCommitteeHarness(streamId), "Flag should be false after createCommittee call success"
         );
     }
 
@@ -1231,6 +1280,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
         assertEqCommittee(committee, expectedCommittee, "get pending committee after restart");
         assertNotEq(createdAt, 0);
         assertEq(missingData, registry.MIN_COMMITTEE_MEMBERS(), "missing data should be equal to min committee members");
+        assertFalse(
+            registry.shouldCreateCommitteeHarness(streamId), "Should not create committee after committee created"
+        );
     }
 
     function test_setup_pendingCommitteeAndExpire() internal {
@@ -1254,6 +1306,10 @@ contract TestCommitteeRegistry is Test, HelperContract {
                 "Pending committee member should not match"
             );
         }
+        assertFalse(
+            registry.shouldCreateCommitteeHarness(streamId),
+            "Flag shouldCreateCommittee should be false before it's called by PegManager"
+        );
 
         // Act
         vm.prank(address(pm));
@@ -1272,6 +1328,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
             expectedCommittee,
             pendingCommitteeAfterCall,
             "New pending committee should match that one returned by setup_pendingCommitteeAndExpire"
+        );
+        assertFalse(
+            registry.shouldCreateCommitteeHarness(streamId), "Should not create committee after committee created"
         );
     }
 
@@ -1375,6 +1434,10 @@ contract TestCommitteeRegistry is Test, HelperContract {
         vm.deal(userAddress, minimumDeposit);
         Committee memory expectedCommittee = setup_getExpectedCommitteeBeforeExpire();
         vm.warp(BLOCK_TIMESTAMP_FOR_DETERMINISTIC_COMMITTEE);
+        assertTrue(
+            registry.shouldCreateCommitteeHarness(streamId),
+            "Flag should be true because there is no pending committee and need one to new packet"
+        );
         // ===== Arrange end =====
 
         // Assert
@@ -1391,5 +1454,6 @@ contract TestCommitteeRegistry is Test, HelperContract {
         assertEqCommittee(pendingCommittee, expectedCommittee, "get pending committee after apply to stream");
         assertNotEq(createdAt, 0, "Created at should not be 0 after apply to stream");
         assertEq(missingData, registry.MIN_COMMITTEE_MEMBERS(), "Missing data should be equal to min committee members");
+        assertFalse(registry.shouldCreateCommitteeHarness(streamId), "Flag should be false before createCommittee call");
     }
 }
