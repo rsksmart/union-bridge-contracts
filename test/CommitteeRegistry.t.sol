@@ -81,23 +81,28 @@ contract TestCommitteeRegistry is Test, HelperContract {
     }
 
     function test_applyToStream_Success_Operator() external {
-        _applyToStream_Success(Role.Operator, Role.Watchtower);
+        _applyToStream_Success(Role.Operator);
     }
 
     function test_applyToStream_Success_Watchtower() external {
-        _applyToStream_Success(Role.Watchtower, Role.Operator);
+        _applyToStream_Success(Role.Watchtower);
     }
 
-    function _applyToStream_Success(Role _role, Role _oppositeRole) internal {
+    function _applyToStream_Success(Role _role) internal {
         // This function applies to the DEFAULT_STREAM with `_role` and check that `_oppositeRole` candidates does not change.
         // Arrange
+        if (_role == Role.None) {
+            revert("Role cannot be None for unsubscribe test");
+        }
+        Role oppositeRole = _role == Role.Operator ? Role.Watchtower : Role.Operator;
+
         bytes32 pubKey = generatePubKey(1);
         address user = vm.addr(1);
         uint256 minimumDeposit = registry.getMinimumDeposit(DEFAULT_STREAM);
         vm.deal(user, minimumDeposit);
 
         uint16[] memory roleCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, _role);
-        uint16[] memory oppositeRoleCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, _oppositeRole);
+        uint16[] memory oppositeRoleCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, oppositeRole);
         uint256 roleCandidatesAmountBefore = roleCandidates.length;
         uint256 opossiteRoleAmountBefore = oppositeRoleCandidates.length;
 
@@ -131,7 +136,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         );
 
         roleCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, _role);
-        oppositeRoleCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, _oppositeRole);
+        oppositeRoleCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, oppositeRole);
         uint256 roleCandidatesAmountAfter = roleCandidates.length;
         uint256 opossiteRoleAmountAfter = oppositeRoleCandidates.length;
         assertEq(roleCandidatesAmountBefore + 1, roleCandidatesAmountAfter, "candidates amount should increase by 1");
@@ -261,16 +266,21 @@ contract TestCommitteeRegistry is Test, HelperContract {
     }
 
     function test_unsubscribeFromStream_Success_Operator() external {
-        _unsubscribeFromStream_Success(Role.Operator, Role.Watchtower);
+        _unsubscribeFromStream_Success(Role.Operator);
     }
 
     function test_unsubscribeFromStream_Success_Watchtower() external {
-        _unsubscribeFromStream_Success(Role.Watchtower, Role.Operator);
+        _unsubscribeFromStream_Success(Role.Watchtower);
     }
 
-    function _unsubscribeFromStream_Success(Role _role, Role _oppositeRole) internal {
-        // This function unsubscribes a user from DEFAULT_STREAM with `_role` and tests that `_oppositeRole` candidates do not change.
+    function _unsubscribeFromStream_Success(Role _role) internal {
+        // This function unsubscribes a user from DEFAULT_STREAM with `_role` and tests that `oppositeRole` candidates do not change.
         // Arrange
+        if (_role == Role.None) {
+            revert("Role cannot be None for unsubscribe test");
+        }
+        Role oppositeRole = _role == Role.Operator ? Role.Watchtower : Role.Operator;
+
         uint256 privKey = uint256(1);
         bytes32 pubKey = generatePubKey(privKey);
         address user = vm.addr(privKey);
@@ -280,7 +290,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         registry.applyToStream{value: minimumDeposit}(pubKey, DEFAULT_STREAM, _role);
 
         uint16[] memory roleCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, _role);
-        uint16[] memory oppositeRoleCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, _oppositeRole);
+        uint16[] memory oppositeRoleCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, oppositeRole);
         uint256 roleCandidatesAmountBefore = roleCandidates.length;
         uint256 oppositeRoleAmountBefore = oppositeRoleCandidates.length;
 
@@ -310,7 +320,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
             "member requested role should be None after unsuscribe"
         );
         roleCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, _role);
-        oppositeRoleCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, _oppositeRole);
+        oppositeRoleCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, oppositeRole);
         uint256 roleCandidatesAmountAfter = roleCandidates.length;
         uint256 opossiteRoleAmountAfter = oppositeRoleCandidates.length;
         assertEq(roleCandidatesAmountBefore - 1, roleCandidatesAmountAfter, "candidates amount should decrease by 1");
