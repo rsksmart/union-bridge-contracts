@@ -269,7 +269,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
     }
 
     function _unsubscribeFromStream_Success(Role _role, Role _oppositeRole) internal {
-        // This function unsubscribe an user from DEFAULT_STREAM with `_role` and test that `_oppositeRole` candidates does not change.
+        // This function unsubscribes a user from DEFAULT_STREAM with `_role` and tests that `_oppositeRole` candidates do not change.
         // Arrange
         uint256 privKey = uint256(1);
         bytes32 pubKey = generatePubKey(privKey);
