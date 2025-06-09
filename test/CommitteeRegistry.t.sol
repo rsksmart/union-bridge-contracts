@@ -136,15 +136,28 @@ contract TestCommitteeRegistry is Test, HelperContract {
         uint256 opossiteRoleAmountAfter = oppositeRoleCandidates.length;
         assertEq(roleCandidatesAmountBefore + 1, roleCandidatesAmountAfter, "candidates amount should increase by 1");
         assertEq(opossiteRoleAmountBefore, opossiteRoleAmountAfter, "opposite role candidates amount should not change");
+
+        // Look up candidate in candidates array
+        uint256 memberIndex = registry.getMemberIndexByAddress(user);
         assertEq(
-            roleCandidates[roleCandidatesAmountAfter - 1],
-            registry.getMemberIndexByAddress(user),
-            "candidate index should match member index"
+            roleCandidates[roleCandidatesAmountAfter - 1], memberIndex, "last candidate index should match member index"
         );
+
+        for (uint256 i = 0; i < roleCandidatesAmountAfter - 1; i++) {
+            assertNotEq(
+                roleCandidates[i], memberIndex, "candidate index should not match member index until last candidate"
+            );
+        }
+
+        for (uint256 i = 0; i < opossiteRoleAmountAfter; i++) {
+            assertNotEq(
+                oppositeRoleCandidates[i], memberIndex, "opposite role candidate index should not match member index"
+            );
+        }
+
         // Check balances after
         uint256 userBalanceAfter = user.balance;
         uint256 contractBalanceAfter = address(registry).balance;
-
         assertEq(userBalanceBefore - userBalanceAfter, minimumDeposit, "user balance should decrease by deposit");
         assertEq(
             contractBalanceAfter - contractBalanceBefore, minimumDeposit, "contract balance should increase by deposit"
@@ -302,6 +315,10 @@ contract TestCommitteeRegistry is Test, HelperContract {
         uint256 opossiteRoleAmountAfter = oppositeRoleCandidates.length;
         assertEq(roleCandidatesAmountBefore - 1, roleCandidatesAmountAfter, "candidates amount should decrease by 1");
         assertEq(oppositeRoleAmountBefore, opossiteRoleAmountAfter, "opposite role candidates amount should not change");
+        uint256 memberIndex = registry.getMemberIndexByAddress(user);
+        for (uint256 i = 0; i < roleCandidatesAmountAfter; i++) {
+            assertNotEq(roleCandidates[i], memberIndex, "candidate index should not match member index");
+        }
     }
 
     function test_unsubscribeFromStream_Revert_memberIsNotCandidateForStream() external {
