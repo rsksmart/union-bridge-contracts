@@ -81,14 +81,14 @@ contract TestCommitteeRegistry is Test, HelperContract {
     }
 
     function test_applyToStream_Success_Operator() external {
-        _applyToStream_Success(Role.Operator);
+        _test_applyToStream_Success(Role.Operator);
     }
 
     function test_applyToStream_Success_Watchtower() external {
-        _applyToStream_Success(Role.Watchtower);
+        _test_applyToStream_Success(Role.Watchtower);
     }
 
-    function _applyToStream_Success(Role _role) internal {
+    function _test_applyToStream_Success(Role _role) internal {
         // This function applies to the DEFAULT_STREAM with `_role` and check that `_oppositeRole` candidates does not change.
         // Arrange
         if (_role == Role.None) {
@@ -266,14 +266,14 @@ contract TestCommitteeRegistry is Test, HelperContract {
     }
 
     function test_unsubscribeFromStream_Success_Operator() external {
-        _unsubscribeFromStream_Success(Role.Operator);
+        _test_unsubscribeFromStream_Success(Role.Operator);
     }
 
     function test_unsubscribeFromStream_Success_Watchtower() external {
-        _unsubscribeFromStream_Success(Role.Watchtower);
+        _test_unsubscribeFromStream_Success(Role.Watchtower);
     }
 
-    function _unsubscribeFromStream_Success(Role _role) internal {
+    function _test_unsubscribeFromStream_Success(Role _role) internal {
         // This function unsubscribes a user from DEFAULT_STREAM with `_role` and tests that `oppositeRole` candidates do not change.
         // Arrange
         if (_role == Role.None) {
