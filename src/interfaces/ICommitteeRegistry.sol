@@ -130,7 +130,7 @@ interface ICommitteeRegistry {
     event NewPendingCommittee(uint256 indexed streamId, Committee _committee);
     event NewMember(bytes32 indexed publicKey);
     event MemberUnsubscribedFromStream(address indexed member, StreamDenomination stream);
-    event NewAvailableBalance(address indexed sender, uint256 balance, uint256 preStakedBalance);
+    event NewAvailableBalance(address indexed sender, uint256 availableBalance, uint256 preStakedBalance);
     event AvailableBalanceRetrieved(address indexed sender, uint256 amount);
     event NewSecurityBondDeposit(
         address indexed sender, StreamDenomination requestedStream, Role requestedRole, uint256 amount
