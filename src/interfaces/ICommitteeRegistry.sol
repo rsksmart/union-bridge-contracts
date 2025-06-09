@@ -171,7 +171,7 @@ interface ICommitteeRegistry {
     error CommitteeIsNotPending(uint64 streamId);
     error PendingCommitteeNotExpired(uint64 streamId, uint256 createdAt, uint256 expireAt);
     error InvalidAgregatedKey();
-    error RepeatedPublicKeys(bytes32 takePubKey, bytes32 covenantPubKey, bytes32 comPubKey);
+    error RepeatedPublicKeys(uint256 index, bytes32 publicKeyX, uint256 repeatedIndex, bytes32 repeatedPublicKeyX);
     error InvalidZeroPublicKey(uint256 index, bytes32 publicKeyX, bytes32 publicKeyY);
     error InvalidPublicKeysLength(uint256 publicKeysLength, uint256 expectedLength);
     error PublicKeyMismatch(uint256 index, bytes32 currentPubKey, bytes32 newPubKey);
@@ -179,7 +179,6 @@ interface ICommitteeRegistry {
     error InvalidSignature(
         uint256 index, PublicKeyRegistration publicKey, address recoveredSignerAddress, address signerAddress
     );
-    error InvalidOddYPoint(uint256 index, bytes32 publicKeyY);
     error NoCommitteeMembers();
     error MemberNotInCommittee(bytes32);
     error MemberAlreadyUpdated(bytes32);

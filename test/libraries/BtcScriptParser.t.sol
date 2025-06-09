@@ -11,7 +11,7 @@ import {TestUtils} from "test/helpers/TestUtils.sol";
 contract TestBtcScriptParser is Test, TestUtils {
     function setUp() external {}
 
-    function test_getTimelockScript_Success_OP_0() external pure {
+    function test_getTimelockScript_Success_OP_0() external {
         // Arrange 1
         uint32 blocks = 0;
         bytes32 pubKey = generatePubKey(1);
@@ -25,7 +25,7 @@ contract TestBtcScriptParser is Test, TestUtils {
         _checkScriptAfterPushBlock(script, i, pubKey);
     }
 
-    function test_getTimelockScript_Success_OP_PUSHNUM() external pure {
+    function test_getTimelockScript_Success_OP_PUSHNUM() external {
         // Arrange 1
         uint32 blocks = 1;
         bytes32 pubKey = generatePubKey(1);
@@ -49,7 +49,7 @@ contract TestBtcScriptParser is Test, TestUtils {
         _checkScriptAfterPushBlock(script, i, pubKey);
     }
 
-    function test_getTimelockScript_Success_OP_PUSHBYTES1() external pure {
+    function test_getTimelockScript_Success_OP_PUSHBYTES1() external {
         // Arrange 17
         uint32 blocks = 17;
         bytes32 pubKey = generatePubKey(1);
@@ -76,7 +76,7 @@ contract TestBtcScriptParser is Test, TestUtils {
         _checkScriptAfterPushBlock(script, i, pubKey);
     }
 
-    function test_getTimelockScript_Success_OP_PUSHBYTES2() external pure {
+    function test_getTimelockScript_Success_OP_PUSHBYTES2() external {
         // Arrange 128
         uint32 blocks = 128;
         bytes32 pubKey = generatePubKey(1);
@@ -111,7 +111,7 @@ contract TestBtcScriptParser is Test, TestUtils {
         _checkScriptAfterPushBlock(script, i, pubKey);
     }
 
-    function test_getTimelockScript_Success_OP_PUSHBYTES3() external pure {
+    function test_getTimelockScript_Success_OP_PUSHBYTES3() external {
         // Arrange 32768
         uint32 blocks = 32768;
         bytes32 pubKey = generatePubKey(1);
@@ -189,7 +189,7 @@ contract TestBtcScriptParser is Test, TestUtils {
         assertEq(_script[i], OpCodes.OP_CHECKSIG, "Seventh part should be OP_CHECKSIG");
     }
 
-    function test_getP2WPKHScript_Success() external pure {
+    function test_getP2WPKHScript_Success() external {
         // Arrange
         bytes memory pubKey = abi.encodePacked(uint8(0x02), generatePubKey(1));
         // Act

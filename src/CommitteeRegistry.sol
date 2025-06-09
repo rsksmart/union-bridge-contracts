@@ -113,8 +113,11 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         external
         payable
     {
-        uint256 publicKeysLength = _publicKeys.length;
+        if (_role == Role.None) {
+            revert RequestedNoneRoleForStream(_stream);
+        }
         // If the public keys length is not the same as the enum length revert
+        uint256 publicKeysLength = _publicKeys.length;
         if (publicKeysLength != PUBLIC_KEYS_INDEX_LENGTH) {
             revert InvalidPublicKeysLength(publicKeysLength, PUBLIC_KEYS_INDEX_LENGTH);
         }
@@ -214,23 +217,18 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     }
 
     function _validatePublicKeys(PublicKeyRegistration[] calldata _publicKeys) internal pure {
-        // Check if the public keys are nor repeated
-        if (
-            _publicKeys[0].publicKeyX == _publicKeys[1].publicKeyX
-                || _publicKeys[0].publicKeyX == _publicKeys[2].publicKeyX
-                || _publicKeys[1].publicKeyX == _publicKeys[2].publicKeyX
-        ) {
-            revert RepeatedPublicKeys(_publicKeys[0].publicKeyX, _publicKeys[1].publicKeyX, _publicKeys[2].publicKeyX);
-        }
-        uint8 publicKeysLength = uint8(_publicKeys.length);
-        for (uint8 i = 0; i < publicKeysLength; i++) {
-            // Check if the public keys are valid
+        // Iterate over the public keys to check if they are valid
+        for (uint8 i = 0; i < PUBLIC_KEYS_INDEX_LENGTH; i++) {
+            // Check if the public key X is not repeated
+            for (uint8 j = i + 1; j < PUBLIC_KEYS_INDEX_LENGTH; j++) {
+                if (_publicKeys[i].publicKeyX == _publicKeys[j].publicKeyX) {
+                    revert RepeatedPublicKeys(i, _publicKeys[i].publicKeyX, j, _publicKeys[j].publicKeyX);
+                }
+            }
+
+            // Check if the public keys is not 0
             if (_publicKeys[i].publicKeyX == bytes32(0) || _publicKeys[i].publicKeyY == bytes32(0)) {
                 revert InvalidZeroPublicKey(i, _publicKeys[i].publicKeyX, _publicKeys[i].publicKeyY);
-            }
-            // Validate public key Y point is not even
-            if (uint256(_publicKeys[i].publicKeyY) & 1 != 0) {
-                revert InvalidOddYPoint(i, _publicKeys[i].publicKeyY);
             }
 
             // Validate signature is not zero
@@ -269,10 +267,9 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
 
         members.push(); // Expand the array
         Member storage member = members[members.length - 1]; // Get reference
-        // Store the public keys in the member
-        uint8 publicKeysLength = uint8(_publicKeys.length);
-        for (uint8 i = 0; i < publicKeysLength; i++) {
-            member.publicKeys[i] = _publicKeys[i].publicKeyX;
+        // Initialize Member public keys
+        for (uint8 i = 0; i < PUBLIC_KEYS_INDEX_LENGTH; i++) {
+            member.publicKeys.push(_publicKeys[i].publicKeyX);
         }
         _initMemberBalance(member);
         // We save the position in the array + 1, to avoid 0 as a valid index, it is then substracted in getMemberPubKeyByAddress

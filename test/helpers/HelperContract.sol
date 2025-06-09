@@ -60,6 +60,7 @@ abstract contract HelperContract is Test, TestUtils {
     function setup_registerMembers(uint256 numWatchtowers, uint256 numOperators, StreamDenomination denomination)
         internal
     {
+        // Register members with their mock keys. These are Bitcoin x-only public keys.
         uint256 totalMembers = numWatchtowers + numOperators;
 
         for (uint256 memberIndex = 0; memberIndex < totalMembers; memberIndex++) {
@@ -97,7 +98,6 @@ abstract contract HelperContract is Test, TestUtils {
         // Set up bridge mock at bridge precompiled address
         bridgeMock = BridgeMock(deployScript.bridgeAddress());
         signatureManager = SignatureManager(deployScript.signatureManager());
-        // Register committees with their mock keys. These are Bitcoin x-only public keys.
     }
 
     // ========================== Peg In Request ==========================
