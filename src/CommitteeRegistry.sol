@@ -495,7 +495,6 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         StreamDenomination denomination = StreamDenomination(_streamId);
 
         // Get candidates per role.
-        // Once we decide to remove candidates once they are selected this arrays will be `storage` instead of `memory`
         uint16[] memory watchtowers = committeesCandidates[denomination][Role.Watchtower];
         uint16[] memory operators = committeesCandidates[denomination][Role.Operator];
         uint256 watchtowersLength = watchtowers.length;
