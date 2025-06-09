@@ -46,7 +46,6 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
 
     uint256 public pendingCommitteeTimeout;
 
-    // This could be reduced to just an array of member index
     mapping(StreamDenomination denomination => mapping(Role role => uint16[] membersIndex)) internal
         committeesCandidates;
 
