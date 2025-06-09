@@ -4,6 +4,7 @@ bash shell/script/deploy/simulate-deploy.sh
 bash shell/format.sh
 # gas report also runs test
 bash shell/gas-report.sh
-# FIXME: uncomment next line after we add the scripts to register members and create committee
-# bash shell/script/local-peg-full-flow.sh      
+# packet creation flow is running also in the peg flow maybe it's not needed here
+bash shell/script/local-packet-creation-full-flow.sh 
+bash shell/script/local-peg-full-flow.sh
 bash shell/slither.sh
