@@ -15,7 +15,8 @@ import {
     ICommitteeRegistry,
     PendingCommittee,
     PendingCommitteeData,
-    PendingCommitteeStatus
+    PendingCommitteeStatus,
+    ApplicationData
 } from "./interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination, IStreamManager} from "./interfaces/IStreamManager.sol";
 import {IPegManager} from "./interfaces/IPegManager.sol";
@@ -62,14 +63,11 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     }
 
     function _initMemberBalance(Member storage _member) internal {
-        uint64 streams = streamManager.getStreamsLength();
+        uint64 streamsLength = streamManager.getStreamsLength();
         _member.balance.available = 0;
-        _member.balance.preStaked = new uint256[](streams);
-        for (uint64 i = 0; i < streams; i++) {
-            _member.balance.preStaked[i] = 0;
-        }
-        for (uint256 i = 0; i < streams; i++) {
+        for (uint256 i = 0; i < streamsLength; i++) {
             _member.balance.staked.push();
+            _member.balance.applications.push(ApplicationData({requestedRole: Role.None, preStaked: 0}));
         }
     }
 
@@ -96,8 +94,10 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         if (_role == Role.None) {
             revert RequestedNoneRoleForStream(_stream);
         }
-        if (member.requestedRoles[_stream] != Role.None) {
-            revert MemberAlreadyRegisteredForStream(msg.sender, _stream, _role, member.requestedRoles[_stream]);
+        if (member.balance.applications[uint8(_stream)].requestedRole != Role.None) {
+            revert MemberAlreadyRegisteredForStream(
+                msg.sender, _stream, _role, member.balance.applications[uint8(_stream)].requestedRole
+            );
         }
         uint256 minDeposit = getMinimumDeposit(_stream);
         if (msg.value < minDeposit) {
@@ -116,15 +116,15 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     {
         Member storage member = _getMemberByAddress(_memberAddress);
 
-        member.balance.preStaked[uint8(_stream)] = _amount;
-        member.requestedRoles[_stream] = _role;
+        member.balance.applications[uint8(_stream)].preStaked = _amount;
+        member.balance.applications[uint8(_stream)].requestedRole = _role;
 
         committeesCandidates[_stream][_role].push(_getMemberIndexByAddress(msg.sender));
     }
 
     function unsubscribeFromStream(StreamDenomination _stream) external {
         Member storage member = _getMemberByAddress(msg.sender);
-        Role role = member.requestedRoles[_stream];
+        Role role = member.balance.applications[uint8(_stream)].requestedRole;
 
         if (role == Role.None) {
             revert MemberIsNotCandidateForStream(msg.sender, _stream);
@@ -134,29 +134,28 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
 
     // NOTE: This function intends to keep many different structures in sync, be careful when modifying it
     function _removeCandidate(address _memberAddress, StreamDenomination _stream, Role _role) internal {
-        _removeCandidateFromArray(_memberAddress, _stream, _role);
+        _removeCandidateFromArray(_getMemberIndexByAddress(_memberAddress), _stream, _role);
         _removeCandidateUpdateBalance(_memberAddress, _stream);
     }
 
     function _removeCandidateUpdateBalance(address _memberAddress, StreamDenomination _stream) internal {
         Member storage member = _getMemberByAddress(_memberAddress);
 
-        uint256 preStakedAmount = member.balance.preStaked[uint8(_stream)];
+        uint256 preStakedAmount = member.balance.applications[uint8(_stream)].preStaked;
         member.balance.available += preStakedAmount;
-        member.balance.preStaked[uint8(_stream)] = 0;
-        member.requestedRoles[_stream] = Role.None;
+        member.balance.applications[uint8(_stream)].preStaked = 0;
+        member.balance.applications[uint8(_stream)].requestedRole = Role.None;
 
         emit NewAvailableBalance(msg.sender, member.balance.available, preStakedAmount);
     }
 
-    function _removeCandidateFromArray(address _memberAddress, StreamDenomination _stream, Role _role) internal {
-        uint16 memberIndex = _getMemberIndexByAddress(_memberAddress);
+    function _removeCandidateFromArray(uint16 _memberIndex, StreamDenomination _stream, Role _role) internal {
         uint16[] storage candidates = committeesCandidates[_stream][_role];
         uint256 length = candidates.length;
 
         // NOTE: This effectively brings the last candidate forward in the list by replacing the removed member
         for (uint256 i = 0; i < length; i++) {
-            if (candidates[i] == memberIndex) {
+            if (candidates[i] == _memberIndex) {
                 candidates[i] = candidates[length - 1];
                 candidates.pop();
                 emit MemberUnsubscribedFromStream(msg.sender, _stream);
@@ -252,7 +251,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     }
 
     function getMemberRequestedRole(address _address, StreamDenomination _denomination) external view returns (Role) {
-        return _getMemberByAddress(_address).requestedRoles[_denomination];
+        return _getMemberByAddress(_address).balance.applications[uint8(_denomination)].requestedRole;
     }
 
     function getMemberAvailableBalance(address _address) external view returns (uint256) {
@@ -264,7 +263,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         view
         returns (uint256)
     {
-        return _getMemberByAddress(_address).balance.preStaked[uint8(_denomination)];
+        return _getMemberByAddress(_address).balance.applications[uint8(_denomination)].preStaked;
     }
 
     function getMemberStakedBalance(address _address, StreamDenomination _denomination, uint64 _packetNumber)
@@ -420,7 +419,8 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         }
 
         // Create unique committee id associated to the streamId and packetNumber.
-        uint256 committeeId = uint256(keccak256(abi.encode(_streamId, streamManager.getPacketsLength(_streamId))));
+        uint64 packetNumber = streamManager.getPacketsLength(_streamId);
+        uint256 committeeId = uint256(keccak256(abi.encode(_streamId, packetNumber)));
         _registerCommittee(committeeId, pendingCommittee.committee);
         // create new packet
         streamManager.createNewPacket(_streamId, committeeId, pendingCommittee.committee.aggregatedKey);

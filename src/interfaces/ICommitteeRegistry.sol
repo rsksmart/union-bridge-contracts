@@ -19,13 +19,17 @@ enum PendingCommitteeStatus {
 
 struct Balance {
     uint256 available;
-    uint256[] preStaked;
+    ApplicationData[] applications;
     mapping(uint64 packetNumber => uint256 amount)[] staked; // denominationIndex => (packetId => amount)
+}
+
+struct ApplicationData {
+    Role requestedRole;
+    uint256 preStaked;
 }
 
 struct Member {
     bytes32 publicKey;
-    mapping(StreamDenomination => Role) requestedRoles;
     Balance balance;
     mapping(string key => string value) data;
 }
