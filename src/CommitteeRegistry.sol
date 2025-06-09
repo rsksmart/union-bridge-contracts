@@ -133,7 +133,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
 
     // NOTE: This function intends to keep many different structures in sync, be careful when modifying it
     function _removeCandidate(address _memberAddress, StreamDenomination _stream, Role _role) internal {
-        _removeCandidateFromArray(_getMemberIndexByAddress(_memberAddress), _stream, _role);
+        _removeFromCommitteesCandidates(_getMemberIndexByAddress(_memberAddress), _stream, _role);
         _removeCandidateUpdateBalance(_memberAddress, _stream);
     }
 
@@ -148,7 +148,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         emit NewAvailableBalance(msg.sender, member.balance.available, preStakedAmount);
     }
 
-    function _removeCandidateFromArray(uint16 _memberIndex, StreamDenomination _stream, Role _role) internal {
+    function _removeFromCommitteesCandidates(uint16 _memberIndex, StreamDenomination _stream, Role _role) internal {
         uint16[] storage candidates = committeesCandidates[_stream][_role];
         uint256 length = candidates.length;
 
