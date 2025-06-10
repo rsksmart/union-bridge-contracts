@@ -21,7 +21,7 @@ allow_internal_expect_revert = true
 # Ignore gas reports for Test contract
 gas_reports_ignore = ["ERC1967Proxy","DeployScript","BridgeMock", "HelperContract", "ProofValidatorHarness", "TestUtils", "TestPegManager", "TestSignatureManager"]
 
-[profile.ci.fuzz]
-runs = 10_000
+# Verbosity level usefull for debugging same as -vvv
+verbosity = 3
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/crates/config
