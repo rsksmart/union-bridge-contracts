@@ -6,7 +6,7 @@
 kill -9 $(lsof -ti :8545)
 
 set -e  # exit on error
-anvil & # Start anvil in the background
+anvil > /dev/null & # Start anvil in the background send stdout to /dev/null
 
 # Wait for anvil to start
 while ! nc -z localhost 8545; do

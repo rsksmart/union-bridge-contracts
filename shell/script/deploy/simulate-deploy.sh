@@ -2,10 +2,8 @@
 echo "================ SIMULATE DEPLOY ================"
 # we go to the root of the project to avoid relative path issues
 current_path=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
-cd "$current_path"
-cd ..
-cd ..
-cd ..
+cd "$current_path/../../.."
+
 # openzeppelin-foundry-upgrades requires a clean build
 bash shell/clean-build.sh
 # remove dry runs as we have one per simulation

@@ -12,4 +12,3 @@ forge script \
     script/GetTemporaryAddress.s.sol \
     --rpc-url $RPC \
     --legacy \
-    -vvvv \
