@@ -8,7 +8,7 @@ import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {Slot, Stream, Packet, SlotState, IStreamManager} from "src/interfaces/IStreamManager.sol";
 
-contract RegisterPegOutRequestScript is ScriptUtils {
+contract RequestPegoutScript is ScriptUtils {
     PegManager pegManager;
     IStreamManager streamManager;
     uint64 amount;

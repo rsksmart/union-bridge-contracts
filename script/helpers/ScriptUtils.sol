@@ -9,6 +9,10 @@ import {
     PublicKeyIndex,
     PUBLIC_KEYS_INDEX_LENGTH
 } from "src/interfaces/ICommitteeRegistry.sol";
+import {BtcTxSPVProof} from "src/PegManager.sol";
+import {BtcTransaction, BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
+import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
+import {Constants} from "src/libraries/Constants.sol";
 
 abstract contract ScriptUtils is Script {
     function getDeployerKey() public view returns (uint256) {
@@ -55,5 +59,48 @@ abstract contract ScriptUtils is Script {
             publicKeysRegistration[i] = generatePublicKeyRegistration(_privateKey, PublicKeyIndex(i));
         }
         return publicKeysRegistration;
+    }
+
+    // ========================== Peg out ==========================
+    function createPegOutTx(bytes32 _acceptPegInTxHash, bytes memory _userPubKey, uint64 _amount)
+        internal
+        pure
+        returns (BtcTransaction memory)
+    {
+        // Input: spend the accept peg-in UTXO
+        BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
+        btcInputs[0] = BtcTxIn({
+            txId: _acceptPegInTxHash,
+            vout: 0, // P2TR output is at index 0
+            sequence: 0xfffffffd,
+            scriptSig: hex""
+        });
+
+        // Outputs
+        BtcTxOut[] memory btcOutputs = new BtcTxOut[](2);
+
+        // user output amount
+        uint64 userAmount = _amount - 1000; // Subtract fee
+        bytes memory userScriptPubKey = BtcScriptParser.getP2WPKHScript(_userPubKey);
+
+        // pay to user's P2WPKH
+        btcOutputs[0] = BtcTxOut({amount: userAmount, scriptPubKey: userScriptPubKey});
+
+        // speedup
+        btcOutputs[1] = BtcTxOut({amount: 300, scriptPubKey: userScriptPubKey});
+
+        return BtcTransaction({version: Constants.BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
+    }
+
+    function createBtcTxSPVProof(BtcTransaction memory _btcTransaction) internal pure returns (BtcTxSPVProof memory) {
+        BtcTxSPVProof memory btcTxSPVProof = BtcTxSPVProof({
+            blockHash: 0x0000000000000000000282fa21665766e58eb6cb94e458c3ef6d4af1121e38d9,
+            btcTx: _btcTransaction,
+            //values obtained from https://github.com/FairgateLabs/rust-bitvmx-transactions/blob/main/src/bin/bridge-pmt.rs
+            merkleBranchPath: 949,
+            merkleBranchHashes: new bytes32[](1)
+        });
+        btcTxSPVProof.merkleBranchHashes[0] = 0x480fd40f2e47eeea8edeef2f7f3e2c680642f748c989ed2e542fe5d28164da51;
+        return btcTxSPVProof;
     }
 }

@@ -120,6 +120,10 @@ interface IPegManager {
     // /// @param _bitcoinUserAddress The Bitcoin user address
     function requestPegOut(bytes calldata _usrPubKey) external payable;
 
+    /// @notice Register a peg-out transaction from Bitcoin
+    /// @param _pegOutTxSPVProof The BTC SPV proof of the peg-out transaction
+    function registerPegout(BtcTxSPVProof calldata _pegOutTxSPVProof) external;
+
     // address indexed bitcoinUserAddress,
     event PegOutRequested(
         bytes indexed usrPubKey,

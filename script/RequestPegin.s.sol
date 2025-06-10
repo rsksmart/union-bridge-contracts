@@ -9,7 +9,7 @@ import {OpCodes} from "src/libraries/OpCodes.sol";
 import {ChainIds} from "src/libraries/Network.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 
-contract RegisterPegInRequestScript is ScriptUtils {
+contract RequestPeginScript is ScriptUtils {
     PegManager pegManager;
     IStreamManager streamManager;
     IBitcoinManager bitcoinManager;
