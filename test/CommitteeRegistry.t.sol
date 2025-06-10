@@ -1808,7 +1808,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         (,, uint64 streamId) = setup_completeCommitteeAndNewMembers();
         StreamDenomination denomination = StreamDenomination(streamId);
         // Need to use last member in the committee to unsubscribe and subscribe to keep same random committee member order
-        uint256 userIndex = 19;
+        uint256 userIndex = registry.MIN_COMMITTEE_MEMBERS() * 2 - 1;
         Role userRole = Role.Operator;
         address userAddress = vm.addr(userIndex + 1);
         PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(userIndex + 1);
