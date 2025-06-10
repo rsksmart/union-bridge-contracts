@@ -550,6 +550,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         uint256 privKey = uint256(1);
         PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(privKey);
+        bytes32 pubKey = pubKeysRegistration[uint8(PublicKeyIndex.Take)].publicKeyX;
         address user = vm.addr(privKey);
         uint256 minimumDeposit = registry.getMinimumDeposit(DEFAULT_STREAM);
         vm.deal(user, minimumDeposit);

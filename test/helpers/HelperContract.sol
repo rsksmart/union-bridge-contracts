@@ -66,7 +66,8 @@ abstract contract HelperContract is Test, TestUtils {
         uint256 totalMembers = numWatchtowers + numOperators;
 
         for (uint256 memberIndex = 0; memberIndex < totalMembers; memberIndex++) {
-            PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(registeredMembersCounter + memberIndex + 1);
+            PublicKeyRegistration[] memory pubKeysRegistration =
+                generatePublicKeysRegistration(registeredMembersCounter + memberIndex + 1);
             address user = vm.addr(registeredMembersCounter + memberIndex + 1); // Use a different address for each member
             // First numWatchtowers members are watchtowers, the rest are operators
             Role role = memberIndex < numWatchtowers ? Role.Watchtower : Role.Operator;
@@ -87,9 +88,12 @@ abstract contract HelperContract is Test, TestUtils {
         setup_applyToStream(_denomination, _address, _publicKeysRegistration, _role);
     }
 
-    function setup_applyToStream(StreamDenomination _denomination, address _address, PublicKeyRegistration[] memory _publicKeysRegistration, Role _role)
-        internal
-    {
+    function setup_applyToStream(
+        StreamDenomination _denomination,
+        address _address,
+        PublicKeyRegistration[] memory _publicKeysRegistration,
+        Role _role
+    ) internal {
         uint256 minimumDeposit = registry.getMinimumDeposit(_denomination);
         vm.deal(_address, minimumDeposit);
 
@@ -109,10 +113,9 @@ abstract contract HelperContract is Test, TestUtils {
 
         for (uint256 i = 0; i < totalMembers; i++) {
             Role role = i < _numWatchtowers ? Role.Watchtower : Role.Operator;
-            PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(_memberIndexInit + i + 1);
-            setup_applyToStream(
-                _denomination, vm.addr(_memberIndexInit + i + 1), pubKeysRegistration, role
-            );
+            PublicKeyRegistration[] memory pubKeysRegistration =
+                generatePublicKeysRegistration(_memberIndexInit + i + 1);
+            setup_applyToStream(_denomination, vm.addr(_memberIndexInit + i + 1), pubKeysRegistration, role);
         }
     }
 
