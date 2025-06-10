@@ -7,9 +7,9 @@ cd "$current_path/../.."
 # set up environment variables
 source .env
 RPC=$LOCAL_RPC
-echo "================ REGISTER PEGIN REQUEST TO $RPC ================"
+echo "================ REGISTER PEGOUT $RPC ================"
 forge script \
-    script/RegisterPegOutRequest.s.sol \
+    script/RequestPegout.s.sol \
     --rpc-url $RPC \
     --legacy \
     --broadcast \

@@ -10,7 +10,7 @@ import {ChainIds} from "src/libraries/Network.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 
-contract AcceptPegInRequestScript is ScriptUtils {
+contract AcceptPeginRequestScript is ScriptUtils {
     PegManager pegManager;
     IStreamManager streamManager;
     IBitcoinManager bitcoinManager;

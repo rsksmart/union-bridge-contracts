@@ -24,6 +24,7 @@ bash "$SCRIPT_DIR/deploy/deploy-local.sh"
 # 3. Accepting the pegin request
 # 4. Registering a pegout request
 # 5. Adding every member signature
+# 6. Registering the pegout
 
 bash "$SCRIPT_DIR/peg-flow.sh"
 
