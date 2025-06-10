@@ -15,7 +15,8 @@ import {
     ICommitteeRegistry,
     PendingCommittee,
     PendingCommitteeData,
-    PendingCommitteeStatus
+    PendingCommitteeStatus,
+    ApplicationData
 } from "./interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination, IStreamManager} from "./interfaces/IStreamManager.sol";
 import {IPegManager} from "./interfaces/IPegManager.sol";
@@ -45,7 +46,8 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
 
     uint256 public pendingCommitteeTimeout;
 
-    mapping(StreamDenomination denomination => CommitteeMember[]) internal committeesCandidates;
+    mapping(StreamDenomination denomination => mapping(Role role => uint16[] membersIndex)) internal
+        committeesCandidates;
 
     function initialize(address _initialOwner) public virtual initializer {
         __BaseProxy_init(_initialOwner);
@@ -60,14 +62,11 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     }
 
     function _initMemberBalance(Member storage _member) internal {
-        uint64 streams = streamManager.getStreamsLength();
+        uint64 streamsLength = streamManager.getStreamsLength();
         _member.balance.available = 0;
-        _member.balance.preStaked = new uint256[](streams);
-        for (uint64 i = 0; i < streams; i++) {
-            _member.balance.preStaked[i] = 0;
-        }
-        for (uint256 i = 0; i < streams; i++) {
+        for (uint256 i = 0; i < streamsLength; i++) {
             _member.balance.staked.push();
+            _member.balance.applications.push(ApplicationData({requestedRole: Role.None, preStaked: 0}));
         }
     }
 
@@ -94,8 +93,10 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         if (_role == Role.None) {
             revert RequestedNoneRoleForStream(_stream);
         }
-        if (member.requestedRoles[_stream] != Role.None) {
-            revert MemberAlreadyRegisteredForStream(msg.sender, _stream, _role, member.requestedRoles[_stream]);
+        if (member.balance.applications[uint8(_stream)].requestedRole != Role.None) {
+            revert MemberAlreadyRegisteredForStream(
+                msg.sender, _stream, _role, member.balance.applications[uint8(_stream)].requestedRole
+            );
         }
         uint256 minDeposit = getMinimumDeposit(_stream);
         if (msg.value < minDeposit) {
@@ -114,47 +115,49 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     {
         Member storage member = _getMemberByAddress(_memberAddress);
 
-        member.balance.preStaked[uint8(_stream)] = _amount;
-        member.requestedRoles[_stream] = _role;
+        member.balance.applications[uint8(_stream)].preStaked = _amount;
+        member.balance.applications[uint8(_stream)].requestedRole = _role;
 
-        committeesCandidates[_stream].push(CommitteeMember({index: _getMemberIndexByAddress(msg.sender), role: _role}));
+        committeesCandidates[_stream][_role].push(_getMemberIndexByAddress(msg.sender));
     }
 
     function unsubscribeFromStream(StreamDenomination _stream) external {
         Member storage member = _getMemberByAddress(msg.sender);
+        Role role = member.balance.applications[uint8(_stream)].requestedRole;
 
-        if (member.requestedRoles[_stream] == Role.None) {
+        if (role == Role.None) {
             revert MemberIsNotCandidateForStream(msg.sender, _stream);
         }
-
-        uint256 available = _removeStreamCandidate(msg.sender, _stream);
-        emit MemberUnsubscribedFromStream(msg.sender, _stream);
-        emit NewAvailableBalance(msg.sender, available);
+        _removeCandidate(msg.sender, _stream, role);
     }
 
     // NOTE: This function intends to keep many different structures in sync, be careful when modifying it
-    function _removeStreamCandidate(address _memberAddress, StreamDenomination _stream)
-        internal
-        returns (uint256 preStakedAmount)
-    {
+    function _removeCandidate(address _memberAddress, StreamDenomination _stream, Role _role) internal {
+        _removeFromCommitteesCandidates(_getMemberIndexByAddress(_memberAddress), _stream, _role);
+        _removeCandidateUpdateBalance(_memberAddress, _stream);
+    }
+
+    function _removeCandidateUpdateBalance(address _memberAddress, StreamDenomination _stream) internal {
         Member storage member = _getMemberByAddress(_memberAddress);
 
-        preStakedAmount = member.balance.preStaked[uint8(_stream)];
-
+        uint256 preStakedAmount = member.balance.applications[uint8(_stream)].preStaked;
         member.balance.available += preStakedAmount;
-        member.balance.preStaked[uint8(_stream)] = 0;
-        member.requestedRoles[_stream] = Role.None;
+        member.balance.applications[uint8(_stream)].preStaked = 0;
+        member.balance.applications[uint8(_stream)].requestedRole = Role.None;
 
-        // Remove from candidates
-        CommitteeMember[] storage candidates = committeesCandidates[_stream];
-        uint16 memberIndex = _getMemberIndexByAddress(_memberAddress);
+        emit NewAvailableBalance(msg.sender, member.balance.available, preStakedAmount);
+    }
+
+    function _removeFromCommitteesCandidates(uint16 _memberIndex, StreamDenomination _stream, Role _role) internal {
+        uint16[] storage candidates = committeesCandidates[_stream][_role];
         uint256 length = candidates.length;
 
         // NOTE: This effectively brings the last candidate forward in the list by replacing the removed member
         for (uint256 i = 0; i < length; i++) {
-            if (candidates[i].index == memberIndex) {
+            if (candidates[i] == _memberIndex) {
                 candidates[i] = candidates[length - 1];
                 candidates.pop();
+                emit MemberUnsubscribedFromStream(msg.sender, _stream);
                 break;
             }
         }
@@ -247,7 +250,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     }
 
     function getMemberRequestedRole(address _address, StreamDenomination _denomination) external view returns (Role) {
-        return _getMemberByAddress(_address).requestedRoles[_denomination];
+        return _getMemberByAddress(_address).balance.applications[uint8(_denomination)].requestedRole;
     }
 
     function getMemberAvailableBalance(address _address) external view returns (uint256) {
@@ -259,7 +262,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         view
         returns (uint256)
     {
-        return _getMemberByAddress(_address).balance.preStaked[uint8(_denomination)];
+        return _getMemberByAddress(_address).balance.applications[uint8(_denomination)].preStaked;
     }
 
     function getMemberStakedBalance(address _address, StreamDenomination _denomination, uint64 _packetNumber)
@@ -415,7 +418,8 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         }
 
         // Create unique committee id associated to the streamId and packetNumber.
-        uint256 committeeId = uint256(keccak256(abi.encode(_streamId, streamManager.getPacketsLength(_streamId))));
+        uint64 packetNumber = streamManager.getPacketsLength(_streamId);
+        uint256 committeeId = uint256(keccak256(abi.encode(_streamId, packetNumber)));
         _registerCommittee(committeeId, pendingCommittee.committee);
         // create new packet
         streamManager.createNewPacket(_streamId, committeeId, pendingCommittee.committee.aggregatedKey);
@@ -468,12 +472,12 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         delete pendingCommittees[_streamId];
     }
 
-    function getCommitteeCandidates(StreamDenomination _denomination)
+    function getCommitteeCandidates(StreamDenomination _denomination, Role _role)
         external
         view
-        returns (CommitteeMember[] memory)
+        returns (uint16[] memory)
     {
-        return committeesCandidates[_denomination];
+        return committeesCandidates[_denomination][_role];
     }
 
     /**
@@ -490,39 +494,25 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         // Get the stream denomination for the streamId
         StreamDenomination denomination = StreamDenomination(_streamId);
 
-        // Get all candidates for this denomination
-        CommitteeMember[] memory candidates = committeesCandidates[denomination];
-        uint256 candidatesLength = candidates.length;
-
-        // Separate watchtowers and operators
-        uint256[] memory watchtowerIndices = new uint256[](candidatesLength);
-        uint256[] memory operatorIndices = new uint256[](candidatesLength);
-        uint256 watchtowerCount = 0;
-        uint256 operatorCount = 0;
-
-        for (uint256 i = 0; i < candidatesLength; i++) {
-            if (candidates[i].role == Role.Watchtower) {
-                watchtowerIndices[watchtowerCount] = i;
-                watchtowerCount++;
-            } else if (candidates[i].role == Role.Operator) {
-                operatorIndices[operatorCount] = i;
-                operatorCount++;
-            }
-        }
+        // Get candidates per role.
+        uint16[] memory watchtowers = committeesCandidates[denomination][Role.Watchtower];
+        uint16[] memory operators = committeesCandidates[denomination][Role.Operator];
+        uint256 watchtowersLength = watchtowers.length;
+        uint256 operatorsLength = operators.length;
 
         // Ensure we have enough candidates
-        if (watchtowerCount < MIN_WATCHTOWERS) {
-            emit MissingWatchtowers(denomination, MIN_WATCHTOWERS, MIN_WATCHTOWERS - watchtowerCount);
+        if (watchtowersLength < MIN_WATCHTOWERS) {
+            emit MissingWatchtowers(denomination, MIN_WATCHTOWERS, MIN_WATCHTOWERS - watchtowersLength);
             return (new CommitteeMember[](0), PendingCommitteeStatus.NotEnoughWatchtowers);
         }
 
-        if (operatorCount < MIN_OPERATORS) {
-            emit MissingOperators(denomination, MIN_OPERATORS, MIN_OPERATORS - operatorCount);
+        if (operatorsLength < MIN_OPERATORS) {
+            emit MissingOperators(denomination, MIN_OPERATORS, MIN_OPERATORS - operatorsLength);
             return (new CommitteeMember[](0), PendingCommitteeStatus.NotEnoughOperators);
         }
 
         // Check if we have enough total members for the committee
-        uint256 totalAvailableMembers = watchtowerCount + operatorCount;
+        uint256 totalAvailableMembers = operatorsLength + watchtowersLength;
         if (totalAvailableMembers < MIN_COMMITTEE_MEMBERS) {
             emit MissingMembers(denomination, MIN_COMMITTEE_MEMBERS, MIN_COMMITTEE_MEMBERS - totalAvailableMembers);
             return (new CommitteeMember[](0), PendingCommitteeStatus.NotEnoughMembers);
@@ -530,8 +520,8 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
 
         // Amount of each members per role in the committee
         // NOTE: Here assumme that MIN_COMMITTEE_MEMBERS > MIN_WATCHTOWERS + MIN_OPERATORS
-        uint256 operatorsCommitteeAmount = (MIN_COMMITTEE_MEMBERS - MIN_WATCHTOWERS > operatorCount)
-            ? operatorCount
+        uint256 operatorsCommitteeAmount = (MIN_COMMITTEE_MEMBERS - MIN_WATCHTOWERS > operatorsLength)
+            ? operatorsLength
             : MIN_COMMITTEE_MEMBERS - MIN_WATCHTOWERS;
         uint256 watchtowerCommitteeAmount = MIN_COMMITTEE_MEMBERS - operatorsCommitteeAmount;
         uint256 committeeMembersCounter = 0;
@@ -545,27 +535,29 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         // This way we avoid index collisions and infinite loops.
 
         // Select random operators
-        for (uint256 length = operatorCount; length > operatorCount - operatorsCommitteeAmount; length--) {
+        for (uint256 length = operatorsLength; length > operatorsLength - operatorsCommitteeAmount; length--) {
             // slither-disable-next-line weak-prng
             uint256 randomPos = uint256(keccak256(abi.encode(block.timestamp, length))) % length;
 
             // This indexing will be simplified when `candidates` array is split in `watchtowers` and `operators` arrays
-            selectedMembers[committeeMembersCounter++] = candidates[operatorIndices[randomPos]];
+            selectedMembers[committeeMembersCounter++] =
+                CommitteeMember({index: operators[randomPos], role: Role.Operator});
 
             // Just move last position to replace random position. There is no need to swap values now.
-            operatorIndices[randomPos] = operatorIndices[length - 1];
+            operators[randomPos] = operators[length - 1];
         }
 
         // Select random watchtowers
-        for (uint256 length = watchtowerCount; length > watchtowerCount - watchtowerCommitteeAmount; length--) {
+        for (uint256 length = watchtowersLength; length > watchtowersLength - watchtowerCommitteeAmount; length--) {
             // slither-disable-next-line weak-prng
             uint256 randomPos = uint256(keccak256(abi.encode(block.timestamp, length))) % length;
 
             // This indexing will be simplified when `candidates` array is split in `watchtowers` and `operators` arrays
-            selectedMembers[committeeMembersCounter++] = candidates[watchtowerIndices[randomPos]];
+            selectedMembers[committeeMembersCounter++] =
+                CommitteeMember({index: watchtowers[randomPos], role: Role.Watchtower});
 
             // Just move last position to replace random position. There is no need to swap values now.
-            watchtowerIndices[randomPos] = watchtowerIndices[length - 1];
+            watchtowers[randomPos] = watchtowers[length - 1];
         }
 
         return (selectedMembers, PendingCommitteeStatus.Success);

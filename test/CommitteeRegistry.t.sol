@@ -19,7 +19,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         runTestDeployScript();
     }
 
-    function test_shouldCreateCommittee_AfterInit() external {
+    function test_shouldCreateCommittee_AfterInit() external view {
         for (uint64 i = 0; i <= uint64(StreamDenomination._10BTC); i++) {
             assertTrue(
                 registry.shouldCreateCommitteeHarness(i), "shouldCreateCommittee should be true after initialization"
@@ -80,16 +80,31 @@ contract TestCommitteeRegistry is Test, HelperContract {
         registry.applyToStream{value: minimumDeposit}(generatePubKey(MAX_MEMBERS_SIZE), DEFAULT_STREAM, DEFAULT_ROLE);
     }
 
-    function test_applyToStream_Success() external {
+    function test_applyToStream_Success_Operator() external {
+        _test_applyToStream_Success(Role.Operator);
+    }
+
+    function test_applyToStream_Success_Watchtower() external {
+        _test_applyToStream_Success(Role.Watchtower);
+    }
+
+    function _test_applyToStream_Success(Role _role) internal {
+        // This function applies to the DEFAULT_STREAM with `_role` and check that `_oppositeRole` candidates does not change.
         // Arrange
-        uint256 privKey = uint256(1);
-        bytes32 pubKey = generatePubKey(privKey);
-        address user = vm.addr(privKey);
+        if (_role == Role.None) {
+            revert("Role cannot be None for unsubscribe test");
+        }
+        Role oppositeRole = _role == Role.Operator ? Role.Watchtower : Role.Operator;
+
+        bytes32 pubKey = generatePubKey(1);
+        address user = vm.addr(1);
         uint256 minimumDeposit = registry.getMinimumDeposit(DEFAULT_STREAM);
         vm.deal(user, minimumDeposit);
 
-        CommitteeMember[] memory committeesCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM);
-        uint256 candidatesAmountBefore = committeesCandidates.length;
+        uint16[] memory roleCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, _role);
+        uint16[] memory oppositeRoleCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, oppositeRole);
+        uint256 roleCandidatesAmountBefore = roleCandidates.length;
+        uint256 opossiteRoleAmountBefore = oppositeRoleCandidates.length;
 
         // Check balances before
         uint256 userBalanceBefore = user.balance;
@@ -101,16 +116,16 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Assert assert deposited bond
         vm.expectEmit(address(registry));
-        emit ICommitteeRegistry.NewSecurityBondDeposit(user, DEFAULT_STREAM, DEFAULT_ROLE, minimumDeposit);
+        emit ICommitteeRegistry.NewSecurityBondDeposit(user, DEFAULT_STREAM, _role, minimumDeposit);
 
         // Act
         vm.prank(user);
-        registry.applyToStream{value: minimumDeposit}(pubKey, DEFAULT_STREAM, DEFAULT_ROLE);
+        registry.applyToStream{value: minimumDeposit}(pubKey, DEFAULT_STREAM, _role);
 
         // Assert
         assertEq(registry.getMemberPublicKey(user), pubKey, "member public key should match the deposited key");
         assertTrue(
-            registry.getMemberRequestedRole(user, DEFAULT_STREAM) == DEFAULT_ROLE,
+            registry.getMemberRequestedRole(user, DEFAULT_STREAM) == _role,
             "member requested role should match the requested role"
         );
         assertEq(registry.getMemberAvailableBalance(user), 0, "member available balance should be 0");
@@ -120,22 +135,34 @@ contract TestCommitteeRegistry is Test, HelperContract {
             "member pre-staked should match the minimum deposit"
         );
 
-        committeesCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM);
-        uint256 candidatesAmountAfter = committeesCandidates.length;
-        assertEq(candidatesAmountBefore + 1, candidatesAmountAfter, "candidates amount should increase by 1");
-        assertTrue(
-            (committeesCandidates[candidatesAmountAfter - 1].role == DEFAULT_ROLE),
-            "candidate role should match requested role"
-        );
+        roleCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, _role);
+        oppositeRoleCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, oppositeRole);
+        uint256 roleCandidatesAmountAfter = roleCandidates.length;
+        uint256 opossiteRoleAmountAfter = oppositeRoleCandidates.length;
+        assertEq(roleCandidatesAmountBefore + 1, roleCandidatesAmountAfter, "candidates amount should increase by 1");
+        assertEq(opossiteRoleAmountBefore, opossiteRoleAmountAfter, "opposite role candidates amount should not change");
+
+        // Look up candidate in candidates array
+        uint256 memberIndex = registry.getMemberIndexByAddress(user);
         assertEq(
-            committeesCandidates[candidatesAmountAfter - 1].index,
-            registry.getMemberIndexByAddress(user),
-            "candidate index should match member index"
+            roleCandidates[roleCandidatesAmountAfter - 1], memberIndex, "last candidate index should match member index"
         );
+
+        for (uint256 i = 0; i < roleCandidatesAmountAfter - 1; i++) {
+            assertNotEq(
+                roleCandidates[i], memberIndex, "candidate index should not match member index until last candidate"
+            );
+        }
+
+        for (uint256 i = 0; i < opossiteRoleAmountAfter; i++) {
+            assertNotEq(
+                oppositeRoleCandidates[i], memberIndex, "opposite role candidate index should not match member index"
+            );
+        }
+
         // Check balances after
         uint256 userBalanceAfter = user.balance;
         uint256 contractBalanceAfter = address(registry).balance;
-
         assertEq(userBalanceBefore - userBalanceAfter, minimumDeposit, "user balance should decrease by deposit");
         assertEq(
             contractBalanceAfter - contractBalanceBefore, minimumDeposit, "contract balance should increase by deposit"
@@ -238,23 +265,40 @@ contract TestCommitteeRegistry is Test, HelperContract {
         registry.applyToStream{value: minimumDeposit - 1}(pubKey, DEFAULT_STREAM, DEFAULT_ROLE);
     }
 
-    function test_unsubscribeFromStream_Success() external {
+    function test_unsubscribeFromStream_Success_Operator() external {
+        _test_unsubscribeFromStream_Success(Role.Operator);
+    }
+
+    function test_unsubscribeFromStream_Success_Watchtower() external {
+        _test_unsubscribeFromStream_Success(Role.Watchtower);
+    }
+
+    function _test_unsubscribeFromStream_Success(Role _role) internal {
+        // This function unsubscribes a user from DEFAULT_STREAM with `_role` and tests that `oppositeRole` candidates do not change.
         // Arrange
+        if (_role == Role.None) {
+            revert("Role cannot be None for unsubscribe test");
+        }
+        Role oppositeRole = _role == Role.Operator ? Role.Watchtower : Role.Operator;
+
         uint256 privKey = uint256(1);
         bytes32 pubKey = generatePubKey(privKey);
         address user = vm.addr(privKey);
         uint256 minimumDeposit = registry.getMinimumDeposit(DEFAULT_STREAM);
         vm.deal(user, minimumDeposit);
         vm.prank(user);
-        registry.applyToStream{value: minimumDeposit}(pubKey, DEFAULT_STREAM, Role.Operator);
-        CommitteeMember[] memory committeesCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM);
-        uint256 candidatesAmountBefore = committeesCandidates.length;
+        registry.applyToStream{value: minimumDeposit}(pubKey, DEFAULT_STREAM, _role);
+
+        uint16[] memory roleCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, _role);
+        uint16[] memory oppositeRoleCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, oppositeRole);
+        uint256 roleCandidatesAmountBefore = roleCandidates.length;
+        uint256 oppositeRoleAmountBefore = oppositeRoleCandidates.length;
 
         // Assert
         vm.expectEmit(address(registry));
         emit ICommitteeRegistry.MemberUnsubscribedFromStream(user, DEFAULT_STREAM);
         vm.expectEmit(address(registry));
-        emit ICommitteeRegistry.NewAvailableBalance(user, minimumDeposit);
+        emit ICommitteeRegistry.NewAvailableBalance(user, minimumDeposit, minimumDeposit);
 
         // Act
         vm.prank(user);
@@ -275,9 +319,16 @@ contract TestCommitteeRegistry is Test, HelperContract {
             registry.getMemberRequestedRole(user, DEFAULT_STREAM) == Role.None,
             "member requested role should be None after unsuscribe"
         );
-        committeesCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM);
-        uint256 candidatesAmountAfter = committeesCandidates.length;
-        assertEq(candidatesAmountBefore - 1, candidatesAmountAfter, "candidates amount should decrease by 1");
+        roleCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, _role);
+        oppositeRoleCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, oppositeRole);
+        uint256 roleCandidatesAmountAfter = roleCandidates.length;
+        uint256 opossiteRoleAmountAfter = oppositeRoleCandidates.length;
+        assertEq(roleCandidatesAmountBefore - 1, roleCandidatesAmountAfter, "candidates amount should decrease by 1");
+        assertEq(oppositeRoleAmountBefore, opossiteRoleAmountAfter, "opposite role candidates amount should not change");
+        uint256 memberIndex = registry.getMemberIndexByAddress(user);
+        for (uint256 i = 0; i < roleCandidatesAmountAfter; i++) {
+            assertNotEq(roleCandidates[i], memberIndex, "candidate index should not match member index");
+        }
     }
 
     function test_unsubscribeFromStream_Revert_memberIsNotCandidateForStream() external {
@@ -382,7 +433,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         returns (uint256)
     {
         // Arrange
-        CommitteeMember[] memory committeesCandidates = registry.getCommitteeCandidates(stream);
+        uint16[] memory committeesCandidates = registry.getCommitteeCandidates(stream, requestedRole);
         uint256 candidatesAmountBeforeDeposit = committeesCandidates.length;
 
         // Determine the minimum bond required (getMinimumDeposit(stream))
@@ -409,14 +460,14 @@ contract TestCommitteeRegistry is Test, HelperContract {
             registry.getMemberAvailableBalance(user), 0, "member available balance should be 0 after deposit for stream"
         );
         // Assert that the member is listed in committeesCandidates[stream]
-        committeesCandidates = registry.getCommitteeCandidates(stream);
+        committeesCandidates = registry.getCommitteeCandidates(stream, requestedRole);
         assertEq(
             candidatesAmountBeforeDeposit + 1,
             committeesCandidates.length,
             "candidates amount should increase by 1 after deposit for stream"
         );
         assertEq(
-            committeesCandidates[committeesCandidates.length - 1].index,
+            committeesCandidates[committeesCandidates.length - 1],
             registry.getMemberIndexByAddress(user),
             "candidate index should match member index"
         );
@@ -425,9 +476,10 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function step_unsubscribeFromStream(address user, StreamDenomination stream) internal {
         // Arrange
+        Role role = registry.getMemberRequestedRole(user, stream);
         uint256 lastAvailableBalance = registry.getMemberAvailableBalance(user);
         uint256 moneyToBecomeAvailable = registry.getMemberPreStakedBalance(user, stream);
-        CommitteeMember[] memory committeesCandidates = registry.getCommitteeCandidates(stream);
+        uint16[] memory committeesCandidates = registry.getCommitteeCandidates(stream, role);
         uint256 candidatesAmountBeforeUnsuscribe = committeesCandidates.length;
 
         // Act
@@ -452,7 +504,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
             "member available balance should increase by the pre-staked amount after unsuscribing for stream"
         );
         // Assert that the user is removed from committeesCandidates[stream]
-        committeesCandidates = registry.getCommitteeCandidates(stream);
+        committeesCandidates = registry.getCommitteeCandidates(stream, role);
         assertEq(
             candidatesAmountBeforeUnsuscribe - 1,
             committeesCandidates.length,
@@ -1159,10 +1211,11 @@ contract TestCommitteeRegistry is Test, HelperContract {
         setup_registerMember(privKey);
         address user = vm.addr(privKey);
         uint256 minimumDeposit = registry.getMinimumDeposit(DEFAULT_STREAM);
+        Role role = Role.Operator;
 
         // Act
         vm.prank(user);
-        registry.registerCandidateToStreamHarness(user, DEFAULT_STREAM, DEFAULT_ROLE, minimumDeposit);
+        registry.registerCandidateToStreamHarness(user, DEFAULT_STREAM, role, minimumDeposit);
 
         // Assert
         assertEq(registry.getMemberAvailableBalance(user), 0, "member available balance should be 0 after registration");
@@ -1174,7 +1227,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         for (uint64 i = 0; i <= uint8(StreamDenomination._10BTC); i++) {
             if (i == uint8(DEFAULT_STREAM)) {
                 assertTrue(
-                    registry.getMemberRequestedRole(user, StreamDenomination(i)) == DEFAULT_ROLE,
+                    registry.getMemberRequestedRole(user, StreamDenomination(i)) == role,
                     "member requested role should match the requested role for stream"
                 );
             } else {
@@ -1191,13 +1244,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
                 "member staked balance should be 0 for all streams after registration for a stream"
             );
         }
-        CommitteeMember[] memory committeesCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM);
-        assertTrue(
-            (committeesCandidates[committeesCandidates.length - 1].role == DEFAULT_ROLE),
-            "candidate role should match requested role"
-        );
+        uint16[] memory committeesCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, role);
         assertEq(
-            committeesCandidates[committeesCandidates.length - 1].index,
+            committeesCandidates[committeesCandidates.length - 1],
             registry.getMemberIndexByAddress(user),
             "candidate index should match member index"
         );
