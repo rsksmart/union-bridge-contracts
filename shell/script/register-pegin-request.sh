@@ -13,4 +13,3 @@ forge script \
     --rpc-url $RPC \
     --legacy \
     --broadcast \
-    -vvvv \
