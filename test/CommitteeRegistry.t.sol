@@ -102,7 +102,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
     function _test_applyToStream_Success(Role _role) internal {
         // This function applies to the DEFAULT_STREAM with `_role` and check that `_oppositeRole` candidates does not change.
         // Arrange
-       if (_role == Role.None) {
+        if (_role == Role.None) {
             revert("Role cannot be None for unsubscribe test");
         }
         Role oppositeRole = _role == Role.Operator ? Role.Watchtower : Role.Operator;
@@ -117,10 +117,8 @@ contract TestCommitteeRegistry is Test, HelperContract {
         uint256 minimumDeposit = registry.getMinimumDeposit(DEFAULT_STREAM);
         vm.deal(user, minimumDeposit);
 
-        uint16[] memory roleCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, _role);
-        uint16[] memory oppositeRoleCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, oppositeRole);
-        uint256 roleCandidatesAmountBefore = roleCandidates.length;
-        uint256 opossiteRoleAmountBefore = oppositeRoleCandidates.length;
+        uint256 roleCandidatesAmountBefore = registry.getCommitteeCandidates(DEFAULT_STREAM, _role).length;
+        uint256 opossiteRoleAmountBefore = registry.getCommitteeCandidates(DEFAULT_STREAM, oppositeRole).length;
 
         // Check balances before
         uint256 userBalanceBefore = user.balance;
@@ -151,8 +149,8 @@ contract TestCommitteeRegistry is Test, HelperContract {
             "member pre-staked should match the minimum deposit"
         );
 
-        roleCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, _role);
-        oppositeRoleCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, oppositeRole);
+        uint16[] memory roleCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, _role);
+        uint16[] memory oppositeRoleCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, oppositeRole);
         uint256 roleCandidatesAmountAfter = roleCandidates.length;
         uint256 opossiteRoleAmountAfter = oppositeRoleCandidates.length;
         assertEq(roleCandidatesAmountBefore + 1, roleCandidatesAmountAfter, "candidates amount should increase by 1");
