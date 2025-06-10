@@ -30,7 +30,7 @@ contract TestPegManager is Test, HelperContract {
 
     function setUp() external {
         runTestDeployScript();
-        (Committee memory expectedCommittee, uint64 streamId) = setup_completeCommittee();
+        (, Committee memory expectedCommittee, uint64 streamId) = setup_completeCommitteeAndNewMembers();
 
         setupExpectedCommittee.aggregatedKey = expectedCommittee.aggregatedKey;
         setupExpectedCommittee.leaderIndex = expectedCommittee.leaderIndex;
@@ -243,8 +243,10 @@ contract TestPegManager is Test, HelperContract {
         // Act
         pm.acceptPegInRequest(pegInAcceptedTxSPVProof);
 
-        // Now we should provide members info to create the committee/packet
-        setup_depositMemberInfo_MultipleMembers(setupStreamId, 0, registry.MIN_COMMITTEE_MEMBERS() - 2);
+        // Now we should provide members info to create the committee/packet. This works with second group of members, their indexes start at registry.MIN_COMMITTEE_MEMBERS()
+        setup_depositMemberInfo_MultipleMembers(
+            setupStreamId, registry.MIN_COMMITTEE_MEMBERS(), registry.MIN_COMMITTEE_MEMBERS() * 2 - 2
+        );
 
         vm.expectEmit(address(registry));
         emit ICommitteeRegistry.NewCommittee(COMMITTEE_ID_STREAM_1_PACKET_1, expectedCommittee);
@@ -252,7 +254,7 @@ contract TestPegManager is Test, HelperContract {
         vm.expectEmit(address(streamManager));
         emit IStreamManager.PacketCreated(setupStreamId, 1);
 
-        vm.prank(vm.addr(registry.MIN_COMMITTEE_MEMBERS()));
+        vm.prank(vm.addr(registry.MIN_COMMITTEE_MEMBERS() * 2));
         registry.depositMemberInfoForCommittee(setupStreamId, COMMITTEE_PUB_KEY_STREAM_1_PACKET_0);
     }
 
@@ -261,7 +263,9 @@ contract TestPegManager is Test, HelperContract {
         // Create pegins until the new packet treshold is reached
         setup_multipleRequestAndAcceptPeginFlows(Constants.SLOTS_PER_PACKET, setupStreamId);
         // Members must deposite their info to create new packet
-        setup_depositMemberInfo_MultipleMembers(setupStreamId, 0, registry.MIN_COMMITTEE_MEMBERS() - 1);
+        setup_depositMemberInfo_MultipleMembers(
+            setupStreamId, registry.MIN_COMMITTEE_MEMBERS(), registry.MIN_COMMITTEE_MEMBERS() * 2 - 1
+        );
 
         // Arrange
         BtcTransaction memory peginTx = setup_requestPeginFlow();

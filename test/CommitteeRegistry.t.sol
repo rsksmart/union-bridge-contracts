@@ -565,7 +565,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         vm.expectEmit(address(registry));
         emit ICommitteeRegistry.MemberUnsubscribedFromStream(user, DEFAULT_STREAM);
         vm.expectEmit(address(registry));
-        emit ICommitteeRegistry.NewAvailableBalance(user, minimumDeposit, minimumDeposit);
+        emit ICommitteeRegistry.NewAvailableBalance(pubKey, minimumDeposit, minimumDeposit);
 
         // Act
         vm.prank(user);
@@ -1082,11 +1082,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_createCommittee_Success() external {
         // This test should register all the members for a committee. This will trigger the creation of a pending committee.
-        // We should complete that committee and then, with all the members registered, we should be able to create a committee.
-        // We should update this once we update staked/prestaked balance movements after committee creation.
-
+        // We should complete that committee and then, with all the new members registered, we should be able to create a committee.
         // Arrange
-        (Committee memory expectedCommittee, uint64 streamId) = setup_completeCommittee();
+        (, Committee memory expectedCommittee, uint64 streamId) = setup_completeCommitteeAndNewMembers();
         expectedCommittee.aggregatedKey = bytes32(0);
 
         // Assert
@@ -1230,6 +1228,17 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Member address is vm.address(memberIndex + 1);
         vm.prank(vm.addr(registry.MIN_COMMITTEE_MEMBERS()));
         registry.depositMemberInfoForCommittee(streamId, COMMITTEE_PUB_KEY_STREAM_1_PACKET_0);
+
+        assertEq(
+            registry.getCommitteeCandidates(StreamDenomination(streamId), Role.Operator).length,
+            0,
+            "Should not have candidates after committee created"
+        );
+        assertEq(
+            registry.getCommitteeCandidates(StreamDenomination(streamId), Role.Watchtower).length,
+            0,
+            "Should not have candidates after committee created"
+        );
     }
 
     function test_getPendingCommittee_Revert_CommitteeIsNotPending_AfterCompleteCommittee() external {
@@ -1349,6 +1358,17 @@ contract TestCommitteeRegistry is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.CommitteeIsNotPending.selector, streamId));
         // Act
         registry.getPendingCommittee(streamId);
+
+        assertEq(
+            registry.getCommitteeCandidates(StreamDenomination(streamId), Role.Operator).length,
+            0,
+            "Should not have candidates after committee created"
+        );
+        assertEq(
+            registry.getCommitteeCandidates(StreamDenomination(streamId), Role.Watchtower).length,
+            0,
+            "Should not have candidates after committee created"
+        );
     }
 
     function test_setPendingCommitteeTimeout_Success() external {
@@ -1733,10 +1753,10 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // ===== Arrange start =====
         // Create a complete committee for initial packet
-        (, uint64 streamId) = setup_completeCommittee();
+        (,, uint64 streamId) = setup_completeCommitteeAndNewMembers();
         StreamDenomination denomination = StreamDenomination(streamId);
         // Need to use last member in the committee to unsubscribe and subscribe to keep same random committee member order
-        uint256 userIndex = 9;
+        uint256 userIndex = 19;
         Role userRole = Role.Operator;
         address userAddress = vm.addr(userIndex + 1);
         PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(userIndex + 1);
@@ -1761,7 +1781,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         uint256 minimumDeposit = registry.getMinimumDeposit(denomination);
         vm.deal(userAddress, minimumDeposit);
-        Committee memory expectedCommittee = setup_getExpectedCommitteeBeforeExpire();
+        Committee memory expectedCommittee = setup_getExpectedSecondCommittee();
         vm.warp(BLOCK_TIMESTAMP_FOR_DETERMINISTIC_COMMITTEE);
         assertTrue(
             registry.shouldCreateCommitteeHarness(streamId),

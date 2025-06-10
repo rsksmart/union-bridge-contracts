@@ -56,6 +56,7 @@ abstract contract HelperContract is Test, TestUtils {
     // Arrange
     uint64 internal constant VALUE = 1_000_000; // 0.01 BTC
     uint256 internal constant BLOCK_TIMESTAMP_FOR_DETERMINISTIC_COMMITTEE = 1000; // Arbitrary timestamp for random committee selection. Changing it will change all random committees
+    uint256 registeredMembersCounter = 0; // Counter to keep track of registered members
 
     function setup_registerMembers(uint256 numWatchtowers, uint256 numOperators, StreamDenomination denomination)
         internal
@@ -64,13 +65,15 @@ abstract contract HelperContract is Test, TestUtils {
         uint256 totalMembers = numWatchtowers + numOperators;
 
         for (uint256 memberIndex = 0; memberIndex < totalMembers; memberIndex++) {
-            PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(memberIndex + 1);
-            address user = vm.addr(memberIndex + 1); // Use a different address for each member
+            PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(registeredMembersCounter + memberIndex + 1);
+            address user = vm.addr(registeredMembersCounter + memberIndex + 1); // Use a different address for each member
             // First numWatchtowers members are watchtowers, the rest are operators
             Role role = memberIndex < numWatchtowers ? Role.Watchtower : Role.Operator;
 
             setup_registerMember(user, role, denomination, pubKeysRegistration);
         }
+
+        registeredMembersCounter += totalMembers;
     }
 
     function setup_registerMember(
@@ -271,7 +274,9 @@ abstract contract HelperContract is Test, TestUtils {
                 _numberOfPegIns > Constants.SLOTS_PER_PACKET
                     && (i % Constants.SLOTS_PER_PACKET) == Constants.SLOT_USAGE_THRESHOLD
             ) {
-                setup_depositMemberInfo_MultipleMembers(_streamId, 0, registry.MIN_COMMITTEE_MEMBERS() - 1);
+                setup_depositMemberInfo_MultipleMembers(
+                    _streamId, registry.MIN_COMMITTEE_MEMBERS(), registry.MIN_COMMITTEE_MEMBERS() * 2 - 1
+                );
             }
         }
     }
@@ -395,6 +400,46 @@ abstract contract HelperContract is Test, TestUtils {
         expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY_STREAM_1_PACKET_0;
 
         return (expectedCommittee, streamId);
+    }
+
+    function setup_completeCommitteeAndNewMembers()
+        internal
+        returns (Committee memory firstCommittee, Committee memory secondCommittee, uint64 streamId)
+    {
+        (firstCommittee, streamId) = setup_completeCommittee();
+
+        // Register new members
+        setup_registerMembers(
+            registry.MIN_COMMITTEE_MEMBERS() / 2, registry.MIN_COMMITTEE_MEMBERS() / 2, StreamDenomination(streamId)
+        );
+
+        secondCommittee = setup_getExpectedSecondCommittee();
+        secondCommittee.aggregatedKey = COMMITTEE_PUB_KEY_STREAM_1_PACKET_0;
+
+        return (firstCommittee, secondCommittee, streamId);
+    }
+
+    function setup_getExpectedSecondCommittee() internal returns (Committee memory) {
+        vm.warp(BLOCK_TIMESTAMP_FOR_DETERMINISTIC_COMMITTEE);
+
+        Committee memory committee = Committee({
+            aggregatedKey: bytes32(0),
+            memberIndexesAndRoles: new CommitteeMember[](registry.MIN_COMMITTEE_MEMBERS()),
+            leaderIndex: 0
+        });
+
+        committee.memberIndexesAndRoles[0] = CommitteeMember({index: 17, role: Role.Operator});
+        committee.memberIndexesAndRoles[1] = CommitteeMember({index: 16, role: Role.Operator});
+        committee.memberIndexesAndRoles[2] = CommitteeMember({index: 18, role: Role.Operator});
+        committee.memberIndexesAndRoles[3] = CommitteeMember({index: 19, role: Role.Operator});
+        committee.memberIndexesAndRoles[4] = CommitteeMember({index: 15, role: Role.Operator});
+        committee.memberIndexesAndRoles[5] = CommitteeMember({index: 12, role: Role.Watchtower});
+        committee.memberIndexesAndRoles[6] = CommitteeMember({index: 11, role: Role.Watchtower});
+        committee.memberIndexesAndRoles[7] = CommitteeMember({index: 13, role: Role.Watchtower});
+        committee.memberIndexesAndRoles[8] = CommitteeMember({index: 14, role: Role.Watchtower});
+        committee.memberIndexesAndRoles[9] = CommitteeMember({index: 10, role: Role.Watchtower});
+
+        return committee;
     }
 
     function setup_getExpectedCommitteeBeforeExpire() internal returns (Committee memory) {
