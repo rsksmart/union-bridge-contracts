@@ -6,6 +6,7 @@ import "forge-std/console.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {BaseProxy} from "./BaseProxy.sol";
 import {
     Role,
@@ -16,6 +17,9 @@ import {
     PendingCommittee,
     PendingCommitteeData,
     PendingCommitteeStatus,
+    PublicKeyIndex,
+    PublicKeyRegistration,
+    PUBLIC_KEYS_INDEX_LENGTH,
     ApplicationData
 } from "./interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination, IStreamManager} from "./interfaces/IStreamManager.sol";
@@ -70,26 +74,56 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         }
     }
 
+    function _getMemberTakePubKeyByIndex(uint16 _memberIndex) internal view returns (bytes32) {
+        return members[_memberIndex].publicKeys[uint8(PublicKeyIndex.Take)];
+    }
+
     function _getMemberPubKeyByAddress(address _address) internal view returns (bytes32) {
         uint16 memberIndex = memberIndexByAddress[_address];
         if (memberIndex == 0) {
             return bytes32(0);
         }
         // Substract 1 to get the correct index
-        return members[memberIndex - 1].publicKey;
+        return members[memberIndex - 1].publicKeys[uint8(PublicKeyIndex.Take)];
     }
 
-    function applyToStream(bytes32 _publicKey, StreamDenomination _stream, Role _role) external payable {
+    function _getOrRegisterMember(address _address, PublicKeyRegistration[] calldata _publicKeys)
+        internal
+        returns (Member storage)
+    {
+        uint16 memberIndex = memberIndexByAddress[_address];
+        Member storage member;
         // Check if the member is already registered
-        if (!_isAlreadyMember(msg.sender)) {
-            _registerMember(_publicKey);
+        if (memberIndex == 0) {
+            member = _registerMember(_publicKeys);
+        } else {
+            // Already exists, get the member from the members array
+            member = members[memberIndex - 1];
+            // Check if the public keys are the same as the stored member's public keys
+            for (uint8 i = 0; i < PUBLIC_KEYS_INDEX_LENGTH; i++) {
+                if (member.publicKeys[i] != _publicKeys[i].publicKeyX) {
+                    revert PublicKeyMismatch(i, member.publicKeys[i], _publicKeys[i].publicKeyX);
+                }
+            }
+        }
+        return member;
+    }
+
+    function applyToStream(StreamDenomination _stream, Role _role, PublicKeyRegistration[] calldata _publicKeys)
+        external
+        payable
+    {
+        if (_role == Role.None) {
+            revert RequestedNoneRoleForStream(_stream);
+        }
+        // If the public keys length is not the same as the enum length revert
+        uint256 publicKeysLength = _publicKeys.length;
+        if (publicKeysLength != PUBLIC_KEYS_INDEX_LENGTH) {
+            revert InvalidPublicKeysLength(publicKeysLength, PUBLIC_KEYS_INDEX_LENGTH);
         }
 
-        Member storage member = _getMemberByAddress(msg.sender);
+        Member storage member = _getOrRegisterMember(msg.sender, _publicKeys);
 
-        if (member.publicKey != _publicKey) {
-            revert PublicKeyMismatch(member.publicKey, _publicKey);
-        }
         if (_role == Role.None) {
             revert RequestedNoneRoleForStream(_stream);
         }
@@ -178,24 +212,71 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         }
     }
 
-    function _isAlreadyMember(address _address) internal view returns (bool) {
-        return memberIndexByAddress[_address] != 0;
+    function _getAddressFromPublicKey(bytes memory _uncompressedPublicKey) internal pure returns (address) {
+        return address(uint160(uint256(keccak256(_uncompressedPublicKey))));
     }
 
-    function _registerMember(bytes32 _publicKey) internal {
+    function _validatePublicKeys(PublicKeyRegistration[] calldata _publicKeys) internal pure {
+        // Iterate over the public keys to check if they are valid
+        for (uint8 i = 0; i < PUBLIC_KEYS_INDEX_LENGTH; i++) {
+            // Check if the public key X is not repeated
+            for (uint8 j = i + 1; j < PUBLIC_KEYS_INDEX_LENGTH; j++) {
+                if (_publicKeys[i].publicKeyX == _publicKeys[j].publicKeyX) {
+                    revert RepeatedPublicKeys(i, _publicKeys[i].publicKeyX, j, _publicKeys[j].publicKeyX);
+                }
+            }
+
+            // Check if the public keys is not 0
+            if (_publicKeys[i].publicKeyX == bytes32(0) || _publicKeys[i].publicKeyY == bytes32(0)) {
+                revert InvalidZeroPublicKey(i, _publicKeys[i].publicKeyX, _publicKeys[i].publicKeyY);
+            }
+
+            // Validate signature is not zero
+            if (_publicKeys[i].v == 0 || _publicKeys[i].r == bytes32(0) || _publicKeys[i].s == bytes32(0)) {
+                revert InvalidZeroSignature(i, _publicKeys[i]);
+            }
+
+            // Use the uncompressed public key as the message
+            bytes memory uncompressedPublicKey = abi.encode(_publicKeys[i].publicKeyX, _publicKeys[i].publicKeyY);
+            bytes32 messageHash = keccak256(uncompressedPublicKey);
+
+            // Validate the signature for the message is valid
+            // * The `ecrecover` EVM precompile allows for malleable (non-unique) signatures:
+            // * this function rejects them by requiring the `s` value to be in the lower
+            // * half order, and the `v` value to be either 27 or 28.
+            address recoveredSignerAddress =
+                ECDSA.recover(messageHash, _publicKeys[i].v, _publicKeys[i].r, _publicKeys[i].s);
+
+            // Get the expectedsigner address from the uncompressed public key
+            address expectedSignerAddress = _getAddressFromPublicKey(uncompressedPublicKey);
+
+            // Validate the recovered signer address is the same as the expected signer address
+            if (recoveredSignerAddress != expectedSignerAddress) {
+                revert InvalidSignature(i, _publicKeys[i], recoveredSignerAddress, expectedSignerAddress);
+            }
+        }
+    }
+
+    function _registerMember(PublicKeyRegistration[] calldata _publicKeys) internal returns (Member storage) {
         // Check max Members
         if (members.length >= MAX_MEMBERS_SIZE) {
             revert TooManyMembers(MAX_MEMBERS_SIZE);
         }
+        // Check if the public keys and the signatures associated are valid
+        _validatePublicKeys(_publicKeys);
 
         members.push(); // Expand the array
         Member storage member = members[members.length - 1]; // Get reference
-        member.publicKey = _publicKey;
+        // Initialize Member public keys
+        for (uint8 i = 0; i < PUBLIC_KEYS_INDEX_LENGTH; i++) {
+            member.publicKeys.push(_publicKeys[i].publicKeyX);
+        }
         _initMemberBalance(member);
         // We save the position in the array + 1, to avoid 0 as a valid index, it is then substracted in getMemberPubKeyByAddress
         memberIndexByAddress[msg.sender] = uint16(members.length);
 
-        emit NewMember(_publicKey);
+        emit NewMember(member.publicKeys);
+        return member;
     }
 
     function _registerCommittee(uint256 _committeeId, Committee storage _committee) internal {
@@ -219,11 +300,11 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         return getCommittee(_committeeId).memberIndexesAndRoles;
     }
 
-    function getMemberPubKeyByIndex(uint16 _memberIndex) external view returns (bytes32) {
+    function getMemberTakePubKeyByIndex(uint16 _memberIndex) external view returns (bytes32) {
         if (_memberIndex >= members.length) {
             revert MemberIndexNotFound(_memberIndex);
         }
-        return members[_memberIndex].publicKey;
+        return _getMemberTakePubKeyByIndex(_memberIndex);
     }
 
     function getMemberIndexByAddress(address _address) external view returns (uint16) {
@@ -245,8 +326,13 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         return memberIndex - 1;
     }
 
-    function getMemberPublicKey(address _address) external view returns (bytes32) {
-        return _getMemberByAddress(_address).publicKey;
+    function getMemberPublicKeys(address _address) external view returns (bytes32[] memory publicKeys) {
+        Member storage member = _getMemberByAddress(_address);
+        publicKeys = new bytes32[](PUBLIC_KEYS_INDEX_LENGTH);
+        for (uint8 i = 0; i < PUBLIC_KEYS_INDEX_LENGTH; i++) {
+            publicKeys[i] = member.publicKeys[i];
+        }
+        return publicKeys;
     }
 
     function getMemberRequestedRole(address _address, StreamDenomination _denomination) external view returns (Role) {
@@ -370,7 +456,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
             // Copy committee members from memory to storage
             pendingCommittees[_streamId].committee.memberIndexesAndRoles.push(committeeMembers[i]);
 
-            bytes32 memberPubKey = members[committeeMembers[i].index].publicKey;
+            bytes32 memberPubKey = _getMemberTakePubKeyByIndex(committeeMembers[i].index);
             // Initialize committee users pending data
             pendingCommittees[_streamId].data[memberPubKey] =
                 PendingCommitteeData({inCommittee: true, aggregatedKey: bytes32(0)});
@@ -465,7 +551,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     function _deletePendingCommittee(uint64 _streamId) internal {
         CommitteeMember[] storage committeeMembers = pendingCommittees[_streamId].committee.memberIndexesAndRoles;
         for (uint256 i = 0; i < committeeMembers.length; i++) {
-            bytes32 memberPubKey = members[committeeMembers[i].index].publicKey;
+            bytes32 memberPubKey = _getMemberTakePubKeyByIndex(committeeMembers[i].index);
             delete pendingCommittees[_streamId].data[memberPubKey];
         }
         //slither-disable-next-line mapping-deletion

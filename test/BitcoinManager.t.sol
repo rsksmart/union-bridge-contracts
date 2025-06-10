@@ -214,7 +214,7 @@ contract TestBtcHelper is Test, HelperContract {
         bitcoinManager.validateAcceptPegInP2TROutput(committeePubKey, VALUE, btcTxOut);
     }
 
-    function test_getSpeedUpScriptPub_Success() external view {
+    function test_getSpeedUpScriptPub_Success() external {
         // Arrange
         bytes32 pubKey = generatePubKey(1);
         // Act

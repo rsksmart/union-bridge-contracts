@@ -3,7 +3,12 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
-import {ICommitteeRegistry, Role} from "src/interfaces/ICommitteeRegistry.sol";
+import {
+    ICommitteeRegistry,
+    Role,
+    PublicKeyRegistration,
+    PUBLIC_KEYS_INDEX_LENGTH
+} from "src/interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
 
 contract ApplyToStreamScript is ScriptUtils {
@@ -14,7 +19,7 @@ contract ApplyToStreamScript is ScriptUtils {
     uint256 role;
     uint256 privKey;
     address user;
-    bytes32 pubKey;
+    PublicKeyRegistration[] pubKeysRegistration;
 
     function setUp(uint16 _mnemonicIndex, uint16 _streamIndex, uint16 _roleIndex) internal {
         committeeRegistry = ICommitteeRegistry(0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0);
@@ -35,7 +40,10 @@ contract ApplyToStreamScript is ScriptUtils {
         minimumDeposit = committeeRegistry.getMinimumDeposit(StreamDenomination(streamId));
         privKey = getMemberKey(uint32(mnemonicIndex));
         user = vm.addr(privKey);
-        pubKey = generatePubKeyKeccak256(privKey);
+        PublicKeyRegistration[] memory pubKeysRegistrationMemory = generatePublicKeysRegistration(privKey);
+        for (uint8 i = 0; i < PUBLIC_KEYS_INDEX_LENGTH; i++) {
+            pubKeysRegistration.push(pubKeysRegistrationMemory[i]);
+        }
 
         if (user.balance < minimumDeposit) {
             revert("Insufficient balance to apply to stream");
@@ -46,11 +54,15 @@ contract ApplyToStreamScript is ScriptUtils {
         setUp(_mnemonicIndex, _streamIndex, _roleIndex);
 
         vm.startBroadcast(privKey);
-        committeeRegistry.applyToStream{value: minimumDeposit}(pubKey, StreamDenomination(streamId), Role(role));
+        committeeRegistry.applyToStream{value: minimumDeposit}(
+            StreamDenomination(streamId), Role(role), pubKeysRegistration
+        );
         vm.stopBroadcast();
-
-        if (committeeRegistry.getMemberPublicKey(user) != pubKey) {
-            revert("applyToStream failed: public key mismatch");
+        bytes32[] memory memberPubKeys = committeeRegistry.getMemberPublicKeys(user);
+        for (uint8 i = 0; i < PUBLIC_KEYS_INDEX_LENGTH; i++) {
+            if (memberPubKeys[i] != pubKeysRegistration[i].publicKeyX) {
+                revert("applyToStream failed: public key mismatch");
+            }
         }
 
         console.log("=== User applied to stream successfully ===");

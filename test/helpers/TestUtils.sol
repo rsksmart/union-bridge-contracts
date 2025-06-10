@@ -2,7 +2,13 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import {CommitteeMember, Committee} from "src/CommitteeRegistry.sol";
+import {
+    CommitteeMember,
+    Committee,
+    PublicKeyRegistration,
+    PublicKeyIndex,
+    PUBLIC_KEYS_INDEX_LENGTH
+} from "src/CommitteeRegistry.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 abstract contract TestUtils is Test {
@@ -68,7 +74,53 @@ abstract contract TestUtils is Test {
         return keccak256(abi.encode(i));
     }
 
-    function generatePubKey(uint256 i) internal pure returns (bytes32) {
-        return bytes32(i + 1);
+    function createWallet(uint256 _privateKey, PublicKeyIndex _pubKeyIndex) public returns (Vm.Wallet memory) {
+        return vm.createWallet(uint256(keccak256(abi.encode(_privateKey, _pubKeyIndex))));
+    }
+
+    function generatePubKey(uint256 _privateKey) internal returns (bytes32) {
+        Vm.Wallet memory wallet = createWallet(_privateKey, PublicKeyIndex.Take);
+        return bytes32(wallet.publicKeyX);
+    }
+
+    function generatePublicKeyRegistration(uint256 _privateKey, PublicKeyIndex _pubKeyIndex)
+        public
+        returns (PublicKeyRegistration memory)
+    {
+        // Generate a deterministic 'public key' from the private key
+        Vm.Wallet memory wallet = createWallet(_privateKey, _pubKeyIndex);
+        // Hash the uncompressed public key
+        bytes32 hash = keccak256(abi.encode(wallet.publicKeyX, wallet.publicKeyY));
+        // Sign the public key
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(wallet, hash);
+        PublicKeyRegistration memory publicKeyRegistration = PublicKeyRegistration({
+            publicKeyX: bytes32(wallet.publicKeyX),
+            publicKeyY: bytes32(wallet.publicKeyY),
+            v: v,
+            r: r,
+            s: s
+        });
+        return publicKeyRegistration;
+    }
+
+    function generatePublicKeysRegistration(uint256 _privateKey) public returns (PublicKeyRegistration[] memory) {
+        // Generate a deterministic 'public key' from the private key
+        PublicKeyRegistration[] memory publicKeysRegistration = new PublicKeyRegistration[](PUBLIC_KEYS_INDEX_LENGTH);
+        for (uint8 i = 0; i < PUBLIC_KEYS_INDEX_LENGTH; i++) {
+            publicKeysRegistration[i] = generatePublicKeyRegistration(_privateKey, PublicKeyIndex(i));
+        }
+        return publicKeysRegistration;
+    }
+
+    function getXPublicKeysFromRegistration(PublicKeyRegistration[] memory _publicKeysRegistration)
+        public
+        pure
+        returns (bytes32[] memory)
+    {
+        bytes32[] memory publicKeys = new bytes32[](_publicKeysRegistration.length);
+        for (uint8 i = 0; i < _publicKeysRegistration.length; i++) {
+            publicKeys[i] = _publicKeysRegistration[i].publicKeyX;
+        }
+        return publicKeys;
     }
 }

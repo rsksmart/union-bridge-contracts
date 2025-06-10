@@ -3,12 +3,20 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
+import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {DeployScript} from "script/deploy/DeployScript.s.sol";
 import {PegManager, BtcTxSPVProof, PegStatus} from "src/PegManager.sol";
 import {PegManagerHarness} from "test/helpers/PegManagerHarness.sol";
 import {StreamManagerHarness} from "test/helpers/StreamManagerHarness.sol";
 import {SignatureManager} from "src/SignatureManager.sol";
-import {Role, Member, CommitteeMember, Committee, CommitteeRegistry} from "src/CommitteeRegistry.sol";
+import {
+    Role,
+    Member,
+    CommitteeMember,
+    Committee,
+    CommitteeRegistry,
+    PublicKeyRegistration
+} from "src/CommitteeRegistry.sol";
 import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
 import {BtcTxIn, BtcTxOut, BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
@@ -52,26 +60,30 @@ abstract contract HelperContract is Test, TestUtils {
     function setup_registerMembers(uint256 numWatchtowers, uint256 numOperators, StreamDenomination denomination)
         internal
     {
+        // Register members with their mock keys. These are Bitcoin x-only public keys.
         uint256 totalMembers = numWatchtowers + numOperators;
 
         for (uint256 memberIndex = 0; memberIndex < totalMembers; memberIndex++) {
-            bytes32 pubKey = generatePubKey(memberIndex + 1);
+            PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(memberIndex + 1);
             address user = vm.addr(memberIndex + 1); // Use a different address for each member
             // First numWatchtowers members are watchtowers, the rest are operators
             Role role = memberIndex < numWatchtowers ? Role.Watchtower : Role.Operator;
 
-            setup_registerMember(user, pubKey, role, denomination);
+            setup_registerMember(user, role, denomination, pubKeysRegistration);
         }
     }
 
-    function setup_registerMember(address _address, bytes32 _pubKey, Role _role, StreamDenomination _denomination)
-        internal
-    {
+    function setup_registerMember(
+        address _address,
+        Role _role,
+        StreamDenomination _denomination,
+        PublicKeyRegistration[] memory _publicKeysRegistration
+    ) internal {
         uint256 minimumDeposit = registry.getMinimumDeposit(_denomination);
         vm.deal(_address, minimumDeposit);
 
         vm.prank(_address); // Use a different address for each member
-        registry.applyToStream{value: minimumDeposit}(_pubKey, _denomination, _role);
+        registry.applyToStream{value: minimumDeposit}(_denomination, _role, _publicKeysRegistration);
     }
 
     function runTestDeployScript() internal {
@@ -86,7 +98,6 @@ abstract contract HelperContract is Test, TestUtils {
         // Set up bridge mock at bridge precompiled address
         bridgeMock = BridgeMock(deployScript.bridgeAddress());
         signatureManager = SignatureManager(deployScript.signatureManager());
-        // Register committees with their mock keys. These are Bitcoin x-only public keys.
     }
 
     // ========================== Peg In Request ==========================
@@ -410,11 +421,11 @@ abstract contract HelperContract is Test, TestUtils {
     }
 
     function setup_registerMember(uint256 privKey) internal {
-        bytes32 pubKey = generatePubKey(privKey);
+        PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(privKey);
         address user = vm.addr(privKey);
 
         vm.prank(user);
-        registry.registerMemberHarness(pubKey);
+        registry.registerMemberHarness(pubKeysRegistration);
     }
 
     function setup_getExpectedCommitteeAfterExpire() internal returns (Committee memory) {
