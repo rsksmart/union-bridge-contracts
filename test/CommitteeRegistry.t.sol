@@ -109,10 +109,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         uint256 privKey = uint256(1);
         PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(privKey);
-        bytes32[] memory pubKeys = new bytes32[](PUBLIC_KEYS_INDEX_LENGTH);
-        for (uint256 i = 0; i < PUBLIC_KEYS_INDEX_LENGTH; i++) {
-            pubKeys[i] = pubKeysRegistration[i].publicKeyX;
-        }
+        bytes32[] memory pubKeys = getXPublicKeysFromRegistration(pubKeysRegistration);
         address user = vm.addr(privKey);
         uint256 minimumDeposit = registry.getMinimumDeposit(DEFAULT_STREAM);
         vm.deal(user, minimumDeposit);
@@ -319,24 +316,26 @@ contract TestCommitteeRegistry is Test, HelperContract {
     }
 
     function test_applyToStream_Revert_RepeatedPublicKeys_Take_Covenant() external {
+        _test_applyToStream_Revert_RepeatedPublicKeys(uint8(PublicKeyIndex.Take), uint8(PublicKeyIndex.Covenant));
+    }
+
+    function _test_applyToStream_Revert_RepeatedPublicKeys(uint8 pubKeyIndex1, uint8 pubKeyIndex2) internal {
         // Arrange
         uint256 privKey = uint256(1);
         address user = vm.addr(privKey);
         uint256 minimumDeposit = registry.getMinimumDeposit(DEFAULT_STREAM);
         vm.deal(user, minimumDeposit);
-        uint8 pubKeyIndexTake = uint8(PublicKeyIndex.Take);
-        uint8 pubKeyIndexCovenant = uint8(PublicKeyIndex.Covenant);
         PublicKeyRegistration[] memory incorrectPubKeysRegistration = generatePublicKeysRegistration(privKey);
-        incorrectPubKeysRegistration[pubKeyIndexTake] = incorrectPubKeysRegistration[pubKeyIndexCovenant];
+        incorrectPubKeysRegistration[pubKeyIndex1] = incorrectPubKeysRegistration[pubKeyIndex2];
 
         // Assert invalid public keys length
         vm.expectRevert(
             abi.encodeWithSelector(
                 ICommitteeRegistry.RepeatedPublicKeys.selector,
-                pubKeyIndexTake,
-                incorrectPubKeysRegistration[pubKeyIndexTake].publicKeyX,
-                pubKeyIndexCovenant,
-                incorrectPubKeysRegistration[pubKeyIndexCovenant].publicKeyX
+                pubKeyIndex1,
+                incorrectPubKeysRegistration[pubKeyIndex1].publicKeyX,
+                pubKeyIndex2,
+                incorrectPubKeysRegistration[pubKeyIndex2].publicKeyX
             )
         );
 
@@ -346,57 +345,13 @@ contract TestCommitteeRegistry is Test, HelperContract {
     }
 
     function test_applyToStream_Revert_RepeatedPublicKeys_Take_Communication() external {
-        // Arrange
-        uint256 privKey = uint256(1);
-        address user = vm.addr(privKey);
-        uint256 minimumDeposit = registry.getMinimumDeposit(DEFAULT_STREAM);
-        vm.deal(user, minimumDeposit);
-        uint8 pubKeyIndexTake = uint8(PublicKeyIndex.Take);
-        uint8 pubKeyIndexCommunication = uint8(PublicKeyIndex.Communication);
-        PublicKeyRegistration[] memory incorrectPubKeysRegistration = generatePublicKeysRegistration(privKey);
-        incorrectPubKeysRegistration[pubKeyIndexTake] = incorrectPubKeysRegistration[pubKeyIndexCommunication];
-
-        // Assert invalid public keys length
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                ICommitteeRegistry.RepeatedPublicKeys.selector,
-                pubKeyIndexTake,
-                incorrectPubKeysRegistration[pubKeyIndexTake].publicKeyX,
-                pubKeyIndexCommunication,
-                incorrectPubKeysRegistration[pubKeyIndexCommunication].publicKeyX
-            )
-        );
-
-        // Act
-        vm.prank(user);
-        registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, DEFAULT_ROLE, incorrectPubKeysRegistration);
+        _test_applyToStream_Revert_RepeatedPublicKeys(uint8(PublicKeyIndex.Take), uint8(PublicKeyIndex.Communication));
     }
 
     function test_applyToStream_Revert_RepeatedPublicKeys_Covenant_Communication() external {
-        // Arrange
-        uint256 privKey = uint256(1);
-        address user = vm.addr(privKey);
-        uint256 minimumDeposit = registry.getMinimumDeposit(DEFAULT_STREAM);
-        vm.deal(user, minimumDeposit);
-        uint8 pubKeyIndexCovenant = uint8(PublicKeyIndex.Covenant);
-        uint8 pubKeyIndexCommunication = uint8(PublicKeyIndex.Communication);
-        PublicKeyRegistration[] memory incorrectPubKeysRegistration = generatePublicKeysRegistration(privKey);
-        incorrectPubKeysRegistration[pubKeyIndexCovenant] = incorrectPubKeysRegistration[pubKeyIndexCommunication];
-
-        // Assert invalid public keys length
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                ICommitteeRegistry.RepeatedPublicKeys.selector,
-                pubKeyIndexCovenant,
-                incorrectPubKeysRegistration[pubKeyIndexCovenant].publicKeyX,
-                pubKeyIndexCommunication,
-                incorrectPubKeysRegistration[pubKeyIndexCommunication].publicKeyX
-            )
+        _test_applyToStream_Revert_RepeatedPublicKeys(
+            uint8(PublicKeyIndex.Covenant), uint8(PublicKeyIndex.Communication)
         );
-
-        // Act
-        vm.prank(user);
-        registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, DEFAULT_ROLE, incorrectPubKeysRegistration);
     }
 
     function _executeAndAssertInvalidZeroPublicKey(
@@ -470,7 +425,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, DEFAULT_ROLE, _incorrectPubKeysRegistration);
     }
 
-    function test_applyToStream_Revert_InvalidZeroSignature() external {
+    function test_applyToStream_Revert_InvalidZeroSignature_V() external {
         // Arrange
         uint256 privKey = uint256(1);
         PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(privKey);
@@ -484,7 +439,15 @@ contract TestCommitteeRegistry is Test, HelperContract {
             _executeAndAssertInvalidZeroSignature(i, privKey, pubKeysRegistration);
             // Restore the original signature
             pubKeysRegistration[i].v = originalV;
+        }
+    }
 
+    function test_applyToStream_Revert_InvalidZeroSignature_R() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(privKey);
+
+        for (uint8 i = 0; i < PUBLIC_KEYS_INDEX_LENGTH; i++) {
             // Store the original signature
             bytes32 originalR = pubKeysRegistration[i].r;
             // Set the signature to 0
@@ -493,7 +456,15 @@ contract TestCommitteeRegistry is Test, HelperContract {
             _executeAndAssertInvalidZeroSignature(i, privKey, pubKeysRegistration);
             // Restore the original signature
             pubKeysRegistration[i].r = originalR;
+        }
+    }
 
+    function test_applyToStream_Revert_InvalidZeroSignature_S() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(privKey);
+
+        for (uint8 i = 0; i < PUBLIC_KEYS_INDEX_LENGTH; i++) {
             // Store the original signature
             bytes32 originalS = pubKeysRegistration[i].s;
             // Set the signature to 0
@@ -513,6 +484,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         vm.deal(user, minimumDeposit);
         PublicKeyRegistration[] memory _incorrectPubKeysRegistration = generatePublicKeysRegistration(privKey);
 
+        // V can only be 27 or 28, so we set it to 29 to trigger the error
         _incorrectPubKeysRegistration[0].v = 29;
 
         // Assert invalid signature
@@ -1058,19 +1030,22 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_getMemberTakePubKeyByIndex_Success() external {
         // Arrange
-        address userAddress = vm.addr(1);
-        PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(1);
-        bytes32[] memory pubKeys = new bytes32[](PUBLIC_KEYS_INDEX_LENGTH);
-        for (uint256 i = 0; i < PUBLIC_KEYS_INDEX_LENGTH; i++) {
-            pubKeys[i] = pubKeysRegistration[i].publicKeyX;
-        }
+        uint256 privKey = uint256(1);
+        address userAddress = vm.addr(privKey);
+        PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(privKey);
+        bytes32[] memory pubKeys = getXPublicKeysFromRegistration(pubKeysRegistration);
         setup_registerMember(userAddress, Role.Operator, StreamDenomination._0_001BTC, pubKeysRegistration);
+        uint16 memberIndex = registry.getMemberIndexByAddress(userAddress);
 
         // Act
-        bytes32 pubKey = registry.getMemberTakePubKeyByIndex(0);
+        bytes32 pubKey = registry.getMemberTakePubKeyByIndex(memberIndex);
 
         // Assert
-        assertEq(pubKeys[0], pubKey, "getted member1 pubkey by index 1");
+        assertEq(
+            pubKeys[uint8(PublicKeyIndex.Take)],
+            pubKey,
+            "Member take public key by index is not the same as the registered one"
+        );
     }
 
     function test_getMemberIndexByAddress_Success() external {
@@ -1477,10 +1452,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Arrange
         uint256 privKey = uint256(1);
         PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(privKey);
-        bytes32[] memory pubKeys = new bytes32[](PUBLIC_KEYS_INDEX_LENGTH);
-        for (uint256 i = 0; i < PUBLIC_KEYS_INDEX_LENGTH; i++) {
-            pubKeys[i] = pubKeysRegistration[i].publicKeyX;
-        }
+        bytes32[] memory pubKeys = getXPublicKeysFromRegistration(pubKeysRegistration);
         address user = vm.addr(privKey);
 
         // Assert

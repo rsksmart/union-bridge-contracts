@@ -111,4 +111,16 @@ abstract contract TestUtils is Test {
         }
         return publicKeysRegistration;
     }
+
+    function getXPublicKeysFromRegistration(PublicKeyRegistration[] memory _publicKeysRegistration)
+        public
+        pure
+        returns (bytes32[] memory)
+    {
+        bytes32[] memory publicKeys = new bytes32[](_publicKeysRegistration.length);
+        for (uint8 i = 0; i < _publicKeysRegistration.length; i++) {
+            publicKeys[i] = _publicKeysRegistration[i].publicKeyX;
+        }
+        return publicKeys;
+    }
 }
