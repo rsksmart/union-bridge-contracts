@@ -58,7 +58,8 @@ abstract contract HelperContract is Test, TestUtils {
     uint256 internal constant BLOCK_TIMESTAMP_FOR_DETERMINISTIC_COMMITTEE = 1000; // Arbitrary timestamp for random committee selection. Changing it will change all random committees
     uint256 registeredMembersCounter = 0; // Counter to keep track of registered members
 
-    function setup_registerMembers(uint256 numWatchtowers, uint256 numOperators, StreamDenomination denomination)
+    // Keep track of the number of members registered so if we want to register more members it'll use new addresses
+    function setup_registerNewMembers(uint256 numWatchtowers, uint256 numOperators, StreamDenomination denomination)
         internal
     {
         // Register members with their mock keys. These are Bitcoin x-only public keys.
@@ -70,23 +71,49 @@ abstract contract HelperContract is Test, TestUtils {
             // First numWatchtowers members are watchtowers, the rest are operators
             Role role = memberIndex < numWatchtowers ? Role.Watchtower : Role.Operator;
 
-            setup_registerMember(user, role, denomination, pubKeysRegistration);
+            setup_applyToStream(denomination, user, pubKeysRegistration, role);
         }
 
         registeredMembersCounter += totalMembers;
     }
 
+    // Leave this function name for the sake of clarity in some tests.
     function setup_registerMember(
         address _address,
         Role _role,
         StreamDenomination _denomination,
         PublicKeyRegistration[] memory _publicKeysRegistration
     ) internal {
+        setup_applyToStream(_denomination, _address, _publicKeysRegistration, _role);
+    }
+
+    function setup_applyToStream(StreamDenomination _denomination, address _address, PublicKeyRegistration[] memory _publicKeysRegistration, Role _role)
+        internal
+    {
         uint256 minimumDeposit = registry.getMinimumDeposit(_denomination);
         vm.deal(_address, minimumDeposit);
 
         vm.prank(_address); // Use a different address for each member
         registry.applyToStream{value: minimumDeposit}(_denomination, _role, _publicKeysRegistration);
+    }
+
+    // This function should be used for members that has been already registered. But it won't fail if the member is not registered.
+    // It will just apply to the stream with the given denomination and role.
+    function setup_applyToStream_MultipleMembers(
+        StreamDenomination _denomination,
+        uint256 _numWatchtowers,
+        uint256 _numOperators,
+        uint256 _memberIndexInit
+    ) internal {
+        uint256 totalMembers = _numWatchtowers + _numOperators;
+
+        for (uint256 i = 0; i < totalMembers; i++) {
+            Role role = i < _numWatchtowers ? Role.Watchtower : Role.Operator;
+            PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(_memberIndexInit + i + 1);
+            setup_applyToStream(
+                _denomination, vm.addr(_memberIndexInit + i + 1), pubKeysRegistration, role
+            );
+        }
     }
 
     function runTestDeployScript() internal {
@@ -384,7 +411,9 @@ abstract contract HelperContract is Test, TestUtils {
         StreamDenomination denomination = StreamDenomination._0_01BTC;
         streamId = 1;
         vm.warp(BLOCK_TIMESTAMP_FOR_DETERMINISTIC_COMMITTEE);
-        setup_registerMembers(registry.MIN_COMMITTEE_MEMBERS() / 2, registry.MIN_COMMITTEE_MEMBERS() / 2, denomination);
+        setup_registerNewMembers(
+            registry.MIN_COMMITTEE_MEMBERS() / 2, registry.MIN_COMMITTEE_MEMBERS() / 2, denomination
+        );
         return (setup_getExpectedCommitteeBeforeExpire(), streamId);
     }
 
@@ -409,7 +438,7 @@ abstract contract HelperContract is Test, TestUtils {
         (firstCommittee, streamId) = setup_completeCommittee();
 
         // Register new members
-        setup_registerMembers(
+        setup_registerNewMembers(
             registry.MIN_COMMITTEE_MEMBERS() / 2, registry.MIN_COMMITTEE_MEMBERS() / 2, StreamDenomination(streamId)
         );
 

@@ -832,7 +832,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Arrange
         StreamDenomination denomination = StreamDenomination._0_01BTC;
         uint64 streamId = 1;
-        setup_registerMembers(
+        setup_registerNewMembers(
             registry.MIN_COMMITTEE_MEMBERS() - registry.MIN_OPERATORS(), registry.MIN_OPERATORS(), denomination
         );
 
@@ -876,7 +876,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Arrange
         StreamDenomination denomination = StreamDenomination._0_01BTC;
         uint64 streamId = 1;
-        setup_registerMembers(
+        setup_registerNewMembers(
             registry.MIN_WATCHTOWERS(), registry.MIN_COMMITTEE_MEMBERS() - registry.MIN_WATCHTOWERS(), denomination
         );
 
@@ -910,7 +910,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Arrange
         StreamDenomination denomination = StreamDenomination._0_01BTC;
         uint64 streamId = 1;
-        setup_registerMembers(registry.MIN_COMMITTEE_MEMBERS(), registry.MIN_COMMITTEE_MEMBERS(), denomination);
+        setup_registerNewMembers(registry.MIN_COMMITTEE_MEMBERS(), registry.MIN_COMMITTEE_MEMBERS(), denomination);
 
         // First selection with timestamp 1
         vm.warp(1);
@@ -943,7 +943,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Arrange
         StreamDenomination denomination = StreamDenomination._0_01BTC;
         uint64 streamId = 1;
-        setup_registerMembers(
+        setup_registerNewMembers(
             registry.MIN_WATCHTOWERS() - 1,
             registry.MIN_COMMITTEE_MEMBERS() - registry.MIN_WATCHTOWERS() + 1,
             denomination
@@ -971,7 +971,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Arrange
         StreamDenomination denomination = StreamDenomination._0_01BTC;
         uint64 streamId = 1;
-        setup_registerMembers(
+        setup_registerNewMembers(
             registry.MIN_COMMITTEE_MEMBERS() - registry.MIN_OPERATORS() + 1, registry.MIN_OPERATORS() - 1, denomination
         );
 
@@ -997,7 +997,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Arrange
         StreamDenomination denomination = StreamDenomination._0_01BTC;
         uint64 streamId = 1;
-        setup_registerMembers(registry.MIN_WATCHTOWERS(), registry.MIN_OPERATORS(), denomination);
+        setup_registerNewMembers(registry.MIN_WATCHTOWERS(), registry.MIN_OPERATORS(), denomination);
 
         // Assert
         vm.expectEmit(address(registry));
@@ -1080,7 +1080,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         registry.getPendingCommittee(0);
     }
 
-    function test_createCommittee_Success() external {
+    function test_createCommittee_Success_WithNewMembers() external {
         // This test should register all the members for a committee. This will trigger the creation of a pending committee.
         // We should complete that committee and then, with all the new members registered, we should be able to create a committee.
         // Arrange
@@ -1108,6 +1108,57 @@ contract TestCommitteeRegistry is Test, HelperContract {
         assertFalse(
             registry.shouldCreateCommitteeHarness(streamId), "Should not create committee after committee created"
         );
+        for (uint256 i = 0; i < committee.memberIndexesAndRoles.length; i++) {
+            uint64 index = committee.memberIndexesAndRoles[i].index;
+            assertTrue(
+                index >= registry.MIN_COMMITTEE_MEMBERS() && index < registry.MIN_COMMITTEE_MEMBERS() * 2,
+                "Member index should be within the second 10 members"
+            );
+        }
+    }
+
+    function test_createCommittee_Success_SameMembersAfterReApply() external {
+        // After first committee is ready all the members apply again to the stream and create a new committee.
+        // Arrange
+        (, uint64 streamId) = setup_completeCommittee();
+
+        assertEq(0, registry.getCommitteeCandidates(StreamDenomination(streamId), Role.Operator).length);
+        assertEq(0, registry.getCommitteeCandidates(StreamDenomination(streamId), Role.Watchtower).length);
+
+        setup_applyToStream_MultipleMembers(
+            StreamDenomination(streamId), registry.MIN_COMMITTEE_MEMBERS() / 2, registry.MIN_COMMITTEE_MEMBERS() / 2, 0
+        );
+        Committee memory expectedCommittee = setup_getExpectedCommitteeBeforeExpire();
+        expectedCommittee.aggregatedKey = bytes32(0);
+
+        // Assert
+        assertFalse(
+            registry.shouldCreateCommitteeHarness(streamId),
+            "Flag should be false before createCommittee call from pegManager"
+        );
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.NewPendingCommittee(streamId, expectedCommittee);
+
+        // Act
+        // This should create a committee as pending
+        vm.prank(address(pm));
+        registry.createCommittee(streamId);
+
+        (Committee memory committee, uint256 createdAt, uint256 missingData) = registry.getPendingCommittee(streamId);
+        // Assert
+        assertEqCommittee(expectedCommittee, committee, "Committee should be equeals");
+        assertNotEq(createdAt, 0, "Created at should not be 0");
+        assertEq(missingData, registry.MIN_COMMITTEE_MEMBERS(), "Missing data should be equal to MIN_COMMITTEE_MEMBERS");
+        assertFalse(
+            registry.shouldCreateCommitteeHarness(streamId), "Should not create committee after committee created"
+        );
+        for (uint256 i = 0; i < committee.memberIndexesAndRoles.length; i++) {
+            uint64 index = committee.memberIndexesAndRoles[i].index;
+            assertTrue(
+                index >= 0 && index < registry.MIN_COMMITTEE_MEMBERS(),
+                "Member index should be within the first 10 members"
+            );
+        }
     }
 
     function test_createCommittee_Success_AlreadyPendingButNotExpired() external {
