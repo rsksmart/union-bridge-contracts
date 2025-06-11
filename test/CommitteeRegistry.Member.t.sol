@@ -825,7 +825,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_getMemberIndexByAddress_Revert_MemberNotRegistered() external {
         // Arrange
-        address memberAddress = vm.addr(registry.MIN_COMMITTEE_MEMBERS() + 1);
+        address memberAddress = vm.addr(registry.minCommitteeMembers() + 1);
 
         // Assert
         vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.MemberNotRegistered.selector, memberAddress));

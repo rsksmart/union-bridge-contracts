@@ -34,10 +34,9 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     uint256 public constant MAX_MEMBERS_PER_COMMITTEE = 100;
 
     // Committee selection constants
-    uint256 public constant MIN_WATCHTOWERS = 3;
-    uint256 public constant MIN_OPERATORS = 3;
-    // NOTE: Should fit condition MIN_COMMITTEE_MEMBERS > MIN_WATCHTOWERS + MIN_OPERATORS
-    uint256 public constant MIN_COMMITTEE_MEMBERS = 10;
+    uint256 public minCommitteeWatchtowers;
+    uint256 public minCommitteeOperators;
+    uint256 public minCommitteeMembers;
 
     mapping(uint64 streamId => PendingCommittee) internal pendingCommittees;
     mapping(uint256 committeeId => Committee) internal committeesByKey;
@@ -59,6 +58,9 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         for (uint64 i = 0; i <= uint64(StreamDenomination._10BTC); i++) {
             shouldCreateCommittee[i] = true;
         }
+        minCommitteeWatchtowers = 3;
+        minCommitteeOperators = 3;
+        minCommitteeMembers = 10;
     }
 
     function getMinimumDeposit(StreamDenomination _denomination) public view returns (uint256) {
@@ -590,12 +592,12 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
 
     /**
      * @notice Randomly selects members to form a new committee for a given stream
-     * @dev Pseudo-randomly select at least MIN_WATCHTOWERS watchtowers and MIN_OPERATORS operators.
-     * - reverts with notEnoughWatchtowers if there are fewer than MIN_WATCHTOWERS watchtower candidates
-     * - reverts with notEnoughOperators if there are fewer than MIN_OPERATORS operator candidates
+     * @dev Pseudo-randomly select at least minCommitteeWatchtowers watchtowers and minCommitteeOperators operators.
+     * - reverts with notEnoughWatchtowers if there are fewer than minCommitteeWatchtowers watchtower candidates
+     * - reverts with notEnoughOperators if there are fewer than minCommitteeOperators operator candidates
      *
      * @param _streamId The ID of the stream to select committee members for (0-4)
-     * @return An array of MIN_COMMITTEE_MEMBERS CommitteeMembers containing the selected members.
+     * @return An array of minCommitteeMembers CommitteeMembers containing the selected members.
      *
      */
     function _selectCommittee(uint64 _streamId) internal returns (CommitteeMember[] memory, PendingCommitteeStatus) {
@@ -609,33 +611,33 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         uint256 operatorsLength = operators.length;
 
         // Ensure we have enough candidates
-        if (watchtowersLength < MIN_WATCHTOWERS) {
-            emit MissingWatchtowers(denomination, MIN_WATCHTOWERS, MIN_WATCHTOWERS - watchtowersLength);
+        if (watchtowersLength < minCommitteeWatchtowers) {
+            emit MissingWatchtowers(denomination, minCommitteeWatchtowers, minCommitteeWatchtowers - watchtowersLength);
             return (new CommitteeMember[](0), PendingCommitteeStatus.NotEnoughWatchtowers);
         }
 
-        if (operatorsLength < MIN_OPERATORS) {
-            emit MissingOperators(denomination, MIN_OPERATORS, MIN_OPERATORS - operatorsLength);
+        if (operatorsLength < minCommitteeOperators) {
+            emit MissingOperators(denomination, minCommitteeOperators, minCommitteeOperators - operatorsLength);
             return (new CommitteeMember[](0), PendingCommitteeStatus.NotEnoughOperators);
         }
 
         // Check if we have enough total members for the committee
         uint256 totalAvailableMembers = operatorsLength + watchtowersLength;
-        if (totalAvailableMembers < MIN_COMMITTEE_MEMBERS) {
-            emit MissingMembers(denomination, MIN_COMMITTEE_MEMBERS, MIN_COMMITTEE_MEMBERS - totalAvailableMembers);
+        if (totalAvailableMembers < minCommitteeMembers) {
+            emit MissingMembers(denomination, minCommitteeMembers, minCommitteeMembers - totalAvailableMembers);
             return (new CommitteeMember[](0), PendingCommitteeStatus.NotEnoughMembers);
         }
 
         // Amount of each members per role in the committee
-        // NOTE: Here assumme that MIN_COMMITTEE_MEMBERS > MIN_WATCHTOWERS + MIN_OPERATORS
-        uint256 operatorsCommitteeAmount = (MIN_COMMITTEE_MEMBERS - MIN_WATCHTOWERS > operatorsLength)
+        // NOTE: Here assumme that minCommitteeMembers > minCommitteeWatchtowers + minCommitteeOperators
+        uint256 operatorsCommitteeAmount = (minCommitteeMembers - minCommitteeWatchtowers > operatorsLength)
             ? operatorsLength
-            : MIN_COMMITTEE_MEMBERS - MIN_WATCHTOWERS;
-        uint256 watchtowerCommitteeAmount = MIN_COMMITTEE_MEMBERS - operatorsCommitteeAmount;
+            : minCommitteeMembers - minCommitteeWatchtowers;
+        uint256 watchtowerCommitteeAmount = minCommitteeMembers - operatorsCommitteeAmount;
         uint256 committeeMembersCounter = 0;
 
-        // Create the final committee with MIN_COMMITTEE_MEMBERS members
-        CommitteeMember[] memory selectedMembers = new CommitteeMember[](MIN_COMMITTEE_MEMBERS);
+        // Create the final committee with minCommitteeMembers members
+        CommitteeMember[] memory selectedMembers = new CommitteeMember[](minCommitteeMembers);
 
         // True randomness is not required here. We only need enough unpredictability to ensure
         // different committee members get selected across multiple runs.
@@ -671,18 +673,12 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         return (selectedMembers, PendingCommitteeStatus.Success);
     }
 
-    function setPendingCommitteeTimeout(uint256 _timeout) external onlyOwner {
-        if (_timeout == 0) {
-            revert InvalidZeroTimeout();
-        }
-        pendingCommitteeTimeout = _timeout;
-    }
-
-    function setStreamManager(IStreamManager _streamManager) public onlyOwner {
+    function setStreamManager(IStreamManager _streamManager) external onlyOwner {
         if (address(_streamManager) == address(0)) {
             revert InvalidZeroAddress();
         }
         streamManager = _streamManager;
+        emit StreamManagerUpdated(address(_streamManager));
     }
 
     function setPegManager(IPegManager _pegManager) external onlyOwner {
@@ -690,6 +686,42 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
             revert InvalidZeroAddress();
         }
         pegManager = _pegManager;
+        emit PegManagerUpdated(address(_pegManager));
+    }
+
+    function setPendingCommitteeTimeout(uint256 _timeout) external onlyOwner {
+        if (_timeout == 0) {
+            revert InvalidZeroValue();
+        }
+        pendingCommitteeTimeout = _timeout;
+        emit PendingCommitteeTimeoutUpdated(_timeout);
+    }
+
+    function setCommitteeMinWatchtowers(uint256 _minWatchtowers) external onlyOwner {
+        if (_minWatchtowers == 0) {
+            revert InvalidZeroValue();
+        }
+        minCommitteeWatchtowers = _minWatchtowers;
+        emit CommitteeMinWatchtowersUpdated(_minWatchtowers);
+    }
+
+    function setCommitteeMinOperators(uint256 _minOperators) external onlyOwner {
+        if (_minOperators == 0) {
+            revert InvalidZeroValue();
+        }
+        minCommitteeOperators = _minOperators;
+        emit CommitteeMinOperatorsUpdated(_minOperators);
+    }
+
+    function setCommitteeMinMembers(uint256 _minMembers) external onlyOwner {
+        if (_minMembers == 0) {
+            revert InvalidZeroValue();
+        }
+        if (_minMembers < minCommitteeWatchtowers + minCommitteeOperators) {
+            revert InvalidMinMembers(_minMembers, minCommitteeWatchtowers, minCommitteeOperators);
+        }
+        minCommitteeMembers = _minMembers;
+        emit CommitteeMinMembersUpdated(_minMembers);
     }
 
     /// ==== Modifiers ====
