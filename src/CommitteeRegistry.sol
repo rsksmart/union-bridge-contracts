@@ -673,15 +673,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         return (selectedMembers, PendingCommitteeStatus.Success);
     }
 
-    function setPendingCommitteeTimeout(uint256 _timeout) external onlyOwner {
-        if (_timeout == 0) {
-            revert InvalidZeroValue();
-        }
-        pendingCommitteeTimeout = _timeout;
-        emit PendingCommitteeTimeoutUpdated(_timeout);
-    }
-
-    function setStreamManager(IStreamManager _streamManager) public onlyOwner {
+    function setStreamManager(IStreamManager _streamManager) external onlyOwner {
         if (address(_streamManager) == address(0)) {
             revert InvalidZeroAddress();
         }
@@ -695,6 +687,14 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         }
         pegManager = _pegManager;
         emit PegManagerUpdated(address(_pegManager));
+    }
+
+    function setPendingCommitteeTimeout(uint256 _timeout) external onlyOwner {
+        if (_timeout == 0) {
+            revert InvalidZeroValue();
+        }
+        pendingCommitteeTimeout = _timeout;
+        emit PendingCommitteeTimeoutUpdated(_timeout);
     }
 
     function setCommitteeMinWatchtowers(uint256 _minWatchtowers) external onlyOwner {

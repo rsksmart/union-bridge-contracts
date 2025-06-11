@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import {StreamDenomination} from "./IStreamManager.sol";
+import {StreamDenomination, IStreamManager} from "./IStreamManager.sol";
 import {IPegManager} from "./IPegManager.sol";
 
 enum Role {
@@ -141,6 +141,10 @@ interface ICommitteeRegistry {
     /// @notice Set Peg Manager address
     /// @param _pegManager The address of the Peg Manager contract
     function setPegManager(IPegManager _pegManager) external;
+
+    /// @notice Set Stream Manager address
+    /// @param _streamManager The address of the Stream Manager contract
+    function setStreamManager(IStreamManager _streamManager) external;
 
     /// @notice Set the pending committee timeout
     /// @param _timeout The timeout in seconds for the pending committee

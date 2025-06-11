@@ -5,7 +5,7 @@ import "forge-std/Script.sol";
 import {BridgeMock} from "test/helpers/BridgeMock.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 
-contract GetTemporaryAddressScript is ScriptUtils {
+contract SetMockBridgeConfirmationsScript is ScriptUtils {
     BridgeMock bridgeMock;
     int256 confirmations;
 

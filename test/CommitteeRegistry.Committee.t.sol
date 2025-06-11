@@ -30,6 +30,138 @@ contract TestCommitteeRegistry is Test, HelperContract {
         }
     }
 
+    function test_setCommitteeMinWatchtowers_Success() external {
+        // Arrange
+        uint256 newMinWatchtowers = registry.minCommitteeWatchtowers() / 2;
+
+        // Assert
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.CommitteeMinWatchtowersUpdated(newMinWatchtowers);
+
+        // Act
+        vm.prank(address(registry.owner()));
+        registry.setCommitteeMinWatchtowers(newMinWatchtowers);
+
+        // Assert
+        assertEq(registry.minCommitteeWatchtowers(), newMinWatchtowers, "Committee min watchtowers should be updated");
+    }
+
+    function test_setCommitteeMinWatchtowers_Revert_OwnableUnauthorizedAccount() external {
+        // Arrange
+        uint256 newMinWatchtowers = registry.minCommitteeWatchtowers() / 2;
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+
+        // Act
+        registry.setCommitteeMinWatchtowers(newMinWatchtowers);
+    }
+
+    function test_setCommitteeMinWatchtowers_Revert_InvalidZeroValue() external {
+        address owner = registry.owner();
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.InvalidZeroValue.selector));
+
+        // Act
+        vm.prank(address(owner));
+        registry.setCommitteeMinWatchtowers(0);
+    }
+
+    function test_setCommitteeMinOperators_Success() external {
+        // Arrange
+        uint256 newMinOperators = registry.minCommitteeOperators() / 2;
+
+        // Assert
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.CommitteeMinOperatorsUpdated(newMinOperators);
+
+        // Act
+        vm.prank(address(registry.owner()));
+        registry.setCommitteeMinOperators(newMinOperators);
+
+        // Assert
+        assertEq(registry.minCommitteeOperators(), newMinOperators, "Committee min operators should be updated");
+    }
+
+    function test_setCommitteeMinOperators_Revert_OwnableUnauthorizedAccount() external {
+        // Arrange
+        uint256 newMinOperators = registry.minCommitteeOperators() / 2;
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+
+        // Act
+        registry.setCommitteeMinOperators(newMinOperators);
+    }
+
+    function test_setCommitteeMinOperators_Revert_InvalidZeroValue() external {
+        address owner = registry.owner();
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.InvalidZeroValue.selector));
+
+        // Act
+        vm.prank(address(owner));
+        registry.setCommitteeMinOperators(0);
+    }
+
+    function test_setCommitteeMinMembers_Success() external {
+        // Arrange
+        uint256 newMinMembers = registry.minCommitteeMembers() + 1;
+
+        // Assert
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.CommitteeMinMembersUpdated(newMinMembers);
+
+        // Act
+        vm.prank(address(registry.owner()));
+        registry.setCommitteeMinMembers(newMinMembers);
+
+        // Assert
+        assertEq(registry.minCommitteeMembers(), newMinMembers, "Committee min members should be updated");
+    }
+
+    function test_setCommitteeMinMembers_Revert_OwnableUnauthorizedAccount() external {
+        // Arrange
+        uint256 newMinMembers = registry.minCommitteeMembers() + 1;
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+
+        // Act
+        registry.setCommitteeMinMembers(newMinMembers);
+    }
+
+    function test_setCommitteeMinMembers_Revert_InvalidZeroValue() external {
+        address owner = registry.owner();
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.InvalidZeroValue.selector));
+
+        // Act
+        vm.prank(address(owner));
+        registry.setCommitteeMinMembers(0);
+    }
+
+    function test_setCommitteeMinMembers_Revert_InvalidMinMembers() external {
+        address owner = registry.owner();
+        uint256 minWatchtowers = registry.minCommitteeWatchtowers();
+        uint256 minOperators = registry.minCommitteeOperators();
+        uint256 invalidMinMembers = minWatchtowers + minOperators - 1;
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ICommitteeRegistry.InvalidMinMembers.selector, invalidMinMembers, minWatchtowers, minOperators
+            )
+        );
+
+        // Act
+        vm.prank(address(owner));
+        registry.setCommitteeMinMembers(invalidMinMembers);
+    }
+
     function test_getCommittee_Success() external {
         // Arrange
         (Committee memory expectedCommittee, uint64 streamId) = setup_completeCommittee();
@@ -616,6 +748,10 @@ contract TestCommitteeRegistry is Test, HelperContract {
     function test_setPendingCommitteeTimeout_Success() external {
         // Arrange
         uint256 newTimeout = registry.pendingCommitteeTimeout() / 2;
+
+        // Assert
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.PendingCommitteeTimeoutUpdated(newTimeout);
 
         // Act
         vm.prank(address(registry.owner()));
