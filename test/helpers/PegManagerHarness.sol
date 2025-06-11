@@ -17,8 +17,8 @@ contract PegManagerHarness is PegManager {
         PegManager.initialize(_initialOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager);
     }
 
-    function setPegOutTempInfoHarness(bytes32 _acceptPegInTxHash, bytes memory _userPubKey) external {
-        pegOutTempInfo[_acceptPegInTxHash] = PegOutTempInfo({userPubKey: _userPubKey});
+    function setPegOutTempInfoHarness(bytes32 _acceptPeginTxHash, bytes memory _userPubKey) external {
+        pegOutTempInfo[_acceptPeginTxHash] = PegOutTempInfo({userPubKey: _userPubKey});
     }
 
     function setStreamPositionHarness(

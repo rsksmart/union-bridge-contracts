@@ -22,8 +22,8 @@ struct Slot {
     uint64 slotId; // Unique ID
     SlotState state; // The state of the slot
     bytes scriptPubKey; // The scriptPubKey of the Accept Peg-in Output UTXO
-    bytes32 acceptPegInTx; // Transaction id of the committee peg-in transaction
-    uint64 acceptPegInAmount; // The value of the accept peg-in transaction P2TR utxo
+    bytes32 acceptPeginTx; // Transaction id of the committee peg-in transaction
+    uint64 acceptPeginAmount; // The value of the accept peg-in transaction P2TR utxo
     bytes32 take0Tx; // Transaction id of the peg-out without dispute transaction
     bytes32 take1Tx; // Transaction id of the successfull dispute peg-out transaction
 }
@@ -100,15 +100,15 @@ interface IStreamManager is IAccessControl {
     /// @notice Allows users to fill the accept peg-in transaction for a given slot
     /// @param _streamId The index in the array of streams
     /// @param _packetNumber The index in the array of packets
-    /// @param _acceptPegInAmount The amount of the accept peg-in transaction
-    /// @param _acceptPegInTx The transaction id of the accept peg-in transaction
+    /// @param _acceptPeginAmount The amount of the accept peg-in transaction
+    /// @param _acceptPeginTx The transaction id of the accept peg-in transaction
     /// @param _scriptPubKey The scriptPubKey of the accept peg-in transaction
     /// @return uint64 The slotId of the filled slot
-    function fillAcceptPegInTx(
+    function fillAcceptPeginTx(
         uint64 _streamId,
         uint64 _packetNumber,
-        uint64 _acceptPegInAmount,
-        bytes32 _acceptPegInTx,
+        uint64 _acceptPeginAmount,
+        bytes32 _acceptPeginTx,
         bytes memory _scriptPubKey
     ) external returns (uint64);
 
@@ -128,13 +128,13 @@ interface IStreamManager is IAccessControl {
     /// @param _streamId The index in the array of streams
     /// @param _packetNumber The index in the array of packets
     /// @param _slotId The index in the array of slots
-    /// @param _acceptPegInTxHash The expected accept peg-in transaction hash for validation
+    /// @param _acceptPeginTxHash The expected accept peg-in transaction hash for validation
     /// @param _take0Tx The transaction id of the peg-out without dispute transaction
     function paidSlot(
         uint64 _streamId,
         uint64 _packetNumber,
         uint64 _slotId,
-        bytes32 _acceptPegInTxHash,
+        bytes32 _acceptPeginTxHash,
         bytes32 _take0Tx
     ) external;
 
@@ -182,6 +182,6 @@ interface IStreamManager is IAccessControl {
     error InvalidPegoutConfirmations(uint8 confirmations);
     error InvalidSecurityBondValue(uint256 securityBond);
     error InvalidSlotState(SlotState actual, SlotState expected);
-    error InvalidAcceptPegInTxHash(bytes32 expected, bytes32 actual);
+    error InvalidAcceptPeginTxHash(bytes32 expected, bytes32 actual);
     error InvalidZeroAddress();
 }

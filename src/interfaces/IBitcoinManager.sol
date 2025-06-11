@@ -39,13 +39,13 @@ interface IBitcoinManager {
     /// @param _value uint64 The amount to peg in
     /// @param _btcReimbursementPubKey The BTC reimbursement public key x-cordinate only
     /// @param _committeePubKey bytes32 Get the current packet's committee key
-    /// @return temporaryPegInAddress The temporary peg-in address
-    function getTemporaryPegInAddress(
+    /// @return temporaryPeginAddress The temporary peg-in address
+    function getTemporaryPeginAddress(
         address _rskDestinationAddress,
         uint64 _value,
         bytes32 _btcReimbursementPubKey,
         bytes32 _committeePubKey
-    ) external view returns (string memory temporaryPegInAddress);
+    ) external view returns (string memory temporaryPeginAddress);
 
     /// @notice Extracts data from a Bitcoin transaction's OP_RETURN output
     /// @dev Expected OP_RETURN format: [OP_RETURN][RSK_PEGIN][packet number][rsk address][btc address]
@@ -53,9 +53,9 @@ interface IBitcoinManager {
     /// @return packetNumber The packet number encoded in the OP_RETURN data
     /// @return destinationAddress The RSK destination address encoded in the OP_RETURN data
     /// @return btcReimbursementPubKey The Bitcoin reimbursement public key (x only) encoded in the OP_RETURN data
-    function getPegInOpReturnData(BtcTxOut calldata _opReturnOut) external pure returns (uint64, address, bytes32);
+    function getPeginOpReturnData(BtcTxOut calldata _opReturnOut) external pure returns (uint64, address, bytes32);
 
-    function validatRequestPegInP2TROutput(
+    function validatRequestPeginP2TROutput(
         address _rskDestinationAddress,
         uint64 _value,
         bytes32 _btcReimbursementPubKey,
@@ -69,12 +69,12 @@ interface IBitcoinManager {
     /// @return txHash The transaction hash in big-endian format
     function getBtcTxHash(BtcTransaction calldata _btcTx) external pure returns (bytes32);
 
-    /// @notice Generates a Taproot script pub key for the PegInRequest with both key spend and script spend paths
+    /// @notice Generates a Taproot script pub key for the PeginRequest with both key spend and script spend paths
     /// @param _rskDestinationAddress address that will get the RBTC
     /// @param _value amount sent in btc, should be equal to stream denomination
     /// @param _btcReimbursementPubKey The user's public key (x-only, 32 bytes)
     /// @param _committeePubKey The committee's public key (x-only, 32 bytes)
-    function getPegInRequestP2TRScriptPub(
+    function getPeginRequestP2TRScriptPub(
         address _rskDestinationAddress,
         uint64 _value,
         bytes32 _btcReimbursementPubKey,
@@ -84,26 +84,26 @@ interface IBitcoinManager {
     /// @notice Get the hash to sign of a Bitcoin  accept peg-in transaction
     /// @param _committeePubKey The committee's public key
     /// @param _userXOnlyPubKey The user's public key (x-only, 32 bytes)
-    /// @param _registerPegInTx The transaction hash of the register peg-in tx being spent
+    /// @param _registerPeginTx The transaction hash of the register peg-in tx being spent
     /// @param _prevoutData Data about the previous output being spent (amount and scriptPubKey)
     /// @return the tagged hash and the encoded data before hashing
-    function getAcceptPegInSignatureHash(
+    function getAcceptPeginSignatureHash(
         bytes32 _committeePubKey,
         bytes32 _userXOnlyPubKey,
-        bytes32 _registerPegInTx,
+        bytes32 _registerPeginTx,
         PrevoutData memory _prevoutData
     ) external pure returns (bytes32, bytes32, bytes memory);
 
-    /// @notice Generates a Taproot script pub key for the AcceptPegIn with both key spend and script spend paths
+    /// @notice Generates a Taproot script pub key for the AcceptPegin with both key spend and script spend paths
     /// @param _committeePubKey The committee's public key (x-only, 32 bytes)
     /// @return The Taproot script pub key
-    function getAcceptPegInP2TRScriptPub(bytes32 _committeePubKey) external pure returns (bytes memory);
+    function getAcceptPeginP2TRScriptPub(bytes32 _committeePubKey) external pure returns (bytes memory);
 
     /// @notice Validates the accept peg in P2TR output
     /// @param _committeePubKey The committee's public key (x-only, 32 bytes)
     /// @param _inputAmount The amount of the input
     /// @param _p2trOut The Bitcoin transaction output containing the P2TR output
-    function validateAcceptPegInP2TROutput(bytes32 _committeePubKey, uint64 _inputAmount, BtcTxOut calldata _p2trOut)
+    function validateAcceptPeginP2TROutput(bytes32 _committeePubKey, uint64 _inputAmount, BtcTxOut calldata _p2trOut)
         external
         pure;
 
@@ -119,10 +119,10 @@ interface IBitcoinManager {
 
     /// @notice Get the hash to sign of a Bitcoin peg-out transaction
     /// @param _usrPubKey The user's public key in compact size that will receive the funds
-    /// @param _acceptPegInTx The transaction hash of the accept peg-in tx being spent
+    /// @param _acceptPeginTx The transaction hash of the accept peg-in tx being spent
     /// @param _prevoutData Data about the previous output being spent (amount and scriptPubKey)
     /// @return the tagged hash and the encoded data before hashing
-    function getPegOutSignatureHash(bytes memory _usrPubKey, bytes32 _acceptPegInTx, PrevoutData memory _prevoutData)
+    function getPegOutSignatureHash(bytes memory _usrPubKey, bytes32 _acceptPeginTx, PrevoutData memory _prevoutData)
         external
         pure
         returns (bytes32, bytes memory);
