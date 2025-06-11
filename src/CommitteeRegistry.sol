@@ -178,7 +178,6 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         Member storage member = members[_memberIndex];
         Role role = member.balance.applications[uint8(_denomination)].requestedRole;
         uint256 preStakedAmount = member.balance.applications[uint8(_denomination)].preStaked;
-        bytes32 memberPubKey = _getMemberTakePubKeyByIndex(_memberIndex);
 
         _removeFromCommitteesCandidates(_memberIndex, _denomination, role);
 
@@ -189,7 +188,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
             member.balance.staked[uint8(_denomination)][_packetNumber] = preStakedAmount;
         } else {
             member.balance.available += preStakedAmount;
-            emit NewAvailableBalance(memberPubKey, member.balance.available, preStakedAmount);
+            emit NewAvailableBalance(member.publicKeys[PublicKeyIndex.Take], member.balance.available, preStakedAmount);
         }
     }
 
