@@ -35,22 +35,22 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
 
     // ========================== Peg In Request ==========================
     /// @dev Generates a temporary peg in address for a peg in request
-    function getTemporaryPegInAddress(
+    function getTemporaryPeginAddress(
         address _rskDestinationAddress,
         uint64 _value,
         bytes32 _btcReimbursementPubKey,
         bytes32 _committeePubKey
     ) external view returns (string memory bitcoinDepositAddress) {
-        validateRequestPegInInputs(_btcReimbursementPubKey, _committeePubKey, _rskDestinationAddress, _value);
+        validateRequestPeginInputs(_btcReimbursementPubKey, _committeePubKey, _rskDestinationAddress, _value);
 
         bytes32 tweakedPublicKey =
-            getRequestPegInTweakedPublicKey(_rskDestinationAddress, _value, _btcReimbursementPubKey, _committeePubKey);
+            getRequestPeginTweakedPublicKey(_rskDestinationAddress, _value, _btcReimbursementPubKey, _committeePubKey);
 
         return Bech32m.encodeTaprootAddress(abi.encodePacked(tweakedPublicKey), network);
     }
 
-    /// @dev Generates the PegInRequest Taproot output script pub key with both key spend and script spend paths
-    function getRequestPegInTweakedPublicKey(
+    /// @dev Generates the PeginRequest Taproot output script pub key with both key spend and script spend paths
+    function getRequestPeginTweakedPublicKey(
         address _rskDestinationAddress,
         uint64 _value,
         bytes32 _btcReimbursementPubKey,
@@ -74,7 +74,7 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
     }
 
     /// @dev Validates the inputs for a peg-in request
-    function validateRequestPegInInputs(
+    function validateRequestPeginInputs(
         bytes32 _btcReimbursementPubKey,
         bytes32 _committeePubKey,
         address _rskDestinationAddress,
@@ -99,7 +99,7 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
     /// @dev [rsk destination address (20 bytes)]
     /// @dev [reimbursement public key (32 bytes)]
     /// @dev Total expected size: 71 bytes
-    function getPegInOpReturnData(BtcTxOut calldata _opReturnOut) external pure returns (uint64, address, bytes32) {
+    function getPeginOpReturnData(BtcTxOut calldata _opReturnOut) external pure returns (uint64, address, bytes32) {
         uint8 expectedSize = (1 + 1 + 9 + 8 + 20 + 32);
         if (_opReturnOut.scriptPubKey.length != expectedSize) {
             revert InvalidOpReturnLength(_opReturnOut.scriptPubKey.length, expectedSize);
@@ -145,7 +145,7 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
     /// @param _btcReimbursementPubKey The user's public key (x-only, 32 bytes)
     /// @param _committeePubKey The committee's public key (x-only, 32 bytes)
     /// @param _p2trOut The P2TR output of the peg in request
-    function validatRequestPegInP2TROutput(
+    function validatRequestPeginP2TROutput(
         address _rskDestinationAddress,
         uint64 _value,
         bytes32 _btcReimbursementPubKey,
@@ -157,27 +157,27 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         if (_p2trOut.amount < _value) {
             revert InvalidOutputAmount(_p2trOut.amount, _value);
         }
-        validateRequestPegInInputs(_btcReimbursementPubKey, _committeePubKey, _rskDestinationAddress, _value);
+        validateRequestPeginInputs(_btcReimbursementPubKey, _committeePubKey, _rskDestinationAddress, _value);
         bytes memory p2trScriptPubKey =
-            getPegInRequestP2TRScriptPub(_rskDestinationAddress, _value, _btcReimbursementPubKey, _committeePubKey);
+            getPeginRequestP2TRScriptPub(_rskDestinationAddress, _value, _btcReimbursementPubKey, _committeePubKey);
         if (!BytesHelper.compare(_p2trOut.scriptPubKey, p2trScriptPubKey)) {
             revert IncorrectOutputScript(_p2trOut.scriptPubKey, p2trScriptPubKey);
         }
     }
 
-    /// @dev Generates the PegInRequest Taproot output script pub key with both key spend and script spend paths
-    function getPegInRequestP2TRScriptPub(
+    /// @dev Generates the PeginRequest Taproot output script pub key with both key spend and script spend paths
+    function getPeginRequestP2TRScriptPub(
         address _rskDestinationAddress,
         uint64 _value,
         bytes32 _btcReimbursementPubKey,
         bytes32 _committeePubKey
     ) public pure returns (bytes memory) {
         bytes32 tweakedPublicKey =
-            getRequestPegInTweakedPublicKey(_rskDestinationAddress, _value, _btcReimbursementPubKey, _committeePubKey);
+            getRequestPeginTweakedPublicKey(_rskDestinationAddress, _value, _btcReimbursementPubKey, _committeePubKey);
         return BtcTaproot.getP2TRScriptPubKey(tweakedPublicKey);
     }
 
-    function validatePegOutUserOutput(BtcTxOut calldata _userOutput, bytes memory _userPubKey) external pure {
+    function validatePegoutUserOutput(BtcTxOut calldata _userOutput, bytes memory _userPubKey) external pure {
         bytes memory expectedScriptPubKey = BtcScriptParser.getP2WPKHScript(_userPubKey);
 
         // Validate that the output script matches the expected P2WPKH script
@@ -188,16 +188,16 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
 
     // ========================== Peg In Accept ==========================
     /// @dev Get the signature hash for a peg in accept transaction
-    function getAcceptPegInSignatureHash(
+    function getAcceptPeginSignatureHash(
         bytes32 _committeePubKey,
         bytes32 _userXOnlyPubKey,
-        bytes32 _registerPegInTx,
+        bytes32 _registerPeginTx,
         PrevoutData memory _prevoutData
     ) external pure returns (bytes32, bytes32, bytes memory) {
         // Prepare the inputs
         BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
         btcInputs[0] = BtcTxIn({
-            txId: _registerPegInTx,
+            txId: _registerPeginTx,
             vout: Constants.VOUT_INDEX_TAPTREE,
             scriptSig: bytes(""),
             sequence: Constants.SEQUENCE
@@ -215,7 +215,7 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         (uint64 fee, uint64 speedUpAmount) = BtcHelper.calculateFeeAndSpeedUp(_prevoutData.value);
 
         // Committee accept pegin
-        bytes memory scriptPubKey = getAcceptPegInP2TRScriptPub(_committeePubKey);
+        bytes memory scriptPubKey = getAcceptPeginP2TRScriptPub(_committeePubKey);
         btcOutputs[0] = BtcTxOut({amount: _prevoutData.value - fee - speedUpAmount, scriptPubKey: scriptPubKey});
 
         // Speed up
@@ -223,21 +223,21 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         btcOutputs[1] = BtcTxOut({amount: speedUpAmount, scriptPubKey: speedUpScriptPubKey});
 
         // Prepare Btc Transaction
-        BtcTransaction memory pegInAcceptTx = BtcTransaction({
+        BtcTransaction memory peginAcceptTx = BtcTransaction({
             version: Constants.BTC_TX_VERSION,
             locktime: Constants.LOCKTIME,
             inputs: btcInputs,
             outputs: btcOutputs
         });
-        bytes32 txHash = _getBtcTxHash(pegInAcceptTx);
+        bytes32 txHash = _getBtcTxHash(peginAcceptTx);
         // Return the tagged hash and the encoded data before hashing
         (bytes32 acceptPeginSignatureHash, bytes memory acceptPeginSignatureMessage) =
-            taprootSignatureHash(Constants.SIGHASH_ALL, prevoutDatas, pegInAcceptTx);
+            taprootSignatureHash(Constants.SIGHASH_ALL, prevoutDatas, peginAcceptTx);
         return (txHash, acceptPeginSignatureHash, acceptPeginSignatureMessage);
     }
 
-    /// @dev Generates the PegInAccept Taproot output script pub key with both key spend and script spend paths
-    function getAcceptPegInTweakedPublicKey(bytes32 _committeePubKey) internal pure returns (bytes32) {
+    /// @dev Generates the PeginAccept Taproot output script pub key with both key spend and script spend paths
+    function getAcceptPeginTweakedPublicKey(bytes32 _committeePubKey) internal pure returns (bytes32) {
         // TODO add necesary tap scripts for take0, take1, etc
 
         // Currently we only consider the key spend path (user take)
@@ -248,7 +248,7 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
     }
 
     /// @notice Validates output against a Taproot script with both key spend and script spend paths
-    function validateAcceptPegInP2TROutput(bytes32 _committeePubKey, uint64 _inputAmount, BtcTxOut calldata _p2trOut)
+    function validateAcceptPeginP2TROutput(bytes32 _committeePubKey, uint64 _inputAmount, BtcTxOut calldata _p2trOut)
         external
         pure
     {
@@ -258,15 +258,15 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         if (_p2trOut.amount < inputMinusFees) {
             revert InvalidOutputAmount(_p2trOut.amount, inputMinusFees);
         }
-        bytes memory p2trScriptPubKey = getAcceptPegInP2TRScriptPub(_committeePubKey);
+        bytes memory p2trScriptPubKey = getAcceptPeginP2TRScriptPub(_committeePubKey);
         if (!BytesHelper.compare(_p2trOut.scriptPubKey, p2trScriptPubKey)) {
             revert IncorrectOutputScript(_p2trOut.scriptPubKey, p2trScriptPubKey);
         }
     }
 
-    /// @dev Generates the PegInRequest Taproot output script pub key with both key spend and script spend paths
-    function getAcceptPegInP2TRScriptPub(bytes32 _committeePubKey) public pure returns (bytes memory) {
-        bytes32 tweakedPublicKey = getAcceptPegInTweakedPublicKey(_committeePubKey);
+    /// @dev Generates the PeginRequest Taproot output script pub key with both key spend and script spend paths
+    function getAcceptPeginP2TRScriptPub(bytes32 _committeePubKey) public pure returns (bytes memory) {
+        bytes32 tweakedPublicKey = getAcceptPeginTweakedPublicKey(_committeePubKey);
         return BtcTaproot.getP2TRScriptPubKey(tweakedPublicKey);
     }
 
@@ -282,7 +282,7 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         }
     }
 
-    /// @dev Generates the PegInRequest Taproot output script pub key with both key spend and script spend paths
+    /// @dev Generates the PeginRequest Taproot output script pub key with both key spend and script spend paths
     function getSpeedUpScriptPub(bytes32 _pubKey) public pure returns (bytes memory) {
         // TODO change this to use P2WPSH with OP_1 so anyone can send the speed up
         // this should change at the same time as in the protocol builder
@@ -291,7 +291,7 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
 
     // ========================== Peg Out Signature Hash ==========================
     /// @dev Get the signature hash for a peg out transaction
-    function getPegOutSignatureHash(bytes memory _usrPubKey, bytes32 _acceptPegInTx, PrevoutData memory _prevoutData)
+    function getPegoutSignatureHash(bytes memory _usrPubKey, bytes32 _acceptPeginTx, PrevoutData memory _prevoutData)
         external
         pure
         returns (bytes32, bytes memory)
@@ -299,7 +299,7 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         // Prepare the inputs
         BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
         btcInputs[0] = BtcTxIn({
-            txId: _acceptPegInTx,
+            txId: _acceptPeginTx,
             vout: Constants.VOUT_INDEX_TAPTREE,
             scriptSig: bytes(""),
             sequence: Constants.SEQUENCE
@@ -324,14 +324,14 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         btcOutputs[1] = BtcTxOut({amount: speedUpAmount, scriptPubKey: scriptPubKey});
 
         // Prepare Btc Transaction
-        BtcTransaction memory pegOutTx = BtcTransaction({
+        BtcTransaction memory pegoutTx = BtcTransaction({
             version: Constants.BTC_TX_VERSION,
             locktime: Constants.LOCKTIME,
             inputs: btcInputs,
             outputs: btcOutputs
         });
         // Return the tagged hash and the encoded data before hashing
-        return taprootSignatureHash(Constants.SIGHASH_ALL, prevoutDatas, pegOutTx);
+        return taprootSignatureHash(Constants.SIGHASH_ALL, prevoutDatas, pegoutTx);
     }
 
     /// @dev Returns Signature Hash. The signature hash is the actual "message" that we sign when creating the signature.

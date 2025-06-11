@@ -37,7 +37,7 @@ contract StreamManager is IStreamManager, AccessControl {
                     pegoutSlotPointer: 0,
                     securityBondValue: BtcHelper.satoshiToWei(_denominations[i]) / 10,
                     peginConfirmations: Constants.PEGIN_CONFIRMATION_DEFAULT,
-                    pegOutConfirmations: Constants.PEGOUT_CONFIRMATION_DEFAULT
+                    pegoutConfirmations: Constants.PEGOUT_CONFIRMATION_DEFAULT
                 })
             );
             emit StreamCreated(i, _denominations[i]);
@@ -127,7 +127,7 @@ contract StreamManager is IStreamManager, AccessControl {
             revert InconsistentSlotsPerPacket(_streamId, _packetNumber, slots[_streamId][_packetNumber].length);
         }
 
-        // Update the stream pegIn pointer
+        // Update the stream pegin pointer
         if (slots[_streamId][_packetNumber].length == Constants.SLOTS_PER_PACKET) {
             // NOTE: Check max amount of packets and/or overflow
             stream.peginPacketPointer++;
@@ -190,12 +190,12 @@ contract StreamManager is IStreamManager, AccessControl {
         return slots[_streamId][_packetNumber][_slotNumber];
     }
 
-    /// @dev Looks for the first empty slot and asigns the PegIn Tx in prepared state
-    function fillAcceptPegInTx(
+    /// @dev Looks for the first empty slot and asigns the Pegin Tx in prepared state
+    function fillAcceptPeginTx(
         uint64 _streamId,
         uint64 _packetNumber,
-        uint64 _acceptPegInAmount,
-        bytes32 _acceptPegInTx,
+        uint64 _acceptPeginAmount,
+        bytes32 _acceptPeginTx,
         bytes memory _scriptPubKey
     ) external onlyPegManager returns (uint64) {
         return fillSlot(
@@ -204,8 +204,8 @@ contract StreamManager is IStreamManager, AccessControl {
             Slot({
                 slotId: 0,
                 state: SlotState.FILLED,
-                acceptPegInTx: _acceptPegInTx,
-                acceptPegInAmount: _acceptPegInAmount,
+                acceptPeginTx: _acceptPeginTx,
+                acceptPeginAmount: _acceptPeginAmount,
                 scriptPubKey: _scriptPubKey,
                 take0Tx: "",
                 take1Tx: ""
@@ -225,7 +225,7 @@ contract StreamManager is IStreamManager, AccessControl {
         uint64 _streamId,
         uint64 _packetNumber,
         uint64 _slotId,
-        bytes32 _acceptPegInTxHash,
+        bytes32 _acceptPeginTxHash,
         bytes32 _take0Tx
     ) external onlyPegManager {
         // Validate that the packet exists
@@ -241,8 +241,8 @@ contract StreamManager is IStreamManager, AccessControl {
         Slot storage slot = slots[_streamId][_packetNumber][_slotId];
 
         // Validate that the first input references the correct accept peg-in transaction
-        if (slot.acceptPegInTx != _acceptPegInTxHash) {
-            revert InvalidAcceptPegInTxHash(slot.acceptPegInTx, _acceptPegInTxHash);
+        if (slot.acceptPeginTx != _acceptPeginTxHash) {
+            revert InvalidAcceptPeginTxHash(slot.acceptPeginTx, _acceptPeginTxHash);
         }
 
         // Update the slot state to PAID and store the take0Tx
@@ -275,7 +275,7 @@ contract StreamManager is IStreamManager, AccessControl {
             revert InvalidPegoutConfirmations(_confirmations);
         }
 
-        streams[_streamId].pegOutConfirmations = _confirmations;
+        streams[_streamId].pegoutConfirmations = _confirmations;
     }
 
     function setCommitteeRegistry(ICommitteeRegistry _committeeRegistry) external onlyOwner {

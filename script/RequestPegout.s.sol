@@ -32,19 +32,19 @@ contract RequestPegoutScript is ScriptUtils {
         uint64 packetNumber = stream.pegoutPacketPointer;
         uint64 slotId = stream.pegoutSlotPointer;
 
-        console.log("=== Request PegOut ===");
+        console.log("=== Request Pegout ===");
         vm.startBroadcast(getDeployerKey());
-        pegManager.requestPegOut{value: amountInWei}(usrPubKey);
+        pegManager.requestPegout{value: amountInWei}(usrPubKey);
         vm.stopBroadcast();
 
-        bytes32 pegOutSignatureHash = pegManager.getPegOutSignatureHash(stream.streamId, packetNumber, slotId);
-        if (pegOutSignatureHash == bytes32(0)) {
-            revert("PegOutRequest not accepted");
+        bytes32 pegoutSignatureHash = pegManager.getPegoutSignatureHash(stream.streamId, packetNumber, slotId);
+        if (pegoutSignatureHash == bytes32(0)) {
+            revert("PegoutRequest not accepted");
         }
 
-        console.log("=== PegOutRequest accepted successfully ===");
-        console.log("pegOutSignatureHash");
-        console.logBytes32(pegOutSignatureHash);
+        console.log("=== PegoutRequest accepted successfully ===");
+        console.log("pegoutSignatureHash");
+        console.logBytes32(pegoutSignatureHash);
         console.log("Stream, Slot, Packet");
         console.log(stream.streamId, slotId, packetNumber);
     }

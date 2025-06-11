@@ -24,7 +24,7 @@ contract TestSignatureManager is Test, HelperContract {
     }
 
     // we only check the revert case since the success cases are being checked in the _addMemberSignaturePegout tests
-    function test_checkAllSignaturesReady_Revert_PegOutRequestNotFound() external {
+    function test_checkAllSignaturesReady_Revert_PegoutRequestNotFound() external {
         // Arrange
         bytes32 hashToSign = 0x0000000000000000000000000000000000000000000000000000000000000001;
 

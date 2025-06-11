@@ -31,8 +31,8 @@ contract StreamManagerHarness is StreamManager {
                 slotId: 0,
                 state: SlotState.FILLED,
                 scriptPubKey: _scriptPubKey,
-                acceptPegInTx: _txId,
-                acceptPegInAmount: _amount,
+                acceptPeginTx: _txId,
+                acceptPeginAmount: _amount,
                 take0Tx: "",
                 take1Tx: ""
             })
@@ -51,8 +51,8 @@ contract StreamManagerHarness is StreamManager {
                     slotId: i,
                     state: _slotState,
                     scriptPubKey: hex"00",
-                    acceptPegInTx: bytes32(0),
-                    acceptPegInAmount: 0,
+                    acceptPeginTx: bytes32(0),
+                    acceptPeginAmount: 0,
                     take0Tx: "",
                     take1Tx: ""
                 })

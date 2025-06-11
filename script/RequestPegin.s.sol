@@ -14,7 +14,7 @@ contract RequestPeginScript is ScriptUtils {
     IStreamManager streamManager;
     IBitcoinManager bitcoinManager;
 
-    function setUp() internal returns (BtcTxSPVProof memory pegInRequestTxSPVProof) {
+    function setUp() internal returns (BtcTxSPVProof memory peginRequestTxSPVProof) {
         // ====== Arguments ======
         address rskDestinationAddress = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
         uint64 value = 100_000;
@@ -38,10 +38,10 @@ contract RequestPeginScript is ScriptUtils {
             scriptSig: hex"",
             sequence: 4294967293
         });
-        // PegIn P2TR output
+        // Pegin P2TR output
         btcTransaction.outputs[0] = BtcTxOut({
             amount: value,
-            scriptPubKey: bitcoinManager.getPegInRequestP2TRScriptPub(
+            scriptPubKey: bitcoinManager.getPeginRequestP2TRScriptPub(
                 rskDestinationAddress, value, btcReimbursementPubKey, committeePubKey
             )
         });
@@ -58,37 +58,37 @@ contract RequestPeginScript is ScriptUtils {
             )
         });
         // SPV proof to verify with the bridge.getBtcTransactionConfirmations
-        pegInRequestTxSPVProof = BtcTxSPVProof({
+        peginRequestTxSPVProof = BtcTxSPVProof({
             blockHash: 0x0000000000000000000282fa21665766e58eb6cb94e458c3ef6d4af1121e38d9,
             btcTx: btcTransaction,
             merkleBranchPath: 4285202432,
             merkleBranchHashes: new bytes32[](1)
         });
-        pegInRequestTxSPVProof.merkleBranchHashes[0] =
+        peginRequestTxSPVProof.merkleBranchHashes[0] =
             0x3fcef4a1ddf759a858190b89ecbd1ff3dffb49704e110b68baf5b5de7021910f;
     }
 
     function run() public {
-        BtcTxSPVProof memory pegInRequestTxSPVProof = setUp();
+        BtcTxSPVProof memory peginRequestTxSPVProof = setUp();
         // get Tx hash
-        bytes32 pegInRequestTxHash = bitcoinManager.getBtcTxHash(pegInRequestTxSPVProof.btcTx);
-        console.log("pegInRequestTxHash");
-        console.logBytes32(pegInRequestTxHash);
-        // check if pegInRequest is already registered
-        StreamPosition memory streamPosition = pegManager.getStreamPosition(pegInRequestTxHash);
+        bytes32 peginRequestTxHash = bitcoinManager.getBtcTxHash(peginRequestTxSPVProof.btcTx);
+        console.log("peginRequestTxHash");
+        console.logBytes32(peginRequestTxHash);
+        // check if peginRequest is already registered
+        StreamPosition memory streamPosition = pegManager.getStreamPosition(peginRequestTxHash);
         if (streamPosition.pegStatus != PegStatus.NOT_REGISTERED) {
-            revert("PegInRequest already registered");
+            revert("PeginRequest already registered");
         }
-        // register pegInRequest
+        // register peginRequest
         vm.startBroadcast(getDeployerKey());
-        pegManager.registerPegInRequest(pegInRequestTxSPVProof);
+        pegManager.registerPeginRequest(peginRequestTxSPVProof);
         vm.stopBroadcast();
-        // check if pegInRequest is registered
-        streamPosition = pegManager.getStreamPosition(pegInRequestTxHash);
+        // check if peginRequest is registered
+        streamPosition = pegManager.getStreamPosition(peginRequestTxHash);
         if (streamPosition.pegStatus != PegStatus.REGISTERED) {
-            revert("PegInRequest not registered");
+            revert("PeginRequest not registered");
         }
-        console.log("=== PegInRequest registered successfully ===");
+        console.log("=== PeginRequest registered successfully ===");
         console.log("streamId");
         console.log(streamPosition.streamId);
         console.log("packetNumber");

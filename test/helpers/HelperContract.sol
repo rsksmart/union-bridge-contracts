@@ -123,10 +123,10 @@ abstract contract HelperContract is Test, TestUtils {
     }
 
     // ========================== Peg In Request ==========================
-    // This counter is added to the txId from getPegInRequestTxIn to avoid collisions when doing multiple pegin's
+    // This counter is added to the txId from getPeginRequestTxIn to avoid collisions when doing multiple pegin's
     uint256 internal txIdCounter = 0;
 
-    function getPegInRequestTxIn() internal returns (BtcTxIn memory) {
+    function getPeginRequestTxIn() internal returns (BtcTxIn memory) {
         return BtcTxIn({
             txId: bytes32(uint256(0x360b81785dc7c2f40627fea364676dbb73e6276683caffd9f906b0e0bd36b3d2) + txIdCounter++),
             vout: 1694,
@@ -135,7 +135,7 @@ abstract contract HelperContract is Test, TestUtils {
         });
     }
 
-    function getPegInRequestP2TROut() internal pure returns (BtcTxOut memory) {
+    function getPeginRequestP2TROut() internal pure returns (BtcTxOut memory) {
         return BtcTxOut({
             amount: VALUE,
             // TODO this is the value that includes the op_return data inside the taptree
@@ -145,19 +145,19 @@ abstract contract HelperContract is Test, TestUtils {
         });
     }
 
-    function getPegInRequestPacket() internal pure returns (uint64) {
+    function getPeginRequestPacket() internal pure returns (uint64) {
         return 0;
     }
 
-    function getPegInRskDestinationAddress() internal pure returns (address) {
+    function getPeginRskDestinationAddress() internal pure returns (address) {
         return 0x7Ac5496aee77c1bA1F0854206A26DdA82A81d6d8;
     }
 
-    function getPegInBtcReimbursementPubKey() internal pure returns (bytes32) {
+    function getPeginBtcReimbursementPubKey() internal pure returns (bytes32) {
         return 0x7d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f;
     }
 
-    function getPegInRequestOpReturnOut(
+    function getPeginRequestOpReturnOut(
         uint64 _packetNumber,
         address _rskDestinationAddress,
         bytes32 _btcReimbursementPubKey
@@ -175,19 +175,19 @@ abstract contract HelperContract is Test, TestUtils {
         return BtcTxOut({amount: 0, scriptPubKey: script});
     }
 
-    function getBtcPegInRequestTx() internal returns (BtcTransaction memory) {
+    function getBtcPeginRequestTx() internal returns (BtcTransaction memory) {
         BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
-        btcInputs[0] = getPegInRequestTxIn();
+        btcInputs[0] = getPeginRequestTxIn();
         // Output
         BtcTxOut[] memory btcOutputs = new BtcTxOut[](2);
-        btcOutputs[0] = getPegInRequestP2TROut();
+        btcOutputs[0] = getPeginRequestP2TROut();
 
         Stream memory stream = streamManager.getStream(VALUE);
         uint64 packetNumber = stream.peginPacketPointer;
 
-        address rskDestinationAddress = getPegInRskDestinationAddress();
-        bytes32 btcReimbursementPubKey = getPegInBtcReimbursementPubKey();
-        btcOutputs[1] = getPegInRequestOpReturnOut(packetNumber, rskDestinationAddress, btcReimbursementPubKey);
+        address rskDestinationAddress = getPeginRskDestinationAddress();
+        bytes32 btcReimbursementPubKey = getPeginBtcReimbursementPubKey();
+        btcOutputs[1] = getPeginRequestOpReturnOut(packetNumber, rskDestinationAddress, btcReimbursementPubKey);
         return BtcTransaction({
             version: Constants.BTC_TX_VERSION,
             inputs: btcInputs,
@@ -201,12 +201,12 @@ abstract contract HelperContract is Test, TestUtils {
     }
 
     // ========================== Peg In Accept ==========================
-    function getBtcAcceptPegInTx(BtcTransaction memory _tx) internal pure returns (BtcTransaction memory) {
+    function getBtcAcceptPeginTx(BtcTransaction memory _tx) internal pure returns (BtcTransaction memory) {
         BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
-        btcInputs[0] = getAcceptPegInTxIn(_tx);
+        btcInputs[0] = getAcceptPeginTxIn(_tx);
         // Output
         BtcTxOut[] memory btcOutputs = new BtcTxOut[](2);
-        btcOutputs[0] = getAcceptPegInP2TROut();
+        btcOutputs[0] = getAcceptPeginP2TROut();
         btcOutputs[1] = getBtcSpeedUpOut();
         // Locktime
         return BtcTransaction({
@@ -217,7 +217,7 @@ abstract contract HelperContract is Test, TestUtils {
         });
     }
 
-    function getAcceptPegInTxIn(BtcTransaction memory _tx) internal pure returns (BtcTxIn memory) {
+    function getAcceptPeginTxIn(BtcTransaction memory _tx) internal pure returns (BtcTxIn memory) {
         return BtcTxIn({txId: getBtcTxHash(_tx), vout: 0, sequence: Constants.SEQUENCE, scriptSig: hex""});
     }
 
@@ -230,7 +230,7 @@ abstract contract HelperContract is Test, TestUtils {
         });
     }
 
-    function getAcceptPegInP2TROut() internal pure returns (BtcTxOut memory) {
+    function getAcceptPeginP2TROut() internal pure returns (BtcTxOut memory) {
         return BtcTxOut({
             amount: VALUE - (Constants.P2TR_FEE + Constants.SPEED_UP_AMOUNT),
             scriptPubKey: hex"51209687ca13c4fb3fa3ba05c2f9119dda026bfe66f0098dcf9b896a98ecb2e96702"
@@ -238,7 +238,7 @@ abstract contract HelperContract is Test, TestUtils {
     }
 
     // ========================== Peg out ==========================
-    function createPegOutTx(bytes32 _acceptPegInTxHash, bytes memory _userPubKey, uint64 _amount)
+    function createPegoutTx(bytes32 _acceptPeginTxHash, bytes memory _userPubKey, uint64 _amount)
         internal
         pure
         returns (BtcTransaction memory)
@@ -246,7 +246,7 @@ abstract contract HelperContract is Test, TestUtils {
         // Input: spend the accept peg-in UTXO
         BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
         btcInputs[0] = BtcTxIn({
-            txId: _acceptPegInTxHash,
+            txId: _acceptPeginTxHash,
             vout: 0, // P2TR output is at index 0
             sequence: 0xfffffffd,
             scriptSig: hex""
@@ -284,13 +284,13 @@ abstract contract HelperContract is Test, TestUtils {
         return btcTxSPVProof;
     }
 
-    function setup_multipleRequestAndAcceptPeginFlows(uint256 _numberOfPegIns, uint64 _streamId) internal {
-        for (uint256 i = 0; i < _numberOfPegIns; i++) {
+    function setup_multipleRequestAndAcceptPeginFlows(uint256 _numberOfPegins, uint64 _streamId) internal {
+        for (uint256 i = 0; i < _numberOfPegins; i++) {
             BtcTransaction memory btcTx = setup_requestPeginFlow();
             setup_acceptPeginFlow(btcTx);
 
             if (
-                _numberOfPegIns > Constants.SLOTS_PER_PACKET
+                _numberOfPegins > Constants.SLOTS_PER_PACKET
                     && (i % Constants.SLOTS_PER_PACKET) == Constants.SLOT_USAGE_THRESHOLD
             ) {
                 uint256 memberIndexStart = registry.minCommitteeMembers();
@@ -302,28 +302,28 @@ abstract contract HelperContract is Test, TestUtils {
 
     function setup_acceptPeginFlow(BtcTransaction memory _tx) public returns (BtcTransaction memory) {
         // Arrange
-        BtcTransaction memory btcTransaction = getBtcAcceptPegInTx(_tx);
+        BtcTransaction memory btcTransaction = getBtcAcceptPeginTx(_tx);
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(10);
-        // Create PegIn accepted tx struct information
-        BtcTxSPVProof memory pegInAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
+        // Create Pegin accepted tx struct information
+        BtcTxSPVProof memory peginAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
         // Act
-        pm.acceptPegInRequest(pegInAcceptedTxSPVProof);
+        pm.acceptPeginRequest(peginAcceptedTxSPVProof);
 
         return btcTransaction;
     }
 
     function setup_requestPeginFlow() public returns (BtcTransaction memory) {
         // Arrange
-        BtcTransaction memory btcTransaction = getBtcPegInRequestTx();
+        BtcTransaction memory btcTransaction = getBtcPeginRequestTx();
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(10);
-        // Create PegIn struct information
-        BtcTxSPVProof memory pegInRequestTxSPVProof = createBtcTxSPVProof(btcTransaction);
+        // Create Pegin struct information
+        BtcTxSPVProof memory peginRequestTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
         // Act
-        pm.registerPegInRequest(pegInRequestTxSPVProof);
+        pm.registerPeginRequest(peginRequestTxSPVProof);
         return btcTransaction;
     }
 
@@ -334,12 +334,12 @@ abstract contract HelperContract is Test, TestUtils {
 
     // ========================== Register Pegout Setup ==========================
     struct RegisterPegoutSetup {
-        BtcTransaction pegOutTx;
-        BtcTxSPVProof pegOutTxSPVProof;
+        BtcTransaction pegoutTx;
+        BtcTxSPVProof pegoutTxSPVProof;
         Stream stream;
         uint64 packetNumber;
         uint64 slotId;
-        bytes32 acceptPegInTxHash;
+        bytes32 acceptPeginTxHash;
         bytes userPubKey;
         bytes32 expectedTxHash;
     }
@@ -350,33 +350,33 @@ abstract contract HelperContract is Test, TestUtils {
         setup.userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
 
         // peg-in tx hash
-        setup.acceptPegInTxHash = 0x30b6a2cae94d89540a99e0dfa39cf88e6de40dca9142810fdce7a95c00faff47;
+        setup.acceptPeginTxHash = 0x30b6a2cae94d89540a99e0dfa39cf88e6de40dca9142810fdce7a95c00faff47;
 
         // Create a peg-out transaction that spends the accept peg-in UTXO
-        setup.pegOutTx = createPegOutTx(setup.acceptPegInTxHash, setup.userPubKey, VALUE);
+        setup.pegoutTx = createPegoutTx(setup.acceptPeginTxHash, setup.userPubKey, VALUE);
 
         setup.slotId = streamManager.setSlotHarness(
             setup.stream.streamId,
             setup.packetNumber,
             hex"00143fd2e14f4b448a071e074e1e1879318447f2a266",
-            setup.acceptPegInTxHash,
+            setup.acceptPeginTxHash,
             VALUE
         );
 
         // Set the slot state to LOCKED
         streamManager.setSlotStateHarness(setup.stream.streamId, setup.packetNumber, setup.slotId, SlotState.LOCKED);
 
-        // Set up the pegOutTxs mapping
-        pm.setPegOutTempInfoHarness(setup.acceptPegInTxHash, setup.userPubKey);
+        // Set up the pegoutTxs mapping
+        pm.setPegoutTempInfoHarness(setup.acceptPeginTxHash, setup.userPubKey);
         pm.setStreamPositionHarness(
-            setup.acceptPegInTxHash, setup.stream.streamId, setup.packetNumber, setup.slotId, PegStatus.ACCEPTED
+            setup.acceptPeginTxHash, setup.stream.streamId, setup.packetNumber, setup.slotId, PegStatus.ACCEPTED
         );
 
         // Create SPV proof for the peg-out transaction
-        setup.pegOutTxSPVProof = createBtcTxSPVProof(setup.pegOutTx);
+        setup.pegoutTxSPVProof = createBtcTxSPVProof(setup.pegoutTx);
 
         // Calculate the expected transaction hash
-        setup.expectedTxHash = bitcoinManager.getBtcTxHash(setup.pegOutTx);
+        setup.expectedTxHash = bitcoinManager.getBtcTxHash(setup.pegoutTx);
 
         return setup;
     }

@@ -10,7 +10,7 @@ contract TestBtcTxEncoder is Test {
 
     function test_encodeTxIn_Success() external pure {
         // Arrange
-        BtcTxIn memory btcInput = getPegInRequestTxIn();
+        BtcTxIn memory btcInput = getPeginRequestTxIn();
         // Act
         bytes memory hexTxIn =
             BtcTxEncoder.encodeTxIn(btcInput.txId, btcInput.vout, btcInput.sequence, btcInput.scriptSig);
@@ -70,7 +70,7 @@ contract TestBtcTxEncoder is Test {
         assertEq(hexTxIn, getExpectedRawTx(), "Encoded Tx should be correctly formed");
     }
 
-    function test_encodeTx_pegInRequest_Success() external pure {
+    function test_encodeTx_peginRequest_Success() external pure {
         // Arrange
         BtcTransaction memory btcTx =
             BtcTransaction({version: 2, inputs: new BtcTxIn[](1), outputs: new BtcTxOut[](2), locktime: 0});
@@ -94,12 +94,12 @@ contract TestBtcTxEncoder is Test {
         assertEq(
             hexTxIn,
             hex"02000000019cf950757f6e64340e22ce541e3b0f0e5d3d7b479a4dda62d8f37ce40bc24fab0000000000fdffffff02a086010000000000225120228f281f297fd01cd363b9c93f742ba2976c1ec5a6083d9f754cb61e505356c30000000000000000476a4552534b5f504547494e00000000000000007ac5496aee77c1ba1f0854206a26dda82a81d6d87d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f00000000",
-            "Encoded PegInRequest Tx should be correctly formed"
+            "Encoded PeginRequest Tx should be correctly formed"
         );
     }
 
     // Helper functions
-    function getPegInRequestTxIn() internal pure returns (BtcTxIn memory) {
+    function getPeginRequestTxIn() internal pure returns (BtcTxIn memory) {
         // Data from tx 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079
         // https://www.blockchain.com/explorer/transactions/btc/c00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079
         return BtcTxIn({
@@ -120,7 +120,7 @@ contract TestBtcTxEncoder is Test {
         // Data from tx 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079
         // https://www.blockchain.com/explorer/transactions/btc/c00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079
         BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
-        btcInputs[0] = getPegInRequestTxIn();
+        btcInputs[0] = getPeginRequestTxIn();
         // Output
         BtcTxOut[] memory btcOutputs = new BtcTxOut[](1);
         btcOutputs[0] = getBtcTxOut();

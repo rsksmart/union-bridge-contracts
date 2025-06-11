@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {PegManager, PegOutTempInfo, PegStatus} from "src/PegManager.sol";
+import {PegManager, PegoutTempInfo, PegStatus} from "src/PegManager.sol";
 import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {IBitcoinManager} from "src/interfaces/IBitcoinManager.sol";
 import {StreamPosition} from "src/interfaces/IPegManager.sol";
@@ -17,8 +17,8 @@ contract PegManagerHarness is PegManager {
         PegManager.initialize(_initialOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager);
     }
 
-    function setPegOutTempInfoHarness(bytes32 _acceptPegInTxHash, bytes memory _userPubKey) external {
-        pegOutTempInfo[_acceptPegInTxHash] = PegOutTempInfo({userPubKey: _userPubKey});
+    function setPegoutTempInfoHarness(bytes32 _acceptPeginTxHash, bytes memory _userPubKey) external {
+        pegoutTempInfo[_acceptPeginTxHash] = PegoutTempInfo({userPubKey: _userPubKey});
     }
 
     function setStreamPositionHarness(
