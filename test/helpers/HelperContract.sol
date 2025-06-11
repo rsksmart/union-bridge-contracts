@@ -39,8 +39,7 @@ abstract contract HelperContract is Test, TestUtils {
         78541660797044910968829902406342334108369226379826116161446442989268089806461;
     uint256 constant COMMITTEE_ID_STREAM_1_PACKET_1 =
         92458281274488595289803937127152923398167637295201432141969818930235769911599;
-    bytes32 constant COMMITTEE_PUB_KEY_STREAM_1_PACKET_0 =
-        0xd1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d;
+    bytes32 constant COMMITTEE_PUB_KEY = 0xd1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d;
 
     // Dummy requested roles and streams for the members
     StreamDenomination internal constant DEFAULT_STREAM = StreamDenomination._0_001BTC;
@@ -56,34 +55,57 @@ abstract contract HelperContract is Test, TestUtils {
     // Arrange
     uint64 internal constant VALUE = 1_000_000; // 0.01 BTC
     uint256 internal constant BLOCK_TIMESTAMP_FOR_DETERMINISTIC_COMMITTEE = 1000; // Arbitrary timestamp for random committee selection. Changing it will change all random committees
+    uint256 registeredMembersCounter = 0; // Counter to keep track of registered members
 
-    function setup_registerMembers(uint256 numWatchtowers, uint256 numOperators, StreamDenomination denomination)
+    // Keep track of the number of members registered so if we want to register more members it'll use new addresses
+    function setup_registerNewMembers(uint256 numWatchtowers, uint256 numOperators, StreamDenomination denomination)
         internal
     {
         // Register members with their mock keys. These are Bitcoin x-only public keys.
         uint256 totalMembers = numWatchtowers + numOperators;
 
         for (uint256 memberIndex = 0; memberIndex < totalMembers; memberIndex++) {
-            PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(memberIndex + 1);
-            address user = vm.addr(memberIndex + 1); // Use a different address for each member
+            PublicKeyRegistration[] memory pubKeysRegistration =
+                generatePublicKeysRegistration(registeredMembersCounter + memberIndex + 1);
+            address user = vm.addr(registeredMembersCounter + memberIndex + 1); // Use a different address for each member
             // First numWatchtowers members are watchtowers, the rest are operators
             Role role = memberIndex < numWatchtowers ? Role.Watchtower : Role.Operator;
 
-            setup_registerMember(user, role, denomination, pubKeysRegistration);
+            setup_applyToStream(denomination, user, pubKeysRegistration, role);
         }
+
+        registeredMembersCounter += totalMembers;
     }
 
-    function setup_registerMember(
-        address _address,
-        Role _role,
+    function setup_applyToStream(
         StreamDenomination _denomination,
-        PublicKeyRegistration[] memory _publicKeysRegistration
+        address _address,
+        PublicKeyRegistration[] memory _publicKeysRegistration,
+        Role _role
     ) internal {
         uint256 minimumDeposit = registry.getMinimumDeposit(_denomination);
         vm.deal(_address, minimumDeposit);
 
         vm.prank(_address); // Use a different address for each member
         registry.applyToStream{value: minimumDeposit}(_denomination, _role, _publicKeysRegistration);
+    }
+
+    // This function should be used for members that has been already registered. But it won't fail if the member is not registered.
+    // It will just apply to the stream with the given denomination and role.
+    function setup_applyToStream_MultipleMembers(
+        StreamDenomination _denomination,
+        uint256 _numWatchtowers,
+        uint256 _numOperators,
+        uint256 _memberIndexInit
+    ) internal {
+        uint256 totalMembers = _numWatchtowers + _numOperators;
+
+        for (uint256 i = 0; i < totalMembers; i++) {
+            Role role = i < _numWatchtowers ? Role.Watchtower : Role.Operator;
+            PublicKeyRegistration[] memory pubKeysRegistration =
+                generatePublicKeysRegistration(_memberIndexInit + i + 1);
+            setup_applyToStream(_denomination, vm.addr(_memberIndexInit + i + 1), pubKeysRegistration, role);
+        }
     }
 
     function runTestDeployScript() internal {
@@ -271,7 +293,9 @@ abstract contract HelperContract is Test, TestUtils {
                 _numberOfPegIns > Constants.SLOTS_PER_PACKET
                     && (i % Constants.SLOTS_PER_PACKET) == Constants.SLOT_USAGE_THRESHOLD
             ) {
-                setup_depositMemberInfo_MultipleMembers(_streamId, 0, registry.MIN_COMMITTEE_MEMBERS() - 1);
+                uint256 memberIndexStart = registry.MIN_COMMITTEE_MEMBERS();
+                uint256 memberCount = registry.MIN_COMMITTEE_MEMBERS();
+                setup_depositMemberInfo_MultipleMembers(_streamId, memberIndexStart, memberCount);
             }
         }
     }
@@ -359,17 +383,17 @@ abstract contract HelperContract is Test, TestUtils {
 
     function setup_depositMemberInfo(uint64 _streamId, address _memberAddress) internal {
         vm.prank(_memberAddress);
-        registry.depositMemberInfoForCommittee(_streamId, COMMITTEE_PUB_KEY_STREAM_1_PACKET_0);
+        registry.depositMemberInfoForCommittee(_streamId, COMMITTEE_PUB_KEY);
     }
 
     // This function is used to deposit member info for multiple members in a committee
-    // Include last member in the range
-    function setup_depositMemberInfo_MultipleMembers(
-        uint64 _streamId,
-        uint256 _memberIndexInit,
-        uint256 _memberIndexEnd
-    ) internal {
-        for (uint256 i = _memberIndexInit; i <= _memberIndexEnd; i++) {
+    // It will deposit member info for members with indexes from _memberIndexInit to _memberIndexInit + _memberCount - 1
+    function setup_depositMemberInfo_MultipleMembers(uint64 _streamId, uint256 _memberIndexInit, uint256 _memberCount)
+        internal
+    {
+        uint256 memberIndexEnd = _memberIndexInit + _memberCount;
+
+        for (uint256 i = _memberIndexInit; i < memberIndexEnd; i++) {
             // Member address is vm.address(memberIndex + 1);
             setup_depositMemberInfo(_streamId, vm.addr(i + 1));
         }
@@ -379,7 +403,9 @@ abstract contract HelperContract is Test, TestUtils {
         StreamDenomination denomination = StreamDenomination._0_01BTC;
         streamId = 1;
         vm.warp(BLOCK_TIMESTAMP_FOR_DETERMINISTIC_COMMITTEE);
-        setup_registerMembers(registry.MIN_COMMITTEE_MEMBERS() / 2, registry.MIN_COMMITTEE_MEMBERS() / 2, denomination);
+        uint256 numOperators = registry.MIN_COMMITTEE_MEMBERS() / 2;
+        uint256 numWatchtowers = registry.MIN_COMMITTEE_MEMBERS() - numOperators;
+        setup_registerNewMembers(numWatchtowers, numOperators, denomination);
         return (setup_getExpectedCommitteeBeforeExpire(), streamId);
     }
 
@@ -391,10 +417,50 @@ abstract contract HelperContract is Test, TestUtils {
     function setup_completeCommittee() internal returns (Committee memory expectedCommittee, uint64 streamId) {
         (expectedCommittee, streamId) = setup_pendingCommittee();
 
-        setup_depositMemberInfo_MultipleMembers(streamId, 0, registry.MIN_COMMITTEE_MEMBERS() - 1);
-        expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY_STREAM_1_PACKET_0;
+        setup_depositMemberInfo_MultipleMembers(streamId, 0, registry.MIN_COMMITTEE_MEMBERS());
+        expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY;
 
         return (expectedCommittee, streamId);
+    }
+
+    function setup_completeCommitteeAndNewMembers()
+        internal
+        returns (Committee memory firstCommittee, Committee memory secondCommittee, uint64 streamId)
+    {
+        (firstCommittee, streamId) = setup_completeCommittee();
+
+        // Register new members
+        uint256 numOperators = registry.MIN_COMMITTEE_MEMBERS() / 2;
+        uint256 numWatchtowers = registry.MIN_COMMITTEE_MEMBERS() - numOperators;
+        setup_registerNewMembers(numWatchtowers, numOperators, StreamDenomination(streamId));
+
+        secondCommittee = setup_getExpectedSecondCommittee();
+        secondCommittee.aggregatedKey = COMMITTEE_PUB_KEY;
+
+        return (firstCommittee, secondCommittee, streamId);
+    }
+
+    function setup_getExpectedSecondCommittee() internal returns (Committee memory) {
+        vm.warp(BLOCK_TIMESTAMP_FOR_DETERMINISTIC_COMMITTEE);
+
+        Committee memory committee = Committee({
+            aggregatedKey: bytes32(0),
+            memberIndexesAndRoles: new CommitteeMember[](registry.MIN_COMMITTEE_MEMBERS()),
+            leaderIndex: 0
+        });
+
+        committee.memberIndexesAndRoles[0] = CommitteeMember({index: 17, role: Role.Operator});
+        committee.memberIndexesAndRoles[1] = CommitteeMember({index: 16, role: Role.Operator});
+        committee.memberIndexesAndRoles[2] = CommitteeMember({index: 18, role: Role.Operator});
+        committee.memberIndexesAndRoles[3] = CommitteeMember({index: 19, role: Role.Operator});
+        committee.memberIndexesAndRoles[4] = CommitteeMember({index: 15, role: Role.Operator});
+        committee.memberIndexesAndRoles[5] = CommitteeMember({index: 12, role: Role.Watchtower});
+        committee.memberIndexesAndRoles[6] = CommitteeMember({index: 11, role: Role.Watchtower});
+        committee.memberIndexesAndRoles[7] = CommitteeMember({index: 13, role: Role.Watchtower});
+        committee.memberIndexesAndRoles[8] = CommitteeMember({index: 14, role: Role.Watchtower});
+        committee.memberIndexesAndRoles[9] = CommitteeMember({index: 10, role: Role.Watchtower});
+
+        return committee;
     }
 
     function setup_getExpectedCommitteeBeforeExpire() internal returns (Committee memory) {

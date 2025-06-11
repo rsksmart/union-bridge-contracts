@@ -550,6 +550,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         uint256 privKey = uint256(1);
         PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(privKey);
+        bytes32 pubKey = pubKeysRegistration[uint8(PublicKeyIndex.Take)].publicKeyX;
         address user = vm.addr(privKey);
         uint256 minimumDeposit = registry.getMinimumDeposit(DEFAULT_STREAM);
         vm.deal(user, minimumDeposit);
@@ -563,9 +564,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Assert
         vm.expectEmit(address(registry));
-        emit ICommitteeRegistry.MemberUnsubscribedFromStream(user, DEFAULT_STREAM);
+        emit ICommitteeRegistry.NewAvailableBalance(pubKey, minimumDeposit, minimumDeposit);
         vm.expectEmit(address(registry));
-        emit ICommitteeRegistry.NewAvailableBalance(user, minimumDeposit, minimumDeposit);
+        emit ICommitteeRegistry.MemberUnsubscribedFromStream(user, DEFAULT_STREAM);
 
         // Act
         vm.prank(user);
@@ -828,13 +829,13 @@ contract TestCommitteeRegistry is Test, HelperContract {
         );
     }
 
-    function test_selectCommittee_Success_3OP_7WT() external {
+    function test_selectCommittee_Success_MinOperators() external {
         // Arrange
         StreamDenomination denomination = StreamDenomination._0_01BTC;
         uint64 streamId = 1;
-        setup_registerMembers(
-            registry.MIN_COMMITTEE_MEMBERS() - registry.MIN_OPERATORS(), registry.MIN_OPERATORS(), denomination
-        );
+        uint256 numOperators = registry.MIN_OPERATORS();
+        uint256 numWatchtowers = registry.MIN_COMMITTEE_MEMBERS() - numOperators;
+        setup_registerNewMembers(numWatchtowers, numOperators, denomination);
 
         // Act
         (CommitteeMember[] memory selectedMembers, PendingCommitteeStatus status) = registry.selectCommittee(streamId);
@@ -872,13 +873,13 @@ contract TestCommitteeRegistry is Test, HelperContract {
         }
     }
 
-    function test_selectCommittee_Success_7OP_3WT() external {
+    function test_selectCommittee_Success_MinWatchtowers() external {
         // Arrange
         StreamDenomination denomination = StreamDenomination._0_01BTC;
         uint64 streamId = 1;
-        setup_registerMembers(
-            registry.MIN_WATCHTOWERS(), registry.MIN_COMMITTEE_MEMBERS() - registry.MIN_WATCHTOWERS(), denomination
-        );
+        uint256 numWatchtowers = registry.MIN_WATCHTOWERS();
+        uint256 numOperators = registry.MIN_COMMITTEE_MEMBERS() - numWatchtowers;
+        setup_registerNewMembers(numWatchtowers, numOperators, denomination);
 
         // Act
         (CommitteeMember[] memory selectedMembers, PendingCommitteeStatus status) = registry.selectCommittee(streamId);
@@ -910,7 +911,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Arrange
         StreamDenomination denomination = StreamDenomination._0_01BTC;
         uint64 streamId = 1;
-        setup_registerMembers(registry.MIN_COMMITTEE_MEMBERS(), registry.MIN_COMMITTEE_MEMBERS(), denomination);
+        uint256 numWachtowers = registry.MIN_WATCHTOWERS();
+        uint256 numOperators = registry.MIN_COMMITTEE_MEMBERS();
+        setup_registerNewMembers(numWachtowers, numOperators, denomination);
 
         // First selection with timestamp 1
         vm.warp(1);
@@ -943,11 +946,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Arrange
         StreamDenomination denomination = StreamDenomination._0_01BTC;
         uint64 streamId = 1;
-        setup_registerMembers(
-            registry.MIN_WATCHTOWERS() - 1,
-            registry.MIN_COMMITTEE_MEMBERS() - registry.MIN_WATCHTOWERS() + 1,
-            denomination
-        );
+        uint256 numWatchtowers = registry.MIN_WATCHTOWERS() - 1;
+        uint256 numOperators = registry.MIN_COMMITTEE_MEMBERS() - numWatchtowers + 1;
+        setup_registerNewMembers(numWatchtowers, numOperators, denomination);
 
         // Assert that selectCommittee reverts with MissingWatchtowers event
         vm.expectEmit(address(registry));
@@ -971,9 +972,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Arrange
         StreamDenomination denomination = StreamDenomination._0_01BTC;
         uint64 streamId = 1;
-        setup_registerMembers(
-            registry.MIN_COMMITTEE_MEMBERS() - registry.MIN_OPERATORS() + 1, registry.MIN_OPERATORS() - 1, denomination
-        );
+        uint256 numOperators = registry.MIN_OPERATORS() - 1;
+        uint256 numWatchtowers = registry.MIN_COMMITTEE_MEMBERS() - numOperators + 1;
+        setup_registerNewMembers(numWatchtowers, numOperators, denomination);
 
         // Assert that selectCommittee reverts with MissingOperators event
         vm.expectEmit(address(registry));
@@ -997,7 +998,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Arrange
         StreamDenomination denomination = StreamDenomination._0_01BTC;
         uint64 streamId = 1;
-        setup_registerMembers(registry.MIN_WATCHTOWERS(), registry.MIN_OPERATORS(), denomination);
+        uint256 numOperators = registry.MIN_OPERATORS();
+        uint256 numWatchtowers = registry.MIN_WATCHTOWERS();
+        setup_registerNewMembers(numWatchtowers, numOperators, denomination);
 
         // Assert
         vm.expectEmit(address(registry));
@@ -1034,7 +1037,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         address userAddress = vm.addr(privKey);
         PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(privKey);
         bytes32[] memory pubKeys = getXPublicKeysFromRegistration(pubKeysRegistration);
-        setup_registerMember(userAddress, Role.Operator, StreamDenomination._0_001BTC, pubKeysRegistration);
+        setup_applyToStream(StreamDenomination._0_001BTC, userAddress, pubKeysRegistration, Role.Operator);
         uint16 memberIndex = registry.getMemberIndexByAddress(userAddress);
 
         // Act
@@ -1053,7 +1056,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         address userAddress = vm.addr(1);
         PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(1);
 
-        setup_registerMember(userAddress, Role.Operator, StreamDenomination._0_001BTC, pubKeysRegistration);
+        setup_applyToStream(StreamDenomination._0_001BTC, userAddress, pubKeysRegistration, Role.Operator);
 
         // Act
         uint16 memberIndex = registry.getMemberIndexByAddress(userAddress);
@@ -1080,13 +1083,11 @@ contract TestCommitteeRegistry is Test, HelperContract {
         registry.getPendingCommittee(0);
     }
 
-    function test_createCommittee_Success() external {
+    function test_createCommittee_Success_WithNewMembers() external {
         // This test should register all the members for a committee. This will trigger the creation of a pending committee.
-        // We should complete that committee and then, with all the members registered, we should be able to create a committee.
-        // We should update this once we update staked/prestaked balance movements after committee creation.
-
+        // We should complete that committee and then, with all the new members registered, we should be able to create a committee.
         // Arrange
-        (Committee memory expectedCommittee, uint64 streamId) = setup_completeCommittee();
+        (, Committee memory expectedCommittee, uint64 streamId) = setup_completeCommitteeAndNewMembers();
         expectedCommittee.aggregatedKey = bytes32(0);
 
         // Assert
@@ -1110,6 +1111,57 @@ contract TestCommitteeRegistry is Test, HelperContract {
         assertFalse(
             registry.shouldCreateCommitteeHarness(streamId), "Should not create committee after committee created"
         );
+        for (uint256 i = 0; i < committee.memberIndexesAndRoles.length; i++) {
+            uint64 index = committee.memberIndexesAndRoles[i].index;
+            assertTrue(
+                index >= registry.MIN_COMMITTEE_MEMBERS() && index < registry.MIN_COMMITTEE_MEMBERS() * 2,
+                "Member index should be within the second 10 members"
+            );
+        }
+    }
+
+    function test_createCommittee_Success_SameMembersAfterReApply() external {
+        // After first committee is ready all the members apply again to the stream and create a new committee.
+        // Arrange
+        (, uint64 streamId) = setup_completeCommittee();
+
+        assertEq(0, registry.getCommitteeCandidates(StreamDenomination(streamId), Role.Operator).length);
+        assertEq(0, registry.getCommitteeCandidates(StreamDenomination(streamId), Role.Watchtower).length);
+
+        uint256 numOperators = registry.MIN_COMMITTEE_MEMBERS() / 2;
+        uint256 numWatchtowers = registry.MIN_COMMITTEE_MEMBERS() / 2;
+        setup_applyToStream_MultipleMembers(StreamDenomination(streamId), numWatchtowers, numOperators, 0);
+        Committee memory expectedCommittee = setup_getExpectedCommitteeBeforeExpire();
+        expectedCommittee.aggregatedKey = bytes32(0);
+
+        // Assert
+        assertFalse(
+            registry.shouldCreateCommitteeHarness(streamId),
+            "Flag should be false before createCommittee call from pegManager"
+        );
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.NewPendingCommittee(streamId, expectedCommittee);
+
+        // Act
+        // This should create a committee as pending
+        vm.prank(address(pm));
+        registry.createCommittee(streamId);
+
+        (Committee memory committee, uint256 createdAt, uint256 missingData) = registry.getPendingCommittee(streamId);
+        // Assert
+        assertEqCommittee(expectedCommittee, committee, "Committee should be equeals");
+        assertNotEq(createdAt, 0, "Created at should not be 0");
+        assertEq(missingData, registry.MIN_COMMITTEE_MEMBERS(), "Missing data should be equal to MIN_COMMITTEE_MEMBERS");
+        assertFalse(
+            registry.shouldCreateCommitteeHarness(streamId), "Should not create committee after committee created"
+        );
+        for (uint256 i = 0; i < committee.memberIndexesAndRoles.length; i++) {
+            uint64 index = committee.memberIndexesAndRoles[i].index;
+            assertTrue(
+                index >= 0 && index < registry.MIN_COMMITTEE_MEMBERS(),
+                "Member index should be within the first 10 members"
+            );
+        }
     }
 
     function test_createCommittee_Success_AlreadyPendingButNotExpired() external {
@@ -1169,11 +1221,11 @@ contract TestCommitteeRegistry is Test, HelperContract {
     function test_depositMemberInfoForCommittee_Success() external {
         // Arrange
         (Committee memory expectedCommittee, uint64 streamId) = setup_pendingCommittee();
-        expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY_STREAM_1_PACKET_0;
+        expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY;
 
         // Act
         vm.prank(vm.addr(1));
-        registry.depositMemberInfoForCommittee(streamId, COMMITTEE_PUB_KEY_STREAM_1_PACKET_0);
+        registry.depositMemberInfoForCommittee(streamId, COMMITTEE_PUB_KEY);
 
         // Assert
         (Committee memory committee, uint256 createdAt, uint256 missingData) = registry.getPendingCommittee(streamId);
@@ -1219,8 +1271,10 @@ contract TestCommitteeRegistry is Test, HelperContract {
     function test_depositMemberInfoForCommittee_Success_CompleteCommittee() external {
         // Arrange
         (Committee memory expectedCommittee, uint64 streamId) = setup_pendingCommittee();
-        expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY_STREAM_1_PACKET_0;
-        setup_depositMemberInfo_MultipleMembers(streamId, 0, registry.MIN_COMMITTEE_MEMBERS() - 2);
+        expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY;
+        uint256 memberIndexStart = 0;
+        uint256 memberCount = registry.MIN_COMMITTEE_MEMBERS() - 1;
+        setup_depositMemberInfo_MultipleMembers(streamId, memberIndexStart, memberCount);
 
         // Assert
         vm.expectEmit(address(registry));
@@ -1229,13 +1283,26 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Act
         // Member address is vm.address(memberIndex + 1);
         vm.prank(vm.addr(registry.MIN_COMMITTEE_MEMBERS()));
-        registry.depositMemberInfoForCommittee(streamId, COMMITTEE_PUB_KEY_STREAM_1_PACKET_0);
+        registry.depositMemberInfoForCommittee(streamId, COMMITTEE_PUB_KEY);
+
+        assertEq(
+            registry.getCommitteeCandidates(StreamDenomination(streamId), Role.Operator).length,
+            0,
+            "Should not have candidates after committee created"
+        );
+        assertEq(
+            registry.getCommitteeCandidates(StreamDenomination(streamId), Role.Watchtower).length,
+            0,
+            "Should not have candidates after committee created"
+        );
     }
 
     function test_getPendingCommittee_Revert_CommitteeIsNotPending_AfterCompleteCommittee() external {
         // Arrange
         (, uint64 streamId) = setup_pendingCommittee();
-        setup_depositMemberInfo_MultipleMembers(streamId, 0, registry.MIN_COMMITTEE_MEMBERS() - 1);
+        uint256 memberIndexStart = 0;
+        uint256 memberCount = registry.MIN_COMMITTEE_MEMBERS();
+        setup_depositMemberInfo_MultipleMembers(streamId, memberIndexStart, memberCount);
 
         // Assert
         vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.CommitteeIsNotPending.selector, streamId));
@@ -1254,7 +1321,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
     function test_isPendingCommitteeExpired_False_AfterCreateCommittee() external {
         // Arrange
         (Committee memory expectedCommittee, uint64 streamId) = setup_pendingCommittee();
-        expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY_STREAM_1_PACKET_0;
+        expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY;
         setup_depositMemberInfo(streamId, vm.addr(1));
 
         // Act
@@ -1268,7 +1335,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
     function test_isPendingCommitteeExpired_False_AfterSomeSeconds() external {
         // Arrange
         (Committee memory expectedCommittee, uint64 streamId) = setup_pendingCommittee();
-        expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY_STREAM_1_PACKET_0;
+        expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY;
         setup_depositMemberInfo(streamId, vm.addr(1));
         vm.warp(block.timestamp + 60 seconds); // warp time but amount of time is not enough to expire the committee
 
@@ -1333,8 +1400,10 @@ contract TestCommitteeRegistry is Test, HelperContract {
         (Committee memory expectedCommittee, uint64 streamId) = setup_pendingCommittee();
         uint256 timeout = registry.pendingCommitteeTimeout();
         vm.warp(block.timestamp + timeout + 1 seconds); // warp time to make committee expired
-        expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY_STREAM_1_PACKET_0;
-        setup_depositMemberInfo_MultipleMembers(streamId, 0, registry.MIN_COMMITTEE_MEMBERS() - 2);
+        expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY;
+        uint256 memberIndexStart = 0;
+        uint256 memberCount = registry.MIN_COMMITTEE_MEMBERS() - 1;
+        setup_depositMemberInfo_MultipleMembers(streamId, memberIndexStart, memberCount);
 
         // Assert
         vm.expectEmit(address(registry));
@@ -1343,12 +1412,23 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Act
         // Member address is vm.address(memberIndex + 1);
         vm.prank(vm.addr(registry.MIN_COMMITTEE_MEMBERS()));
-        registry.depositMemberInfoForCommittee(streamId, COMMITTEE_PUB_KEY_STREAM_1_PACKET_0);
+        registry.depositMemberInfoForCommittee(streamId, COMMITTEE_PUB_KEY);
 
         // Assert
         vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.CommitteeIsNotPending.selector, streamId));
         // Act
         registry.getPendingCommittee(streamId);
+
+        assertEq(
+            registry.getCommitteeCandidates(StreamDenomination(streamId), Role.Operator).length,
+            0,
+            "Should not have candidates after committee created"
+        );
+        assertEq(
+            registry.getCommitteeCandidates(StreamDenomination(streamId), Role.Watchtower).length,
+            0,
+            "Should not have candidates after committee created"
+        );
     }
 
     function test_setPendingCommitteeTimeout_Success() external {
@@ -1733,10 +1813,10 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // ===== Arrange start =====
         // Create a complete committee for initial packet
-        (, uint64 streamId) = setup_completeCommittee();
+        (,, uint64 streamId) = setup_completeCommitteeAndNewMembers();
         StreamDenomination denomination = StreamDenomination(streamId);
         // Need to use last member in the committee to unsubscribe and subscribe to keep same random committee member order
-        uint256 userIndex = 9;
+        uint256 userIndex = registry.MIN_COMMITTEE_MEMBERS() * 2 - 1;
         Role userRole = Role.Operator;
         address userAddress = vm.addr(userIndex + 1);
         PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(userIndex + 1);
@@ -1761,7 +1841,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         uint256 minimumDeposit = registry.getMinimumDeposit(denomination);
         vm.deal(userAddress, minimumDeposit);
-        Committee memory expectedCommittee = setup_getExpectedCommitteeBeforeExpire();
+        Committee memory expectedCommittee = setup_getExpectedSecondCommittee();
         vm.warp(BLOCK_TIMESTAMP_FOR_DETERMINISTIC_COMMITTEE);
         assertTrue(
             registry.shouldCreateCommitteeHarness(streamId),

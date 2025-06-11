@@ -155,34 +155,53 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         committeesCandidates[_stream][_role].push(_getMemberIndexByAddress(msg.sender));
     }
 
-    function unsubscribeFromStream(StreamDenomination _stream) external {
+    function unsubscribeFromStream(StreamDenomination _denomination) external {
         Member storage member = _getMemberByAddress(msg.sender);
-        Role role = member.balance.applications[uint8(_stream)].requestedRole;
+        Role role = member.balance.applications[uint8(_denomination)].requestedRole;
 
         if (role == Role.None) {
-            revert MemberIsNotCandidateForStream(msg.sender, _stream);
+            revert MemberIsNotCandidateForStream(msg.sender, _denomination);
         }
-        _removeCandidate(msg.sender, _stream, role);
+        _movePreStakedToAvailable(member, _denomination);
+        _removeFromCandidates(_getMemberIndexByAddress(msg.sender), _denomination, role);
     }
 
-    // NOTE: This function intends to keep many different structures in sync, be careful when modifying it
-    function _removeCandidate(address _memberAddress, StreamDenomination _stream, Role _role) internal {
-        _removeFromCommitteesCandidates(_getMemberIndexByAddress(_memberAddress), _stream, _role);
-        _removeCandidateUpdateBalance(_memberAddress, _stream);
+    function _movePreStakedToAvailable(Member storage _member, StreamDenomination _denomination) internal {
+        ApplicationData memory originalData = _member.balance.applications[uint8(_denomination)];
+        _member.balance.applications[uint8(_denomination)] = ApplicationData({requestedRole: Role.None, preStaked: 0});
+
+        _member.balance.available += originalData.preStaked;
+        emit NewAvailableBalance(
+            _member.publicKeys[uint256(PublicKeyIndex.Take)], _member.balance.available, originalData.preStaked
+        );
     }
 
-    function _removeCandidateUpdateBalance(address _memberAddress, StreamDenomination _stream) internal {
-        Member storage member = _getMemberByAddress(_memberAddress);
+    function _movePreStakedToStaked(uint16 _memberIndex, StreamDenomination _denomination, uint64 _packetNumber)
+        internal
+        returns (Role)
+    {
+        Member storage member = members[_memberIndex];
 
-        uint256 preStakedAmount = member.balance.applications[uint8(_stream)].preStaked;
-        member.balance.available += preStakedAmount;
-        member.balance.applications[uint8(_stream)].preStaked = 0;
-        member.balance.applications[uint8(_stream)].requestedRole = Role.None;
+        ApplicationData memory originalData = member.balance.applications[uint8(_denomination)];
+        member.balance.applications[uint8(_denomination)] = ApplicationData({requestedRole: Role.None, preStaked: 0});
 
-        emit NewAvailableBalance(msg.sender, member.balance.available, preStakedAmount);
+        // Save the pre-staked amount to the staked balance
+        member.balance.staked[uint8(_denomination)][_packetNumber] = originalData.preStaked;
+        return originalData.requestedRole;
     }
 
-    function _removeFromCommitteesCandidates(uint16 _memberIndex, StreamDenomination _stream, Role _role) internal {
+    function _removeCandidatesAndUpdateBalance(
+        CommitteeMember[] memory _members,
+        StreamDenomination _denomination,
+        uint64 _packetNumber
+    ) internal {
+        for (uint256 i = 0; i < _members.length; i++) {
+            Role role = _movePreStakedToStaked(_members[i].index, _denomination, _packetNumber);
+            _removeFromCandidates(_members[i].index, _denomination, role);
+        }
+    }
+
+    function _removeFromCandidates(uint16 _memberIndex, StreamDenomination _stream, Role _role) internal {
         uint16[] storage candidates = committeesCandidates[_stream][_role];
         uint256 length = candidates.length;
 
@@ -506,6 +525,9 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         // Create unique committee id associated to the streamId and packetNumber.
         uint64 packetNumber = streamManager.getPacketsLength(_streamId);
         uint256 committeeId = uint256(keccak256(abi.encode(_streamId, packetNumber)));
+        _removeCandidatesAndUpdateBalance(
+            pendingCommittee.committee.memberIndexesAndRoles, StreamDenomination(_streamId), packetNumber
+        );
         _registerCommittee(committeeId, pendingCommittee.committee);
         // create new packet
         streamManager.createNewPacket(_streamId, committeeId, pendingCommittee.committee.aggregatedKey);

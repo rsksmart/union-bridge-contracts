@@ -42,7 +42,7 @@ contract TestPegManager is Test, HelperContract {
 
     function setUp() external {
         runTestDeployScript();
-        (Committee memory expectedCommittee, uint64 streamId) = setup_completeCommittee();
+        (, Committee memory expectedCommittee, uint64 streamId) = setup_completeCommitteeAndNewMembers();
 
         setupExpectedCommittee.aggregatedKey = expectedCommittee.aggregatedKey;
         setupExpectedCommittee.leaderIndex = expectedCommittee.leaderIndex;
