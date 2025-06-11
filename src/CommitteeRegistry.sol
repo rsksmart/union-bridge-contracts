@@ -188,7 +188,9 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
             member.balance.staked[uint8(_denomination)][_packetNumber] = preStakedAmount;
         } else {
             member.balance.available += preStakedAmount;
-            emit NewAvailableBalance(member.publicKeys[PublicKeyIndex.Take], member.balance.available, preStakedAmount);
+            emit NewAvailableBalance(
+                member.publicKeys[uint256(PublicKeyIndex.Take)], member.balance.available, preStakedAmount
+            );
         }
     }
 

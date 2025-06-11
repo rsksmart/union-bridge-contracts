@@ -1035,7 +1035,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         address userAddress = vm.addr(privKey);
         PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(privKey);
         bytes32[] memory pubKeys = getXPublicKeysFromRegistration(pubKeysRegistration);
-        setup_registerMember(userAddress, Role.Operator, StreamDenomination._0_001BTC, pubKeysRegistration);
+        setup_applyToStream(StreamDenomination._0_001BTC, userAddress, pubKeysRegistration, Role.Operator);
         uint16 memberIndex = registry.getMemberIndexByAddress(userAddress);
 
         // Act
@@ -1054,7 +1054,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         address userAddress = vm.addr(1);
         PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(1);
 
-        setup_registerMember(userAddress, Role.Operator, StreamDenomination._0_001BTC, pubKeysRegistration);
+        setup_applyToStream(StreamDenomination._0_001BTC, userAddress, pubKeysRegistration, Role.Operator);
 
         // Act
         uint16 memberIndex = registry.getMemberIndexByAddress(userAddress);
