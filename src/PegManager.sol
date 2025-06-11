@@ -187,7 +187,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         (bytes32 acceptPeginTxHash, bytes32 acceptPeginSignatureHash, bytes memory acceptPeginSignatureMessage) =
         bitcoinManager.getAcceptPeginSignatureHash(_committeePubKey, _userXOnlyPubKey, _registerPeginTx, _prevoutData);
 
-        // Store peginRequest txHash to avoid processing it again FIXME: Duplicated is not being checked?
+        // Store peginRequest txHash to avoid processing it again
         peginRequests[_registerPeginTx] = acceptPeginTxHash;
         streamPosition[acceptPeginTxHash] = StreamPosition({
             streamId: _streamId,
