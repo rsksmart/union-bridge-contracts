@@ -207,15 +207,15 @@ contract TestCommitteeRegistry is Test, HelperContract {
         (CommitteeMember[] memory selectedMembers, PendingCommitteeStatus status) = registry.selectCommittee(streamId);
 
         // Assert - Verify status and committee has correct size
-        assertTrue(status == PendingCommitteeStatus.Success, "Committee selection should be successful");
+        assertTrue(status == PendingCommitteeStatus.SUCCESS, "Committee selection should be successful");
         assertEq(selectedMembers.length, registry.minCommitteeMembers(), "Committee should have 10 members");
 
         // Count roles in selection
         uint256 watchtowerCount = 0;
         uint256 operatorCount = 0;
         for (uint256 i = 0; i < selectedMembers.length; i++) {
-            if (selectedMembers[i].role == Role.Watchtower) watchtowerCount++;
-            else if (selectedMembers[i].role == Role.Operator) operatorCount++;
+            if (selectedMembers[i].role == Role.WATCHTOWER) watchtowerCount++;
+            else if (selectedMembers[i].role == Role.OPERATOR) operatorCount++;
         }
 
         // Verify correct role distribution
@@ -251,15 +251,15 @@ contract TestCommitteeRegistry is Test, HelperContract {
         (CommitteeMember[] memory selectedMembers, PendingCommitteeStatus status) = registry.selectCommittee(streamId);
 
         // Assert - Verify status and committee has correct size
-        assertTrue(status == PendingCommitteeStatus.Success, "Committee selection should be successful");
+        assertTrue(status == PendingCommitteeStatus.SUCCESS, "Committee selection should be successful");
         assertEq(selectedMembers.length, registry.minCommitteeMembers(), "Committee should have 10 members");
 
         // Count roles in selection
         uint256 watchtowerCount = 0;
         uint256 operatorCount = 0;
         for (uint256 i = 0; i < selectedMembers.length; i++) {
-            if (selectedMembers[i].role == Role.Watchtower) watchtowerCount++;
-            else if (selectedMembers[i].role == Role.Operator) operatorCount++;
+            if (selectedMembers[i].role == Role.WATCHTOWER) watchtowerCount++;
+            else if (selectedMembers[i].role == Role.OPERATOR) operatorCount++;
         }
 
         // Verify correct role distribution
@@ -284,13 +284,13 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // First selection with timestamp 1
         vm.warp(1);
         (CommitteeMember[] memory selectedMembers1, PendingCommitteeStatus status1) = registry.selectCommittee(streamId);
-        assertTrue(status1 == PendingCommitteeStatus.Success, "Committee selection should be successful");
+        assertTrue(status1 == PendingCommitteeStatus.SUCCESS, "Committee selection should be successful");
         assertUniqueMembers(selectedMembers1);
 
         // Second selection with different timestamp
         vm.warp(1000);
         (CommitteeMember[] memory selectedMembers2, PendingCommitteeStatus status2) = registry.selectCommittee(streamId);
-        assertTrue(status2 == PendingCommitteeStatus.Success, "Committee selection should be successful");
+        assertTrue(status2 == PendingCommitteeStatus.SUCCESS, "Committee selection should be successful");
         assertUniqueMembers(selectedMembers2);
 
         // Verify both selections have correct size
@@ -324,7 +324,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         (CommitteeMember[] memory members, PendingCommitteeStatus status) = registry.selectCommittee(streamId);
         // Assert
         assertTrue(
-            status == PendingCommitteeStatus.NotEnoughWatchtowers,
+            status == PendingCommitteeStatus.NOT_ENOUGH_WATCHTOWERS,
             "Committee selection should fail due to not enough watchtowers"
         );
         assertEq(members.length, 0, "No members should be selected due to not enough members");
@@ -350,7 +350,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         (CommitteeMember[] memory members, PendingCommitteeStatus status) = registry.selectCommittee(streamId);
         // Assert
         assertTrue(
-            status == PendingCommitteeStatus.NotEnoughOperators,
+            status == PendingCommitteeStatus.NOT_ENOUGH_OPERATORS,
             "Committee selection should fail due to not enough operators"
         );
         assertEq(members.length, 0, "No members should be selected due to not enough members");
@@ -380,7 +380,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         (CommitteeMember[] memory members, PendingCommitteeStatus status) = registry.selectCommittee(streamId);
         // Assert
         assertTrue(
-            status == PendingCommitteeStatus.NotEnoughMembers,
+            status == PendingCommitteeStatus.NOT_ENOUGH_MEMBERS,
             "Committee selection should fail due to not enough members"
         );
         assertEq(members.length, 0, "No members should be selected due to not enough members");
@@ -439,8 +439,8 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Arrange
         (, uint64 streamId) = setup_completeCommittee();
 
-        assertEq(0, registry.getCommitteeCandidates(StreamDenomination(streamId), Role.Operator).length);
-        assertEq(0, registry.getCommitteeCandidates(StreamDenomination(streamId), Role.Watchtower).length);
+        assertEq(0, registry.getCommitteeCandidates(StreamDenomination(streamId), Role.OPERATOR).length);
+        assertEq(0, registry.getCommitteeCandidates(StreamDenomination(streamId), Role.WATCHTOWER).length);
 
         uint256 numOperators = registry.minCommitteeMembers() / 2;
         uint256 numWatchtowers = registry.minCommitteeMembers() / 2;
@@ -600,12 +600,12 @@ contract TestCommitteeRegistry is Test, HelperContract {
         registry.depositMemberInfoForCommittee(streamId, COMMITTEE_PUB_KEY);
 
         assertEq(
-            registry.getCommitteeCandidates(StreamDenomination(streamId), Role.Operator).length,
+            registry.getCommitteeCandidates(StreamDenomination(streamId), Role.OPERATOR).length,
             0,
             "Should not have candidates after committee created"
         );
         assertEq(
-            registry.getCommitteeCandidates(StreamDenomination(streamId), Role.Watchtower).length,
+            registry.getCommitteeCandidates(StreamDenomination(streamId), Role.WATCHTOWER).length,
             0,
             "Should not have candidates after committee created"
         );
@@ -734,12 +734,12 @@ contract TestCommitteeRegistry is Test, HelperContract {
         registry.getPendingCommittee(streamId);
 
         assertEq(
-            registry.getCommitteeCandidates(StreamDenomination(streamId), Role.Operator).length,
+            registry.getCommitteeCandidates(StreamDenomination(streamId), Role.OPERATOR).length,
             0,
             "Should not have candidates after committee created"
         );
         assertEq(
-            registry.getCommitteeCandidates(StreamDenomination(streamId), Role.Watchtower).length,
+            registry.getCommitteeCandidates(StreamDenomination(streamId), Role.WATCHTOWER).length,
             0,
             "Should not have candidates after committee created"
         );
@@ -957,7 +957,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         StreamDenomination denomination = StreamDenomination(streamId);
         // Need to use last member in the committee to unsubscribe and subscribe to keep same random committee member order
         uint256 userIndex = registry.minCommitteeMembers() * 2 - 1;
-        Role userRole = Role.Operator;
+        Role userRole = Role.OPERATOR;
         address userAddress = vm.addr(userIndex + 1);
         PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(userIndex + 1);
 

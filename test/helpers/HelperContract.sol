@@ -43,7 +43,7 @@ abstract contract HelperContract is Test, TestUtils {
 
     // Dummy requested roles and streams for the members
     StreamDenomination internal constant DEFAULT_STREAM = StreamDenomination._0_001BTC;
-    Role internal constant DEFAULT_ROLE = Role.Operator;
+    Role internal constant DEFAULT_ROLE = Role.OPERATOR;
 
     BitcoinManager internal bitcoinManager;
     BridgeMock internal bridgeMock;
@@ -69,7 +69,7 @@ abstract contract HelperContract is Test, TestUtils {
                 generatePublicKeysRegistration(registeredMembersCounter + memberIndex + 1);
             address user = vm.addr(registeredMembersCounter + memberIndex + 1); // Use a different address for each member
             // First numWatchtowers members are watchtowers, the rest are operators
-            Role role = memberIndex < numWatchtowers ? Role.Watchtower : Role.Operator;
+            Role role = memberIndex < numWatchtowers ? Role.WATCHTOWER : Role.OPERATOR;
 
             setup_applyToStream(denomination, user, pubKeysRegistration, role);
         }
@@ -101,7 +101,7 @@ abstract contract HelperContract is Test, TestUtils {
         uint256 totalMembers = _numWatchtowers + _numOperators;
 
         for (uint256 i = 0; i < totalMembers; i++) {
-            Role role = i < _numWatchtowers ? Role.Watchtower : Role.Operator;
+            Role role = i < _numWatchtowers ? Role.WATCHTOWER : Role.OPERATOR;
             PublicKeyRegistration[] memory pubKeysRegistration =
                 generatePublicKeysRegistration(_memberIndexInit + i + 1);
             setup_applyToStream(_denomination, vm.addr(_memberIndexInit + i + 1), pubKeysRegistration, role);
@@ -449,16 +449,16 @@ abstract contract HelperContract is Test, TestUtils {
             leaderIndex: 0
         });
 
-        committee.memberIndexesAndRoles[0] = CommitteeMember({index: 17, role: Role.Operator});
-        committee.memberIndexesAndRoles[1] = CommitteeMember({index: 16, role: Role.Operator});
-        committee.memberIndexesAndRoles[2] = CommitteeMember({index: 18, role: Role.Operator});
-        committee.memberIndexesAndRoles[3] = CommitteeMember({index: 19, role: Role.Operator});
-        committee.memberIndexesAndRoles[4] = CommitteeMember({index: 15, role: Role.Operator});
-        committee.memberIndexesAndRoles[5] = CommitteeMember({index: 12, role: Role.Watchtower});
-        committee.memberIndexesAndRoles[6] = CommitteeMember({index: 11, role: Role.Watchtower});
-        committee.memberIndexesAndRoles[7] = CommitteeMember({index: 13, role: Role.Watchtower});
-        committee.memberIndexesAndRoles[8] = CommitteeMember({index: 14, role: Role.Watchtower});
-        committee.memberIndexesAndRoles[9] = CommitteeMember({index: 10, role: Role.Watchtower});
+        committee.memberIndexesAndRoles[0] = CommitteeMember({index: 17, role: Role.OPERATOR});
+        committee.memberIndexesAndRoles[1] = CommitteeMember({index: 16, role: Role.OPERATOR});
+        committee.memberIndexesAndRoles[2] = CommitteeMember({index: 18, role: Role.OPERATOR});
+        committee.memberIndexesAndRoles[3] = CommitteeMember({index: 19, role: Role.OPERATOR});
+        committee.memberIndexesAndRoles[4] = CommitteeMember({index: 15, role: Role.OPERATOR});
+        committee.memberIndexesAndRoles[5] = CommitteeMember({index: 12, role: Role.WATCHTOWER});
+        committee.memberIndexesAndRoles[6] = CommitteeMember({index: 11, role: Role.WATCHTOWER});
+        committee.memberIndexesAndRoles[7] = CommitteeMember({index: 13, role: Role.WATCHTOWER});
+        committee.memberIndexesAndRoles[8] = CommitteeMember({index: 14, role: Role.WATCHTOWER});
+        committee.memberIndexesAndRoles[9] = CommitteeMember({index: 10, role: Role.WATCHTOWER});
 
         return committee;
     }
@@ -472,16 +472,16 @@ abstract contract HelperContract is Test, TestUtils {
             leaderIndex: 0
         });
 
-        committee.memberIndexesAndRoles[0] = CommitteeMember({index: 7, role: Role.Operator});
-        committee.memberIndexesAndRoles[1] = CommitteeMember({index: 6, role: Role.Operator});
-        committee.memberIndexesAndRoles[2] = CommitteeMember({index: 8, role: Role.Operator});
-        committee.memberIndexesAndRoles[3] = CommitteeMember({index: 9, role: Role.Operator});
-        committee.memberIndexesAndRoles[4] = CommitteeMember({index: 5, role: Role.Operator});
-        committee.memberIndexesAndRoles[5] = CommitteeMember({index: 2, role: Role.Watchtower});
-        committee.memberIndexesAndRoles[6] = CommitteeMember({index: 1, role: Role.Watchtower});
-        committee.memberIndexesAndRoles[7] = CommitteeMember({index: 3, role: Role.Watchtower});
-        committee.memberIndexesAndRoles[8] = CommitteeMember({index: 4, role: Role.Watchtower});
-        committee.memberIndexesAndRoles[9] = CommitteeMember({index: 0, role: Role.Watchtower});
+        committee.memberIndexesAndRoles[0] = CommitteeMember({index: 7, role: Role.OPERATOR});
+        committee.memberIndexesAndRoles[1] = CommitteeMember({index: 6, role: Role.OPERATOR});
+        committee.memberIndexesAndRoles[2] = CommitteeMember({index: 8, role: Role.OPERATOR});
+        committee.memberIndexesAndRoles[3] = CommitteeMember({index: 9, role: Role.OPERATOR});
+        committee.memberIndexesAndRoles[4] = CommitteeMember({index: 5, role: Role.OPERATOR});
+        committee.memberIndexesAndRoles[5] = CommitteeMember({index: 2, role: Role.WATCHTOWER});
+        committee.memberIndexesAndRoles[6] = CommitteeMember({index: 1, role: Role.WATCHTOWER});
+        committee.memberIndexesAndRoles[7] = CommitteeMember({index: 3, role: Role.WATCHTOWER});
+        committee.memberIndexesAndRoles[8] = CommitteeMember({index: 4, role: Role.WATCHTOWER});
+        committee.memberIndexesAndRoles[9] = CommitteeMember({index: 0, role: Role.WATCHTOWER});
 
         return committee;
     }
@@ -507,16 +507,16 @@ abstract contract HelperContract is Test, TestUtils {
             leaderIndex: 0
         });
 
-        committee.memberIndexesAndRoles[0] = CommitteeMember({index: 7, role: Role.Operator});
-        committee.memberIndexesAndRoles[1] = CommitteeMember({index: 8, role: Role.Operator});
-        committee.memberIndexesAndRoles[2] = CommitteeMember({index: 9, role: Role.Operator});
-        committee.memberIndexesAndRoles[3] = CommitteeMember({index: 5, role: Role.Operator});
-        committee.memberIndexesAndRoles[4] = CommitteeMember({index: 6, role: Role.Operator});
-        committee.memberIndexesAndRoles[5] = CommitteeMember({index: 2, role: Role.Watchtower});
-        committee.memberIndexesAndRoles[6] = CommitteeMember({index: 3, role: Role.Watchtower});
-        committee.memberIndexesAndRoles[7] = CommitteeMember({index: 4, role: Role.Watchtower});
-        committee.memberIndexesAndRoles[8] = CommitteeMember({index: 0, role: Role.Watchtower});
-        committee.memberIndexesAndRoles[9] = CommitteeMember({index: 1, role: Role.Watchtower});
+        committee.memberIndexesAndRoles[0] = CommitteeMember({index: 7, role: Role.OPERATOR});
+        committee.memberIndexesAndRoles[1] = CommitteeMember({index: 8, role: Role.OPERATOR});
+        committee.memberIndexesAndRoles[2] = CommitteeMember({index: 9, role: Role.OPERATOR});
+        committee.memberIndexesAndRoles[3] = CommitteeMember({index: 5, role: Role.OPERATOR});
+        committee.memberIndexesAndRoles[4] = CommitteeMember({index: 6, role: Role.OPERATOR});
+        committee.memberIndexesAndRoles[5] = CommitteeMember({index: 2, role: Role.WATCHTOWER});
+        committee.memberIndexesAndRoles[6] = CommitteeMember({index: 3, role: Role.WATCHTOWER});
+        committee.memberIndexesAndRoles[7] = CommitteeMember({index: 4, role: Role.WATCHTOWER});
+        committee.memberIndexesAndRoles[8] = CommitteeMember({index: 0, role: Role.WATCHTOWER});
+        committee.memberIndexesAndRoles[9] = CommitteeMember({index: 1, role: Role.WATCHTOWER});
 
         return committee;
     }

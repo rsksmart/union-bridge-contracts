@@ -79,7 +79,7 @@ abstract contract TestUtils is Test {
     }
 
     function generatePubKey(uint256 _privateKey) internal returns (bytes32) {
-        Vm.Wallet memory wallet = createWallet(_privateKey, PublicKeyIndex.Take);
+        Vm.Wallet memory wallet = createWallet(_privateKey, PublicKeyIndex.TAKE);
         return bytes32(wallet.publicKeyX);
     }
 
