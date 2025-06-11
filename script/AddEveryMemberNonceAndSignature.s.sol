@@ -3,25 +3,26 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
 import {PegManager} from "src/PegManager.sol";
+import {CommitteeRegistry} from "src/CommitteeRegistry.sol";
 import {ISignatureManager} from "src/interfaces/ISignatureManager.sol";
 import {ChainIds} from "src/libraries/Network.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 
-// FIXME: this constant should be the same one used by the committee registry
-//  we need to decide if we move the cosntant to the interface or to the constants library
-uint256 constant minCommitteMembers = 10;
-
 contract AddEveryMemberSignatureScript is ScriptUtils {
     PegManager pegManager;
+    CommitteeRegistry committeeRegistry;
     ISignatureManager signatureManager;
     bytes32 signature;
     bytes nonce;
     bytes32 pegOutSignatureHash;
+    uint256 minCommitteMembers;
 
     function setUp() internal {
         // ====== Arguments ======
         pegManager = PegManager(0x0165878A594ca255338adfa4d48449f69242Eb8F);
+        committeeRegistry = CommitteeRegistry(0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0);
+        minCommitteMembers = committeeRegistry.minCommitteeMembers();
         signatureManager = pegManager.signatureManager();
         signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
         nonce =
