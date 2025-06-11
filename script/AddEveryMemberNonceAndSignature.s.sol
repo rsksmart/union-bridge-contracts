@@ -10,7 +10,7 @@ import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 
 // FIXME: this constant should be the same one used by the committee registry
 //  we need to decide if we move the cosntant to the interface or to the constants library
-uint256 constant MIN_COMMITTEE_MEMBERS = 10;
+uint256 constant minCommitteMembers = 10;
 
 contract AddEveryMemberSignatureScript is ScriptUtils {
     PegManager pegManager;
@@ -34,7 +34,7 @@ contract AddEveryMemberSignatureScript is ScriptUtils {
         setUp();
         bool allAddedNonce = false;
         console.log("=== Adding Member Nonces ===");
-        for (uint8 i = 0; i < MIN_COMMITTEE_MEMBERS; i++) {
+        for (uint8 i = 0; i < minCommitteMembers; i++) {
             if (allAddedNonce) {
                 revert("Nonces should not be complete before last member");
             }
@@ -51,7 +51,7 @@ contract AddEveryMemberSignatureScript is ScriptUtils {
 
         bool allSigned = false;
         console.log("=== Adding Member Signatures ===");
-        for (uint8 i = 0; i < MIN_COMMITTEE_MEMBERS; i++) {
+        for (uint8 i = 0; i < minCommitteMembers; i++) {
             if (allSigned) {
                 revert("Signatures should not be complete before last member");
             }

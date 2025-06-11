@@ -146,6 +146,18 @@ interface ICommitteeRegistry {
     /// @param _timeout The timeout in seconds for the pending committee
     function setPendingCommitteeTimeout(uint256 _timeout) external;
 
+    /// @notice Set the minimum watchtowers required for a committee
+    /// @param _minWatchtowers The minimum watchtowers required for a committee
+    function setCommitteeMinWatchtowers(uint256 _minWatchtowers) external;
+
+    /// @notice Set the minimum operators required for a committee
+    /// @param _minOperators The minimum operators required for a committee
+    function setCommitteeMinOperators(uint256 _minOperators) external;
+
+    /// @notice Set the minimum members required for a committee
+    /// @param _minMembers The minimum number of members required for a committee
+    function setCommitteeMinMembers(uint256 _minMembers) external;
+
     /// ===================== Events =========================
     event NewCommittee(uint256 indexed committeeId, Committee _committee);
     event NewPendingCommittee(uint256 indexed streamId, Committee _committee);
@@ -159,6 +171,12 @@ interface ICommitteeRegistry {
     event MissingWatchtowers(StreamDenomination denomination, uint256 required, uint256 missing);
     event MissingOperators(StreamDenomination denomination, uint256 required, uint256 missing);
     event MissingMembers(StreamDenomination denomination, uint256 required, uint256 missing);
+    event PendingCommitteeTimeoutUpdated(uint256 timeout);
+    event StreamManagerUpdated(address streamManager);
+    event PegManagerUpdated(address pegManager);
+    event CommitteeMinWatchtowersUpdated(uint256 minWatchtowers);
+    event CommitteeMinOperatorsUpdated(uint256 minOperators);
+    event CommitteeMinMembersUpdated(uint256 minMembers);
 
     /// ==================== Errors =====================
     error RequestedDifferentStreamsAndRolesLength(uint256 streamsLength, uint256 rolesLength);
@@ -200,9 +218,10 @@ interface ICommitteeRegistry {
     error MemberNotRegistered(address memberAddress);
     error DespositBondTooLow(uint256 sent, uint256 minDeposit);
     error FailedToSendRSK(address memberAddress, uint256 amount);
+    error InvalidZeroValue();
+    error InvalidMinMembers(uint256 minMembers, uint256 minCommitteWatchtowers, uint256 minCommitteOperators);
 
     /// ================ Internal Errors =================
     error _MemberIndexOutOfBounds(uint16 memberIndex);
     error _FailedToCreateCommittee(uint64 streamId, PendingCommitteeStatus status);
-    error InvalidZeroTimeout();
 }

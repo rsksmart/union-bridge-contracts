@@ -293,8 +293,8 @@ abstract contract HelperContract is Test, TestUtils {
                 _numberOfPegIns > Constants.SLOTS_PER_PACKET
                     && (i % Constants.SLOTS_PER_PACKET) == Constants.SLOT_USAGE_THRESHOLD
             ) {
-                uint256 memberIndexStart = registry.MIN_COMMITTEE_MEMBERS();
-                uint256 memberCount = registry.MIN_COMMITTEE_MEMBERS();
+                uint256 memberIndexStart = registry.minCommitteeMembers();
+                uint256 memberCount = registry.minCommitteeMembers();
                 setup_depositMemberInfo_MultipleMembers(_streamId, memberIndexStart, memberCount);
             }
         }
@@ -403,8 +403,8 @@ abstract contract HelperContract is Test, TestUtils {
         StreamDenomination denomination = StreamDenomination._0_01BTC;
         streamId = 1;
         vm.warp(BLOCK_TIMESTAMP_FOR_DETERMINISTIC_COMMITTEE);
-        uint256 numOperators = registry.MIN_COMMITTEE_MEMBERS() / 2;
-        uint256 numWatchtowers = registry.MIN_COMMITTEE_MEMBERS() - numOperators;
+        uint256 numOperators = registry.minCommitteeMembers() / 2;
+        uint256 numWatchtowers = registry.minCommitteeMembers() - numOperators;
         setup_registerNewMembers(numWatchtowers, numOperators, denomination);
         return (setup_getExpectedCommitteeBeforeExpire(), streamId);
     }
@@ -417,7 +417,7 @@ abstract contract HelperContract is Test, TestUtils {
     function setup_completeCommittee() internal returns (Committee memory expectedCommittee, uint64 streamId) {
         (expectedCommittee, streamId) = setup_pendingCommittee();
 
-        setup_depositMemberInfo_MultipleMembers(streamId, 0, registry.MIN_COMMITTEE_MEMBERS());
+        setup_depositMemberInfo_MultipleMembers(streamId, 0, registry.minCommitteeMembers());
         expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY;
 
         return (expectedCommittee, streamId);
@@ -430,8 +430,8 @@ abstract contract HelperContract is Test, TestUtils {
         (firstCommittee, streamId) = setup_completeCommittee();
 
         // Register new members
-        uint256 numOperators = registry.MIN_COMMITTEE_MEMBERS() / 2;
-        uint256 numWatchtowers = registry.MIN_COMMITTEE_MEMBERS() - numOperators;
+        uint256 numOperators = registry.minCommitteeMembers() / 2;
+        uint256 numWatchtowers = registry.minCommitteeMembers() - numOperators;
         setup_registerNewMembers(numWatchtowers, numOperators, StreamDenomination(streamId));
 
         secondCommittee = setup_getExpectedSecondCommittee();
@@ -445,7 +445,7 @@ abstract contract HelperContract is Test, TestUtils {
 
         Committee memory committee = Committee({
             aggregatedKey: bytes32(0),
-            memberIndexesAndRoles: new CommitteeMember[](registry.MIN_COMMITTEE_MEMBERS()),
+            memberIndexesAndRoles: new CommitteeMember[](registry.minCommitteeMembers()),
             leaderIndex: 0
         });
 
@@ -468,7 +468,7 @@ abstract contract HelperContract is Test, TestUtils {
         vm.warp(BLOCK_TIMESTAMP_FOR_DETERMINISTIC_COMMITTEE);
         Committee memory committee = Committee({
             aggregatedKey: bytes32(0),
-            memberIndexesAndRoles: new CommitteeMember[](registry.MIN_COMMITTEE_MEMBERS()),
+            memberIndexesAndRoles: new CommitteeMember[](registry.minCommitteeMembers()),
             leaderIndex: 0
         });
 
@@ -503,7 +503,7 @@ abstract contract HelperContract is Test, TestUtils {
         // NOTE: member order is tied to the timeout used in setup_pendingCommitteeAndExpire()
         Committee memory committee = Committee({
             aggregatedKey: bytes32(0),
-            memberIndexesAndRoles: new CommitteeMember[](registry.MIN_COMMITTEE_MEMBERS()),
+            memberIndexesAndRoles: new CommitteeMember[](registry.minCommitteeMembers()),
             leaderIndex: 0
         });
 
