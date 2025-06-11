@@ -2,8 +2,8 @@
 pragma solidity ^0.8.20;
 
 import {BaseProxy} from "./BaseProxy.sol";
-import {ICommitteeRegistry, CommitteeMember} from "./interfaces/ICommitteeRegistry.sol";
-import {ISignatureManager, Signatures, SignatureData} from "./interfaces/ISignatureManager.sol";
+import {ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
+import {ISignatureManager} from "./interfaces/ISignatureManager.sol";
 import {PrevoutData, BtcTransaction, BtcTxOut, IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
 import {
     BtcTxSPVProof,
