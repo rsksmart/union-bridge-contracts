@@ -35,12 +35,12 @@ contract RegisterPegoutScript is ScriptUtils {
     function run() public {
         setUp();
 
-        BtcTransaction memory pegOutTx = createPegOutTx(acceptPeginTxHash, usrPubKey, amount);
-        BtcTxSPVProof memory pegOutTxSPVProof = createBtcTxSPVProof(pegOutTx);
+        BtcTransaction memory pegoutTx = createPegoutTx(acceptPeginTxHash, usrPubKey, amount);
+        BtcTxSPVProof memory pegoutTxSPVProof = createBtcTxSPVProof(pegoutTx);
 
         // Register peg-out transaction
         vm.startBroadcast(getDeployerKey());
-        pegManager.registerPegout(pegOutTxSPVProof);
+        pegManager.registerPegout(pegoutTxSPVProof);
         vm.stopBroadcast();
 
         Slot memory slot = pegManager.streamManager().getSlot(stream.streamId, expectedPacketNumber, expectedSlotId);

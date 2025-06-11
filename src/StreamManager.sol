@@ -37,7 +37,7 @@ contract StreamManager is IStreamManager, AccessControl {
                     pegoutSlotPointer: 0,
                     securityBondValue: BtcHelper.satoshiToWei(_denominations[i]) / 10,
                     peginConfirmations: Constants.PEGIN_CONFIRMATION_DEFAULT,
-                    pegOutConfirmations: Constants.PEGOUT_CONFIRMATION_DEFAULT
+                    pegoutConfirmations: Constants.PEGOUT_CONFIRMATION_DEFAULT
                 })
             );
             emit StreamCreated(i, _denominations[i]);
@@ -275,7 +275,7 @@ contract StreamManager is IStreamManager, AccessControl {
             revert InvalidPegoutConfirmations(_confirmations);
         }
 
-        streams[_streamId].pegOutConfirmations = _confirmations;
+        streams[_streamId].pegoutConfirmations = _confirmations;
     }
 
     function setCommitteeRegistry(ICommitteeRegistry _committeeRegistry) external onlyOwner {

@@ -15,8 +15,8 @@ contract AddEveryMemberSignatureScript is ScriptUtils {
     ISignatureManager signatureManager;
     bytes32 signature;
     bytes nonce;
-    bytes32 pegOutSignatureHash;
     uint256 minCommitteMembers;
+    bytes32 pegoutSignatureHash;
 
     function setUp() internal {
         // ====== Arguments ======
@@ -28,7 +28,7 @@ contract AddEveryMemberSignatureScript is ScriptUtils {
         nonce =
             hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
 
-        pegOutSignatureHash = 0xbdbcc0e498ff3efd9332048959b808326e6361ba820aabdde997c49b699e8b20;
+        pegoutSignatureHash = 0xbdbcc0e498ff3efd9332048959b808326e6361ba820aabdde997c49b699e8b20;
     }
 
     function run() public {
@@ -40,7 +40,7 @@ contract AddEveryMemberSignatureScript is ScriptUtils {
                 revert("Nonces should not be complete before last member");
             }
             vm.startBroadcast(getMemberKey(i));
-            allAddedNonce = signatureManager.addMemberNonce(pegOutSignatureHash, nonce);
+            allAddedNonce = signatureManager.addMemberNonce(pegoutSignatureHash, nonce);
             vm.stopBroadcast();
 
             console.log("Added nonce for member", i);
@@ -57,7 +57,7 @@ contract AddEveryMemberSignatureScript is ScriptUtils {
                 revert("Signatures should not be complete before last member");
             }
             vm.startBroadcast(getMemberKey(i));
-            allSigned = signatureManager.addMemberSignature(pegOutSignatureHash, signature);
+            allSigned = signatureManager.addMemberSignature(pegoutSignatureHash, signature);
             vm.stopBroadcast();
 
             console.log("Added signature for member", i);

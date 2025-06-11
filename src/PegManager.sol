@@ -8,7 +8,7 @@ import {PrevoutData, BtcTransaction, BtcTxOut, IBitcoinManager} from "./interfac
 import {
     BtcTxSPVProof,
     RequestPeginTempInfo,
-    PegOutTempInfo,
+    PegoutTempInfo,
     StreamPosition,
     PegStatus,
     IPegManager
@@ -32,10 +32,10 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
     mapping(bytes32 requestPeginTxHash => bytes32 acceptPeginTxhash) internal peginRequests;
     mapping(bytes32 acceptPeginTxhash => StreamPosition streamPosition) internal streamPosition;
     mapping(bytes32 requestPeginTxHash => RequestPeginTempInfo tempInfo) internal peginTempInfo;
-    mapping(bytes32 acceptPeginTxHash => PegOutTempInfo tempInfo) internal pegOutTempInfo;
+    mapping(bytes32 acceptPeginTxHash => PegoutTempInfo tempInfo) internal pegoutTempInfo;
 
     // key = keccak256(abi.encodePacked(streamId, packetNumber, slotId))
-    mapping(bytes32 key => bytes32 pegOutSignatureHash) internal pegOutSighashes;
+    mapping(bytes32 key => bytes32 pegoutSignatureHash) internal pegoutSighashes;
 
     function initialize(
         address _initialOwner,
@@ -80,8 +80,8 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         return peginTempInfo[_btcTxHash];
     }
 
-    function getPegTempOutInfo(bytes32 _acceptPeginTxHash) external view returns (PegOutTempInfo memory) {
-        return pegOutTempInfo[_acceptPeginTxHash];
+    function getPegTempOutInfo(bytes32 _acceptPeginTxHash) external view returns (PegoutTempInfo memory) {
+        return pegoutTempInfo[_acceptPeginTxHash];
     }
 
     function getTemporaryPeginAddress(address _rootstockDepositAddress, uint64 _value, bytes32 _btcReimbursementPubKey)
@@ -306,7 +306,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         //requestRbtc(rskDestinationAddress, rbtcAmount);
     }
 
-    function validatePegOutRequest(bytes calldata _usrPubKey, uint256 amountInWei) internal pure {
+    function validatePegoutRequest(bytes calldata _usrPubKey, uint256 amountInWei) internal pure {
         if (BtcHelper.weiToSatoshi(amountInWei) > type(uint64).max) {
             revert PegoutRequestAmountExceedsUint64Limit(BtcHelper.weiToSatoshi(amountInWei));
         }
@@ -319,8 +319,8 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         // TODO: validate who can request a peg-out
     }
 
-    function requestPegOut(bytes calldata _usrPubKey) external payable {
-        validatePegOutRequest(_usrPubKey, msg.value);
+    function requestPegout(bytes calldata _usrPubKey) external payable {
+        validatePegoutRequest(_usrPubKey, msg.value);
 
         uint64 receivedAmount = uint64(BtcHelper.weiToSatoshi(msg.value));
 
@@ -332,21 +332,21 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         PrevoutData memory prevoutData = PrevoutData({value: slot.acceptPeginAmount, scriptPubKey: slot.scriptPubKey});
 
         // Compute the Bitcoin peg-out signature hash
-        (bytes32 pegOutSignatureHash, bytes memory commonSignatureMessage) =
-            bitcoinManager.getPegOutSignatureHash(_usrPubKey, slot.acceptPeginTx, prevoutData);
+        (bytes32 pegoutSignatureHash, bytes memory commonSignatureMessage) =
+            bitcoinManager.getPegoutSignatureHash(_usrPubKey, slot.acceptPeginTx, prevoutData);
 
         // Store the pegout transaction info for efficient lookup during registration
-        pegOutTempInfo[slot.acceptPeginTx] = PegOutTempInfo({userPubKey: _usrPubKey});
+        pegoutTempInfo[slot.acceptPeginTx] = PegoutTempInfo({userPubKey: _usrPubKey});
 
         // Store the peg-out transaction hash on-chain and initialize the signatures
-        storePegOutAndInitSignatures(pegOutSignatureHash, stream.streamId, packetNumber, slot.slotId);
+        storePegoutAndInitSignatures(pegoutSignatureHash, stream.streamId, packetNumber, slot.slotId);
 
         // TODO: return RBTC to the RSK Legacy Bridge following https://github.com/rsksmart/RSKIPs/pull/502
 
-        emit PegOutRequested(
+        emit PegoutRequested(
             _usrPubKey,
             stream.denomination,
-            pegOutSignatureHash,
+            pegoutSignatureHash,
             commonSignatureMessage,
             stream.streamId,
             packetNumber,
@@ -355,11 +355,11 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
     }
 
     /// @notice Register a peg-out transaction from Bitcoin
-    /// @param _pegOutTxSPVProof The BTC SPV proof of the peg-out transaction
-    function registerPegout(BtcTxSPVProof calldata _pegOutTxSPVProof) external {
+    /// @param _pegoutTxSPVProof The BTC SPV proof of the peg-out transaction
+    function registerPegout(BtcTxSPVProof calldata _pegoutTxSPVProof) external {
         // Get the accept peg-in tx hash from the first input (this is what gets spent)
-        bytes32 acceptPeginTxHash = _pegOutTxSPVProof.btcTx.inputs[0].txId;
-        uint32 vout = _pegOutTxSPVProof.btcTx.inputs[0].vout;
+        bytes32 acceptPeginTxHash = _pegoutTxSPVProof.btcTx.inputs[0].txId;
+        uint32 vout = _pegoutTxSPVProof.btcTx.inputs[0].vout;
 
         // get the stream data for this pegout
         StreamPosition memory streamInfo = streamPosition[acceptPeginTxHash];
@@ -374,23 +374,23 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         }
 
         // Calculate the transaction hash for verification
-        bytes32 txHash = bitcoinManager.getBtcTxHash(_pegOutTxSPVProof.btcTx);
+        bytes32 txHash = bitcoinManager.getBtcTxHash(_pegoutTxSPVProof.btcTx);
 
         // Get the stream to check confirmations
         Stream memory stream = streamManager.getStreamById(streamInfo.streamId);
 
         // Verify the txHash is part of the Merkle Root and has enough confirmations
         verifyTxConfirmations(
-            stream.pegOutConfirmations,
+            stream.pegoutConfirmations,
             txHash,
-            _pegOutTxSPVProof.blockHash,
-            _pegOutTxSPVProof.merkleBranchPath,
-            _pegOutTxSPVProof.merkleBranchHashes
+            _pegoutTxSPVProof.blockHash,
+            _pegoutTxSPVProof.merkleBranchPath,
+            _pegoutTxSPVProof.merkleBranchHashes
         );
 
         // Validate that the first output is a P2WPKH paying the user
-        bytes memory userPubKey = pegOutTempInfo[acceptPeginTxHash].userPubKey;
-        bitcoinManager.validatePegOutUserOutput(_pegOutTxSPVProof.btcTx.outputs[0], userPubKey);
+        bytes memory userPubKey = pegoutTempInfo[acceptPeginTxHash].userPubKey;
+        bitcoinManager.validatePegoutUserOutput(_pegoutTxSPVProof.btcTx.outputs[0], userPubKey);
 
         // Update slot status
         streamManager.paidSlot(
@@ -400,8 +400,8 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         // update the peg status to PAID
         streamPosition[acceptPeginTxHash].pegStatus = PegStatus.PAID;
 
-        emit PegOutRegistered(
-            _pegOutTxSPVProof.blockHash,
+        emit PegoutRegistered(
+            _pegoutTxSPVProof.blockHash,
             txHash,
             acceptPeginTxHash,
             streamInfo.streamId,
@@ -410,33 +410,33 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         );
     }
 
-    function getPegOutSignatureHash(uint64 streamId, uint64 packetNumber, uint64 slotId)
+    function getPegoutSignatureHash(uint64 streamId, uint64 packetNumber, uint64 slotId)
         external
         view
         returns (bytes32)
     {
         bytes32 key = keccak256(abi.encodePacked(streamId, packetNumber, slotId));
-        return pegOutSighashes[key];
+        return pegoutSighashes[key];
     }
 
     function getStreamPosition(bytes32 _btcTxHash) public view returns (StreamPosition memory) {
         return streamPosition[peginRequests[_btcTxHash]];
     }
 
-    function storePegOutAndInitSignatures(
-        bytes32 _pegOutSignatureHash,
+    function storePegoutAndInitSignatures(
+        bytes32 _pegoutSignatureHash,
         uint64 _streamId,
         uint64 _packetNumber,
         uint64 _slotId
     ) internal {
         // Store the peg-out transaction hash on-chain and initialize the signatures
         bytes32 key = keccak256(abi.encodePacked(_streamId, _packetNumber, _slotId));
-        pegOutSighashes[key] = _pegOutSignatureHash;
+        pegoutSighashes[key] = _pegoutSignatureHash;
 
         // Get the committee key
         uint256 committeeId = streamManager.getCommitteeId(_streamId, _packetNumber);
 
         // Initialize the signatures for each member
-        signatureManager.initSignatures(_pegOutSignatureHash, committeeId);
+        signatureManager.initSignatures(_pegoutSignatureHash, committeeId);
     }
 }

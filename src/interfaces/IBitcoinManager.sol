@@ -122,15 +122,15 @@ interface IBitcoinManager {
     /// @param _acceptPeginTx The transaction hash of the accept peg-in tx being spent
     /// @param _prevoutData Data about the previous output being spent (amount and scriptPubKey)
     /// @return the tagged hash and the encoded data before hashing
-    function getPegOutSignatureHash(bytes memory _usrPubKey, bytes32 _acceptPeginTx, PrevoutData memory _prevoutData)
+    function getPegoutSignatureHash(bytes memory _usrPubKey, bytes32 _acceptPeginTx, PrevoutData memory _prevoutData)
         external
         pure
         returns (bytes32, bytes memory);
 
     /// @notice Validates that the peg-out transaction output is a P2WPKH paying the user
-    /// @param _pegOutOutput The Bitcoin transaction output to validate
+    /// @param _pegoutOutput The Bitcoin transaction output to validate
     /// @param _userPubKey The user's public key that should receive the funds
-    function validatePegOutUserOutput(BtcTxOut calldata _pegOutOutput, bytes memory _userPubKey) external pure;
+    function validatePegoutUserOutput(BtcTxOut calldata _pegoutOutput, bytes memory _userPubKey) external pure;
 
     error InvalidOpReturnLength(uint256 actual, uint256 expected);
     error IncorrectlyFormedOpReturn(uint256 index);

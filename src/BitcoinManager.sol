@@ -177,7 +177,7 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         return BtcTaproot.getP2TRScriptPubKey(tweakedPublicKey);
     }
 
-    function validatePegOutUserOutput(BtcTxOut calldata _userOutput, bytes memory _userPubKey) external pure {
+    function validatePegoutUserOutput(BtcTxOut calldata _userOutput, bytes memory _userPubKey) external pure {
         bytes memory expectedScriptPubKey = BtcScriptParser.getP2WPKHScript(_userPubKey);
 
         // Validate that the output script matches the expected P2WPKH script
@@ -291,7 +291,7 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
 
     // ========================== Peg Out Signature Hash ==========================
     /// @dev Get the signature hash for a peg out transaction
-    function getPegOutSignatureHash(bytes memory _usrPubKey, bytes32 _acceptPeginTx, PrevoutData memory _prevoutData)
+    function getPegoutSignatureHash(bytes memory _usrPubKey, bytes32 _acceptPeginTx, PrevoutData memory _prevoutData)
         external
         pure
         returns (bytes32, bytes memory)
@@ -324,14 +324,14 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         btcOutputs[1] = BtcTxOut({amount: speedUpAmount, scriptPubKey: scriptPubKey});
 
         // Prepare Btc Transaction
-        BtcTransaction memory pegOutTx = BtcTransaction({
+        BtcTransaction memory pegoutTx = BtcTransaction({
             version: Constants.BTC_TX_VERSION,
             locktime: Constants.LOCKTIME,
             inputs: btcInputs,
             outputs: btcOutputs
         });
         // Return the tagged hash and the encoded data before hashing
-        return taprootSignatureHash(Constants.SIGHASH_ALL, prevoutDatas, pegOutTx);
+        return taprootSignatureHash(Constants.SIGHASH_ALL, prevoutDatas, pegoutTx);
     }
 
     /// @dev Returns Signature Hash. The signature hash is the actual "message" that we sign when creating the signature.

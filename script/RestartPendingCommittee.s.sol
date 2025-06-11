@@ -10,7 +10,7 @@ import {Slot, Stream, Packet, SlotState, IStreamManager} from "src/interfaces/IS
 import {CommitteeRegistry} from "src/CommitteeRegistry.sol";
 import {Vm} from "forge-std/Vm.sol";
 
-contract RegisterPegOutRequestScript is ScriptUtils {
+contract RegisterPegoutRequestScript is ScriptUtils {
     PegManager pegManager;
     CommitteeRegistry committeeRegistry;
     uint64 streamId;

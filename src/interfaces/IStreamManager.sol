@@ -49,7 +49,7 @@ struct Stream {
     uint64 pegoutPacketPointer; // Another index for the packets array. It points to the current packet that should have a slot filled for a peg-out request
     uint16 pegoutSlotPointer; // An index for the slots array. It points to the first slot in the pegoutPacketPointer that should be processed when requested (if it's filled)
     uint8 peginConfirmations; // A generic number
-    uint8 pegOutConfirmations; // Another generic number
+    uint8 pegoutConfirmations; // Another generic number
     uint256 securityBondValue; // The required bond (in wei) that each member of the committee needs to deposit to secure a packet
 }
 

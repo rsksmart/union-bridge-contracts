@@ -62,7 +62,7 @@ abstract contract ScriptUtils is Script {
     }
 
     // ========================== Peg out ==========================
-    function createPegOutTx(bytes32 _acceptPeginTxHash, bytes memory _userPubKey, uint64 _amount)
+    function createPegoutTx(bytes32 _acceptPeginTxHash, bytes memory _userPubKey, uint64 _amount)
         internal
         pure
         returns (BtcTransaction memory)

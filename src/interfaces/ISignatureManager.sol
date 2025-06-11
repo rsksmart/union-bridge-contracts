@@ -44,7 +44,7 @@ interface ISignatureManager is IAccessControl {
     error MemberAlreadyAddedNonce(bytes32 memberPubKey, address memberAddress, bytes nonce);
     error AllNoncesAreNotPresent(bytes32 hashToSign);
     error InvalidSignature();
-    error MemberHasAlreadySigned(bytes32 memberPubKey, address memberAddress, bytes32 pegOutTxHash);
+    error MemberHasAlreadySigned(bytes32 memberPubKey, address memberAddress, bytes32 pegoutTxHash);
     error MemberNotFound(address memberAddress);
     error MemberNotFoundInCommittee(bytes32 memberPubKey, address memberAddress, bytes32 hashToSign);
     error InvalidHashToSign(bytes32 hashToSign);

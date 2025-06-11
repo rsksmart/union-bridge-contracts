@@ -41,7 +41,7 @@ struct RequestPeginTempInfo {
     bytes32 acceptPeginTxHash;
 }
 
-struct PegOutTempInfo {
+struct PegoutTempInfo {
     bytes userPubKey;
 }
 
@@ -113,29 +113,29 @@ interface IPegManager {
     // /// @param streamId The stream identifier
     // /// @param sequenceNumber The sequence number
     // /// @param slotId The slot identifier
-    // function selectUTXOsForPegOut(uint256 streamId, uint256 sequenceNumber, uint256 slotId) external;
+    // function selectUTXOsForPegout(uint256 streamId, uint256 sequenceNumber, uint256 slotId) external;
 
     // /// @notice Requests a peg-out to Bitcoin
     // /// @param _usrPubKey The user public key
     // /// @param _bitcoinUserAddress The Bitcoin user address
-    function requestPegOut(bytes calldata _usrPubKey) external payable;
+    function requestPegout(bytes calldata _usrPubKey) external payable;
 
     /// @notice Register a peg-out transaction from Bitcoin
-    /// @param _pegOutTxSPVProof The BTC SPV proof of the peg-out transaction
-    function registerPegout(BtcTxSPVProof calldata _pegOutTxSPVProof) external;
+    /// @param _pegoutTxSPVProof The BTC SPV proof of the peg-out transaction
+    function registerPegout(BtcTxSPVProof calldata _pegoutTxSPVProof) external;
 
     // address indexed bitcoinUserAddress,
-    event PegOutRequested(
+    event PegoutRequested(
         bytes indexed usrPubKey,
         uint64 amount,
-        bytes32 indexed pegOutSignatureHash,
+        bytes32 indexed pegoutSignatureHash,
         bytes commonSignatureMessage,
         uint64 streamId,
         uint64 packetNumber,
         uint64 slotId
     );
 
-    event PegOutRegistered(
+    event PegoutRegistered(
         bytes32 indexed blockHash,
         bytes32 indexed txHash,
         bytes32 indexed acceptPeginTxHash,

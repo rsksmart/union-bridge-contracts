@@ -12,7 +12,7 @@ import {
     PegStatus,
     IPegManager
 } from "src/interfaces/IPegManager.sol";
-import {PegOutTempInfo} from "src/PegManager.sol";
+import {PegoutTempInfo} from "src/PegManager.sol";
 import {BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
 import {Slot, SlotState, Packet, Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {ISignatureManager} from "src/interfaces/ISignatureManager.sol";
@@ -52,8 +52,8 @@ contract TestPegManager is Test, HelperContract {
         setupStreamId = streamId;
     }
 
-    // ================= Request PegOut =================
-    function test_requestPegOut_Success() external {
+    // ================= Request Pegout =================
+    function test_requestPegout_Success() external {
         // Arrange
         bytes32 expectedHash = 0xdfdfbe00b8a563bd5ceb2279c14b33763ed5305301ad1240378ad376384375c3;
         bytes memory expectedDigest =
@@ -75,16 +75,16 @@ contract TestPegManager is Test, HelperContract {
 
         // Assert
         vm.expectEmit(address(pm));
-        emit IPegManager.PegOutRequested(
+        emit IPegManager.PegoutRequested(
             usrPubKey, amount, expectedHash, expectedDigest, stream.streamId, packetNumber, slotId
         );
 
         // Act
-        pm.requestPegOut{value: amountInWei}(usrPubKey);
+        pm.requestPegout{value: amountInWei}(usrPubKey);
 
         // Assert
-        bytes32 pegOutSignatureHash = pm.getPegOutSignatureHash(stream.streamId, packetNumber, slotId);
-        assertEq(pegOutSignatureHash, expectedHash, "expected hash doesn't match the pegout computed one");
+        bytes32 pegoutSignatureHash = pm.getPegoutSignatureHash(stream.streamId, packetNumber, slotId);
+        assertEq(pegoutSignatureHash, expectedHash, "expected hash doesn't match the pegout computed one");
 
         // Assert
         Slot memory slot = streamManager.getSlot(stream.streamId, packetNumber, slotId);
@@ -97,7 +97,7 @@ contract TestPegManager is Test, HelperContract {
         );
     }
 
-    function test_requestPegOut_fromAcceptPegin_Success() external {
+    function test_requestPegout_fromAcceptPegin_Success() external {
         // Setup
         setup_requestAndAcceptPeginFlow();
 
@@ -120,15 +120,15 @@ contract TestPegManager is Test, HelperContract {
 
         // Assert
         vm.expectEmit(address(pm));
-        emit IPegManager.PegOutRequested(
+        emit IPegManager.PegoutRequested(
             usrPubKey, amount, expectedHash, expectedDigest, stream.streamId, packetNumber, slotId
         );
 
         // Act
-        pm.requestPegOut{value: amountInWei}(usrPubKey);
+        pm.requestPegout{value: amountInWei}(usrPubKey);
 
         // Assert
-        bytes32 result = pm.getPegOutSignatureHash(stream.streamId, packetNumber, slotId);
+        bytes32 result = pm.getPegoutSignatureHash(stream.streamId, packetNumber, slotId);
         assertEq(result, expectedHash, "expected hash doesn't match the pegout computed one");
 
         // Assert
@@ -142,7 +142,7 @@ contract TestPegManager is Test, HelperContract {
         );
     }
 
-    function test_requestPegOut_FromNextPacket_Success() external {
+    function test_requestPegout_FromNextPacket_Success() external {
         // Setup
         uint256 pegoutAmount = Constants.SLOTS_PER_PACKET + 10;
         setup_multipleRequestAndAcceptPeginFlows(pegoutAmount, setupStreamId);
@@ -168,7 +168,7 @@ contract TestPegManager is Test, HelperContract {
             assertEq(slotIdExpected, slotId);
 
             // Act
-            pm.requestPegOut{value: amountInWei}(usrPubKey);
+            pm.requestPegout{value: amountInWei}(usrPubKey);
 
             // Assert
             Slot memory slot = streamManager.getSlot(stream.streamId, packetNumber, slotId);
@@ -183,7 +183,7 @@ contract TestPegManager is Test, HelperContract {
         );
     }
 
-    function test_requestPegOut_Revert_InvalidPublicKeyLength() external {
+    function test_requestPegout_Revert_InvalidPublicKeyLength() external {
         // Arrange
         bytes memory usrPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b00";
 
@@ -191,10 +191,10 @@ contract TestPegManager is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(IPegManager.InvalidPubKeyLength.selector, usrPubKey.length));
 
         // Act
-        pm.requestPegOut(usrPubKey);
+        pm.requestPegout(usrPubKey);
     }
 
-    function test_requestPegOut_Revert_StreamNotFoundByDenomination() external {
+    function test_requestPegout_Revert_StreamNotFoundByDenomination() external {
         // Arrange
         bytes memory usrPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
         uint64 amount = 5;
@@ -204,10 +204,10 @@ contract TestPegManager is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(IStreamManager.StreamNotFoundByDenomination.selector, amount));
 
         // Act
-        pm.requestPegOut{value: amountInWei}(usrPubKey);
+        pm.requestPegout{value: amountInWei}(usrPubKey);
     }
 
-    function test_requestPegOut_Revert_NonExistentSlot() external {
+    function test_requestPegout_Revert_NonExistentSlot() external {
         // Arrange
         bytes memory usrPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
         uint64 amount = 1000000; // 0.01 BTC
@@ -222,22 +222,22 @@ contract TestPegManager is Test, HelperContract {
         );
 
         // Act
-        pm.requestPegOut{value: amountInWei}(usrPubKey);
+        pm.requestPegout{value: amountInWei}(usrPubKey);
     }
 
-    // we only check the revert case since the success cases are being checked in the _addMemberSignaturePegOut tests
-    function test_checkAllSignaturesReady_Revert_PegOutRequestNotFound() external {
+    // we only check the revert case since the success cases are being checked in the _addMemberSignaturePegout tests
+    function test_checkAllSignaturesReady_Revert_PegoutRequestNotFound() external {
         // Arrange
-        bytes32 pegOutSignatureHash = 0x0000000000000000000000000000000000000000000000000000000000000001;
+        bytes32 pegoutSignatureHash = 0x0000000000000000000000000000000000000000000000000000000000000001;
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(ISignatureManager.HashToSignNotFound.selector, pegOutSignatureHash));
+        vm.expectRevert(abi.encodeWithSelector(ISignatureManager.HashToSignNotFound.selector, pegoutSignatureHash));
 
         // Act
-        signatureManager.checkAllSignaturesReady(pegOutSignatureHash);
+        signatureManager.checkAllSignaturesReady(pegoutSignatureHash);
     }
 
-    function setup_arrangeRequestPegOut() internal returns (bytes32) {
+    function setup_arrangeRequestPegout() internal returns (bytes32) {
         // Arrange
         bytes memory usrPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
 
@@ -253,20 +253,20 @@ contract TestPegManager is Test, HelperContract {
         uint64 slotId = streamManager.setSlotHarness(stream.streamId, packetNumber, scriptPubKey, txId, amount);
 
         // Execute pegout as part of the arrange
-        pm.requestPegOut{value: amountInWei}(usrPubKey);
-        bytes32 pegOutSignatureHash = pm.getPegOutSignatureHash(stream.streamId, packetNumber, slotId);
+        pm.requestPegout{value: amountInWei}(usrPubKey);
+        bytes32 pegoutSignatureHash = pm.getPegoutSignatureHash(stream.streamId, packetNumber, slotId);
 
-        return (pegOutSignatureHash);
+        return (pegoutSignatureHash);
     }
 
     function test_registerPegout_success() external {
         // Setup
         RegisterPegoutSetup memory setup = setup_registerPegoutScenario();
 
-        // Expect the PegOutRegistered event
+        // Expect the PegoutRegistered event
         vm.expectEmit(address(pm));
-        emit IPegManager.PegOutRegistered(
-            setup.pegOutTxSPVProof.blockHash,
+        emit IPegManager.PegoutRegistered(
+            setup.pegoutTxSPVProof.blockHash,
             setup.expectedTxHash,
             setup.acceptPeginTxHash,
             setup.stream.streamId,
@@ -275,7 +275,7 @@ contract TestPegManager is Test, HelperContract {
         );
 
         // Register the peg-out transaction
-        pm.registerPegout(setup.pegOutTxSPVProof);
+        pm.registerPegout(setup.pegoutTxSPVProof);
 
         // Verify the slot was marked as PAID
         Slot memory updatedSlot = streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId);
@@ -292,14 +292,14 @@ contract TestPegManager is Test, HelperContract {
             abi.encodeWithSelector(IPegManager.InvalidSlotState.selector, SlotState.FILLED, SlotState.LOCKED)
         );
 
-        pm.registerPegout(setup.pegOutTxSPVProof);
+        pm.registerPegout(setup.pegoutTxSPVProof);
     }
 
     function test_registerPegout_Revert_InvalidAcceptPeginTxHash() external {
         // Create a peg-out transaction that spends the accept peg-in UTXO
         bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
         bytes32 acceptPeginTxHash = 0x30b6a2cae94d89540a99e0dfa39cf88e6de40dca9142810fdce7a95c00faff47;
-        BtcTransaction memory pegOutTx = createPegOutTx(acceptPeginTxHash, userPubKey, VALUE);
+        BtcTransaction memory pegoutTx = createPegoutTx(acceptPeginTxHash, userPubKey, VALUE);
 
         // Create a slot
         Stream memory stream = streamManager.getStream(VALUE);
@@ -317,12 +317,12 @@ contract TestPegManager is Test, HelperContract {
         // Set the slot state to LOCKED
         streamManager.setSlotStateHarness(stream.streamId, packetNumber, slotId, SlotState.LOCKED);
 
-        // Set up the pegOutTxs mapping
-        pm.setPegOutTempInfoHarness(acceptPeginTxHash, userPubKey);
+        // Set up the pegoutTxs mapping
+        pm.setPegoutTempInfoHarness(acceptPeginTxHash, userPubKey);
         pm.setStreamPositionHarness(acceptPeginTxHash, stream.streamId, packetNumber, slotId, PegStatus.ACCEPTED);
 
         // Create SPV proof for the peg-out transaction
-        BtcTxSPVProof memory pegOutTxSPVProof = createBtcTxSPVProof(pegOutTx);
+        BtcTxSPVProof memory pegoutTxSPVProof = createBtcTxSPVProof(pegoutTx);
 
         // Set mock bridge confirmations
         bridgeMock.setBtcTransactionConfirmations(10);
@@ -333,7 +333,7 @@ contract TestPegManager is Test, HelperContract {
         );
 
         // Register the peg-out transaction
-        pm.registerPegout(pegOutTxSPVProof);
+        pm.registerPegout(pegoutTxSPVProof);
     }
 
     function test_registerPegout_Revert_IncorrectVout() external {
@@ -341,14 +341,14 @@ contract TestPegManager is Test, HelperContract {
         RegisterPegoutSetup memory setup = setup_registerPegoutScenario();
 
         // Override the vout to be 1 instead of 0
-        setup.pegOutTx.inputs[0].vout = 1;
-        setup.pegOutTxSPVProof = createBtcTxSPVProof(setup.pegOutTx);
+        setup.pegoutTx.inputs[0].vout = 1;
+        setup.pegoutTxSPVProof = createBtcTxSPVProof(setup.pegoutTx);
 
         vm.expectRevert(
             abi.encodeWithSelector(IPegManager.IncorrectVout.selector, uint32(1), Constants.VOUT_INDEX_TAPTREE)
         );
 
-        pm.registerPegout(setup.pegOutTxSPVProof);
+        pm.registerPegout(setup.pegoutTxSPVProof);
     }
 
     function test_registerPegout_Revert_NotEnoughConfirmations() external {
@@ -364,15 +364,15 @@ contract TestPegManager is Test, HelperContract {
             )
         );
 
-        pm.registerPegout(setup.pegOutTxSPVProof);
+        pm.registerPegout(setup.pegoutTxSPVProof);
     }
 
     function test_registerPegout_Revert_IncorrectOutputScript() external {
         RegisterPegoutSetup memory setup = setup_registerPegoutScenario();
 
         // Change the first output to have an incorrect script (not P2WPKH for the user's pubkey)
-        setup.pegOutTx.outputs[0].scriptPubKey = hex"001499999999999999999999999999999999999999"; // Wrong script
-        setup.pegOutTxSPVProof = createBtcTxSPVProof(setup.pegOutTx);
+        setup.pegoutTx.outputs[0].scriptPubKey = hex"001499999999999999999999999999999999999999"; // Wrong script
+        setup.pegoutTxSPVProof = createBtcTxSPVProof(setup.pegoutTx);
 
         // Calculate expected script for user's pubkey
         bytes memory expectedScript = BtcScriptParser.getP2WPKHScript(setup.userPubKey);
@@ -380,12 +380,12 @@ contract TestPegManager is Test, HelperContract {
         // Expect revert for incorrect output script
         vm.expectRevert(
             abi.encodeWithSelector(
-                IPegManager.IncorrectOutputScript.selector, setup.pegOutTx.outputs[0].scriptPubKey, expectedScript
+                IPegManager.IncorrectOutputScript.selector, setup.pegoutTx.outputs[0].scriptPubKey, expectedScript
             )
         );
 
         // Register the peg-out transaction
-        pm.registerPegout(setup.pegOutTxSPVProof);
+        pm.registerPegout(setup.pegoutTxSPVProof);
     }
 
     function test_registerPegout_Revert_AlreadyPaid() external {
@@ -398,10 +398,10 @@ contract TestPegManager is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(IPegManager.InvalidSlotState.selector, SlotState.PAID, SlotState.LOCKED));
 
         // Act
-        pm.registerPegout(setup.pegOutTxSPVProof);
+        pm.registerPegout(setup.pegoutTxSPVProof);
     }
 
-    function test_fullPegOutFlow() external {
+    function test_fullPegoutFlow() external {
         // =========== Request Peg-In & Accept Peg-In ============
         (BtcTransaction memory requestPeginTx, BtcTransaction memory acceptPeginTx) = setup_requestAndAcceptPeginFlow();
 
@@ -410,16 +410,16 @@ contract TestPegManager is Test, HelperContract {
 
         // =================== Request Peg-Out ===================
         bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
-        uint64 pegOutAmount = VALUE; // Same amount as peg-in
-        uint256 pegOutAmountInWei = BtcHelper.satoshiToWei(pegOutAmount);
+        uint64 pegoutAmount = VALUE; // Same amount as peg-in
+        uint256 pegoutAmountInWei = BtcHelper.satoshiToWei(pegoutAmount);
 
         // Calculate expected values
-        Stream memory stream = streamManager.getStream(pegOutAmount);
+        Stream memory stream = streamManager.getStream(pegoutAmount);
         uint64 expectedPacketNumber = stream.pegoutPacketPointer;
         uint64 expectedSlotId = stream.pegoutSlotPointer;
 
         // Request peg-out
-        pm.requestPegOut{value: pegOutAmountInWei}(userPubKey);
+        pm.requestPegout{value: pegoutAmountInWei}(userPubKey);
 
         // Verify slot was locked
         Slot memory slot = streamManager.getSlot(stream.streamId, expectedPacketNumber, expectedSlotId);
@@ -427,17 +427,17 @@ contract TestPegManager is Test, HelperContract {
         assertEq(slot.acceptPeginTx, acceptPeginTxHash, "Slot should reference the correct accept peg-in tx");
 
         // =================== Register Peg-Out ===================
-        BtcTransaction memory pegOutTx = createPegOutTx(acceptPeginTxHash, userPubKey, slot.acceptPeginAmount);
-        BtcTxSPVProof memory pegOutTxSPVProof = createBtcTxSPVProof(pegOutTx);
+        BtcTransaction memory pegoutTx = createPegoutTx(acceptPeginTxHash, userPubKey, slot.acceptPeginAmount);
+        BtcTxSPVProof memory pegoutTxSPVProof = createBtcTxSPVProof(pegoutTx);
 
         // Calculate expected transaction hash
-        bytes32 expectedPegOutTxHash = bitcoinManager.getBtcTxHash(pegOutTx);
+        bytes32 expectedPegoutTxHash = bitcoinManager.getBtcTxHash(pegoutTx);
 
-        // Expect the PegOutRegistered event
+        // Expect the PegoutRegistered event
         vm.expectEmit(address(pm));
-        emit IPegManager.PegOutRegistered(
-            pegOutTxSPVProof.blockHash,
-            expectedPegOutTxHash,
+        emit IPegManager.PegoutRegistered(
+            pegoutTxSPVProof.blockHash,
+            expectedPegoutTxHash,
             acceptPeginTxHash,
             stream.streamId,
             expectedPacketNumber,
@@ -445,15 +445,15 @@ contract TestPegManager is Test, HelperContract {
         );
 
         // Register peg-out transaction
-        pm.registerPegout(pegOutTxSPVProof);
+        pm.registerPegout(pegoutTxSPVProof);
 
         // Validate the full peg-out flow, avoiding stack too deep error
-        _validateFullPegOutFlow(
+        _validateFullPegoutFlow(
             requestPeginTx, acceptPeginTxHash, stream, expectedPacketNumber, expectedSlotId, userPubKey
         );
     }
 
-    function _validateFullPegOutFlow(
+    function _validateFullPegoutFlow(
         BtcTransaction memory requestPeginTx,
         bytes32 acceptPeginTxHash,
         Stream memory stream,
@@ -470,12 +470,12 @@ contract TestPegManager is Test, HelperContract {
         );
 
         bytes32 requestPeginTxHash = bitcoinManager.getBtcTxHash(requestPeginTx);
-        PegOutTempInfo memory pegOutInfo = pm.getPegTempOutInfo(acceptPeginTxHash);
+        PegoutTempInfo memory pegoutInfo = pm.getPegTempOutInfo(acceptPeginTxHash);
         StreamPosition memory streamPosition = pm.getStreamPosition(requestPeginTxHash);
 
         // internal state should be consistent
         assertEq(uint256(streamPosition.pegStatus), uint256(PegStatus.PAID), "Peg status should be PAID");
-        assertEq(pegOutInfo.userPubKey, userPubKey, "User public key should match");
+        assertEq(pegoutInfo.userPubKey, userPubKey, "User public key should match");
         assertEq(streamPosition.streamId, stream.streamId, "Stream ID should match");
         assertEq(streamPosition.packetNumber, expectedPacketNumber, "Packet number should match");
         assertEq(streamPosition.slotId, expectedSlotId, "Slot ID should match");

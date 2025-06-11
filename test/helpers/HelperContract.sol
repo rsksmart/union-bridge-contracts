@@ -238,7 +238,7 @@ abstract contract HelperContract is Test, TestUtils {
     }
 
     // ========================== Peg out ==========================
-    function createPegOutTx(bytes32 _acceptPeginTxHash, bytes memory _userPubKey, uint64 _amount)
+    function createPegoutTx(bytes32 _acceptPeginTxHash, bytes memory _userPubKey, uint64 _amount)
         internal
         pure
         returns (BtcTransaction memory)
@@ -334,8 +334,8 @@ abstract contract HelperContract is Test, TestUtils {
 
     // ========================== Register Pegout Setup ==========================
     struct RegisterPegoutSetup {
-        BtcTransaction pegOutTx;
-        BtcTxSPVProof pegOutTxSPVProof;
+        BtcTransaction pegoutTx;
+        BtcTxSPVProof pegoutTxSPVProof;
         Stream stream;
         uint64 packetNumber;
         uint64 slotId;
@@ -353,7 +353,7 @@ abstract contract HelperContract is Test, TestUtils {
         setup.acceptPeginTxHash = 0x30b6a2cae94d89540a99e0dfa39cf88e6de40dca9142810fdce7a95c00faff47;
 
         // Create a peg-out transaction that spends the accept peg-in UTXO
-        setup.pegOutTx = createPegOutTx(setup.acceptPeginTxHash, setup.userPubKey, VALUE);
+        setup.pegoutTx = createPegoutTx(setup.acceptPeginTxHash, setup.userPubKey, VALUE);
 
         setup.slotId = streamManager.setSlotHarness(
             setup.stream.streamId,
@@ -366,17 +366,17 @@ abstract contract HelperContract is Test, TestUtils {
         // Set the slot state to LOCKED
         streamManager.setSlotStateHarness(setup.stream.streamId, setup.packetNumber, setup.slotId, SlotState.LOCKED);
 
-        // Set up the pegOutTxs mapping
-        pm.setPegOutTempInfoHarness(setup.acceptPeginTxHash, setup.userPubKey);
+        // Set up the pegoutTxs mapping
+        pm.setPegoutTempInfoHarness(setup.acceptPeginTxHash, setup.userPubKey);
         pm.setStreamPositionHarness(
             setup.acceptPeginTxHash, setup.stream.streamId, setup.packetNumber, setup.slotId, PegStatus.ACCEPTED
         );
 
         // Create SPV proof for the peg-out transaction
-        setup.pegOutTxSPVProof = createBtcTxSPVProof(setup.pegOutTx);
+        setup.pegoutTxSPVProof = createBtcTxSPVProof(setup.pegoutTx);
 
         // Calculate the expected transaction hash
-        setup.expectedTxHash = bitcoinManager.getBtcTxHash(setup.pegOutTx);
+        setup.expectedTxHash = bitcoinManager.getBtcTxHash(setup.pegoutTx);
 
         return setup;
     }
