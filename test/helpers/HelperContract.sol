@@ -78,16 +78,6 @@ abstract contract HelperContract is Test, TestUtils {
         registeredMembersCounter += totalMembers;
     }
 
-    // Leave this function name for the sake of clarity in some tests.
-    function setup_registerMember(
-        address _address,
-        Role _role,
-        StreamDenomination _denomination,
-        PublicKeyRegistration[] memory _publicKeysRegistration
-    ) internal {
-        setup_applyToStream(_denomination, _address, _publicKeysRegistration, _role);
-    }
-
     function setup_applyToStream(
         StreamDenomination _denomination,
         address _address,
