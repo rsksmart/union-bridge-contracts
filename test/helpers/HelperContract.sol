@@ -403,9 +403,9 @@ abstract contract HelperContract is Test, TestUtils {
         StreamDenomination denomination = StreamDenomination._0_01BTC;
         streamId = 1;
         vm.warp(BLOCK_TIMESTAMP_FOR_DETERMINISTIC_COMMITTEE);
-        setup_registerNewMembers(
-            registry.MIN_COMMITTEE_MEMBERS() / 2, registry.MIN_COMMITTEE_MEMBERS() / 2, denomination
-        );
+        uint256 numOperators = registry.MIN_COMMITTEE_MEMBERS() / 2;
+        uint256 numWatchtowers = registry.MIN_COMMITTEE_MEMBERS() - numOperators;
+        setup_registerNewMembers(numWatchtowers, numOperators, denomination);
         return (setup_getExpectedCommitteeBeforeExpire(), streamId);
     }
 
@@ -430,9 +430,9 @@ abstract contract HelperContract is Test, TestUtils {
         (firstCommittee, streamId) = setup_completeCommittee();
 
         // Register new members
-        setup_registerNewMembers(
-            registry.MIN_COMMITTEE_MEMBERS() / 2, registry.MIN_COMMITTEE_MEMBERS() / 2, StreamDenomination(streamId)
-        );
+        uint256 numOperators = registry.MIN_COMMITTEE_MEMBERS() / 2;
+        uint256 numWatchtowers = registry.MIN_COMMITTEE_MEMBERS() - numOperators;
+        setup_registerNewMembers(numWatchtowers, numOperators, StreamDenomination(streamId));
 
         secondCommittee = setup_getExpectedSecondCommittee();
         secondCommittee.aggregatedKey = COMMITTEE_PUB_KEY;

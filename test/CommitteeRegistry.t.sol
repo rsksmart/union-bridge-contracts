@@ -829,13 +829,13 @@ contract TestCommitteeRegistry is Test, HelperContract {
         );
     }
 
-    function test_selectCommittee_Success_3OP_7WT() external {
+    function test_selectCommittee_Success_MinOperators() external {
         // Arrange
         StreamDenomination denomination = StreamDenomination._0_01BTC;
         uint64 streamId = 1;
-        setup_registerNewMembers(
-            registry.MIN_COMMITTEE_MEMBERS() - registry.MIN_OPERATORS(), registry.MIN_OPERATORS(), denomination
-        );
+        uint256 numOperators = registry.MIN_OPERATORS();
+        uint256 numWatchtowers = registry.MIN_COMMITTEE_MEMBERS() - numOperators;
+        setup_registerNewMembers(numWatchtowers, numOperators, denomination);
 
         // Act
         (CommitteeMember[] memory selectedMembers, PendingCommitteeStatus status) = registry.selectCommittee(streamId);
@@ -873,13 +873,13 @@ contract TestCommitteeRegistry is Test, HelperContract {
         }
     }
 
-    function test_selectCommittee_Success_7OP_3WT() external {
+    function test_selectCommittee_Success_MinWatchtowers() external {
         // Arrange
         StreamDenomination denomination = StreamDenomination._0_01BTC;
         uint64 streamId = 1;
-        setup_registerNewMembers(
-            registry.MIN_WATCHTOWERS(), registry.MIN_COMMITTEE_MEMBERS() - registry.MIN_WATCHTOWERS(), denomination
-        );
+        uint256 numWatchtowers = registry.MIN_WATCHTOWERS();
+        uint256 numOperators = registry.MIN_COMMITTEE_MEMBERS() - numWatchtowers;
+        setup_registerNewMembers(numWatchtowers, numOperators, denomination);
 
         // Act
         (CommitteeMember[] memory selectedMembers, PendingCommitteeStatus status) = registry.selectCommittee(streamId);
@@ -911,7 +911,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Arrange
         StreamDenomination denomination = StreamDenomination._0_01BTC;
         uint64 streamId = 1;
-        setup_registerNewMembers(registry.MIN_COMMITTEE_MEMBERS(), registry.MIN_COMMITTEE_MEMBERS(), denomination);
+        uint256 numWachtowers = registry.MIN_WATCHTOWERS();
+        uint256 numOperators = registry.MIN_COMMITTEE_MEMBERS();
+        setup_registerNewMembers(numWachtowers, numOperators, denomination);
 
         // First selection with timestamp 1
         vm.warp(1);
@@ -944,11 +946,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Arrange
         StreamDenomination denomination = StreamDenomination._0_01BTC;
         uint64 streamId = 1;
-        setup_registerNewMembers(
-            registry.MIN_WATCHTOWERS() - 1,
-            registry.MIN_COMMITTEE_MEMBERS() - registry.MIN_WATCHTOWERS() + 1,
-            denomination
-        );
+        uint256 numWatchtowers = registry.MIN_WATCHTOWERS() - 1;
+        uint256 numOperators = registry.MIN_COMMITTEE_MEMBERS() - numWatchtowers + 1;
+        setup_registerNewMembers(numWatchtowers, numOperators, denomination);
 
         // Assert that selectCommittee reverts with MissingWatchtowers event
         vm.expectEmit(address(registry));
@@ -972,9 +972,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Arrange
         StreamDenomination denomination = StreamDenomination._0_01BTC;
         uint64 streamId = 1;
-        setup_registerNewMembers(
-            registry.MIN_COMMITTEE_MEMBERS() - registry.MIN_OPERATORS() + 1, registry.MIN_OPERATORS() - 1, denomination
-        );
+        uint256 numOperators = registry.MIN_OPERATORS() - 1;
+        uint256 numWatchtowers = registry.MIN_COMMITTEE_MEMBERS() - numOperators + 1;
+        setup_registerNewMembers(numWatchtowers, numOperators, denomination);
 
         // Assert that selectCommittee reverts with MissingOperators event
         vm.expectEmit(address(registry));
@@ -998,7 +998,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Arrange
         StreamDenomination denomination = StreamDenomination._0_01BTC;
         uint64 streamId = 1;
-        setup_registerNewMembers(registry.MIN_WATCHTOWERS(), registry.MIN_OPERATORS(), denomination);
+        uint256 numOperators = registry.MIN_OPERATORS();
+        uint256 numWatchtowers = registry.MIN_WATCHTOWERS();
+        setup_registerNewMembers(numWatchtowers, numOperators, denomination);
 
         // Assert
         vm.expectEmit(address(registry));
@@ -1126,9 +1128,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
         assertEq(0, registry.getCommitteeCandidates(StreamDenomination(streamId), Role.Operator).length);
         assertEq(0, registry.getCommitteeCandidates(StreamDenomination(streamId), Role.Watchtower).length);
 
-        setup_applyToStream_MultipleMembers(
-            StreamDenomination(streamId), registry.MIN_COMMITTEE_MEMBERS() / 2, registry.MIN_COMMITTEE_MEMBERS() / 2, 0
-        );
+        uint256 numOperators = registry.MIN_COMMITTEE_MEMBERS() / 2;
+        uint256 numWatchtowers = registry.MIN_COMMITTEE_MEMBERS() / 2;
+        setup_applyToStream_MultipleMembers(StreamDenomination(streamId), numWatchtowers, numOperators, 0);
         Committee memory expectedCommittee = setup_getExpectedCommitteeBeforeExpire();
         expectedCommittee.aggregatedKey = bytes32(0);
 
