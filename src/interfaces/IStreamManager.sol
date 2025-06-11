@@ -14,8 +14,8 @@ enum StreamDenomination { //TODO integrate this enum into StreamManager logic
 enum SlotState {
     PREPARED,
     FILLED,
-    PAID,
-    LOCKED
+    LOCKED,
+    PAID
 }
 
 struct Slot {
