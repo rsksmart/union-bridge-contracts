@@ -39,8 +39,7 @@ abstract contract HelperContract is Test, TestUtils {
         78541660797044910968829902406342334108369226379826116161446442989268089806461;
     uint256 constant COMMITTEE_ID_STREAM_1_PACKET_1 =
         92458281274488595289803937127152923398167637295201432141969818930235769911599;
-    bytes32 constant COMMITTEE_PUB_KEY_STREAM_1_PACKET_0 =
-        0xd1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d;
+    bytes32 constant COMMITTEE_PUB_KEY = 0xd1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d;
 
     // Dummy requested roles and streams for the members
     StreamDenomination internal constant DEFAULT_STREAM = StreamDenomination._0_001BTC;
@@ -384,7 +383,7 @@ abstract contract HelperContract is Test, TestUtils {
 
     function setup_depositMemberInfo(uint64 _streamId, address _memberAddress) internal {
         vm.prank(_memberAddress);
-        registry.depositMemberInfoForCommittee(_streamId, COMMITTEE_PUB_KEY_STREAM_1_PACKET_0);
+        registry.depositMemberInfoForCommittee(_streamId, COMMITTEE_PUB_KEY);
     }
 
     // This function is used to deposit member info for multiple members in a committee
@@ -419,7 +418,7 @@ abstract contract HelperContract is Test, TestUtils {
         (expectedCommittee, streamId) = setup_pendingCommittee();
 
         setup_depositMemberInfo_MultipleMembers(streamId, 0, registry.MIN_COMMITTEE_MEMBERS());
-        expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY_STREAM_1_PACKET_0;
+        expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY;
 
         return (expectedCommittee, streamId);
     }
@@ -436,7 +435,7 @@ abstract contract HelperContract is Test, TestUtils {
         );
 
         secondCommittee = setup_getExpectedSecondCommittee();
-        secondCommittee.aggregatedKey = COMMITTEE_PUB_KEY_STREAM_1_PACKET_0;
+        secondCommittee.aggregatedKey = COMMITTEE_PUB_KEY;
 
         return (firstCommittee, secondCommittee, streamId);
     }
