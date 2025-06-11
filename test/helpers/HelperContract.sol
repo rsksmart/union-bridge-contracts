@@ -294,9 +294,9 @@ abstract contract HelperContract is Test, TestUtils {
                 _numberOfPegIns > Constants.SLOTS_PER_PACKET
                     && (i % Constants.SLOTS_PER_PACKET) == Constants.SLOT_USAGE_THRESHOLD
             ) {
-                setup_depositMemberInfo_MultipleMembers(
-                    _streamId, registry.MIN_COMMITTEE_MEMBERS(), registry.MIN_COMMITTEE_MEMBERS() * 2 - 1
-                );
+                uint256 memberIndexStart = registry.MIN_COMMITTEE_MEMBERS();
+                uint256 memberCount = registry.MIN_COMMITTEE_MEMBERS();
+                setup_depositMemberInfo_MultipleMembers(_streamId, memberIndexStart, memberCount);
             }
         }
     }
@@ -388,13 +388,13 @@ abstract contract HelperContract is Test, TestUtils {
     }
 
     // This function is used to deposit member info for multiple members in a committee
-    // Include last member in the range
-    function setup_depositMemberInfo_MultipleMembers(
-        uint64 _streamId,
-        uint256 _memberIndexInit,
-        uint256 _memberIndexEnd
-    ) internal {
-        for (uint256 i = _memberIndexInit; i <= _memberIndexEnd; i++) {
+    // It will deposit member info for members with indexes from _memberIndexInit to _memberIndexInit + _memberCount - 1
+    function setup_depositMemberInfo_MultipleMembers(uint64 _streamId, uint256 _memberIndexInit, uint256 _memberCount)
+        internal
+    {
+        uint256 memberIndexEnd = _memberIndexInit + _memberCount;
+
+        for (uint256 i = _memberIndexInit; i < memberIndexEnd; i++) {
             // Member address is vm.address(memberIndex + 1);
             setup_depositMemberInfo(_streamId, vm.addr(i + 1));
         }
@@ -418,7 +418,7 @@ abstract contract HelperContract is Test, TestUtils {
     function setup_completeCommittee() internal returns (Committee memory expectedCommittee, uint64 streamId) {
         (expectedCommittee, streamId) = setup_pendingCommittee();
 
-        setup_depositMemberInfo_MultipleMembers(streamId, 0, registry.MIN_COMMITTEE_MEMBERS() - 1);
+        setup_depositMemberInfo_MultipleMembers(streamId, 0, registry.MIN_COMMITTEE_MEMBERS());
         expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY_STREAM_1_PACKET_0;
 
         return (expectedCommittee, streamId);

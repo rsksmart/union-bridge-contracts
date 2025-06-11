@@ -1270,7 +1270,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Arrange
         (Committee memory expectedCommittee, uint64 streamId) = setup_pendingCommittee();
         expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY_STREAM_1_PACKET_0;
-        setup_depositMemberInfo_MultipleMembers(streamId, 0, registry.MIN_COMMITTEE_MEMBERS() - 2);
+        uint256 memberIndexStart = 0;
+        uint256 memberCount = registry.MIN_COMMITTEE_MEMBERS() - 1;
+        setup_depositMemberInfo_MultipleMembers(streamId, memberIndexStart, memberCount);
 
         // Assert
         vm.expectEmit(address(registry));
@@ -1296,7 +1298,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
     function test_getPendingCommittee_Revert_CommitteeIsNotPending_AfterCompleteCommittee() external {
         // Arrange
         (, uint64 streamId) = setup_pendingCommittee();
-        setup_depositMemberInfo_MultipleMembers(streamId, 0, registry.MIN_COMMITTEE_MEMBERS() - 1);
+        uint256 memberIndexStart = 0;
+        uint256 memberCount = registry.MIN_COMMITTEE_MEMBERS();
+        setup_depositMemberInfo_MultipleMembers(streamId, memberIndexStart, memberCount);
 
         // Assert
         vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.CommitteeIsNotPending.selector, streamId));
@@ -1395,7 +1399,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
         uint256 timeout = registry.pendingCommitteeTimeout();
         vm.warp(block.timestamp + timeout + 1 seconds); // warp time to make committee expired
         expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY_STREAM_1_PACKET_0;
-        setup_depositMemberInfo_MultipleMembers(streamId, 0, registry.MIN_COMMITTEE_MEMBERS() - 2);
+        uint256 memberIndexStart = 0;
+        uint256 memberCount = registry.MIN_COMMITTEE_MEMBERS() - 1;
+        setup_depositMemberInfo_MultipleMembers(streamId, memberIndexStart, memberCount);
 
         // Assert
         vm.expectEmit(address(registry));

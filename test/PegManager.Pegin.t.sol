@@ -244,9 +244,9 @@ contract TestPegManager is Test, HelperContract {
         pm.acceptPegInRequest(pegInAcceptedTxSPVProof);
 
         // Now we should provide members info to create the committee/packet. This works with second group of members, their indexes start at registry.MIN_COMMITTEE_MEMBERS()
-        setup_depositMemberInfo_MultipleMembers(
-            setupStreamId, registry.MIN_COMMITTEE_MEMBERS(), registry.MIN_COMMITTEE_MEMBERS() * 2 - 2
-        );
+        uint256 memberIndexStart = registry.MIN_COMMITTEE_MEMBERS();
+        uint256 memberCount = registry.MIN_COMMITTEE_MEMBERS() - 1;
+        setup_depositMemberInfo_MultipleMembers(setupStreamId, memberIndexStart, memberCount);
 
         vm.expectEmit(address(registry));
         emit ICommitteeRegistry.NewCommittee(COMMITTEE_ID_STREAM_1_PACKET_1, expectedCommittee);
@@ -263,9 +263,9 @@ contract TestPegManager is Test, HelperContract {
         // Create pegins until the new packet treshold is reached
         setup_multipleRequestAndAcceptPeginFlows(Constants.SLOTS_PER_PACKET, setupStreamId);
         // Members must deposite their info to create new packet
-        setup_depositMemberInfo_MultipleMembers(
-            setupStreamId, registry.MIN_COMMITTEE_MEMBERS(), registry.MIN_COMMITTEE_MEMBERS() * 2 - 1
-        );
+        uint256 memberIndexStart = registry.MIN_COMMITTEE_MEMBERS();
+        uint256 memberCount = registry.MIN_COMMITTEE_MEMBERS();
+        setup_depositMemberInfo_MultipleMembers(setupStreamId, memberIndexStart, memberCount);
 
         // Arrange
         BtcTransaction memory peginTx = setup_requestPeginFlow();
