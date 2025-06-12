@@ -5,22 +5,22 @@ import {StreamDenomination, IStreamManager} from "./IStreamManager.sol";
 import {IPegManager} from "./IPegManager.sol";
 
 enum Role {
-    None,
-    Operator,
-    Watchtower
+    NONE,
+    OPERATOR,
+    WATCHTOWER
 }
 
 enum PendingCommitteeStatus {
-    Success,
-    NotEnoughMembers,
-    NotEnoughOperators,
-    NotEnoughWatchtowers
+    SUCCESS,
+    NOT_ENOUGH_MEMBERS,
+    NOT_ENOUGH_OPERATORS,
+    NOT_ENOUGH_WATCHTOWERS
 }
 
 struct Balance {
     uint256 available;
     ApplicationData[] applications;
-    mapping(uint64 packetNumber => uint256 amount)[] staked; // denominationIndex => (packetId => amount)
+    mapping(uint64 packetNumber => uint256 amount)[] staked;
 }
 
 struct ApplicationData {
@@ -29,12 +29,12 @@ struct ApplicationData {
 }
 
 enum PublicKeyIndex {
-    Take,
-    Covenant,
-    Communication
+    TAKE,
+    COVENANT,
+    COMMUNICATION
 }
 
-uint8 constant PUBLIC_KEYS_INDEX_LENGTH = 3; // uint8(PublicKeyIndex.Communication) + 1
+uint8 constant PUBLIC_KEYS_INDEX_LENGTH = 3; // uint8(PublicKeyIndex.COMMUNICATION) + 1
 
 struct PublicKeyRegistration {
     bytes32 publicKeyX;
@@ -57,7 +57,7 @@ struct CommitteeMember {
 }
 
 struct Committee {
-    bytes32 aggregatedKey; // BTC public key of the commitee (TODO: Rename to aggregatedKey)
+    bytes32 aggregatedKey; // BTC public key of the commitee
     CommitteeMember[] memberIndexesAndRoles; // Indices and roles of the members from the members array
     uint8 leaderIndex; // TODO add leader logic
 }

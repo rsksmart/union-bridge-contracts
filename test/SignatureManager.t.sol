@@ -326,7 +326,7 @@ contract TestSignatureManager is Test, HelperContract {
         PublicKeyRegistration[] memory nonCommitteeMemberPubKeysRegistration =
             generatePublicKeysRegistration(registry.minCommitteeMembers() + 1);
         setup_applyToStream(
-            StreamDenomination._0_01BTC, nonCommitteeMember, nonCommitteeMemberPubKeysRegistration, Role.Operator
+            StreamDenomination._0_01BTC, nonCommitteeMember, nonCommitteeMemberPubKeysRegistration, Role.OPERATOR
         );
         // The nonce values are dummy values
         bytes memory nonce =
@@ -357,7 +357,7 @@ contract TestSignatureManager is Test, HelperContract {
         PublicKeyRegistration[] memory nonCommitteeMemberPubKeysRegistration =
             generatePublicKeysRegistration(registry.minCommitteeMembers() + 1);
         setup_applyToStream(
-            StreamDenomination._0_01BTC, nonCommitteeMember, nonCommitteeMemberPubKeysRegistration, Role.Operator
+            StreamDenomination._0_01BTC, nonCommitteeMember, nonCommitteeMemberPubKeysRegistration, Role.OPERATOR
         );
         bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
 

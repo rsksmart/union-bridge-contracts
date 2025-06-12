@@ -45,20 +45,20 @@ contract TestCommitteeRegistry is Test, HelperContract {
     }
 
     function test_applyToStream_Success_Operator() external {
-        _test_applyToStream_Success(Role.Operator);
+        _test_applyToStream_Success(Role.OPERATOR);
     }
 
     function test_applyToStream_Success_Watchtower() external {
-        _test_applyToStream_Success(Role.Watchtower);
+        _test_applyToStream_Success(Role.WATCHTOWER);
     }
 
     function _test_applyToStream_Success(Role _role) internal {
         // This function applies to the DEFAULT_STREAM with `_role` and check that `_oppositeRole` candidates does not change.
         // Arrange
-        if (_role == Role.None) {
+        if (_role == Role.NONE) {
             revert("Role cannot be None for unsubscribe test");
         }
-        Role oppositeRole = _role == Role.Operator ? Role.Watchtower : Role.Operator;
+        Role oppositeRole = _role == Role.OPERATOR ? Role.WATCHTOWER : Role.OPERATOR;
 
         uint256 privKey = uint256(1);
         PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(privKey);
@@ -140,8 +140,8 @@ contract TestCommitteeRegistry is Test, HelperContract {
         uint256 privKey2 = uint256(2);
         PublicKeyRegistration[] memory pubKeysRegistration2 = generatePublicKeysRegistration(privKey2);
         address user2 = vm.addr(privKey2);
-        step_applyToStreamForStream(user1, pubKeysRegistration1, DEFAULT_STREAM, Role.Operator);
-        step_applyToStreamForStream(user2, pubKeysRegistration2, DEFAULT_STREAM, Role.Operator);
+        step_applyToStreamForStream(user1, pubKeysRegistration1, DEFAULT_STREAM, Role.OPERATOR);
+        step_applyToStreamForStream(user2, pubKeysRegistration2, DEFAULT_STREAM, Role.OPERATOR);
     }
 
     function test_applyToStream_Revert_PublicKeyMismatch() external {
@@ -154,7 +154,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         vm.deal(user, minimumDeposit);
 
         vm.prank(user);
-        registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, Role.Operator, pubKeysRegistration);
+        registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, Role.OPERATOR, pubKeysRegistration);
 
         vm.deal(user, minimumDeposit);
 
@@ -170,7 +170,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Act
         vm.prank(user);
-        registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, Role.Watchtower, differentPubKey);
+        registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, Role.WATCHTOWER, differentPubKey);
     }
 
     function test_applyToStream_Revert_memberAlreadyRegisteredForStream() external {
@@ -182,7 +182,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         vm.deal(user, minimumDeposit);
 
         vm.prank(user);
-        registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, Role.Operator, pubKeysRegistration);
+        registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, Role.OPERATOR, pubKeysRegistration);
 
         vm.deal(user, minimumDeposit);
 
@@ -192,14 +192,14 @@ contract TestCommitteeRegistry is Test, HelperContract {
                 ICommitteeRegistry.MemberAlreadyRegisteredForStream.selector,
                 user,
                 DEFAULT_STREAM,
-                Role.Watchtower,
-                Role.Operator
+                Role.WATCHTOWER,
+                Role.OPERATOR
             )
         );
 
         // Act
         vm.prank(user);
-        registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, Role.Watchtower, pubKeysRegistration);
+        registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, Role.WATCHTOWER, pubKeysRegistration);
     }
 
     function test_applyToStream_Revert_requestedNoneRoleForStream() external {
@@ -215,7 +215,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Act
         vm.prank(user);
-        registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, Role.None, pubKeysRegistration);
+        registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, Role.NONE, pubKeysRegistration);
     }
 
     function test_applyToStream_Revert_despositBondTooLow() external {
@@ -237,18 +237,18 @@ contract TestCommitteeRegistry is Test, HelperContract {
     }
 
     function test_unsubscribeFromStream_Success_Operator() external {
-        _test_unsubscribeFromStream_Success(Role.Operator);
+        _test_unsubscribeFromStream_Success(Role.OPERATOR);
     }
 
     function test_unsubscribeFromStream_Success_Watchtower() external {
-        _test_unsubscribeFromStream_Success(Role.Watchtower);
+        _test_unsubscribeFromStream_Success(Role.WATCHTOWER);
     }
 
     function test_applyToStream_Revert_InvalidPublicKeysLength() external {
         // Arrange
         uint256 privKey = uint256(1);
         PublicKeyRegistration[] memory incorrectPubKeysRegistration = new PublicKeyRegistration[](1);
-        PublicKeyIndex pubKeyIndex = PublicKeyIndex.Take;
+        PublicKeyIndex pubKeyIndex = PublicKeyIndex.TAKE;
         incorrectPubKeysRegistration[uint8(pubKeyIndex)] = generatePublicKeyRegistration(privKey, pubKeyIndex);
         address user = vm.addr(privKey);
         uint256 minimumDeposit = registry.getMinimumDeposit(DEFAULT_STREAM);
@@ -269,7 +269,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
     }
 
     function test_applyToStream_Revert_RepeatedPublicKeys_Take_Covenant() external {
-        _test_applyToStream_Revert_RepeatedPublicKeys(uint8(PublicKeyIndex.Take), uint8(PublicKeyIndex.Covenant));
+        _test_applyToStream_Revert_RepeatedPublicKeys(uint8(PublicKeyIndex.TAKE), uint8(PublicKeyIndex.COVENANT));
     }
 
     function _test_applyToStream_Revert_RepeatedPublicKeys(uint8 pubKeyIndex1, uint8 pubKeyIndex2) internal {
@@ -298,12 +298,12 @@ contract TestCommitteeRegistry is Test, HelperContract {
     }
 
     function test_applyToStream_Revert_RepeatedPublicKeys_Take_Communication() external {
-        _test_applyToStream_Revert_RepeatedPublicKeys(uint8(PublicKeyIndex.Take), uint8(PublicKeyIndex.Communication));
+        _test_applyToStream_Revert_RepeatedPublicKeys(uint8(PublicKeyIndex.TAKE), uint8(PublicKeyIndex.COMMUNICATION));
     }
 
     function test_applyToStream_Revert_RepeatedPublicKeys_Covenant_Communication() external {
         _test_applyToStream_Revert_RepeatedPublicKeys(
-            uint8(PublicKeyIndex.Covenant), uint8(PublicKeyIndex.Communication)
+            uint8(PublicKeyIndex.COVENANT), uint8(PublicKeyIndex.COMMUNICATION)
         );
     }
 
@@ -496,14 +496,14 @@ contract TestCommitteeRegistry is Test, HelperContract {
     function _test_unsubscribeFromStream_Success(Role _role) internal {
         // This function unsubscribes a user from DEFAULT_STREAM with `_role` and tests that `oppositeRole` candidates do not change.
         // Arrange
-        if (_role == Role.None) {
+        if (_role == Role.NONE) {
             revert("Role cannot be None for unsubscribe test");
         }
-        Role oppositeRole = _role == Role.Operator ? Role.Watchtower : Role.Operator;
+        Role oppositeRole = _role == Role.OPERATOR ? Role.WATCHTOWER : Role.OPERATOR;
 
         uint256 privKey = uint256(1);
         PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(privKey);
-        bytes32 pubKey = pubKeysRegistration[uint8(PublicKeyIndex.Take)].publicKeyX;
+        bytes32 pubKey = pubKeysRegistration[uint8(PublicKeyIndex.TAKE)].publicKeyX;
         address user = vm.addr(privKey);
         uint256 minimumDeposit = registry.getMinimumDeposit(DEFAULT_STREAM);
         vm.deal(user, minimumDeposit);
@@ -537,7 +537,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
             "member pre-staked should be 0 after unsuscribe"
         );
         assertTrue(
-            registry.getMemberRequestedRole(user, DEFAULT_STREAM) == Role.None,
+            registry.getMemberRequestedRole(user, DEFAULT_STREAM) == Role.NONE,
             "member requested role should be None after unsuscribe"
         );
         roleCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, _role);
@@ -560,7 +560,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         uint256 minimumDeposit = registry.getMinimumDeposit(StreamDenomination._0_001BTC);
         vm.deal(user, minimumDeposit);
         vm.prank(user);
-        registry.applyToStream{value: minimumDeposit}(StreamDenomination._0_001BTC, Role.Operator, pubKeysRegistration);
+        registry.applyToStream{value: minimumDeposit}(StreamDenomination._0_001BTC, Role.OPERATOR, pubKeysRegistration);
 
         // Assert
         vm.expectRevert(
@@ -715,9 +715,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
             0,
             "member pre-staked should be 0 after unsuscribing for stream"
         );
-        // Assert that requestedRoles[stream] == Role.None
+        // Assert that requestedRoles[stream] == Role.NONE
         assertTrue(
-            registry.getMemberRequestedRole(user, stream) == Role.None,
+            registry.getMemberRequestedRole(user, stream) == Role.NONE,
             "member requested role should be None after unsuscribing for stream"
         );
         // Assert that available increased by the correct bond amount
@@ -742,7 +742,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(privKey);
         address user = vm.addr(privKey);
         uint256 totalDeposited = 0;
-        Role requestedRole = Role.Operator;
+        Role requestedRole = Role.OPERATOR;
 
         // 1. Deposit in All Streams
         for (uint8 i = 0; i <= uint8(StreamDenomination._10BTC); i++) {
@@ -795,7 +795,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         address userAddress = vm.addr(privKey);
         PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(privKey);
         bytes32[] memory pubKeys = getXPublicKeysFromRegistration(pubKeysRegistration);
-        setup_applyToStream(StreamDenomination._0_001BTC, userAddress, pubKeysRegistration, Role.Operator);
+        setup_applyToStream(StreamDenomination._0_001BTC, userAddress, pubKeysRegistration, Role.OPERATOR);
         uint16 memberIndex = registry.getMemberIndexByAddress(userAddress);
 
         // Act
@@ -803,7 +803,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Assert
         assertEq(
-            pubKeys[uint8(PublicKeyIndex.Take)],
+            pubKeys[uint8(PublicKeyIndex.TAKE)],
             pubKey,
             "Member take public key by index is not the same as the registered one"
         );
@@ -814,7 +814,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         address userAddress = vm.addr(1);
         PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(1);
 
-        setup_applyToStream(StreamDenomination._0_001BTC, userAddress, pubKeysRegistration, Role.Operator);
+        setup_applyToStream(StreamDenomination._0_001BTC, userAddress, pubKeysRegistration, Role.OPERATOR);
 
         // Act
         uint16 memberIndex = registry.getMemberIndexByAddress(userAddress);
@@ -920,7 +920,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
                 "member staked balance should be 0 after registration for stream"
             );
             assertTrue(
-                registry.getMemberRequestedRole(user, StreamDenomination(i)) == Role.None,
+                registry.getMemberRequestedRole(user, StreamDenomination(i)) == Role.NONE,
                 "member requested role should be None after registration for stream"
             );
         }
@@ -932,7 +932,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         setup_registerMember(privKey);
         address user = vm.addr(privKey);
         uint256 minimumDeposit = registry.getMinimumDeposit(DEFAULT_STREAM);
-        Role role = Role.Operator;
+        Role role = Role.OPERATOR;
 
         // Act
         vm.prank(user);
@@ -953,7 +953,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
                 );
             } else {
                 assertTrue(
-                    registry.getMemberRequestedRole(user, StreamDenomination(i)) == Role.None,
+                    registry.getMemberRequestedRole(user, StreamDenomination(i)) == Role.NONE,
                     "member requested role should be None for other streams"
                 );
                 uint256 preStakedBalance = registry.getMemberPreStakedBalance(user, StreamDenomination(i));
