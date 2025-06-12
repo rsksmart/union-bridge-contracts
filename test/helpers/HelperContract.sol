@@ -309,7 +309,7 @@ abstract contract HelperContract is Test, TestUtils {
         BtcTxSPVProof memory peginAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
         // Act
-        pm.acceptPeginRequest(peginAcceptedTxSPVProof);
+        pm.acceptPegin(peginAcceptedTxSPVProof);
 
         return btcTransaction;
     }
@@ -323,7 +323,7 @@ abstract contract HelperContract is Test, TestUtils {
         BtcTxSPVProof memory peginRequestTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
         // Act
-        pm.registerPeginRequest(peginRequestTxSPVProof);
+        pm.requestPegin(peginRequestTxSPVProof);
         return btcTransaction;
     }
 

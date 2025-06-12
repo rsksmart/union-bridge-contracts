@@ -63,9 +63,9 @@ interface IPegManager {
 
     /// @notice Register a peg-in request transaction from Bitcoin
     /// @param _peginRequestTxSPVProof The BTC SPV proof of Request the peg-in transaction
-    function registerPeginRequest(BtcTxSPVProof calldata _peginRequestTxSPVProof) external;
+    function requestPegin(BtcTxSPVProof calldata _peginRequestTxSPVProof) external;
 
-    event RegisteredPeginRequest(
+    event PeginRequested(
         bytes32 indexed blockHash,
         bytes32 indexed txHash,
         uint64 vout,
@@ -93,9 +93,9 @@ interface IPegManager {
 
     /// @notice Accepts and Registers a bitcoin peg in transaction out of the temporary address
     /// @param _peginAcceptedTxSPVProof The BTC SPV proof of the Accept peg-in transaction
-    function acceptPeginRequest(BtcTxSPVProof calldata _peginAcceptedTxSPVProof) external;
+    function acceptPegin(BtcTxSPVProof calldata _peginAcceptedTxSPVProof) external;
 
-    event AcceptedPeginRequest(
+    event PeginAccepted(
         bytes32 indexed blockHash,
         bytes32 indexed txHash,
         bytes32 indexed peginTxHash,
@@ -150,11 +150,10 @@ interface IPegManager {
     error SignatureManagerAddressZero();
     error StreamManagerAddressZero();
     error PegoutRequestAmountExceedsUint64Limit(uint256 amount);
-    error AlreadyRegisteredPegin(bytes32 btcTxHash);
-    error AlreadyRegisteredPeginRequest(bytes32 btcTxHash);
-    error UnregisteredPeginRequest(bytes32 btcTxHash);
+    error PeginAlreadyRequested(bytes32 btcTxHash);
+    error PeginNotRequested(bytes32 btcTxHash);
     error InvalidAcceptPeginTxHash(bytes32 expected, bytes32 actual);
-    error AlreadyRegisteredAcceptPegin(bytes32 btcTxHash);
+    error PeginAlreadyAccepted(bytes32 btcTxHash);
     error IncorrectInputsNumber(uint256 actual, uint256 expected);
     error IncorrectOutputsNumber(uint256 actual, uint256 expected);
     error InvalidPubKeyLength(uint256 usrPubKeyLength);

@@ -52,7 +52,7 @@ contract TestPegManager is Test, HelperContract {
     }
 
     // ========================== REGISTER PEG IN REQUEST ==========================
-    function test_registerPeginRequest_Success() external {
+    function test_requestPegin_Success() external {
         // Arrange
         BtcTransaction memory btcTransaction = getBtcPeginRequestTx();
         // Set Mock Bridge state
@@ -63,7 +63,7 @@ contract TestPegManager is Test, HelperContract {
         // Assert
         vm.expectEmit(address(pm));
         // We emit the event we expect to see.
-        emit IPegManager.RegisteredPeginRequest(
+        emit IPegManager.PeginRequested(
             peginRequestTxSPVProof.blockHash,
             getBtcTxHash(btcTransaction),
             0,
@@ -75,7 +75,7 @@ contract TestPegManager is Test, HelperContract {
         );
 
         // Act
-        pm.registerPeginRequest(peginRequestTxSPVProof);
+        pm.requestPegin(peginRequestTxSPVProof);
 
         // Assert
         bytes32 txHash = getBtcTxHash(btcTransaction);
@@ -103,7 +103,7 @@ contract TestPegManager is Test, HelperContract {
         );
     }
 
-    function test_registerPeginRequest_Revert_AlreadyRegistered() external {
+    function test_requestPegin_Revert_PeginAlreadyRequested() external {
         // Arrange
         BtcTransaction memory btcTransaction = getBtcPeginRequestTx();
         // Set Mock Bridge state
@@ -112,18 +112,18 @@ contract TestPegManager is Test, HelperContract {
         BtcTxSPVProof memory peginRequestTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
         // Register First Peg In Request
-        pm.registerPeginRequest(peginRequestTxSPVProof);
+        pm.requestPegin(peginRequestTxSPVProof);
 
         // Assert
         vm.expectRevert(
-            abi.encodeWithSelector(IPegManager.AlreadyRegisteredPeginRequest.selector, getBtcTxHash(btcTransaction))
+            abi.encodeWithSelector(IPegManager.PeginAlreadyRequested.selector, getBtcTxHash(btcTransaction))
         );
 
         // Act Register Second Peg In Request
-        pm.registerPeginRequest(peginRequestTxSPVProof);
+        pm.requestPegin(peginRequestTxSPVProof);
     }
 
-    function test_registerPeginRequest_Revert_NotEnoughConfirmations() external {
+    function test_requestPegin_Revert_NotEnoughConfirmations() external {
         // Arrange
         int256 actualConfirmations = 0;
         BtcTransaction memory btcTransaction = getBtcPeginRequestTx();
@@ -140,10 +140,10 @@ contract TestPegManager is Test, HelperContract {
             )
         );
         // Act
-        pm.registerPeginRequest(peginRequestTxSPVProof);
+        pm.requestPegin(peginRequestTxSPVProof);
     }
 
-    function test_registerPeginRequest_Revert_BridgeBtcTxInvalidMerkleBranch() external {
+    function test_requestPegin_Revert_BridgeBtcTxInvalidMerkleBranch() external {
         // Arrange
         BtcTransaction memory btcTransaction = getBtcPeginRequestTx();
         // Set Mock Bridge state
@@ -161,10 +161,10 @@ contract TestPegManager is Test, HelperContract {
             )
         );
         // Act
-        pm.registerPeginRequest(peginRequestTxSPVProof);
+        pm.requestPegin(peginRequestTxSPVProof);
     }
 
-    function test_registerPeginRequest_Revert_IncorrectBtcTxVersion() external {
+    function test_requestPegin_Revert_IncorrectBtcTxVersion() external {
         // ===  Before test setup  is run for this  test ===
         // Arrange
         BtcTransaction memory btcTransaction = getBtcPeginRequestTx();
@@ -182,10 +182,10 @@ contract TestPegManager is Test, HelperContract {
         );
 
         // Act
-        pm.registerPeginRequest(peginRequestTxSPVProof);
+        pm.requestPegin(peginRequestTxSPVProof);
     }
 
-    function test_registerPeginRequest_Revert_IncorrectLocktime() external {
+    function test_requestPegin_Revert_IncorrectLocktime() external {
         // ===  Before test setup  is run for this  test ===
         // Arrange
         BtcTransaction memory btcTransaction = getBtcPeginRequestTx();
@@ -203,11 +203,11 @@ contract TestPegManager is Test, HelperContract {
         );
 
         // Act
-        pm.registerPeginRequest(peginRequestTxSPVProof);
+        pm.requestPegin(peginRequestTxSPVProof);
     }
 
     // ========================== ACCEPT PEG IN ==========================
-    function test_acceptPeginRequest_Revert_UnregisteredPeginRequest() external {
+    function test_acceptPegin_Revert_PeginNotRequested() external {
         BtcTransaction memory btcTx = HelperContract.getBtcPeginRequestTx();
 
         // Arrange
@@ -218,15 +218,13 @@ contract TestPegManager is Test, HelperContract {
         BtcTxSPVProof memory peginAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
         // Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(IPegManager.UnregisteredPeginRequest.selector, btcTransaction.inputs[0].txId)
-        );
+        vm.expectRevert(abi.encodeWithSelector(IPegManager.PeginNotRequested.selector, btcTransaction.inputs[0].txId));
 
         // Act
-        pm.acceptPeginRequest(peginAcceptedTxSPVProof);
+        pm.acceptPegin(peginAcceptedTxSPVProof);
     }
 
-    function test_acceptPeginRequest_newPacketCreated() external {
+    function test_acceptPegin_newPacketCreated() external {
         // Arrange
         // Create pegins until the new packet threshold is reached
         setup_multipleRequestAndAcceptPeginFlows(Constants.SLOT_USAGE_THRESHOLD - 1, setupStreamId);
@@ -242,7 +240,7 @@ contract TestPegManager is Test, HelperContract {
         emit ICommitteeRegistry.NewPendingCommittee(setupStreamId, expectedCommittee);
 
         // Act
-        pm.acceptPeginRequest(peginAcceptedTxSPVProof);
+        pm.acceptPegin(peginAcceptedTxSPVProof);
 
         // Now we should provide members info to create the committee/packet. This works with second group of members, their indexes start at registry.minCommitteeMembers()
         uint256 memberIndexStart = registry.minCommitteeMembers();
@@ -261,7 +259,7 @@ contract TestPegManager is Test, HelperContract {
         registry.depositMemberInfoForCommittee(setupStreamId, COMMITTEE_PUB_KEY);
     }
 
-    function test_acceptPeginRequest_newPacketUsed() external {
+    function test_acceptPegin_newPacketUsed() external {
         // Arrange
         // Create pegins until the new packet treshold is reached
         setup_multipleRequestAndAcceptPeginFlows(Constants.SLOTS_PER_PACKET, setupStreamId);
@@ -283,7 +281,7 @@ contract TestPegManager is Test, HelperContract {
         bytes32 acceptPeginTxHash = HelperContract.getBtcTxHash(btcTransaction);
         uint64 packetId = 1;
         uint64 slotId = 0;
-        emit IPegManager.AcceptedPeginRequest(
+        emit IPegManager.PeginAccepted(
             peginAcceptedTxSPVProof.blockHash,
             acceptPeginTxHash,
             peginRequestTxHash,
@@ -300,10 +298,10 @@ contract TestPegManager is Test, HelperContract {
             btcTransaction.outputs[0].scriptPubKey
         );
         // Act
-        pm.acceptPeginRequest(peginAcceptedTxSPVProof);
+        pm.acceptPegin(peginAcceptedTxSPVProof);
     }
 
-    function test_acceptPeginRequest_Success() external {
+    function test_acceptPegin_Success() external {
         setup_requestPeginFlow();
 
         // ===  Before test setup  is run for this  test ===
@@ -323,7 +321,7 @@ contract TestPegManager is Test, HelperContract {
         bytes32 acceptPeginTxHash = getBtcTxHash(btcTransaction);
         uint64 streamId = 1;
         uint64 slotId = 0;
-        emit IPegManager.AcceptedPeginRequest(
+        emit IPegManager.PeginAccepted(
             peginAcceptedTxSPVProof.blockHash,
             acceptPeginTxHash,
             peginRequestTxHash,
@@ -341,7 +339,7 @@ contract TestPegManager is Test, HelperContract {
         );
 
         // Act
-        pm.acceptPeginRequest(peginAcceptedTxSPVProof);
+        pm.acceptPegin(peginAcceptedTxSPVProof);
 
         // Assert
         // Registered Peg In Stream Position
@@ -358,7 +356,7 @@ contract TestPegManager is Test, HelperContract {
         assertEq(slot.scriptPubKey, btcTransaction.outputs[0].scriptPubKey, "Incorrect scriptPubKey");
     }
 
-    function test_acceptPeginRequest_Revert_AlreadyRegisteredAcceptPegin() external {
+    function test_acceptPegin_Revert_PeginAlreadyAccepted() external {
         setup_requestPeginFlow();
 
         // ===  Before test setup  is run for this  test ===
@@ -371,18 +369,18 @@ contract TestPegManager is Test, HelperContract {
         BtcTxSPVProof memory peginAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
         // Register First  Accept Peg In Request
-        pm.acceptPeginRequest(peginAcceptedTxSPVProof);
+        pm.acceptPegin(peginAcceptedTxSPVProof);
 
         // Assert
         vm.expectRevert(
-            abi.encodeWithSelector(IPegManager.AlreadyRegisteredAcceptPegin.selector, btcTransaction.inputs[0].txId)
+            abi.encodeWithSelector(IPegManager.PeginAlreadyAccepted.selector, btcTransaction.inputs[0].txId)
         );
 
         // Act Register Second Accept Peg In Request
-        pm.acceptPeginRequest(peginAcceptedTxSPVProof);
+        pm.acceptPegin(peginAcceptedTxSPVProof);
     }
 
-    function test_acceptPeginRequest_Revert_InvalidAcceptPeginTxHash() external {
+    function test_acceptPegin_Revert_InvalidAcceptPeginTxHash() external {
         setup_requestPeginFlow();
 
         // ===  Before test setup  is run for this  test ===
@@ -405,10 +403,10 @@ contract TestPegManager is Test, HelperContract {
         );
 
         // Act
-        pm.acceptPeginRequest(peginAcceptedTxSPVProof);
+        pm.acceptPegin(peginAcceptedTxSPVProof);
     }
 
-    function test_acceptPeginRequest_Revert_Revert_NotEnoughConfirmations() external {
+    function test_acceptPegin_Revert_Revert_NotEnoughConfirmations() external {
         // ===  Before test setup  is run for this  test ===
         BtcTransaction memory peginTx = setup_requestPeginFlow();
         // Arrange
@@ -427,7 +425,7 @@ contract TestPegManager is Test, HelperContract {
         );
 
         // Act
-        pm.acceptPeginRequest(peginAcceptedTxSPVProof);
+        pm.acceptPegin(peginAcceptedTxSPVProof);
     }
 
     function test_peginFlow_RequestMultiplePegin_Revert_IncorrectPacketNumber() external {
@@ -447,7 +445,7 @@ contract TestPegManager is Test, HelperContract {
         BtcTxSPVProof memory peginAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
         vm.expectEmit(address(pm));
-        emit IPegManager.AcceptedPeginRequest(
+        emit IPegManager.PeginAccepted(
             peginAcceptedTxSPVProof.blockHash,
             acceptPeginTxHash,
             peginRequestTxHash,
@@ -463,7 +461,7 @@ contract TestPegManager is Test, HelperContract {
             satoshiToWei(btcTransaction.outputs[0].amount), // Rbtc amount
             btcTransaction.outputs[0].scriptPubKey
         );
-        pm.acceptPeginRequest(peginAcceptedTxSPVProof);
+        pm.acceptPegin(peginAcceptedTxSPVProof);
 
         btcTransaction = getBtcAcceptPeginTx(peginTxN_1);
         peginRequestTxHash = HelperContract.getBtcTxHash(peginTxN_1);
@@ -472,6 +470,6 @@ contract TestPegManager is Test, HelperContract {
 
         // This should revert because this pegin was linked to packet 0 and now we are in packet 1
         vm.expectRevert(abi.encodeWithSelector(IStreamManager.InvalidPeginPacketNumber.selector, setupStreamId, 0));
-        pm.acceptPeginRequest(peginAcceptedTxSPVProof);
+        pm.acceptPegin(peginAcceptedTxSPVProof);
     }
 }

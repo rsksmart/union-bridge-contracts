@@ -101,7 +101,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         );
     }
 
-    function registerPeginRequest(BtcTxSPVProof calldata _peginRequestTxSPVProof) external {
+    function requestPegin(BtcTxSPVProof calldata _peginRequestTxSPVProof) external {
         if (_peginRequestTxSPVProof.btcTx.version != Constants.BTC_TX_VERSION) {
             revert InvalidBtcTxVersion(_peginRequestTxSPVProof.btcTx.version, Constants.BTC_TX_VERSION);
         }
@@ -111,7 +111,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         // Calculate txHash from BtcTransaction
         bytes32 txHash = bitcoinManager.getBtcTxHash(_peginRequestTxSPVProof.btcTx);
         if (getStreamPosition(txHash).pegStatus != PegStatus.NOT_REGISTERED) {
-            revert AlreadyRegisteredPeginRequest(txHash);
+            revert PeginAlreadyRequested(txHash);
         }
         // Validate transaction has at least 2 outputs
         if (_peginRequestTxSPVProof.btcTx.outputs.length < 2) {
@@ -149,7 +149,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             _peginRequestTxSPVProof.merkleBranchHashes
         );
 
-        emit RegisteredPeginRequest(
+        emit PeginRequested(
             _peginRequestTxSPVProof.blockHash,
             txHash,
             Constants.VOUT_INDEX_TAPTREE, // vout is the first output, is the P2TR
@@ -211,7 +211,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         signatureManager.initSignatures(acceptPeginSignatureHash, committeeId);
     }
 
-    function acceptPeginRequest(BtcTxSPVProof calldata _peginAcceptedTxSPVProof) external {
+    function acceptPegin(BtcTxSPVProof calldata _peginAcceptedTxSPVProof) external {
         // The first input consumes the the peg in request utxo
         bytes32 requestPeginTxHash = _peginAcceptedTxSPVProof.btcTx.inputs[Constants.VOUT_INDEX_TAPTREE].txId;
 
@@ -221,10 +221,10 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         // Validate the peg in request tx exists and the status
         StreamPosition memory streamInfo = getStreamPosition(requestPeginTxHash);
         if (streamInfo.pegStatus == PegStatus.NOT_REGISTERED) {
-            revert UnregisteredPeginRequest(requestPeginTxHash);
+            revert PeginNotRequested(requestPeginTxHash);
         }
         if (streamInfo.pegStatus != PegStatus.REGISTERED) {
-            revert AlreadyRegisteredAcceptPegin(requestPeginTxHash);
+            revert PeginAlreadyAccepted(requestPeginTxHash);
         }
 
         // Calculate txHash from BtcTransaction
@@ -290,7 +290,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
 
         uint256 rbtcAmount = BtcHelper.satoshiToWei(_acceptPeginTxOutput.amount);
 
-        emit AcceptedPeginRequest(
+        emit PeginAccepted(
             _blockHash,
             _txHash,
             _requestPeginTxHash,
@@ -365,7 +365,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         StreamPosition memory streamInfo = streamPosition[acceptPeginTxHash];
 
         if (streamInfo.pegStatus == PegStatus.NOT_REGISTERED) {
-            revert UnregisteredPeginRequest(acceptPeginTxHash);
+            revert PeginNotRequested(acceptPeginTxHash);
         }
 
         // Validate that the vout is correct

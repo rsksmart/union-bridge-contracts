@@ -83,7 +83,7 @@ contract AcceptPeginRequestScript is ScriptUtils {
 
         // accept peginRequest
         vm.startBroadcast(getDeployerKey());
-        pegManager.acceptPeginRequest(peginAcceptedTxSPVProof);
+        pegManager.acceptPegin(peginAcceptedTxSPVProof);
         vm.stopBroadcast();
 
         // check if peginRequest is accepted
