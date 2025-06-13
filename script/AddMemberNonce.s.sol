@@ -1,0 +1,57 @@
+// SPDX-License-Identifier: Unlicense
+pragma solidity ^0.8.20;
+
+import "forge-std/Script.sol";
+import {PegManager} from "src/PegManager.sol";
+import {ISignatureManager} from "src/interfaces/ISignatureManager.sol";
+import {ChainIds} from "src/libraries/Network.sol";
+import {BtcHelper} from "src/libraries/BtcHelper.sol";
+import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
+
+contract AddMemberNonce is ScriptUtils {
+    PegManager pegManager;
+    ISignatureManager signatureManager;
+    bytes nonce;
+    bytes32 signatureHash;
+    uint256 privKey;
+    address user;
+
+    function setUp(uint16 _mnemonicIndex, bytes32 _signatureHash, bytes memory _nonce) internal {
+        pegManager = PegManager(0x0165878A594ca255338adfa4d48449f69242Eb8F);
+        signatureManager = pegManager.signatureManager();
+
+        // Read args from command line / env
+        if (_mnemonicIndex > 9) {
+            revert("mnemonic index must be between 0 and 9");
+        }
+        privKey = getMemberKey(uint32(_mnemonicIndex));
+
+        // FIXME: is this needed?
+        user = vm.addr(privKey);
+
+        if (_nonce.length != 66) {
+            revert("Nonce must be 66 bytes long");
+        }
+        nonce = _nonce;
+
+        if (_signatureHash == bytes32(0)) {
+            revert("Signature hash must not be zero");
+        }
+        signatureHash = _signatureHash;
+    }
+
+    function run(uint16 _mnemonicIndex, bytes32 _signatureHash, bytes memory _nonce) public {
+        setUp(_mnemonicIndex, _signatureHash, _nonce);
+
+        console.log("=== Adding Member Nonce ===");
+        vm.startBroadcast(privKey);
+        bool noncesReady = signatureManager.addMemberNonce(signatureHash, _nonce);
+        vm.stopBroadcast();
+
+        if (noncesReady) {
+            console.log("=== All nonces added successfully ===");
+        } else {
+            console.log("=== There are still missing nonces ===");
+        }
+    }
+}
