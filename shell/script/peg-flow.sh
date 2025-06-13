@@ -15,7 +15,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 bash "$SCRIPT_DIR/packet-creation-flow.sh"
 bash "$SCRIPT_DIR/request-pegin.sh"
-bash "$SCRIPT_DIR/accept-pegin-request.sh"
+bash "$SCRIPT_DIR/accept-pegin.sh"
 bash "$SCRIPT_DIR/request-pegout.sh"
 bash "$SCRIPT_DIR/add-every-member-nonce-and-signature.sh"
 bash "$SCRIPT_DIR/register-pegout.sh"

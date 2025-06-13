@@ -144,7 +144,7 @@ Register the accept peg in request transaction sent by the committee in Bitcoin,
 Then run:
 
 ```sh
-bash shell/script/accept-pegin-request.sh
+bash shell/script/accept-pegin.sh
 ```
 
 ### Request peg out
