@@ -2,7 +2,6 @@
 set -e
 
 # Defaults
-# SIGNATURE_HASH="0xbdbcc0e498ff3efd9332048959b808326e6361ba820aabdde997c49b699e8b20"
 NONCE="0xf8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000"
 SIGNATURE="0xf8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0"
 

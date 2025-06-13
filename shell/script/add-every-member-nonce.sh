@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -e
+source .env
 
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -26,8 +27,8 @@ fi
 
 chmod +x "$SCRIPT_DIR/add-member-nonce.sh"
 
-# Loop through all members (mnemonic indices 0 to 9)
-for i in {0..9}; do
+# Loop through all mnemonic indices
+for ((i=0; i<=MAX_MNEMONIC_INDEX; i++)); do
   echo "Adding nonce for member $i"
   "$SCRIPT_DIR/add-member-nonce.sh" -m "$i" -h "$SIGNATURE_HASH" -n "$NONCE"
 done

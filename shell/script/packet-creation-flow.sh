@@ -35,7 +35,7 @@ done
 TOTAL=$((OPERATOR_AMOUNT + WATCHTOWER_AMOUNT))
 
 # Enforce constraints
-if [ "$TOTAL" -ne 10 ]; then
+if [ "$TOTAL" -ne "$MAX_MNEMONIC_INDEX"+1 ]; then
   echo "Error: Total number of members must be exactly 10 (you passed $TOTAL)."
   exit 1
 fi
@@ -58,7 +58,7 @@ fi
 echo "=== APPLYING $OPERATOR_AMOUNT OPERATORS AND $WATCHTOWER_AMOUNT WATCHTOWERS TO STREAM $STREAM ==="
 
 # Apply to stream
-for ((i=0; i<TOTAL; i++)); do
+for ((i=0; i<=MAX_MNEMONIC_INDEX; i++)); do
   if [ "$i" -lt "$OPERATOR_AMOUNT" ]; then
     ROLE=1  # Operator
   else
@@ -73,7 +73,6 @@ if [ -z "$COMMITTEE_PK" ]; then
   exit 1
 fi
 
-
-for ((i=0; i<TOTAL; i++)); do
+for ((i=0; i<=MAX_MNEMONIC_INDEX; i++)); do
   bash "$SCRIPT_DIR/deposit-member-info-for-committee.sh" -m "$i" -s "$STREAM" -p "$COMMITTEE_PK"
 done

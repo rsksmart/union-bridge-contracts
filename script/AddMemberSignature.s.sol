@@ -8,7 +8,7 @@ import {ChainIds} from "src/libraries/Network.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 
-contract AddMemberNonce is ScriptUtils {
+contract AddMemberSignature is ScriptUtils {
     PegManager pegManager;
     ISignatureManager signatureManager;
     bytes32 signature;
