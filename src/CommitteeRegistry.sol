@@ -166,6 +166,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         }
         _movePreStakedToAvailable(member, _denomination);
         _removeFromCandidates(_getMemberIndexByAddress(msg.sender), _denomination, role);
+        emit MemberUnsubscribedFromStream(msg.sender, _denomination);
     }
 
     function _movePreStakedToAvailable(Member storage _member, StreamDenomination _denomination) internal {
@@ -212,7 +213,6 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
             if (candidates[i] == _memberIndex) {
                 candidates[i] = candidates[length - 1];
                 candidates.pop();
-                emit MemberUnsubscribedFromStream(msg.sender, _stream);
                 break;
             }
         }
@@ -519,6 +519,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         }
 
         pendingCommittee.missingData--;
+        emit MemberInfoDeposited(_streamId, msg.sender, _aggregatedKey);
         if (pendingCommittee.missingData != 0) {
             // Committee is not completed yet
             return;
