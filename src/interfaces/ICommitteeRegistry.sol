@@ -181,6 +181,7 @@ interface ICommitteeRegistry {
     event CommitteeMinWatchtowersUpdated(uint256 minWatchtowers);
     event CommitteeMinOperatorsUpdated(uint256 minOperators);
     event CommitteeMinMembersUpdated(uint256 minMembers);
+    event MemberInfoDeposited(uint64 indexed streamId, address indexed member, bytes32 aggregatedKey);
 
     /// ==================== Errors =====================
     error RequestedDifferentStreamsAndRolesLength(uint256 streamsLength, uint256 rolesLength);

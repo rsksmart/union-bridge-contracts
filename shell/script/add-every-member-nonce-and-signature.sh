@@ -1,14 +1,32 @@
-#!/bin/sh
+#!/bin/bash
+set -e
 
-# we go to the root of the project to avoid relative path issues
-current_path=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
-cd "$current_path/../.."
-# set up environment variables
-source .env
-RPC=$LOCAL_RPC
-echo "================ ADD MEMBER SIGNATURE TO $RPC ================"
-forge script \
-    script/AddEveryMemberNonceAndSignature.s.sol \
-    --rpc-url $RPC \
-    --legacy \
-    --broadcast \
+# Defaults
+NONCE="0xf8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000"
+SIGNATURE="0xf8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0"
+
+usage() {
+  echo "Usage: $0 [-h signature_hash] [-n nonce] [-s signature]"
+  exit 1
+}
+
+# Parse args
+while getopts ":h:n:s:" opt; do
+  case "$opt" in
+    h) SIGNATURE_HASH="$OPTARG" ;;
+    n) NONCE="$OPTARG" ;;
+    s) SIGNATURE="$OPTARG" ;;
+    *) usage ;;
+  esac
+done
+
+# Go to script dir
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Ensure helper scripts are executable
+chmod +x "$SCRIPT_DIR/add-every-member-nonce.sh"
+chmod +x "$SCRIPT_DIR/add-every-member-signature.sh"
+
+# Run both scripts
+bash "$SCRIPT_DIR/add-every-member-nonce.sh" -h "$SIGNATURE_HASH" -n "$NONCE"
+bash "$SCRIPT_DIR/add-every-member-signature.sh" -h "$SIGNATURE_HASH" -s "$SIGNATURE"

@@ -537,6 +537,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
         (Committee memory expectedCommittee, uint64 streamId) = setup_pendingCommittee();
         expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY;
 
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.MemberInfoDeposited(streamId, vm.addr(1), COMMITTEE_PUB_KEY);
+
         // Act
         vm.prank(vm.addr(1));
         registry.depositMemberInfoForCommittee(streamId, COMMITTEE_PUB_KEY);

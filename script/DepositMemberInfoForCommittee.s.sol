@@ -14,7 +14,6 @@ contract DepositMemberInfoForCommitteeScript is ScriptUtils {
     uint64 stream;
     uint256 privKey;
     address user;
-    bytes32 pubKey;
 
     function setUp(uint16 _mnemonicIndex, uint64 _streamIndex, bytes32 _committeePubKey) internal {
         committeeRegistry = ICommitteeRegistry(0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0);
