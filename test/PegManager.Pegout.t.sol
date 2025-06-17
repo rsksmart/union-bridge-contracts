@@ -470,7 +470,7 @@ contract TestPegManager is Test, HelperContract {
         );
 
         bytes32 requestPeginTxHash = bitcoinManager.getBtcTxHash(requestPeginTx);
-        PegoutTempInfo memory pegoutInfo = pm.getPegTempOutInfo(acceptPeginTxHash);
+        PegoutTempInfo memory pegoutInfo = pm.getPegoutTempInfo(acceptPeginTxHash);
         StreamPosition memory streamPosition = pm.getStreamPosition(requestPeginTxHash);
 
         // internal state should be consistent

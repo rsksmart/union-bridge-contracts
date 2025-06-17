@@ -2,8 +2,10 @@
 pragma solidity ^0.8.20;
 
 import {Constants} from "./libraries/Constants.sol";
-import {ISignatureManager, Signatures, SignatureData} from "./interfaces/ISignatureManager.sol";
-import {Committee, CommitteeMember, ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
+import {
+    ISignatureManager, Signatures, SignatureData, Take1TxHashes, Take1Data
+} from "./interfaces/ISignatureManager.sol";
+import {Committee, CommitteeMember, ICommitteeRegistry, Role} from "./interfaces/ICommitteeRegistry.sol";
 import {AccessControl} from "./AccessControl.sol";
 
 /// @title SignatureManager
@@ -13,6 +15,7 @@ contract SignatureManager is ISignatureManager, AccessControl {
 
     // Signatures waiting for the committee to sign
     mapping(bytes32 hashToSign => Signatures signatures) internal committeeSignatures;
+    mapping(bytes32 acceptPeginTxHash => Take1TxHashes take1TxHashes) internal take1TxHashesMap;
 
     function initialize(address _initialOwner, address _pegManager, ICommitteeRegistry _committeeRegistry)
         public
@@ -26,15 +29,19 @@ contract SignatureManager is ISignatureManager, AccessControl {
     }
 
     function _isMemberInCommittee(uint256 _committeeId, uint16 _memberIndex) internal view returns (bool) {
+        return _getMemberRole(_committeeId, _memberIndex) != Role.NONE;
+    }
+
+    function _getMemberRole(uint256 _committeeId, uint16 _memberIndex) internal view returns (Role) {
         CommitteeMember[] memory members = committeeRegistry.getCommitteeMembers(_committeeId);
-        bool memberInCommittee = false;
+        Role role = Role.NONE;
         for (uint256 i = 0; i < members.length; i++) {
             if (members[i].index == _memberIndex) {
-                memberInCommittee = true;
+                role = members[i].role;
                 break;
             }
         }
-        return memberInCommittee;
+        return role;
     }
 
     function addMemberNonce(bytes32 _hashToSign, bytes memory _nonce) external returns (bool) {
@@ -48,7 +55,7 @@ contract SignatureManager is ISignatureManager, AccessControl {
         Signatures storage signatures = _getSignatures(_hashToSign);
         // Check if the member is in the committee
         if (!_isMemberInCommittee(signatures.committeeId, memberIndex)) {
-            revert MemberNotFoundInCommittee(memberPubKey, msg.sender, _hashToSign);
+            revert MemberNotFoundInCommittee(signatures.committeeId, msg.sender);
         }
 
         SignatureData storage memberSignatureData = signatures.partialSignaturesData[memberIndex];
@@ -83,7 +90,7 @@ contract SignatureManager is ISignatureManager, AccessControl {
         (uint16 memberIndex, bytes32 memberPubKey) = _getMemberIndex(msg.sender);
         // Check if the member is in the committee
         if (!_isMemberInCommittee(signatures.committeeId, memberIndex)) {
-            revert MemberNotFoundInCommittee(memberPubKey, msg.sender, _hashToSign);
+            revert MemberNotFoundInCommittee(signatures.committeeId, msg.sender);
         }
 
         SignatureData storage memberSignatureData = signatures.partialSignaturesData[memberIndex];
@@ -168,5 +175,108 @@ contract SignatureManager is ISignatureManager, AccessControl {
         signatures.missingNonces = memberCount;
         signatures.timestamp = block.timestamp;
         signatures.committeeId = _committeeId;
+    }
+
+    function initTake1TxHashes(bytes32 _acceptPeginTxHash, uint256 _committeeId) external onlyPegManager {
+        // Check if the accept pegin tx hash is not empty
+        if (_acceptPeginTxHash == bytes32(0)) {
+            revert InvalidAcceptPeginTxHash(_acceptPeginTxHash);
+        }
+
+        // Check if the signatures are already initialized
+        Take1TxHashes storage txHashes = take1TxHashesMap[_acceptPeginTxHash];
+        if (txHashes.committeeId != 0) {
+            revert Take1TxHashesAlreadyInitialized(_acceptPeginTxHash);
+        }
+
+        // Only operators should provide Take1 tx hashes
+        uint256 operatorsCount = 0;
+        CommitteeMember[] memory members = committeeRegistry.getCommitteeMembers(_committeeId);
+        for (uint256 i = 0; i < members.length; i++) {
+            if (members[i].role == Role.OPERATOR) {
+                operatorsCount++;
+            }
+        }
+
+        // Initialize missing hashes counter
+        txHashes.missingHashes = uint8(operatorsCount);
+        txHashes.committeeId = _committeeId;
+    }
+
+    function _getTake1TxHashes(bytes32 _acceptPeginTxHash) internal view returns (Take1TxHashes storage) {
+        // slither-disable-next-line incorrect-equality timestamp
+        if (take1TxHashesMap[_acceptPeginTxHash].committeeId == 0) {
+            revert AcceptPeginTxHashNotFound(_acceptPeginTxHash);
+        }
+        return take1TxHashesMap[_acceptPeginTxHash];
+    }
+
+    function addTake1TxHash(bytes32 _acceptPeginTxHash, bytes32 _hash) external {
+        Take1TxHashes storage take1TxHashes = _getTake1TxHashes(_acceptPeginTxHash);
+
+        if (take1TxHashes.missingHashes == 0) {
+            revert AllTake1TxHashesAlreadyPresent(_acceptPeginTxHash);
+        }
+        // Check if hash is valid
+        if (_hash == bytes32(0)) {
+            revert InvalidHash(_hash);
+        }
+
+        uint16 memberIndex = committeeRegistry.getMemberIndexByAddress(msg.sender);
+        Role role = _getMemberRole(take1TxHashes.committeeId, memberIndex);
+
+        // Check if the member is in the committee
+        if (role == Role.NONE) {
+            revert MemberNotFoundInCommittee(take1TxHashes.committeeId, msg.sender);
+        }
+
+        // Only operators should add take 1 tx hashes
+        if (role != Role.OPERATOR) {
+            revert MemberIsNotOperator(take1TxHashes.committeeId, msg.sender);
+        }
+
+        if (take1TxHashes.txHashes[memberIndex] != bytes32(0)) {
+            revert MemberAlreadyAddedTake1TxHash(_acceptPeginTxHash, msg.sender, _hash);
+        }
+
+        take1TxHashes.txHashes[memberIndex] = _hash;
+        emit Take1TxHashAdded(_acceptPeginTxHash, msg.sender, _hash);
+
+        take1TxHashes.missingHashes -= 1;
+        if (take1TxHashes.missingHashes == 0) {
+            emit AllTake1TxHashesAdded(_acceptPeginTxHash);
+        }
+    }
+
+    function checkAllTake1HashesReady(bytes32 _acceptPeginTxHash) external view returns (bool) {
+        Take1TxHashes storage take1TxHashes = _getTake1TxHashes(_acceptPeginTxHash);
+        return (take1TxHashes.missingHashes == 0);
+    }
+
+    function getTake1Data(bytes32 _acceptPeginTxHash) external view returns (Take1Data[] memory) {
+        Take1TxHashes storage take1TxHashes = _getTake1TxHashes(_acceptPeginTxHash);
+        uint256 operatorsCount = 0;
+        CommitteeMember[] memory members = committeeRegistry.getCommitteeMembers(take1TxHashes.committeeId);
+        for (uint256 i = 0; i < members.length; i++) {
+            if (members[i].role == Role.OPERATOR) {
+                operatorsCount++;
+            }
+        }
+        Take1Data[] memory take1Data = new Take1Data[](operatorsCount);
+        operatorsCount = 0;
+        for (uint256 i = 0; i < members.length; i++) {
+            if (members[i].role == Role.OPERATOR) {
+                take1Data[operatorsCount].txHash = take1TxHashes.txHashes[members[i].index];
+                take1Data[operatorsCount].memberIndex = members[i].index;
+                operatorsCount++;
+            }
+        }
+
+        return take1Data;
+    }
+
+    function getCommitteeIdByAcceptPeginTxHash(bytes32 _acceptPeginTxHash) external view returns (uint256) {
+        Take1TxHashes storage take1TxHashes = _getTake1TxHashes(_acceptPeginTxHash);
+        return take1TxHashes.committeeId;
     }
 }

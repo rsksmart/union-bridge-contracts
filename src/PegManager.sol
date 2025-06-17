@@ -80,7 +80,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         return peginTempInfo[_btcTxHash];
     }
 
-    function getPegTempOutInfo(bytes32 _acceptPeginTxHash) external view returns (PegoutTempInfo memory) {
+    function getPegoutTempInfo(bytes32 _acceptPeginTxHash) external view returns (PegoutTempInfo memory) {
         return pegoutTempInfo[_acceptPeginTxHash];
     }
 
@@ -209,6 +209,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         // Initialize the signatures needed for a given aggregated key
         uint256 committeeId = streamManager.getCommitteeId(_streamId, _packetNumber);
         signatureManager.initSignatures(acceptPeginSignatureHash, committeeId);
+        signatureManager.initTake1TxHashes(acceptPeginTxHash, committeeId);
     }
 
     function acceptPegin(BtcTxSPVProof calldata _peginAcceptedTxSPVProof) external {
@@ -227,64 +228,65 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             revert PeginAlreadyAccepted(requestPeginTxHash);
         }
 
-        // Calculate txHash from BtcTransaction
-        bytes32 txHash = bitcoinManager.getBtcTxHash(_peginAcceptedTxSPVProof.btcTx);
+        // Calculate acceptPegintxHash from BtcTransaction
+        bytes32 acceptPegintxHash = bitcoinManager.getBtcTxHash(_peginAcceptedTxSPVProof.btcTx);
 
         // Validate the txhash is the same calculated at request peg in tx
-        if (requestTempInfo.acceptPeginTxHash != txHash) {
-            revert InvalidAcceptPeginTxHash(requestTempInfo.acceptPeginTxHash, txHash);
+        if (requestTempInfo.acceptPeginTxHash != acceptPegintxHash) {
+            revert InvalidAcceptPeginTxHash(requestTempInfo.acceptPeginTxHash, acceptPegintxHash);
         }
 
-        // Verify the txHash part of the Merkle Root of Tx of a Block
+        // Verify the acceptPegintxHash part of the Merkle Root of Tx of a Block
         // and that block is inside Bitcoin Mainchain
         // annd has enough confirmations
         verifyTxConfirmations(
             streamManager.getStreamById(streamInfo.streamId).peginConfirmations,
-            txHash,
+            acceptPegintxHash,
             _peginAcceptedTxSPVProof.blockHash,
             _peginAcceptedTxSPVProof.merkleBranchPath,
             _peginAcceptedTxSPVProof.merkleBranchHashes
         );
 
-        _storePeginAndInitSignatures(
+        _storePegin(
             requestPeginTxHash,
             streamInfo,
             requestTempInfo,
             _peginAcceptedTxSPVProof.blockHash,
-            txHash,
+            acceptPegintxHash,
             _peginAcceptedTxSPVProof.btcTx.outputs[Constants.VOUT_INDEX_TAPTREE]
         );
     }
 
-    function _storePeginAndInitSignatures(
+    function _storePegin(
         bytes32 _requestPeginTxHash,
         StreamPosition memory streamInfo,
         RequestPeginTempInfo storage requestTempInfo,
         bytes32 _blockHash,
-        bytes32 _txHash,
+        bytes32 _acceptPegintxHash,
         BtcTxOut memory _acceptPeginTxOutput
     ) internal {
+        StreamPosition storage stream = streamPosition[_acceptPegintxHash];
+
         // Update the peg in request status to ACCEPTED to avoid processing it again
-        streamPosition[_txHash].pegStatus = PegStatus.ACCEPTED;
+        stream.pegStatus = PegStatus.ACCEPTED;
 
         // Store Tx in peginSlot as Filled
-        streamPosition[_txHash].slotId = streamManager.fillAcceptPeginTx(
+        stream.slotId = streamManager.fillAcceptPeginTx(
             streamInfo.streamId,
             streamInfo.packetNumber,
             _acceptPeginTxOutput.amount,
-            _txHash,
+            _acceptPegintxHash,
             _acceptPeginTxOutput.scriptPubKey
         );
 
         // Check if we need a new packet/committee
-        // NOTE: Compare directly with Constants.SLOT_USAGE_THRESHOLD. It is not mathematically correct but it's functionally the same
-        if (streamPosition[_txHash].slotId == Constants.SLOT_USAGE_THRESHOLD - 1) {
-            committeeRegistry.createCommittee(streamPosition[_txHash].streamId);
+        if (stream.slotId == Constants.SLOT_USAGE_THRESHOLD - 1) {
+            committeeRegistry.createCommittee(stream.streamId);
         }
 
-        if (streamPosition[_txHash].slotId >= Constants.SLOT_USAGE_THRESHOLD) {
-            if (committeeRegistry.isPendingCommitteeExpired(streamPosition[_txHash].streamId)) {
-                committeeRegistry.createCommittee(streamPosition[_txHash].streamId);
+        if (stream.slotId >= Constants.SLOT_USAGE_THRESHOLD) {
+            if (committeeRegistry.isPendingCommitteeExpired(stream.streamId)) {
+                committeeRegistry.createCommittee(stream.streamId);
             }
         }
 
@@ -292,10 +294,10 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
 
         emit PeginAccepted(
             _blockHash,
-            _txHash,
+            _acceptPegintxHash,
             _requestPeginTxHash,
             Constants.VOUT_INDEX_TAPTREE,
-            streamPosition[_txHash],
+            stream,
             requestTempInfo.btcReimbursementPubKey,
             requestTempInfo.rskDestinationAddress,
             rbtcAmount,
