@@ -169,7 +169,7 @@ contract StreamManager is IStreamManager, AccessControl {
         // Update the stream pegout pointers
         stream.pegoutSlotPointer++;
         if (stream.pegoutSlotPointer > Constants.SLOTS_PER_PACKET) {
-            revert InconsistentPegoutPointer(_streamId, packetNumber, stream.pegoutSlotPointer);
+            revert _InconsistentPegoutPointer(_streamId, packetNumber, stream.pegoutSlotPointer);
         }
 
         if (stream.pegoutSlotPointer == Constants.SLOTS_PER_PACKET) {

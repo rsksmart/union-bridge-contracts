@@ -86,11 +86,6 @@ interface IPegManager {
     function getRequestPeginTempInfo(bytes32 btcTxHash) external view returns (RequestPeginTempInfo memory);
 
     // ===================== Accept Peg-in Request =====================
-
-    // /// @notice Verifys and Registers the partial signature for accept peg-in transaction
-    // /// @param _peginAcceptedTxSPVProof Accept peg-in transaction
-    // function verifyAcceptPeginRequest(BtcTxSPVProof calldata _peginAcceptedTxSPVProof) external;
-
     /// @notice Accepts and Registers a bitcoin peg in transaction out of the temporary address
     /// @param _peginAcceptedTxSPVProof The BTC SPV proof of the Accept peg-in transaction
     function acceptPegin(BtcTxSPVProof calldata _peginAcceptedTxSPVProof) external;
@@ -108,17 +103,9 @@ interface IPegManager {
     );
 
     // ===================== Peg-out Request =====================
-
-    // /// @notice Selects UTXOs for peg-out
-    // /// @param streamId The stream identifier
-    // /// @param sequenceNumber The sequence number
-    // /// @param slotId The slot identifier
-    // function selectUTXOsForPegout(uint256 streamId, uint256 sequenceNumber, uint256 slotId) external;
-
-    // /// @notice Requests a peg-out to Bitcoin
+    // /// @notice Try a peg-out to Bitcoin. It will revert if not filled slot is available.
     // /// @param _usrPubKey The user public key
-    // /// @param _bitcoinUserAddress The Bitcoin user address
-    function requestPegout(bytes calldata _usrPubKey) external payable;
+    function tryPegout(bytes calldata _usrPubKey) external payable;
 
     /// @notice Register a peg-out transaction from Bitcoin
     /// @param _pegoutTxSPVProof The BTC SPV proof of the peg-out transaction

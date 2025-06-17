@@ -321,7 +321,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         // TODO: validate who can request a peg-out
     }
 
-    function requestPegout(bytes calldata _usrPubKey) external payable {
+    function tryPegout(bytes calldata _usrPubKey) external payable {
         validatePegoutRequest(_usrPubKey, msg.value);
 
         uint64 receivedAmount = uint64(BtcHelper.weiToSatoshi(msg.value));

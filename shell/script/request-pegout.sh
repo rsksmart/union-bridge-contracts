@@ -9,7 +9,7 @@ source .env
 RPC=$LOCAL_RPC
 echo "================ REGISTER PEGOUT $RPC ================"
 forge script \
-    script/RequestPegout.s.sol \
+    script/TryPegout.s.sol \
     --rpc-url $RPC \
     --legacy \
     --broadcast \
