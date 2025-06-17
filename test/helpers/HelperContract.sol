@@ -65,9 +65,8 @@ abstract contract HelperContract is Test, TestUtils {
         uint256 totalMembers = numWatchtowers + numOperators;
 
         for (uint256 memberIndex = 0; memberIndex < totalMembers; memberIndex++) {
-            PublicKeyRegistration[] memory pubKeysRegistration =
-                generatePublicKeysRegistration(registeredMembersCounter + memberIndex + 1);
             address user = vm.addr(registeredMembersCounter + memberIndex + 1); // Use a different address for each member
+            PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(uint256(uint160(user))); // Generate public keys based on the address
             // First numWatchtowers members are watchtowers, the rest are operators
             Role role = memberIndex < numWatchtowers ? Role.WATCHTOWER : Role.OPERATOR;
 
@@ -102,9 +101,10 @@ abstract contract HelperContract is Test, TestUtils {
 
         for (uint256 i = 0; i < totalMembers; i++) {
             Role role = i < _numWatchtowers ? Role.WATCHTOWER : Role.OPERATOR;
+            address memberAddress = vm.addr(_memberIndexInit + i + 1);
             PublicKeyRegistration[] memory pubKeysRegistration =
-                generatePublicKeysRegistration(_memberIndexInit + i + 1);
-            setup_applyToStream(_denomination, vm.addr(_memberIndexInit + i + 1), pubKeysRegistration, role);
+                generatePublicKeysRegistration(uint256(uint160(memberAddress))); // Generate public keys based on the address
+            setup_applyToStream(_denomination, memberAddress, pubKeysRegistration, role);
         }
     }
 
@@ -445,20 +445,20 @@ abstract contract HelperContract is Test, TestUtils {
 
         Committee memory committee = Committee({
             aggregatedKey: bytes32(0),
-            memberIndexesAndRoles: new CommitteeMember[](registry.minCommitteeMembers()),
-            leaderIndex: 0
+            members: new CommitteeMember[](registry.minCommitteeMembers()),
+            leaderAddress: address(0)
         });
 
-        committee.memberIndexesAndRoles[0] = CommitteeMember({index: 17, role: Role.OPERATOR});
-        committee.memberIndexesAndRoles[1] = CommitteeMember({index: 16, role: Role.OPERATOR});
-        committee.memberIndexesAndRoles[2] = CommitteeMember({index: 18, role: Role.OPERATOR});
-        committee.memberIndexesAndRoles[3] = CommitteeMember({index: 19, role: Role.OPERATOR});
-        committee.memberIndexesAndRoles[4] = CommitteeMember({index: 15, role: Role.OPERATOR});
-        committee.memberIndexesAndRoles[5] = CommitteeMember({index: 12, role: Role.WATCHTOWER});
-        committee.memberIndexesAndRoles[6] = CommitteeMember({index: 11, role: Role.WATCHTOWER});
-        committee.memberIndexesAndRoles[7] = CommitteeMember({index: 13, role: Role.WATCHTOWER});
-        committee.memberIndexesAndRoles[8] = CommitteeMember({index: 14, role: Role.WATCHTOWER});
-        committee.memberIndexesAndRoles[9] = CommitteeMember({index: 10, role: Role.WATCHTOWER});
+        committee.members[0] = CommitteeMember({memberAddress: vm.addr(17 + 1), role: Role.OPERATOR});
+        committee.members[1] = CommitteeMember({memberAddress: vm.addr(16 + 1), role: Role.OPERATOR});
+        committee.members[2] = CommitteeMember({memberAddress: vm.addr(18 + 1), role: Role.OPERATOR});
+        committee.members[3] = CommitteeMember({memberAddress: vm.addr(19 + 1), role: Role.OPERATOR});
+        committee.members[4] = CommitteeMember({memberAddress: vm.addr(15 + 1), role: Role.OPERATOR});
+        committee.members[5] = CommitteeMember({memberAddress: vm.addr(12 + 1), role: Role.WATCHTOWER});
+        committee.members[6] = CommitteeMember({memberAddress: vm.addr(11 + 1), role: Role.WATCHTOWER});
+        committee.members[7] = CommitteeMember({memberAddress: vm.addr(13 + 1), role: Role.WATCHTOWER});
+        committee.members[8] = CommitteeMember({memberAddress: vm.addr(14 + 1), role: Role.WATCHTOWER});
+        committee.members[9] = CommitteeMember({memberAddress: vm.addr(10 + 1), role: Role.WATCHTOWER});
 
         return committee;
     }
@@ -468,20 +468,20 @@ abstract contract HelperContract is Test, TestUtils {
         vm.warp(BLOCK_TIMESTAMP_FOR_DETERMINISTIC_COMMITTEE);
         Committee memory committee = Committee({
             aggregatedKey: bytes32(0),
-            memberIndexesAndRoles: new CommitteeMember[](registry.minCommitteeMembers()),
-            leaderIndex: 0
+            members: new CommitteeMember[](registry.minCommitteeMembers()),
+            leaderAddress: address(0)
         });
 
-        committee.memberIndexesAndRoles[0] = CommitteeMember({index: 7, role: Role.OPERATOR});
-        committee.memberIndexesAndRoles[1] = CommitteeMember({index: 6, role: Role.OPERATOR});
-        committee.memberIndexesAndRoles[2] = CommitteeMember({index: 8, role: Role.OPERATOR});
-        committee.memberIndexesAndRoles[3] = CommitteeMember({index: 9, role: Role.OPERATOR});
-        committee.memberIndexesAndRoles[4] = CommitteeMember({index: 5, role: Role.OPERATOR});
-        committee.memberIndexesAndRoles[5] = CommitteeMember({index: 2, role: Role.WATCHTOWER});
-        committee.memberIndexesAndRoles[6] = CommitteeMember({index: 1, role: Role.WATCHTOWER});
-        committee.memberIndexesAndRoles[7] = CommitteeMember({index: 3, role: Role.WATCHTOWER});
-        committee.memberIndexesAndRoles[8] = CommitteeMember({index: 4, role: Role.WATCHTOWER});
-        committee.memberIndexesAndRoles[9] = CommitteeMember({index: 0, role: Role.WATCHTOWER});
+        committee.members[0] = CommitteeMember({memberAddress: vm.addr(7 + 1), role: Role.OPERATOR});
+        committee.members[1] = CommitteeMember({memberAddress: vm.addr(6 + 1), role: Role.OPERATOR});
+        committee.members[2] = CommitteeMember({memberAddress: vm.addr(8 + 1), role: Role.OPERATOR});
+        committee.members[3] = CommitteeMember({memberAddress: vm.addr(9 + 1), role: Role.OPERATOR});
+        committee.members[4] = CommitteeMember({memberAddress: vm.addr(5 + 1), role: Role.OPERATOR});
+        committee.members[5] = CommitteeMember({memberAddress: vm.addr(2 + 1), role: Role.WATCHTOWER});
+        committee.members[6] = CommitteeMember({memberAddress: vm.addr(1 + 1), role: Role.WATCHTOWER});
+        committee.members[7] = CommitteeMember({memberAddress: vm.addr(3 + 1), role: Role.WATCHTOWER});
+        committee.members[8] = CommitteeMember({memberAddress: vm.addr(4 + 1), role: Role.WATCHTOWER});
+        committee.members[9] = CommitteeMember({memberAddress: vm.addr(0 + 1), role: Role.WATCHTOWER});
 
         return committee;
     }
@@ -490,8 +490,7 @@ abstract contract HelperContract is Test, TestUtils {
         PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(privKey);
         address user = vm.addr(privKey);
 
-        vm.prank(user);
-        registry.registerMemberHarness(pubKeysRegistration);
+        registry.registerMemberHarness(user, pubKeysRegistration);
     }
 
     function setup_getExpectedCommitteeAfterExpire() internal returns (Committee memory) {
@@ -503,20 +502,20 @@ abstract contract HelperContract is Test, TestUtils {
         // NOTE: member order is tied to the timeout used in setup_pendingCommitteeAndExpire()
         Committee memory committee = Committee({
             aggregatedKey: bytes32(0),
-            memberIndexesAndRoles: new CommitteeMember[](registry.minCommitteeMembers()),
-            leaderIndex: 0
+            members: new CommitteeMember[](registry.minCommitteeMembers()),
+            leaderAddress: address(0)
         });
 
-        committee.memberIndexesAndRoles[0] = CommitteeMember({index: 7, role: Role.OPERATOR});
-        committee.memberIndexesAndRoles[1] = CommitteeMember({index: 8, role: Role.OPERATOR});
-        committee.memberIndexesAndRoles[2] = CommitteeMember({index: 9, role: Role.OPERATOR});
-        committee.memberIndexesAndRoles[3] = CommitteeMember({index: 5, role: Role.OPERATOR});
-        committee.memberIndexesAndRoles[4] = CommitteeMember({index: 6, role: Role.OPERATOR});
-        committee.memberIndexesAndRoles[5] = CommitteeMember({index: 2, role: Role.WATCHTOWER});
-        committee.memberIndexesAndRoles[6] = CommitteeMember({index: 3, role: Role.WATCHTOWER});
-        committee.memberIndexesAndRoles[7] = CommitteeMember({index: 4, role: Role.WATCHTOWER});
-        committee.memberIndexesAndRoles[8] = CommitteeMember({index: 0, role: Role.WATCHTOWER});
-        committee.memberIndexesAndRoles[9] = CommitteeMember({index: 1, role: Role.WATCHTOWER});
+        committee.members[0] = CommitteeMember({memberAddress: vm.addr(7 + 1), role: Role.OPERATOR});
+        committee.members[1] = CommitteeMember({memberAddress: vm.addr(8 + 1), role: Role.OPERATOR});
+        committee.members[2] = CommitteeMember({memberAddress: vm.addr(9 + 1), role: Role.OPERATOR});
+        committee.members[3] = CommitteeMember({memberAddress: vm.addr(5 + 1), role: Role.OPERATOR});
+        committee.members[4] = CommitteeMember({memberAddress: vm.addr(6 + 1), role: Role.OPERATOR});
+        committee.members[5] = CommitteeMember({memberAddress: vm.addr(2 + 1), role: Role.WATCHTOWER});
+        committee.members[6] = CommitteeMember({memberAddress: vm.addr(3 + 1), role: Role.WATCHTOWER});
+        committee.members[7] = CommitteeMember({memberAddress: vm.addr(4 + 1), role: Role.WATCHTOWER});
+        committee.members[8] = CommitteeMember({memberAddress: vm.addr(0 + 1), role: Role.WATCHTOWER});
+        committee.members[9] = CommitteeMember({memberAddress: vm.addr(1 + 1), role: Role.WATCHTOWER});
 
         return committee;
     }

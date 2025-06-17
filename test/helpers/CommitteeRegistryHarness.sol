@@ -25,8 +25,10 @@ contract CommitteeRegistryHarness is CommitteeRegistry {
         _registerCandidateToStream(_memberAddress, _stream, _role, _amount);
     }
 
-    function registerMemberHarness(PublicKeyRegistration[] calldata _publicKeysRegistration) public {
-        _registerMember(_publicKeysRegistration);
+    function registerMemberHarness(address _memberAddress, PublicKeyRegistration[] calldata _publicKeysRegistration)
+        public
+    {
+        _registerMember(_memberAddress, _publicKeysRegistration);
     }
 
     function createCommitteeAfterApplyToStreamHarness(StreamDenomination _denomination) public {

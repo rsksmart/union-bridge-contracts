@@ -192,7 +192,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Act
         CommitteeMember[] memory members = registry.getCommitteeMembers(COMMITTEE_ID_STREAM_1_PACKET_0);
         // Assert
-        assertEqCommitteeMembers(expectedCommittee.memberIndexesAndRoles, members, "Member list are not equal");
+        assertEqCommitteeMembers(expectedCommittee.members, members, "Member list are not equal");
     }
 
     function test_selectCommittee_Success_MinOperators() external {
@@ -233,7 +233,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
         for (uint256 i = 0; i < selectedMembers.length; i++) {
             for (uint256 j = i + 1; j < selectedMembers.length; j++) {
                 assertNotEq(
-                    selectedMembers[i].index, selectedMembers[j].index, "There is a repeated member in selected members"
+                    selectedMembers[i].memberAddress,
+                    selectedMembers[j].memberAddress,
+                    "There is a repeated member in selected members"
                 );
             }
         }
@@ -300,7 +302,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Verify selections are different (at least one member is in a different position)
         bool isDifferent = false;
         for (uint256 i = 0; i < selectedMembers1.length; i++) {
-            if (selectedMembers1[i].index != selectedMembers2[i].index) {
+            if (selectedMembers1[i].memberAddress != selectedMembers2[i].memberAddress) {
                 isDifferent = true;
                 break;
             }
@@ -425,13 +427,6 @@ contract TestCommitteeRegistry is Test, HelperContract {
         assertFalse(
             registry.shouldCreateCommitteeHarness(streamId), "Should not create committee after committee created"
         );
-        for (uint256 i = 0; i < committee.memberIndexesAndRoles.length; i++) {
-            uint64 index = committee.memberIndexesAndRoles[i].index;
-            assertTrue(
-                index >= registry.minCommitteeMembers() && index < registry.minCommitteeMembers() * 2,
-                "Member index should be within the second 10 members"
-            );
-        }
     }
 
     function test_createCommittee_Success_SameMembersAfterReApply() external {
@@ -469,13 +464,6 @@ contract TestCommitteeRegistry is Test, HelperContract {
         assertFalse(
             registry.shouldCreateCommitteeHarness(streamId), "Should not create committee after committee created"
         );
-        for (uint256 i = 0; i < committee.memberIndexesAndRoles.length; i++) {
-            uint64 index = committee.memberIndexesAndRoles[i].index;
-            assertTrue(
-                index >= 0 && index < registry.minCommitteeMembers(),
-                "Member index should be within the first 10 members"
-            );
-        }
     }
 
     function test_createCommittee_Success_AlreadyPendingButNotExpired() external {
@@ -510,9 +498,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
             "Pending committee should not change"
         );
         assertEqCommitteeMembers(
-            pendingCommittee.memberIndexesAndRoles,
-            pendingCommitteeAfterCall.memberIndexesAndRoles,
-            "Create committee should not change members"
+            pendingCommittee.members, pendingCommitteeAfterCall.members, "Create committee should not change members"
         );
         assertFalse(
             registry.shouldCreateCommitteeHarness(streamId), "Flag should be false after createCommittee call success"
@@ -551,6 +537,44 @@ contract TestCommitteeRegistry is Test, HelperContract {
         assertEq(missingData, registry.minCommitteeMembers() - 1);
     }
 
+    function test_depositMemberInfoForCommittee_Revert_MemberInfoAlreadyDeposited() external {
+        // Arrange
+        (Committee memory expectedCommittee, uint64 streamId) = setup_pendingCommittee();
+        expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY;
+        address memberAddress = vm.addr(1);
+        // Deposit data for the first time
+        vm.prank(memberAddress);
+        registry.depositMemberInfoForCommittee(streamId, COMMITTEE_PUB_KEY);
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(ICommitteeRegistry.MemberInfoAlreadyDeposited.selector, memberAddress, streamId)
+        );
+
+        // Act
+        vm.prank(memberAddress);
+        registry.depositMemberInfoForCommittee(streamId, COMMITTEE_PUB_KEY);
+    }
+
+    function test_depositMemberInfoForCommittee_Revert_MemberNotInCommittee() external {
+        // Arrange
+        (Committee memory expectedCommittee, uint64 streamId) = setup_pendingCommittee();
+        expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY;
+        address notCommitteeMember = vm.addr(registry.minCommitteeMembers() + 1);
+        PublicKeyRegistration[] memory publicKeysRegistration =
+            generatePublicKeysRegistration(uint256(uint160(notCommitteeMember)));
+        setup_applyToStream(StreamDenomination(streamId), notCommitteeMember, publicKeysRegistration, Role.OPERATOR);
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(ICommitteeRegistry.MemberNotInCommittee.selector, streamId, notCommitteeMember)
+        );
+
+        // Act
+        vm.prank(notCommitteeMember);
+        registry.depositMemberInfoForCommittee(streamId, COMMITTEE_PUB_KEY);
+    }
+
     function test_depositMemberInfoForCommittee_Revert_InvalidAgregatedKey() external {
         // Arrange
         (, uint64 streamId) = setup_pendingCommittee();
@@ -561,6 +585,18 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Act
         vm.prank(vm.addr(1));
         registry.depositMemberInfoForCommittee(streamId, bytes32(0));
+    }
+
+    function test_depositMemberInfoForCommittee_Revert_CommitteeIsNotPending() external {
+        // Arrange
+        uint64 streamId = 1;
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.CommitteeIsNotPending.selector, streamId));
+
+        // Act
+        vm.prank(vm.addr(1));
+        registry.depositMemberInfoForCommittee(streamId, COMMITTEE_PUB_KEY);
     }
 
     function test_depositMemberInfoForCommittee_WrongCommitteeKey() external {
@@ -847,14 +883,14 @@ contract TestCommitteeRegistry is Test, HelperContract {
         (Committee memory currentPendingCommittee, uint256 createdAt,) = registry.getPendingCommittee(streamId);
 
         assertEq(
-            expectedCommittee.memberIndexesAndRoles.length,
-            currentPendingCommittee.memberIndexesAndRoles.length,
+            expectedCommittee.members.length,
+            currentPendingCommittee.members.length,
             "Pending committee length should match. They are always the MIN_MEMBERS_COMMITTEE"
         );
-        for (uint256 i = 0; i < expectedCommittee.memberIndexesAndRoles.length; i++) {
+        for (uint256 i = 0; i < expectedCommittee.members.length; i++) {
             assertNotEq(
-                expectedCommittee.memberIndexesAndRoles[i].index,
-                currentPendingCommittee.memberIndexesAndRoles[i].index,
+                expectedCommittee.members[i].memberAddress,
+                currentPendingCommittee.members[i].memberAddress,
                 "Pending committee member should not match"
             );
         }
@@ -910,9 +946,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
             "Pending committee should not change"
         );
         assertEqCommitteeMembers(
-            pendingCommitteeAfterCall.memberIndexesAndRoles,
-            expectedCommittee.memberIndexesAndRoles,
-            "Create committee should not change members"
+            pendingCommitteeAfterCall.members, expectedCommittee.members, "Create committee should not change members"
         );
     }
 
@@ -932,9 +966,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         (Committee memory pendingCommitteeAfterCall, uint256 createdAtAfterCall, uint256 missingDataAfterCall) =
             registry.getPendingCommittee(streamId);
-        assertEq(
-            missingDataAfterCall, expectedCommittee.memberIndexesAndRoles.length, "Pending committee should not change"
-        );
+        assertEq(missingDataAfterCall, expectedCommittee.members.length, "Pending committee should not change");
         assertNotEq(createdAt, createdAtAfterCall, "Pending committee should change");
         assertEq(
             pendingCommitteeAfterCall.aggregatedKey,
@@ -942,9 +974,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
             "Pending committee should not change"
         );
         assertEqCommitteeMembers(
-            pendingCommitteeAfterCall.memberIndexesAndRoles,
-            expectedCommittee.memberIndexesAndRoles,
-            "Create committee should not change members"
+            pendingCommitteeAfterCall.members, expectedCommittee.members, "Create committee should not change members"
         );
     }
 
@@ -962,7 +992,8 @@ contract TestCommitteeRegistry is Test, HelperContract {
         uint256 userIndex = registry.minCommitteeMembers() * 2 - 1;
         Role userRole = Role.OPERATOR;
         address userAddress = vm.addr(userIndex + 1);
-        PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(userIndex + 1);
+        PublicKeyRegistration[] memory pubKeysRegistration =
+            generatePublicKeysRegistration(uint256(uint160(userAddress)));
 
         // Unsubscribe one of the members
         vm.prank(userAddress);

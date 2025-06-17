@@ -52,21 +52,21 @@ struct Member {
 }
 
 struct CommitteeMember {
-    uint16 index; // from the members array
+    address memberAddress;
     Role role;
 }
 
 struct Committee {
     bytes32 aggregatedKey; // BTC public key of the commitee
-    CommitteeMember[] memberIndexesAndRoles; // Indices and roles of the members from the members array
-    uint8 leaderIndex; // TODO add leader logic
+    CommitteeMember[] members;
+    address leaderAddress; // TODO add leader logic
 }
 
 struct PendingCommittee {
     Committee committee;
     uint256 createdAt;
     uint16 missingData;
-    mapping(bytes32 memberPubKey => PendingCommitteeData) data;
+    mapping(address memberAddress => PendingCommitteeData) data;
 }
 
 struct PendingCommitteeData {
@@ -104,15 +104,13 @@ interface ICommitteeRegistry {
     function getCommitteeCandidates(StreamDenomination _denomination, Role _role)
         external
         view
-        returns (uint16[] memory);
+        returns (address[] memory);
 
     function getCommittee(uint256 _committeeId) external view returns (Committee calldata);
 
     function getCommitteeMembers(uint256 _committeeId) external view returns (CommitteeMember[] memory);
 
-    function getMemberTakePubKeyByIndex(uint16 _memberIndex) external view returns (bytes32);
-
-    function getMemberIndexByAddress(address _address) external view returns (uint16);
+    function getMemberTakePubKey(address _memberAddress) external view returns (bytes32);
 
     function getMinimumDeposit(StreamDenomination _denomination) external view returns (uint256);
 
@@ -203,13 +201,12 @@ interface ICommitteeRegistry {
         uint256 index, PublicKeyRegistration publicKey, address recoveredSignerAddress, address signerAddress
     );
     error NoCommitteeMembers();
-    error MemberNotInCommittee(bytes32);
-    error MemberAlreadyUpdated(bytes32);
+    error MemberNotInCommittee(uint64 streamId, address memberAddress);
+    error MemberInfoAlreadyDeposited(address memberAddress);
     error CommitteeNotFound(uint256 committeeId);
     error UnauthorizedAccount(address account);
     error InvalidZeroAddress();
     error RequestedNoneRoleForStream(StreamDenomination stream);
-    error NonRegisteredMember(address memberAddress);
     error TooManyMembers(uint256 maxMembers);
     error NotEnoughWatchtowers(uint64 streamId);
     error NotEnoughOperators(uint64 streamId);
@@ -219,7 +216,6 @@ interface ICommitteeRegistry {
     );
     error MemberIsNotCandidateForStream(address member, StreamDenomination stream);
     error NoAvailableBalanceToWithdraw(address member);
-    error MemberIndexNotFound(uint16 memberIndex);
     error MemberNotRegistered(address memberAddress);
     error DespositBondTooLow(uint256 sent, uint256 minDeposit);
     error FailedToSendRSK(address memberAddress, uint256 amount);

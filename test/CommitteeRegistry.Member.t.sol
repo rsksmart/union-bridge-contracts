@@ -22,28 +22,6 @@ contract TestCommitteeRegistry is Test, HelperContract {
         runTestDeployScript();
     }
 
-    function test_applyToStream_Revert_TooManyMembers() external {
-        // Arrange
-        uint256 MAX_MEMBERS_SIZE = registry.MAX_MEMBERS_SIZE();
-        uint256 minimumDeposit = registry.getMinimumDeposit(DEFAULT_STREAM);
-        for (uint16 i = 0; i < MAX_MEMBERS_SIZE; i++) {
-            // Add balance to the user
-            address user = vm.addr(i + 1);
-            PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(i + 1);
-            vm.deal(user, minimumDeposit);
-
-            vm.prank(user);
-            registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, DEFAULT_ROLE, pubKeysRegistration);
-        }
-
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.TooManyMembers.selector, MAX_MEMBERS_SIZE));
-        // Act
-        registry.applyToStream{value: minimumDeposit}(
-            DEFAULT_STREAM, DEFAULT_ROLE, generatePublicKeysRegistration(MAX_MEMBERS_SIZE)
-        );
-    }
-
     function test_applyToStream_Success_Operator() external {
         _test_applyToStream_Success(Role.OPERATOR);
     }
@@ -99,28 +77,27 @@ contract TestCommitteeRegistry is Test, HelperContract {
             "member pre-staked should match the minimum deposit"
         );
 
-        uint16[] memory roleCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, _role);
-        uint16[] memory oppositeRoleCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, oppositeRole);
+        address[] memory roleCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, _role);
+        address[] memory oppositeRoleCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, oppositeRole);
         uint256 roleCandidatesAmountAfter = roleCandidates.length;
         uint256 opossiteRoleAmountAfter = oppositeRoleCandidates.length;
         assertEq(roleCandidatesAmountBefore + 1, roleCandidatesAmountAfter, "candidates amount should increase by 1");
         assertEq(opossiteRoleAmountBefore, opossiteRoleAmountAfter, "opposite role candidates amount should not change");
 
         // Look up candidate in candidates array
-        uint256 memberIndex = registry.getMemberIndexByAddress(user);
         assertEq(
-            roleCandidates[roleCandidatesAmountAfter - 1], memberIndex, "last candidate index should match member index"
+            roleCandidates[roleCandidatesAmountAfter - 1], user, "last candidate address should match member address"
         );
 
         for (uint256 i = 0; i < roleCandidatesAmountAfter - 1; i++) {
             assertNotEq(
-                roleCandidates[i], memberIndex, "candidate index should not match member index until last candidate"
+                roleCandidates[i], user, "candidate address should not match member address until last candidate"
             );
         }
 
         for (uint256 i = 0; i < opossiteRoleAmountAfter; i++) {
             assertNotEq(
-                oppositeRoleCandidates[i], memberIndex, "opposite role candidate index should not match member index"
+                oppositeRoleCandidates[i], user, "opposite role candidate addresses should not match member address"
             );
         }
 
@@ -510,8 +487,8 @@ contract TestCommitteeRegistry is Test, HelperContract {
         vm.prank(user);
         registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, _role, pubKeysRegistration);
 
-        uint16[] memory roleCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, _role);
-        uint16[] memory oppositeRoleCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, oppositeRole);
+        address[] memory roleCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, _role);
+        address[] memory oppositeRoleCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, oppositeRole);
         uint256 roleCandidatesAmountBefore = roleCandidates.length;
         uint256 oppositeRoleAmountBefore = oppositeRoleCandidates.length;
 
@@ -546,9 +523,8 @@ contract TestCommitteeRegistry is Test, HelperContract {
         uint256 opossiteRoleAmountAfter = oppositeRoleCandidates.length;
         assertEq(roleCandidatesAmountBefore - 1, roleCandidatesAmountAfter, "candidates amount should decrease by 1");
         assertEq(oppositeRoleAmountBefore, opossiteRoleAmountAfter, "opposite role candidates amount should not change");
-        uint256 memberIndex = registry.getMemberIndexByAddress(user);
         for (uint256 i = 0; i < roleCandidatesAmountAfter; i++) {
-            assertNotEq(roleCandidates[i], memberIndex, "candidate index should not match member index");
+            assertNotEq(roleCandidates[i], user, "candidate addresses should not match member address");
         }
     }
 
@@ -580,7 +556,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         address user = vm.addr(privKey);
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.NonRegisteredMember.selector, user));
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.MemberNotRegistered.selector, user));
 
         // Act
         vm.prank(user);
@@ -656,7 +632,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         Role requestedRole
     ) internal returns (uint256) {
         // Arrange
-        uint16[] memory committeesCandidates = registry.getCommitteeCandidates(stream, requestedRole);
+        address[] memory committeesCandidates = registry.getCommitteeCandidates(stream, requestedRole);
         uint256 candidatesAmountBeforeDeposit = committeesCandidates.length;
 
         // Determine the minimum bond required (getMinimumDeposit(stream))
@@ -690,9 +666,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
             "candidates amount should increase by 1 after deposit for stream"
         );
         assertEq(
-            committeesCandidates[committeesCandidates.length - 1],
-            registry.getMemberIndexByAddress(user),
-            "candidate index should match member index"
+            committeesCandidates[committeesCandidates.length - 1], user, "candidate address should match member address"
         );
         return minimumDeposit;
     }
@@ -702,7 +676,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         Role role = registry.getMemberRequestedRole(user, stream);
         uint256 lastAvailableBalance = registry.getMemberAvailableBalance(user);
         uint256 moneyToBecomeAvailable = registry.getMemberPreStakedBalance(user, stream);
-        uint16[] memory committeesCandidates = registry.getCommitteeCandidates(stream, role);
+        address[] memory committeesCandidates = registry.getCommitteeCandidates(stream, role);
         uint256 candidatesAmountBeforeUnsuscribe = committeesCandidates.length;
 
         // Act
@@ -782,24 +756,26 @@ contract TestCommitteeRegistry is Test, HelperContract {
         );
     }
 
-    function test_getMemberTakePubKeyByIndex_Revert_MemberIndexNotFound() external {
+    function test_getMemberTakePubKey_Revert_MemberNotRegistered() external {
+        // Arrange
+        address memberAddress = vm.addr(1);
+
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.MemberIndexNotFound.selector, 3));
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.MemberNotRegistered.selector, memberAddress));
         // Act
-        registry.getMemberTakePubKeyByIndex(3);
+        registry.getMemberTakePubKey(memberAddress);
     }
 
-    function test_getMemberTakePubKeyByIndex_Success() external {
+    function test_getMemberTakePubKey_Success() external {
         // Arrange
         uint256 privKey = uint256(1);
         address userAddress = vm.addr(privKey);
         PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(privKey);
         bytes32[] memory pubKeys = getXPublicKeysFromRegistration(pubKeysRegistration);
         setup_applyToStream(StreamDenomination._0_001BTC, userAddress, pubKeysRegistration, Role.OPERATOR);
-        uint16 memberIndex = registry.getMemberIndexByAddress(userAddress);
 
         // Act
-        bytes32 pubKey = registry.getMemberTakePubKeyByIndex(memberIndex);
+        bytes32 pubKey = registry.getMemberTakePubKey(userAddress);
 
         // Assert
         assertEq(
@@ -809,81 +785,56 @@ contract TestCommitteeRegistry is Test, HelperContract {
         );
     }
 
-    function test_getMemberIndexByAddress_Success() external {
-        // Arrange
-        address userAddress = vm.addr(1);
-        PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(1);
-
-        setup_applyToStream(StreamDenomination._0_001BTC, userAddress, pubKeysRegistration, Role.OPERATOR);
-
-        // Act
-        uint16 memberIndex = registry.getMemberIndexByAddress(userAddress);
-
-        // Assert
-        assertEq(memberIndex, 0, "Member index should be 0 for address vm.addr(1)");
-    }
-
-    function test_getMemberIndexByAddress_Revert_MemberNotRegistered() external {
-        // Arrange
-        address memberAddress = vm.addr(registry.minCommitteeMembers() + 1);
-
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.MemberNotRegistered.selector, memberAddress));
-
-        // Act
-        registry.getMemberIndexByAddress(memberAddress);
-    }
-
-    function test_getMemberPublicKey_Revert_NonRegisteredMember() external {
+    function test_getMemberPublicKey_Revert_MemberNotRegistered() external {
         // Arrange
         address user = vm.addr(uint256(100));
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.NonRegisteredMember.selector, user));
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.MemberNotRegistered.selector, user));
 
         // Act
         registry.getMemberPublicKeys(user);
     }
 
-    function test_getMemberRequestedRole_Revert_NonRegisteredMember() external {
+    function test_getMemberRequestedRole_Revert_MemberNotRegistered() external {
         // Arrange
         address user = vm.addr(uint256(100));
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.NonRegisteredMember.selector, user));
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.MemberNotRegistered.selector, user));
 
         // Act
         registry.getMemberRequestedRole(user, DEFAULT_STREAM);
     }
 
-    function test_getMemberAvailableBalance_Revert_NonRegisteredMember() external {
+    function test_getMemberAvailableBalance_Revert_MemberNotRegistered() external {
         // Arrange
         address user = vm.addr(uint256(100));
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.NonRegisteredMember.selector, user));
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.MemberNotRegistered.selector, user));
 
         // Act
         registry.getMemberAvailableBalance(user);
     }
 
-    function test_getMemberPreStakedBalance_Revert_NonRegisteredMember() external {
+    function test_getMemberPreStakedBalance_Revert_MemberNotRegistered() external {
         // Arrange
         address user = vm.addr(uint256(100));
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.NonRegisteredMember.selector, user));
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.MemberNotRegistered.selector, user));
 
         // Act
         registry.getMemberPreStakedBalance(user, DEFAULT_STREAM);
     }
 
-    function test_getMemberStakedBalance_Revert_NonRegisteredMember() external {
+    function test_getMemberStakedBalance_Revert_MemberNotRegistered() external {
         // Arrange
         address user = vm.addr(uint256(100));
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.NonRegisteredMember.selector, user));
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.MemberNotRegistered.selector, user));
 
         // Act
         registry.getMemberStakedBalance(user, DEFAULT_STREAM, 0);
@@ -901,12 +852,10 @@ contract TestCommitteeRegistry is Test, HelperContract {
         emit ICommitteeRegistry.NewMember(pubKeys);
 
         // Act
-        vm.prank(user);
-        registry.registerMemberHarness(pubKeysRegistration);
+        registry.registerMemberHarness(user, pubKeysRegistration);
 
         // Assert
         assertEq(registry.getMemberPublicKeys(user), pubKeys, "member public key should match the registered key");
-        assertEq(registry.getMemberIndexByAddress(user), 0, "member index should be 0 after registration");
         assertEq(registry.getMemberAvailableBalance(user), 0, "member available balance should be 0 after registration");
         for (uint64 i = 0; i <= uint8(StreamDenomination._10BTC); i++) {
             assertEq(
@@ -965,15 +914,13 @@ contract TestCommitteeRegistry is Test, HelperContract {
                 "member staked balance should be 0 for all streams after registration for a stream"
             );
         }
-        uint16[] memory committeesCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, role);
+        address[] memory committeesCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, role);
         assertEq(
-            committeesCandidates[committeesCandidates.length - 1],
-            registry.getMemberIndexByAddress(user),
-            "candidate index should match member index"
+            committeesCandidates[committeesCandidates.length - 1], user, "candidate address should match member address"
         );
     }
 
-    function test_registerCandidateToStream_Revert_NonRegisteredMember() external {
+    function test_registerCandidateToStream_Revert_MemberNotRegistered() external {
         // Arrange
         uint256 privKey = uint256(1);
         address user = vm.addr(privKey);
@@ -981,7 +928,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         vm.deal(user, minimumDeposit);
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.NonRegisteredMember.selector, user));
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.MemberNotRegistered.selector, user));
 
         // Act
         vm.prank(user);

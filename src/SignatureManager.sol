@@ -28,15 +28,15 @@ contract SignatureManager is ISignatureManager, AccessControl {
         __AccessControl_init(_initialOwner, _pegManager);
     }
 
-    function _isMemberInCommittee(uint256 _committeeId, uint16 _memberIndex) internal view returns (bool) {
-        return _getMemberRole(_committeeId, _memberIndex) != Role.NONE;
+    function _isMemberInCommittee(uint256 _committeeId, address _memberAddress) internal view returns (bool) {
+        return _getMemberRole(_committeeId, _memberAddress) != Role.NONE;
     }
 
-    function _getMemberRole(uint256 _committeeId, uint16 _memberIndex) internal view returns (Role) {
+    function _getMemberRole(uint256 _committeeId, address _memberAddress) internal view returns (Role) {
         CommitteeMember[] memory members = committeeRegistry.getCommitteeMembers(_committeeId);
         Role role = Role.NONE;
         for (uint256 i = 0; i < members.length; i++) {
-            if (members[i].index == _memberIndex) {
+            if (members[i].memberAddress == _memberAddress) {
                 role = members[i].role;
                 break;
             }
@@ -51,14 +51,14 @@ contract SignatureManager is ISignatureManager, AccessControl {
         }
 
         // Get the sender's public key if it's a valid member and the signature data
-        (uint16 memberIndex, bytes32 memberPubKey) = _getMemberIndex(msg.sender);
+        bytes32 memberPubKey = committeeRegistry.getMemberTakePubKey(msg.sender);
         Signatures storage signatures = _getSignatures(_hashToSign);
         // Check if the member is in the committee
-        if (!_isMemberInCommittee(signatures.committeeId, memberIndex)) {
+        if (!_isMemberInCommittee(signatures.committeeId, msg.sender)) {
             revert MemberNotFoundInCommittee(signatures.committeeId, msg.sender);
         }
 
-        SignatureData storage memberSignatureData = signatures.partialSignaturesData[memberIndex];
+        SignatureData storage memberSignatureData = signatures.partialSignaturesData[msg.sender];
         // Check if the member has already added a nonce
         if (memberSignatureData.nonce.length != 0) {
             revert MemberAlreadyAddedNonce(memberPubKey, msg.sender, _nonce);
@@ -87,13 +87,13 @@ contract SignatureManager is ISignatureManager, AccessControl {
             revert InvalidSignature();
         }
         // Get the sender's public key if it's a valid member and the signature data
-        (uint16 memberIndex, bytes32 memberPubKey) = _getMemberIndex(msg.sender);
+        bytes32 memberPubKey = committeeRegistry.getMemberTakePubKey(msg.sender);
         // Check if the member is in the committee
-        if (!_isMemberInCommittee(signatures.committeeId, memberIndex)) {
+        if (!_isMemberInCommittee(signatures.committeeId, msg.sender)) {
             revert MemberNotFoundInCommittee(signatures.committeeId, msg.sender);
         }
 
-        SignatureData storage memberSignatureData = signatures.partialSignaturesData[memberIndex];
+        SignatureData storage memberSignatureData = signatures.partialSignaturesData[msg.sender];
         // Check if the member has already added a signature
         if (memberSignatureData.signature != "") {
             revert MemberHasAlreadySigned(memberPubKey, msg.sender, _hashToSign);
@@ -124,11 +124,11 @@ contract SignatureManager is ISignatureManager, AccessControl {
         SignatureData[] memory partialSignaturesData = new SignatureData[](memberCount);
         // IMPORTANT: Musig2 requires the signatures and nonce to be in the same order when creating the partial and aggregated signatures
         for (uint256 i = 0; i < memberCount; i++) {
-            partialSignaturesData[i] = signatures.partialSignaturesData[members[i].index];
+            partialSignaturesData[i] = signatures.partialSignaturesData[members[i].memberAddress];
             if (partialSignaturesData[i].memberPublicKey == "") {
                 // slither-disable-next-line calls-inside-a-loop
                 partialSignaturesData[i].memberPublicKey =
-                    committeeRegistry.getMemberTakePubKeyByIndex(members[i].index);
+                    committeeRegistry.getMemberTakePubKey(members[i].memberAddress);
             }
         }
         return partialSignaturesData;
@@ -146,13 +146,6 @@ contract SignatureManager is ISignatureManager, AccessControl {
             revert HashToSignNotFound(_hashToSign);
         }
         return committeeSignatures[_hashToSign];
-    }
-
-    function _getMemberIndex(address _memberAddress) internal view returns (uint16, bytes32) {
-        uint16 memberIndex = committeeRegistry.getMemberIndexByAddress(_memberAddress);
-        bytes32 memberPubKey = committeeRegistry.getMemberTakePubKeyByIndex(memberIndex);
-
-        return (memberIndex, memberPubKey);
     }
 
     function initSignatures(bytes32 _hashToSign, uint256 _committeeId) external onlyPegManager {
@@ -222,8 +215,7 @@ contract SignatureManager is ISignatureManager, AccessControl {
             revert InvalidHash(_hash);
         }
 
-        uint16 memberIndex = committeeRegistry.getMemberIndexByAddress(msg.sender);
-        Role role = _getMemberRole(take1TxHashes.committeeId, memberIndex);
+        Role role = _getMemberRole(take1TxHashes.committeeId, msg.sender);
 
         // Check if the member is in the committee
         if (role == Role.NONE) {
@@ -235,11 +227,11 @@ contract SignatureManager is ISignatureManager, AccessControl {
             revert MemberIsNotOperator(take1TxHashes.committeeId, msg.sender);
         }
 
-        if (take1TxHashes.txHashes[memberIndex] != bytes32(0)) {
+        if (take1TxHashes.txHashes[msg.sender] != bytes32(0)) {
             revert MemberAlreadyAddedTake1TxHash(_acceptPeginTxHash, msg.sender, _hash);
         }
 
-        take1TxHashes.txHashes[memberIndex] = _hash;
+        take1TxHashes.txHashes[msg.sender] = _hash;
         emit Take1TxHashAdded(_acceptPeginTxHash, msg.sender, _hash);
 
         take1TxHashes.missingHashes -= 1;
@@ -266,8 +258,8 @@ contract SignatureManager is ISignatureManager, AccessControl {
         operatorsCount = 0;
         for (uint256 i = 0; i < members.length; i++) {
             if (members[i].role == Role.OPERATOR) {
-                take1Data[operatorsCount].txHash = take1TxHashes.txHashes[members[i].index];
-                take1Data[operatorsCount].memberIndex = members[i].index;
+                take1Data[operatorsCount].txHash = take1TxHashes.txHashes[members[i].memberAddress];
+                take1Data[operatorsCount].memberAddress = members[i].memberAddress;
                 operatorsCount++;
             }
         }

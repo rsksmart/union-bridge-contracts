@@ -10,7 +10,7 @@ struct SignatureData {
 }
 
 struct Signatures {
-    mapping(uint256 memberIndex => SignatureData) partialSignaturesData;
+    mapping(address memberAddress => SignatureData) partialSignaturesData;
     uint8 missingSignatures;
     uint8 missingNonces;
     uint256 timestamp;
@@ -19,11 +19,11 @@ struct Signatures {
 
 struct Take1Data {
     bytes32 txHash;
-    uint256 memberIndex;
+    address memberAddress;
 }
 
 struct Take1TxHashes {
-    mapping(uint256 memberIndex => bytes32 take1TxHash) txHashes;
+    mapping(address memberAddress => bytes32 take1TxHash) txHashes;
     uint8 missingHashes;
     uint256 committeeId;
 }

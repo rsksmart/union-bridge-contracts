@@ -24,21 +24,21 @@ abstract contract TestUtils is Test {
         );
 
         assertEq(
-            actualCommittee.memberIndexesAndRoles.length,
-            expectedCommittee.memberIndexesAndRoles.length,
+            actualCommittee.members.length,
+            expectedCommittee.members.length,
             string(abi.encodePacked("expect ", testName, " to have  same memberIndices length"))
         );
 
-        for (uint256 i = 0; i < actualCommittee.memberIndexesAndRoles.length; i++) {
+        for (uint256 i = 0; i < actualCommittee.members.length; i++) {
             assertEq(
-                actualCommittee.memberIndexesAndRoles[i].index,
-                expectedCommittee.memberIndexesAndRoles[i].index,
+                actualCommittee.members[i].memberAddress,
+                expectedCommittee.members[i].memberAddress,
                 string(abi.encodePacked("expect ", testName, " to have  same memberIndices[", Strings.toString(i), "]"))
             );
         }
         assertEq(
-            actualCommittee.leaderIndex,
-            expectedCommittee.leaderIndex,
+            actualCommittee.leaderAddress,
+            expectedCommittee.leaderAddress,
             string(abi.encodePacked("expect ", testName, " to have same leader"))
         );
     }
@@ -55,8 +55,8 @@ abstract contract TestUtils is Test {
         );
         for (uint256 i = 0; i < actualMembers.length; i++) {
             assertEq(
-                actualMembers[i].index,
-                expectedMembers[i].index,
+                actualMembers[i].memberAddress,
+                expectedMembers[i].memberAddress,
                 string(abi.encodePacked("expect", testName, " member[", Strings.toString(i), "] to have same address"))
             );
         }

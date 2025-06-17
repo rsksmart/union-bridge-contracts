@@ -48,8 +48,8 @@ contract TestSignatureManager is Test, HelperContract {
         // The nonce values are dummy values
         bytes memory nonce =
             hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
-        bytes32 committeeMember0Pubkey = generatePubKey(1);
         address committeeMember0adr = vm.addr(1);
+        bytes32 committeeMember0Pubkey = generatePubKey(uint256(uint160(committeeMember0adr)));
 
         // Assert
         // We emit the event we expect to see.
@@ -73,8 +73,8 @@ contract TestSignatureManager is Test, HelperContract {
         setup_membersNonces(hashToSign, 0, registry.minCommitteeMembers() - 2);
         (hashToSign);
         uint256 lastMemberIndex = registry.minCommitteeMembers() - 1;
-        bytes32 lastMemberPubkey = generatePubKey(lastMemberIndex + 1);
         address lastMemberAddress = vm.addr(lastMemberIndex + 1);
+        bytes32 lastMemberPubkey = generatePubKey(uint256(uint160(lastMemberAddress)));
 
         // Assert
         // We emit the event we expect to see.
@@ -101,8 +101,8 @@ contract TestSignatureManager is Test, HelperContract {
         // The signature an nonce values are dummy values
         bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
         uint256 memberIndex = 0;
-        bytes32 memberPubKey = generatePubKey(memberIndex + 1);
         address committeeMember0adr = vm.addr(memberIndex + 1);
+        bytes32 memberPubKey = generatePubKey(uint256(uint160(committeeMember0adr)));
 
         // We emit the event we expect to see.
         // Assert
@@ -136,11 +136,11 @@ contract TestSignatureManager is Test, HelperContract {
         for (uint256 i = 0; i < members.length; i++) {
             assertEq(
                 signatures[i].memberPublicKey,
-                generatePubKey(members[i].index + 1),
+                generatePubKey(uint256(uint160(members[i].memberAddress))),
                 "signatures[i].memberPublicKey should be equal to the committee member key"
             );
 
-            if (members[i].index != memberIndex) {
+            if (members[i].memberAddress != committeeMember0adr) {
                 assertEq(
                     signatures[i].signature,
                     bytes32(0),
@@ -166,8 +166,8 @@ contract TestSignatureManager is Test, HelperContract {
         uint256 lastMemberIndex = registry.minCommitteeMembers() - 1;
         setup_membersSignatures(hashToSign, 0, lastMemberIndex - 1);
         // Pub key and address are generated based on the member index + 1
-        bytes32 lastMemberPubKey = generatePubKey(lastMemberIndex + 1);
         address lastMemberAddress = vm.addr(lastMemberIndex + 1);
+        bytes32 lastMemberPubKey = generatePubKey(uint256(uint160(lastMemberAddress)));
 
         // Assert
         // We emit the event we expect to see.
@@ -200,7 +200,7 @@ contract TestSignatureManager is Test, HelperContract {
         for (uint256 i = 0; i < members.length; i++) {
             assertEq(
                 signatures[i].memberPublicKey,
-                generatePubKey(members[i].index + 1),
+                generatePubKey(uint256(uint160(members[i].memberAddress))),
                 "signatures[i].memberPublicKey should be equal to the committee member key"
             );
             assertNotEq(signatures[i].signature, bytes32(0), "signatures[i].signature should not be empty");
@@ -276,8 +276,8 @@ contract TestSignatureManager is Test, HelperContract {
         // The nonce values are dummy values
         bytes memory nonce =
             hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
-        bytes32 committeeMember0Pubkey = generatePubKey(1);
         address committeeMember0adr = vm.addr(1);
+        bytes32 committeeMember0Pubkey = generatePubKey(uint256(uint160(committeeMember0adr)));
 
         // First time adding the nonce
         vm.prank(committeeMember0adr);
@@ -304,8 +304,8 @@ contract TestSignatureManager is Test, HelperContract {
         // Arrange
         // The signature values are dummy values
         bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
-        bytes32 committeeMember0Pubkey = generatePubKey(1);
         address committeeMember0adr = vm.addr(1);
+        bytes32 committeeMember0Pubkey = generatePubKey(uint256(uint160(committeeMember0adr)));
 
         // Sign the first time
         vm.prank(committeeMember0adr);
@@ -331,7 +331,7 @@ contract TestSignatureManager is Test, HelperContract {
         bytes32 hashToSign = setup_initSignatures();
         address nonCommitteeMember = vm.addr(registry.minCommitteeMembers() + 1);
         PublicKeyRegistration[] memory nonCommitteeMemberPubKeysRegistration =
-            generatePublicKeysRegistration(registry.minCommitteeMembers() + 1);
+            generatePublicKeysRegistration(uint256(uint160(nonCommitteeMember)));
         setup_applyToStream(
             StreamDenomination._0_01BTC, nonCommitteeMember, nonCommitteeMemberPubKeysRegistration, Role.OPERATOR
         );
@@ -359,7 +359,7 @@ contract TestSignatureManager is Test, HelperContract {
 
         address nonCommitteeMember = vm.addr(registry.minCommitteeMembers() + 1);
         PublicKeyRegistration[] memory nonCommitteeMemberPubKeysRegistration =
-            generatePublicKeysRegistration(registry.minCommitteeMembers() + 1);
+            generatePublicKeysRegistration(uint256(uint160(nonCommitteeMember)));
         setup_applyToStream(
             StreamDenomination._0_01BTC, nonCommitteeMember, nonCommitteeMemberPubKeysRegistration, Role.OPERATOR
         );
@@ -425,7 +425,7 @@ contract TestSignatureManager is Test, HelperContract {
         for (uint256 i = 0; i < signatures.length; i++) {
             assertEq(
                 signatures[i].memberPublicKey,
-                generatePubKey(members[i].index + 1),
+                generatePubKey(uint256(uint160(members[i].memberAddress))),
                 "signatures[i].memberPublicKey should be equal to the committee member key"
             );
             assertEq(signatures[i].signature, bytes32(0), "signatures[i].signature should be empty");

@@ -26,11 +26,9 @@ import {StreamDenomination, IStreamManager} from "./interfaces/IStreamManager.so
 import {IPegManager} from "./interfaces/IPegManager.sol";
 
 contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
-    // Address of the Memeber => Amount provided
-    Member[] internal members;
+    mapping(address => Member) internal members;
 
     uint256 public constant MAX_COMMITTEES_SIZE = 100;
-    uint256 public constant MAX_MEMBERS_SIZE = 256;
     uint256 public constant MAX_MEMBERS_PER_COMMITTEE = 100;
 
     // Committee selection constants
@@ -42,14 +40,12 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     mapping(uint256 committeeId => Committee) internal committeesByKey;
     mapping(uint64 streamId => bool createCommittee) internal shouldCreateCommittee;
 
-    // NOTE: This is a mapping of the members, where the key is the address and the value is the index in the members array + 1
-    mapping(address => uint16) internal memberIndexByAddress;
     IStreamManager streamManager;
     IPegManager pegManager;
 
     uint256 public pendingCommitteeTimeout;
 
-    mapping(StreamDenomination denomination => mapping(Role role => uint16[] membersIndex)) internal
+    mapping(StreamDenomination denomination => mapping(Role role => address[] membersAddress)) internal
         committeesCandidates;
 
     function initialize(address _initialOwner) public virtual initializer {
@@ -76,31 +72,20 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         }
     }
 
-    function _getMemberTakePubKeyByIndex(uint16 _memberIndex) internal view returns (bytes32) {
-        return members[_memberIndex].publicKeys[uint8(PublicKeyIndex.TAKE)];
-    }
-
-    function _getMemberPubKeyByAddress(address _address) internal view returns (bytes32) {
-        uint16 memberIndex = memberIndexByAddress[_address];
-        if (memberIndex == 0) {
-            return bytes32(0);
-        }
-        // Substract 1 to get the correct index
-        return members[memberIndex - 1].publicKeys[uint8(PublicKeyIndex.TAKE)];
+    function _getMemberTakePubKey(address _address) internal view returns (bytes32) {
+        bytes32[] memory pubKeys = _getMember(_address).publicKeys;
+        return pubKeys[uint8(PublicKeyIndex.TAKE)];
     }
 
     function _getOrRegisterMember(address _address, PublicKeyRegistration[] calldata _publicKeys)
         internal
         returns (Member storage)
     {
-        uint16 memberIndex = memberIndexByAddress[_address];
-        Member storage member;
+        Member storage member = members[_address];
         // Check if the member is already registered
-        if (memberIndex == 0) {
-            member = _registerMember(_publicKeys);
+        if (member.publicKeys.length == 0) {
+            member = _registerMember(_address, _publicKeys);
         } else {
-            // Already exists, get the member from the members array
-            member = members[memberIndex - 1];
             // Check if the public keys are the same as the stored member's public keys
             for (uint8 i = 0; i < PUBLIC_KEYS_INDEX_LENGTH; i++) {
                 if (member.publicKeys[i] != _publicKeys[i].publicKeyX) {
@@ -149,23 +134,23 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     function _registerCandidateToStream(address _memberAddress, StreamDenomination _stream, Role _role, uint256 _amount)
         internal
     {
-        Member storage member = _getMemberByAddress(_memberAddress);
+        Member storage member = _getMember(_memberAddress);
 
         member.balance.applications[uint8(_stream)].preStaked = _amount;
         member.balance.applications[uint8(_stream)].requestedRole = _role;
 
-        committeesCandidates[_stream][_role].push(_getMemberIndexByAddress(msg.sender));
+        committeesCandidates[_stream][_role].push(_memberAddress);
     }
 
     function unsubscribeFromStream(StreamDenomination _denomination) external {
-        Member storage member = _getMemberByAddress(msg.sender);
+        Member storage member = _getMember(msg.sender);
         Role role = member.balance.applications[uint8(_denomination)].requestedRole;
 
         if (role == Role.NONE) {
             revert MemberIsNotCandidateForStream(msg.sender, _denomination);
         }
         _movePreStakedToAvailable(member, _denomination);
-        _removeFromCandidates(_getMemberIndexByAddress(msg.sender), _denomination, role);
+        _removeFromCandidates(msg.sender, _denomination, role);
         emit MemberUnsubscribedFromStream(msg.sender, _denomination);
     }
 
@@ -179,11 +164,11 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         );
     }
 
-    function _movePreStakedToStaked(uint16 _memberIndex, StreamDenomination _denomination, uint64 _packetNumber)
+    function _movePreStakedToStaked(address _memberAddress, StreamDenomination _denomination, uint64 _packetNumber)
         internal
         returns (Role)
     {
-        Member storage member = members[_memberIndex];
+        Member storage member = _getMember(_memberAddress);
 
         ApplicationData memory originalData = member.balance.applications[uint8(_denomination)];
         member.balance.applications[uint8(_denomination)] = ApplicationData({requestedRole: Role.NONE, preStaked: 0});
@@ -199,18 +184,18 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         uint64 _packetNumber
     ) internal {
         for (uint256 i = 0; i < _members.length; i++) {
-            Role role = _movePreStakedToStaked(_members[i].index, _denomination, _packetNumber);
-            _removeFromCandidates(_members[i].index, _denomination, role);
+            Role role = _movePreStakedToStaked(_members[i].memberAddress, _denomination, _packetNumber);
+            _removeFromCandidates(_members[i].memberAddress, _denomination, role);
         }
     }
 
-    function _removeFromCandidates(uint16 _memberIndex, StreamDenomination _stream, Role _role) internal {
-        uint16[] storage candidates = committeesCandidates[_stream][_role];
+    function _removeFromCandidates(address _memberAddress, StreamDenomination _stream, Role _role) internal {
+        address[] storage candidates = committeesCandidates[_stream][_role];
         uint256 length = candidates.length;
 
         // NOTE: This effectively brings the last candidate forward in the list by replacing the removed member
         for (uint256 i = 0; i < length; i++) {
-            if (candidates[i] == _memberIndex) {
+            if (candidates[i] == _memberAddress) {
                 candidates[i] = candidates[length - 1];
                 candidates.pop();
                 break;
@@ -219,7 +204,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     }
 
     function withdrawAvailableBalance() external {
-        Member storage member = _getMemberByAddress(msg.sender);
+        Member storage member = _getMember(msg.sender);
         uint256 amount = member.balance.available;
         if (amount == 0) {
             revert NoAvailableBalanceToWithdraw(msg.sender);
@@ -278,23 +263,21 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         }
     }
 
-    function _registerMember(PublicKeyRegistration[] calldata _publicKeys) internal returns (Member storage) {
-        // Check max Members
-        if (members.length >= MAX_MEMBERS_SIZE) {
-            revert TooManyMembers(MAX_MEMBERS_SIZE);
-        }
+    function _registerMember(address _memberAddress, PublicKeyRegistration[] calldata _publicKeys)
+        internal
+        returns (Member storage)
+    {
         // Check if the public keys and the signatures associated are valid
         _validatePublicKeys(_publicKeys);
 
-        members.push(); // Expand the array
-        Member storage member = members[members.length - 1]; // Get reference
+        Member storage member = members[_memberAddress]; // Get reference
+
         // Initialize Member public keys
         for (uint8 i = 0; i < PUBLIC_KEYS_INDEX_LENGTH; i++) {
             member.publicKeys.push(_publicKeys[i].publicKeyX);
         }
+
         _initMemberBalance(member);
-        // We save the position in the array + 1, to avoid 0 as a valid index, it is then substracted in getMemberPubKeyByAddress
-        memberIndexByAddress[msg.sender] = uint16(members.length);
 
         emit NewMember(member.publicKeys);
         return member;
@@ -307,48 +290,22 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
 
     function getCommittee(uint256 _committeeId) public view returns (Committee memory) {
         Committee memory committee = committeesByKey[_committeeId];
-        if (committee.memberIndexesAndRoles.length == 0) {
+        if (committee.members.length == 0) {
             revert CommitteeNotFound(_committeeId);
         }
         return committee;
     }
 
-    function getMembersLength() external view returns (uint256) {
-        return members.length;
-    }
-
     function getCommitteeMembers(uint256 _committeeId) external view returns (CommitteeMember[] memory) {
-        return getCommittee(_committeeId).memberIndexesAndRoles;
+        return getCommittee(_committeeId).members;
     }
 
-    function getMemberTakePubKeyByIndex(uint16 _memberIndex) external view returns (bytes32) {
-        if (_memberIndex >= members.length) {
-            revert MemberIndexNotFound(_memberIndex);
-        }
-        return _getMemberTakePubKeyByIndex(_memberIndex);
-    }
-
-    function getMemberIndexByAddress(address _address) external view returns (uint16) {
-        return _getMemberIndexByAddress(_address);
-    }
-
-    function _getMemberIndexByAddress(address _address) internal view returns (uint16) {
-        uint16 memberIndex = memberIndexByAddress[_address];
-
-        // 0 is reserved for non registered members
-        if (memberIndex == 0) {
-            revert MemberNotRegistered(_address);
-        }
-        if (memberIndex > members.length) {
-            revert _MemberIndexOutOfBounds(memberIndex);
-        }
-
-        // Substract 1 to get the correct index
-        return memberIndex - 1;
+    function getMemberTakePubKey(address _address) external view returns (bytes32) {
+        return _getMemberTakePubKey(_address);
     }
 
     function getMemberPublicKeys(address _address) external view returns (bytes32[] memory publicKeys) {
-        Member storage member = _getMemberByAddress(_address);
+        Member storage member = _getMember(_address);
         publicKeys = new bytes32[](PUBLIC_KEYS_INDEX_LENGTH);
         for (uint8 i = 0; i < PUBLIC_KEYS_INDEX_LENGTH; i++) {
             publicKeys[i] = member.publicKeys[i];
@@ -356,20 +313,32 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         return publicKeys;
     }
 
-    function getMemberRequestedRole(address _address, StreamDenomination _denomination) external view returns (Role) {
-        return _getMemberByAddress(_address).balance.applications[uint8(_denomination)].requestedRole;
+    function _getMemberApplicationData(address _address, StreamDenomination _denomination)
+        internal
+        view
+        returns (ApplicationData memory applicationData)
+    {
+        applicationData = _getMember(_address).balance.applications[uint8(_denomination)];
+    }
+
+    function getMemberRequestedRole(address _memberAddress, StreamDenomination _denomination)
+        external
+        view
+        returns (Role)
+    {
+        return _getMemberApplicationData(_memberAddress, _denomination).requestedRole;
     }
 
     function getMemberAvailableBalance(address _address) external view returns (uint256) {
-        return _getMemberByAddress(_address).balance.available;
+        return _getMember(_address).balance.available;
     }
 
-    function getMemberPreStakedBalance(address _address, StreamDenomination _denomination)
+    function getMemberPreStakedBalance(address _memberAddress, StreamDenomination _denomination)
         external
         view
         returns (uint256)
     {
-        return _getMemberByAddress(_address).balance.applications[uint8(_denomination)].preStaked;
+        return _getMemberApplicationData(_memberAddress, _denomination).preStaked;
     }
 
     function getMemberStakedBalance(address _address, StreamDenomination _denomination, uint64 _packetNumber)
@@ -377,19 +346,14 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         view
         returns (uint256 amount)
     {
-        return _getMemberByAddress(_address).balance.staked[uint8(_denomination)][_packetNumber];
+        return _getMember(_address).balance.staked[uint8(_denomination)][_packetNumber];
     }
 
-    function _getMemberByAddress(address _address) internal view returns (Member storage) {
-        uint16 memberIndex = memberIndexByAddress[_address];
-
-        // 0 is reserved for non registered members
-        if (memberIndex == 0) {
-            revert NonRegisteredMember(_address);
+    function _getMember(address _address) internal view returns (Member storage member) {
+        member = members[_address];
+        if (member.publicKeys.length == 0) {
+            revert MemberNotRegistered(_address);
         }
-
-        // Substract 1 to get the correct index
-        return members[memberIndex - 1];
     }
 
     function restartPendingCommittee(uint64 _streamId) external {
@@ -475,11 +439,10 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         // No need to initialize aggregatedKey, since it will be set by the members.
         for (uint256 i = 0; i < committeeMembers.length; i++) {
             // Copy committee members from memory to storage
-            pendingCommittees[_streamId].committee.memberIndexesAndRoles.push(committeeMembers[i]);
+            pendingCommittees[_streamId].committee.members.push(committeeMembers[i]);
 
-            bytes32 memberPubKey = _getMemberTakePubKeyByIndex(committeeMembers[i].index);
             // Initialize committee users pending data
-            pendingCommittees[_streamId].data[memberPubKey] =
+            pendingCommittees[_streamId].data[committeeMembers[i].memberAddress] =
                 PendingCommitteeData({inCommittee: true, aggregatedKey: bytes32(0)});
         }
         emit NewPendingCommittee(_streamId, pendingCommittees[_streamId].committee);
@@ -496,16 +459,15 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
             revert InvalidAgregatedKey();
         }
 
-        bytes32 memberPubKey = _getCurrentMemberPubKey();
-        if (!pendingCommittee.data[memberPubKey].inCommittee) {
-            revert MemberNotInCommittee(memberPubKey);
+        if (!pendingCommittee.data[msg.sender].inCommittee) {
+            revert MemberNotInCommittee(_streamId, msg.sender);
         }
 
-        if (pendingCommittee.data[memberPubKey].aggregatedKey != bytes32(0)) {
-            revert MemberAlreadyUpdated(memberPubKey);
+        if (pendingCommittee.data[msg.sender].aggregatedKey != bytes32(0)) {
+            revert MemberInfoAlreadyDeposited(msg.sender);
         }
 
-        pendingCommittee.data[memberPubKey].aggregatedKey = _aggregatedKey;
+        pendingCommittee.data[msg.sender].aggregatedKey = _aggregatedKey;
 
         if (pendingCommittee.committee.aggregatedKey == bytes32(0)) {
             // Save the agregated key for the committee
@@ -529,10 +491,9 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         uint64 packetNumber = streamManager.getPacketsLength(_streamId);
         uint256 committeeId = uint256(keccak256(abi.encode(_streamId, packetNumber)));
         _removeCandidatesAndUpdateBalance(
-            pendingCommittee.committee.memberIndexesAndRoles, StreamDenomination(_streamId), packetNumber
+            pendingCommittee.committee.members, StreamDenomination(_streamId), packetNumber
         );
         _registerCommittee(committeeId, pendingCommittee.committee);
-        // create new packet
         streamManager.createNewPacket(_streamId, committeeId, pendingCommittee.committee.aggregatedKey);
         _deletePendingCommittee(_streamId);
     }
@@ -555,14 +516,6 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         missingData = pendingCommittee.missingData;
     }
 
-    function _getCurrentMemberPubKey() internal view returns (bytes32) {
-        bytes32 memberPubKey = _getMemberPubKeyByAddress(msg.sender);
-        if (memberPubKey == bytes32(0)) {
-            revert MemberNotFound(msg.sender);
-        }
-        return memberPubKey;
-    }
-
     function isPendingCommitteeExpired(uint64 _streamId) external view returns (bool) {
         uint256 createdAt = pendingCommittees[_streamId].createdAt;
         // If no pending committee in proccess we return false
@@ -574,10 +527,9 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     }
 
     function _deletePendingCommittee(uint64 _streamId) internal {
-        CommitteeMember[] storage committeeMembers = pendingCommittees[_streamId].committee.memberIndexesAndRoles;
+        CommitteeMember[] storage committeeMembers = pendingCommittees[_streamId].committee.members;
         for (uint256 i = 0; i < committeeMembers.length; i++) {
-            bytes32 memberPubKey = _getMemberTakePubKeyByIndex(committeeMembers[i].index);
-            delete pendingCommittees[_streamId].data[memberPubKey];
+            delete pendingCommittees[_streamId].data[committeeMembers[i].memberAddress];
         }
         //slither-disable-next-line mapping-deletion
         delete pendingCommittees[_streamId];
@@ -586,7 +538,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     function getCommitteeCandidates(StreamDenomination _denomination, Role _role)
         external
         view
-        returns (uint16[] memory)
+        returns (address[] memory)
     {
         return committeesCandidates[_denomination][_role];
     }
@@ -606,8 +558,8 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         StreamDenomination denomination = StreamDenomination(_streamId);
 
         // Get candidates per role.
-        uint16[] memory watchtowers = committeesCandidates[denomination][Role.WATCHTOWER];
-        uint16[] memory operators = committeesCandidates[denomination][Role.OPERATOR];
+        address[] memory watchtowers = committeesCandidates[denomination][Role.WATCHTOWER];
+        address[] memory operators = committeesCandidates[denomination][Role.OPERATOR];
         uint256 watchtowersLength = watchtowers.length;
         uint256 operatorsLength = operators.length;
 
@@ -650,9 +602,8 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
             // slither-disable-next-line weak-prng
             uint256 randomPos = uint256(keccak256(abi.encode(block.timestamp, length))) % length;
 
-            // This indexing will be simplified when `candidates` array is split in `watchtowers` and `operators` arrays
             selectedMembers[committeeMembersCounter++] =
-                CommitteeMember({index: operators[randomPos], role: Role.OPERATOR});
+                CommitteeMember({memberAddress: operators[randomPos], role: Role.OPERATOR});
 
             // Just move last position to replace random position. There is no need to swap values now.
             operators[randomPos] = operators[length - 1];
@@ -663,9 +614,8 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
             // slither-disable-next-line weak-prng
             uint256 randomPos = uint256(keccak256(abi.encode(block.timestamp, length))) % length;
 
-            // This indexing will be simplified when `candidates` array is split in `watchtowers` and `operators` arrays
             selectedMembers[committeeMembersCounter++] =
-                CommitteeMember({index: watchtowers[randomPos], role: Role.WATCHTOWER});
+                CommitteeMember({memberAddress: watchtowers[randomPos], role: Role.WATCHTOWER});
 
             // Just move last position to replace random position. There is no need to swap values now.
             watchtowers[randomPos] = watchtowers[length - 1];

@@ -33,9 +33,9 @@ contract TestPegManager is Test, HelperContract {
         (, Committee memory expectedCommittee, uint64 streamId) = setup_completeCommitteeAndNewMembers();
 
         setupExpectedCommittee.aggregatedKey = expectedCommittee.aggregatedKey;
-        setupExpectedCommittee.leaderIndex = expectedCommittee.leaderIndex;
-        for (uint64 i = 0; i < expectedCommittee.memberIndexesAndRoles.length; i++) {
-            setupExpectedCommittee.memberIndexesAndRoles.push(expectedCommittee.memberIndexesAndRoles[i]);
+        setupExpectedCommittee.leaderAddress = expectedCommittee.leaderAddress;
+        for (uint64 i = 0; i < expectedCommittee.members.length; i++) {
+            setupExpectedCommittee.members.push(expectedCommittee.members[i]);
         }
         setupStreamId = streamId;
     }
