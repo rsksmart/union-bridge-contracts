@@ -68,6 +68,24 @@ contract TestCommitteeRegistry is Test, HelperContract {
         registry.setCommitteeMinWatchtowers(0);
     }
 
+    function test_setCommitteeMinWatchtowers_Revert_InvalidMinWatchtowers() external {
+        address owner = registry.owner();
+        uint256 minMembers = registry.minCommitteeMembers();
+        uint256 minOperators = registry.minCommitteeOperators();
+        uint256 invalidMinWatchtowers = minMembers - minOperators + 1;
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ICommitteeRegistry.InvalidMinWatchtowers.selector, minMembers, invalidMinWatchtowers, minOperators
+            )
+        );
+
+        // Act
+        vm.prank(address(owner));
+        registry.setCommitteeMinWatchtowers(invalidMinWatchtowers);
+    }
+
     function test_setCommitteeMinOperators_Success() external {
         // Arrange
         uint256 newMinOperators = registry.minCommitteeOperators() / 2;
@@ -104,6 +122,24 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Act
         vm.prank(address(owner));
         registry.setCommitteeMinOperators(0);
+    }
+
+    function test_setCommitteeMinOperators_Revert_InvalidMinOperators() external {
+        address owner = registry.owner();
+        uint256 minMembers = registry.minCommitteeMembers();
+        uint256 minWatchtowers = registry.minCommitteeWatchtowers();
+        uint256 invalidMinOperators = minMembers - minWatchtowers + 1;
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ICommitteeRegistry.InvalidMinOperators.selector, minMembers, minWatchtowers, invalidMinOperators
+            )
+        );
+
+        // Act
+        vm.prank(address(owner));
+        registry.setCommitteeMinOperators(invalidMinOperators);
     }
 
     function test_setCommitteeMinMembers_Success() external {
