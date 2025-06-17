@@ -411,6 +411,11 @@ abstract contract HelperContract is Test, TestUtils {
 
     function setup_pendingCommitteeAndExpire() internal returns (Committee memory expectedCommittee, uint64 streamId) {
         (, streamId) = setup_pendingCommittee();
+        // Deposit member info for all the members but the last one
+        // This is to simulate the scenario where the committee is pending and some members have not deposited their info yet
+        // Last member will be slashed and removed from the next committee
+        setup_depositMemberInfo_MultipleMembers(streamId, 0, registry.minCommitteeMembers() - 1);
+        setup_registerNewMembers(0, 1, StreamDenomination(streamId)); // Register one more operator to replace the slashed one
         expectedCommittee = setup_getExpectedCommitteeAfterExpire();
     }
 
@@ -508,7 +513,7 @@ abstract contract HelperContract is Test, TestUtils {
 
         committee.members[0] = CommitteeMember({memberAddress: vm.addr(7 + 1), role: Role.OPERATOR});
         committee.members[1] = CommitteeMember({memberAddress: vm.addr(8 + 1), role: Role.OPERATOR});
-        committee.members[2] = CommitteeMember({memberAddress: vm.addr(9 + 1), role: Role.OPERATOR});
+        committee.members[2] = CommitteeMember({memberAddress: vm.addr(10 + 1), role: Role.OPERATOR});
         committee.members[3] = CommitteeMember({memberAddress: vm.addr(5 + 1), role: Role.OPERATOR});
         committee.members[4] = CommitteeMember({memberAddress: vm.addr(6 + 1), role: Role.OPERATOR});
         committee.members[5] = CommitteeMember({memberAddress: vm.addr(2 + 1), role: Role.WATCHTOWER});

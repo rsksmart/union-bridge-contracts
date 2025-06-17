@@ -44,6 +44,13 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     IPegManager pegManager;
 
     uint256 public pendingCommitteeTimeout;
+    uint256 public bannedMemberTimeout;
+
+    uint256 public slashingPercentage;
+    uint256 public rewardPercentage;
+
+    // This variable is used to track the contract collected rewards available.
+    uint256 public contractAvailableBalance;
 
     mapping(StreamDenomination denomination => mapping(Role role => address[] membersAddress)) internal
         committeesCandidates;
@@ -51,6 +58,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     function initialize(address _initialOwner) public virtual initializer {
         __BaseProxy_init(_initialOwner);
         pendingCommitteeTimeout = 1 days; // Default timeout for pending committees
+        bannedMemberTimeout = 7 days;
         for (uint64 i = 0; i <= uint64(StreamDenomination._10BTC); i++) {
             shouldCreateCommittee[i] = true;
         }
@@ -96,13 +104,35 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         return member;
     }
 
-    function applyToStream(StreamDenomination _stream, Role _role, PublicKeyRegistration[] calldata _publicKeys)
+    function _isMemberBanned(address _memberAddress, StreamDenomination _denomination) internal returns (bool) {
+        // Member could not be registered yet, so we access the mapping directly
+        Member storage member = members[_memberAddress];
+        if (member.bannedTimestamp[_denomination] == 0) {
+            return false; // Not banned
+        }
+        // Check if the ban is still active
+        if (block.timestamp > member.bannedTimestamp[_denomination] + bannedMemberTimeout) {
+            // Ban expired, remove the ban timestamp
+            member.bannedTimestamp[_denomination] = 0;
+            return false;
+        }
+        return true; // Still banned
+    }
+
+    function applyToStream(StreamDenomination _denomination, Role _role, PublicKeyRegistration[] calldata _publicKeys)
         external
         payable
     {
-        if (_role == Role.NONE) {
-            revert RequestedNoneRoleForStream(_stream);
+        // Check if the member is banned for the stream
+        if (_isMemberBanned(msg.sender, _denomination) == true) {
+            uint256 bannedAt = _getMember(msg.sender).bannedTimestamp[_denomination];
+            revert MemberIsBannedForStream(msg.sender, _denomination, bannedAt, bannedAt + bannedMemberTimeout);
         }
+
+        if (_role == Role.NONE) {
+            revert RequestedNoneRoleForStream(_denomination);
+        }
+
         // If the public keys length is not the same as the enum length revert
         uint256 publicKeysLength = _publicKeys.length;
         if (publicKeysLength != PUBLIC_KEYS_INDEX_LENGTH) {
@@ -112,56 +142,75 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         Member storage member = _getOrRegisterMember(msg.sender, _publicKeys);
 
         if (_role == Role.NONE) {
-            revert RequestedNoneRoleForStream(_stream);
+            revert RequestedNoneRoleForStream(_denomination);
         }
-        if (member.balance.applications[uint8(_stream)].requestedRole != Role.NONE) {
+        if (member.balance.applications[uint8(_denomination)].requestedRole != Role.NONE) {
             revert MemberAlreadyRegisteredForStream(
-                msg.sender, _stream, _role, member.balance.applications[uint8(_stream)].requestedRole
+                msg.sender, _denomination, _role, member.balance.applications[uint8(_denomination)].requestedRole
             );
         }
-        uint256 minDeposit = getMinimumDeposit(_stream);
+        uint256 minDeposit = getMinimumDeposit(_denomination);
         if (msg.value < minDeposit) {
             revert DespositBondTooLow(msg.value, minDeposit);
         }
 
-        _registerCandidateToStream(msg.sender, _stream, _role, msg.value);
-        emit NewSecurityBondDeposit(msg.sender, _stream, _role, msg.value);
+        _registerCandidateToStream(msg.sender, _denomination, _role, msg.value);
+        emit NewSecurityBondDeposit(msg.sender, _denomination, _role, msg.value);
 
-        _createCommitteeAfterApplyToStream(_stream);
+        _createCommitteeAfterApplyToStream(_denomination);
     }
 
     // NOTE: This function intends to keep many different structures in sync, be careful when modifying it
-    function _registerCandidateToStream(address _memberAddress, StreamDenomination _stream, Role _role, uint256 _amount)
-        internal
-    {
+    function _registerCandidateToStream(
+        address _memberAddress,
+        StreamDenomination _denomination,
+        Role _role,
+        uint256 _amount
+    ) internal {
         Member storage member = _getMember(_memberAddress);
 
-        member.balance.applications[uint8(_stream)].preStaked = _amount;
-        member.balance.applications[uint8(_stream)].requestedRole = _role;
+        member.balance.applications[uint8(_denomination)].preStaked = _amount;
+        member.balance.applications[uint8(_denomination)].requestedRole = _role;
 
-        committeesCandidates[_stream][_role].push(_memberAddress);
+        committeesCandidates[_denomination][_role].push(_memberAddress);
     }
 
     function unsubscribeFromStream(StreamDenomination _denomination) external {
-        Member storage member = _getMember(msg.sender);
+        if (_isInPendingCommittee(msg.sender, uint64(_denomination))) {
+            revert MemberIsInPendingCommittee(msg.sender, _denomination);
+        }
+
+        _unsubscribeFromStream(msg.sender, _denomination);
+        emit MemberUnsubscribedFromStream(msg.sender, _denomination);
+    }
+
+    function _isInPendingCommittee(address _memberAddress, uint64 _streamId) internal view returns (bool) {
+        PendingCommittee storage pendingCommittee = pendingCommittees[_streamId];
+        if (pendingCommittee.createdAt == 0) {
+            return false; // No pending committee
+        }
+        return pendingCommittee.data[_memberAddress].inCommittee;
+    }
+
+    function _unsubscribeFromStream(address _memberAddress, StreamDenomination _denomination) internal {
+        Member storage member = _getMember(_memberAddress);
         Role role = member.balance.applications[uint8(_denomination)].requestedRole;
 
         if (role == Role.NONE) {
             revert MemberIsNotCandidateForStream(msg.sender, _denomination);
         }
-        _movePreStakedToAvailable(member, _denomination);
-        _removeFromCandidates(msg.sender, _denomination, role);
-        emit MemberUnsubscribedFromStream(msg.sender, _denomination);
+        _movePreStakedToAvailable(member, _memberAddress, _denomination);
+        _removeFromCandidates(_memberAddress, _denomination, role);
     }
 
-    function _movePreStakedToAvailable(Member storage _member, StreamDenomination _denomination) internal {
+    function _movePreStakedToAvailable(Member storage _member, address _memberAddress, StreamDenomination _denomination)
+        internal
+    {
         ApplicationData memory originalData = _member.balance.applications[uint8(_denomination)];
         _member.balance.applications[uint8(_denomination)] = ApplicationData({requestedRole: Role.NONE, preStaked: 0});
 
         _member.balance.available += originalData.preStaked;
-        emit NewAvailableBalance(
-            _member.publicKeys[uint256(PublicKeyIndex.TAKE)], _member.balance.available, originalData.preStaked
-        );
+        emit NewAvailableBalance(_memberAddress, _member.balance.available, originalData.preStaked);
     }
 
     function _movePreStakedToStaked(address _memberAddress, StreamDenomination _denomination, uint64 _packetNumber)
@@ -368,7 +417,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
             revert PendingCommitteeNotExpired(_streamId, createdAt, createdAt + pendingCommitteeTimeout);
         }
 
-        _slashCommittee();
+        _slashPendingCommittee(_streamId);
         _deletePendingCommittee(_streamId);
         _createCommittee(_streamId);
     }
@@ -383,7 +432,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
                 return;
             }
 
-            _slashCommittee();
+            _slashPendingCommittee(_streamId);
             _deletePendingCommittee(_streamId);
         }
         _createCommittee(_streamId);
@@ -415,7 +464,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
 
         // slither-disable-next-line timestamp
         if (block.timestamp >= createdAt + pendingCommitteeTimeout) {
-            _slashCommittee();
+            _slashPendingCommittee(_streamId);
             _deletePendingCommittee(_streamId);
             _createCommittee(_streamId);
         }
@@ -498,8 +547,47 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         _deletePendingCommittee(_streamId);
     }
 
-    function _slashCommittee() internal {
-        // TODO: slash the members. Sasasaaa.
+    function _slashPendingCommittee(uint64 _streamId) internal {
+        CommitteeMember[] memory committeeMembers = pendingCommittees[_streamId].committee.members;
+        uint256 honestMembersCount = 0;
+        address[] memory honestMembers = new address[](committeeMembers.length);
+        uint256 rewardCollected = 0;
+
+        for (uint256 i = 0; i < committeeMembers.length; i++) {
+            PendingCommitteeData storage data = pendingCommittees[_streamId].data[committeeMembers[i].memberAddress];
+            if (data.aggregatedKey == bytes32(0)) {
+                rewardCollected +=
+                    _slashDishonestMember(committeeMembers[i].memberAddress, StreamDenomination(_streamId));
+            } else {
+                honestMembers[honestMembersCount++] = committeeMembers[i].memberAddress;
+            }
+        }
+
+        uint256 rewardPerMember = (rewardCollected * rewardPercentage) / 100;
+        for (uint256 i = 0; i < honestMembersCount; i++) {
+            Member storage member = _getMember(honestMembers[i]);
+            // Add the reward to the available balance of the honest member
+            member.balance.available += rewardPerMember;
+            emit NewAvailableBalance(honestMembers[i], member.balance.available, rewardPerMember);
+        }
+
+        contractAvailableBalance += rewardCollected - (rewardPerMember * honestMembersCount);
+    }
+
+    function _slashDishonestMember(address _memberAddress, StreamDenomination _denomination)
+        internal
+        returns (uint256 slashedAmount)
+    {
+        Member storage member = _getMember(_memberAddress);
+        uint256 preStaked = member.balance.applications[uint8(_denomination)].preStaked;
+
+        slashedAmount = (preStaked * slashingPercentage) / 100;
+        member.balance.applications[uint8(_denomination)].preStaked -= slashedAmount;
+
+        _unsubscribeFromStream(_memberAddress, _denomination);
+
+        member.bannedTimestamp[_denomination] = block.timestamp;
+        emit MemberSlashed(_memberAddress, _denomination, slashedAmount);
     }
 
     function getPendingCommittee(uint64 _streamId)
@@ -648,6 +736,14 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         emit PendingCommitteeTimeoutUpdated(_timeout);
     }
 
+    function setBannedMemberTimeout(uint256 _timeout) external onlyOwner {
+        if (_timeout == 0) {
+            revert InvalidZeroValue();
+        }
+        bannedMemberTimeout = _timeout;
+        emit BannedMemberTimeoutUpdated(_timeout);
+    }
+
     function setCommitteeMinWatchtowers(uint256 _minWatchtowers) external onlyOwner {
         if (_minWatchtowers == 0) {
             revert InvalidZeroValue();
@@ -673,6 +769,28 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         }
         minCommitteeMembers = _minMembers;
         emit CommitteeMinMembersUpdated(_minMembers);
+    }
+
+    function setSlashingPercentage(uint256 _percentage) external onlyOwner {
+        if (_percentage > 100) {
+            revert InvalidPercentage(_percentage);
+        }
+        if (_percentage == 0) {
+            revert InvalidZeroValue();
+        }
+        slashingPercentage = _percentage;
+        emit SlashingPercentageUpdated(_percentage);
+    }
+
+    function setMembersRewardPercentage(uint256 _percentage) external onlyPegManager {
+        if (_percentage > 100) {
+            revert InvalidPercentage(_percentage);
+        }
+        if (_percentage == 0) {
+            revert InvalidZeroValue();
+        }
+        rewardPercentage = _percentage;
+        emit RewardingPercentageUpdated(_percentage);
     }
 
     /// ==== Modifiers ====

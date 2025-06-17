@@ -480,7 +480,6 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         uint256 privKey = uint256(1);
         PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(privKey);
-        bytes32 pubKey = pubKeysRegistration[uint8(PublicKeyIndex.TAKE)].publicKeyX;
         address user = vm.addr(privKey);
         uint256 minimumDeposit = registry.getMinimumDeposit(DEFAULT_STREAM);
         vm.deal(user, minimumDeposit);
@@ -494,7 +493,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Assert
         vm.expectEmit(address(registry));
-        emit ICommitteeRegistry.NewAvailableBalance(pubKey, minimumDeposit, minimumDeposit);
+        emit ICommitteeRegistry.NewAvailableBalance(user, minimumDeposit, minimumDeposit);
         vm.expectEmit(address(registry));
         emit ICommitteeRegistry.MemberUnsubscribedFromStream(user, DEFAULT_STREAM);
 

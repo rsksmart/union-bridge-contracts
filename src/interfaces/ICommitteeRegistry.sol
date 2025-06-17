@@ -49,6 +49,7 @@ struct Member {
     mapping(StreamDenomination => Role) requestedRoles;
     Balance balance;
     mapping(string key => string value) data;
+    mapping(StreamDenomination => uint256 bannedAt) bannedTimestamp;
 }
 
 struct CommitteeMember {
@@ -165,7 +166,7 @@ interface ICommitteeRegistry {
     event NewPendingCommittee(uint256 indexed streamId, Committee _committee);
     event NewMember(bytes32[] indexed publicKeys); // Public keys of the member using enum PublicKeyIndex
     event MemberUnsubscribedFromStream(address indexed member, StreamDenomination stream);
-    event NewAvailableBalance(bytes32 indexed memberTakePubKey, uint256 availableBalance, uint256 preStakedBalance);
+    event NewAvailableBalance(address indexed member, uint256 availableBalance, uint256 increment);
     event AvailableBalanceRetrieved(address indexed sender, uint256 amount);
     event NewSecurityBondDeposit(
         address indexed sender, StreamDenomination requestedStream, Role requestedRole, uint256 amount
@@ -174,12 +175,16 @@ interface ICommitteeRegistry {
     event MissingOperators(StreamDenomination denomination, uint256 required, uint256 missing);
     event MissingMembers(StreamDenomination denomination, uint256 required, uint256 missing);
     event PendingCommitteeTimeoutUpdated(uint256 timeout);
+    event BannedMemberTimeoutUpdated(uint256 timeout);
     event StreamManagerUpdated(address streamManager);
     event PegManagerUpdated(address pegManager);
     event CommitteeMinWatchtowersUpdated(uint256 minWatchtowers);
     event CommitteeMinOperatorsUpdated(uint256 minOperators);
     event CommitteeMinMembersUpdated(uint256 minMembers);
     event MemberInfoDeposited(uint64 indexed streamId, address indexed member, bytes32 aggregatedKey);
+    event SlashingPercentageUpdated(uint256 _percentage);
+    event RewardingPercentageUpdated(uint256 _percentage);
+    event MemberSlashed(address memberAddress, StreamDenomination denomination, uint256 slashedAmount);
 
     /// ==================== Errors =====================
     error RequestedDifferentStreamsAndRolesLength(uint256 streamsLength, uint256 rolesLength);
@@ -221,6 +226,11 @@ interface ICommitteeRegistry {
     error FailedToSendRSK(address memberAddress, uint256 amount);
     error InvalidZeroValue();
     error InvalidMinMembers(uint256 minMembers, uint256 minCommitteWatchtowers, uint256 minCommitteOperators);
+    error InvalidPercentage(uint256 _percentage);
+    error MemberIsInPendingCommittee(address memberAddress, StreamDenomination denomination);
+    error MemberIsBannedForStream(
+        address memberAddress, StreamDenomination denomination, uint256 bannedAt, uint256 bannedExpireAt
+    );
 
     /// ================ Internal Errors =================
     error _MemberIndexOutOfBounds(uint16 memberIndex);
