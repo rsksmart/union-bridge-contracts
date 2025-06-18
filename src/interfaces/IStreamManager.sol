@@ -173,7 +173,6 @@ interface IStreamManager is IAccessControl {
     error tooManyDenominations(uint256 maxDenominationsSize);
     error NoFilledSlot(uint256 streamId, uint256 packetNumber, uint256 slotId);
     error PacketNotFound(uint256 streamId, uint256 packetNumber);
-    error InconsistentPegoutPointer(uint256 streamId, uint256 packetNumber, uint256 slotPointer);
     error InconsistentSlotsPerPacket(uint256 streamId, uint256 packetNumber, uint256 slotsPerPacket);
     error InvalidPeginPacketNumber(uint256 streamId, uint256 packetNumber);
     error NonExistentSlot(uint256 streamId, uint256 packetNumber, uint256 slotId);
@@ -184,4 +183,6 @@ interface IStreamManager is IAccessControl {
     error InvalidSlotState(SlotState actual, SlotState expected);
     error InvalidAcceptPeginTxHash(bytes32 expected, bytes32 actual);
     error InvalidZeroAddress();
+
+    error _InconsistentPegoutPointer(uint256 streamId, uint256 packetNumber, uint256 slotPointer);
 }

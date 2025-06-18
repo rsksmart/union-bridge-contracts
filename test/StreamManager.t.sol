@@ -47,7 +47,7 @@ contract TestStreamManager is Test, HelperContract {
 
         // Assert
         vm.expectRevert(
-            abi.encodeWithSelector(IStreamManager.InconsistentPegoutPointer.selector, setupStreamId, 0, 101)
+            abi.encodeWithSelector(IStreamManager._InconsistentPegoutPointer.selector, setupStreamId, 0, 101)
         );
 
         // Act

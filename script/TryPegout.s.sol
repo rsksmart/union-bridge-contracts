@@ -8,7 +8,7 @@ import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {Slot, Stream, Packet, SlotState, IStreamManager} from "src/interfaces/IStreamManager.sol";
 
-contract RequestPegoutScript is ScriptUtils {
+contract TryPegoutScript is ScriptUtils {
     PegManager pegManager;
     IStreamManager streamManager;
     uint64 amount;
@@ -32,17 +32,17 @@ contract RequestPegoutScript is ScriptUtils {
         uint64 packetNumber = stream.pegoutPacketPointer;
         uint64 slotId = stream.pegoutSlotPointer;
 
-        console.log("=== Request Pegout ===");
+        console.log("=== Try Pegout ===");
         vm.startBroadcast(getDeployerKey());
-        pegManager.requestPegout{value: amountInWei}(usrPubKey);
+        pegManager.tryPegout{value: amountInWei}(usrPubKey);
         vm.stopBroadcast();
 
         bytes32 pegoutSignatureHash = pegManager.getPegoutSignatureHash(stream.streamId, packetNumber, slotId);
         if (pegoutSignatureHash == bytes32(0)) {
-            revert("PegoutRequest not accepted");
+            revert("Pegout not accepted");
         }
 
-        console.log("=== PegoutRequest accepted successfully ===");
+        console.log("=== Pegout accepted successfully ===");
         console.log("pegoutSignatureHash");
         console.logBytes32(pegoutSignatureHash);
         console.log("Stream, Slot, Packet");
