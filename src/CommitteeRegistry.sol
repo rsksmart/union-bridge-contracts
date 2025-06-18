@@ -565,7 +565,9 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
             }
         }
 
-        uint256 rewardPerMember = (rewardCollected * rewardPercentage) / 100;
+        uint256 rewardPerMember =
+            honestMembersCount > 0 ? (rewardCollected * rewardPercentage) / 100 / honestMembersCount : rewardCollected;
+
         for (uint256 i = 0; i < honestMembersCount; i++) {
             Member storage member = _getMember(honestMembers[i]);
             // Add the reward to the available balance of the honest member
