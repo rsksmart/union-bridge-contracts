@@ -480,7 +480,6 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         uint256 privKey = uint256(1);
         PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(privKey);
-        bytes32 pubKey = pubKeysRegistration[uint8(PublicKeyIndex.TAKE)].publicKeyX;
         address user = vm.addr(privKey);
         uint256 minimumDeposit = registry.getMinimumDeposit(DEFAULT_STREAM);
         vm.deal(user, minimumDeposit);
@@ -494,7 +493,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Assert
         vm.expectEmit(address(registry));
-        emit ICommitteeRegistry.NewAvailableBalance(pubKey, minimumDeposit, minimumDeposit);
+        emit ICommitteeRegistry.NewAvailableBalance(user, minimumDeposit, minimumDeposit);
         vm.expectEmit(address(registry));
         emit ICommitteeRegistry.MemberUnsubscribedFromStream(user, DEFAULT_STREAM);
 
@@ -550,7 +549,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         registry.unsubscribeFromStream(StreamDenomination._0_01BTC);
     }
 
-    function test_unsubscribeFromStream_Revert_nonRegisteredMember() external {
+    function test_unsubscribeFromStream_Revert_MemberNotRegistered() external {
         // Arrange
         uint256 privKey = uint256(1);
         address user = vm.addr(privKey);
@@ -561,6 +560,23 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Act
         vm.prank(user);
         registry.unsubscribeFromStream(DEFAULT_STREAM);
+    }
+
+    function test_unsubscribeFromStream_Revert_MemberIsInPendingCommittee() external {
+        // Arrange
+        (, uint64 streamId) = setup_pendingCommittee();
+        address user = vm.addr(1);
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ICommitteeRegistry.MemberIsInPendingCommittee.selector, user, StreamDenomination(streamId)
+            )
+        );
+
+        // Act
+        vm.prank(user);
+        registry.unsubscribeFromStream(StreamDenomination(streamId));
     }
 
     function test_withdrawAvailableBalance_Success() external {
