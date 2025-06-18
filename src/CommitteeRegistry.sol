@@ -143,25 +143,42 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     }
 
     function unsubscribeFromStream(StreamDenomination _denomination) external {
-        Member storage member = _getMember(msg.sender);
-        Role role = member.balance.applications[uint8(_denomination)].requestedRole;
-
-        if (role == Role.NONE) {
-            revert MemberIsNotCandidateForStream(msg.sender, _denomination);
+        if (_isInPendingCommittee(msg.sender, uint64(_denomination))) {
+            revert MemberIsInPendingCommittee(msg.sender, _denomination);
         }
-        _movePreStakedToAvailable(member, _denomination);
-        _removeFromCandidates(msg.sender, _denomination, role);
+
+        _unsubscribeFromStream(msg.sender, _denomination);
         emit MemberUnsubscribedFromStream(msg.sender, _denomination);
     }
 
-    function _movePreStakedToAvailable(Member storage _member, StreamDenomination _denomination) internal {
+    function _isInPendingCommittee(address _memberAddress, uint64 _streamId) internal view returns (bool) {
+        PendingCommittee storage pendingCommittee = pendingCommittees[_streamId];
+        if (pendingCommittee.createdAt == 0) {
+            return false; // No pending committee
+        }
+        return pendingCommittee.data[_memberAddress].inCommittee;
+    }
+
+    function _unsubscribeFromStream(address _memberAddress, StreamDenomination _denomination) internal {
+        Member storage member = _getMember(_memberAddress);
+        Role role = member.balance.applications[uint8(_denomination)].requestedRole;
+
+        if (role == Role.NONE) {
+            revert MemberIsNotCandidateForStream(_memberAddress, _denomination);
+        }
+
+        _movePreStakedToAvailable(member, _memberAddress, _denomination);
+        _removeFromCandidates(_memberAddress, _denomination, role);
+    }
+
+    function _movePreStakedToAvailable(Member storage _member, address _memberAddress, StreamDenomination _denomination)
+        internal
+    {
         ApplicationData memory originalData = _member.balance.applications[uint8(_denomination)];
         _member.balance.applications[uint8(_denomination)] = ApplicationData({requestedRole: Role.NONE, preStaked: 0});
 
         _member.balance.available += originalData.preStaked;
-        emit NewAvailableBalance(
-            _member.publicKeys[uint256(PublicKeyIndex.TAKE)], _member.balance.available, originalData.preStaked
-        );
+        emit NewAvailableBalance(_memberAddress, _member.balance.available, originalData.preStaked);
     }
 
     function _movePreStakedToStaked(address _memberAddress, StreamDenomination _denomination, uint64 _packetNumber)

@@ -174,7 +174,7 @@ interface ICommitteeRegistry {
     event NewPendingCommittee(uint256 indexed streamId, Committee _committee);
     event NewMember(bytes32[] indexed publicKeys); // Public keys of the member using enum PublicKeyIndex
     event MemberUnsubscribedFromStream(address indexed member, StreamDenomination stream);
-    event NewAvailableBalance(bytes32 indexed memberTakePubKey, uint256 availableBalance, uint256 preStakedBalance);
+    event NewAvailableBalance(address indexed memberAddress, uint256 availableBalance, uint256 preStakedBalance);
     event AvailableBalanceRetrieved(address indexed sender, uint256 amount);
     event NewSecurityBondDeposit(
         address indexed sender, StreamDenomination requestedStream, Role requestedRole, uint256 amount
@@ -232,6 +232,7 @@ interface ICommitteeRegistry {
     error InvalidMinMembers(uint256 minMembers, uint256 minCommitteWatchtowers, uint256 minCommitteOperators);
     error InvalidMinOperators(uint256 minMembers, uint256 minCommitteWatchtowers, uint256 minCommitteOperators);
     error InvalidMinWatchtowers(uint256 minMembers, uint256 minCommitteWatchtowers, uint256 minCommitteOperators);
+    error MemberIsInPendingCommittee(address memberAddress, StreamDenomination denomination);
 
     /// ================ Internal Errors =================
     error _MemberIndexOutOfBounds(uint16 memberIndex);
