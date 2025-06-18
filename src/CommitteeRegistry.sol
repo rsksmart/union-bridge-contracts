@@ -652,6 +652,9 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         if (_minWatchtowers == 0) {
             revert InvalidZeroValue();
         }
+        if (minCommitteeMembers < _minWatchtowers + minCommitteeOperators) {
+            revert InvalidMinWatchtowers(minCommitteeMembers, _minWatchtowers, minCommitteeOperators);
+        }
         minCommitteeWatchtowers = _minWatchtowers;
         emit CommitteeMinWatchtowersUpdated(_minWatchtowers);
     }
@@ -659,6 +662,9 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     function setCommitteeMinOperators(uint256 _minOperators) external onlyOwner {
         if (_minOperators == 0) {
             revert InvalidZeroValue();
+        }
+        if (minCommitteeMembers < minCommitteeWatchtowers + _minOperators) {
+            revert InvalidMinOperators(minCommitteeMembers, minCommitteeWatchtowers, _minOperators);
         }
         minCommitteeOperators = _minOperators;
         emit CommitteeMinOperatorsUpdated(_minOperators);

@@ -160,6 +160,15 @@ interface ICommitteeRegistry {
     /// @param _minMembers The minimum number of members required for a committee
     function setCommitteeMinMembers(uint256 _minMembers) external;
 
+    /// @notice Get the minimun watchtowers required for a committee
+    function minCommitteeWatchtowers() external view returns (uint256);
+
+    /// @notice Get the minimun operators required for a committee
+    function minCommitteeOperators() external view returns (uint256);
+
+    /// @notice Get the minimun members required for a committee
+    function minCommitteeMembers() external view returns (uint256);
+
     /// ===================== Events =========================
     event NewCommittee(uint256 indexed committeeId, Committee _committee);
     event NewPendingCommittee(uint256 indexed streamId, Committee _committee);
@@ -221,6 +230,8 @@ interface ICommitteeRegistry {
     error FailedToSendRSK(address memberAddress, uint256 amount);
     error InvalidZeroValue();
     error InvalidMinMembers(uint256 minMembers, uint256 minCommitteWatchtowers, uint256 minCommitteOperators);
+    error InvalidMinOperators(uint256 minMembers, uint256 minCommitteWatchtowers, uint256 minCommitteOperators);
+    error InvalidMinWatchtowers(uint256 minMembers, uint256 minCommitteWatchtowers, uint256 minCommitteOperators);
 
     /// ================ Internal Errors =================
     error _MemberIndexOutOfBounds(uint16 memberIndex);
