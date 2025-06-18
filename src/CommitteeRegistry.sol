@@ -57,14 +57,19 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
 
     function initialize(address _initialOwner) public virtual initializer {
         __BaseProxy_init(_initialOwner);
-        pendingCommitteeTimeout = 1 days; // Default timeout for pending committees
-        bannedMemberTimeout = 7 days;
         for (uint64 i = 0; i <= uint64(StreamDenomination._10BTC); i++) {
             shouldCreateCommittee[i] = true;
         }
+
+        pendingCommitteeTimeout = 1 days; // Default timeout for pending committees
+        bannedMemberTimeout = 7 days;
+
         minCommitteeWatchtowers = 3;
         minCommitteeOperators = 3;
         minCommitteeMembers = 10;
+
+        slashingPercentage = 40;
+        rewardPercentage = 75;
     }
 
     function getMinimumDeposit(StreamDenomination _denomination) public view returns (uint256) {
@@ -105,7 +110,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     }
 
     function _isMemberBanned(address _memberAddress, StreamDenomination _denomination) internal returns (bool) {
-        // Member could not be registered yet, so we access the mapping directly
+        // The member might not be registered yet, so we access the mapping directly
         Member storage member = members[_memberAddress];
         if (member.bannedTimestamp[_denomination] == 0) {
             return false; // Not banned
@@ -141,9 +146,6 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
 
         Member storage member = _getOrRegisterMember(msg.sender, _publicKeys);
 
-        if (_role == Role.NONE) {
-            revert RequestedNoneRoleForStream(_denomination);
-        }
         if (member.balance.applications[uint8(_denomination)].requestedRole != Role.NONE) {
             revert MemberAlreadyRegisteredForStream(
                 msg.sender, _denomination, _role, member.balance.applications[uint8(_denomination)].requestedRole
@@ -197,7 +199,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         Role role = member.balance.applications[uint8(_denomination)].requestedRole;
 
         if (role == Role.NONE) {
-            revert MemberIsNotCandidateForStream(msg.sender, _denomination);
+            revert MemberIsNotCandidateForStream(_memberAddress, _denomination);
         }
         _movePreStakedToAvailable(member, _memberAddress, _denomination);
         _removeFromCandidates(_memberAddress, _denomination, role);
