@@ -4,14 +4,7 @@ pragma solidity ^0.8.20;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
-import {
-    BtcTransaction,
-    BtcTxSPVProof,
-    StreamPosition,
-    RequestPeginTempInfo,
-    PegStatus,
-    IPegManager
-} from "src/interfaces/IPegManager.sol";
+import {BtcTransaction, BtcTxSPVProof, StreamPosition, PegStatus, IPegManager} from "src/interfaces/IPegManager.sol";
 import {PegoutTempInfo} from "src/PegManager.sol";
 import {BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
 import {Slot, SlotState, Packet, Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";

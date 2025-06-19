@@ -200,8 +200,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         peginTempInfo[_registerPeginTx] = RequestPeginTempInfo({
             rskDestinationAddress: _rskDestinationAddress,
             btcReimbursementPubKey: _userXOnlyPubKey,
-            acceptPeginSignatureHash: acceptPeginSignatureHash,
-            acceptPeginTxHash: acceptPeginTxHash
+            acceptPeginSignatureHash: acceptPeginSignatureHash
         });
 
         emit InitAcceptPegin(
@@ -218,9 +217,6 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         // The first input consumes the the peg in request utxo
         bytes32 requestPeginTxHash = _peginAcceptedTxSPVProof.btcTx.inputs[Constants.VOUT_INDEX_TAPTREE].txId;
 
-        // Get the peg in request temp info
-        RequestPeginTempInfo storage requestTempInfo = peginTempInfo[requestPeginTxHash];
-
         // Validate the peg in request tx exists and the status
         StreamPosition memory streamInfo = getStreamPosition(requestPeginTxHash);
         if (streamInfo.pegStatus == PegStatus.NOT_REGISTERED) {
@@ -234,8 +230,8 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         bytes32 acceptPegintxHash = bitcoinManager.getBtcTxHash(_peginAcceptedTxSPVProof.btcTx);
 
         // Validate the txhash is the same calculated at request peg in tx
-        if (requestTempInfo.acceptPeginTxHash != acceptPegintxHash) {
-            revert InvalidAcceptPeginTxHash(requestTempInfo.acceptPeginTxHash, acceptPegintxHash);
+        if (peginRequests[requestPeginTxHash] != acceptPegintxHash) {
+            revert InvalidAcceptPeginTxHash(peginRequests[requestPeginTxHash], acceptPegintxHash);
         }
 
         // Verify the acceptPegintxHash part of the Merkle Root of Tx of a Block
@@ -252,7 +248,6 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         _storePegin(
             requestPeginTxHash,
             streamInfo,
-            requestTempInfo,
             _peginAcceptedTxSPVProof.blockHash,
             acceptPegintxHash,
             _peginAcceptedTxSPVProof.btcTx.outputs[Constants.VOUT_INDEX_TAPTREE]
@@ -262,7 +257,6 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
     function _storePegin(
         bytes32 _requestPeginTxHash,
         StreamPosition memory streamInfo,
-        RequestPeginTempInfo storage requestTempInfo,
         bytes32 _blockHash,
         bytes32 _acceptPegintxHash,
         BtcTxOut memory _acceptPeginTxOutput
@@ -293,6 +287,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         }
 
         uint256 rbtcAmount = BtcHelper.satoshiToWei(_acceptPeginTxOutput.amount);
+        RequestPeginTempInfo storage requestTempInfo = peginTempInfo[_requestPeginTxHash];
 
         emit PeginAccepted(
             _blockHash,
