@@ -712,11 +712,7 @@ contract TestSignatureManager is Test, HelperContract {
 
         // Assert
         vm.expectRevert(
-            abi.encodeWithSelector(
-                ISignatureManager.AllTake1TxHashesAlreadyPresent.selector,
-                acceptPeginTxHash,
-                COMMITTEE_ID_STREAM_1_PACKET_0
-            )
+            abi.encodeWithSelector(ISignatureManager.AllTake1TxHashesAlreadyPresent.selector, acceptPeginTxHash)
         );
 
         // Act

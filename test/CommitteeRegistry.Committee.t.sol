@@ -583,9 +583,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         registry.depositMemberInfoForCommittee(streamId, COMMITTEE_PUB_KEY);
 
         // Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(ICommitteeRegistry.MemberInfoAlreadyDeposited.selector, memberAddress, streamId)
-        );
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.MemberInfoAlreadyDeposited.selector, memberAddress));
 
         // Act
         vm.prank(memberAddress);
