@@ -315,9 +315,9 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             revert PegoutRequestAmountExceedsUint64Limit(BtcHelper.weiToSatoshi(amountInWei));
         }
 
-        // Validate the _usrPubKey is 33 bytes
-        if (_usrPubKey.length != 33) {
-            revert InvalidPubKeyLength(_usrPubKey.length);
+        // Validate the _usrPubKey is 33 bytes (compressed pubkey)
+        if (_usrPubKey.length != 33 || (_usrPubKey[0] != 0x02 && _usrPubKey[0] != 0x03)) {
+            revert InvalidCompressedPubKey(_usrPubKey);
         }
 
         // TODO: validate who can request a peg-out
@@ -336,25 +336,27 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         PrevoutData memory prevoutData = PrevoutData({value: slot.acceptPeginAmount, scriptPubKey: slot.scriptPubKey});
 
         // Compute the Bitcoin peg-out signature hash
-        (bytes32 pegoutSignatureHash, bytes memory commonSignatureMessage) =
+        (bytes32 pegoutSignatureHash, bytes memory pegoutSignatureMessage) =
             bitcoinManager.getPegoutSignatureHash(_usrPubKey, slot.acceptPeginTx, prevoutData);
 
         // Store the pegout transaction info for efficient lookup during registration
         pegoutTempInfo[slot.acceptPeginTx] = PegoutTempInfo({userPubKey: _usrPubKey});
 
         // Store the peg-out transaction hash on-chain and initialize the signatures
-        storePegoutAndInitSignatures(pegoutSignatureHash, stream.streamId, packetNumber, slot.slotId);
+        uint256 committeeId =
+            storePegoutAndInitSignatures(pegoutSignatureHash, stream.streamId, packetNumber, slot.slotId);
 
         // TODO: return RBTC to the RSK Legacy Bridge following https://github.com/rsksmart/RSKIPs/pull/502
 
         emit PegoutRequested(
             _usrPubKey,
-            stream.denomination,
+            committeeId,
             pegoutSignatureHash,
-            commonSignatureMessage,
+            pegoutSignatureMessage,
             stream.streamId,
             packetNumber,
-            slot.slotId
+            slot.slotId,
+            stream.denomination
         );
     }
 
@@ -432,7 +434,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         uint64 _streamId,
         uint64 _packetNumber,
         uint64 _slotId
-    ) internal {
+    ) internal returns (uint256) {
         // Store the peg-out transaction hash on-chain and initialize the signatures
         bytes32 key = keccak256(abi.encodePacked(_streamId, _packetNumber, _slotId));
         pegoutSighashes[key] = _pegoutSignatureHash;
@@ -442,5 +444,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
 
         // Initialize the signatures for each member
         signatureManager.initSignatures(_pegoutSignatureHash, committeeId);
+
+        return committeeId;
     }
 }

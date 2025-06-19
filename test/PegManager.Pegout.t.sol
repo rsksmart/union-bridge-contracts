@@ -70,13 +70,14 @@ contract TestPegManager is Test, HelperContract {
         Stream memory stream = streamManager.getStream(uint64(amount));
         uint64 packetNumber = 0;
         uint64 slotId = 0;
+        uint256 committeeId = uint256(keccak256(abi.encode(stream.streamId, packetNumber)));
 
         streamManager.setSlotHarness(stream.streamId, packetNumber, scriptPubKey, txId, amount);
 
         // Assert
         vm.expectEmit(address(pm));
         emit IPegManager.PegoutRequested(
-            usrPubKey, amount, expectedHash, expectedDigest, stream.streamId, packetNumber, slotId
+            usrPubKey, committeeId, expectedHash, expectedDigest, stream.streamId, packetNumber, slotId, amount
         );
 
         // Act
@@ -117,11 +118,19 @@ contract TestPegManager is Test, HelperContract {
         Stream memory stream = streamManager.getStream(amount);
         uint64 slotId = stream.pegoutSlotPointer;
         uint64 packetNumber = stream.pegoutPacketPointer;
+        uint256 committeeId = uint256(keccak256(abi.encode(stream.streamId, packetNumber)));
 
         // Assert
         vm.expectEmit(address(pm));
         emit IPegManager.PegoutRequested(
-            usrPubKey, amount, expectedSignatureHash, expectedSignatureDigest, stream.streamId, packetNumber, slotId
+            usrPubKey,
+            committeeId,
+            expectedSignatureHash,
+            expectedSignatureDigest,
+            stream.streamId,
+            packetNumber,
+            slotId,
+            amount
         );
 
         // Act
@@ -190,7 +199,18 @@ contract TestPegManager is Test, HelperContract {
         bytes memory usrPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b00";
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegManager.InvalidPubKeyLength.selector, usrPubKey.length));
+        vm.expectRevert(abi.encodeWithSelector(IPegManager.InvalidCompressedPubKey.selector, usrPubKey));
+
+        // Act
+        pm.tryPegout(usrPubKey);
+    }
+
+    function test_tryPegout_Revert_InvalidPublicKeyFirstByte() external {
+        // Arrange
+        bytes memory usrPubKey = hex"04d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IPegManager.InvalidCompressedPubKey.selector, usrPubKey));
 
         // Act
         pm.tryPegout(usrPubKey);

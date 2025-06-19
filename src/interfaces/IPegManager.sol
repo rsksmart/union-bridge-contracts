@@ -115,12 +115,13 @@ interface IPegManager {
     // address indexed bitcoinUserAddress,
     event PegoutRequested(
         bytes indexed usrPubKey,
-        uint64 amount,
+        uint256 indexed committeeId,
         bytes32 indexed pegoutSignatureHash,
         bytes pegoutSignatureMessage,
         uint64 streamId,
         uint64 packetNumber,
-        uint64 slotId
+        uint64 slotId,
+        uint64 amount
     );
 
     event PegoutRegistered(
@@ -144,7 +145,7 @@ interface IPegManager {
     error PeginAlreadyAccepted(bytes32 btcTxHash);
     error IncorrectInputsNumber(uint256 actual, uint256 expected);
     error IncorrectOutputsNumber(uint256 actual, uint256 expected);
-    error InvalidPubKeyLength(uint256 usrPubKeyLength);
+    error InvalidCompressedPubKey(bytes usrPubKey);
     error InvalidLocktime(uint256 actual, uint256 expected);
     error InvalidBtcTxVersion(uint256 actual, uint256 expected);
     error InvalidSlotState(SlotState actual, SlotState expected);
