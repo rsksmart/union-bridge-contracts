@@ -10,8 +10,8 @@
 
 set -e  # exit on error
 
-PEGOUT_SIGNATURE_HASH="0xbdbcc0e498ff3efd9332048959b808326e6361ba820aabdde997c49b699e8b20"
-PEGIN_SIGNATURE_HASH="0xfba8ece80878b0fc5faab104b2df2fd6b1eb272c13d5146cef1b998ca3f261eb"
+PEGOUT_SIGNATURE_HASH="0x84db689c468f3824c4f010331d786d97b59ce5ac15ab69dda529291d9db762d7"
+PEGIN_SIGNATURE_HASH="0x5642b8f6a605936eebaac9dcb46687bdf400948285d293283dcb87251aecd55b"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

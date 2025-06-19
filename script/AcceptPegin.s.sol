@@ -18,7 +18,7 @@ contract AcceptPeginScript is ScriptUtils {
     function setUp() internal returns (BtcTxSPVProof memory peginAcceptedTxSPVProof) {
         // ====== Arguments ======
         // This is the peg-in request transaction hash that was previously registered
-        bytes32 requestPeginTxHash = 0x8264f7a960bc2f030c740ff08089b202adb73b820a3d7e174edc7626806905bf;
+        bytes32 requestPeginTxHash = 0x9a40f6df4226a822b1b952d41d490a3ab91f1826b684c56a05d75be16f0eb088;
         // The other data is obtained from the peg-in request transaction
         pegManager = PegManager(0x0165878A594ca255338adfa4d48449f69242Eb8F);
         // =======================
