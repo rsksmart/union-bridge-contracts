@@ -3,8 +3,7 @@
 # we go to the root of the project to avoid relative path issues
 current_path=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
 cd "$current_path/../../.."
-# openzeppelin-foundry-upgrades requires a clean build
-bash shell/clean-build.sh
+
 # set up environment variables
 source .env
 echo "================ RPC_URL: $RPC_URL ================"
