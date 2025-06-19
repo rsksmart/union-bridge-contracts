@@ -88,6 +88,9 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         if (_rskDestinationAddress == address(0)) {
             revert InvalidAddress(_rskDestinationAddress);
         }
+        if (_value == 0) {
+            revert InvalidInputAmount(_value);
+        }
     }
 
     /// @dev Expected OP_RETURN format:
