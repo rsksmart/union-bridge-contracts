@@ -25,7 +25,21 @@ contract TestBtcHelper is Test, HelperContract {
         string memory result =
             bitcoinManager.getTemporaryPeginAddress(rskAddress, value, btcReimbursementPubKey, committeePubKey);
         // Assert
-        string memory expectedAddress = "bcrt1py28js8ef0lgpe5mrh8yn7apt52tkc8k95cyrm8m4fjmpu5zn2mps7esu9h";
+        string memory expectedAddress = "bcrt1pff4szccvny97tn5d5q9xf5kw30p9njxnvd6q0tmp8f7tk8adphuqnxt4tt";
+        assertEq(result, expectedAddress, "Incorrect temporary peg in address at BitcoinManager");
+    }
+
+    function test_getTemporaryPeginAddress_Success_DifferentAmountGivesDifferentAddress() external view {
+        // Arrange
+        address rskAddress = 0x7Ac5496aee77c1bA1F0854206A26DdA82A81d6d8;
+        uint64 value = 1_000_000; // 0.01 BTC
+        bytes32 btcReimbursementPubKey = 0x7d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f;
+        bytes32 committeePubKey = 0xd1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d;
+        // Act
+        string memory result =
+            bitcoinManager.getTemporaryPeginAddress(rskAddress, value, btcReimbursementPubKey, committeePubKey);
+        // Assert
+        string memory expectedAddress = "bcrt1p9hdr74xdg69a7w6r4pfsrrnj3l7ku54x5jdmtwf4thnjyhkmeuhs79pnrw";
         assertEq(result, expectedAddress, "Incorrect temporary peg in address at BitcoinManager");
     }
 
@@ -54,7 +68,7 @@ contract TestBtcHelper is Test, HelperContract {
         });
         btcTx.outputs[0] = BtcTxOut({
             amount: 100000,
-            scriptPubKey: hex"5120228f281f297fd01cd363b9c93f742ba2976c1ec5a6083d9f754cb61e505356c3"
+            scriptPubKey: hex"51202dda3f54cd468bdf3b43a853018e728ffd6e52a6a49bb5b9355de7225edbcf2f"
         });
         btcTx.outputs[1] = BtcTxOut({
             amount: 0,
@@ -65,7 +79,7 @@ contract TestBtcHelper is Test, HelperContract {
         // Assert
         assertEq(
             txHash,
-            0x7b160254c1f59d16a1d8c18c89fadb875a0a8cfc94758a76ad6b9caaf21b146d,
+            0x3e2dae98db783476cc24e8fea4c7b6fdbfc6c211d576ab835ccf0c1e4e36f8f9,
             "Hashing the Transaction without the witness with Hash256 didn't give the correct txId"
         );
     }
@@ -87,7 +101,7 @@ contract TestBtcHelper is Test, HelperContract {
             abi.encodePacked(
                 OpCodes.OP_1,
                 OpCodes.OP_PUSHBYTES_32,
-                bytes32(0x228f281f297fd01cd363b9c93f742ba2976c1ec5a6083d9f754cb61e505356c3)
+                bytes32(0x4a6b01630c990be5ce8da00a64d2ce8bc259c8d3637407af613a7cbb1fad0df8)
             ),
             "The script pub key should be correct at BitcoinManager"
         );

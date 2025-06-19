@@ -116,7 +116,7 @@ interface IPegManager {
         bytes indexed usrPubKey,
         uint64 amount,
         bytes32 indexed pegoutSignatureHash,
-        bytes commonSignatureMessage,
+        bytes pegoutSignatureMessage,
         uint64 streamId,
         uint64 packetNumber,
         uint64 slotId

@@ -60,12 +60,11 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
             BtcScriptParser.getTimelockScript(Constants.TIMELOCK_BLOCKS, _btcReimbursementPubKey);
         bytes32 timelockLeaf = BtcTaproot.getLeaf(timelockScript);
 
-        // TODO Add this back once it's implemented in the protocol builder
-        // bytes memory data = abi.encodePacked(_rskDestinationAddress, _value);
-        // bytes memory extraDataScript = abi.encodePacked(OpCodes.OP_RETURN, OpCodes.OP_PUSHBYTES_28, data);
-        // bytes32 extraDataLeaf = BtcTaproot.getLeaf(extraDataScript);
+        bytes memory extraDataScript =
+            abi.encodePacked(OpCodes.OP_RETURN, OpCodes.OP_PUSHBYTES_28, _rskDestinationAddress, _value);
+        bytes32 extraDataLeaf = BtcTaproot.getLeaf(extraDataScript);
 
-        bytes32 merkleRoot = timelockLeaf; // BtcTaproot.getBranch(timelockLeaf, extraDataLeaf);
+        bytes32 merkleRoot = BtcTaproot.getBranch(timelockLeaf, extraDataLeaf);
 
         bytes32 tweak = BtcTaproot.getTweak(abi.encodePacked(_committeePubKey, merkleRoot));
         bytes32 tweakedPublicKey = BtcTaproot.getTweakedPublicKey(_committeePubKey, tweak);

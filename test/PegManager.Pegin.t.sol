@@ -42,10 +42,8 @@ contract TestPegManager is Test, HelperContract {
 
     function test_getTemporaryPeginAddress_Success() external view {
         address dummyRskAddress = 0x7Ac5496aee77c1bA1F0854206A26DdA82A81d6d8;
-        // TODO this is the value that includes the op_return data inside the taptree
-        // this should be put back once the protocol builder is updated
-        // string memory tempAddress = "bcrt1ptp8gw3yt9rjavkrlxhwmlm9y5w4c5u6yeeltmupanle76eq4ftrszyjhnn";
-        string memory tempAddress = "bcrt1py28js8ef0lgpe5mrh8yn7apt52tkc8k95cyrm8m4fjmpu5zn2mps7esu9h";
+        // Address is different according to amount and destination address
+        string memory tempAddress = "bcrt1p9hdr74xdg69a7w6r4pfsrrnj3l7ku54x5jdmtwf4thnjyhkmeuhs79pnrw";
 
         string memory result = pm.getTemporaryPeginAddress(dummyRskAddress, VALUE, BTC_REIMBURSEMENT_PUBKEY);
         assertEq(result, tempAddress, "Incorrect temporary peg in address at PegManager");
@@ -59,13 +57,13 @@ contract TestPegManager is Test, HelperContract {
         bridgeMock.setBtcTransactionConfirmations(10);
         // Create Pegin struct information
         BtcTxSPVProof memory peginRequestTxSPVProof = createBtcTxSPVProof(btcTransaction);
+        bytes32 expectedRegisterPeginTxHash = getBtcTxHash(btcTransaction);
 
         // Assert
         vm.expectEmit(address(pm));
-        // We emit the event we expect to see.
         emit IPegManager.PeginRequested(
             peginRequestTxSPVProof.blockHash,
-            getBtcTxHash(btcTransaction),
+            expectedRegisterPeginTxHash,
             0,
             VALUE,
             PACKET_NUMBER,
