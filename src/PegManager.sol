@@ -204,7 +204,9 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             acceptPeginTxHash: acceptPeginTxHash
         });
 
-        emit InitAcceptPegin(_committeePubKey, _registerPeginTx, acceptPeginSignatureHash, acceptPeginSignatureMessage);
+        emit InitAcceptPegin(
+            _committeePubKey, _registerPeginTx, acceptPeginTxHash, acceptPeginSignatureHash, acceptPeginSignatureMessage
+        );
 
         // Initialize the signatures needed for a given aggregated key
         uint256 committeeId = streamManager.getCommitteeId(_streamId, _packetNumber);

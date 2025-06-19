@@ -79,6 +79,7 @@ interface IPegManager {
     event InitAcceptPegin(
         bytes32 indexed committeePubKey,
         bytes32 indexed requestPeginTxHash,
+        bytes32 indexed acceptPeginTxHash,
         bytes32 acceptPeginSignatureHash,
         bytes acceptPeginSignatureMessage
     );
