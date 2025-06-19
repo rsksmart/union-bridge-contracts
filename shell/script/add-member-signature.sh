@@ -1,5 +1,3 @@
-#!/bin/sh
-
 # Go to project root
 current_path=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
 cd "$current_path/../.."

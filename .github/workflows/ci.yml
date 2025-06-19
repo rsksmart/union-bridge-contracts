@@ -21,9 +21,17 @@ jobs:
         with:
           version: v1.1.0
 
+      - name: Start Anvil
+        run: anvil --port 8545 --silent &
+
       - name: Simulate deployment
         run: bash shell/script/deploy/simulate-deploy.sh
 
+      - name: Deploy contracts
+        run: bash shell/script/deploy/deploy-local.sh
+
+      - name: Run peg-flow
+        run: bash shell/script/peg-flow.sh
+
       - name: Run tests
         run: forge test -vvv
-
