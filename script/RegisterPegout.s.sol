@@ -12,7 +12,7 @@ contract RegisterPegoutScript is ScriptUtils {
     PegManager pegManager;
 
     uint64 amount;
-    bytes usrPubKey;
+    bytes userPubKey;
     bytes32 acceptPeginTxHash;
 
     Stream stream;
@@ -23,7 +23,7 @@ contract RegisterPegoutScript is ScriptUtils {
         pegManager = PegManager(0x0165878A594ca255338adfa4d48449f69242Eb8F);
 
         acceptPeginTxHash = 0x73d69e28cbe4ffc75b786b5dae8086a8112f6eb793d6891f2f900aac968a78ea;
-        usrPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+        userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
         amount = 100_000; // 0.001 BTC
 
         // Calculate expected slot and packet numbers
@@ -35,7 +35,7 @@ contract RegisterPegoutScript is ScriptUtils {
     function run() public {
         setUp();
 
-        BtcTransaction memory pegoutTx = createPegoutTx(acceptPeginTxHash, usrPubKey, amount);
+        BtcTransaction memory pegoutTx = createPegoutTx(acceptPeginTxHash, userPubKey, amount);
         BtcTxSPVProof memory pegoutTxSPVProof = createBtcTxSPVProof(pegoutTx);
 
         // Register peg-out transaction

@@ -147,7 +147,7 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
     /// @param _btcReimbursementPubKey The user's public key (x-only, 32 bytes)
     /// @param _committeePubKey The committee's public key (x-only, 32 bytes)
     /// @param _p2trOut The P2TR output of the peg in request
-    function validatRequestPeginP2TROutput(
+    function validateRequestPeginP2TROutput(
         address _rskDestinationAddress,
         uint64 _value,
         bytes32 _btcReimbursementPubKey,
@@ -293,7 +293,7 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
 
     // ========================== Peg Out Signature Hash ==========================
     /// @dev Get the signature hash for a peg out transaction
-    function getPegoutSignatureHash(bytes memory _usrPubKey, bytes32 _acceptPeginTx, PrevoutData memory _prevoutData)
+    function getPegoutSignatureHash(bytes memory _userPubKey, bytes32 _acceptPeginTx, PrevoutData memory _prevoutData)
         external
         pure
         returns (bytes32, bytes memory)
@@ -319,7 +319,7 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         (uint64 fee, uint64 speedUpAmount) = BtcHelper.calculateFeeAndSpeedUp(_prevoutData.value);
 
         // User pegout
-        bytes memory scriptPubKey = BtcScriptParser.getP2WPKHScript(_usrPubKey);
+        bytes memory scriptPubKey = BtcScriptParser.getP2WPKHScript(_userPubKey);
         btcOutputs[0] = BtcTxOut({amount: _prevoutData.value - fee - speedUpAmount, scriptPubKey: scriptPubKey});
 
         // Speed up

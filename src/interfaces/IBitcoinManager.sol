@@ -55,7 +55,7 @@ interface IBitcoinManager {
     /// @return btcReimbursementPubKey The Bitcoin reimbursement public key (x only) encoded in the OP_RETURN data
     function getPeginOpReturnData(BtcTxOut calldata _opReturnOut) external pure returns (uint64, address, bytes32);
 
-    function validatRequestPeginP2TROutput(
+    function validateRequestPeginP2TROutput(
         address _rskDestinationAddress,
         uint64 _value,
         bytes32 _btcReimbursementPubKey,
@@ -118,11 +118,11 @@ interface IBitcoinManager {
     function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut calldata _speedUpOut) external pure;
 
     /// @notice Get the hash to sign of a Bitcoin peg-out transaction
-    /// @param _usrPubKey The user's public key in compact size that will receive the funds
+    /// @param _userPubKey The user's public key in compact size that will receive the funds
     /// @param _acceptPeginTx The transaction hash of the accept peg-in tx being spent
     /// @param _prevoutData Data about the previous output being spent (amount and scriptPubKey)
     /// @return the tagged hash and the encoded data before hashing
-    function getPegoutSignatureHash(bytes memory _usrPubKey, bytes32 _acceptPeginTx, PrevoutData memory _prevoutData)
+    function getPegoutSignatureHash(bytes memory _userPubKey, bytes32 _acceptPeginTx, PrevoutData memory _prevoutData)
         external
         pure
         returns (bytes32, bytes memory);

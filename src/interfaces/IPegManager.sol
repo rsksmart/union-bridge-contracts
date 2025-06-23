@@ -99,8 +99,8 @@ interface IPegManager {
 
     // ===================== Peg-out Request =====================
     // /// @notice Try a peg-out to Bitcoin. It will revert if not filled slot is available.
-    // /// @param _usrPubKey The user public key
-    function tryPegout(bytes calldata _usrPubKey) external payable;
+    // /// @param _userPubKey The user public key
+    function tryPegout(bytes calldata _userPubKey) external payable;
 
     /// @notice Register a peg-out transaction from Bitcoin
     /// @param _pegoutTxSPVProof The BTC SPV proof of the peg-out transaction
@@ -108,7 +108,7 @@ interface IPegManager {
 
     // address indexed bitcoinUserAddress,
     event PegoutRequested(
-        bytes indexed usrPubKey,
+        bytes indexed userPubKey,
         uint256 indexed committeeId,
         bytes32 indexed pegoutSignatureHash,
         bytes pegoutSignatureMessage,
@@ -139,7 +139,7 @@ interface IPegManager {
     error PeginAlreadyAccepted(bytes32 btcTxHash);
     error IncorrectInputsNumber(uint256 actual, uint256 expected);
     error IncorrectOutputsNumber(uint256 actual, uint256 expected);
-    error InvalidCompressedPubKey(bytes usrPubKey);
+    error InvalidCompressedPubKey(bytes userPubKey);
     error InvalidLocktime(uint256 actual, uint256 expected);
     error InvalidBtcTxVersion(uint256 actual, uint256 expected);
     error InvalidSlotState(SlotState actual, SlotState expected);
