@@ -84,7 +84,6 @@ contract RequestPeginScript is ScriptUtils {
         vm.startBroadcast(getDeployerKey());
         pegManager.requestPegin(peginRequestTxSPVProof);
         vm.stopBroadcast();
-        vm.getRecordedLogs();
         // check if peginRequest is registered
         streamPosition = pegManager.getStreamPosition(peginRequestTxHash);
         if (streamPosition.pegStatus != PegStatus.REGISTERED) {

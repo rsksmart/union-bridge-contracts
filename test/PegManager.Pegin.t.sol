@@ -57,7 +57,7 @@ contract TestPegManager is Test, HelperContract {
         bridgeMock.setBtcTransactionConfirmations(10);
         // Create Pegin struct information
         BtcTxSPVProof memory peginRequestTxSPVProof = createBtcTxSPVProof(btcTransaction);
-        bytes32 expectedRegisterPeginTxHash = getBtcTxHash(btcTransaction);
+        bytes32 expectedRequestPeginTxHash = getBtcTxHash(btcTransaction);
         // expectedAcceptPeginTxHash should be hex"325bd7c332003b6f86b54cc1fa15429cc47124e5ec9c9900043ecbc61de38095";
         bytes32 expectedAcceptPeginTxHash = getBtcTxHash(getBtcAcceptPeginTx(btcTransaction));
         bytes32 expectedAcceptPeginSignatureHash = hex"4253f76ab307da1c9f2a7e0f17e12eed9c5614bed4e0f5efdf666c167c23cb18";
@@ -68,7 +68,7 @@ contract TestPegManager is Test, HelperContract {
         vm.expectEmit(address(pm));
         emit IPegManager.PeginRequested(
             peginRequestTxSPVProof.blockHash,
-            expectedRegisterPeginTxHash,
+            expectedRequestPeginTxHash,
             0,
             VALUE,
             PACKET_NUMBER,
@@ -81,7 +81,7 @@ contract TestPegManager is Test, HelperContract {
         vm.expectEmit(address(pm));
         emit IPegManager.InitAcceptPegin(
             COMMITTEE_PUB_KEY,
-            expectedRegisterPeginTxHash,
+            expectedRequestPeginTxHash,
             expectedAcceptPeginTxHash,
             expectedAcceptPeginSignatureHash,
             expectedAcceptPeginSignatureMessage
