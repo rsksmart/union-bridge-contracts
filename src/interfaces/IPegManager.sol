@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNKNOWN
 pragma solidity ^0.8.20;
 
-import {BtcTransaction} from "./IBitcoinManager.sol";
+import {BtcTransaction, PrevoutData} from "./IBitcoinManager.sol";
 import {IStreamManager, SlotState} from "./IStreamManager.sol";
 import {ISignatureManager} from "./ISignatureManager.sol";
 
@@ -65,21 +65,14 @@ interface IPegManager {
     function requestPegin(BtcTxSPVProof calldata _peginRequestTxSPVProof) external;
 
     event PeginRequested(
-        bytes32 indexed blockHash,
-        bytes32 indexed txHash,
-        uint64 vout,
-        uint64 value,
-        uint256 packetNumber,
-        address rskDestinationAddress,
-        bytes32 btcReimbursementPubKey,
-        bytes utxoScriptPubKey
-    );
-
-    event InitAcceptPegin(
-        bytes32 indexed committeePubKey,
+        uint256 indexed committeeId,
         bytes32 indexed requestPeginTxHash,
         bytes32 indexed acceptPeginTxHash,
-        bytes32 acceptPeginSignatureHash,
+        uint64 vout,
+        uint64 streamId,
+        uint64 packetNumber,
+        RequestPeginTempInfo requestPeginInfo,
+        PrevoutData prevoutData,
         bytes acceptPeginSignatureMessage
     );
 
@@ -94,8 +87,8 @@ interface IPegManager {
 
     event PeginAccepted(
         bytes32 indexed blockHash,
-        bytes32 indexed txHash,
-        bytes32 indexed peginTxHash,
+        bytes32 indexed acceptPeginTxHash,
+        bytes32 indexed peginRequestTxHash,
         uint64 vout,
         StreamPosition streamPosition,
         bytes32 speedUpPubKey,

@@ -12,7 +12,7 @@ import {
     PegStatus,
     IPegManager
 } from "src/interfaces/IPegManager.sol";
-import {BtcTxIn, BtcTxOut, IBitcoinManager} from "src/interfaces/IBitcoinManager.sol";
+import {BtcTxIn, BtcTxOut, IBitcoinManager, PrevoutData} from "src/interfaces/IBitcoinManager.sol";
 import {Slot, SlotState, Packet, Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE} from "src/interfaces/IBridge.sol";
 import {ProofValidator} from "src/ProofValidator.sol";
@@ -64,26 +64,26 @@ contract TestPegManager is Test, HelperContract {
         bytes memory expectedAcceptPeginSignatureMessage =
             hex"0001020000000000000045eb25874678e195a26959dbc0597bca2bbc693af2ff2e73a862eb5156b285384f973621fe8403b6facae9abab80d863a847d3fb007ba2f9830f8e16e6e9b4d45314b96b3848ec1e8f6c656d51101273a35b12be9382350f8d4fa53959c09e9c23e9829bfb4e23fbd3c4848baa035af15d73bcb83e510f7f097f90a21a4280d296339a89bcce784abffbc39f4c9810a04d0d54e6cec93308d43efcabcf2dc87e0000000000";
 
-        // Assert
-        vm.expectEmit(address(pm));
-        emit IPegManager.PeginRequested(
-            peginRequestTxSPVProof.blockHash,
-            expectedRequestPeginTxHash,
-            0,
-            VALUE,
-            PACKET_NUMBER,
-            RSK_DESTINATION_ADDRESS,
-            BTC_REIMBURSEMENT_PUBKEY,
-            btcTransaction.outputs[0].scriptPubKey
-        );
+        RequestPeginTempInfo memory expectedRequestPeginInfo = RequestPeginTempInfo({
+            rskDestinationAddress: RSK_DESTINATION_ADDRESS,
+            btcReimbursementPubKey: BTC_REIMBURSEMENT_PUBKEY,
+            acceptPeginSignatureHash: expectedAcceptPeginSignatureHash
+        });
+        PrevoutData memory expectedPrevoutData =
+            PrevoutData({value: btcTransaction.outputs[0].amount, scriptPubKey: btcTransaction.outputs[0].scriptPubKey});
+        uint256 expectedCommitteeId = streamManager.getCommitteeId(setupStreamId, PACKET_NUMBER);
 
         // Assert
         vm.expectEmit(address(pm));
-        emit IPegManager.InitAcceptPegin(
-            COMMITTEE_PUB_KEY,
+        emit IPegManager.PeginRequested(
+            expectedCommitteeId,
             expectedRequestPeginTxHash,
             expectedAcceptPeginTxHash,
-            expectedAcceptPeginSignatureHash,
+            0,
+            setupStreamId,
+            PACKET_NUMBER,
+            expectedRequestPeginInfo,
+            expectedPrevoutData,
             expectedAcceptPeginSignatureMessage
         );
 

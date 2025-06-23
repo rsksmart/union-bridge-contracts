@@ -138,9 +138,6 @@ abstract contract HelperContract is Test, TestUtils {
     function getPeginRequestP2TROut() internal pure returns (BtcTxOut memory) {
         return BtcTxOut({
             amount: VALUE,
-            // TODO this is the value that includes the op_return data inside the taptree
-            // It should be put back once the protocol builder is updated
-            // scriptPubKey: hex"5120c8c2100e84799661079100ee50ce96bd1db6a1021819042b5b950ef01a4e7f41"
             scriptPubKey: hex"51202dda3f54cd468bdf3b43a853018e728ffd6e52a6a49bb5b9355de7225edbcf2f"
         });
     }
