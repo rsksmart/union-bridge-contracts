@@ -139,9 +139,9 @@ Then run:
 bash shell/script/get-temporary-address.sh
 ```
 
-### Register peg in request
+### Request peg in
 
-Register the peg in request transaction sent by the user in Bitcoin, set the corresponding arguments at [RegisterPegInRequest.s.sol](./script/RegisterPegInRequest.s.sol)
+Register the peg in request transaction sent by the user in Bitcoin, set the corresponding arguments at [RequestPegout.s.sol](./script/RequestPegout.s.sol)
 
 ```solidity
 // ====== Arguments ======
@@ -154,12 +154,12 @@ pegManager = PegManager(0x0165878A594ca255338adfa4d48449f69242Eb8F);
 Then run:
 
 ```sh
-bash shell/script/register-pegin-request.sh
+bash shell/script/request-pegin.sh
 ```
 
-### Accept peg in request
+### Accept peg in
 
-Register the accept peg in request transaction sent by the committee in Bitcoin, set the corresponding arguments at [AcceptPegInRequest.s.sol](./script/AcceptPegInRequest.s.sol)
+Register the accept peg in request transaction sent by the committee in Bitcoin, set the corresponding arguments at [AcceptPegin.s.sol](./script/AcceptPegin.s.sol)
 
 Then run:
 
@@ -169,12 +169,12 @@ bash shell/script/accept-pegin.sh
 
 ### Request peg out
 
-Register the peg out request, set the corresponding arguments at [RegisterPegOutRequest.s.sol](./script/RegisterPegOutRequest.s.sol)
+Request the peg out request, set the corresponding arguments at [RequestPegout.s.sol](./script/RequestPegout.s.sol)
 
 Then run:
 
 ```sh
-bash shell/script/register-pegout-request.sh
+bash shell/script/request-pegout.sh
 ```
 
 ### Run Pegin/Pegout Flow
