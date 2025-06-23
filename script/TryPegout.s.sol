@@ -13,7 +13,7 @@ contract TryPegoutScript is ScriptUtils {
     IStreamManager streamManager;
     uint64 amount;
     uint256 amountInWei;
-    bytes usrPubKey;
+    bytes userPubKey;
 
     function setUp() internal {
         // ====== Arguments ======
@@ -21,7 +21,7 @@ contract TryPegoutScript is ScriptUtils {
         streamManager = IStreamManager(pegManager.streamManager());
         amount = 100_000; // 0.001 BTC
         amountInWei = BtcHelper.satoshiToWei(amount);
-        usrPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+        userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
     }
 
     function run() public {
@@ -34,7 +34,7 @@ contract TryPegoutScript is ScriptUtils {
 
         console.log("=== Try Pegout ===");
         vm.startBroadcast(getDeployerKey());
-        pegManager.tryPegout{value: amountInWei}(usrPubKey);
+        pegManager.tryPegout{value: amountInWei}(userPubKey);
         vm.stopBroadcast();
 
         bytes32 pegoutSignatureHash = pegManager.getPegoutSignatureHash(stream.streamId, packetNumber, slotId);

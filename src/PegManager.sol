@@ -130,7 +130,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
 
         // Validates that the Taproot Script has a Key Path for the committeePubKey
         // and has a timelock for btcReimbursementPubKey
-        bitcoinManager.validatRequestPeginP2TROutput(
+        bitcoinManager.validateRequestPeginP2TROutput(
             rskDestinationAddress,
             stream.denomination,
             btcReimbursementPubKey,
@@ -305,21 +305,21 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         //requestRbtc(rskDestinationAddress, rbtcAmount);
     }
 
-    function validatePegoutRequest(bytes calldata _usrPubKey, uint256 amountInWei) internal pure {
+    function validatePegoutRequest(bytes calldata _userPubKey, uint256 amountInWei) internal pure {
         if (BtcHelper.weiToSatoshi(amountInWei) > type(uint64).max) {
             revert PegoutRequestAmountExceedsUint64Limit(BtcHelper.weiToSatoshi(amountInWei));
         }
 
-        // Validate the _usrPubKey is 33 bytes (compressed pubkey)
-        if (_usrPubKey.length != 33 || (_usrPubKey[0] != 0x02 && _usrPubKey[0] != 0x03)) {
-            revert InvalidCompressedPubKey(_usrPubKey);
+        // Validate the _userPubKey is 33 bytes (compressed pubkey)
+        if (_userPubKey.length != 33 || (_userPubKey[0] != 0x02 && _userPubKey[0] != 0x03)) {
+            revert InvalidCompressedPubKey(_userPubKey);
         }
 
         // TODO: validate who can request a peg-out
     }
 
-    function tryPegout(bytes calldata _usrPubKey) external payable {
-        validatePegoutRequest(_usrPubKey, msg.value);
+    function tryPegout(bytes calldata _userPubKey) external payable {
+        validatePegoutRequest(_userPubKey, msg.value);
 
         uint64 receivedAmount = uint64(BtcHelper.weiToSatoshi(msg.value));
 
@@ -332,10 +332,10 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
 
         // Compute the Bitcoin peg-out signature hash
         (bytes32 pegoutSignatureHash, bytes memory pegoutSignatureMessage) =
-            bitcoinManager.getPegoutSignatureHash(_usrPubKey, slot.acceptPeginTx, prevoutData);
+            bitcoinManager.getPegoutSignatureHash(_userPubKey, slot.acceptPeginTx, prevoutData);
 
         // Store the pegout transaction info for efficient lookup during registration
-        pegoutTempInfo[slot.acceptPeginTx] = PegoutTempInfo({userPubKey: _usrPubKey});
+        pegoutTempInfo[slot.acceptPeginTx] = PegoutTempInfo({userPubKey: _userPubKey});
 
         // Store the peg-out transaction hash on-chain and initialize the signatures
         uint256 committeeId =
@@ -344,7 +344,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         // TODO: return RBTC to the RSK Legacy Bridge following https://github.com/rsksmart/RSKIPs/pull/502
 
         emit PegoutRequested(
-            _usrPubKey,
+            _userPubKey,
             committeeId,
             pegoutSignatureHash,
             pegoutSignatureMessage,

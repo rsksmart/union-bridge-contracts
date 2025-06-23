@@ -131,7 +131,7 @@ contract TestBtcHelper is Test, HelperContract {
         );
     }
 
-    function test_validatRequestPeginP2TROutput_Success() external {
+    function test_validateRequestPeginP2TROutput_Success() external {
         // Arrange
         BtcTxOut memory btcTxOut = getBtcPeginRequestTx().outputs[0];
         uint64 value = VALUE;
@@ -139,13 +139,13 @@ contract TestBtcHelper is Test, HelperContract {
         bytes32 btcReimbursementPubKey = getPeginBtcReimbursementPubKey();
         bytes32 committeePubKey = COMMITTEE_PUB_KEY;
         // Act
-        bitcoinManager.validatRequestPeginP2TROutput(
+        bitcoinManager.validateRequestPeginP2TROutput(
             rskDestinationAddress, value, btcReimbursementPubKey, committeePubKey, btcTxOut
         );
         // Assert if not reverts everything is ok
     }
 
-    function test_validatRequestPeginP2TROutput_Revert_InvalidOutputAmount() external {
+    function test_validateRequestPeginP2TROutput_Revert_InvalidOutputAmount() external {
         // Arrange
         BtcTxOut memory btcTxOut = getBtcPeginRequestTx().outputs[0];
         btcTxOut.amount = VALUE - Constants.P2TR_FEE;
@@ -156,7 +156,7 @@ contract TestBtcHelper is Test, HelperContract {
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IBitcoinManager.InvalidOutputAmount.selector, btcTxOut.amount, value));
         // Act
-        bitcoinManager.validatRequestPeginP2TROutput(
+        bitcoinManager.validateRequestPeginP2TROutput(
             rskDestinationAddress, value, btcReimbursementPubKey, committeePubKey, btcTxOut
         );
     }
@@ -283,7 +283,7 @@ contract TestBtcHelper is Test, HelperContract {
     function test_getPegoutSignatureHash_Success() external view {
         // Arrange
         bytes32 p2tr_spk = 0x9687ca13c4fb3fa3ba05c2f9119dda026bfe66f0098dcf9b896a98ecb2e96702;
-        bytes memory usrPubKey = hex"027d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f";
+        bytes memory userPubKey = hex"027d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f";
         bytes32 acceptPeginTx = 0x8cc94a32480857817b037792eb95556670c9e001981f36102b72b96a8e559789;
         PrevoutData memory prevoutData = PrevoutData({
             // txid: 0x8cc94a32480857817b037792eb95556670c9e001981f36102b72b96a8e559789,
@@ -296,12 +296,12 @@ contract TestBtcHelper is Test, HelperContract {
         // prevoutData.value - (Constants.SPEED_UP_AMOUNT + Constants.P2TR_FEE); // 0.00008730 BTC
 
         // Act
-        (bytes32 result,) = bitcoinManager.getPegoutSignatureHash(usrPubKey, acceptPeginTx, prevoutData);
+        (bytes32 result,) = bitcoinManager.getPegoutSignatureHash(userPubKey, acceptPeginTx, prevoutData);
 
         // ExpectedHash hash computed externally from a run of the pegout flow of the protocol builder
         // using the following inputs and running on regtest
         // required inputs:
-        // - usrPubKey = 027d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f
+        // - userPubKey = 027d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f
         // - prevoutsData = [
         //     {
         //         "txid": "8cc94a32480857817b037792eb95556670c9e001981f36102b72b96a8e559789",

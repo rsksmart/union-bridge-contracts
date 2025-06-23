@@ -6,7 +6,7 @@ cd "$current_path";
 
 forge bind \
     --module \
-    --select "^(PegManager|BitcoinManager|CommitteeRegistry)$" \
+    --select "^(PegManager|BitcoinManager|CommitteeRegistry|SignatureManager|StreamManager)$" \
     --overwrite \
     --bindings-path ./crate/src/bindings
 #    --alloy-version v0.14.0 \

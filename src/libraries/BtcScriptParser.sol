@@ -16,8 +16,8 @@ library BtcScriptParser {
     error NumberTooLarge(uint256 actual, uint256 max);
 
     // Pay To Witness Public Key Hash
-    function getP2WPKHScript(bytes memory _usrPubKey) internal pure returns (bytes memory) {
-        bytes20 pubKeyHash = BtcHelper.hash160(_usrPubKey);
+    function getP2WPKHScript(bytes memory _userPubKey) internal pure returns (bytes memory) {
+        bytes20 pubKeyHash = BtcHelper.hash160(_userPubKey);
 
         return abi.encodePacked(OpCodes.OP_0, OpCodes.OP_PUSHBYTES_20, pubKeyHash);
     }

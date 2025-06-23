@@ -1,5 +1,5 @@
  # Deploy smart contracts
-FROM ghcr.io/foundry-rs/foundry:v1.1.0
+FROM ghcr.io/foundry-rs/foundry:v1.2.3
 
 # "======= Install Node for OpenZeppelin ======="
 USER root
