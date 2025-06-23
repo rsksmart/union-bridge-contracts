@@ -82,7 +82,7 @@ contract TestBtcTxEncoder is Test {
         });
         btcTx.outputs[0] = BtcTxOut({
             amount: 100000,
-            scriptPubKey: hex"5120228f281f297fd01cd363b9c93f742ba2976c1ec5a6083d9f754cb61e505356c3"
+            scriptPubKey: hex"51202dda3f54cd468bdf3b43a853018e728ffd6e52a6a49bb5b9355de7225edbcf2f"
         });
         btcTx.outputs[1] = BtcTxOut({
             amount: 0,
@@ -93,7 +93,7 @@ contract TestBtcTxEncoder is Test {
         // Assert
         assertEq(
             hexTxIn,
-            hex"02000000019cf950757f6e64340e22ce541e3b0f0e5d3d7b479a4dda62d8f37ce40bc24fab0000000000fdffffff02a086010000000000225120228f281f297fd01cd363b9c93f742ba2976c1ec5a6083d9f754cb61e505356c30000000000000000476a4552534b5f504547494e00000000000000007ac5496aee77c1ba1f0854206a26dda82a81d6d87d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f00000000",
+            hex"02000000019cf950757f6e64340e22ce541e3b0f0e5d3d7b479a4dda62d8f37ce40bc24fab0000000000fdffffff02a0860100000000002251202dda3f54cd468bdf3b43a853018e728ffd6e52a6a49bb5b9355de7225edbcf2f0000000000000000476a4552534b5f504547494e00000000000000007ac5496aee77c1ba1f0854206a26dda82a81d6d87d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f00000000",
             "Encoded PeginRequest Tx should be correctly formed"
         );
     }

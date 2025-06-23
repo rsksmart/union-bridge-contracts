@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
-import {PegManager, StreamPosition, BtcTxSPVProof, PegStatus} from "src/PegManager.sol";
+import {PegManager, StreamPosition, BtcTxSPVProof, PegStatus, RequestPeginTempInfo} from "src/PegManager.sol";
 import {IBitcoinManager, BtcTransaction, BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
 import {Stream, Packet, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {OpCodes} from "src/libraries/OpCodes.sol";
@@ -80,6 +80,7 @@ contract RequestPeginScript is ScriptUtils {
             revert("PeginRequest already registered");
         }
         // register peginRequest
+        vm.recordLogs();
         vm.startBroadcast(getDeployerKey());
         pegManager.requestPegin(peginRequestTxSPVProof);
         vm.stopBroadcast();
@@ -93,5 +94,10 @@ contract RequestPeginScript is ScriptUtils {
         console.log(streamPosition.streamId);
         console.log("packetNumber");
         console.log(streamPosition.packetNumber);
+        console.log("accept pegin Tx Hash");
+        console.logBytes32(pegManager.getPeginRequest(peginRequestTxHash));
+        RequestPeginTempInfo memory requestPeginTempInfo = pegManager.getRequestPeginTempInfo(peginRequestTxHash);
+        console.log("accept pegin Signature Hash");
+        console.logBytes32(requestPeginTempInfo.acceptPeginSignatureHash);
     }
 }

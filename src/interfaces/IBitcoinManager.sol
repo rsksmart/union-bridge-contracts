@@ -138,5 +138,6 @@ interface IBitcoinManager {
     error InvalidPublicKey(bytes32 publicKey);
     error InvalidAddress(address _address);
     error InvalidValue(uint64 _value, uint64 expected);
+    error InvalidInputAmount(uint64 _value);
     error InvalidOutputAmount(uint64 actual, uint64 expected);
 }

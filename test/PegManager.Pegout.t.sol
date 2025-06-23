@@ -4,14 +4,7 @@ pragma solidity ^0.8.20;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
-import {
-    BtcTransaction,
-    BtcTxSPVProof,
-    StreamPosition,
-    RequestPeginTempInfo,
-    PegStatus,
-    IPegManager
-} from "src/interfaces/IPegManager.sol";
+import {BtcTransaction, BtcTxSPVProof, StreamPosition, PegStatus, IPegManager} from "src/interfaces/IPegManager.sol";
 import {PegoutTempInfo} from "src/PegManager.sol";
 import {BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
 import {Slot, SlotState, Packet, Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
@@ -70,13 +63,14 @@ contract TestPegManager is Test, HelperContract {
         Stream memory stream = streamManager.getStream(uint64(amount));
         uint64 packetNumber = 0;
         uint64 slotId = 0;
+        uint256 committeeId = uint256(keccak256(abi.encode(stream.streamId, packetNumber)));
 
         streamManager.setSlotHarness(stream.streamId, packetNumber, scriptPubKey, txId, amount);
 
         // Assert
         vm.expectEmit(address(pm));
         emit IPegManager.PegoutRequested(
-            usrPubKey, amount, expectedHash, expectedDigest, stream.streamId, packetNumber, slotId
+            usrPubKey, committeeId, expectedHash, expectedDigest, stream.streamId, packetNumber, slotId, amount
         );
 
         // Act
@@ -102,12 +96,12 @@ contract TestPegManager is Test, HelperContract {
         setup_requestAndAcceptPeginFlow();
 
         // Arrange
-        bytes32 expectedHash = 0x2d481d49aa6db0b972aa3bd0362586ef57b24e50f0e9574f758e7ea32892f2db;
+        bytes32 expectedSignatureHash = 0x772f88b4a710480e59273515298d2830db5239e54152de486a9a3e6a5adc5c6a;
 
         // These values are attached to txIdCounter value in HelperContract.getPeginRequestTxIn().
         // Counter should start in 0, otherwise the test will fail or expectedDigestc and usrPubKey should be updated.
-        bytes memory expectedDigest =
-            hex"000102000000000000005ef78f9036240a4786781297f6948d64e29693a6bdacf08ce3be4735cd047d8b88ded5110527d28e1ec7e99eb5e0292efb561a926b954918acc0492495244dcbbe45ad9e08ae96e42d7fd1f70a454432049ebd6a625fa377ffa22033fd8692d623e9829bfb4e23fbd3c4848baa035af15d73bcb83e510f7f097f90a21a4280d259b22a5698c2f1292b6f5a6ce99656354fd1191aeb5ed63f498d35005230c0f40000000000";
+        bytes memory expectedSignatureDigest =
+            hex"00010200000000000000ace1d82cab320dbc4dcf12779c7cf044655e5a0392244bc8be5266332fe4b75888ded5110527d28e1ec7e99eb5e0292efb561a926b954918acc0492495244dcbbe45ad9e08ae96e42d7fd1f70a454432049ebd6a625fa377ffa22033fd8692d623e9829bfb4e23fbd3c4848baa035af15d73bcb83e510f7f097f90a21a4280d259b22a5698c2f1292b6f5a6ce99656354fd1191aeb5ed63f498d35005230c0f40000000000";
 
         bytes memory usrPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
 
@@ -117,11 +111,19 @@ contract TestPegManager is Test, HelperContract {
         Stream memory stream = streamManager.getStream(amount);
         uint64 slotId = stream.pegoutSlotPointer;
         uint64 packetNumber = stream.pegoutPacketPointer;
+        uint256 committeeId = uint256(keccak256(abi.encode(stream.streamId, packetNumber)));
 
         // Assert
         vm.expectEmit(address(pm));
         emit IPegManager.PegoutRequested(
-            usrPubKey, amount, expectedHash, expectedDigest, stream.streamId, packetNumber, slotId
+            usrPubKey,
+            committeeId,
+            expectedSignatureHash,
+            expectedSignatureDigest,
+            stream.streamId,
+            packetNumber,
+            slotId,
+            amount
         );
 
         // Act
@@ -129,7 +131,7 @@ contract TestPegManager is Test, HelperContract {
 
         // Assert
         bytes32 result = pm.getPegoutSignatureHash(stream.streamId, packetNumber, slotId);
-        assertEq(result, expectedHash, "expected hash doesn't match the pegout computed one");
+        assertEq(result, expectedSignatureHash, "expected hash doesn't match the pegout computed one");
 
         // Assert
         Slot memory slot = streamManager.getSlot(stream.streamId, packetNumber, slotId);
@@ -138,7 +140,9 @@ contract TestPegManager is Test, HelperContract {
         // Assert
         // Check if the signatures struct was initialized by checking that the function doesn't revert, we expect false since it hasn't been signed yet;
         assertEq(
-            signatureManager.checkAllSignaturesReady(expectedHash), false, "Signatures struct hasn't been initialized"
+            signatureManager.checkAllSignaturesReady(expectedSignatureHash),
+            false,
+            "Signatures struct hasn't been initialized"
         );
     }
 
@@ -188,7 +192,18 @@ contract TestPegManager is Test, HelperContract {
         bytes memory usrPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b00";
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegManager.InvalidPubKeyLength.selector, usrPubKey.length));
+        vm.expectRevert(abi.encodeWithSelector(IPegManager.InvalidCompressedPubKey.selector, usrPubKey));
+
+        // Act
+        pm.tryPegout(usrPubKey);
+    }
+
+    function test_tryPegout_Revert_InvalidPublicKeyFirstByte() external {
+        // Arrange
+        bytes memory usrPubKey = hex"04d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IPegManager.InvalidCompressedPubKey.selector, usrPubKey));
 
         // Act
         pm.tryPegout(usrPubKey);

@@ -23,7 +23,7 @@ import {Constants} from "src/libraries/Constants.sol";
 
 contract TestSignatureManager is Test, HelperContract {
     uint64 internal setupStreamId;
-    bytes32 constant ACCEPT_PEGIN_TX_HASH = hex"e845a73ebccb6ce070eed67035f7f5e3a3135cf5b346f14085babf10b37a5791";
+    bytes32 constant ACCEPT_PEGIN_TX_HASH = hex"325bd7c332003b6f86b54cc1fa15429cc47124e5ec9c9900043ecbc61de38095";
 
     function setUp() external {
         runTestDeployScript();

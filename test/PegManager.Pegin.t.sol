@@ -42,10 +42,8 @@ contract TestPegManager is Test, HelperContract {
 
     function test_getTemporaryPeginAddress_Success() external view {
         address dummyRskAddress = 0x7Ac5496aee77c1bA1F0854206A26DdA82A81d6d8;
-        // TODO this is the value that includes the op_return data inside the taptree
-        // this should be put back once the protocol builder is updated
-        // string memory tempAddress = "bcrt1ptp8gw3yt9rjavkrlxhwmlm9y5w4c5u6yeeltmupanle76eq4ftrszyjhnn";
-        string memory tempAddress = "bcrt1py28js8ef0lgpe5mrh8yn7apt52tkc8k95cyrm8m4fjmpu5zn2mps7esu9h";
+        // Address is different according to amount and destination address
+        string memory tempAddress = "bcrt1p9hdr74xdg69a7w6r4pfsrrnj3l7ku54x5jdmtwf4thnjyhkmeuhs79pnrw";
 
         string memory result = pm.getTemporaryPeginAddress(dummyRskAddress, VALUE, BTC_REIMBURSEMENT_PUBKEY);
         assertEq(result, tempAddress, "Incorrect temporary peg in address at PegManager");
@@ -59,19 +57,34 @@ contract TestPegManager is Test, HelperContract {
         bridgeMock.setBtcTransactionConfirmations(10);
         // Create Pegin struct information
         BtcTxSPVProof memory peginRequestTxSPVProof = createBtcTxSPVProof(btcTransaction);
+        bytes32 expectedRequestPeginTxHash = getBtcTxHash(btcTransaction);
+        // expectedAcceptPeginTxHash should be hex"325bd7c332003b6f86b54cc1fa15429cc47124e5ec9c9900043ecbc61de38095";
+        bytes32 expectedAcceptPeginTxHash = getBtcTxHash(getBtcAcceptPeginTx(btcTransaction));
+        bytes32 expectedAcceptPeginSignatureHash = hex"4253f76ab307da1c9f2a7e0f17e12eed9c5614bed4e0f5efdf666c167c23cb18";
+        bytes memory expectedAcceptPeginSignatureMessage =
+            hex"0001020000000000000045eb25874678e195a26959dbc0597bca2bbc693af2ff2e73a862eb5156b285384f973621fe8403b6facae9abab80d863a847d3fb007ba2f9830f8e16e6e9b4d45314b96b3848ec1e8f6c656d51101273a35b12be9382350f8d4fa53959c09e9c23e9829bfb4e23fbd3c4848baa035af15d73bcb83e510f7f097f90a21a4280d296339a89bcce784abffbc39f4c9810a04d0d54e6cec93308d43efcabcf2dc87e0000000000";
 
         // Assert
         vm.expectEmit(address(pm));
-        // We emit the event we expect to see.
         emit IPegManager.PeginRequested(
             peginRequestTxSPVProof.blockHash,
-            getBtcTxHash(btcTransaction),
+            expectedRequestPeginTxHash,
             0,
             VALUE,
             PACKET_NUMBER,
             RSK_DESTINATION_ADDRESS,
             BTC_REIMBURSEMENT_PUBKEY,
             btcTransaction.outputs[0].scriptPubKey
+        );
+
+        // Assert
+        vm.expectEmit(address(pm));
+        emit IPegManager.InitAcceptPegin(
+            COMMITTEE_PUB_KEY,
+            expectedRequestPeginTxHash,
+            expectedAcceptPeginTxHash,
+            expectedAcceptPeginSignatureHash,
+            expectedAcceptPeginSignatureMessage
         );
 
         // Act
@@ -85,12 +98,12 @@ contract TestPegManager is Test, HelperContract {
         assertEq(streamPosition.packetNumber, 0, "Incorrect packetNumber registered");
         assertEq(uint256(streamPosition.pegStatus), uint256(PegStatus.REGISTERED), "Pegin Request was not registered");
 
-        BtcTransaction memory acceptPeginTx = getBtcAcceptPeginTx(btcTransaction);
+        BtcTransaction memory expectedAcceptPeginTx = getBtcAcceptPeginTx(btcTransaction);
+        // Registered Pegin Request
+        bytes32 acceptPeginTxHash = pm.getPeginRequest(txHash);
+        assertEq(acceptPeginTxHash, getBtcTxHash(expectedAcceptPeginTx), "Incorrect pegin request acceptPeginTxHash");
         // Registered Peg In Temp info
         RequestPeginTempInfo memory peginTempInfo = pm.getRequestPeginTempInfo(txHash);
-        assertEq(
-            peginTempInfo.acceptPeginTxHash, getBtcTxHash(acceptPeginTx), "Incorrect peg in temp info acceptPeginTxHash"
-        );
         assertEq(
             peginTempInfo.rskDestinationAddress,
             RSK_DESTINATION_ADDRESS,
@@ -99,6 +112,11 @@ contract TestPegManager is Test, HelperContract {
         assertEq(
             peginTempInfo.btcReimbursementPubKey,
             BTC_REIMBURSEMENT_PUBKEY,
+            "Incorrect peg in temp info btcReimbursementPubKey"
+        );
+        assertEq(
+            peginTempInfo.acceptPeginSignatureHash,
+            hex"4253f76ab307da1c9f2a7e0f17e12eed9c5614bed4e0f5efdf666c167c23cb18",
             "Incorrect peg in temp info btcReimbursementPubKey"
         );
     }

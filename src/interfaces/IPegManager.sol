@@ -38,7 +38,6 @@ struct RequestPeginTempInfo {
     address rskDestinationAddress;
     bytes32 btcReimbursementPubKey;
     bytes32 acceptPeginSignatureHash;
-    bytes32 acceptPeginTxHash;
 }
 
 struct PegoutTempInfo {
@@ -79,9 +78,12 @@ interface IPegManager {
     event InitAcceptPegin(
         bytes32 indexed committeePubKey,
         bytes32 indexed requestPeginTxHash,
+        bytes32 indexed acceptPeginTxHash,
         bytes32 acceptPeginSignatureHash,
         bytes acceptPeginSignatureMessage
     );
+
+    function getPeginRequest(bytes32 _btcTxHash) external view returns (bytes32);
 
     function getRequestPeginTempInfo(bytes32 btcTxHash) external view returns (RequestPeginTempInfo memory);
 
@@ -114,12 +116,13 @@ interface IPegManager {
     // address indexed bitcoinUserAddress,
     event PegoutRequested(
         bytes indexed usrPubKey,
-        uint64 amount,
+        uint256 indexed committeeId,
         bytes32 indexed pegoutSignatureHash,
-        bytes commonSignatureMessage,
+        bytes pegoutSignatureMessage,
         uint64 streamId,
         uint64 packetNumber,
-        uint64 slotId
+        uint64 slotId,
+        uint64 amount
     );
 
     event PegoutRegistered(
@@ -143,7 +146,7 @@ interface IPegManager {
     error PeginAlreadyAccepted(bytes32 btcTxHash);
     error IncorrectInputsNumber(uint256 actual, uint256 expected);
     error IncorrectOutputsNumber(uint256 actual, uint256 expected);
-    error InvalidPubKeyLength(uint256 usrPubKeyLength);
+    error InvalidCompressedPubKey(bytes usrPubKey);
     error InvalidLocktime(uint256 actual, uint256 expected);
     error InvalidBtcTxVersion(uint256 actual, uint256 expected);
     error InvalidSlotState(SlotState actual, SlotState expected);
