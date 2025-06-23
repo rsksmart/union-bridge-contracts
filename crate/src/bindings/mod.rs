@@ -6,3 +6,5 @@
 pub mod r#bitcoinmanager;
 pub mod r#committeeregistry;
 pub mod r#pegmanager;
+pub mod r#signaturemanager;
+pub mod r#streammanager;
