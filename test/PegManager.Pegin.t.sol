@@ -98,12 +98,12 @@ contract TestPegManager is Test, HelperContract {
         assertEq(streamPosition.packetNumber, 0, "Incorrect packetNumber registered");
         assertEq(uint256(streamPosition.pegStatus), uint256(PegStatus.REGISTERED), "Pegin Request was not registered");
 
-        BtcTransaction memory acceptPeginTx = getBtcAcceptPeginTx(btcTransaction);
+        BtcTransaction memory expectedAcceptPeginTx = getBtcAcceptPeginTx(btcTransaction);
+        // Registered Pegin Request
+        bytes32 acceptPeginTxHash = pm.getPeginRequest(txHash);
+        assertEq(acceptPeginTxHash, getBtcTxHash(expectedAcceptPeginTx), "Incorrect pegin request acceptPeginTxHash");
         // Registered Peg In Temp info
         RequestPeginTempInfo memory peginTempInfo = pm.getRequestPeginTempInfo(txHash);
-        assertEq(
-            peginTempInfo.acceptPeginTxHash, getBtcTxHash(acceptPeginTx), "Incorrect peg in temp info acceptPeginTxHash"
-        );
         assertEq(
             peginTempInfo.rskDestinationAddress,
             RSK_DESTINATION_ADDRESS,
@@ -112,6 +112,11 @@ contract TestPegManager is Test, HelperContract {
         assertEq(
             peginTempInfo.btcReimbursementPubKey,
             BTC_REIMBURSEMENT_PUBKEY,
+            "Incorrect peg in temp info btcReimbursementPubKey"
+        );
+        assertEq(
+            peginTempInfo.acceptPeginSignatureHash,
+            hex"4253f76ab307da1c9f2a7e0f17e12eed9c5614bed4e0f5efdf666c167c23cb18",
             "Incorrect peg in temp info btcReimbursementPubKey"
         );
     }

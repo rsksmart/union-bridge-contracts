@@ -1,25 +1,51 @@
 # BitVMX Union Bridge Contracts
+
 This repository contains the specifications and Solidity code for the Union Bridge Contracts.
 
 ## Pre requisites
+
 - You’ll need the [Rust](https://www.rust-lang.org/) compiler and Cargo, Rust’s package manager. The easiest way to install both is by using [rustup.rs.](https://rustup.rs/)
 - [Foundry v1.1.0-nightly](https://book.getfoundry.sh/getting-started/installation)
 - [Node.js LTS (22)](https://nodejs.org/en/download)
 
 ## Install dependencies
+
 - Run `forge install` to install smart contract dependencies
 - Run `npm install -g @openzeppelin/upgrades-core@1.44.0` to install open zepelin upgrade validations dependencies
 
 ## Testing
+
+### Tests
+
 You can run unit test with:
 
- ```sh
+```sh
 bash test.sh
 ```
 
-Or you can run the full test suit with:
+### Coverage
 
- ```sh
+Show coverage report and create [lcov file](https://lcov-viewer.netlify.app/)
+
+```sh
+bash coverage.sh
+```
+
+### Contract size
+
+Also you can check the contract size using:
+
+```sh
+bash shell/size-report.sh
+```
+
+Contracts size needs to be lower than 24kb
+
+### Integration test
+
+You can run the local integration test suit with:
+
+```sh
 bash run.sh
 ```
 
@@ -61,12 +87,6 @@ bash shell/slither.sh
 bash shell/sscript/deploy/simulate-deploy.sh
 ```
 
-Also you can check the contract size using:
-
-```sh
-bash shell/size-report.sh
-```
-
 ## Deployment
 
 Use [deployment script] (https://book.getfoundry.sh/guides/scripting-with-solidity#deploying-our-contract) to deploy:
@@ -93,6 +113,7 @@ It will automatically generate the rust files for the smart contracts using Allo
 We have scripts to interact with the deployed contracts
 
 ### Set Mock Bridge Confirmations
+
 In order to use the smart contracts on localnet we will need to set the number of confirmations of the BTC transactions because the Powpeg bridge does not exists on our local network.
 To do this we will run:
 
@@ -100,12 +121,11 @@ To do this we will run:
 bash shell/script/set-mock-bridge-confirmations.sh
 ```
 
-
 ### Get temporary address
 
 Returns the address where the user have to send funds to PegIn, set the corresponding arguments at [GetTemporaryAddress.s.sol](./script/GetTemporaryAddress.s.sol)
 
-``` solidity
+```solidity
 // ====== Arguments ======
 rootstock_deposit_address = 0x7ac5496aee77c1ba1f0854206a26dda82a81d6d8;
 value = 100_000;
@@ -123,7 +143,7 @@ bash shell/script/get-temporary-address.sh
 
 Register the peg in request transaction sent by the user in Bitcoin, set the corresponding arguments at [RegisterPegInRequest.s.sol](./script/RegisterPegInRequest.s.sol)
 
-``` solidity
+```solidity
 // ====== Arguments ======
 address rskDestinationAddress = 0x7ac5496aee77c1ba1f0854206a26dda82a81d6d8;
 uint64 value = 100_000;
@@ -167,15 +187,14 @@ For easier testing of the complete pegin/pegout flow, we provide a script that a
 4. Simulates a complete pegin/pegout cycle:
    - Registers a pegin request (user deposits BTC)
    - Accepts the pegin request (committee confirms BTC deposit)
-   - Registers a pegout request (user requests BTC withdrawal) 
+   - Registers a pegout request (user requests BTC withdrawal)
    - Adds committee member signatures (to authorize BTC withdrawal)
 
-
 To run the automated flow:
+
 ```sh
 bash ./shell/script/local-peg-full-flow.sh
 ```
-
 
 ## Development
 
@@ -191,7 +210,7 @@ We use a soldity interface called [Bridge.sol](./src//interfaces/Bridge.sol) to 
 
 ### Partial Merkle Tree Generation
 
-We use https://github.com/FairgateLabs/rust-bitvmx-transactions/blob/main/src/bin/bridge-pmt.rs in order to obtain the `merkleBraMerkle Branch PathnchPath` and `Merkle Branch Hashes` used in the bitcoin transaction SPV (proof). 
+We use https://github.com/FairgateLabs/rust-bitvmx-transactions/blob/main/src/bin/bridge-pmt.rs in order to obtain the `merkleBraMerkle Branch PathnchPath` and `Merkle Branch Hashes` used in the bitcoin transaction SPV (proof).
 
 Usage example:
 
@@ -245,7 +264,7 @@ docker-compose up
 
 ### ValidateCommandError
 
-If you see something like 
+If you see something like
 
 ```
 [FAIL: revert: Failed to run upgrade safety validation: /Users/pmprete/.npm/_npx/e9c2fe9985ed1095/node_modules/@openzeppelin/upgrades-core/dist/cli/validate/build-info-file.js:127

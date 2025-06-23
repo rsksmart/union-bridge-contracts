@@ -38,7 +38,6 @@ struct RequestPeginTempInfo {
     address rskDestinationAddress;
     bytes32 btcReimbursementPubKey;
     bytes32 acceptPeginSignatureHash;
-    bytes32 acceptPeginTxHash;
 }
 
 struct PegoutTempInfo {
@@ -83,6 +82,8 @@ interface IPegManager {
         bytes32 acceptPeginSignatureHash,
         bytes acceptPeginSignatureMessage
     );
+
+    function getPeginRequest(bytes32 _btcTxHash) external view returns (bytes32);
 
     function getRequestPeginTempInfo(bytes32 btcTxHash) external view returns (RequestPeginTempInfo memory);
 
