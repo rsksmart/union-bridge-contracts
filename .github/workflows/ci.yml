@@ -31,7 +31,7 @@ jobs:
         run: bash shell/script/deploy/deploy-local.sh
 
       - name: Run peg-flow
-        run: bash shell/script/peg-flow.sh
+        run: bash shell/script/integration-test/peg-flow.sh
 
       - name: Run tests
         run: forge test -vvv
