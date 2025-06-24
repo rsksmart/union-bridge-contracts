@@ -4,8 +4,8 @@ set -e
 source .env
 
 # Get the directory where this script is located
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR/../.."  # Go to project root
+CURRENT_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$CURRENT_PATH/../.."  # Go to project root
 
 # Parse arguments
 while getopts "h:s:" opt; do
@@ -25,10 +25,10 @@ if [ -z "$SIGNATURE_HASH" ] || [ -z "$SIGNATURE" ]; then
   exit 1
 fi
 
-chmod +x "$SCRIPT_DIR/add-member-signature.sh"
+chmod +x "$CURRENT_PATH/add-member-signature.sh"
 
 # Loop through all mnemonic indices
 for ((i=0; i<=MAX_MNEMONIC_INDEX; i++)); do
   echo "Adding signature for member $i"
-  "$SCRIPT_DIR/add-member-signature.sh" -m "$i" -h "$SIGNATURE_HASH" -s "$SIGNATURE"
+  "$CURRENT_PATH/add-member-signature.sh" -m "$i" -h "$SIGNATURE_HASH" -s "$SIGNATURE"
 done
