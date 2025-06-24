@@ -1,5 +1,5 @@
 # Go to project root
-CURRENT_PATH=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
+CURRENT_PATH=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 cd "$CURRENT_PATH/../../.."
 
 # Load environment variables

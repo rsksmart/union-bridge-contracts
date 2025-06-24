@@ -4,7 +4,7 @@ set -e
 source .env
 
 # Get the directory where this script is located
-CURRENT_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CURRENT_PATH=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 cd "$CURRENT_PATH/../.."  # Go to project root
 
 # Parse arguments
