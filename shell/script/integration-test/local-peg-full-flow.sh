@@ -14,17 +14,20 @@ while ! nc -z localhost 8545; do
 done
 
 # Get the directory where this script is located
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CURRENT_PATH=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+SCRIPT_DIR="$CURRENT_PATH/.."
 
 bash "$SCRIPT_DIR/deploy/deploy-local.sh"
 
-# This script runs the packet creation flow, including:
-# 1. Applying members to a stream
-# 2. Which triggers the creation of a pending committee
-# 3. Depositing member info for each member of the committee
-# 4. Which in turn triggers the completion of the creation of the committee and a packet with it
+# This script runs the pegin/pegout flow, including:
+# 1. Register 10 members and deposit their aggregated key to create a committee and packet
+# 2. Registering a pegin request
+# 3. Accepting the pegin request
+# 4. Registering a pegout request
+# 5. Adding every member signature
+# 6. Registering the pegout
 
-bash "$SCRIPT_DIR/packet-creation-flow.sh"
+bash "$SCRIPT_DIR/integration-test/peg-flow.sh"
 
 # Kill any used anvil process
 kill -9 $(lsof -ti :8545)

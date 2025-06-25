@@ -14,12 +14,13 @@ PEGOUT_SIGNATURE_HASH="0x84db689c468f3824c4f010331d786d97b59ce5ac15ab69dda529291
 PEGIN_SIGNATURE_HASH="0x5642b8f6a605936eebaac9dcb46687bdf400948285d293283dcb87251aecd55b"
 
 # Get the directory where this script is located
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CURRENT_PATH=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+SCRIPT_DIR="$CURRENT_PATH/.."
 
-bash "$SCRIPT_DIR/packet-creation-flow.sh"
+bash "$SCRIPT_DIR/integration-test/packet-creation-flow.sh"
 bash "$SCRIPT_DIR/request-pegin.sh"
-bash "$SCRIPT_DIR/add-every-member-nonce-and-signature.sh" -h "$PEGIN_SIGNATURE_HASH"
+bash "$SCRIPT_DIR/signatures/add-every-member-nonce-and-signature.sh" -h "$PEGIN_SIGNATURE_HASH"
 bash "$SCRIPT_DIR/accept-pegin.sh"
 bash "$SCRIPT_DIR/request-pegout.sh"
-bash "$SCRIPT_DIR/add-every-member-nonce-and-signature.sh" -h "$PEGOUT_SIGNATURE_HASH"
+bash "$SCRIPT_DIR/signatures/add-every-member-nonce-and-signature.sh" -h "$PEGOUT_SIGNATURE_HASH"
 bash "$SCRIPT_DIR/register-pegout.sh"

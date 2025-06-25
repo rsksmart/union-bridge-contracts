@@ -12,7 +12,8 @@ set -e  # exit on error
 source .env
 
 # Get the directory where this script is located
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CURRENT_PATH=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+SCRIPT_DIR="$CURRENT_PATH/.."
 
 # Default values
 OPERATOR_AMOUNT=3

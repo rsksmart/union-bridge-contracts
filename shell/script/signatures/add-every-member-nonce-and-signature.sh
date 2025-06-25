@@ -21,12 +21,12 @@ while getopts ":h:n:s:" opt; do
 done
 
 # Go to script dir
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CURRENT_PATH=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 # Ensure helper scripts are executable
-chmod +x "$SCRIPT_DIR/add-every-member-nonce.sh"
-chmod +x "$SCRIPT_DIR/add-every-member-signature.sh"
+chmod +x "$CURRENT_PATH/add-every-member-nonce.sh"
+chmod +x "$CURRENT_PATH/add-every-member-signature.sh"
 
 # Run both scripts
-bash "$SCRIPT_DIR/add-every-member-nonce.sh" -h "$SIGNATURE_HASH" -n "$NONCE"
-bash "$SCRIPT_DIR/add-every-member-signature.sh" -h "$SIGNATURE_HASH" -s "$SIGNATURE"
+bash "$CURRENT_PATH/add-every-member-nonce.sh" -h "$SIGNATURE_HASH" -n "$NONCE"
+bash "$CURRENT_PATH/add-every-member-signature.sh" -h "$SIGNATURE_HASH" -s "$SIGNATURE"
