@@ -3,107 +3,159 @@ pragma solidity ^0.8.20;
 
 import {IAccessControl} from "./IAccessControl.sol";
 
-enum StreamDenomination { //TODO integrate this enum into StreamManager logic
+/// @notice Represents different Bitcoin denominations supported by the union bridge
+/// @dev Each denomination corresponds to a specific stream for efficient fund management
+// TODO: integrate this enum into StreamManager logic
+enum StreamDenomination {
+    /// @notice 0.001 BTC (100,000 satoshis)
     _0_001BTC,
+    /// @notice 0.01 BTC (1,000,000 satoshis)
     _0_01BTC,
+    /// @notice 0.1 BTC (10,000,000 satoshis)
     _0_1BTC,
+    /// @notice 1 BTC (100,000,000 satoshis)
     _1BTC,
+    /// @notice 10 BTC (1,000,000,000 satoshis)
     _10BTC
 }
 
+/// @notice Represents the current state of a slot in the stream system
+/// @dev Tracks the progression of funds through the slot lifecycle
 enum SlotState {
+    /// @notice Slot is prepared and ready to accept peg-in transactions
     PREPARED,
+    /// @notice Slot has received a peg-in transaction and is filled with funds
     FILLED,
+    /// @notice Slot is locked for peg-out processing
     LOCKED,
+    /// @notice Slot has been paid out via peg-out transaction
     PAID
 }
 
+/// @notice Represents a slot within a packet that can hold funds
+/// @dev Each slot corresponds to a specific UTXO in the Bitcoin network
 struct Slot {
-    uint64 slotId; // Unique ID
-    SlotState state; // The state of the slot
-    bytes scriptPubKey; // The scriptPubKey of the Accept Peg-in Output UTXO
-    bytes32 acceptPeginTx; // Transaction id of the committee peg-in transaction
-    uint64 acceptPeginAmount; // The value of the accept peg-in transaction P2TR utxo
-    bytes32 take0Tx; // Transaction id of the peg-out without dispute transaction
-    bytes32 take1Tx; // Transaction id of the successfull dispute peg-out transaction
+    /// @notice Unique identifier for the slot within its packet
+    uint64 slotId;
+    /// @notice Current state of the slot in the lifecycle
+    SlotState state;
+    /// @notice The scriptPubKey of the Accept Peg-in Output UTXO
+    /// @dev This is the locking script that defines how the UTXO can be spent
+    bytes scriptPubKey;
+    /// @notice Transaction ID of peg-in transaction in the committee account
+    /// @dev This is the Bitcoin transaction that filled this slot
+    bytes32 acceptPeginTx;
+    /// @notice The value of the accept peg-in transaction P2TR UTXO in satoshis
+    uint64 acceptPeginAmount;
+    /// @notice Transaction ID of the peg-out transaction to the user account
+    /// @dev Used for normal peg-out operations
+    bytes32 take0Tx;
+    /// @notice Transaction ID of the transaction to the operator account as the operator advanced funds to the user
+    /// @dev Used when the operator advances funds to the user because not all members of the committee signed the peg-out transaction
+    bytes32 take1Tx;
 }
 
+/// @notice Represents a packet within a stream that contains multiple slots
+/// @dev Each packet is managed by a specific committee
 struct Packet {
-    uint64 packetNumber; // Unique ID
-    // uint64 denomination; // The denomination in satoshis of the packet (redundant, this field is also in the stream structure)
-    // Slot[] slots; // A dynamic array to store the slots of the packet
-    // Arrays should not be in scruct otherwise they are too havy on memory and cause a stack too deep exception
-    // uint256 slotLength; // Length of the array (redundant but can be stored if needed)
-    // uint256 committeeId; // Unique committee ID // Not Necessary
-    uint256 committeeId; // The committee ID
-    bytes32 committeePubKey; // The internal key of the committee
+    /// @notice Unique identifier for the packet within its stream
+    uint64 packetNumber;
+    /// @notice The committee ID responsible for this packet
+    /// @dev Each packet is managed by a specific committee of validators
+    uint256 committeeId;
+    /// @notice The internal key of the committee for this packet
+    /// @dev This is the public key used for committee operations
+    bytes32 committeePubKey;
 }
 
+/// @notice Represents a stream that manages funds of a specific denomination
+/// @dev Each stream handles a specific Bitcoin amount for efficient fund management
 struct Stream {
-    uint64 streamId; // Unique ID
-    uint64 denomination; // The denomination of the stream in satoshis
-    // Packet[] packets; // A dynamic array to store the packets of the stream
-    // Arrays should not be in scruct otherwise they are too havy on memory and cause a stack too deep exception
-    // uint8 packetLength; // Length of the array (redundant but can be stored if needed)
-    uint64 peginPacketPointer; // An index for the packets array. It points to the current packet with space to a slot to register a peg-in request
-    uint64 pegoutPacketPointer; // Another index for the packets array. It points to the current packet that should have a slot filled for a peg-out request
-    uint16 pegoutSlotPointer; // An index for the slots array. It points to the first slot in the pegoutPacketPointer that should be processed when requested (if it's filled)
-    uint8 peginConfirmations; // A generic number
-    uint8 pegoutConfirmations; // Another generic number
-    uint256 securityBondValue; // The required bond (in wei) that each member of the committee needs to deposit to secure a packet
+    /// @notice Unique identifier for the stream
+    uint64 streamId;
+    /// @notice The denomination of the stream in satoshis
+    /// @dev All funds in this stream must match this exact amount
+    uint64 denomination;
+    /// @notice Index pointing to the current packet with space for peg-in requests
+    /// @dev Used to track which packet should receive new peg-in transactions
+    uint64 peginPacketPointer;
+    /// @notice Index pointing to the current packet that should have filled slots for peg-out requests
+    /// @dev Used to track which packet should be processed for peg-out operations
+    uint64 pegoutPacketPointer;
+    /// @notice Index pointing to the first slot in the pegoutPacketPointer that should be processed
+    /// @dev Used to track which slot should be processed next for peg-out operations
+    uint16 pegoutSlotPointer;
+    /// @notice Number of confirmations required for peg-in transactions
+    /// @dev Ensures sufficient Bitcoin confirmations before accepting peg-ins
+    uint8 peginConfirmations;
+    /// @notice Number of confirmations required for peg-out transactions
+    /// @dev Ensures sufficient Bitcoin confirmations before completing peg-outs
+    uint8 pegoutConfirmations;
+    /// @notice Required bond (in wei) that each committee member needs to deposit
+    /// @dev Provides security and incentive alignment for committee members
+    uint256 securityBondValue;
 }
 
+/// @notice Interface for managing streams, packets, and slots in the union bridge
+/// @dev This interface provides functions for organizing and tracking funds through the hierarchical structure
+/// @dev Manages the lifecycle of funds from peg-in to peg-out through streams, packets, and slots
 interface IStreamManager is IAccessControl {
-    /// @notice Adds a packet to a specific stream with the committee public key
-    /// @param _streamId The index in the array of streams
-    /// @param _committeeId The id of the committee for the packet
+    /// @notice Creates a new packet in a specific stream with committee assignment
+    /// @dev Only callable by the CommitteeRegistry smart contract
+    /// @param _streamId The index of the stream to add the packet to
+    /// @param _committeeId The ID of the committee responsible for this packet
     /// @param _committeePubKey The public key of the selected committee for the packet
     function createNewPacket(uint64 _streamId, uint256 _committeeId, bytes32 _committeePubKey) external;
 
-    /// @notice Allows users to get the Stream information for a given denomination
-    /// @param _denomination The value to peg in used by the stream in satoshi
-    /// @return Stream The stream information
+    /// @notice Retrieves stream information for a given denomination
+    /// @dev Looks up the stream that handles the specified Bitcoin amount
+    /// @param _denomination The value in satoshis used to identify the stream
+    /// @return Stream The complete stream information
     function getStream(uint64 _denomination) external view returns (Stream calldata);
 
-    /// @notice Allows users to get the Stream information for a given index
-    /// @param _streamId The index in the array of streams
-    /// @return Stream The stream information
+    /// @notice Retrieves stream information for a given stream ID
+    /// @dev Direct lookup by stream index
+    /// @param _streamId The index of the stream to retrieve
+    /// @return Stream The complete stream information
     function getStreamById(uint64 _streamId) external view returns (Stream calldata);
 
-    /// @notice Get the number of streams
+    /// @notice Gets the total number of streams in the system
     /// @return uint64 The number of streams
     function getStreamsLength() external view returns (uint64);
 
-    /// @notice Get the number of packets for a given stream
-    /// @param _streamId The index in the array of streams
+    /// @notice Gets the number of packets in a specific stream
+    /// @param _streamId The index of the stream
+    /// @return uint64 The number of packets in the stream
     function getPacketsLength(uint64 _streamId) external view returns (uint64);
 
-    /// @notice Allows users to get the packet information for a given packet index at a stream
-    /// @param _streamId The index in the array of streams
-    /// @param _packetNumber The index in the array of packets
-    /// @return Packet The packet information
+    /// @notice Retrieves packet information for a specific packet in a stream
+    /// @param _streamId The index of the stream
+    /// @param _packetNumber The index of the packet within the stream
+    /// @return Packet The complete packet information
     function getPacket(uint64 _streamId, uint64 _packetNumber) external view returns (Packet memory);
 
-    /// @notice Allows users to get the first filled Slot information for a given packet index at a stream and lock slot
-    /// @param _streamId The index in the array of streams
-    /// @return slot The slot of the first filled slot information
-    /// @return packetNumber The packet number of the first filled slot information
+    /// @notice Locks the first filled slot in a stream for peg-out processing
+    /// @dev Returns the slot information and packet number for the locked slot
+    /// @param _streamId The index of the stream
+    /// @return slot The slot information for the locked slot
+    /// @return packetNumber The packet number containing the locked slot
     function lockSlot(uint64 _streamId) external returns (Slot memory, uint64 packetNumber);
 
-    /// @notice Allows users to get the Slot information for a given slot index at a packet index at a stream
-    /// @param _streamId The index in the array of streams
-    /// @param _packetNumber The index in the array of packets
-    /// @param _slotNumber The index in the array of slots
-    /// @return Slot The slot information
+    /// @notice Retrieves slot information for a specific slot in a packet
+    /// @param _streamId The index of the stream
+    /// @param _packetNumber The index of the packet within the stream
+    /// @param _slotNumber The index of the slot within the packet
+    /// @return Slot The complete slot information
     function getSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotNumber) external view returns (Slot memory);
 
-    /// @notice Allows users to fill the accept peg-in transaction for a given slot
-    /// @param _streamId The index in the array of streams
-    /// @param _packetNumber The index in the array of packets
-    /// @param _acceptPeginAmount The amount of the accept peg-in transaction
-    /// @param _acceptPeginTx The transaction id of the accept peg-in transaction
+    /// @notice Fills a slot with accept peg-in transaction information
+    /// @dev Updates the slot state to FILLED and stores transaction details
+    /// @param _streamId The index of the stream
+    /// @param _packetNumber The index of the packet within the stream
+    /// @param _acceptPeginAmount The amount of the accept peg-in transaction in satoshis
+    /// @param _acceptPeginTx The transaction ID of the accept peg-in transaction
     /// @param _scriptPubKey The scriptPubKey of the accept peg-in transaction
-    /// @return uint64 The slotId of the filled slot
+    /// @return uint64 The slot ID of the filled slot
     function fillAcceptPeginTx(
         uint64 _streamId,
         uint64 _packetNumber,
@@ -112,24 +164,25 @@ interface IStreamManager is IAccessControl {
         bytes memory _scriptPubKey
     ) external returns (uint64);
 
-    /// @notice Allows users to get the committee id for a given packet index at a stream
-    /// @param _streamId The index in the array of streams
-    /// @param _packetNumber The index in the array of packets
-    /// @return uint256 The committee id
+    /// @notice Retrieves the committee ID for a specific packet
+    /// @param _streamId The index of the stream
+    /// @param _packetNumber The index of the packet within the stream
+    /// @return uint256 The committee ID responsible for this packet
     function getCommitteeId(uint64 _streamId, uint64 _packetNumber) external view returns (uint256);
 
-    /// @notice Allows users to get the committee public key for a given packet index at a stream
-    /// @param _streamId The index in the array of streams
-    /// @param _packetNumber The index in the array of packets
-    /// @return bytes32 The committee public key
+    /// @notice Retrieves the committee public key for a specific packet
+    /// @param _streamId The index of the stream
+    /// @param _packetNumber The index of the packet within the stream
+    /// @return bytes32 The committee public key for this packet
     function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes32);
 
-    /// @notice Marks a slot as paid, updating its state to PAID
-    /// @param _streamId The index in the array of streams
-    /// @param _packetNumber The index in the array of packets
-    /// @param _slotId The index in the array of slots
+    /// @notice Marks a slot as paid and updates its state
+    /// @dev Updates the slot state to PAID and stores the peg-out transaction ID
+    /// @param _streamId The index of the stream
+    /// @param _packetNumber The index of the packet within the stream
+    /// @param _slotId The index of the slot within the packet
     /// @param _acceptPeginTxHash The expected accept peg-in transaction hash for validation
-    /// @param _take0Tx The transaction id of the peg-out without dispute transaction
+    /// @param _take0Tx The transaction ID of the normal peg-out transaction
     function paidSlot(
         uint64 _streamId,
         uint64 _packetNumber,
@@ -138,51 +191,128 @@ interface IStreamManager is IAccessControl {
         bytes32 _take0Tx
     ) external;
 
-    /// @notice Allows contract owner to set the security bond value for a given stream
-    /// @param _streamId The index in the array of streams
-    /// @param _securityBondValue The value of the security bond expresed in RBTC in wei
-    /// @dev The security bond is the amount of RBTC that each committee member needs to deposit to secure a packet
+    /// @notice Sets the security bond value for a specific stream
+    /// @dev Only callable by the contract owner
+    /// @param _streamId The index of the stream
+    /// @param _securityBondValue The value of the security bond in RBTC (wei)
     function setSecurityBond(uint64 _streamId, uint256 _securityBondValue) external;
 
-    /// @notice Allows contract owner to set the peg-in confirmations for a given stream
-    /// @param _streamId The index in the array of streams
-    /// @param _confirmations The number of confirmations required for a peg-in transaction
-    /// @dev The peg-in confirmations is the number of confirmations required for a peg-in transaction to be considered valid
+    /// @notice Sets the number of confirmations required for peg-in transactions
+    /// @dev Only callable by the contract owner
+    /// @param _streamId The index of the stream
+    /// @param _confirmations The number of confirmations required for peg-in transactions
     function setPeginConfirmations(uint64 _streamId, uint8 _confirmations) external;
 
-    /// @notice Allows contract owner to set the peg-out confirmations for a given stream
-    /// @param _streamId The index in the array of streams
-    /// @param _confirmations The number of confirmations required for a peg-out transaction
-    /// @dev The peg-out confirmations is the number of confirmations required for a peg-out transaction to be considered valid
+    /// @notice Sets the number of confirmations required for peg-out transactions
+    /// @dev Only callable by the contract owner
+    /// @param _streamId The index of the stream
+    /// @param _confirmations The number of confirmations required for peg-out transactions
     function setPegoutConfirmations(uint64 _streamId, uint8 _confirmations) external;
 
-    /// @notice Allows users to get the current packet committee id for a given stream
-    /// @param _streamId The index in the array of streams
-    /// @return uint256 The current packet committee id
-    /// @dev This functions return 0 if the stream does not have a current packet (i.e. no packets created yet or last packet run out of slots)
+    /// @notice Gets the committee ID for the current packet in a stream
+    /// @param _streamId The index of the stream
+    /// @return uint256 The committee ID for the current packet (returns 0 if no current packet)
     function getCurrentPacketCommitteeId(uint64 _streamId) external view returns (uint256);
 
+    // Events
+    /// @notice Event emitted when a new stream is created
+    /// @param streamId The ID of the newly created stream
+    /// @param denomination The denomination of the stream in satoshis
     event StreamCreated(uint64 streamId, uint64 denomination);
+
+    /// @notice Event emitted when a new packet is created
+    /// @param streamId The ID of the stream containing the packet
+    /// @param packetNumber The number of the newly created packet
     event PacketCreated(uint64 streamId, uint64 packetNumber);
+
+    /// @notice Event emitted when a new slot is created
+    /// @param streamId The ID of the stream containing the slot
+    /// @param packetNumber The number of the packet containing the slot
+    /// @param slotId The ID of the newly created slot
     event SlotCreated(uint64 streamId, uint64 packetNumber, uint64 slotId);
 
+    // Errors
+    /// @notice Thrown when a stream is not found for the given denomination
+    /// @param denomination The denomination that was not found
     error StreamNotFoundByDenomination(uint256 denomination);
+
+    /// @notice Thrown when a stream is not found for the given stream ID
+    /// @param streamId The stream ID that was not found
     error StreamNotFoundById(uint256 streamId);
+
+    /// @notice Thrown when a packet number is out of bounds
+    /// @param packetNumber The packet number that is out of bounds
     error PacketOutOfBound(uint256 packetNumber);
+
+    /// @notice Thrown when there are no empty slots available in a packet
+    /// @param streamId The stream ID
+    /// @param packetNumber The packet number
     error NoEmptySlot(uint256 streamId, uint256 packetNumber);
+
+    /// @notice Thrown when there are too many denominations
+    /// @param maxDenominationsSize The maximum number of denominations allowed
     error tooManyDenominations(uint256 maxDenominationsSize);
+
+    /// @notice Thrown when there are no filled slots available
+    /// @param streamId The stream ID
+    /// @param packetNumber The packet number
+    /// @param slotId The slot ID
     error NoFilledSlot(uint256 streamId, uint256 packetNumber, uint256 slotId);
+
+    /// @notice Thrown when a packet is not found
+    /// @param streamId The stream ID
+    /// @param packetNumber The packet number
     error PacketNotFound(uint256 streamId, uint256 packetNumber);
+
+    /// @notice Thrown when there are inconsistent slots per packet
+    /// @param streamId The stream ID
+    /// @param packetNumber The packet number
+    /// @param slotsPerPacket The number of slots per packet
     error InconsistentSlotsPerPacket(uint256 streamId, uint256 packetNumber, uint256 slotsPerPacket);
+
+    /// @notice Thrown when the peg-in packet number is invalid
+    /// @param streamId The stream ID
+    /// @param packetNumber The invalid packet number
     error InvalidPeginPacketNumber(uint256 streamId, uint256 packetNumber);
+
+    /// @notice Thrown when a slot does not exist
+    /// @param streamId The stream ID
+    /// @param packetNumber The packet number
+    /// @param slotId The slot ID
     error NonExistentSlot(uint256 streamId, uint256 packetNumber, uint256 slotId);
+
+    /// @notice Thrown when a stream is already initialized
+    /// @param streamId The stream ID that is already initialized
     error StreamAlreadyInitialized(uint256 streamId);
+
+    /// @notice Thrown when peg-in confirmations are invalid
+    /// @param confirmations The invalid number of confirmations
     error InvalidPeginConfirmations(uint8 confirmations);
+
+    /// @notice Thrown when peg-out confirmations are invalid
+    /// @param confirmations The invalid number of confirmations
     error InvalidPegoutConfirmations(uint8 confirmations);
+
+    /// @notice Thrown when the security bond value is invalid
+    /// @param securityBond The invalid security bond value
     error InvalidSecurityBondValue(uint256 securityBond);
+
+    /// @notice Thrown when the slot state doesn't match the expected state
+    /// @param actual The actual slot state
+    /// @param expected The expected slot state
     error InvalidSlotState(SlotState actual, SlotState expected);
+
+    /// @notice Thrown when the accept peg-in transaction hash doesn't match
+    /// @param expected The expected transaction hash
+    /// @param actual The actual transaction hash
     error InvalidAcceptPeginTxHash(bytes32 expected, bytes32 actual);
+
+    /// @notice Thrown when an address is zero
     error InvalidZeroAddress();
 
+    /// @notice Thrown when there is an inconsistent peg-out pointer
+    /// @param streamId The stream ID
+    /// @param packetNumber The packet number
+    /// @param slotPointer The slot pointer
     error _InconsistentPegoutPointer(uint256 streamId, uint256 packetNumber, uint256 slotPointer);
 }

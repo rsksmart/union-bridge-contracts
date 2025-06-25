@@ -3,74 +3,225 @@ pragma solidity ^0.8.20;
 
 import {IAccessControl} from "./IAccessControl.sol";
 
+/// @notice Represents signature data for a committee member
+/// @dev Contains the member's public key, signature, and nonce for multi-signature operations
 struct SignatureData {
+    /// @notice The signature provided by the member
     bytes32 signature;
-    bytes nonce; // Should be 66 bytes
+    /// @notice The nonce used for signature generation (should be 66 bytes)
+    bytes nonce;
 }
 
+/// @notice Represents the state of signatures for a specific hash
+/// @dev Tracks partial signatures, missing signatures, and committee information
 struct Signatures {
+    /// @notice Mapping of member addresses to their signature data
     mapping(address memberAddress => SignatureData) partialSignaturesData;
+    /// @notice Number of missing signatures
     uint8 missingSignatures;
+    /// @notice Number of missing nonces
     uint8 missingNonces;
+    /// @notice ID of the committee responsible for these signatures
     uint256 committeeId;
 }
 
+/// @notice Represents Take1 transaction data for a committee member
+/// @dev Used for Take1 operations (advance funds to the user)
 struct Take1Data {
+    /// @notice The transaction hash provided by the member
     bytes32 txHash;
+    /// @notice The member's address
     address memberAddress;
 }
 
+/// @notice Represents the state of Take1 transaction hashes for a specific accept peg-in
+/// @dev Tracks Take1 transaction hashes provided by committee members
 struct Take1TxHashes {
+    /// @notice Mapping of member addresses to their Take1 transaction hashes
     mapping(address memberAddress => bytes32 take1TxHash) txHashes;
+    /// @notice Number of missing Take1 transaction hashes
     uint8 missingHashes;
+    /// @notice ID of the committee responsible for these hashes
     uint256 committeeId;
 }
 
+/// @notice Interface for managing multi-signature operations in the union bridge
+/// @dev This interface provides functions for collecting and validating committee signatures
+/// @dev Handles member signatures for both pegin and pegout transactions
 interface ISignatureManager is IAccessControl {
+    /// @notice Initializes signature collection for a specific hash
+    /// @dev Sets up the signature tracking structure for committee members
+    /// @param _hashToSign The hash that committee members need to sign
+    /// @param _committeeId The ID of the committee responsible for signing
     function initSignatures(bytes32 _hashToSign, uint256 _committeeId) external;
 
+    /// @notice Adds a nonce for a committee member
+    /// @dev Called by committee members to provide their nonce for signature generation
+    /// @param _hashToSign The hash being signed
+    /// @param _nonce The nonce provided by the member (should be 66 bytes)
+    /// @return True if the nonce was successfully added
     function addMemberNonce(bytes32 _hashToSign, bytes memory _nonce) external returns (bool);
 
+    /// @notice Adds a signature for a committee member
+    /// @dev Called by committee members to provide their signature
+    /// @param _hashToSign The hash being signed
+    /// @param _signature The signature provided by the member
+    /// @return True if the signature was successfully added
     function addMemberSignature(bytes32 _hashToSign, bytes32 _signature) external returns (bool);
 
+    /// @notice Checks if all signatures are ready for a specific hash
+    /// @param _hashToSign The hash to check signatures for
+    /// @return True if all required signatures have been collected
     function checkAllSignaturesReady(bytes32 _hashToSign) external view returns (bool);
 
+    /// @notice Retrieves all partial signatures for a specific hash
+    /// @param _hashToSign The hash to get signatures for
+    /// @return Array of signature data from all committee members
     function getPartialSignatures(bytes32 _hashToSign) external view returns (SignatureData[] memory);
 
+    /// @notice Gets the status of signatures for a specific hash
+    /// @param _hashToSign The hash to check status for
+    /// @return missingSignatures Number of missing signatures
+    /// @return missingNonces Number of missing nonces
+    /// @return committeeId The committee ID responsible for these signatures
     function getSignaturesStatus(bytes32 _hashToSign)
         external
         view
         returns (uint8 missingSignatures, uint8 missingNonces, uint256 committeeId);
 
+    /// @notice Initializes Take1 transaction hash collection for a specific accept peg-in
+    /// @dev Sets up the Take1 hash tracking structure for committee members
+    /// @param _acceptPeginTxHash The accept peg-in transaction hash
+    /// @param _committeeId The ID of the committee responsible for Take1 operations
     function initTake1TxHashes(bytes32 _acceptPeginTxHash, uint256 _committeeId) external;
+
+    /// @notice Adds a Take1 transaction hash for a committee member
+    /// @dev Called by committee operators to provide their Take1 transaction hash
+    /// @param _acceptPeginTxHash The accept peg-in transaction hash
+    /// @param _txHash The Take1 transaction hash provided by the member
     function addTake1TxHash(bytes32 _acceptPeginTxHash, bytes32 _txHash) external;
+
+    /// @notice Checks if all Take1 transaction hashes are ready
+    /// @param _acceptPeginTxHash The accept peg-in transaction hash
+    /// @return True if all required Take1 hashes have been collected
     function checkAllTake1HashesReady(bytes32 _acceptPeginTxHash) external view returns (bool);
+
+    /// @notice Retrieves all Take1 data for a specific accept peg-in
+    /// @param _acceptPeginTxHash The accept peg-in transaction hash
+    /// @return Array of Take1 data from all committee members
     function getTake1Data(bytes32 _acceptPeginTxHash) external view returns (Take1Data[] memory);
+
+    /// @notice Gets the committee ID for a specific accept peg-in transaction hash
+    /// @param _acceptPeginTxHash The accept peg-in transaction hash
+    /// @return The committee ID responsible for this accept peg-in
     function getCommitteeIdByAcceptPeginTxHash(bytes32 _acceptPeginTxHash) external view returns (uint256);
 
-    event NonceAdded(bytes32 indexed hashToSign, address indexed memberAddress, bytes nonce);
+    // Events
+    /// @notice Event emitted when a nonce is added by a committee member
+    /// @param hashToSign The hash being signed
+    /// @param memberAddress The member's RSK address
+    /// @param nonce The nonce provided by the member
+    event NonceAdded(bytes32 indexed hashToSign, indexed memberAddress, bytes nonce);
+
+    /// @notice Event emitted when all nonces are ready for a hash
+    /// @param hashToSign The hash for which all nonces are ready
     event AllNoncesReady(bytes32 indexed hashToSign);
-    event SignatureAdded(bytes32 indexed hashToSign, address indexed memberAddress, bytes32 signature);
+
+    /// @notice Event emitted when a signature is added by a committee member
+    /// @param hashToSign The hash being signed
+    /// @param memberAddress The member's RSK address
+    /// @param signature The signature provided by the member
+    event SignatureAdded(bytes32 indexed hashToSign, indexed memberAddress, bytes32 signature);
+
+    /// @notice Event emitted when all signatures are ready for a hash
+    /// @param hashToSign The hash for which all signatures are ready
     event AllSignaturesReady(bytes32 indexed hashToSign);
+
+    /// @notice Event emitted when a Take1 transaction hash is added
+    /// @param acceptPeginTxHash The accept peg-in transaction hash
+    /// @param memberAddress The member's address
+    /// @param hash The Take1 transaction hash provided by the member
     event Take1TxHashAdded(bytes32 acceptPeginTxHash, address memberAddress, bytes32 hash);
+
+    /// @notice Event emitted when all Take1 transaction hashes are added
+    /// @param acceptPeginTxHash The accept peg-in transaction hash
     event AllTake1TxHashesAdded(bytes32 acceptPeginTxHash);
 
+    // Errors
+    /// @notice Thrown when the committee registry address is set to zero
     error CommitteeRegistryAddressZero();
+
+    /// @notice Thrown when a hash to sign is not found
+    /// @param hashToSign The hash that was not found
     error HashToSignNotFound(bytes32 hashToSign);
+
+    /// @notice Thrown when the nonce length is invalid
+    /// @param actual The actual nonce length
+    /// @param expected The expected nonce length (66 bytes)
     error InvalidNonceLength(uint256 actual, uint8 expected);
+
+    /// @notice Thrown when a member has already added a nonce
+    /// @param memberAddress The member's address
+    /// @param nonce The nonce that was already added
     error MemberAlreadyAddedNonce(address memberAddress, bytes nonce);
+
+    /// @notice Thrown when all nonces are not present
+    /// @param hashToSign The hash for which nonces are missing
     error AllNoncesAreNotPresent(bytes32 hashToSign);
+
+    /// @notice Thrown when a signature is invalid
     error InvalidSignature();
+
+    /// @notice Thrown when a member has already signed
+    /// @param memberAddress The member's address
+    /// @param pegoutTxHash The peg-out transaction hash
     error MemberHasAlreadySigned(address memberAddress, bytes32 pegoutTxHash);
+
+    /// @notice Thrown when a member is not found
+    /// @param memberAddress The member's address
     error MemberNotFound(address memberAddress);
+
+    /// @notice Thrown when a member is not found in a committee
+    /// @param committeeId The committee ID
+    /// @param memberAddress The member's address
     error MemberNotFoundInCommittee(uint256 committeeId, address memberAddress);
+
+    /// @notice Thrown when the hash to sign is invalid
+    /// @param hashToSign The invalid hash
     error InvalidHashToSign(bytes32 hashToSign);
+
+    /// @notice Thrown when signatures are already initialized
+    /// @param hashToSign The hash for which signatures are already initialized
     error SignaturesAlreadyInitialized(bytes32 hashToSign);
+
+    /// @notice Thrown when the accept peg-in transaction hash is invalid
+    /// @param acceptPeginTxHash The invalid accept peg-in transaction hash
     error InvalidAcceptPeginTxHash(bytes32 acceptPeginTxHash);
+
+    /// @notice Thrown when Take1 transaction hashes are already initialized
+    /// @param acceptPeginTxHash The accept peg-in transaction hash
     error Take1TxHashesAlreadyInitialized(bytes32 acceptPeginTxHash);
+
+    /// @notice Thrown when an accept peg-in transaction hash is not found
+    /// @param acceptPeginTxHash The accept peg-in transaction hash that was not found
     error AcceptPeginTxHashNotFound(bytes32 acceptPeginTxHash);
+
+    /// @notice Thrown when all Take1 transaction hashes are already present
+    /// @param acceptPeginTxHash The accept peg-in transaction hash
     error AllTake1TxHashesAlreadyPresent(bytes32 acceptPeginTxHash);
+
+    /// @notice Thrown when a hash is invalid
+    /// @param hash The invalid hash
     error InvalidHash(bytes32 hash);
+
+    /// @notice Thrown when a member is not an operator
+    /// @param committeeId The committee ID
+    /// @param memberAddress The member's address
     error MemberIsNotOperator(uint256 committeeId, address memberAddress);
+
+    /// @notice Thrown when a member has already added a Take1 transaction hash
+    /// @param acceptPeginTxHash The accept peg-in transaction hash
+    /// @param memberAddress The member's address
+    /// @param hash The Take1 transaction hash that was already added
     error MemberAlreadyAddedTake1TxHash(bytes32 acceptPeginTxHash, address memberAddress, bytes32 hash);
 }
