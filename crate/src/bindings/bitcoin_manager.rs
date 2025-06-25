@@ -1043,12 +1043,12 @@ pub mod BitcoinManager {
             pub const NAME: &'static str = stringify!(@ name);
             /// Convert from the underlying value type.
             #[inline]
-            pub const fn from(value: u8) -> Self {
+            pub const fn from_underlying(value: u8) -> Self {
                 Self(value)
             }
             /// Return the underlying value.
             #[inline]
-            pub const fn into(self) -> u8 {
+            pub const fn into_underlying(self) -> u8 {
                 self.0
             }
             /// Return the single encoding of this value, delegating to the
@@ -1062,6 +1062,18 @@ pub mod BitcoinManager {
             #[inline]
             pub fn abi_encode_packed(&self) -> alloy_sol_types::private::Vec<u8> {
                 <Self as alloy_sol_types::SolType>::abi_encode_packed(&self.0)
+            }
+        }
+        #[automatically_derived]
+        impl From<u8> for BtcNetwork {
+            fn from(value: u8) -> Self {
+                Self::from_underlying(value)
+            }
+        }
+        #[automatically_derived]
+        impl From<BtcNetwork> for u8 {
+            fn from(value: BtcNetwork) -> Self {
+                value.into_underlying()
             }
         }
         #[automatically_derived]
@@ -2189,6 +2201,13 @@ error AddressEmptyCode(address target);
                     ),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -2264,6 +2283,13 @@ error ERC1967InvalidImplementation(address implementation);
                     ),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -2274,7 +2300,7 @@ error ERC1967NonPayable();
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct ERC1967NonPayable {}
+    pub struct ERC1967NonPayable;
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -2309,7 +2335,7 @@ error ERC1967NonPayable();
         #[doc(hidden)]
         impl ::core::convert::From<UnderlyingRustTuple<'_>> for ERC1967NonPayable {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self {}
+                Self
             }
         }
         #[automatically_derived]
@@ -2330,6 +2356,13 @@ error ERC1967NonPayable();
             fn tokenize(&self) -> Self::Token<'_> {
                 ()
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -2340,7 +2373,7 @@ error FailedCall();
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct FailedCall {}
+    pub struct FailedCall;
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -2375,7 +2408,7 @@ error FailedCall();
         #[doc(hidden)]
         impl ::core::convert::From<UnderlyingRustTuple<'_>> for FailedCall {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self {}
+                Self
             }
         }
         #[automatically_derived]
@@ -2395,6 +2428,13 @@ error FailedCall();
             #[inline]
             fn tokenize(&self) -> Self::Token<'_> {
                 ()
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -2483,6 +2523,13 @@ error IncorrectOutputScript(bytes actual, bytes expected);
                     ),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -2560,6 +2607,13 @@ error IncorrectlyFormedOpReturn(uint256 index);
                     > as alloy_sol_types::SolType>::tokenize(&self.index),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -2633,6 +2687,13 @@ error InvalidAddress(address _address);
                     ),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -2643,7 +2704,7 @@ error InvalidInitialization();
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct InvalidInitialization {}
+    pub struct InvalidInitialization;
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -2678,7 +2739,7 @@ error InvalidInitialization();
         #[doc(hidden)]
         impl ::core::convert::From<UnderlyingRustTuple<'_>> for InvalidInitialization {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self {}
+                Self
             }
         }
         #[automatically_derived]
@@ -2698,6 +2759,13 @@ error InvalidInitialization();
             #[inline]
             fn tokenize(&self) -> Self::Token<'_> {
                 ()
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -2771,6 +2839,13 @@ error InvalidInputAmount(uint64 _value);
                         64,
                     > as alloy_sol_types::SolType>::tokenize(&self._value),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -2859,6 +2934,13 @@ error InvalidOpReturnLength(uint256 actual, uint256 expected);
                     > as alloy_sol_types::SolType>::tokenize(&self.expected),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -2942,6 +3024,13 @@ error InvalidOutputAmount(uint64 actual, uint64 expected);
                         64,
                     > as alloy_sol_types::SolType>::tokenize(&self.expected),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -3032,6 +3121,13 @@ error InvalidPrevoutDataLength(uint256 actual, uint256 expected);
                     > as alloy_sol_types::SolType>::tokenize(&self.expected),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -3104,6 +3200,13 @@ error InvalidPublicKey(bytes32 publicKey);
                         32,
                     > as alloy_sol_types::SolType>::tokenize(&self.publicKey),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -3189,6 +3292,13 @@ error InvalidValue(uint64 _value, uint64 expected);
                     > as alloy_sol_types::SolType>::tokenize(&self.expected),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -3199,7 +3309,7 @@ error NotInitializing();
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct NotInitializing {}
+    pub struct NotInitializing;
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -3234,7 +3344,7 @@ error NotInitializing();
         #[doc(hidden)]
         impl ::core::convert::From<UnderlyingRustTuple<'_>> for NotInitializing {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self {}
+                Self
             }
         }
         #[automatically_derived]
@@ -3254,6 +3364,13 @@ error NotInitializing();
             #[inline]
             fn tokenize(&self) -> Self::Token<'_> {
                 ()
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -3342,6 +3459,13 @@ error NumberTooLarge(uint256 actual, uint256 max);
                     > as alloy_sol_types::SolType>::tokenize(&self.max),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -3414,6 +3538,13 @@ error OwnableInvalidOwner(address owner);
                         &self.owner,
                     ),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -3490,6 +3621,13 @@ error OwnableUnauthorizedAccount(address account);
                     ),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -3500,7 +3638,7 @@ error UUPSUnauthorizedCallContext();
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct UUPSUnauthorizedCallContext {}
+    pub struct UUPSUnauthorizedCallContext;
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -3537,7 +3675,7 @@ error UUPSUnauthorizedCallContext();
         impl ::core::convert::From<UnderlyingRustTuple<'_>>
         for UUPSUnauthorizedCallContext {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self {}
+                Self
             }
         }
         #[automatically_derived]
@@ -3557,6 +3695,13 @@ error UUPSUnauthorizedCallContext();
             #[inline]
             fn tokenize(&self) -> Self::Token<'_> {
                 ()
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -3632,6 +3777,13 @@ error UUPSUnsupportedProxiableUUID(bytes32 slot);
                         32,
                     > as alloy_sol_types::SolType>::tokenize(&self.slot),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -3727,6 +3879,13 @@ error indexOverflow(uint256 length, uint256 from, uint256 upTo);
                         256,
                     > as alloy_sol_types::SolType>::tokenize(&self.upTo),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -4070,7 +4229,7 @@ function UPGRADE_INTERFACE_VERSION() external view returns (string memory);
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct UPGRADE_INTERFACE_VERSIONCall {}
+    pub struct UPGRADE_INTERFACE_VERSIONCall;
     #[derive(serde::Serialize, serde::Deserialize)]
     #[derive(Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`UPGRADE_INTERFACE_VERSION()`](UPGRADE_INTERFACE_VERSIONCall) function.
@@ -4117,7 +4276,7 @@ function UPGRADE_INTERFACE_VERSION() external view returns (string memory);
             impl ::core::convert::From<UnderlyingRustTuple<'_>>
             for UPGRADE_INTERFACE_VERSIONCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self {}
+                    Self
                 }
             }
         }
@@ -4160,7 +4319,7 @@ function UPGRADE_INTERFACE_VERSION() external view returns (string memory);
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = UPGRADE_INTERFACE_VERSIONReturn;
+            type Return = alloy::sol_types::private::String;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::String,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -4178,14 +4337,34 @@ function UPGRADE_INTERFACE_VERSION() external view returns (string memory);
                 ()
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::String as alloy_sol_types::SolType>::tokenize(
+                        ret,
+                    ),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: UPGRADE_INTERFACE_VERSIONReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: UPGRADE_INTERFACE_VERSIONReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -4279,6 +4458,13 @@ function __BaseProxy_init(address _initialOwner) external;
                 }
             }
         }
+        impl __BaseProxy_initReturn {
+            fn _tokenize(
+                &self,
+            ) -> <__BaseProxy_initCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for __BaseProxy_initCall {
             type Parameters<'a> = (alloy::sol_types::sol_data::Address,);
@@ -4307,13 +4493,23 @@ function __BaseProxy_init(address _initialOwner) external;
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                __BaseProxy_initReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -4419,7 +4615,7 @@ function getAcceptPeginP2TRScriptPub(bytes32 _committeePubKey) external pure ret
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = getAcceptPeginP2TRScriptPubReturn;
+            type Return = alloy::sol_types::private::Bytes;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Bytes,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -4441,14 +4637,34 @@ function getAcceptPeginP2TRScriptPub(bytes32 _committeePubKey) external pure ret
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::Bytes as alloy_sol_types::SolType>::tokenize(
+                        ret,
+                    ),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: getAcceptPeginP2TRScriptPubReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: getAcceptPeginP2TRScriptPubReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -4589,6 +4805,25 @@ function getAcceptPeginSignatureHash(bytes32 _committeePubKey, bytes32 _userXOnl
                 }
             }
         }
+        impl getAcceptPeginSignatureHashReturn {
+            fn _tokenize(
+                &self,
+            ) -> <getAcceptPeginSignatureHashCall as alloy_sol_types::SolCall>::ReturnToken<
+                '_,
+            > {
+                (
+                    <alloy::sol_types::sol_data::FixedBytes<
+                        32,
+                    > as alloy_sol_types::SolType>::tokenize(&self._0),
+                    <alloy::sol_types::sol_data::FixedBytes<
+                        32,
+                    > as alloy_sol_types::SolType>::tokenize(&self._1),
+                    <alloy::sol_types::sol_data::Bytes as alloy_sol_types::SolType>::tokenize(
+                        &self._2,
+                    ),
+                )
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for getAcceptPeginSignatureHashCall {
             type Parameters<'a> = (
@@ -4635,13 +4870,23 @@ function getAcceptPeginSignatureHash(bytes32 _committeePubKey, bytes32 _userXOnl
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                getAcceptPeginSignatureHashReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -4745,7 +4990,7 @@ function getBtcTxHash(BtcTransaction memory _btcTx) external pure returns (bytes
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = getBtcTxHashReturn;
+            type Return = alloy::sol_types::private::FixedBytes<32>;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::FixedBytes<32>,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -4763,14 +5008,34 @@ function getBtcTxHash(BtcTransaction memory _btcTx) external pure returns (bytes
                 (<BtcTransaction as alloy_sol_types::SolType>::tokenize(&self._btcTx),)
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::FixedBytes<
+                        32,
+                    > as alloy_sol_types::SolType>::tokenize(ret),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: getBtcTxHashReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: getBtcTxHashReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -4782,7 +5047,7 @@ function getImplementation() external view returns (address);
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct getImplementationCall {}
+    pub struct getImplementationCall;
     #[derive(serde::Serialize, serde::Deserialize)]
     #[derive(Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`getImplementation()`](getImplementationCall) function.
@@ -4829,7 +5094,7 @@ function getImplementation() external view returns (address);
             impl ::core::convert::From<UnderlyingRustTuple<'_>>
             for getImplementationCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self {}
+                    Self
                 }
             }
         }
@@ -4872,7 +5137,7 @@ function getImplementation() external view returns (address);
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = getImplementationReturn;
+            type Return = alloy::sol_types::private::Address;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Address,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -4890,14 +5155,34 @@ function getImplementation() external view returns (address);
                 ()
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::Address as alloy_sol_types::SolType>::tokenize(
+                        ret,
+                    ),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: getImplementationReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: getImplementationReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -5014,6 +5299,25 @@ function getPeginOpReturnData(BtcTxOut memory _opReturnOut) external pure return
                 }
             }
         }
+        impl getPeginOpReturnDataReturn {
+            fn _tokenize(
+                &self,
+            ) -> <getPeginOpReturnDataCall as alloy_sol_types::SolCall>::ReturnToken<
+                '_,
+            > {
+                (
+                    <alloy::sol_types::sol_data::Uint<
+                        64,
+                    > as alloy_sol_types::SolType>::tokenize(&self._0),
+                    <alloy::sol_types::sol_data::Address as alloy_sol_types::SolType>::tokenize(
+                        &self._1,
+                    ),
+                    <alloy::sol_types::sol_data::FixedBytes<
+                        32,
+                    > as alloy_sol_types::SolType>::tokenize(&self._2),
+                )
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for getPeginOpReturnDataCall {
             type Parameters<'a> = (BtcTxOut,);
@@ -5042,13 +5346,23 @@ function getPeginOpReturnData(BtcTxOut memory _opReturnOut) external pure return
                 (<BtcTxOut as alloy_sol_types::SolType>::tokenize(&self._opReturnOut),)
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                getPeginOpReturnDataReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -5185,7 +5499,7 @@ function getPeginRequestP2TRScriptPub(address _rskDestinationAddress, uint64 _va
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = getPeginRequestP2TRScriptPubReturn;
+            type Return = alloy::sol_types::private::Bytes;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Bytes,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -5218,14 +5532,34 @@ function getPeginRequestP2TRScriptPub(address _rskDestinationAddress, uint64 _va
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::Bytes as alloy_sol_types::SolType>::tokenize(
+                        ret,
+                    ),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: getPeginRequestP2TRScriptPubReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: getPeginRequestP2TRScriptPubReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -5348,6 +5682,22 @@ function getPegoutSignatureHash(bytes memory _userPubKey, bytes32 _acceptPeginTx
                 }
             }
         }
+        impl getPegoutSignatureHashReturn {
+            fn _tokenize(
+                &self,
+            ) -> <getPegoutSignatureHashCall as alloy_sol_types::SolCall>::ReturnToken<
+                '_,
+            > {
+                (
+                    <alloy::sol_types::sol_data::FixedBytes<
+                        32,
+                    > as alloy_sol_types::SolType>::tokenize(&self._0),
+                    <alloy::sol_types::sol_data::Bytes as alloy_sol_types::SolType>::tokenize(
+                        &self._1,
+                    ),
+                )
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for getPegoutSignatureHashCall {
             type Parameters<'a> = (
@@ -5389,13 +5739,23 @@ function getPegoutSignatureHash(bytes memory _userPubKey, bytes32 _acceptPeginTx
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                getPegoutSignatureHashReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -5501,7 +5861,7 @@ function getSpeedUpScriptPub(bytes32 _pubKey) external pure returns (bytes memor
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = getSpeedUpScriptPubReturn;
+            type Return = alloy::sol_types::private::Bytes;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Bytes,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -5523,14 +5883,34 @@ function getSpeedUpScriptPub(bytes32 _pubKey) external pure returns (bytes memor
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::Bytes as alloy_sol_types::SolType>::tokenize(
+                        ret,
+                    ),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: getSpeedUpScriptPubReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: getSpeedUpScriptPubReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -5668,7 +6048,7 @@ function getTemporaryPeginAddress(address _rskDestinationAddress, uint64 _value,
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = getTemporaryPeginAddressReturn;
+            type Return = alloy::sol_types::private::String;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::String,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -5701,14 +6081,34 @@ function getTemporaryPeginAddress(address _rskDestinationAddress, uint64 _value,
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::String as alloy_sol_types::SolType>::tokenize(
+                        ret,
+                    ),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: getTemporaryPeginAddressReturn = r.into();
+                        r.bitcoinDepositAddress
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: getTemporaryPeginAddressReturn = r.into();
+                        r.bitcoinDepositAddress
+                    })
             }
         }
     };
@@ -5809,6 +6209,13 @@ function initialize(address _initialOwner, BtcNetwork _network) external;
                 }
             }
         }
+        impl initializeReturn {
+            fn _tokenize(
+                &self,
+            ) -> <initializeCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for initializeCall {
             type Parameters<'a> = (alloy::sol_types::sol_data::Address, BtcNetwork);
@@ -5838,13 +6245,23 @@ function initialize(address _initialOwner, BtcNetwork _network) external;
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                initializeReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -5857,7 +6274,7 @@ function network() external view returns (BtcNetwork);
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct networkCall {}
+    pub struct networkCall;
     #[derive(serde::Serialize, serde::Deserialize)]
     #[derive(Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`network()`](networkCall) function.
@@ -5902,7 +6319,7 @@ function network() external view returns (BtcNetwork);
             #[doc(hidden)]
             impl ::core::convert::From<UnderlyingRustTuple<'_>> for networkCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self {}
+                    Self
                 }
             }
         }
@@ -5945,7 +6362,7 @@ function network() external view returns (BtcNetwork);
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = networkReturn;
+            type Return = <BtcNetwork as alloy::sol_types::SolType>::RustType;
             type ReturnTuple<'a> = (BtcNetwork,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -5963,14 +6380,30 @@ function network() external view returns (BtcNetwork);
                 ()
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (<BtcNetwork as alloy_sol_types::SolType>::tokenize(ret),)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: networkReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: networkReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -5982,7 +6415,7 @@ function owner() external view returns (address);
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct ownerCall {}
+    pub struct ownerCall;
     #[derive(serde::Serialize, serde::Deserialize)]
     #[derive(Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`owner()`](ownerCall) function.
@@ -6027,7 +6460,7 @@ function owner() external view returns (address);
             #[doc(hidden)]
             impl ::core::convert::From<UnderlyingRustTuple<'_>> for ownerCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self {}
+                    Self
                 }
             }
         }
@@ -6068,7 +6501,7 @@ function owner() external view returns (address);
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = ownerReturn;
+            type Return = alloy::sol_types::private::Address;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Address,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -6086,14 +6519,34 @@ function owner() external view returns (address);
                 ()
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::Address as alloy_sol_types::SolType>::tokenize(
+                        ret,
+                    ),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: ownerReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: ownerReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -6105,7 +6558,7 @@ function proxiableUUID() external view returns (bytes32);
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct proxiableUUIDCall {}
+    pub struct proxiableUUIDCall;
     #[derive(serde::Serialize, serde::Deserialize)]
     #[derive(Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`proxiableUUID()`](proxiableUUIDCall) function.
@@ -6150,7 +6603,7 @@ function proxiableUUID() external view returns (bytes32);
             #[doc(hidden)]
             impl ::core::convert::From<UnderlyingRustTuple<'_>> for proxiableUUIDCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self {}
+                    Self
                 }
             }
         }
@@ -6191,7 +6644,7 @@ function proxiableUUID() external view returns (bytes32);
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = proxiableUUIDReturn;
+            type Return = alloy::sol_types::private::FixedBytes<32>;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::FixedBytes<32>,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -6209,14 +6662,34 @@ function proxiableUUID() external view returns (bytes32);
                 ()
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::FixedBytes<
+                        32,
+                    > as alloy_sol_types::SolType>::tokenize(ret),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: proxiableUUIDReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: proxiableUUIDReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -6228,7 +6701,7 @@ function renounceOwnership() external;
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct renounceOwnershipCall {}
+    pub struct renounceOwnershipCall;
     ///Container type for the return parameters of the [`renounceOwnership()`](renounceOwnershipCall) function.
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
@@ -6270,7 +6743,7 @@ function renounceOwnership() external;
             impl ::core::convert::From<UnderlyingRustTuple<'_>>
             for renounceOwnershipCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self {}
+                    Self
                 }
             }
         }
@@ -6307,6 +6780,13 @@ function renounceOwnership() external;
                 }
             }
         }
+        impl renounceOwnershipReturn {
+            fn _tokenize(
+                &self,
+            ) -> <renounceOwnershipCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for renounceOwnershipCall {
             type Parameters<'a> = ();
@@ -6331,13 +6811,23 @@ function renounceOwnership() external;
                 ()
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                renounceOwnershipReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -6432,6 +6922,13 @@ function transferOwnership(address newOwner) external;
                 }
             }
         }
+        impl transferOwnershipReturn {
+            fn _tokenize(
+                &self,
+            ) -> <transferOwnershipCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for transferOwnershipCall {
             type Parameters<'a> = (alloy::sol_types::sol_data::Address,);
@@ -6460,13 +6957,23 @@ function transferOwnership(address newOwner) external;
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                transferOwnershipReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -6572,6 +7079,13 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 }
             }
         }
+        impl upgradeToAndCallReturn {
+            fn _tokenize(
+                &self,
+            ) -> <upgradeToAndCallCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for upgradeToAndCallCall {
             type Parameters<'a> = (
@@ -6606,13 +7120,23 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                upgradeToAndCallReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -6723,6 +7247,15 @@ function validateAcceptPeginP2TROutput(bytes32 _committeePubKey, uint64 _inputAm
                 }
             }
         }
+        impl validateAcceptPeginP2TROutputReturn {
+            fn _tokenize(
+                &self,
+            ) -> <validateAcceptPeginP2TROutputCall as alloy_sol_types::SolCall>::ReturnToken<
+                '_,
+            > {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for validateAcceptPeginP2TROutputCall {
             type Parameters<'a> = (
@@ -6759,13 +7292,23 @@ function validateAcceptPeginP2TROutput(bytes32 _committeePubKey, uint64 _inputAm
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                validateAcceptPeginP2TROutputReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -6868,6 +7411,15 @@ function validatePegoutUserOutput(BtcTxOut memory _userOutput, bytes memory _use
                 }
             }
         }
+        impl validatePegoutUserOutputReturn {
+            fn _tokenize(
+                &self,
+            ) -> <validatePegoutUserOutputCall as alloy_sol_types::SolCall>::ReturnToken<
+                '_,
+            > {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for validatePegoutUserOutputCall {
             type Parameters<'a> = (BtcTxOut, alloy::sol_types::sol_data::Bytes);
@@ -6897,13 +7449,23 @@ function validatePegoutUserOutput(BtcTxOut memory _userOutput, bytes memory _use
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                validatePegoutUserOutputReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -7030,6 +7592,15 @@ function validateRequestPeginP2TROutput(address _rskDestinationAddress, uint64 _
                 }
             }
         }
+        impl validateRequestPeginP2TROutputReturn {
+            fn _tokenize(
+                &self,
+            ) -> <validateRequestPeginP2TROutputCall as alloy_sol_types::SolCall>::ReturnToken<
+                '_,
+            > {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for validateRequestPeginP2TROutputCall {
             type Parameters<'a> = (
@@ -7076,13 +7647,23 @@ function validateRequestPeginP2TROutput(address _rskDestinationAddress, uint64 _
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                validateRequestPeginP2TROutputReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -7188,6 +7769,15 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 }
             }
         }
+        impl validateSpeedUpOutputReturn {
+            fn _tokenize(
+                &self,
+            ) -> <validateSpeedUpOutputCall as alloy_sol_types::SolCall>::ReturnToken<
+                '_,
+            > {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for validateSpeedUpOutputCall {
             type Parameters<'a> = (alloy::sol_types::sol_data::FixedBytes<32>, BtcTxOut);
@@ -7217,13 +7807,23 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                validateSpeedUpOutputReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -7395,20 +7995,16 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
         fn abi_decode_raw(
             selector: [u8; 4],
             data: &[u8],
-            validate: bool,
         ) -> alloy_sol_types::Result<Self> {
             static DECODE_SHIMS: &[fn(
                 &[u8],
-                bool,
             ) -> alloy_sol_types::Result<BitcoinManagerCalls>] = &[
                 {
                     fn getTemporaryPeginAddress(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
                         <getTemporaryPeginAddressCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(BitcoinManagerCalls::getTemporaryPeginAddress)
                     }
@@ -7417,11 +8013,9 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn getAcceptPeginSignatureHash(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
                         <getAcceptPeginSignatureHashCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(BitcoinManagerCalls::getAcceptPeginSignatureHash)
                     }
@@ -7430,11 +8024,9 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn validatePegoutUserOutput(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
                         <validatePegoutUserOutputCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(BitcoinManagerCalls::validatePegoutUserOutput)
                     }
@@ -7443,11 +8035,9 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn upgradeToAndCall(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
                         <upgradeToAndCallCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(BitcoinManagerCalls::upgradeToAndCall)
                     }
@@ -7456,11 +8046,9 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn getPeginOpReturnData(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
                         <getPeginOpReturnDataCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(BitcoinManagerCalls::getPeginOpReturnData)
                     }
@@ -7469,11 +8057,9 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn proxiableUUID(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
                         <proxiableUUIDCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(BitcoinManagerCalls::proxiableUUID)
                     }
@@ -7482,11 +8068,9 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn getAcceptPeginP2TRScriptPub(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
                         <getAcceptPeginP2TRScriptPubCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(BitcoinManagerCalls::getAcceptPeginP2TRScriptPub)
                     }
@@ -7495,12 +8079,8 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn network(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
-                        <networkCall as alloy_sol_types::SolCall>::abi_decode_raw(
-                                data,
-                                validate,
-                            )
+                        <networkCall as alloy_sol_types::SolCall>::abi_decode_raw(data)
                             .map(BitcoinManagerCalls::network)
                     }
                     network
@@ -7508,11 +8088,9 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn renounceOwnership(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
                         <renounceOwnershipCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(BitcoinManagerCalls::renounceOwnership)
                     }
@@ -7521,11 +8099,9 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn validateRequestPeginP2TROutput(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
                         <validateRequestPeginP2TROutputCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(BitcoinManagerCalls::validateRequestPeginP2TROutput)
                     }
@@ -7534,12 +8110,8 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn owner(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
-                        <ownerCall as alloy_sol_types::SolCall>::abi_decode_raw(
-                                data,
-                                validate,
-                            )
+                        <ownerCall as alloy_sol_types::SolCall>::abi_decode_raw(data)
                             .map(BitcoinManagerCalls::owner)
                     }
                     owner
@@ -7547,11 +8119,9 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn initialize(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
                         <initializeCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(BitcoinManagerCalls::initialize)
                     }
@@ -7560,11 +8130,9 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn getBtcTxHash(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
                         <getBtcTxHashCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(BitcoinManagerCalls::getBtcTxHash)
                     }
@@ -7573,11 +8141,9 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn getImplementation(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
                         <getImplementationCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(BitcoinManagerCalls::getImplementation)
                     }
@@ -7586,11 +8152,9 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn UPGRADE_INTERFACE_VERSION(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
                         <UPGRADE_INTERFACE_VERSIONCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(BitcoinManagerCalls::UPGRADE_INTERFACE_VERSION)
                     }
@@ -7599,11 +8163,9 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn getPegoutSignatureHash(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
                         <getPegoutSignatureHashCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(BitcoinManagerCalls::getPegoutSignatureHash)
                     }
@@ -7612,11 +8174,9 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn __BaseProxy_init(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
                         <__BaseProxy_initCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(BitcoinManagerCalls::__BaseProxy_init)
                     }
@@ -7625,11 +8185,9 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn validateSpeedUpOutput(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
                         <validateSpeedUpOutputCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(BitcoinManagerCalls::validateSpeedUpOutput)
                     }
@@ -7638,11 +8196,9 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn getSpeedUpScriptPub(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
                         <getSpeedUpScriptPubCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(BitcoinManagerCalls::getSpeedUpScriptPub)
                     }
@@ -7651,11 +8207,9 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn validateAcceptPeginP2TROutput(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
                         <validateAcceptPeginP2TROutputCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(BitcoinManagerCalls::validateAcceptPeginP2TROutput)
                     }
@@ -7664,11 +8218,9 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn getPeginRequestP2TRScriptPub(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
                         <getPeginRequestP2TRScriptPubCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(BitcoinManagerCalls::getPeginRequestP2TRScriptPub)
                     }
@@ -7677,11 +8229,9 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn transferOwnership(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
                         <transferOwnershipCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(BitcoinManagerCalls::transferOwnership)
                     }
@@ -7696,7 +8246,269 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                     ),
                 );
             };
-            DECODE_SHIMS[idx](data, validate)
+            DECODE_SHIMS[idx](data)
+        }
+        #[inline]
+        #[allow(non_snake_case)]
+        fn abi_decode_raw_validate(
+            selector: [u8; 4],
+            data: &[u8],
+        ) -> alloy_sol_types::Result<Self> {
+            static DECODE_VALIDATE_SHIMS: &[fn(
+                &[u8],
+            ) -> alloy_sol_types::Result<BitcoinManagerCalls>] = &[
+                {
+                    fn getTemporaryPeginAddress(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
+                        <getTemporaryPeginAddressCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerCalls::getTemporaryPeginAddress)
+                    }
+                    getTemporaryPeginAddress
+                },
+                {
+                    fn getAcceptPeginSignatureHash(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
+                        <getAcceptPeginSignatureHashCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerCalls::getAcceptPeginSignatureHash)
+                    }
+                    getAcceptPeginSignatureHash
+                },
+                {
+                    fn validatePegoutUserOutput(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
+                        <validatePegoutUserOutputCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerCalls::validatePegoutUserOutput)
+                    }
+                    validatePegoutUserOutput
+                },
+                {
+                    fn upgradeToAndCall(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
+                        <upgradeToAndCallCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerCalls::upgradeToAndCall)
+                    }
+                    upgradeToAndCall
+                },
+                {
+                    fn getPeginOpReturnData(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
+                        <getPeginOpReturnDataCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerCalls::getPeginOpReturnData)
+                    }
+                    getPeginOpReturnData
+                },
+                {
+                    fn proxiableUUID(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
+                        <proxiableUUIDCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerCalls::proxiableUUID)
+                    }
+                    proxiableUUID
+                },
+                {
+                    fn getAcceptPeginP2TRScriptPub(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
+                        <getAcceptPeginP2TRScriptPubCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerCalls::getAcceptPeginP2TRScriptPub)
+                    }
+                    getAcceptPeginP2TRScriptPub
+                },
+                {
+                    fn network(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
+                        <networkCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerCalls::network)
+                    }
+                    network
+                },
+                {
+                    fn renounceOwnership(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
+                        <renounceOwnershipCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerCalls::renounceOwnership)
+                    }
+                    renounceOwnership
+                },
+                {
+                    fn validateRequestPeginP2TROutput(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
+                        <validateRequestPeginP2TROutputCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerCalls::validateRequestPeginP2TROutput)
+                    }
+                    validateRequestPeginP2TROutput
+                },
+                {
+                    fn owner(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
+                        <ownerCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerCalls::owner)
+                    }
+                    owner
+                },
+                {
+                    fn initialize(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
+                        <initializeCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerCalls::initialize)
+                    }
+                    initialize
+                },
+                {
+                    fn getBtcTxHash(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
+                        <getBtcTxHashCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerCalls::getBtcTxHash)
+                    }
+                    getBtcTxHash
+                },
+                {
+                    fn getImplementation(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
+                        <getImplementationCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerCalls::getImplementation)
+                    }
+                    getImplementation
+                },
+                {
+                    fn UPGRADE_INTERFACE_VERSION(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
+                        <UPGRADE_INTERFACE_VERSIONCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerCalls::UPGRADE_INTERFACE_VERSION)
+                    }
+                    UPGRADE_INTERFACE_VERSION
+                },
+                {
+                    fn getPegoutSignatureHash(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
+                        <getPegoutSignatureHashCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerCalls::getPegoutSignatureHash)
+                    }
+                    getPegoutSignatureHash
+                },
+                {
+                    fn __BaseProxy_init(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
+                        <__BaseProxy_initCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerCalls::__BaseProxy_init)
+                    }
+                    __BaseProxy_init
+                },
+                {
+                    fn validateSpeedUpOutput(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
+                        <validateSpeedUpOutputCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerCalls::validateSpeedUpOutput)
+                    }
+                    validateSpeedUpOutput
+                },
+                {
+                    fn getSpeedUpScriptPub(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
+                        <getSpeedUpScriptPubCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerCalls::getSpeedUpScriptPub)
+                    }
+                    getSpeedUpScriptPub
+                },
+                {
+                    fn validateAcceptPeginP2TROutput(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
+                        <validateAcceptPeginP2TROutputCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerCalls::validateAcceptPeginP2TROutput)
+                    }
+                    validateAcceptPeginP2TROutput
+                },
+                {
+                    fn getPeginRequestP2TRScriptPub(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
+                        <getPeginRequestP2TRScriptPubCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerCalls::getPeginRequestP2TRScriptPub)
+                    }
+                    getPeginRequestP2TRScriptPub
+                },
+                {
+                    fn transferOwnership(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerCalls> {
+                        <transferOwnershipCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerCalls::transferOwnership)
+                    }
+                    transferOwnership
+                },
+            ];
+            let Ok(idx) = Self::SELECTORS.binary_search(&selector) else {
+                return Err(
+                    alloy_sol_types::Error::unknown_selector(
+                        <Self as alloy_sol_types::SolInterface>::NAME,
+                        selector,
+                    ),
+                );
+            };
+            DECODE_VALIDATE_SHIMS[idx](data)
         }
         #[inline]
         fn abi_encoded_size(&self) -> usize {
@@ -8104,20 +8916,16 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
         fn abi_decode_raw(
             selector: [u8; 4],
             data: &[u8],
-            validate: bool,
         ) -> alloy_sol_types::Result<Self> {
             static DECODE_SHIMS: &[fn(
                 &[u8],
-                bool,
             ) -> alloy_sol_types::Result<BitcoinManagerErrors>] = &[
                 {
                     fn OwnableUnauthorizedAccount(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
                         <OwnableUnauthorizedAccount as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(BitcoinManagerErrors::OwnableUnauthorizedAccount)
                     }
@@ -8126,11 +8934,9 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn OwnableInvalidOwner(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
                         <OwnableInvalidOwner as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(BitcoinManagerErrors::OwnableInvalidOwner)
                     }
@@ -8139,11 +8945,9 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn InvalidPublicKey(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
                         <InvalidPublicKey as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(BitcoinManagerErrors::InvalidPublicKey)
                     }
@@ -8152,11 +8956,9 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn InvalidOutputAmount(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
                         <InvalidOutputAmount as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(BitcoinManagerErrors::InvalidOutputAmount)
                     }
@@ -8165,11 +8967,9 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn IncorrectlyFormedOpReturn(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
                         <IncorrectlyFormedOpReturn as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(BitcoinManagerErrors::IncorrectlyFormedOpReturn)
                     }
@@ -8178,11 +8978,9 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn ERC1967InvalidImplementation(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
                         <ERC1967InvalidImplementation as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(BitcoinManagerErrors::ERC1967InvalidImplementation)
                     }
@@ -8191,11 +8989,9 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn indexOverflow(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
                         <indexOverflow as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(BitcoinManagerErrors::indexOverflow)
                     }
@@ -8204,11 +9000,9 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn InvalidInputAmount(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
                         <InvalidInputAmount as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(BitcoinManagerErrors::InvalidInputAmount)
                     }
@@ -8217,11 +9011,9 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn InvalidAddress(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
                         <InvalidAddress as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(BitcoinManagerErrors::InvalidAddress)
                     }
@@ -8230,11 +9022,9 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn InvalidPrevoutDataLength(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
                         <InvalidPrevoutDataLength as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(BitcoinManagerErrors::InvalidPrevoutDataLength)
                     }
@@ -8243,11 +9033,9 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn AddressEmptyCode(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
                         <AddressEmptyCode as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(BitcoinManagerErrors::AddressEmptyCode)
                     }
@@ -8256,11 +9044,9 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn UUPSUnsupportedProxiableUUID(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
                         <UUPSUnsupportedProxiableUUID as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(BitcoinManagerErrors::UUPSUnsupportedProxiableUUID)
                     }
@@ -8269,11 +9055,9 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn ERC1967NonPayable(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
                         <ERC1967NonPayable as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(BitcoinManagerErrors::ERC1967NonPayable)
                     }
@@ -8282,12 +9066,8 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn InvalidValue(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
-                        <InvalidValue as alloy_sol_types::SolError>::abi_decode_raw(
-                                data,
-                                validate,
-                            )
+                        <InvalidValue as alloy_sol_types::SolError>::abi_decode_raw(data)
                             .map(BitcoinManagerErrors::InvalidValue)
                     }
                     InvalidValue
@@ -8295,11 +9075,9 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn NumberTooLarge(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
                         <NumberTooLarge as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(BitcoinManagerErrors::NumberTooLarge)
                     }
@@ -8308,11 +9086,9 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn InvalidOpReturnLength(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
                         <InvalidOpReturnLength as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(BitcoinManagerErrors::InvalidOpReturnLength)
                     }
@@ -8321,11 +9097,9 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn IncorrectOutputScript(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
                         <IncorrectOutputScript as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(BitcoinManagerErrors::IncorrectOutputScript)
                     }
@@ -8334,12 +9108,8 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn FailedCall(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
-                        <FailedCall as alloy_sol_types::SolError>::abi_decode_raw(
-                                data,
-                                validate,
-                            )
+                        <FailedCall as alloy_sol_types::SolError>::abi_decode_raw(data)
                             .map(BitcoinManagerErrors::FailedCall)
                     }
                     FailedCall
@@ -8347,11 +9117,9 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn NotInitializing(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
                         <NotInitializing as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(BitcoinManagerErrors::NotInitializing)
                     }
@@ -8360,11 +9128,9 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn UUPSUnauthorizedCallContext(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
                         <UUPSUnauthorizedCallContext as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(BitcoinManagerErrors::UUPSUnauthorizedCallContext)
                     }
@@ -8373,11 +9139,9 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                 {
                     fn InvalidInitialization(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
                         <InvalidInitialization as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(BitcoinManagerErrors::InvalidInitialization)
                     }
@@ -8392,7 +9156,258 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                     ),
                 );
             };
-            DECODE_SHIMS[idx](data, validate)
+            DECODE_SHIMS[idx](data)
+        }
+        #[inline]
+        #[allow(non_snake_case)]
+        fn abi_decode_raw_validate(
+            selector: [u8; 4],
+            data: &[u8],
+        ) -> alloy_sol_types::Result<Self> {
+            static DECODE_VALIDATE_SHIMS: &[fn(
+                &[u8],
+            ) -> alloy_sol_types::Result<BitcoinManagerErrors>] = &[
+                {
+                    fn OwnableUnauthorizedAccount(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
+                        <OwnableUnauthorizedAccount as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerErrors::OwnableUnauthorizedAccount)
+                    }
+                    OwnableUnauthorizedAccount
+                },
+                {
+                    fn OwnableInvalidOwner(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
+                        <OwnableInvalidOwner as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerErrors::OwnableInvalidOwner)
+                    }
+                    OwnableInvalidOwner
+                },
+                {
+                    fn InvalidPublicKey(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
+                        <InvalidPublicKey as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerErrors::InvalidPublicKey)
+                    }
+                    InvalidPublicKey
+                },
+                {
+                    fn InvalidOutputAmount(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
+                        <InvalidOutputAmount as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerErrors::InvalidOutputAmount)
+                    }
+                    InvalidOutputAmount
+                },
+                {
+                    fn IncorrectlyFormedOpReturn(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
+                        <IncorrectlyFormedOpReturn as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerErrors::IncorrectlyFormedOpReturn)
+                    }
+                    IncorrectlyFormedOpReturn
+                },
+                {
+                    fn ERC1967InvalidImplementation(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
+                        <ERC1967InvalidImplementation as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerErrors::ERC1967InvalidImplementation)
+                    }
+                    ERC1967InvalidImplementation
+                },
+                {
+                    fn indexOverflow(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
+                        <indexOverflow as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerErrors::indexOverflow)
+                    }
+                    indexOverflow
+                },
+                {
+                    fn InvalidInputAmount(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
+                        <InvalidInputAmount as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerErrors::InvalidInputAmount)
+                    }
+                    InvalidInputAmount
+                },
+                {
+                    fn InvalidAddress(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
+                        <InvalidAddress as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerErrors::InvalidAddress)
+                    }
+                    InvalidAddress
+                },
+                {
+                    fn InvalidPrevoutDataLength(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
+                        <InvalidPrevoutDataLength as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerErrors::InvalidPrevoutDataLength)
+                    }
+                    InvalidPrevoutDataLength
+                },
+                {
+                    fn AddressEmptyCode(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
+                        <AddressEmptyCode as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerErrors::AddressEmptyCode)
+                    }
+                    AddressEmptyCode
+                },
+                {
+                    fn UUPSUnsupportedProxiableUUID(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
+                        <UUPSUnsupportedProxiableUUID as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerErrors::UUPSUnsupportedProxiableUUID)
+                    }
+                    UUPSUnsupportedProxiableUUID
+                },
+                {
+                    fn ERC1967NonPayable(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
+                        <ERC1967NonPayable as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerErrors::ERC1967NonPayable)
+                    }
+                    ERC1967NonPayable
+                },
+                {
+                    fn InvalidValue(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
+                        <InvalidValue as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerErrors::InvalidValue)
+                    }
+                    InvalidValue
+                },
+                {
+                    fn NumberTooLarge(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
+                        <NumberTooLarge as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerErrors::NumberTooLarge)
+                    }
+                    NumberTooLarge
+                },
+                {
+                    fn InvalidOpReturnLength(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
+                        <InvalidOpReturnLength as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerErrors::InvalidOpReturnLength)
+                    }
+                    InvalidOpReturnLength
+                },
+                {
+                    fn IncorrectOutputScript(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
+                        <IncorrectOutputScript as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerErrors::IncorrectOutputScript)
+                    }
+                    IncorrectOutputScript
+                },
+                {
+                    fn FailedCall(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
+                        <FailedCall as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerErrors::FailedCall)
+                    }
+                    FailedCall
+                },
+                {
+                    fn NotInitializing(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
+                        <NotInitializing as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerErrors::NotInitializing)
+                    }
+                    NotInitializing
+                },
+                {
+                    fn UUPSUnauthorizedCallContext(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
+                        <UUPSUnauthorizedCallContext as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerErrors::UUPSUnauthorizedCallContext)
+                    }
+                    UUPSUnauthorizedCallContext
+                },
+                {
+                    fn InvalidInitialization(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<BitcoinManagerErrors> {
+                        <InvalidInitialization as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(BitcoinManagerErrors::InvalidInitialization)
+                    }
+                    InvalidInitialization
+                },
+            ];
+            let Ok(idx) = Self::SELECTORS.binary_search(&selector) else {
+                return Err(
+                    alloy_sol_types::Error::unknown_selector(
+                        <Self as alloy_sol_types::SolInterface>::NAME,
+                        selector,
+                    ),
+                );
+            };
+            DECODE_VALIDATE_SHIMS[idx](data)
         }
         #[inline]
         fn abi_encoded_size(&self) -> usize {
@@ -8671,14 +9686,12 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
         fn decode_raw_log(
             topics: &[alloy_sol_types::Word],
             data: &[u8],
-            validate: bool,
         ) -> alloy_sol_types::Result<Self> {
             match topics.first().copied() {
                 Some(<Initialized as alloy_sol_types::SolEvent>::SIGNATURE_HASH) => {
                     <Initialized as alloy_sol_types::SolEvent>::decode_raw_log(
                             topics,
                             data,
-                            validate,
                         )
                         .map(Self::Initialized)
                 }
@@ -8688,16 +9701,11 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
                     <OwnershipTransferred as alloy_sol_types::SolEvent>::decode_raw_log(
                             topics,
                             data,
-                            validate,
                         )
                         .map(Self::OwnershipTransferred)
                 }
                 Some(<Upgraded as alloy_sol_types::SolEvent>::SIGNATURE_HASH) => {
-                    <Upgraded as alloy_sol_types::SolEvent>::decode_raw_log(
-                            topics,
-                            data,
-                            validate,
-                        )
+                    <Upgraded as alloy_sol_types::SolEvent>::decode_raw_log(topics, data)
                         .map(Self::Upgraded)
                 }
                 _ => {
@@ -8749,14 +9757,13 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut memory _speedUpOut) ext
 See the [wrapper's documentation](`BitcoinManagerInstance`) for more details.*/
     #[inline]
     pub const fn new<
-        T: alloy_contract::private::Transport + ::core::clone::Clone,
-        P: alloy_contract::private::Provider<T, N>,
+        P: alloy_contract::private::Provider<N>,
         N: alloy_contract::private::Network,
     >(
         address: alloy_sol_types::private::Address,
         provider: P,
-    ) -> BitcoinManagerInstance<T, P, N> {
-        BitcoinManagerInstance::<T, P, N>::new(address, provider)
+    ) -> BitcoinManagerInstance<P, N> {
+        BitcoinManagerInstance::<P, N>::new(address, provider)
     }
     /**Deploys this contract using the given `provider` and constructor arguments, if any.
 
@@ -8765,15 +9772,14 @@ Returns a new instance of the contract, if the deployment was successful.
 For more fine-grained control over the deployment process, use [`deploy_builder`] instead.*/
     #[inline]
     pub fn deploy<
-        T: alloy_contract::private::Transport + ::core::clone::Clone,
-        P: alloy_contract::private::Provider<T, N>,
+        P: alloy_contract::private::Provider<N>,
         N: alloy_contract::private::Network,
     >(
         provider: P,
     ) -> impl ::core::future::Future<
-        Output = alloy_contract::Result<BitcoinManagerInstance<T, P, N>>,
+        Output = alloy_contract::Result<BitcoinManagerInstance<P, N>>,
     > {
-        BitcoinManagerInstance::<T, P, N>::deploy(provider)
+        BitcoinManagerInstance::<P, N>::deploy(provider)
     }
     /**Creates a `RawCallBuilder` for deploying this contract using the given `provider`
 and constructor arguments, if any.
@@ -8782,11 +9788,10 @@ This is a simple wrapper around creating a `RawCallBuilder` with the data set to
 the bytecode concatenated with the constructor's ABI-encoded arguments.*/
     #[inline]
     pub fn deploy_builder<
-        T: alloy_contract::private::Transport + ::core::clone::Clone,
-        P: alloy_contract::private::Provider<T, N>,
+        P: alloy_contract::private::Provider<N>,
         N: alloy_contract::private::Network,
-    >(provider: P) -> alloy_contract::RawCallBuilder<T, P, N> {
-        BitcoinManagerInstance::<T, P, N>::deploy_builder(provider)
+    >(provider: P) -> alloy_contract::RawCallBuilder<P, N> {
+        BitcoinManagerInstance::<P, N>::deploy_builder(provider)
     }
     /**A [`BitcoinManager`](self) instance.
 
@@ -8800,13 +9805,13 @@ be used to deploy a new instance of the contract.
 
 See the [module-level documentation](self) for all the available methods.*/
     #[derive(Clone)]
-    pub struct BitcoinManagerInstance<T, P, N = alloy_contract::private::Ethereum> {
+    pub struct BitcoinManagerInstance<P, N = alloy_contract::private::Ethereum> {
         address: alloy_sol_types::private::Address,
         provider: P,
-        _network_transport: ::core::marker::PhantomData<(N, T)>,
+        _network: ::core::marker::PhantomData<N>,
     }
     #[automatically_derived]
-    impl<T, P, N> ::core::fmt::Debug for BitcoinManagerInstance<T, P, N> {
+    impl<P, N> ::core::fmt::Debug for BitcoinManagerInstance<P, N> {
         #[inline]
         fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
             f.debug_tuple("BitcoinManagerInstance").field(&self.address).finish()
@@ -8815,10 +9820,9 @@ See the [module-level documentation](self) for all the available methods.*/
     /// Instantiation and getters/setters.
     #[automatically_derived]
     impl<
-        T: alloy_contract::private::Transport + ::core::clone::Clone,
-        P: alloy_contract::private::Provider<T, N>,
+        P: alloy_contract::private::Provider<N>,
         N: alloy_contract::private::Network,
-    > BitcoinManagerInstance<T, P, N> {
+    > BitcoinManagerInstance<P, N> {
         /**Creates a new wrapper around an on-chain [`BitcoinManager`](self) contract instance.
 
 See the [wrapper's documentation](`BitcoinManagerInstance`) for more details.*/
@@ -8830,7 +9834,7 @@ See the [wrapper's documentation](`BitcoinManagerInstance`) for more details.*/
             Self {
                 address,
                 provider,
-                _network_transport: ::core::marker::PhantomData,
+                _network: ::core::marker::PhantomData,
             }
         }
         /**Deploys this contract using the given `provider` and constructor arguments, if any.
@@ -8841,7 +9845,7 @@ For more fine-grained control over the deployment process, use [`deploy_builder`
         #[inline]
         pub async fn deploy(
             provider: P,
-        ) -> alloy_contract::Result<BitcoinManagerInstance<T, P, N>> {
+        ) -> alloy_contract::Result<BitcoinManagerInstance<P, N>> {
             let call_builder = Self::deploy_builder(provider);
             let contract_address = call_builder.deploy().await?;
             Ok(Self::new(contract_address, call_builder.provider))
@@ -8852,7 +9856,7 @@ and constructor arguments, if any.
 This is a simple wrapper around creating a `RawCallBuilder` with the data set to
 the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         #[inline]
-        pub fn deploy_builder(provider: P) -> alloy_contract::RawCallBuilder<T, P, N> {
+        pub fn deploy_builder(provider: P) -> alloy_contract::RawCallBuilder<P, N> {
             alloy_contract::RawCallBuilder::new_raw_deploy(
                 provider,
                 ::core::clone::Clone::clone(&BYTECODE),
@@ -8879,24 +9883,23 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             &self.provider
         }
     }
-    impl<T, P: ::core::clone::Clone, N> BitcoinManagerInstance<T, &P, N> {
+    impl<P: ::core::clone::Clone, N> BitcoinManagerInstance<&P, N> {
         /// Clones the provider and returns a new instance with the cloned provider.
         #[inline]
-        pub fn with_cloned_provider(self) -> BitcoinManagerInstance<T, P, N> {
+        pub fn with_cloned_provider(self) -> BitcoinManagerInstance<P, N> {
             BitcoinManagerInstance {
                 address: self.address,
                 provider: ::core::clone::Clone::clone(&self.provider),
-                _network_transport: ::core::marker::PhantomData,
+                _network: ::core::marker::PhantomData,
             }
         }
     }
     /// Function calls.
     #[automatically_derived]
     impl<
-        T: alloy_contract::private::Transport + ::core::clone::Clone,
-        P: alloy_contract::private::Provider<T, N>,
+        P: alloy_contract::private::Provider<N>,
         N: alloy_contract::private::Network,
-    > BitcoinManagerInstance<T, P, N> {
+    > BitcoinManagerInstance<P, N> {
         /// Creates a new call builder using this contract instance's provider and address.
         ///
         /// Note that the call can be any function call, not just those defined in this
@@ -8904,20 +9907,20 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         pub fn call_builder<C: alloy_sol_types::SolCall>(
             &self,
             call: &C,
-        ) -> alloy_contract::SolCallBuilder<T, &P, C, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, C, N> {
             alloy_contract::SolCallBuilder::new_sol(&self.provider, &self.address, call)
         }
         ///Creates a new call builder for the [`UPGRADE_INTERFACE_VERSION`] function.
         pub fn UPGRADE_INTERFACE_VERSION(
             &self,
-        ) -> alloy_contract::SolCallBuilder<T, &P, UPGRADE_INTERFACE_VERSIONCall, N> {
-            self.call_builder(&UPGRADE_INTERFACE_VERSIONCall {})
+        ) -> alloy_contract::SolCallBuilder<&P, UPGRADE_INTERFACE_VERSIONCall, N> {
+            self.call_builder(&UPGRADE_INTERFACE_VERSIONCall)
         }
         ///Creates a new call builder for the [`__BaseProxy_init`] function.
         pub fn __BaseProxy_init(
             &self,
             _initialOwner: alloy::sol_types::private::Address,
-        ) -> alloy_contract::SolCallBuilder<T, &P, __BaseProxy_initCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, __BaseProxy_initCall, N> {
             self.call_builder(
                 &__BaseProxy_initCall {
                     _initialOwner,
@@ -8928,7 +9931,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         pub fn getAcceptPeginP2TRScriptPub(
             &self,
             _committeePubKey: alloy::sol_types::private::FixedBytes<32>,
-        ) -> alloy_contract::SolCallBuilder<T, &P, getAcceptPeginP2TRScriptPubCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, getAcceptPeginP2TRScriptPubCall, N> {
             self.call_builder(
                 &getAcceptPeginP2TRScriptPubCall {
                     _committeePubKey,
@@ -8942,7 +9945,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             _userXOnlyPubKey: alloy::sol_types::private::FixedBytes<32>,
             _registerPeginTx: alloy::sol_types::private::FixedBytes<32>,
             _prevoutData: <PrevoutData as alloy::sol_types::SolType>::RustType,
-        ) -> alloy_contract::SolCallBuilder<T, &P, getAcceptPeginSignatureHashCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, getAcceptPeginSignatureHashCall, N> {
             self.call_builder(
                 &getAcceptPeginSignatureHashCall {
                     _committeePubKey,
@@ -8956,20 +9959,20 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         pub fn getBtcTxHash(
             &self,
             _btcTx: <BtcTransaction as alloy::sol_types::SolType>::RustType,
-        ) -> alloy_contract::SolCallBuilder<T, &P, getBtcTxHashCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, getBtcTxHashCall, N> {
             self.call_builder(&getBtcTxHashCall { _btcTx })
         }
         ///Creates a new call builder for the [`getImplementation`] function.
         pub fn getImplementation(
             &self,
-        ) -> alloy_contract::SolCallBuilder<T, &P, getImplementationCall, N> {
-            self.call_builder(&getImplementationCall {})
+        ) -> alloy_contract::SolCallBuilder<&P, getImplementationCall, N> {
+            self.call_builder(&getImplementationCall)
         }
         ///Creates a new call builder for the [`getPeginOpReturnData`] function.
         pub fn getPeginOpReturnData(
             &self,
             _opReturnOut: <BtcTxOut as alloy::sol_types::SolType>::RustType,
-        ) -> alloy_contract::SolCallBuilder<T, &P, getPeginOpReturnDataCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, getPeginOpReturnDataCall, N> {
             self.call_builder(
                 &getPeginOpReturnDataCall {
                     _opReturnOut,
@@ -8983,7 +9986,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             _value: u64,
             _btcReimbursementPubKey: alloy::sol_types::private::FixedBytes<32>,
             _committeePubKey: alloy::sol_types::private::FixedBytes<32>,
-        ) -> alloy_contract::SolCallBuilder<T, &P, getPeginRequestP2TRScriptPubCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, getPeginRequestP2TRScriptPubCall, N> {
             self.call_builder(
                 &getPeginRequestP2TRScriptPubCall {
                     _rskDestinationAddress,
@@ -8999,7 +10002,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             _userPubKey: alloy::sol_types::private::Bytes,
             _acceptPeginTx: alloy::sol_types::private::FixedBytes<32>,
             _prevoutData: <PrevoutData as alloy::sol_types::SolType>::RustType,
-        ) -> alloy_contract::SolCallBuilder<T, &P, getPegoutSignatureHashCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, getPegoutSignatureHashCall, N> {
             self.call_builder(
                 &getPegoutSignatureHashCall {
                     _userPubKey,
@@ -9012,7 +10015,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         pub fn getSpeedUpScriptPub(
             &self,
             _pubKey: alloy::sol_types::private::FixedBytes<32>,
-        ) -> alloy_contract::SolCallBuilder<T, &P, getSpeedUpScriptPubCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, getSpeedUpScriptPubCall, N> {
             self.call_builder(&getSpeedUpScriptPubCall { _pubKey })
         }
         ///Creates a new call builder for the [`getTemporaryPeginAddress`] function.
@@ -9022,7 +10025,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             _value: u64,
             _btcReimbursementPubKey: alloy::sol_types::private::FixedBytes<32>,
             _committeePubKey: alloy::sol_types::private::FixedBytes<32>,
-        ) -> alloy_contract::SolCallBuilder<T, &P, getTemporaryPeginAddressCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, getTemporaryPeginAddressCall, N> {
             self.call_builder(
                 &getTemporaryPeginAddressCall {
                     _rskDestinationAddress,
@@ -9037,7 +10040,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             &self,
             _initialOwner: alloy::sol_types::private::Address,
             _network: <BtcNetwork as alloy::sol_types::SolType>::RustType,
-        ) -> alloy_contract::SolCallBuilder<T, &P, initializeCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, initializeCall, N> {
             self.call_builder(
                 &initializeCall {
                     _initialOwner,
@@ -9046,30 +10049,30 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             )
         }
         ///Creates a new call builder for the [`network`] function.
-        pub fn network(&self) -> alloy_contract::SolCallBuilder<T, &P, networkCall, N> {
-            self.call_builder(&networkCall {})
+        pub fn network(&self) -> alloy_contract::SolCallBuilder<&P, networkCall, N> {
+            self.call_builder(&networkCall)
         }
         ///Creates a new call builder for the [`owner`] function.
-        pub fn owner(&self) -> alloy_contract::SolCallBuilder<T, &P, ownerCall, N> {
-            self.call_builder(&ownerCall {})
+        pub fn owner(&self) -> alloy_contract::SolCallBuilder<&P, ownerCall, N> {
+            self.call_builder(&ownerCall)
         }
         ///Creates a new call builder for the [`proxiableUUID`] function.
         pub fn proxiableUUID(
             &self,
-        ) -> alloy_contract::SolCallBuilder<T, &P, proxiableUUIDCall, N> {
-            self.call_builder(&proxiableUUIDCall {})
+        ) -> alloy_contract::SolCallBuilder<&P, proxiableUUIDCall, N> {
+            self.call_builder(&proxiableUUIDCall)
         }
         ///Creates a new call builder for the [`renounceOwnership`] function.
         pub fn renounceOwnership(
             &self,
-        ) -> alloy_contract::SolCallBuilder<T, &P, renounceOwnershipCall, N> {
-            self.call_builder(&renounceOwnershipCall {})
+        ) -> alloy_contract::SolCallBuilder<&P, renounceOwnershipCall, N> {
+            self.call_builder(&renounceOwnershipCall)
         }
         ///Creates a new call builder for the [`transferOwnership`] function.
         pub fn transferOwnership(
             &self,
             newOwner: alloy::sol_types::private::Address,
-        ) -> alloy_contract::SolCallBuilder<T, &P, transferOwnershipCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, transferOwnershipCall, N> {
             self.call_builder(&transferOwnershipCall { newOwner })
         }
         ///Creates a new call builder for the [`upgradeToAndCall`] function.
@@ -9077,7 +10080,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             &self,
             newImplementation: alloy::sol_types::private::Address,
             data: alloy::sol_types::private::Bytes,
-        ) -> alloy_contract::SolCallBuilder<T, &P, upgradeToAndCallCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, upgradeToAndCallCall, N> {
             self.call_builder(
                 &upgradeToAndCallCall {
                     newImplementation,
@@ -9091,12 +10094,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             _committeePubKey: alloy::sol_types::private::FixedBytes<32>,
             _inputAmount: u64,
             _p2trOut: <BtcTxOut as alloy::sol_types::SolType>::RustType,
-        ) -> alloy_contract::SolCallBuilder<
-            T,
-            &P,
-            validateAcceptPeginP2TROutputCall,
-            N,
-        > {
+        ) -> alloy_contract::SolCallBuilder<&P, validateAcceptPeginP2TROutputCall, N> {
             self.call_builder(
                 &validateAcceptPeginP2TROutputCall {
                     _committeePubKey,
@@ -9110,7 +10108,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             &self,
             _userOutput: <BtcTxOut as alloy::sol_types::SolType>::RustType,
             _userPubKey: alloy::sol_types::private::Bytes,
-        ) -> alloy_contract::SolCallBuilder<T, &P, validatePegoutUserOutputCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, validatePegoutUserOutputCall, N> {
             self.call_builder(
                 &validatePegoutUserOutputCall {
                     _userOutput,
@@ -9126,12 +10124,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             _btcReimbursementPubKey: alloy::sol_types::private::FixedBytes<32>,
             _committeePubKey: alloy::sol_types::private::FixedBytes<32>,
             _p2trOut: <BtcTxOut as alloy::sol_types::SolType>::RustType,
-        ) -> alloy_contract::SolCallBuilder<
-            T,
-            &P,
-            validateRequestPeginP2TROutputCall,
-            N,
-        > {
+        ) -> alloy_contract::SolCallBuilder<&P, validateRequestPeginP2TROutputCall, N> {
             self.call_builder(
                 &validateRequestPeginP2TROutputCall {
                     _rskDestinationAddress,
@@ -9147,7 +10140,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             &self,
             _pubKey: alloy::sol_types::private::FixedBytes<32>,
             _speedUpOut: <BtcTxOut as alloy::sol_types::SolType>::RustType,
-        ) -> alloy_contract::SolCallBuilder<T, &P, validateSpeedUpOutputCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, validateSpeedUpOutputCall, N> {
             self.call_builder(
                 &validateSpeedUpOutputCall {
                     _pubKey,
@@ -9159,33 +10152,30 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
     /// Event filters.
     #[automatically_derived]
     impl<
-        T: alloy_contract::private::Transport + ::core::clone::Clone,
-        P: alloy_contract::private::Provider<T, N>,
+        P: alloy_contract::private::Provider<N>,
         N: alloy_contract::private::Network,
-    > BitcoinManagerInstance<T, P, N> {
+    > BitcoinManagerInstance<P, N> {
         /// Creates a new event filter using this contract instance's provider and address.
         ///
         /// Note that the type can be any event, not just those defined in this contract.
         /// Prefer using the other methods for building type-safe event filters.
         pub fn event_filter<E: alloy_sol_types::SolEvent>(
             &self,
-        ) -> alloy_contract::Event<T, &P, E, N> {
+        ) -> alloy_contract::Event<&P, E, N> {
             alloy_contract::Event::new_sol(&self.provider, &self.address)
         }
         ///Creates a new event filter for the [`Initialized`] event.
-        pub fn Initialized_filter(
-            &self,
-        ) -> alloy_contract::Event<T, &P, Initialized, N> {
+        pub fn Initialized_filter(&self) -> alloy_contract::Event<&P, Initialized, N> {
             self.event_filter::<Initialized>()
         }
         ///Creates a new event filter for the [`OwnershipTransferred`] event.
         pub fn OwnershipTransferred_filter(
             &self,
-        ) -> alloy_contract::Event<T, &P, OwnershipTransferred, N> {
+        ) -> alloy_contract::Event<&P, OwnershipTransferred, N> {
             self.event_filter::<OwnershipTransferred>()
         }
         ///Creates a new event filter for the [`Upgraded`] event.
-        pub fn Upgraded_filter(&self) -> alloy_contract::Event<T, &P, Upgraded, N> {
+        pub fn Upgraded_filter(&self) -> alloy_contract::Event<&P, Upgraded, N> {
             self.event_filter::<Upgraded>()
         }
     }

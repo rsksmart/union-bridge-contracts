@@ -1404,12 +1404,12 @@ pub mod StreamManager {
             pub const NAME: &'static str = stringify!(@ name);
             /// Convert from the underlying value type.
             #[inline]
-            pub const fn from(value: u8) -> Self {
+            pub const fn from_underlying(value: u8) -> Self {
                 Self(value)
             }
             /// Return the underlying value.
             #[inline]
-            pub const fn into(self) -> u8 {
+            pub const fn into_underlying(self) -> u8 {
                 self.0
             }
             /// Return the single encoding of this value, delegating to the
@@ -1423,6 +1423,18 @@ pub mod StreamManager {
             #[inline]
             pub fn abi_encode_packed(&self) -> alloy_sol_types::private::Vec<u8> {
                 <Self as alloy_sol_types::SolType>::abi_encode_packed(&self.0)
+            }
+        }
+        #[automatically_derived]
+        impl From<u8> for SlotState {
+            fn from(value: u8) -> Self {
+                Self::from_underlying(value)
+            }
+        }
+        #[automatically_derived]
+        impl From<SlotState> for u8 {
+            fn from(value: SlotState) -> Self {
+                value.into_underlying()
             }
         }
         #[automatically_derived]
@@ -2536,6 +2548,13 @@ error AddressEmptyCode(address target);
                     ),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -2611,6 +2630,13 @@ error ERC1967InvalidImplementation(address implementation);
                     ),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -2621,7 +2647,7 @@ error ERC1967NonPayable();
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct ERC1967NonPayable {}
+    pub struct ERC1967NonPayable;
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -2656,7 +2682,7 @@ error ERC1967NonPayable();
         #[doc(hidden)]
         impl ::core::convert::From<UnderlyingRustTuple<'_>> for ERC1967NonPayable {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self {}
+                Self
             }
         }
         #[automatically_derived]
@@ -2677,6 +2703,13 @@ error ERC1967NonPayable();
             fn tokenize(&self) -> Self::Token<'_> {
                 ()
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -2687,7 +2720,7 @@ error FailedCall();
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct FailedCall {}
+    pub struct FailedCall;
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -2722,7 +2755,7 @@ error FailedCall();
         #[doc(hidden)]
         impl ::core::convert::From<UnderlyingRustTuple<'_>> for FailedCall {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self {}
+                Self
             }
         }
         #[automatically_derived]
@@ -2742,6 +2775,13 @@ error FailedCall();
             #[inline]
             fn tokenize(&self) -> Self::Token<'_> {
                 ()
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -2840,6 +2880,13 @@ error InconsistentSlotsPerPacket(uint256 streamId, uint256 packetNumber, uint256
                     > as alloy_sol_types::SolType>::tokenize(&self.slotsPerPacket),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -2929,6 +2976,13 @@ error InvalidAcceptPeginTxHash(bytes32 expected, bytes32 actual);
                     > as alloy_sol_types::SolType>::tokenize(&self.actual),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -2939,7 +2993,7 @@ error InvalidInitialization();
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct InvalidInitialization {}
+    pub struct InvalidInitialization;
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -2974,7 +3028,7 @@ error InvalidInitialization();
         #[doc(hidden)]
         impl ::core::convert::From<UnderlyingRustTuple<'_>> for InvalidInitialization {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self {}
+                Self
             }
         }
         #[automatically_derived]
@@ -2994,6 +3048,13 @@ error InvalidInitialization();
             #[inline]
             fn tokenize(&self) -> Self::Token<'_> {
                 ()
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -3069,6 +3130,13 @@ error InvalidPeginConfirmations(uint8 confirmations);
                         8,
                     > as alloy_sol_types::SolType>::tokenize(&self.confirmations),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -3159,6 +3227,13 @@ error InvalidPeginPacketNumber(uint256 streamId, uint256 packetNumber);
                     > as alloy_sol_types::SolType>::tokenize(&self.packetNumber),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -3233,6 +3308,13 @@ error InvalidPegoutConfirmations(uint8 confirmations);
                         8,
                     > as alloy_sol_types::SolType>::tokenize(&self.confirmations),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -3310,6 +3392,13 @@ error InvalidSecurityBondValue(uint256 securityBond);
                         256,
                     > as alloy_sol_types::SolType>::tokenize(&self.securityBond),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -3391,6 +3480,13 @@ error InvalidSlotState(SlotState actual, SlotState expected);
                     <SlotState as alloy_sol_types::SolType>::tokenize(&self.expected),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -3401,7 +3497,7 @@ error InvalidZeroAddress();
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct InvalidZeroAddress {}
+    pub struct InvalidZeroAddress;
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -3436,7 +3532,7 @@ error InvalidZeroAddress();
         #[doc(hidden)]
         impl ::core::convert::From<UnderlyingRustTuple<'_>> for InvalidZeroAddress {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self {}
+                Self
             }
         }
         #[automatically_derived]
@@ -3456,6 +3552,13 @@ error InvalidZeroAddress();
             #[inline]
             fn tokenize(&self) -> Self::Token<'_> {
                 ()
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -3543,6 +3646,13 @@ error NoEmptySlot(uint256 streamId, uint256 packetNumber);
                         256,
                     > as alloy_sol_types::SolType>::tokenize(&self.packetNumber),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -3639,6 +3749,13 @@ error NoFilledSlot(uint256 streamId, uint256 packetNumber, uint256 slotId);
                     > as alloy_sol_types::SolType>::tokenize(&self.slotId),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -3734,6 +3851,13 @@ error NonExistentSlot(uint256 streamId, uint256 packetNumber, uint256 slotId);
                     > as alloy_sol_types::SolType>::tokenize(&self.slotId),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -3744,7 +3868,7 @@ error NotInitializing();
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct NotInitializing {}
+    pub struct NotInitializing;
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -3779,7 +3903,7 @@ error NotInitializing();
         #[doc(hidden)]
         impl ::core::convert::From<UnderlyingRustTuple<'_>> for NotInitializing {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self {}
+                Self
             }
         }
         #[automatically_derived]
@@ -3799,6 +3923,13 @@ error NotInitializing();
             #[inline]
             fn tokenize(&self) -> Self::Token<'_> {
                 ()
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -3872,6 +4003,13 @@ error OwnableInvalidOwner(address owner);
                         &self.owner,
                     ),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -3947,6 +4085,13 @@ error OwnableUnauthorizedAccount(address account);
                         &self.account,
                     ),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -4035,6 +4180,13 @@ error PacketNotFound(uint256 streamId, uint256 packetNumber);
                     > as alloy_sol_types::SolType>::tokenize(&self.packetNumber),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -4110,6 +4262,13 @@ error PacketOutOfBound(uint256 packetNumber);
                     > as alloy_sol_types::SolType>::tokenize(&self.packetNumber),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -4120,7 +4279,7 @@ error PegManagerAddressZero();
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct PegManagerAddressZero {}
+    pub struct PegManagerAddressZero;
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -4155,7 +4314,7 @@ error PegManagerAddressZero();
         #[doc(hidden)]
         impl ::core::convert::From<UnderlyingRustTuple<'_>> for PegManagerAddressZero {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self {}
+                Self
             }
         }
         #[automatically_derived]
@@ -4175,6 +4334,13 @@ error PegManagerAddressZero();
             #[inline]
             fn tokenize(&self) -> Self::Token<'_> {
                 ()
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -4253,6 +4419,13 @@ error StreamAlreadyInitialized(uint256 streamId);
                     > as alloy_sol_types::SolType>::tokenize(&self.streamId),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -4330,6 +4503,13 @@ error StreamNotFoundByDenomination(uint256 denomination);
                     > as alloy_sol_types::SolType>::tokenize(&self.denomination),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -4405,6 +4585,13 @@ error StreamNotFoundById(uint256 streamId);
                     > as alloy_sol_types::SolType>::tokenize(&self.streamId),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -4415,7 +4602,7 @@ error UUPSUnauthorizedCallContext();
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct UUPSUnauthorizedCallContext {}
+    pub struct UUPSUnauthorizedCallContext;
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -4452,7 +4639,7 @@ error UUPSUnauthorizedCallContext();
         impl ::core::convert::From<UnderlyingRustTuple<'_>>
         for UUPSUnauthorizedCallContext {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self {}
+                Self
             }
         }
         #[automatically_derived]
@@ -4472,6 +4659,13 @@ error UUPSUnauthorizedCallContext();
             #[inline]
             fn tokenize(&self) -> Self::Token<'_> {
                 ()
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -4548,6 +4742,13 @@ error UUPSUnsupportedProxiableUUID(bytes32 slot);
                     > as alloy_sol_types::SolType>::tokenize(&self.slot),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -4620,6 +4821,13 @@ error UnauthorizedAccount(address sender);
                         &self.sender,
                     ),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -4718,6 +4926,13 @@ error _InconsistentPegoutPointer(uint256 streamId, uint256 packetNumber, uint256
                     > as alloy_sol_types::SolType>::tokenize(&self.slotPointer),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -4794,6 +5009,13 @@ error tooManyDenominations(uint256 maxDenominationsSize);
                         256,
                     > as alloy_sol_types::SolType>::tokenize(&self.maxDenominationsSize),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -5492,7 +5714,7 @@ function UPGRADE_INTERFACE_VERSION() external view returns (string memory);
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct UPGRADE_INTERFACE_VERSIONCall {}
+    pub struct UPGRADE_INTERFACE_VERSIONCall;
     #[derive(serde::Serialize, serde::Deserialize)]
     #[derive(Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`UPGRADE_INTERFACE_VERSION()`](UPGRADE_INTERFACE_VERSIONCall) function.
@@ -5539,7 +5761,7 @@ function UPGRADE_INTERFACE_VERSION() external view returns (string memory);
             impl ::core::convert::From<UnderlyingRustTuple<'_>>
             for UPGRADE_INTERFACE_VERSIONCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self {}
+                    Self
                 }
             }
         }
@@ -5582,7 +5804,7 @@ function UPGRADE_INTERFACE_VERSION() external view returns (string memory);
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = UPGRADE_INTERFACE_VERSIONReturn;
+            type Return = alloy::sol_types::private::String;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::String,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -5600,14 +5822,34 @@ function UPGRADE_INTERFACE_VERSION() external view returns (string memory);
                 ()
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::String as alloy_sol_types::SolType>::tokenize(
+                        ret,
+                    ),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: UPGRADE_INTERFACE_VERSIONReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: UPGRADE_INTERFACE_VERSIONReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -5712,6 +5954,15 @@ function __AccessControl_init(address _initialOwner, address _pegManager) extern
                 }
             }
         }
+        impl __AccessControl_initReturn {
+            fn _tokenize(
+                &self,
+            ) -> <__AccessControl_initCall as alloy_sol_types::SolCall>::ReturnToken<
+                '_,
+            > {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for __AccessControl_initCall {
             type Parameters<'a> = (
@@ -5746,13 +5997,23 @@ function __AccessControl_init(address _initialOwner, address _pegManager) extern
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                __AccessControl_initReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -5847,6 +6108,13 @@ function __BaseProxy_init(address _initialOwner) external;
                 }
             }
         }
+        impl __BaseProxy_initReturn {
+            fn _tokenize(
+                &self,
+            ) -> <__BaseProxy_initCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for __BaseProxy_initCall {
             type Parameters<'a> = (alloy::sol_types::sol_data::Address,);
@@ -5875,13 +6143,23 @@ function __BaseProxy_init(address _initialOwner) external;
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                __BaseProxy_initReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -5894,7 +6172,7 @@ function committeeRegistry() external view returns (address);
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct committeeRegistryCall {}
+    pub struct committeeRegistryCall;
     #[derive(serde::Serialize, serde::Deserialize)]
     #[derive(Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`committeeRegistry()`](committeeRegistryCall) function.
@@ -5941,7 +6219,7 @@ function committeeRegistry() external view returns (address);
             impl ::core::convert::From<UnderlyingRustTuple<'_>>
             for committeeRegistryCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self {}
+                    Self
                 }
             }
         }
@@ -5984,7 +6262,7 @@ function committeeRegistry() external view returns (address);
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = committeeRegistryReturn;
+            type Return = alloy::sol_types::private::Address;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Address,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -6002,14 +6280,34 @@ function committeeRegistry() external view returns (address);
                 ()
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::Address as alloy_sol_types::SolType>::tokenize(
+                        ret,
+                    ),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: committeeRegistryReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: committeeRegistryReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -6117,6 +6415,13 @@ function createNewPacket(uint64 _streamId, uint256 _committeeId, bytes32 _commit
                 }
             }
         }
+        impl createNewPacketReturn {
+            fn _tokenize(
+                &self,
+            ) -> <createNewPacketCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for createNewPacketCall {
             type Parameters<'a> = (
@@ -6155,13 +6460,23 @@ function createNewPacket(uint64 _streamId, uint256 _committeeId, bytes32 _commit
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                createNewPacketReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -6305,7 +6620,7 @@ function fillAcceptPeginTx(uint64 _streamId, uint64 _packetNumber, uint64 _accep
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = fillAcceptPeginTxReturn;
+            type Return = u64;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Uint<64>,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -6339,14 +6654,34 @@ function fillAcceptPeginTx(uint64 _streamId, uint64 _packetNumber, uint64 _accep
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::Uint<
+                        64,
+                    > as alloy_sol_types::SolType>::tokenize(ret),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: fillAcceptPeginTxReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: fillAcceptPeginTxReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -6462,7 +6797,7 @@ function getCommitteeId(uint64 _streamId, uint64 _packetNumber) external view re
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = getCommitteeIdReturn;
+            type Return = alloy::sol_types::private::primitives::aliases::U256;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Uint<256>,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -6487,14 +6822,34 @@ function getCommitteeId(uint64 _streamId, uint64 _packetNumber) external view re
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::Uint<
+                        256,
+                    > as alloy_sol_types::SolType>::tokenize(ret),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: getCommitteeIdReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: getCommitteeIdReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -6610,7 +6965,7 @@ function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external vie
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = getCommitteePubKeyReturn;
+            type Return = alloy::sol_types::private::FixedBytes<32>;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::FixedBytes<32>,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -6635,14 +6990,34 @@ function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external vie
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::FixedBytes<
+                        32,
+                    > as alloy_sol_types::SolType>::tokenize(ret),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: getCommitteePubKeyReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: getCommitteePubKeyReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -6749,7 +7124,7 @@ function getCurrentPacketCommitteeId(uint64 _streamId) external view returns (ui
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = getCurrentPacketCommitteeIdReturn;
+            type Return = alloy::sol_types::private::primitives::aliases::U256;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Uint<256>,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -6771,14 +7146,34 @@ function getCurrentPacketCommitteeId(uint64 _streamId) external view returns (ui
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::Uint<
+                        256,
+                    > as alloy_sol_types::SolType>::tokenize(ret),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: getCurrentPacketCommitteeIdReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: getCurrentPacketCommitteeIdReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -6790,7 +7185,7 @@ function getImplementation() external view returns (address);
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct getImplementationCall {}
+    pub struct getImplementationCall;
     #[derive(serde::Serialize, serde::Deserialize)]
     #[derive(Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`getImplementation()`](getImplementationCall) function.
@@ -6837,7 +7232,7 @@ function getImplementation() external view returns (address);
             impl ::core::convert::From<UnderlyingRustTuple<'_>>
             for getImplementationCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self {}
+                    Self
                 }
             }
         }
@@ -6880,7 +7275,7 @@ function getImplementation() external view returns (address);
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = getImplementationReturn;
+            type Return = alloy::sol_types::private::Address;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Address,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -6898,14 +7293,34 @@ function getImplementation() external view returns (address);
                 ()
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::Address as alloy_sol_types::SolType>::tokenize(
+                        ret,
+                    ),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: getImplementationReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: getImplementationReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -7019,7 +7434,7 @@ function getPacket(uint64 _streamId, uint64 _packetNumber) external view returns
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = getPacketReturn;
+            type Return = <Packet as alloy::sol_types::SolType>::RustType;
             type ReturnTuple<'a> = (Packet,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -7044,14 +7459,30 @@ function getPacket(uint64 _streamId, uint64 _packetNumber) external view returns
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (<Packet as alloy_sol_types::SolType>::tokenize(ret),)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: getPacketReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: getPacketReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -7156,7 +7587,7 @@ function getPacketsLength(uint64 _streamId) external view returns (uint64);
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = getPacketsLengthReturn;
+            type Return = u64;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Uint<64>,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -7178,14 +7609,34 @@ function getPacketsLength(uint64 _streamId) external view returns (uint64);
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::Uint<
+                        64,
+                    > as alloy_sol_types::SolType>::tokenize(ret),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: getPacketsLengthReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: getPacketsLengthReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -7304,7 +7755,7 @@ function getSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotNumber) ext
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = getSlotReturn;
+            type Return = <Slot as alloy::sol_types::SolType>::RustType;
             type ReturnTuple<'a> = (Slot,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -7332,14 +7783,30 @@ function getSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotNumber) ext
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (<Slot as alloy_sol_types::SolType>::tokenize(ret),)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: getSlotReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: getSlotReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -7442,7 +7909,7 @@ function getStream(uint64 _denomination) external view returns (Stream memory);
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = getStreamReturn;
+            type Return = <Stream as alloy::sol_types::SolType>::RustType;
             type ReturnTuple<'a> = (Stream,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -7464,14 +7931,30 @@ function getStream(uint64 _denomination) external view returns (Stream memory);
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (<Stream as alloy_sol_types::SolType>::tokenize(ret),)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: getStreamReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: getStreamReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -7574,7 +8057,7 @@ function getStreamById(uint64 _streamId) external view returns (Stream memory);
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = getStreamByIdReturn;
+            type Return = <Stream as alloy::sol_types::SolType>::RustType;
             type ReturnTuple<'a> = (Stream,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -7596,14 +8079,30 @@ function getStreamById(uint64 _streamId) external view returns (Stream memory);
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (<Stream as alloy_sol_types::SolType>::tokenize(ret),)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: getStreamByIdReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: getStreamByIdReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -7615,7 +8114,7 @@ function getStreamsLength() external view returns (uint64);
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct getStreamsLengthCall {}
+    pub struct getStreamsLengthCall;
     #[derive(serde::Serialize, serde::Deserialize)]
     #[derive(Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`getStreamsLength()`](getStreamsLengthCall) function.
@@ -7662,7 +8161,7 @@ function getStreamsLength() external view returns (uint64);
             impl ::core::convert::From<UnderlyingRustTuple<'_>>
             for getStreamsLengthCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self {}
+                    Self
                 }
             }
         }
@@ -7705,7 +8204,7 @@ function getStreamsLength() external view returns (uint64);
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = getStreamsLengthReturn;
+            type Return = u64;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Uint<64>,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -7723,14 +8222,34 @@ function getStreamsLength() external view returns (uint64);
                 ()
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::Uint<
+                        64,
+                    > as alloy_sol_types::SolType>::tokenize(ret),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: getStreamsLengthReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: getStreamsLengthReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -7846,6 +8365,13 @@ function initialize(address _initialOwner, address _pegManager, address _committ
                 }
             }
         }
+        impl initializeReturn {
+            fn _tokenize(
+                &self,
+            ) -> <initializeCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for initializeCall {
             type Parameters<'a> = (
@@ -7888,13 +8414,23 @@ function initialize(address _initialOwner, address _pegManager, address _committ
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                initializeReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -7998,6 +8534,18 @@ function lockSlot(uint64 _streamId) external returns (Slot memory, uint64 packet
                 }
             }
         }
+        impl lockSlotReturn {
+            fn _tokenize(
+                &self,
+            ) -> <lockSlotCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
+                (
+                    <Slot as alloy_sol_types::SolType>::tokenize(&self._0),
+                    <alloy::sol_types::sol_data::Uint<
+                        64,
+                    > as alloy_sol_types::SolType>::tokenize(&self.packetNumber),
+                )
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for lockSlotCall {
             type Parameters<'a> = (alloy::sol_types::sol_data::Uint<64>,);
@@ -8026,13 +8574,23 @@ function lockSlot(uint64 _streamId) external returns (Slot memory, uint64 packet
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                lockSlotReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -8045,7 +8603,7 @@ function owner() external view returns (address);
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct ownerCall {}
+    pub struct ownerCall;
     #[derive(serde::Serialize, serde::Deserialize)]
     #[derive(Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`owner()`](ownerCall) function.
@@ -8090,7 +8648,7 @@ function owner() external view returns (address);
             #[doc(hidden)]
             impl ::core::convert::From<UnderlyingRustTuple<'_>> for ownerCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self {}
+                    Self
                 }
             }
         }
@@ -8131,7 +8689,7 @@ function owner() external view returns (address);
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = ownerReturn;
+            type Return = alloy::sol_types::private::Address;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Address,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -8149,14 +8707,34 @@ function owner() external view returns (address);
                 ()
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::Address as alloy_sol_types::SolType>::tokenize(
+                        ret,
+                    ),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: ownerReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: ownerReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -8278,6 +8856,23 @@ function packets(uint64 streamId, uint256) external view returns (uint64 packetN
                 }
             }
         }
+        impl packetsReturn {
+            fn _tokenize(
+                &self,
+            ) -> <packetsCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::Uint<
+                        64,
+                    > as alloy_sol_types::SolType>::tokenize(&self.packetNumber),
+                    <alloy::sol_types::sol_data::Uint<
+                        256,
+                    > as alloy_sol_types::SolType>::tokenize(&self.committeeId),
+                    <alloy::sol_types::sol_data::FixedBytes<
+                        32,
+                    > as alloy_sol_types::SolType>::tokenize(&self.committeePubKey),
+                )
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for packetsCall {
             type Parameters<'a> = (
@@ -8316,13 +8911,23 @@ function packets(uint64 streamId, uint256) external view returns (uint64 packetN
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                packetsReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -8445,6 +9050,13 @@ function paidSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId, bytes3
                 }
             }
         }
+        impl paidSlotReturn {
+            fn _tokenize(
+                &self,
+            ) -> <paidSlotCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for paidSlotCall {
             type Parameters<'a> = (
@@ -8491,13 +9103,23 @@ function paidSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId, bytes3
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                paidSlotReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -8510,7 +9132,7 @@ function pegManager() external view returns (address);
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct pegManagerCall {}
+    pub struct pegManagerCall;
     #[derive(serde::Serialize, serde::Deserialize)]
     #[derive(Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`pegManager()`](pegManagerCall) function.
@@ -8555,7 +9177,7 @@ function pegManager() external view returns (address);
             #[doc(hidden)]
             impl ::core::convert::From<UnderlyingRustTuple<'_>> for pegManagerCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self {}
+                    Self
                 }
             }
         }
@@ -8596,7 +9218,7 @@ function pegManager() external view returns (address);
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = pegManagerReturn;
+            type Return = alloy::sol_types::private::Address;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Address,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -8614,14 +9236,34 @@ function pegManager() external view returns (address);
                 ()
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::Address as alloy_sol_types::SolType>::tokenize(
+                        ret,
+                    ),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: pegManagerReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: pegManagerReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -8633,7 +9275,7 @@ function proxiableUUID() external view returns (bytes32);
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct proxiableUUIDCall {}
+    pub struct proxiableUUIDCall;
     #[derive(serde::Serialize, serde::Deserialize)]
     #[derive(Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`proxiableUUID()`](proxiableUUIDCall) function.
@@ -8678,7 +9320,7 @@ function proxiableUUID() external view returns (bytes32);
             #[doc(hidden)]
             impl ::core::convert::From<UnderlyingRustTuple<'_>> for proxiableUUIDCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self {}
+                    Self
                 }
             }
         }
@@ -8719,7 +9361,7 @@ function proxiableUUID() external view returns (bytes32);
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = proxiableUUIDReturn;
+            type Return = alloy::sol_types::private::FixedBytes<32>;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::FixedBytes<32>,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -8737,14 +9379,34 @@ function proxiableUUID() external view returns (bytes32);
                 ()
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::FixedBytes<
+                        32,
+                    > as alloy_sol_types::SolType>::tokenize(ret),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: proxiableUUIDReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: proxiableUUIDReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -8756,7 +9418,7 @@ function renounceOwnership() external;
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct renounceOwnershipCall {}
+    pub struct renounceOwnershipCall;
     ///Container type for the return parameters of the [`renounceOwnership()`](renounceOwnershipCall) function.
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
@@ -8798,7 +9460,7 @@ function renounceOwnership() external;
             impl ::core::convert::From<UnderlyingRustTuple<'_>>
             for renounceOwnershipCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self {}
+                    Self
                 }
             }
         }
@@ -8835,6 +9497,13 @@ function renounceOwnership() external;
                 }
             }
         }
+        impl renounceOwnershipReturn {
+            fn _tokenize(
+                &self,
+            ) -> <renounceOwnershipCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for renounceOwnershipCall {
             type Parameters<'a> = ();
@@ -8859,13 +9528,23 @@ function renounceOwnership() external;
                 ()
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                renounceOwnershipReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -8962,6 +9641,15 @@ function setCommitteeRegistry(address _committeeRegistry) external;
                 }
             }
         }
+        impl setCommitteeRegistryReturn {
+            fn _tokenize(
+                &self,
+            ) -> <setCommitteeRegistryCall as alloy_sol_types::SolCall>::ReturnToken<
+                '_,
+            > {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for setCommitteeRegistryCall {
             type Parameters<'a> = (alloy::sol_types::sol_data::Address,);
@@ -8990,13 +9678,23 @@ function setCommitteeRegistry(address _committeeRegistry) external;
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                setCommitteeRegistryReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -9099,6 +9797,15 @@ function setPeginConfirmations(uint64 _streamId, uint8 _confirmations) external;
                 }
             }
         }
+        impl setPeginConfirmationsReturn {
+            fn _tokenize(
+                &self,
+            ) -> <setPeginConfirmationsCall as alloy_sol_types::SolCall>::ReturnToken<
+                '_,
+            > {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for setPeginConfirmationsCall {
             type Parameters<'a> = (
@@ -9133,13 +9840,23 @@ function setPeginConfirmations(uint64 _streamId, uint8 _confirmations) external;
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                setPeginConfirmationsReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -9242,6 +9959,15 @@ function setPegoutConfirmations(uint64 _streamId, uint8 _confirmations) external
                 }
             }
         }
+        impl setPegoutConfirmationsReturn {
+            fn _tokenize(
+                &self,
+            ) -> <setPegoutConfirmationsCall as alloy_sol_types::SolCall>::ReturnToken<
+                '_,
+            > {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for setPegoutConfirmationsCall {
             type Parameters<'a> = (
@@ -9276,13 +10002,23 @@ function setPegoutConfirmations(uint64 _streamId, uint8 _confirmations) external
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                setPegoutConfirmationsReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -9386,6 +10122,13 @@ function setSecurityBond(uint64 _streamId, uint256 _securityBondValue) external;
                 }
             }
         }
+        impl setSecurityBondReturn {
+            fn _tokenize(
+                &self,
+            ) -> <setSecurityBondCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for setSecurityBondCall {
             type Parameters<'a> = (
@@ -9420,13 +10163,23 @@ function setSecurityBond(uint64 _streamId, uint256 _securityBondValue) external;
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                setSecurityBondReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -9521,6 +10274,13 @@ function transferOwnership(address newOwner) external;
                 }
             }
         }
+        impl transferOwnershipReturn {
+            fn _tokenize(
+                &self,
+            ) -> <transferOwnershipCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for transferOwnershipCall {
             type Parameters<'a> = (alloy::sol_types::sol_data::Address,);
@@ -9549,13 +10309,23 @@ function transferOwnership(address newOwner) external;
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                transferOwnershipReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -9661,6 +10431,13 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 }
             }
         }
+        impl upgradeToAndCallReturn {
+            fn _tokenize(
+                &self,
+            ) -> <upgradeToAndCallCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for upgradeToAndCallCall {
             type Parameters<'a> = (
@@ -9695,13 +10472,23 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                upgradeToAndCallReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -9915,20 +10702,16 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
         fn abi_decode_raw(
             selector: [u8; 4],
             data: &[u8],
-            validate: bool,
         ) -> alloy_sol_types::Result<Self> {
             static DECODE_SHIMS: &[fn(
                 &[u8],
-                bool,
             ) -> alloy_sol_types::Result<StreamManagerCalls>] = &[
                 {
                     fn committeeRegistry(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerCalls> {
                         <committeeRegistryCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerCalls::committeeRegistry)
                     }
@@ -9937,12 +10720,8 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn getSlot(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerCalls> {
-                        <getSlotCall as alloy_sol_types::SolCall>::abi_decode_raw(
-                                data,
-                                validate,
-                            )
+                        <getSlotCall as alloy_sol_types::SolCall>::abi_decode_raw(data)
                             .map(StreamManagerCalls::getSlot)
                     }
                     getSlot
@@ -9950,11 +10729,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn getCurrentPacketCommitteeId(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerCalls> {
                         <getCurrentPacketCommitteeIdCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerCalls::getCurrentPacketCommitteeId)
                     }
@@ -9963,11 +10740,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn __AccessControl_init(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerCalls> {
                         <__AccessControl_initCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerCalls::__AccessControl_init)
                     }
@@ -9976,11 +10751,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn upgradeToAndCall(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerCalls> {
                         <upgradeToAndCallCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerCalls::upgradeToAndCall)
                     }
@@ -9989,11 +10762,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn proxiableUUID(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerCalls> {
                         <proxiableUUIDCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerCalls::proxiableUUID)
                     }
@@ -10002,11 +10773,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn pegManager(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerCalls> {
                         <pegManagerCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerCalls::pegManager)
                     }
@@ -10015,11 +10784,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn createNewPacket(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerCalls> {
                         <createNewPacketCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerCalls::createNewPacket)
                     }
@@ -10028,11 +10795,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn renounceOwnership(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerCalls> {
                         <renounceOwnershipCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerCalls::renounceOwnership)
                     }
@@ -10041,12 +10806,8 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn lockSlot(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerCalls> {
-                        <lockSlotCall as alloy_sol_types::SolCall>::abi_decode_raw(
-                                data,
-                                validate,
-                            )
+                        <lockSlotCall as alloy_sol_types::SolCall>::abi_decode_raw(data)
                             .map(StreamManagerCalls::lockSlot)
                     }
                     lockSlot
@@ -10054,11 +10815,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn getStreamsLength(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerCalls> {
                         <getStreamsLengthCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerCalls::getStreamsLength)
                     }
@@ -10067,12 +10826,8 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn packets(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerCalls> {
-                        <packetsCall as alloy_sol_types::SolCall>::abi_decode_raw(
-                                data,
-                                validate,
-                            )
+                        <packetsCall as alloy_sol_types::SolCall>::abi_decode_raw(data)
                             .map(StreamManagerCalls::packets)
                     }
                     packets
@@ -10080,12 +10835,8 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn owner(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerCalls> {
-                        <ownerCall as alloy_sol_types::SolCall>::abi_decode_raw(
-                                data,
-                                validate,
-                            )
+                        <ownerCall as alloy_sol_types::SolCall>::abi_decode_raw(data)
                             .map(StreamManagerCalls::owner)
                     }
                     owner
@@ -10093,12 +10844,8 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn paidSlot(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerCalls> {
-                        <paidSlotCall as alloy_sol_types::SolCall>::abi_decode_raw(
-                                data,
-                                validate,
-                            )
+                        <paidSlotCall as alloy_sol_types::SolCall>::abi_decode_raw(data)
                             .map(StreamManagerCalls::paidSlot)
                     }
                     paidSlot
@@ -10106,11 +10853,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn getCommitteePubKey(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerCalls> {
                         <getCommitteePubKeyCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerCalls::getCommitteePubKey)
                     }
@@ -10119,11 +10864,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn getImplementation(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerCalls> {
                         <getImplementationCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerCalls::getImplementation)
                     }
@@ -10132,11 +10875,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn UPGRADE_INTERFACE_VERSION(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerCalls> {
                         <UPGRADE_INTERFACE_VERSIONCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerCalls::UPGRADE_INTERFACE_VERSION)
                     }
@@ -10145,11 +10886,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn initialize(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerCalls> {
                         <initializeCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerCalls::initialize)
                     }
@@ -10158,11 +10897,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn __BaseProxy_init(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerCalls> {
                         <__BaseProxy_initCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerCalls::__BaseProxy_init)
                     }
@@ -10171,11 +10908,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn getCommitteeId(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerCalls> {
                         <getCommitteeIdCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerCalls::getCommitteeId)
                     }
@@ -10184,12 +10919,8 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn getPacket(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerCalls> {
-                        <getPacketCall as alloy_sol_types::SolCall>::abi_decode_raw(
-                                data,
-                                validate,
-                            )
+                        <getPacketCall as alloy_sol_types::SolCall>::abi_decode_raw(data)
                             .map(StreamManagerCalls::getPacket)
                     }
                     getPacket
@@ -10197,11 +10928,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn setPeginConfirmations(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerCalls> {
                         <setPeginConfirmationsCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerCalls::setPeginConfirmations)
                     }
@@ -10210,11 +10939,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn fillAcceptPeginTx(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerCalls> {
                         <fillAcceptPeginTxCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerCalls::fillAcceptPeginTx)
                     }
@@ -10223,12 +10950,8 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn getStream(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerCalls> {
-                        <getStreamCall as alloy_sol_types::SolCall>::abi_decode_raw(
-                                data,
-                                validate,
-                            )
+                        <getStreamCall as alloy_sol_types::SolCall>::abi_decode_raw(data)
                             .map(StreamManagerCalls::getStream)
                     }
                     getStream
@@ -10236,11 +10959,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn getPacketsLength(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerCalls> {
                         <getPacketsLengthCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerCalls::getPacketsLength)
                     }
@@ -10249,11 +10970,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn setPegoutConfirmations(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerCalls> {
                         <setPegoutConfirmationsCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerCalls::setPegoutConfirmations)
                     }
@@ -10262,11 +10981,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn getStreamById(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerCalls> {
                         <getStreamByIdCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerCalls::getStreamById)
                     }
@@ -10275,11 +10992,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn transferOwnership(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerCalls> {
                         <transferOwnershipCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerCalls::transferOwnership)
                     }
@@ -10288,11 +11003,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn setSecurityBond(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerCalls> {
                         <setSecurityBondCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerCalls::setSecurityBond)
                     }
@@ -10301,11 +11014,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn setCommitteeRegistry(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerCalls> {
                         <setCommitteeRegistryCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerCalls::setCommitteeRegistry)
                     }
@@ -10320,7 +11031,357 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                     ),
                 );
             };
-            DECODE_SHIMS[idx](data, validate)
+            DECODE_SHIMS[idx](data)
+        }
+        #[inline]
+        #[allow(non_snake_case)]
+        fn abi_decode_raw_validate(
+            selector: [u8; 4],
+            data: &[u8],
+        ) -> alloy_sol_types::Result<Self> {
+            static DECODE_VALIDATE_SHIMS: &[fn(
+                &[u8],
+            ) -> alloy_sol_types::Result<StreamManagerCalls>] = &[
+                {
+                    fn committeeRegistry(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerCalls> {
+                        <committeeRegistryCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerCalls::committeeRegistry)
+                    }
+                    committeeRegistry
+                },
+                {
+                    fn getSlot(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerCalls> {
+                        <getSlotCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerCalls::getSlot)
+                    }
+                    getSlot
+                },
+                {
+                    fn getCurrentPacketCommitteeId(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerCalls> {
+                        <getCurrentPacketCommitteeIdCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerCalls::getCurrentPacketCommitteeId)
+                    }
+                    getCurrentPacketCommitteeId
+                },
+                {
+                    fn __AccessControl_init(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerCalls> {
+                        <__AccessControl_initCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerCalls::__AccessControl_init)
+                    }
+                    __AccessControl_init
+                },
+                {
+                    fn upgradeToAndCall(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerCalls> {
+                        <upgradeToAndCallCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerCalls::upgradeToAndCall)
+                    }
+                    upgradeToAndCall
+                },
+                {
+                    fn proxiableUUID(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerCalls> {
+                        <proxiableUUIDCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerCalls::proxiableUUID)
+                    }
+                    proxiableUUID
+                },
+                {
+                    fn pegManager(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerCalls> {
+                        <pegManagerCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerCalls::pegManager)
+                    }
+                    pegManager
+                },
+                {
+                    fn createNewPacket(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerCalls> {
+                        <createNewPacketCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerCalls::createNewPacket)
+                    }
+                    createNewPacket
+                },
+                {
+                    fn renounceOwnership(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerCalls> {
+                        <renounceOwnershipCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerCalls::renounceOwnership)
+                    }
+                    renounceOwnership
+                },
+                {
+                    fn lockSlot(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerCalls> {
+                        <lockSlotCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerCalls::lockSlot)
+                    }
+                    lockSlot
+                },
+                {
+                    fn getStreamsLength(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerCalls> {
+                        <getStreamsLengthCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerCalls::getStreamsLength)
+                    }
+                    getStreamsLength
+                },
+                {
+                    fn packets(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerCalls> {
+                        <packetsCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerCalls::packets)
+                    }
+                    packets
+                },
+                {
+                    fn owner(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerCalls> {
+                        <ownerCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerCalls::owner)
+                    }
+                    owner
+                },
+                {
+                    fn paidSlot(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerCalls> {
+                        <paidSlotCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerCalls::paidSlot)
+                    }
+                    paidSlot
+                },
+                {
+                    fn getCommitteePubKey(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerCalls> {
+                        <getCommitteePubKeyCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerCalls::getCommitteePubKey)
+                    }
+                    getCommitteePubKey
+                },
+                {
+                    fn getImplementation(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerCalls> {
+                        <getImplementationCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerCalls::getImplementation)
+                    }
+                    getImplementation
+                },
+                {
+                    fn UPGRADE_INTERFACE_VERSION(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerCalls> {
+                        <UPGRADE_INTERFACE_VERSIONCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerCalls::UPGRADE_INTERFACE_VERSION)
+                    }
+                    UPGRADE_INTERFACE_VERSION
+                },
+                {
+                    fn initialize(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerCalls> {
+                        <initializeCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerCalls::initialize)
+                    }
+                    initialize
+                },
+                {
+                    fn __BaseProxy_init(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerCalls> {
+                        <__BaseProxy_initCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerCalls::__BaseProxy_init)
+                    }
+                    __BaseProxy_init
+                },
+                {
+                    fn getCommitteeId(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerCalls> {
+                        <getCommitteeIdCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerCalls::getCommitteeId)
+                    }
+                    getCommitteeId
+                },
+                {
+                    fn getPacket(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerCalls> {
+                        <getPacketCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerCalls::getPacket)
+                    }
+                    getPacket
+                },
+                {
+                    fn setPeginConfirmations(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerCalls> {
+                        <setPeginConfirmationsCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerCalls::setPeginConfirmations)
+                    }
+                    setPeginConfirmations
+                },
+                {
+                    fn fillAcceptPeginTx(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerCalls> {
+                        <fillAcceptPeginTxCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerCalls::fillAcceptPeginTx)
+                    }
+                    fillAcceptPeginTx
+                },
+                {
+                    fn getStream(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerCalls> {
+                        <getStreamCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerCalls::getStream)
+                    }
+                    getStream
+                },
+                {
+                    fn getPacketsLength(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerCalls> {
+                        <getPacketsLengthCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerCalls::getPacketsLength)
+                    }
+                    getPacketsLength
+                },
+                {
+                    fn setPegoutConfirmations(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerCalls> {
+                        <setPegoutConfirmationsCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerCalls::setPegoutConfirmations)
+                    }
+                    setPegoutConfirmations
+                },
+                {
+                    fn getStreamById(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerCalls> {
+                        <getStreamByIdCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerCalls::getStreamById)
+                    }
+                    getStreamById
+                },
+                {
+                    fn transferOwnership(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerCalls> {
+                        <transferOwnershipCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerCalls::transferOwnership)
+                    }
+                    transferOwnership
+                },
+                {
+                    fn setSecurityBond(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerCalls> {
+                        <setSecurityBondCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerCalls::setSecurityBond)
+                    }
+                    setSecurityBond
+                },
+                {
+                    fn setCommitteeRegistry(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerCalls> {
+                        <setCommitteeRegistryCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerCalls::setCommitteeRegistry)
+                    }
+                    setCommitteeRegistry
+                },
+            ];
+            let Ok(idx) = Self::SELECTORS.binary_search(&selector) else {
+                return Err(
+                    alloy_sol_types::Error::unknown_selector(
+                        <Self as alloy_sol_types::SolInterface>::NAME,
+                        selector,
+                    ),
+                );
+            };
+            DECODE_VALIDATE_SHIMS[idx](data)
         }
         #[inline]
         fn abi_encoded_size(&self) -> usize {
@@ -10855,20 +11916,16 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
         fn abi_decode_raw(
             selector: [u8; 4],
             data: &[u8],
-            validate: bool,
         ) -> alloy_sol_types::Result<Self> {
             static DECODE_SHIMS: &[fn(
                 &[u8],
-                bool,
             ) -> alloy_sol_types::Result<StreamManagerErrors>] = &[
                 {
                     fn InvalidPeginConfirmations(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerErrors> {
                         <InvalidPeginConfirmations as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerErrors::InvalidPeginConfirmations)
                     }
@@ -10877,11 +11934,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn OwnableUnauthorizedAccount(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerErrors> {
                         <OwnableUnauthorizedAccount as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerErrors::OwnableUnauthorizedAccount)
                     }
@@ -10890,11 +11945,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn PacketOutOfBound(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerErrors> {
                         <PacketOutOfBound as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerErrors::PacketOutOfBound)
                     }
@@ -10903,11 +11956,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn OwnableInvalidOwner(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerErrors> {
                         <OwnableInvalidOwner as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerErrors::OwnableInvalidOwner)
                     }
@@ -10916,11 +11967,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn UnauthorizedAccount(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerErrors> {
                         <UnauthorizedAccount as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerErrors::UnauthorizedAccount)
                     }
@@ -10929,11 +11978,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn NonExistentSlot(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerErrors> {
                         <NonExistentSlot as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerErrors::NonExistentSlot)
                     }
@@ -10942,11 +11989,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn ERC1967InvalidImplementation(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerErrors> {
                         <ERC1967InvalidImplementation as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerErrors::ERC1967InvalidImplementation)
                     }
@@ -10955,11 +12000,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn InconsistentSlotsPerPacket(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerErrors> {
                         <InconsistentSlotsPerPacket as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerErrors::InconsistentSlotsPerPacket)
                     }
@@ -10968,12 +12011,8 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn NoEmptySlot(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerErrors> {
-                        <NoEmptySlot as alloy_sol_types::SolError>::abi_decode_raw(
-                                data,
-                                validate,
-                            )
+                        <NoEmptySlot as alloy_sol_types::SolError>::abi_decode_raw(data)
                             .map(StreamManagerErrors::NoEmptySlot)
                     }
                     NoEmptySlot
@@ -10981,11 +12020,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn StreamNotFoundByDenomination(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerErrors> {
                         <StreamNotFoundByDenomination as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerErrors::StreamNotFoundByDenomination)
                     }
@@ -10994,11 +12031,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn InvalidPeginPacketNumber(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerErrors> {
                         <InvalidPeginPacketNumber as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerErrors::InvalidPeginPacketNumber)
                     }
@@ -11007,11 +12042,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn StreamNotFoundById(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerErrors> {
                         <StreamNotFoundById as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerErrors::StreamNotFoundById)
                     }
@@ -11020,11 +12053,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn InvalidSecurityBondValue(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerErrors> {
                         <InvalidSecurityBondValue as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerErrors::InvalidSecurityBondValue)
                     }
@@ -11033,11 +12064,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn InvalidSlotState(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerErrors> {
                         <InvalidSlotState as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerErrors::InvalidSlotState)
                     }
@@ -11046,11 +12075,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn tooManyDenominations(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerErrors> {
                         <tooManyDenominations as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerErrors::tooManyDenominations)
                     }
@@ -11059,11 +12086,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn InvalidAcceptPeginTxHash(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerErrors> {
                         <InvalidAcceptPeginTxHash as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerErrors::InvalidAcceptPeginTxHash)
                     }
@@ -11072,11 +12097,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn AddressEmptyCode(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerErrors> {
                         <AddressEmptyCode as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerErrors::AddressEmptyCode)
                     }
@@ -11085,11 +12108,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn UUPSUnsupportedProxiableUUID(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerErrors> {
                         <UUPSUnsupportedProxiableUUID as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerErrors::UUPSUnsupportedProxiableUUID)
                     }
@@ -11098,11 +12119,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn ERC1967NonPayable(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerErrors> {
                         <ERC1967NonPayable as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerErrors::ERC1967NonPayable)
                     }
@@ -11111,12 +12130,8 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn NoFilledSlot(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerErrors> {
-                        <NoFilledSlot as alloy_sol_types::SolError>::abi_decode_raw(
-                                data,
-                                validate,
-                            )
+                        <NoFilledSlot as alloy_sol_types::SolError>::abi_decode_raw(data)
                             .map(StreamManagerErrors::NoFilledSlot)
                     }
                     NoFilledSlot
@@ -11124,11 +12139,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn StreamAlreadyInitialized(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerErrors> {
                         <StreamAlreadyInitialized as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerErrors::StreamAlreadyInitialized)
                     }
@@ -11137,11 +12150,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn _InconsistentPegoutPointer(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerErrors> {
                         <_InconsistentPegoutPointer as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerErrors::_InconsistentPegoutPointer)
                     }
@@ -11150,12 +12161,8 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn FailedCall(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerErrors> {
-                        <FailedCall as alloy_sol_types::SolError>::abi_decode_raw(
-                                data,
-                                validate,
-                            )
+                        <FailedCall as alloy_sol_types::SolError>::abi_decode_raw(data)
                             .map(StreamManagerErrors::FailedCall)
                     }
                     FailedCall
@@ -11163,11 +12170,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn NotInitializing(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerErrors> {
                         <NotInitializing as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerErrors::NotInitializing)
                     }
@@ -11176,11 +12181,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn UUPSUnauthorizedCallContext(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerErrors> {
                         <UUPSUnauthorizedCallContext as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerErrors::UUPSUnauthorizedCallContext)
                     }
@@ -11189,11 +12192,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn InvalidPegoutConfirmations(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerErrors> {
                         <InvalidPegoutConfirmations as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerErrors::InvalidPegoutConfirmations)
                     }
@@ -11202,11 +12203,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn InvalidZeroAddress(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerErrors> {
                         <InvalidZeroAddress as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerErrors::InvalidZeroAddress)
                     }
@@ -11215,11 +12214,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn PacketNotFound(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerErrors> {
                         <PacketNotFound as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerErrors::PacketNotFound)
                     }
@@ -11228,11 +12225,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn InvalidInitialization(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerErrors> {
                         <InvalidInitialization as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerErrors::InvalidInitialization)
                     }
@@ -11241,11 +12236,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn PegManagerAddressZero(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<StreamManagerErrors> {
                         <PegManagerAddressZero as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(StreamManagerErrors::PegManagerAddressZero)
                     }
@@ -11260,7 +12253,357 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                     ),
                 );
             };
-            DECODE_SHIMS[idx](data, validate)
+            DECODE_SHIMS[idx](data)
+        }
+        #[inline]
+        #[allow(non_snake_case)]
+        fn abi_decode_raw_validate(
+            selector: [u8; 4],
+            data: &[u8],
+        ) -> alloy_sol_types::Result<Self> {
+            static DECODE_VALIDATE_SHIMS: &[fn(
+                &[u8],
+            ) -> alloy_sol_types::Result<StreamManagerErrors>] = &[
+                {
+                    fn InvalidPeginConfirmations(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerErrors> {
+                        <InvalidPeginConfirmations as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerErrors::InvalidPeginConfirmations)
+                    }
+                    InvalidPeginConfirmations
+                },
+                {
+                    fn OwnableUnauthorizedAccount(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerErrors> {
+                        <OwnableUnauthorizedAccount as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerErrors::OwnableUnauthorizedAccount)
+                    }
+                    OwnableUnauthorizedAccount
+                },
+                {
+                    fn PacketOutOfBound(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerErrors> {
+                        <PacketOutOfBound as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerErrors::PacketOutOfBound)
+                    }
+                    PacketOutOfBound
+                },
+                {
+                    fn OwnableInvalidOwner(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerErrors> {
+                        <OwnableInvalidOwner as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerErrors::OwnableInvalidOwner)
+                    }
+                    OwnableInvalidOwner
+                },
+                {
+                    fn UnauthorizedAccount(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerErrors> {
+                        <UnauthorizedAccount as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerErrors::UnauthorizedAccount)
+                    }
+                    UnauthorizedAccount
+                },
+                {
+                    fn NonExistentSlot(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerErrors> {
+                        <NonExistentSlot as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerErrors::NonExistentSlot)
+                    }
+                    NonExistentSlot
+                },
+                {
+                    fn ERC1967InvalidImplementation(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerErrors> {
+                        <ERC1967InvalidImplementation as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerErrors::ERC1967InvalidImplementation)
+                    }
+                    ERC1967InvalidImplementation
+                },
+                {
+                    fn InconsistentSlotsPerPacket(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerErrors> {
+                        <InconsistentSlotsPerPacket as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerErrors::InconsistentSlotsPerPacket)
+                    }
+                    InconsistentSlotsPerPacket
+                },
+                {
+                    fn NoEmptySlot(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerErrors> {
+                        <NoEmptySlot as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerErrors::NoEmptySlot)
+                    }
+                    NoEmptySlot
+                },
+                {
+                    fn StreamNotFoundByDenomination(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerErrors> {
+                        <StreamNotFoundByDenomination as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerErrors::StreamNotFoundByDenomination)
+                    }
+                    StreamNotFoundByDenomination
+                },
+                {
+                    fn InvalidPeginPacketNumber(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerErrors> {
+                        <InvalidPeginPacketNumber as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerErrors::InvalidPeginPacketNumber)
+                    }
+                    InvalidPeginPacketNumber
+                },
+                {
+                    fn StreamNotFoundById(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerErrors> {
+                        <StreamNotFoundById as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerErrors::StreamNotFoundById)
+                    }
+                    StreamNotFoundById
+                },
+                {
+                    fn InvalidSecurityBondValue(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerErrors> {
+                        <InvalidSecurityBondValue as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerErrors::InvalidSecurityBondValue)
+                    }
+                    InvalidSecurityBondValue
+                },
+                {
+                    fn InvalidSlotState(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerErrors> {
+                        <InvalidSlotState as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerErrors::InvalidSlotState)
+                    }
+                    InvalidSlotState
+                },
+                {
+                    fn tooManyDenominations(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerErrors> {
+                        <tooManyDenominations as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerErrors::tooManyDenominations)
+                    }
+                    tooManyDenominations
+                },
+                {
+                    fn InvalidAcceptPeginTxHash(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerErrors> {
+                        <InvalidAcceptPeginTxHash as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerErrors::InvalidAcceptPeginTxHash)
+                    }
+                    InvalidAcceptPeginTxHash
+                },
+                {
+                    fn AddressEmptyCode(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerErrors> {
+                        <AddressEmptyCode as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerErrors::AddressEmptyCode)
+                    }
+                    AddressEmptyCode
+                },
+                {
+                    fn UUPSUnsupportedProxiableUUID(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerErrors> {
+                        <UUPSUnsupportedProxiableUUID as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerErrors::UUPSUnsupportedProxiableUUID)
+                    }
+                    UUPSUnsupportedProxiableUUID
+                },
+                {
+                    fn ERC1967NonPayable(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerErrors> {
+                        <ERC1967NonPayable as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerErrors::ERC1967NonPayable)
+                    }
+                    ERC1967NonPayable
+                },
+                {
+                    fn NoFilledSlot(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerErrors> {
+                        <NoFilledSlot as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerErrors::NoFilledSlot)
+                    }
+                    NoFilledSlot
+                },
+                {
+                    fn StreamAlreadyInitialized(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerErrors> {
+                        <StreamAlreadyInitialized as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerErrors::StreamAlreadyInitialized)
+                    }
+                    StreamAlreadyInitialized
+                },
+                {
+                    fn _InconsistentPegoutPointer(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerErrors> {
+                        <_InconsistentPegoutPointer as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerErrors::_InconsistentPegoutPointer)
+                    }
+                    _InconsistentPegoutPointer
+                },
+                {
+                    fn FailedCall(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerErrors> {
+                        <FailedCall as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerErrors::FailedCall)
+                    }
+                    FailedCall
+                },
+                {
+                    fn NotInitializing(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerErrors> {
+                        <NotInitializing as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerErrors::NotInitializing)
+                    }
+                    NotInitializing
+                },
+                {
+                    fn UUPSUnauthorizedCallContext(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerErrors> {
+                        <UUPSUnauthorizedCallContext as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerErrors::UUPSUnauthorizedCallContext)
+                    }
+                    UUPSUnauthorizedCallContext
+                },
+                {
+                    fn InvalidPegoutConfirmations(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerErrors> {
+                        <InvalidPegoutConfirmations as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerErrors::InvalidPegoutConfirmations)
+                    }
+                    InvalidPegoutConfirmations
+                },
+                {
+                    fn InvalidZeroAddress(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerErrors> {
+                        <InvalidZeroAddress as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerErrors::InvalidZeroAddress)
+                    }
+                    InvalidZeroAddress
+                },
+                {
+                    fn PacketNotFound(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerErrors> {
+                        <PacketNotFound as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerErrors::PacketNotFound)
+                    }
+                    PacketNotFound
+                },
+                {
+                    fn InvalidInitialization(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerErrors> {
+                        <InvalidInitialization as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerErrors::InvalidInitialization)
+                    }
+                    InvalidInitialization
+                },
+                {
+                    fn PegManagerAddressZero(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<StreamManagerErrors> {
+                        <PegManagerAddressZero as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(StreamManagerErrors::PegManagerAddressZero)
+                    }
+                    PegManagerAddressZero
+                },
+            ];
+            let Ok(idx) = Self::SELECTORS.binary_search(&selector) else {
+                return Err(
+                    alloy_sol_types::Error::unknown_selector(
+                        <Self as alloy_sol_types::SolInterface>::NAME,
+                        selector,
+                    ),
+                );
+            };
+            DECODE_VALIDATE_SHIMS[idx](data)
         }
         #[inline]
         fn abi_encoded_size(&self) -> usize {
@@ -11659,14 +13002,12 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
         fn decode_raw_log(
             topics: &[alloy_sol_types::Word],
             data: &[u8],
-            validate: bool,
         ) -> alloy_sol_types::Result<Self> {
             match topics.first().copied() {
                 Some(<Initialized as alloy_sol_types::SolEvent>::SIGNATURE_HASH) => {
                     <Initialized as alloy_sol_types::SolEvent>::decode_raw_log(
                             topics,
                             data,
-                            validate,
                         )
                         .map(Self::Initialized)
                 }
@@ -11676,7 +13017,6 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                     <OwnershipTransferred as alloy_sol_types::SolEvent>::decode_raw_log(
                             topics,
                             data,
-                            validate,
                         )
                         .map(Self::OwnershipTransferred)
                 }
@@ -11684,7 +13024,6 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                     <PacketCreated as alloy_sol_types::SolEvent>::decode_raw_log(
                             topics,
                             data,
-                            validate,
                         )
                         .map(Self::PacketCreated)
                 }
@@ -11692,7 +13031,6 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                     <SlotCreated as alloy_sol_types::SolEvent>::decode_raw_log(
                             topics,
                             data,
-                            validate,
                         )
                         .map(Self::SlotCreated)
                 }
@@ -11700,16 +13038,11 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                     <StreamCreated as alloy_sol_types::SolEvent>::decode_raw_log(
                             topics,
                             data,
-                            validate,
                         )
                         .map(Self::StreamCreated)
                 }
                 Some(<Upgraded as alloy_sol_types::SolEvent>::SIGNATURE_HASH) => {
-                    <Upgraded as alloy_sol_types::SolEvent>::decode_raw_log(
-                            topics,
-                            data,
-                            validate,
-                        )
+                    <Upgraded as alloy_sol_types::SolEvent>::decode_raw_log(topics, data)
                         .map(Self::Upgraded)
                 }
                 _ => {
@@ -11779,14 +13112,13 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
 See the [wrapper's documentation](`StreamManagerInstance`) for more details.*/
     #[inline]
     pub const fn new<
-        T: alloy_contract::private::Transport + ::core::clone::Clone,
-        P: alloy_contract::private::Provider<T, N>,
+        P: alloy_contract::private::Provider<N>,
         N: alloy_contract::private::Network,
     >(
         address: alloy_sol_types::private::Address,
         provider: P,
-    ) -> StreamManagerInstance<T, P, N> {
-        StreamManagerInstance::<T, P, N>::new(address, provider)
+    ) -> StreamManagerInstance<P, N> {
+        StreamManagerInstance::<P, N>::new(address, provider)
     }
     /**Deploys this contract using the given `provider` and constructor arguments, if any.
 
@@ -11795,15 +13127,14 @@ Returns a new instance of the contract, if the deployment was successful.
 For more fine-grained control over the deployment process, use [`deploy_builder`] instead.*/
     #[inline]
     pub fn deploy<
-        T: alloy_contract::private::Transport + ::core::clone::Clone,
-        P: alloy_contract::private::Provider<T, N>,
+        P: alloy_contract::private::Provider<N>,
         N: alloy_contract::private::Network,
     >(
         provider: P,
     ) -> impl ::core::future::Future<
-        Output = alloy_contract::Result<StreamManagerInstance<T, P, N>>,
+        Output = alloy_contract::Result<StreamManagerInstance<P, N>>,
     > {
-        StreamManagerInstance::<T, P, N>::deploy(provider)
+        StreamManagerInstance::<P, N>::deploy(provider)
     }
     /**Creates a `RawCallBuilder` for deploying this contract using the given `provider`
 and constructor arguments, if any.
@@ -11812,11 +13143,10 @@ This is a simple wrapper around creating a `RawCallBuilder` with the data set to
 the bytecode concatenated with the constructor's ABI-encoded arguments.*/
     #[inline]
     pub fn deploy_builder<
-        T: alloy_contract::private::Transport + ::core::clone::Clone,
-        P: alloy_contract::private::Provider<T, N>,
+        P: alloy_contract::private::Provider<N>,
         N: alloy_contract::private::Network,
-    >(provider: P) -> alloy_contract::RawCallBuilder<T, P, N> {
-        StreamManagerInstance::<T, P, N>::deploy_builder(provider)
+    >(provider: P) -> alloy_contract::RawCallBuilder<P, N> {
+        StreamManagerInstance::<P, N>::deploy_builder(provider)
     }
     /**A [`StreamManager`](self) instance.
 
@@ -11830,13 +13160,13 @@ be used to deploy a new instance of the contract.
 
 See the [module-level documentation](self) for all the available methods.*/
     #[derive(Clone)]
-    pub struct StreamManagerInstance<T, P, N = alloy_contract::private::Ethereum> {
+    pub struct StreamManagerInstance<P, N = alloy_contract::private::Ethereum> {
         address: alloy_sol_types::private::Address,
         provider: P,
-        _network_transport: ::core::marker::PhantomData<(N, T)>,
+        _network: ::core::marker::PhantomData<N>,
     }
     #[automatically_derived]
-    impl<T, P, N> ::core::fmt::Debug for StreamManagerInstance<T, P, N> {
+    impl<P, N> ::core::fmt::Debug for StreamManagerInstance<P, N> {
         #[inline]
         fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
             f.debug_tuple("StreamManagerInstance").field(&self.address).finish()
@@ -11845,10 +13175,9 @@ See the [module-level documentation](self) for all the available methods.*/
     /// Instantiation and getters/setters.
     #[automatically_derived]
     impl<
-        T: alloy_contract::private::Transport + ::core::clone::Clone,
-        P: alloy_contract::private::Provider<T, N>,
+        P: alloy_contract::private::Provider<N>,
         N: alloy_contract::private::Network,
-    > StreamManagerInstance<T, P, N> {
+    > StreamManagerInstance<P, N> {
         /**Creates a new wrapper around an on-chain [`StreamManager`](self) contract instance.
 
 See the [wrapper's documentation](`StreamManagerInstance`) for more details.*/
@@ -11860,7 +13189,7 @@ See the [wrapper's documentation](`StreamManagerInstance`) for more details.*/
             Self {
                 address,
                 provider,
-                _network_transport: ::core::marker::PhantomData,
+                _network: ::core::marker::PhantomData,
             }
         }
         /**Deploys this contract using the given `provider` and constructor arguments, if any.
@@ -11871,7 +13200,7 @@ For more fine-grained control over the deployment process, use [`deploy_builder`
         #[inline]
         pub async fn deploy(
             provider: P,
-        ) -> alloy_contract::Result<StreamManagerInstance<T, P, N>> {
+        ) -> alloy_contract::Result<StreamManagerInstance<P, N>> {
             let call_builder = Self::deploy_builder(provider);
             let contract_address = call_builder.deploy().await?;
             Ok(Self::new(contract_address, call_builder.provider))
@@ -11882,7 +13211,7 @@ and constructor arguments, if any.
 This is a simple wrapper around creating a `RawCallBuilder` with the data set to
 the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         #[inline]
-        pub fn deploy_builder(provider: P) -> alloy_contract::RawCallBuilder<T, P, N> {
+        pub fn deploy_builder(provider: P) -> alloy_contract::RawCallBuilder<P, N> {
             alloy_contract::RawCallBuilder::new_raw_deploy(
                 provider,
                 ::core::clone::Clone::clone(&BYTECODE),
@@ -11909,24 +13238,23 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             &self.provider
         }
     }
-    impl<T, P: ::core::clone::Clone, N> StreamManagerInstance<T, &P, N> {
+    impl<P: ::core::clone::Clone, N> StreamManagerInstance<&P, N> {
         /// Clones the provider and returns a new instance with the cloned provider.
         #[inline]
-        pub fn with_cloned_provider(self) -> StreamManagerInstance<T, P, N> {
+        pub fn with_cloned_provider(self) -> StreamManagerInstance<P, N> {
             StreamManagerInstance {
                 address: self.address,
                 provider: ::core::clone::Clone::clone(&self.provider),
-                _network_transport: ::core::marker::PhantomData,
+                _network: ::core::marker::PhantomData,
             }
         }
     }
     /// Function calls.
     #[automatically_derived]
     impl<
-        T: alloy_contract::private::Transport + ::core::clone::Clone,
-        P: alloy_contract::private::Provider<T, N>,
+        P: alloy_contract::private::Provider<N>,
         N: alloy_contract::private::Network,
-    > StreamManagerInstance<T, P, N> {
+    > StreamManagerInstance<P, N> {
         /// Creates a new call builder using this contract instance's provider and address.
         ///
         /// Note that the call can be any function call, not just those defined in this
@@ -11934,21 +13262,21 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         pub fn call_builder<C: alloy_sol_types::SolCall>(
             &self,
             call: &C,
-        ) -> alloy_contract::SolCallBuilder<T, &P, C, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, C, N> {
             alloy_contract::SolCallBuilder::new_sol(&self.provider, &self.address, call)
         }
         ///Creates a new call builder for the [`UPGRADE_INTERFACE_VERSION`] function.
         pub fn UPGRADE_INTERFACE_VERSION(
             &self,
-        ) -> alloy_contract::SolCallBuilder<T, &P, UPGRADE_INTERFACE_VERSIONCall, N> {
-            self.call_builder(&UPGRADE_INTERFACE_VERSIONCall {})
+        ) -> alloy_contract::SolCallBuilder<&P, UPGRADE_INTERFACE_VERSIONCall, N> {
+            self.call_builder(&UPGRADE_INTERFACE_VERSIONCall)
         }
         ///Creates a new call builder for the [`__AccessControl_init`] function.
         pub fn __AccessControl_init(
             &self,
             _initialOwner: alloy::sol_types::private::Address,
             _pegManager: alloy::sol_types::private::Address,
-        ) -> alloy_contract::SolCallBuilder<T, &P, __AccessControl_initCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, __AccessControl_initCall, N> {
             self.call_builder(
                 &__AccessControl_initCall {
                     _initialOwner,
@@ -11960,7 +13288,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         pub fn __BaseProxy_init(
             &self,
             _initialOwner: alloy::sol_types::private::Address,
-        ) -> alloy_contract::SolCallBuilder<T, &P, __BaseProxy_initCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, __BaseProxy_initCall, N> {
             self.call_builder(
                 &__BaseProxy_initCall {
                     _initialOwner,
@@ -11970,8 +13298,8 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         ///Creates a new call builder for the [`committeeRegistry`] function.
         pub fn committeeRegistry(
             &self,
-        ) -> alloy_contract::SolCallBuilder<T, &P, committeeRegistryCall, N> {
-            self.call_builder(&committeeRegistryCall {})
+        ) -> alloy_contract::SolCallBuilder<&P, committeeRegistryCall, N> {
+            self.call_builder(&committeeRegistryCall)
         }
         ///Creates a new call builder for the [`createNewPacket`] function.
         pub fn createNewPacket(
@@ -11979,7 +13307,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             _streamId: u64,
             _committeeId: alloy::sol_types::private::primitives::aliases::U256,
             _committeePubKey: alloy::sol_types::private::FixedBytes<32>,
-        ) -> alloy_contract::SolCallBuilder<T, &P, createNewPacketCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, createNewPacketCall, N> {
             self.call_builder(
                 &createNewPacketCall {
                     _streamId,
@@ -11996,7 +13324,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             _acceptPeginAmount: u64,
             _acceptPeginTx: alloy::sol_types::private::FixedBytes<32>,
             _scriptPubKey: alloy::sol_types::private::Bytes,
-        ) -> alloy_contract::SolCallBuilder<T, &P, fillAcceptPeginTxCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, fillAcceptPeginTxCall, N> {
             self.call_builder(
                 &fillAcceptPeginTxCall {
                     _streamId,
@@ -12012,7 +13340,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             &self,
             _streamId: u64,
             _packetNumber: u64,
-        ) -> alloy_contract::SolCallBuilder<T, &P, getCommitteeIdCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, getCommitteeIdCall, N> {
             self.call_builder(
                 &getCommitteeIdCall {
                     _streamId,
@@ -12025,7 +13353,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             &self,
             _streamId: u64,
             _packetNumber: u64,
-        ) -> alloy_contract::SolCallBuilder<T, &P, getCommitteePubKeyCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, getCommitteePubKeyCall, N> {
             self.call_builder(
                 &getCommitteePubKeyCall {
                     _streamId,
@@ -12037,7 +13365,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         pub fn getCurrentPacketCommitteeId(
             &self,
             _streamId: u64,
-        ) -> alloy_contract::SolCallBuilder<T, &P, getCurrentPacketCommitteeIdCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, getCurrentPacketCommitteeIdCall, N> {
             self.call_builder(
                 &getCurrentPacketCommitteeIdCall {
                     _streamId,
@@ -12047,15 +13375,15 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         ///Creates a new call builder for the [`getImplementation`] function.
         pub fn getImplementation(
             &self,
-        ) -> alloy_contract::SolCallBuilder<T, &P, getImplementationCall, N> {
-            self.call_builder(&getImplementationCall {})
+        ) -> alloy_contract::SolCallBuilder<&P, getImplementationCall, N> {
+            self.call_builder(&getImplementationCall)
         }
         ///Creates a new call builder for the [`getPacket`] function.
         pub fn getPacket(
             &self,
             _streamId: u64,
             _packetNumber: u64,
-        ) -> alloy_contract::SolCallBuilder<T, &P, getPacketCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, getPacketCall, N> {
             self.call_builder(
                 &getPacketCall {
                     _streamId,
@@ -12067,7 +13395,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         pub fn getPacketsLength(
             &self,
             _streamId: u64,
-        ) -> alloy_contract::SolCallBuilder<T, &P, getPacketsLengthCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, getPacketsLengthCall, N> {
             self.call_builder(&getPacketsLengthCall { _streamId })
         }
         ///Creates a new call builder for the [`getSlot`] function.
@@ -12076,7 +13404,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             _streamId: u64,
             _packetNumber: u64,
             _slotNumber: u64,
-        ) -> alloy_contract::SolCallBuilder<T, &P, getSlotCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, getSlotCall, N> {
             self.call_builder(
                 &getSlotCall {
                     _streamId,
@@ -12089,21 +13417,21 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         pub fn getStream(
             &self,
             _denomination: u64,
-        ) -> alloy_contract::SolCallBuilder<T, &P, getStreamCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, getStreamCall, N> {
             self.call_builder(&getStreamCall { _denomination })
         }
         ///Creates a new call builder for the [`getStreamById`] function.
         pub fn getStreamById(
             &self,
             _streamId: u64,
-        ) -> alloy_contract::SolCallBuilder<T, &P, getStreamByIdCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, getStreamByIdCall, N> {
             self.call_builder(&getStreamByIdCall { _streamId })
         }
         ///Creates a new call builder for the [`getStreamsLength`] function.
         pub fn getStreamsLength(
             &self,
-        ) -> alloy_contract::SolCallBuilder<T, &P, getStreamsLengthCall, N> {
-            self.call_builder(&getStreamsLengthCall {})
+        ) -> alloy_contract::SolCallBuilder<&P, getStreamsLengthCall, N> {
+            self.call_builder(&getStreamsLengthCall)
         }
         ///Creates a new call builder for the [`initialize`] function.
         pub fn initialize(
@@ -12112,7 +13440,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             _pegManager: alloy::sol_types::private::Address,
             _committeeRegistry: alloy::sol_types::private::Address,
             _denominations: alloy::sol_types::private::Vec<u64>,
-        ) -> alloy_contract::SolCallBuilder<T, &P, initializeCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, initializeCall, N> {
             self.call_builder(
                 &initializeCall {
                     _initialOwner,
@@ -12126,19 +13454,19 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         pub fn lockSlot(
             &self,
             _streamId: u64,
-        ) -> alloy_contract::SolCallBuilder<T, &P, lockSlotCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, lockSlotCall, N> {
             self.call_builder(&lockSlotCall { _streamId })
         }
         ///Creates a new call builder for the [`owner`] function.
-        pub fn owner(&self) -> alloy_contract::SolCallBuilder<T, &P, ownerCall, N> {
-            self.call_builder(&ownerCall {})
+        pub fn owner(&self) -> alloy_contract::SolCallBuilder<&P, ownerCall, N> {
+            self.call_builder(&ownerCall)
         }
         ///Creates a new call builder for the [`packets`] function.
         pub fn packets(
             &self,
             streamId: u64,
             _1: alloy::sol_types::private::primitives::aliases::U256,
-        ) -> alloy_contract::SolCallBuilder<T, &P, packetsCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, packetsCall, N> {
             self.call_builder(&packetsCall { streamId, _1 })
         }
         ///Creates a new call builder for the [`paidSlot`] function.
@@ -12149,7 +13477,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             _slotId: u64,
             _acceptPeginTxHash: alloy::sol_types::private::FixedBytes<32>,
             _take0Tx: alloy::sol_types::private::FixedBytes<32>,
-        ) -> alloy_contract::SolCallBuilder<T, &P, paidSlotCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, paidSlotCall, N> {
             self.call_builder(
                 &paidSlotCall {
                     _streamId,
@@ -12163,26 +13491,26 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         ///Creates a new call builder for the [`pegManager`] function.
         pub fn pegManager(
             &self,
-        ) -> alloy_contract::SolCallBuilder<T, &P, pegManagerCall, N> {
-            self.call_builder(&pegManagerCall {})
+        ) -> alloy_contract::SolCallBuilder<&P, pegManagerCall, N> {
+            self.call_builder(&pegManagerCall)
         }
         ///Creates a new call builder for the [`proxiableUUID`] function.
         pub fn proxiableUUID(
             &self,
-        ) -> alloy_contract::SolCallBuilder<T, &P, proxiableUUIDCall, N> {
-            self.call_builder(&proxiableUUIDCall {})
+        ) -> alloy_contract::SolCallBuilder<&P, proxiableUUIDCall, N> {
+            self.call_builder(&proxiableUUIDCall)
         }
         ///Creates a new call builder for the [`renounceOwnership`] function.
         pub fn renounceOwnership(
             &self,
-        ) -> alloy_contract::SolCallBuilder<T, &P, renounceOwnershipCall, N> {
-            self.call_builder(&renounceOwnershipCall {})
+        ) -> alloy_contract::SolCallBuilder<&P, renounceOwnershipCall, N> {
+            self.call_builder(&renounceOwnershipCall)
         }
         ///Creates a new call builder for the [`setCommitteeRegistry`] function.
         pub fn setCommitteeRegistry(
             &self,
             _committeeRegistry: alloy::sol_types::private::Address,
-        ) -> alloy_contract::SolCallBuilder<T, &P, setCommitteeRegistryCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, setCommitteeRegistryCall, N> {
             self.call_builder(
                 &setCommitteeRegistryCall {
                     _committeeRegistry,
@@ -12194,7 +13522,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             &self,
             _streamId: u64,
             _confirmations: u8,
-        ) -> alloy_contract::SolCallBuilder<T, &P, setPeginConfirmationsCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, setPeginConfirmationsCall, N> {
             self.call_builder(
                 &setPeginConfirmationsCall {
                     _streamId,
@@ -12207,7 +13535,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             &self,
             _streamId: u64,
             _confirmations: u8,
-        ) -> alloy_contract::SolCallBuilder<T, &P, setPegoutConfirmationsCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, setPegoutConfirmationsCall, N> {
             self.call_builder(
                 &setPegoutConfirmationsCall {
                     _streamId,
@@ -12220,7 +13548,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             &self,
             _streamId: u64,
             _securityBondValue: alloy::sol_types::private::primitives::aliases::U256,
-        ) -> alloy_contract::SolCallBuilder<T, &P, setSecurityBondCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, setSecurityBondCall, N> {
             self.call_builder(
                 &setSecurityBondCall {
                     _streamId,
@@ -12232,7 +13560,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         pub fn transferOwnership(
             &self,
             newOwner: alloy::sol_types::private::Address,
-        ) -> alloy_contract::SolCallBuilder<T, &P, transferOwnershipCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, transferOwnershipCall, N> {
             self.call_builder(&transferOwnershipCall { newOwner })
         }
         ///Creates a new call builder for the [`upgradeToAndCall`] function.
@@ -12240,7 +13568,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             &self,
             newImplementation: alloy::sol_types::private::Address,
             data: alloy::sol_types::private::Bytes,
-        ) -> alloy_contract::SolCallBuilder<T, &P, upgradeToAndCallCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, upgradeToAndCallCall, N> {
             self.call_builder(
                 &upgradeToAndCallCall {
                     newImplementation,
@@ -12252,51 +13580,46 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
     /// Event filters.
     #[automatically_derived]
     impl<
-        T: alloy_contract::private::Transport + ::core::clone::Clone,
-        P: alloy_contract::private::Provider<T, N>,
+        P: alloy_contract::private::Provider<N>,
         N: alloy_contract::private::Network,
-    > StreamManagerInstance<T, P, N> {
+    > StreamManagerInstance<P, N> {
         /// Creates a new event filter using this contract instance's provider and address.
         ///
         /// Note that the type can be any event, not just those defined in this contract.
         /// Prefer using the other methods for building type-safe event filters.
         pub fn event_filter<E: alloy_sol_types::SolEvent>(
             &self,
-        ) -> alloy_contract::Event<T, &P, E, N> {
+        ) -> alloy_contract::Event<&P, E, N> {
             alloy_contract::Event::new_sol(&self.provider, &self.address)
         }
         ///Creates a new event filter for the [`Initialized`] event.
-        pub fn Initialized_filter(
-            &self,
-        ) -> alloy_contract::Event<T, &P, Initialized, N> {
+        pub fn Initialized_filter(&self) -> alloy_contract::Event<&P, Initialized, N> {
             self.event_filter::<Initialized>()
         }
         ///Creates a new event filter for the [`OwnershipTransferred`] event.
         pub fn OwnershipTransferred_filter(
             &self,
-        ) -> alloy_contract::Event<T, &P, OwnershipTransferred, N> {
+        ) -> alloy_contract::Event<&P, OwnershipTransferred, N> {
             self.event_filter::<OwnershipTransferred>()
         }
         ///Creates a new event filter for the [`PacketCreated`] event.
         pub fn PacketCreated_filter(
             &self,
-        ) -> alloy_contract::Event<T, &P, PacketCreated, N> {
+        ) -> alloy_contract::Event<&P, PacketCreated, N> {
             self.event_filter::<PacketCreated>()
         }
         ///Creates a new event filter for the [`SlotCreated`] event.
-        pub fn SlotCreated_filter(
-            &self,
-        ) -> alloy_contract::Event<T, &P, SlotCreated, N> {
+        pub fn SlotCreated_filter(&self) -> alloy_contract::Event<&P, SlotCreated, N> {
             self.event_filter::<SlotCreated>()
         }
         ///Creates a new event filter for the [`StreamCreated`] event.
         pub fn StreamCreated_filter(
             &self,
-        ) -> alloy_contract::Event<T, &P, StreamCreated, N> {
+        ) -> alloy_contract::Event<&P, StreamCreated, N> {
             self.event_filter::<StreamCreated>()
         }
         ///Creates a new event filter for the [`Upgraded`] event.
-        pub fn Upgraded_filter(&self) -> alloy_contract::Event<T, &P, Upgraded, N> {
+        pub fn Upgraded_filter(&self) -> alloy_contract::Event<&P, Upgraded, N> {
             self.event_filter::<Upgraded>()
         }
     }

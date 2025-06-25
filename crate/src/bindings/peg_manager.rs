@@ -1618,12 +1618,12 @@ pub mod PegManager {
             pub const NAME: &'static str = stringify!(@ name);
             /// Convert from the underlying value type.
             #[inline]
-            pub const fn from(value: u8) -> Self {
+            pub const fn from_underlying(value: u8) -> Self {
                 Self(value)
             }
             /// Return the underlying value.
             #[inline]
-            pub const fn into(self) -> u8 {
+            pub const fn into_underlying(self) -> u8 {
                 self.0
             }
             /// Return the single encoding of this value, delegating to the
@@ -1637,6 +1637,18 @@ pub mod PegManager {
             #[inline]
             pub fn abi_encode_packed(&self) -> alloy_sol_types::private::Vec<u8> {
                 <Self as alloy_sol_types::SolType>::abi_encode_packed(&self.0)
+            }
+        }
+        #[automatically_derived]
+        impl From<u8> for PegStatus {
+            fn from(value: u8) -> Self {
+                Self::from_underlying(value)
+            }
+        }
+        #[automatically_derived]
+        impl From<PegStatus> for u8 {
+            fn from(value: PegStatus) -> Self {
+                value.into_underlying()
             }
         }
         #[automatically_derived]
@@ -1744,12 +1756,12 @@ pub mod PegManager {
             pub const NAME: &'static str = stringify!(@ name);
             /// Convert from the underlying value type.
             #[inline]
-            pub const fn from(value: u8) -> Self {
+            pub const fn from_underlying(value: u8) -> Self {
                 Self(value)
             }
             /// Return the underlying value.
             #[inline]
-            pub const fn into(self) -> u8 {
+            pub const fn into_underlying(self) -> u8 {
                 self.0
             }
             /// Return the single encoding of this value, delegating to the
@@ -1763,6 +1775,18 @@ pub mod PegManager {
             #[inline]
             pub fn abi_encode_packed(&self) -> alloy_sol_types::private::Vec<u8> {
                 <Self as alloy_sol_types::SolType>::abi_encode_packed(&self.0)
+            }
+        }
+        #[automatically_derived]
+        impl From<u8> for SlotState {
+            fn from(value: u8) -> Self {
+                Self::from_underlying(value)
+            }
+        }
+        #[automatically_derived]
+        impl From<SlotState> for u8 {
+            fn from(value: SlotState) -> Self {
+                value.into_underlying()
             }
         }
         #[automatically_derived]
@@ -3894,6 +3918,13 @@ error AddressEmptyCode(address target);
                     ),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -3904,7 +3935,7 @@ error BitcoinManagerAddressZero();
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct BitcoinManagerAddressZero {}
+    pub struct BitcoinManagerAddressZero;
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -3941,7 +3972,7 @@ error BitcoinManagerAddressZero();
         impl ::core::convert::From<UnderlyingRustTuple<'_>>
         for BitcoinManagerAddressZero {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self {}
+                Self
             }
         }
         #[automatically_derived]
@@ -3962,6 +3993,13 @@ error BitcoinManagerAddressZero();
             fn tokenize(&self) -> Self::Token<'_> {
                 ()
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -3972,7 +4010,7 @@ error BridgeAddressZero();
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct BridgeAddressZero {}
+    pub struct BridgeAddressZero;
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -4007,7 +4045,7 @@ error BridgeAddressZero();
         #[doc(hidden)]
         impl ::core::convert::From<UnderlyingRustTuple<'_>> for BridgeAddressZero {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self {}
+                Self
             }
         }
         #[automatically_derived]
@@ -4027,6 +4065,13 @@ error BridgeAddressZero();
             #[inline]
             fn tokenize(&self) -> Self::Token<'_> {
                 ()
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -4103,6 +4148,13 @@ error BridgeBtcBlockNotInBestChain(bytes32 blockHash);
                     > as alloy_sol_types::SolType>::tokenize(&self.blockHash),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -4177,6 +4229,13 @@ error BridgeBtcBlockTooOld(int256 maxDepth);
                         256,
                     > as alloy_sol_types::SolType>::tokenize(&self.maxDepth),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -4253,6 +4312,13 @@ error BridgeBtcInconsistentBlock(bytes32 blockHash);
                     > as alloy_sol_types::SolType>::tokenize(&self.blockHash),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -4327,6 +4393,13 @@ error BridgeBtcInexistantBlockHash(bytes32 blockHash);
                         32,
                     > as alloy_sol_types::SolType>::tokenize(&self.blockHash),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -4427,6 +4500,13 @@ error BridgeBtcTxInvalidMerkleBranch(bytes32 txHash, uint256 merkleBranchPath, b
                     > as alloy_sol_types::SolType>::tokenize(&self.merkleBranchHashes),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -4501,6 +4581,13 @@ error BridgeBtcUnknownError(int256 errorCode);
                         256,
                     > as alloy_sol_types::SolType>::tokenize(&self.errorCode),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -4579,6 +4666,13 @@ error BridgeExceededLockingCap(uint256 amount);
                     > as alloy_sol_types::SolType>::tokenize(&self.amount),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -4589,7 +4683,7 @@ error BridgeUnauthorizedCaller();
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct BridgeUnauthorizedCaller {}
+    pub struct BridgeUnauthorizedCaller;
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -4626,7 +4720,7 @@ error BridgeUnauthorizedCaller();
         impl ::core::convert::From<UnderlyingRustTuple<'_>>
         for BridgeUnauthorizedCaller {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self {}
+                Self
             }
         }
         #[automatically_derived]
@@ -4647,6 +4741,13 @@ error BridgeUnauthorizedCaller();
             fn tokenize(&self) -> Self::Token<'_> {
                 ()
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -4657,7 +4758,7 @@ error CommitteeRegistryAddressZero();
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct CommitteeRegistryAddressZero {}
+    pub struct CommitteeRegistryAddressZero;
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -4694,7 +4795,7 @@ error CommitteeRegistryAddressZero();
         impl ::core::convert::From<UnderlyingRustTuple<'_>>
         for CommitteeRegistryAddressZero {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self {}
+                Self
             }
         }
         #[automatically_derived]
@@ -4714,6 +4815,13 @@ error CommitteeRegistryAddressZero();
             #[inline]
             fn tokenize(&self) -> Self::Token<'_> {
                 ()
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -4790,6 +4898,13 @@ error ERC1967InvalidImplementation(address implementation);
                     ),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -4800,7 +4915,7 @@ error ERC1967NonPayable();
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct ERC1967NonPayable {}
+    pub struct ERC1967NonPayable;
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -4835,7 +4950,7 @@ error ERC1967NonPayable();
         #[doc(hidden)]
         impl ::core::convert::From<UnderlyingRustTuple<'_>> for ERC1967NonPayable {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self {}
+                Self
             }
         }
         #[automatically_derived]
@@ -4856,6 +4971,13 @@ error ERC1967NonPayable();
             fn tokenize(&self) -> Self::Token<'_> {
                 ()
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -4866,7 +4988,7 @@ error FailedCall();
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct FailedCall {}
+    pub struct FailedCall;
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -4901,7 +5023,7 @@ error FailedCall();
         #[doc(hidden)]
         impl ::core::convert::From<UnderlyingRustTuple<'_>> for FailedCall {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self {}
+                Self
             }
         }
         #[automatically_derived]
@@ -4921,6 +5043,13 @@ error FailedCall();
             #[inline]
             fn tokenize(&self) -> Self::Token<'_> {
                 ()
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -5009,6 +5138,13 @@ error IncorrectInputsNumber(uint256 actual, uint256 expected);
                     > as alloy_sol_types::SolType>::tokenize(&self.expected),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -5095,6 +5231,13 @@ error IncorrectOutputScript(bytes actual, bytes expected);
                         &self.expected,
                     ),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -5183,6 +5326,13 @@ error IncorrectOutputsNumber(uint256 actual, uint256 expected);
                     > as alloy_sol_types::SolType>::tokenize(&self.expected),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -5266,6 +5416,13 @@ error IncorrectVout(uint32 actual, uint32 expected);
                         32,
                     > as alloy_sol_types::SolType>::tokenize(&self.expected),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -5356,6 +5513,13 @@ error InvalidAcceptPeginTxHash(bytes32 expected, bytes32 actual);
                     > as alloy_sol_types::SolType>::tokenize(&self.actual),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -5443,6 +5607,13 @@ error InvalidBtcTxVersion(uint256 actual, uint256 expected);
                     > as alloy_sol_types::SolType>::tokenize(&self.expected),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -5516,6 +5687,13 @@ error InvalidCompressedPubKey(bytes userPubKey);
                     ),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -5526,7 +5704,7 @@ error InvalidInitialization();
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct InvalidInitialization {}
+    pub struct InvalidInitialization;
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -5561,7 +5739,7 @@ error InvalidInitialization();
         #[doc(hidden)]
         impl ::core::convert::From<UnderlyingRustTuple<'_>> for InvalidInitialization {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self {}
+                Self
             }
         }
         #[automatically_derived]
@@ -5581,6 +5759,13 @@ error InvalidInitialization();
             #[inline]
             fn tokenize(&self) -> Self::Token<'_> {
                 ()
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -5669,6 +5854,13 @@ error InvalidLocktime(uint256 actual, uint256 expected);
                     > as alloy_sol_types::SolType>::tokenize(&self.expected),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -5748,6 +5940,13 @@ error InvalidSlotState(SlotState actual, SlotState expected);
                     <SlotState as alloy_sol_types::SolType>::tokenize(&self.actual),
                     <SlotState as alloy_sol_types::SolType>::tokenize(&self.expected),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -5836,6 +6035,13 @@ error NotEnoughConfirmations(int256 actual, uint256 expected);
                     > as alloy_sol_types::SolType>::tokenize(&self.expected),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -5846,7 +6052,7 @@ error NotInitializing();
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct NotInitializing {}
+    pub struct NotInitializing;
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -5881,7 +6087,7 @@ error NotInitializing();
         #[doc(hidden)]
         impl ::core::convert::From<UnderlyingRustTuple<'_>> for NotInitializing {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self {}
+                Self
             }
         }
         #[automatically_derived]
@@ -5901,6 +6107,13 @@ error NotInitializing();
             #[inline]
             fn tokenize(&self) -> Self::Token<'_> {
                 ()
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -5974,6 +6187,13 @@ error OwnableInvalidOwner(address owner);
                         &self.owner,
                     ),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -6050,6 +6270,13 @@ error OwnableUnauthorizedAccount(address account);
                     ),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -6122,6 +6349,13 @@ error PeginAlreadyAccepted(bytes32 btcTxHash);
                         32,
                     > as alloy_sol_types::SolType>::tokenize(&self.btcTxHash),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -6196,6 +6430,13 @@ error PeginAlreadyRequested(bytes32 btcTxHash);
                     > as alloy_sol_types::SolType>::tokenize(&self.btcTxHash),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -6268,6 +6509,13 @@ error PeginNotRequested(bytes32 btcTxHash);
                         32,
                     > as alloy_sol_types::SolType>::tokenize(&self.btcTxHash),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -6346,6 +6594,13 @@ error PegoutRequestAmountExceedsUint64Limit(uint256 amount);
                     > as alloy_sol_types::SolType>::tokenize(&self.amount),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -6356,7 +6611,7 @@ error SignatureManagerAddressZero();
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct SignatureManagerAddressZero {}
+    pub struct SignatureManagerAddressZero;
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -6393,7 +6648,7 @@ error SignatureManagerAddressZero();
         impl ::core::convert::From<UnderlyingRustTuple<'_>>
         for SignatureManagerAddressZero {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self {}
+                Self
             }
         }
         #[automatically_derived]
@@ -6414,6 +6669,13 @@ error SignatureManagerAddressZero();
             fn tokenize(&self) -> Self::Token<'_> {
                 ()
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -6424,7 +6686,7 @@ error StreamManagerAddressZero();
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct StreamManagerAddressZero {}
+    pub struct StreamManagerAddressZero;
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -6461,7 +6723,7 @@ error StreamManagerAddressZero();
         impl ::core::convert::From<UnderlyingRustTuple<'_>>
         for StreamManagerAddressZero {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self {}
+                Self
             }
         }
         #[automatically_derived]
@@ -6482,6 +6744,13 @@ error StreamManagerAddressZero();
             fn tokenize(&self) -> Self::Token<'_> {
                 ()
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -6492,7 +6761,7 @@ error UUPSUnauthorizedCallContext();
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct UUPSUnauthorizedCallContext {}
+    pub struct UUPSUnauthorizedCallContext;
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -6529,7 +6798,7 @@ error UUPSUnauthorizedCallContext();
         impl ::core::convert::From<UnderlyingRustTuple<'_>>
         for UUPSUnauthorizedCallContext {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self {}
+                Self
             }
         }
         #[automatically_derived]
@@ -6549,6 +6818,13 @@ error UUPSUnauthorizedCallContext();
             #[inline]
             fn tokenize(&self) -> Self::Token<'_> {
                 ()
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -6624,6 +6900,13 @@ error UUPSUnsupportedProxiableUUID(bytes32 slot);
                         32,
                     > as alloy_sol_types::SolType>::tokenize(&self.slot),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -7633,7 +7916,7 @@ function UPGRADE_INTERFACE_VERSION() external view returns (string memory);
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct UPGRADE_INTERFACE_VERSIONCall {}
+    pub struct UPGRADE_INTERFACE_VERSIONCall;
     #[derive(serde::Serialize, serde::Deserialize)]
     #[derive(Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`UPGRADE_INTERFACE_VERSION()`](UPGRADE_INTERFACE_VERSIONCall) function.
@@ -7680,7 +7963,7 @@ function UPGRADE_INTERFACE_VERSION() external view returns (string memory);
             impl ::core::convert::From<UnderlyingRustTuple<'_>>
             for UPGRADE_INTERFACE_VERSIONCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self {}
+                    Self
                 }
             }
         }
@@ -7723,7 +8006,7 @@ function UPGRADE_INTERFACE_VERSION() external view returns (string memory);
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = UPGRADE_INTERFACE_VERSIONReturn;
+            type Return = alloy::sol_types::private::String;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::String,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -7741,14 +8024,34 @@ function UPGRADE_INTERFACE_VERSION() external view returns (string memory);
                 ()
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::String as alloy_sol_types::SolType>::tokenize(
+                        ret,
+                    ),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: UPGRADE_INTERFACE_VERSIONReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: UPGRADE_INTERFACE_VERSIONReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -7842,6 +8145,13 @@ function __BaseProxy_init(address _initialOwner) external;
                 }
             }
         }
+        impl __BaseProxy_initReturn {
+            fn _tokenize(
+                &self,
+            ) -> <__BaseProxy_initCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for __BaseProxy_initCall {
             type Parameters<'a> = (alloy::sol_types::sol_data::Address,);
@@ -7870,13 +8180,23 @@ function __BaseProxy_init(address _initialOwner) external;
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                __BaseProxy_initReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -7971,6 +8291,15 @@ function __ProofValidator_init(address _bridgeAddress) external;
                 }
             }
         }
+        impl __ProofValidator_initReturn {
+            fn _tokenize(
+                &self,
+            ) -> <__ProofValidator_initCall as alloy_sol_types::SolCall>::ReturnToken<
+                '_,
+            > {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for __ProofValidator_initCall {
             type Parameters<'a> = (alloy::sol_types::sol_data::Address,);
@@ -7999,13 +8328,23 @@ function __ProofValidator_init(address _bridgeAddress) external;
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                __ProofValidator_initReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -8100,6 +8439,13 @@ function acceptPegin(BtcTxSPVProof memory _peginAcceptedTxSPVProof) external;
                 }
             }
         }
+        impl acceptPeginReturn {
+            fn _tokenize(
+                &self,
+            ) -> <acceptPeginCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for acceptPeginCall {
             type Parameters<'a> = (BtcTxSPVProof,);
@@ -8128,13 +8474,23 @@ function acceptPegin(BtcTxSPVProof memory _peginAcceptedTxSPVProof) external;
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                acceptPeginReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -8147,7 +8503,7 @@ function bitcoinManager() external view returns (address);
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct bitcoinManagerCall {}
+    pub struct bitcoinManagerCall;
     #[derive(serde::Serialize, serde::Deserialize)]
     #[derive(Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`bitcoinManager()`](bitcoinManagerCall) function.
@@ -8192,7 +8548,7 @@ function bitcoinManager() external view returns (address);
             #[doc(hidden)]
             impl ::core::convert::From<UnderlyingRustTuple<'_>> for bitcoinManagerCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self {}
+                    Self
                 }
             }
         }
@@ -8235,7 +8591,7 @@ function bitcoinManager() external view returns (address);
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = bitcoinManagerReturn;
+            type Return = alloy::sol_types::private::Address;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Address,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -8253,14 +8609,34 @@ function bitcoinManager() external view returns (address);
                 ()
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::Address as alloy_sol_types::SolType>::tokenize(
+                        ret,
+                    ),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: bitcoinManagerReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: bitcoinManagerReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -8272,7 +8648,7 @@ function bridge() external view returns (address);
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct bridgeCall {}
+    pub struct bridgeCall;
     #[derive(serde::Serialize, serde::Deserialize)]
     #[derive(Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`bridge()`](bridgeCall) function.
@@ -8317,7 +8693,7 @@ function bridge() external view returns (address);
             #[doc(hidden)]
             impl ::core::convert::From<UnderlyingRustTuple<'_>> for bridgeCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self {}
+                    Self
                 }
             }
         }
@@ -8358,7 +8734,7 @@ function bridge() external view returns (address);
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = bridgeReturn;
+            type Return = alloy::sol_types::private::Address;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Address,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -8376,14 +8752,34 @@ function bridge() external view returns (address);
                 ()
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::Address as alloy_sol_types::SolType>::tokenize(
+                        ret,
+                    ),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: bridgeReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: bridgeReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -8395,7 +8791,7 @@ function committeeRegistry() external view returns (address);
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct committeeRegistryCall {}
+    pub struct committeeRegistryCall;
     #[derive(serde::Serialize, serde::Deserialize)]
     #[derive(Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`committeeRegistry()`](committeeRegistryCall) function.
@@ -8442,7 +8838,7 @@ function committeeRegistry() external view returns (address);
             impl ::core::convert::From<UnderlyingRustTuple<'_>>
             for committeeRegistryCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self {}
+                    Self
                 }
             }
         }
@@ -8485,7 +8881,7 @@ function committeeRegistry() external view returns (address);
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = committeeRegistryReturn;
+            type Return = alloy::sol_types::private::Address;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Address,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -8503,14 +8899,34 @@ function committeeRegistry() external view returns (address);
                 ()
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::Address as alloy_sol_types::SolType>::tokenize(
+                        ret,
+                    ),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: committeeRegistryReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: committeeRegistryReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -8522,7 +8938,7 @@ function getImplementation() external view returns (address);
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct getImplementationCall {}
+    pub struct getImplementationCall;
     #[derive(serde::Serialize, serde::Deserialize)]
     #[derive(Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`getImplementation()`](getImplementationCall) function.
@@ -8569,7 +8985,7 @@ function getImplementation() external view returns (address);
             impl ::core::convert::From<UnderlyingRustTuple<'_>>
             for getImplementationCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self {}
+                    Self
                 }
             }
         }
@@ -8612,7 +9028,7 @@ function getImplementation() external view returns (address);
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = getImplementationReturn;
+            type Return = alloy::sol_types::private::Address;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Address,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -8630,14 +9046,34 @@ function getImplementation() external view returns (address);
                 ()
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::Address as alloy_sol_types::SolType>::tokenize(
+                        ret,
+                    ),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: getImplementationReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: getImplementationReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -8740,7 +9176,7 @@ function getPeginRequest(bytes32 _btcTxHash) external view returns (bytes32);
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = getPeginRequestReturn;
+            type Return = alloy::sol_types::private::FixedBytes<32>;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::FixedBytes<32>,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -8762,14 +9198,34 @@ function getPeginRequest(bytes32 _btcTxHash) external view returns (bytes32);
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::FixedBytes<
+                        32,
+                    > as alloy_sol_types::SolType>::tokenize(ret),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: getPeginRequestReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: getPeginRequestReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -8890,7 +9346,7 @@ function getPegoutSignatureHash(uint64 streamId, uint64 packetNumber, uint64 slo
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = getPegoutSignatureHashReturn;
+            type Return = alloy::sol_types::private::FixedBytes<32>;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::FixedBytes<32>,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -8918,14 +9374,34 @@ function getPegoutSignatureHash(uint64 streamId, uint64 packetNumber, uint64 slo
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::FixedBytes<
+                        32,
+                    > as alloy_sol_types::SolType>::tokenize(ret),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: getPegoutSignatureHashReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: getPegoutSignatureHashReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -9034,7 +9510,7 @@ function getPegoutTempInfo(bytes32 _acceptPeginTxHash) external view returns (Pe
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = getPegoutTempInfoReturn;
+            type Return = <PegoutTempInfo as alloy::sol_types::SolType>::RustType;
             type ReturnTuple<'a> = (PegoutTempInfo,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -9056,14 +9532,30 @@ function getPegoutTempInfo(bytes32 _acceptPeginTxHash) external view returns (Pe
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (<PegoutTempInfo as alloy_sol_types::SolType>::tokenize(ret),)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: getPegoutTempInfoReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: getPegoutTempInfoReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -9170,7 +9662,7 @@ function getRequestPeginTempInfo(bytes32 _btcTxHash) external view returns (Requ
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = getRequestPeginTempInfoReturn;
+            type Return = <RequestPeginTempInfo as alloy::sol_types::SolType>::RustType;
             type ReturnTuple<'a> = (RequestPeginTempInfo,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -9192,14 +9684,30 @@ function getRequestPeginTempInfo(bytes32 _btcTxHash) external view returns (Requ
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (<RequestPeginTempInfo as alloy_sol_types::SolType>::tokenize(ret),)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: getRequestPeginTempInfoReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: getRequestPeginTempInfoReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -9306,7 +9814,7 @@ function getStreamPosition(bytes32 _btcTxHash) external view returns (StreamPosi
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = getStreamPositionReturn;
+            type Return = <StreamPosition as alloy::sol_types::SolType>::RustType;
             type ReturnTuple<'a> = (StreamPosition,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -9328,14 +9836,30 @@ function getStreamPosition(bytes32 _btcTxHash) external view returns (StreamPosi
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (<StreamPosition as alloy_sol_types::SolType>::tokenize(ret),)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: getStreamPositionReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: getStreamPositionReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -9466,7 +9990,7 @@ function getTemporaryPeginAddress(address _rootstockDepositAddress, uint64 _valu
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = getTemporaryPeginAddressReturn;
+            type Return = alloy::sol_types::private::String;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::String,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -9496,14 +10020,34 @@ function getTemporaryPeginAddress(address _rootstockDepositAddress, uint64 _valu
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::String as alloy_sol_types::SolType>::tokenize(
+                        ret,
+                    ),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: getTemporaryPeginAddressReturn = r.into();
+                        r.bitcoinDepositAddress
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: getTemporaryPeginAddressReturn = r.into();
+                        r.bitcoinDepositAddress
+                    })
             }
         }
     };
@@ -9619,6 +10163,13 @@ function initialize(address _initialOwner, address _bridgeAddress, address _comm
                 }
             }
         }
+        impl initializeReturn {
+            fn _tokenize(
+                &self,
+            ) -> <initializeCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for initializeCall {
             type Parameters<'a> = (
@@ -9661,13 +10212,23 @@ function initialize(address _initialOwner, address _bridgeAddress, address _comm
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                initializeReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -9680,7 +10241,7 @@ function owner() external view returns (address);
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct ownerCall {}
+    pub struct ownerCall;
     #[derive(serde::Serialize, serde::Deserialize)]
     #[derive(Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`owner()`](ownerCall) function.
@@ -9725,7 +10286,7 @@ function owner() external view returns (address);
             #[doc(hidden)]
             impl ::core::convert::From<UnderlyingRustTuple<'_>> for ownerCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self {}
+                    Self
                 }
             }
         }
@@ -9766,7 +10327,7 @@ function owner() external view returns (address);
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = ownerReturn;
+            type Return = alloy::sol_types::private::Address;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Address,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -9784,14 +10345,34 @@ function owner() external view returns (address);
                 ()
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::Address as alloy_sol_types::SolType>::tokenize(
+                        ret,
+                    ),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: ownerReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: ownerReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -9803,7 +10384,7 @@ function proxiableUUID() external view returns (bytes32);
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct proxiableUUIDCall {}
+    pub struct proxiableUUIDCall;
     #[derive(serde::Serialize, serde::Deserialize)]
     #[derive(Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`proxiableUUID()`](proxiableUUIDCall) function.
@@ -9848,7 +10429,7 @@ function proxiableUUID() external view returns (bytes32);
             #[doc(hidden)]
             impl ::core::convert::From<UnderlyingRustTuple<'_>> for proxiableUUIDCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self {}
+                    Self
                 }
             }
         }
@@ -9889,7 +10470,7 @@ function proxiableUUID() external view returns (bytes32);
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = proxiableUUIDReturn;
+            type Return = alloy::sol_types::private::FixedBytes<32>;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::FixedBytes<32>,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -9907,14 +10488,34 @@ function proxiableUUID() external view returns (bytes32);
                 ()
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::FixedBytes<
+                        32,
+                    > as alloy_sol_types::SolType>::tokenize(ret),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: proxiableUUIDReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: proxiableUUIDReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -10008,6 +10609,13 @@ function registerPegout(BtcTxSPVProof memory _pegoutTxSPVProof) external;
                 }
             }
         }
+        impl registerPegoutReturn {
+            fn _tokenize(
+                &self,
+            ) -> <registerPegoutCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for registerPegoutCall {
             type Parameters<'a> = (BtcTxSPVProof,);
@@ -10036,13 +10644,23 @@ function registerPegout(BtcTxSPVProof memory _pegoutTxSPVProof) external;
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                registerPegoutReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -10055,7 +10673,7 @@ function renounceOwnership() external;
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct renounceOwnershipCall {}
+    pub struct renounceOwnershipCall;
     ///Container type for the return parameters of the [`renounceOwnership()`](renounceOwnershipCall) function.
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
@@ -10097,7 +10715,7 @@ function renounceOwnership() external;
             impl ::core::convert::From<UnderlyingRustTuple<'_>>
             for renounceOwnershipCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self {}
+                    Self
                 }
             }
         }
@@ -10134,6 +10752,13 @@ function renounceOwnership() external;
                 }
             }
         }
+        impl renounceOwnershipReturn {
+            fn _tokenize(
+                &self,
+            ) -> <renounceOwnershipCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for renounceOwnershipCall {
             type Parameters<'a> = ();
@@ -10158,13 +10783,23 @@ function renounceOwnership() external;
                 ()
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                renounceOwnershipReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -10259,6 +10894,13 @@ function requestPegin(BtcTxSPVProof memory _peginRequestTxSPVProof) external;
                 }
             }
         }
+        impl requestPeginReturn {
+            fn _tokenize(
+                &self,
+            ) -> <requestPeginCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for requestPeginCall {
             type Parameters<'a> = (BtcTxSPVProof,);
@@ -10287,13 +10929,23 @@ function requestPegin(BtcTxSPVProof memory _peginRequestTxSPVProof) external;
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                requestPeginReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -10388,6 +11040,13 @@ function setSignatureManager(address _signatureManager) external;
                 }
             }
         }
+        impl setSignatureManagerReturn {
+            fn _tokenize(
+                &self,
+            ) -> <setSignatureManagerCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for setSignatureManagerCall {
             type Parameters<'a> = (alloy::sol_types::sol_data::Address,);
@@ -10416,13 +11075,23 @@ function setSignatureManager(address _signatureManager) external;
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                setSignatureManagerReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -10517,6 +11186,13 @@ function setStreamManager(address _streamManager) external;
                 }
             }
         }
+        impl setStreamManagerReturn {
+            fn _tokenize(
+                &self,
+            ) -> <setStreamManagerCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for setStreamManagerCall {
             type Parameters<'a> = (alloy::sol_types::sol_data::Address,);
@@ -10545,13 +11221,23 @@ function setStreamManager(address _streamManager) external;
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                setStreamManagerReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -10564,7 +11250,7 @@ function signatureManager() external view returns (address);
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct signatureManagerCall {}
+    pub struct signatureManagerCall;
     #[derive(serde::Serialize, serde::Deserialize)]
     #[derive(Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`signatureManager()`](signatureManagerCall) function.
@@ -10611,7 +11297,7 @@ function signatureManager() external view returns (address);
             impl ::core::convert::From<UnderlyingRustTuple<'_>>
             for signatureManagerCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self {}
+                    Self
                 }
             }
         }
@@ -10654,7 +11340,7 @@ function signatureManager() external view returns (address);
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = signatureManagerReturn;
+            type Return = alloy::sol_types::private::Address;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Address,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -10672,14 +11358,34 @@ function signatureManager() external view returns (address);
                 ()
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::Address as alloy_sol_types::SolType>::tokenize(
+                        ret,
+                    ),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: signatureManagerReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: signatureManagerReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -10691,7 +11397,7 @@ function streamManager() external view returns (address);
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct streamManagerCall {}
+    pub struct streamManagerCall;
     #[derive(serde::Serialize, serde::Deserialize)]
     #[derive(Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`streamManager()`](streamManagerCall) function.
@@ -10736,7 +11442,7 @@ function streamManager() external view returns (address);
             #[doc(hidden)]
             impl ::core::convert::From<UnderlyingRustTuple<'_>> for streamManagerCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self {}
+                    Self
                 }
             }
         }
@@ -10777,7 +11483,7 @@ function streamManager() external view returns (address);
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = streamManagerReturn;
+            type Return = alloy::sol_types::private::Address;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Address,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -10795,14 +11501,34 @@ function streamManager() external view returns (address);
                 ()
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::Address as alloy_sol_types::SolType>::tokenize(
+                        ret,
+                    ),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: streamManagerReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: streamManagerReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -10896,6 +11622,13 @@ function transferOwnership(address newOwner) external;
                 }
             }
         }
+        impl transferOwnershipReturn {
+            fn _tokenize(
+                &self,
+            ) -> <transferOwnershipCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for transferOwnershipCall {
             type Parameters<'a> = (alloy::sol_types::sol_data::Address,);
@@ -10924,13 +11657,23 @@ function transferOwnership(address newOwner) external;
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                transferOwnershipReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -11021,6 +11764,13 @@ function tryPegout(bytes memory _userPubKey) external payable;
                 }
             }
         }
+        impl tryPegoutReturn {
+            fn _tokenize(
+                &self,
+            ) -> <tryPegoutCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for tryPegoutCall {
             type Parameters<'a> = (alloy::sol_types::sol_data::Bytes,);
@@ -11049,13 +11799,23 @@ function tryPegout(bytes memory _userPubKey) external payable;
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                tryPegoutReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -11161,6 +11921,13 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 }
             }
         }
+        impl upgradeToAndCallReturn {
+            fn _tokenize(
+                &self,
+            ) -> <upgradeToAndCallCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for upgradeToAndCallCall {
             type Parameters<'a> = (
@@ -11195,13 +11962,23 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                upgradeToAndCallReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -11403,20 +12180,16 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
         fn abi_decode_raw(
             selector: [u8; 4],
             data: &[u8],
-            validate: bool,
         ) -> alloy_sol_types::Result<Self> {
             static DECODE_SHIMS: &[fn(
                 &[u8],
-                bool,
             ) -> alloy_sol_types::Result<PegManagerCalls>] = &[
                 {
                     fn committeeRegistry(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerCalls> {
                         <committeeRegistryCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerCalls::committeeRegistry)
                     }
@@ -11425,11 +12198,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn getPegoutSignatureHash(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerCalls> {
                         <getPegoutSignatureHashCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerCalls::getPegoutSignatureHash)
                     }
@@ -11438,11 +12209,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn requestPegin(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerCalls> {
                         <requestPeginCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerCalls::requestPegin)
                     }
@@ -11451,11 +12220,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn setStreamManager(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerCalls> {
                         <setStreamManagerCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerCalls::setStreamManager)
                     }
@@ -11464,11 +12231,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn streamManager(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerCalls> {
                         <streamManagerCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerCalls::streamManager)
                     }
@@ -11477,11 +12242,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn signatureManager(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerCalls> {
                         <signatureManagerCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerCalls::signatureManager)
                     }
@@ -11490,11 +12253,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn setSignatureManager(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerCalls> {
                         <setSignatureManagerCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerCalls::setSignatureManager)
                     }
@@ -11503,11 +12264,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn upgradeToAndCall(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerCalls> {
                         <upgradeToAndCallCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerCalls::upgradeToAndCall)
                     }
@@ -11516,11 +12275,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn proxiableUUID(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerCalls> {
                         <proxiableUUIDCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerCalls::proxiableUUID)
                     }
@@ -11529,11 +12286,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn getPegoutTempInfo(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerCalls> {
                         <getPegoutTempInfoCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerCalls::getPegoutTempInfo)
                     }
@@ -11542,11 +12297,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn registerPegout(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerCalls> {
                         <registerPegoutCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerCalls::registerPegout)
                     }
@@ -11555,11 +12308,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn getPeginRequest(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerCalls> {
                         <getPeginRequestCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerCalls::getPeginRequest)
                     }
@@ -11568,11 +12319,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn renounceOwnership(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerCalls> {
                         <renounceOwnershipCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerCalls::renounceOwnership)
                     }
@@ -11581,25 +12330,17 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn __ProofValidator_init(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerCalls> {
                         <__ProofValidator_initCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerCalls::__ProofValidator_init)
                     }
                     __ProofValidator_init
                 },
                 {
-                    fn owner(
-                        data: &[u8],
-                        validate: bool,
-                    ) -> alloy_sol_types::Result<PegManagerCalls> {
-                        <ownerCall as alloy_sol_types::SolCall>::abi_decode_raw(
-                                data,
-                                validate,
-                            )
+                    fn owner(data: &[u8]) -> alloy_sol_types::Result<PegManagerCalls> {
+                        <ownerCall as alloy_sol_types::SolCall>::abi_decode_raw(data)
                             .map(PegManagerCalls::owner)
                     }
                     owner
@@ -11607,11 +12348,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn getTemporaryPeginAddress(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerCalls> {
                         <getTemporaryPeginAddressCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerCalls::getTemporaryPeginAddress)
                     }
@@ -11620,11 +12359,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn getRequestPeginTempInfo(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerCalls> {
                         <getRequestPeginTempInfoCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerCalls::getRequestPeginTempInfo)
                     }
@@ -11633,11 +12370,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn getImplementation(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerCalls> {
                         <getImplementationCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerCalls::getImplementation)
                     }
@@ -11646,11 +12381,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn UPGRADE_INTERFACE_VERSION(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerCalls> {
                         <UPGRADE_INTERFACE_VERSIONCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerCalls::UPGRADE_INTERFACE_VERSION)
                     }
@@ -11659,25 +12392,17 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn __BaseProxy_init(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerCalls> {
                         <__BaseProxy_initCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerCalls::__BaseProxy_init)
                     }
                     __BaseProxy_init
                 },
                 {
-                    fn bridge(
-                        data: &[u8],
-                        validate: bool,
-                    ) -> alloy_sol_types::Result<PegManagerCalls> {
-                        <bridgeCall as alloy_sol_types::SolCall>::abi_decode_raw(
-                                data,
-                                validate,
-                            )
+                    fn bridge(data: &[u8]) -> alloy_sol_types::Result<PegManagerCalls> {
+                        <bridgeCall as alloy_sol_types::SolCall>::abi_decode_raw(data)
                             .map(PegManagerCalls::bridge)
                     }
                     bridge
@@ -11685,11 +12410,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn getStreamPosition(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerCalls> {
                         <getStreamPositionCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerCalls::getStreamPosition)
                     }
@@ -11698,11 +12421,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn transferOwnership(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerCalls> {
                         <transferOwnershipCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerCalls::transferOwnership)
                     }
@@ -11711,11 +12432,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn bitcoinManager(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerCalls> {
                         <bitcoinManagerCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerCalls::bitcoinManager)
                     }
@@ -11724,12 +12443,8 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn tryPegout(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerCalls> {
-                        <tryPegoutCall as alloy_sol_types::SolCall>::abi_decode_raw(
-                                data,
-                                validate,
-                            )
+                        <tryPegoutCall as alloy_sol_types::SolCall>::abi_decode_raw(data)
                             .map(PegManagerCalls::tryPegout)
                     }
                     tryPegout
@@ -11737,11 +12452,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn acceptPegin(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerCalls> {
                         <acceptPeginCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerCalls::acceptPegin)
                     }
@@ -11750,11 +12463,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn initialize(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerCalls> {
                         <initializeCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerCalls::initialize)
                     }
@@ -11769,7 +12480,320 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                     ),
                 );
             };
-            DECODE_SHIMS[idx](data, validate)
+            DECODE_SHIMS[idx](data)
+        }
+        #[inline]
+        #[allow(non_snake_case)]
+        fn abi_decode_raw_validate(
+            selector: [u8; 4],
+            data: &[u8],
+        ) -> alloy_sol_types::Result<Self> {
+            static DECODE_VALIDATE_SHIMS: &[fn(
+                &[u8],
+            ) -> alloy_sol_types::Result<PegManagerCalls>] = &[
+                {
+                    fn committeeRegistry(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerCalls> {
+                        <committeeRegistryCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerCalls::committeeRegistry)
+                    }
+                    committeeRegistry
+                },
+                {
+                    fn getPegoutSignatureHash(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerCalls> {
+                        <getPegoutSignatureHashCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerCalls::getPegoutSignatureHash)
+                    }
+                    getPegoutSignatureHash
+                },
+                {
+                    fn requestPegin(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerCalls> {
+                        <requestPeginCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerCalls::requestPegin)
+                    }
+                    requestPegin
+                },
+                {
+                    fn setStreamManager(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerCalls> {
+                        <setStreamManagerCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerCalls::setStreamManager)
+                    }
+                    setStreamManager
+                },
+                {
+                    fn streamManager(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerCalls> {
+                        <streamManagerCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerCalls::streamManager)
+                    }
+                    streamManager
+                },
+                {
+                    fn signatureManager(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerCalls> {
+                        <signatureManagerCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerCalls::signatureManager)
+                    }
+                    signatureManager
+                },
+                {
+                    fn setSignatureManager(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerCalls> {
+                        <setSignatureManagerCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerCalls::setSignatureManager)
+                    }
+                    setSignatureManager
+                },
+                {
+                    fn upgradeToAndCall(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerCalls> {
+                        <upgradeToAndCallCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerCalls::upgradeToAndCall)
+                    }
+                    upgradeToAndCall
+                },
+                {
+                    fn proxiableUUID(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerCalls> {
+                        <proxiableUUIDCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerCalls::proxiableUUID)
+                    }
+                    proxiableUUID
+                },
+                {
+                    fn getPegoutTempInfo(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerCalls> {
+                        <getPegoutTempInfoCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerCalls::getPegoutTempInfo)
+                    }
+                    getPegoutTempInfo
+                },
+                {
+                    fn registerPegout(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerCalls> {
+                        <registerPegoutCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerCalls::registerPegout)
+                    }
+                    registerPegout
+                },
+                {
+                    fn getPeginRequest(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerCalls> {
+                        <getPeginRequestCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerCalls::getPeginRequest)
+                    }
+                    getPeginRequest
+                },
+                {
+                    fn renounceOwnership(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerCalls> {
+                        <renounceOwnershipCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerCalls::renounceOwnership)
+                    }
+                    renounceOwnership
+                },
+                {
+                    fn __ProofValidator_init(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerCalls> {
+                        <__ProofValidator_initCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerCalls::__ProofValidator_init)
+                    }
+                    __ProofValidator_init
+                },
+                {
+                    fn owner(data: &[u8]) -> alloy_sol_types::Result<PegManagerCalls> {
+                        <ownerCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerCalls::owner)
+                    }
+                    owner
+                },
+                {
+                    fn getTemporaryPeginAddress(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerCalls> {
+                        <getTemporaryPeginAddressCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerCalls::getTemporaryPeginAddress)
+                    }
+                    getTemporaryPeginAddress
+                },
+                {
+                    fn getRequestPeginTempInfo(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerCalls> {
+                        <getRequestPeginTempInfoCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerCalls::getRequestPeginTempInfo)
+                    }
+                    getRequestPeginTempInfo
+                },
+                {
+                    fn getImplementation(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerCalls> {
+                        <getImplementationCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerCalls::getImplementation)
+                    }
+                    getImplementation
+                },
+                {
+                    fn UPGRADE_INTERFACE_VERSION(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerCalls> {
+                        <UPGRADE_INTERFACE_VERSIONCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerCalls::UPGRADE_INTERFACE_VERSION)
+                    }
+                    UPGRADE_INTERFACE_VERSION
+                },
+                {
+                    fn __BaseProxy_init(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerCalls> {
+                        <__BaseProxy_initCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerCalls::__BaseProxy_init)
+                    }
+                    __BaseProxy_init
+                },
+                {
+                    fn bridge(data: &[u8]) -> alloy_sol_types::Result<PegManagerCalls> {
+                        <bridgeCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerCalls::bridge)
+                    }
+                    bridge
+                },
+                {
+                    fn getStreamPosition(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerCalls> {
+                        <getStreamPositionCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerCalls::getStreamPosition)
+                    }
+                    getStreamPosition
+                },
+                {
+                    fn transferOwnership(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerCalls> {
+                        <transferOwnershipCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerCalls::transferOwnership)
+                    }
+                    transferOwnership
+                },
+                {
+                    fn bitcoinManager(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerCalls> {
+                        <bitcoinManagerCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerCalls::bitcoinManager)
+                    }
+                    bitcoinManager
+                },
+                {
+                    fn tryPegout(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerCalls> {
+                        <tryPegoutCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerCalls::tryPegout)
+                    }
+                    tryPegout
+                },
+                {
+                    fn acceptPegin(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerCalls> {
+                        <acceptPeginCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerCalls::acceptPegin)
+                    }
+                    acceptPegin
+                },
+                {
+                    fn initialize(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerCalls> {
+                        <initializeCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerCalls::initialize)
+                    }
+                    initialize
+                },
+            ];
+            let Ok(idx) = Self::SELECTORS.binary_search(&selector) else {
+                return Err(
+                    alloy_sol_types::Error::unknown_selector(
+                        <Self as alloy_sol_types::SolInterface>::NAME,
+                        selector,
+                    ),
+                );
+            };
+            DECODE_VALIDATE_SHIMS[idx](data)
         }
         #[inline]
         fn abi_encoded_size(&self) -> usize {
@@ -12326,20 +13350,16 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
         fn abi_decode_raw(
             selector: [u8; 4],
             data: &[u8],
-            validate: bool,
         ) -> alloy_sol_types::Result<Self> {
             static DECODE_SHIMS: &[fn(
                 &[u8],
-                bool,
             ) -> alloy_sol_types::Result<PegManagerErrors>] = &[
                 {
                     fn PegoutRequestAmountExceedsUint64Limit(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerErrors> {
                         <PegoutRequestAmountExceedsUint64Limit as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerErrors::PegoutRequestAmountExceedsUint64Limit)
                     }
@@ -12348,11 +13368,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn InvalidBtcTxVersion(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerErrors> {
                         <InvalidBtcTxVersion as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerErrors::InvalidBtcTxVersion)
                     }
@@ -12361,11 +13379,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn BridgeBtcInconsistentBlock(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerErrors> {
                         <BridgeBtcInconsistentBlock as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerErrors::BridgeBtcInconsistentBlock)
                     }
@@ -12374,11 +13390,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn OwnableUnauthorizedAccount(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerErrors> {
                         <OwnableUnauthorizedAccount as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerErrors::OwnableUnauthorizedAccount)
                     }
@@ -12387,11 +13401,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn PeginAlreadyRequested(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerErrors> {
                         <PeginAlreadyRequested as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerErrors::PeginAlreadyRequested)
                     }
@@ -12400,11 +13412,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn BridgeBtcBlockTooOld(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerErrors> {
                         <BridgeBtcBlockTooOld as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerErrors::BridgeBtcBlockTooOld)
                     }
@@ -12413,11 +13423,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn CommitteeRegistryAddressZero(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerErrors> {
                         <CommitteeRegistryAddressZero as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerErrors::CommitteeRegistryAddressZero)
                     }
@@ -12426,11 +13434,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn OwnableInvalidOwner(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerErrors> {
                         <OwnableInvalidOwner as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerErrors::OwnableInvalidOwner)
                     }
@@ -12439,11 +13445,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn BridgeExceededLockingCap(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerErrors> {
                         <BridgeExceededLockingCap as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerErrors::BridgeExceededLockingCap)
                     }
@@ -12452,11 +13456,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn NotEnoughConfirmations(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerErrors> {
                         <NotEnoughConfirmations as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerErrors::NotEnoughConfirmations)
                     }
@@ -12465,11 +13467,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn BridgeUnauthorizedCaller(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerErrors> {
                         <BridgeUnauthorizedCaller as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerErrors::BridgeUnauthorizedCaller)
                     }
@@ -12478,11 +13478,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn IncorrectOutputsNumber(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerErrors> {
                         <IncorrectOutputsNumber as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerErrors::IncorrectOutputsNumber)
                     }
@@ -12491,11 +13489,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn ERC1967InvalidImplementation(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerErrors> {
                         <ERC1967InvalidImplementation as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerErrors::ERC1967InvalidImplementation)
                     }
@@ -12504,11 +13500,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn BitcoinManagerAddressZero(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerErrors> {
                         <BitcoinManagerAddressZero as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerErrors::BitcoinManagerAddressZero)
                     }
@@ -12517,11 +13511,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn BridgeBtcBlockNotInBestChain(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerErrors> {
                         <BridgeBtcBlockNotInBestChain as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerErrors::BridgeBtcBlockNotInBestChain)
                     }
@@ -12530,11 +13522,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn IncorrectVout(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerErrors> {
                         <IncorrectVout as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerErrors::IncorrectVout)
                     }
@@ -12543,11 +13533,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn BridgeBtcUnknownError(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerErrors> {
                         <BridgeBtcUnknownError as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerErrors::BridgeBtcUnknownError)
                     }
@@ -12556,11 +13544,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn PeginNotRequested(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerErrors> {
                         <PeginNotRequested as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerErrors::PeginNotRequested)
                     }
@@ -12569,11 +13555,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn BridgeBtcTxInvalidMerkleBranch(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerErrors> {
                         <BridgeBtcTxInvalidMerkleBranch as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerErrors::BridgeBtcTxInvalidMerkleBranch)
                     }
@@ -12582,11 +13566,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn BridgeAddressZero(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerErrors> {
                         <BridgeAddressZero as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerErrors::BridgeAddressZero)
                     }
@@ -12595,11 +13577,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn InvalidSlotState(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerErrors> {
                         <InvalidSlotState as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerErrors::InvalidSlotState)
                     }
@@ -12608,11 +13588,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn IncorrectInputsNumber(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerErrors> {
                         <IncorrectInputsNumber as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerErrors::IncorrectInputsNumber)
                     }
@@ -12621,11 +13599,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn InvalidAcceptPeginTxHash(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerErrors> {
                         <InvalidAcceptPeginTxHash as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerErrors::InvalidAcceptPeginTxHash)
                     }
@@ -12634,11 +13610,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn AddressEmptyCode(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerErrors> {
                         <AddressEmptyCode as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerErrors::AddressEmptyCode)
                     }
@@ -12647,11 +13621,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn StreamManagerAddressZero(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerErrors> {
                         <StreamManagerAddressZero as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerErrors::StreamManagerAddressZero)
                     }
@@ -12660,11 +13632,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn PeginAlreadyAccepted(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerErrors> {
                         <PeginAlreadyAccepted as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerErrors::PeginAlreadyAccepted)
                     }
@@ -12673,11 +13643,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn UUPSUnsupportedProxiableUUID(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerErrors> {
                         <UUPSUnsupportedProxiableUUID as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerErrors::UUPSUnsupportedProxiableUUID)
                     }
@@ -12686,11 +13654,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn SignatureManagerAddressZero(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerErrors> {
                         <SignatureManagerAddressZero as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerErrors::SignatureManagerAddressZero)
                     }
@@ -12699,11 +13665,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn ERC1967NonPayable(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerErrors> {
                         <ERC1967NonPayable as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerErrors::ERC1967NonPayable)
                     }
@@ -12712,11 +13676,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn InvalidCompressedPubKey(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerErrors> {
                         <InvalidCompressedPubKey as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerErrors::InvalidCompressedPubKey)
                     }
@@ -12725,11 +13687,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn BridgeBtcInexistantBlockHash(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerErrors> {
                         <BridgeBtcInexistantBlockHash as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerErrors::BridgeBtcInexistantBlockHash)
                     }
@@ -12738,11 +13698,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn IncorrectOutputScript(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerErrors> {
                         <IncorrectOutputScript as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerErrors::IncorrectOutputScript)
                     }
@@ -12751,11 +13709,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn InvalidLocktime(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerErrors> {
                         <InvalidLocktime as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerErrors::InvalidLocktime)
                     }
@@ -12764,12 +13720,8 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn FailedCall(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerErrors> {
-                        <FailedCall as alloy_sol_types::SolError>::abi_decode_raw(
-                                data,
-                                validate,
-                            )
+                        <FailedCall as alloy_sol_types::SolError>::abi_decode_raw(data)
                             .map(PegManagerErrors::FailedCall)
                     }
                     FailedCall
@@ -12777,11 +13729,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn NotInitializing(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerErrors> {
                         <NotInitializing as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerErrors::NotInitializing)
                     }
@@ -12790,11 +13740,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn UUPSUnauthorizedCallContext(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerErrors> {
                         <UUPSUnauthorizedCallContext as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerErrors::UUPSUnauthorizedCallContext)
                     }
@@ -12803,11 +13751,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 {
                     fn InvalidInitialization(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<PegManagerErrors> {
                         <InvalidInitialization as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(PegManagerErrors::InvalidInitialization)
                     }
@@ -12822,7 +13768,434 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                     ),
                 );
             };
-            DECODE_SHIMS[idx](data, validate)
+            DECODE_SHIMS[idx](data)
+        }
+        #[inline]
+        #[allow(non_snake_case)]
+        fn abi_decode_raw_validate(
+            selector: [u8; 4],
+            data: &[u8],
+        ) -> alloy_sol_types::Result<Self> {
+            static DECODE_VALIDATE_SHIMS: &[fn(
+                &[u8],
+            ) -> alloy_sol_types::Result<PegManagerErrors>] = &[
+                {
+                    fn PegoutRequestAmountExceedsUint64Limit(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerErrors> {
+                        <PegoutRequestAmountExceedsUint64Limit as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerErrors::PegoutRequestAmountExceedsUint64Limit)
+                    }
+                    PegoutRequestAmountExceedsUint64Limit
+                },
+                {
+                    fn InvalidBtcTxVersion(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerErrors> {
+                        <InvalidBtcTxVersion as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerErrors::InvalidBtcTxVersion)
+                    }
+                    InvalidBtcTxVersion
+                },
+                {
+                    fn BridgeBtcInconsistentBlock(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerErrors> {
+                        <BridgeBtcInconsistentBlock as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerErrors::BridgeBtcInconsistentBlock)
+                    }
+                    BridgeBtcInconsistentBlock
+                },
+                {
+                    fn OwnableUnauthorizedAccount(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerErrors> {
+                        <OwnableUnauthorizedAccount as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerErrors::OwnableUnauthorizedAccount)
+                    }
+                    OwnableUnauthorizedAccount
+                },
+                {
+                    fn PeginAlreadyRequested(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerErrors> {
+                        <PeginAlreadyRequested as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerErrors::PeginAlreadyRequested)
+                    }
+                    PeginAlreadyRequested
+                },
+                {
+                    fn BridgeBtcBlockTooOld(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerErrors> {
+                        <BridgeBtcBlockTooOld as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerErrors::BridgeBtcBlockTooOld)
+                    }
+                    BridgeBtcBlockTooOld
+                },
+                {
+                    fn CommitteeRegistryAddressZero(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerErrors> {
+                        <CommitteeRegistryAddressZero as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerErrors::CommitteeRegistryAddressZero)
+                    }
+                    CommitteeRegistryAddressZero
+                },
+                {
+                    fn OwnableInvalidOwner(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerErrors> {
+                        <OwnableInvalidOwner as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerErrors::OwnableInvalidOwner)
+                    }
+                    OwnableInvalidOwner
+                },
+                {
+                    fn BridgeExceededLockingCap(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerErrors> {
+                        <BridgeExceededLockingCap as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerErrors::BridgeExceededLockingCap)
+                    }
+                    BridgeExceededLockingCap
+                },
+                {
+                    fn NotEnoughConfirmations(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerErrors> {
+                        <NotEnoughConfirmations as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerErrors::NotEnoughConfirmations)
+                    }
+                    NotEnoughConfirmations
+                },
+                {
+                    fn BridgeUnauthorizedCaller(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerErrors> {
+                        <BridgeUnauthorizedCaller as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerErrors::BridgeUnauthorizedCaller)
+                    }
+                    BridgeUnauthorizedCaller
+                },
+                {
+                    fn IncorrectOutputsNumber(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerErrors> {
+                        <IncorrectOutputsNumber as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerErrors::IncorrectOutputsNumber)
+                    }
+                    IncorrectOutputsNumber
+                },
+                {
+                    fn ERC1967InvalidImplementation(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerErrors> {
+                        <ERC1967InvalidImplementation as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerErrors::ERC1967InvalidImplementation)
+                    }
+                    ERC1967InvalidImplementation
+                },
+                {
+                    fn BitcoinManagerAddressZero(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerErrors> {
+                        <BitcoinManagerAddressZero as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerErrors::BitcoinManagerAddressZero)
+                    }
+                    BitcoinManagerAddressZero
+                },
+                {
+                    fn BridgeBtcBlockNotInBestChain(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerErrors> {
+                        <BridgeBtcBlockNotInBestChain as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerErrors::BridgeBtcBlockNotInBestChain)
+                    }
+                    BridgeBtcBlockNotInBestChain
+                },
+                {
+                    fn IncorrectVout(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerErrors> {
+                        <IncorrectVout as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerErrors::IncorrectVout)
+                    }
+                    IncorrectVout
+                },
+                {
+                    fn BridgeBtcUnknownError(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerErrors> {
+                        <BridgeBtcUnknownError as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerErrors::BridgeBtcUnknownError)
+                    }
+                    BridgeBtcUnknownError
+                },
+                {
+                    fn PeginNotRequested(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerErrors> {
+                        <PeginNotRequested as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerErrors::PeginNotRequested)
+                    }
+                    PeginNotRequested
+                },
+                {
+                    fn BridgeBtcTxInvalidMerkleBranch(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerErrors> {
+                        <BridgeBtcTxInvalidMerkleBranch as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerErrors::BridgeBtcTxInvalidMerkleBranch)
+                    }
+                    BridgeBtcTxInvalidMerkleBranch
+                },
+                {
+                    fn BridgeAddressZero(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerErrors> {
+                        <BridgeAddressZero as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerErrors::BridgeAddressZero)
+                    }
+                    BridgeAddressZero
+                },
+                {
+                    fn InvalidSlotState(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerErrors> {
+                        <InvalidSlotState as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerErrors::InvalidSlotState)
+                    }
+                    InvalidSlotState
+                },
+                {
+                    fn IncorrectInputsNumber(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerErrors> {
+                        <IncorrectInputsNumber as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerErrors::IncorrectInputsNumber)
+                    }
+                    IncorrectInputsNumber
+                },
+                {
+                    fn InvalidAcceptPeginTxHash(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerErrors> {
+                        <InvalidAcceptPeginTxHash as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerErrors::InvalidAcceptPeginTxHash)
+                    }
+                    InvalidAcceptPeginTxHash
+                },
+                {
+                    fn AddressEmptyCode(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerErrors> {
+                        <AddressEmptyCode as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerErrors::AddressEmptyCode)
+                    }
+                    AddressEmptyCode
+                },
+                {
+                    fn StreamManagerAddressZero(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerErrors> {
+                        <StreamManagerAddressZero as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerErrors::StreamManagerAddressZero)
+                    }
+                    StreamManagerAddressZero
+                },
+                {
+                    fn PeginAlreadyAccepted(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerErrors> {
+                        <PeginAlreadyAccepted as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerErrors::PeginAlreadyAccepted)
+                    }
+                    PeginAlreadyAccepted
+                },
+                {
+                    fn UUPSUnsupportedProxiableUUID(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerErrors> {
+                        <UUPSUnsupportedProxiableUUID as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerErrors::UUPSUnsupportedProxiableUUID)
+                    }
+                    UUPSUnsupportedProxiableUUID
+                },
+                {
+                    fn SignatureManagerAddressZero(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerErrors> {
+                        <SignatureManagerAddressZero as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerErrors::SignatureManagerAddressZero)
+                    }
+                    SignatureManagerAddressZero
+                },
+                {
+                    fn ERC1967NonPayable(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerErrors> {
+                        <ERC1967NonPayable as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerErrors::ERC1967NonPayable)
+                    }
+                    ERC1967NonPayable
+                },
+                {
+                    fn InvalidCompressedPubKey(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerErrors> {
+                        <InvalidCompressedPubKey as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerErrors::InvalidCompressedPubKey)
+                    }
+                    InvalidCompressedPubKey
+                },
+                {
+                    fn BridgeBtcInexistantBlockHash(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerErrors> {
+                        <BridgeBtcInexistantBlockHash as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerErrors::BridgeBtcInexistantBlockHash)
+                    }
+                    BridgeBtcInexistantBlockHash
+                },
+                {
+                    fn IncorrectOutputScript(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerErrors> {
+                        <IncorrectOutputScript as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerErrors::IncorrectOutputScript)
+                    }
+                    IncorrectOutputScript
+                },
+                {
+                    fn InvalidLocktime(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerErrors> {
+                        <InvalidLocktime as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerErrors::InvalidLocktime)
+                    }
+                    InvalidLocktime
+                },
+                {
+                    fn FailedCall(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerErrors> {
+                        <FailedCall as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerErrors::FailedCall)
+                    }
+                    FailedCall
+                },
+                {
+                    fn NotInitializing(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerErrors> {
+                        <NotInitializing as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerErrors::NotInitializing)
+                    }
+                    NotInitializing
+                },
+                {
+                    fn UUPSUnauthorizedCallContext(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerErrors> {
+                        <UUPSUnauthorizedCallContext as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerErrors::UUPSUnauthorizedCallContext)
+                    }
+                    UUPSUnauthorizedCallContext
+                },
+                {
+                    fn InvalidInitialization(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<PegManagerErrors> {
+                        <InvalidInitialization as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(PegManagerErrors::InvalidInitialization)
+                    }
+                    InvalidInitialization
+                },
+            ];
+            let Ok(idx) = Self::SELECTORS.binary_search(&selector) else {
+                return Err(
+                    alloy_sol_types::Error::unknown_selector(
+                        <Self as alloy_sol_types::SolInterface>::NAME,
+                        selector,
+                    ),
+                );
+            };
+            DECODE_VALIDATE_SHIMS[idx](data)
         }
         #[inline]
         fn abi_encoded_size(&self) -> usize {
@@ -13307,14 +14680,12 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
         fn decode_raw_log(
             topics: &[alloy_sol_types::Word],
             data: &[u8],
-            validate: bool,
         ) -> alloy_sol_types::Result<Self> {
             match topics.first().copied() {
                 Some(<Initialized as alloy_sol_types::SolEvent>::SIGNATURE_HASH) => {
                     <Initialized as alloy_sol_types::SolEvent>::decode_raw_log(
                             topics,
                             data,
-                            validate,
                         )
                         .map(Self::Initialized)
                 }
@@ -13324,7 +14695,6 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                     <OwnershipTransferred as alloy_sol_types::SolEvent>::decode_raw_log(
                             topics,
                             data,
-                            validate,
                         )
                         .map(Self::OwnershipTransferred)
                 }
@@ -13332,7 +14702,6 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                     <PeginAccepted as alloy_sol_types::SolEvent>::decode_raw_log(
                             topics,
                             data,
-                            validate,
                         )
                         .map(Self::PeginAccepted)
                 }
@@ -13340,7 +14709,6 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                     <PeginRequested as alloy_sol_types::SolEvent>::decode_raw_log(
                             topics,
                             data,
-                            validate,
                         )
                         .map(Self::PeginRequested)
                 }
@@ -13348,7 +14716,6 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                     <PegoutRegistered as alloy_sol_types::SolEvent>::decode_raw_log(
                             topics,
                             data,
-                            validate,
                         )
                         .map(Self::PegoutRegistered)
                 }
@@ -13356,16 +14723,11 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                     <PegoutRequested as alloy_sol_types::SolEvent>::decode_raw_log(
                             topics,
                             data,
-                            validate,
                         )
                         .map(Self::PegoutRequested)
                 }
                 Some(<Upgraded as alloy_sol_types::SolEvent>::SIGNATURE_HASH) => {
-                    <Upgraded as alloy_sol_types::SolEvent>::decode_raw_log(
-                            topics,
-                            data,
-                            validate,
-                        )
+                    <Upgraded as alloy_sol_types::SolEvent>::decode_raw_log(topics, data)
                         .map(Self::Upgraded)
                 }
                 _ => {
@@ -13441,14 +14803,13 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
 See the [wrapper's documentation](`PegManagerInstance`) for more details.*/
     #[inline]
     pub const fn new<
-        T: alloy_contract::private::Transport + ::core::clone::Clone,
-        P: alloy_contract::private::Provider<T, N>,
+        P: alloy_contract::private::Provider<N>,
         N: alloy_contract::private::Network,
     >(
         address: alloy_sol_types::private::Address,
         provider: P,
-    ) -> PegManagerInstance<T, P, N> {
-        PegManagerInstance::<T, P, N>::new(address, provider)
+    ) -> PegManagerInstance<P, N> {
+        PegManagerInstance::<P, N>::new(address, provider)
     }
     /**Deploys this contract using the given `provider` and constructor arguments, if any.
 
@@ -13457,15 +14818,14 @@ Returns a new instance of the contract, if the deployment was successful.
 For more fine-grained control over the deployment process, use [`deploy_builder`] instead.*/
     #[inline]
     pub fn deploy<
-        T: alloy_contract::private::Transport + ::core::clone::Clone,
-        P: alloy_contract::private::Provider<T, N>,
+        P: alloy_contract::private::Provider<N>,
         N: alloy_contract::private::Network,
     >(
         provider: P,
     ) -> impl ::core::future::Future<
-        Output = alloy_contract::Result<PegManagerInstance<T, P, N>>,
+        Output = alloy_contract::Result<PegManagerInstance<P, N>>,
     > {
-        PegManagerInstance::<T, P, N>::deploy(provider)
+        PegManagerInstance::<P, N>::deploy(provider)
     }
     /**Creates a `RawCallBuilder` for deploying this contract using the given `provider`
 and constructor arguments, if any.
@@ -13474,11 +14834,10 @@ This is a simple wrapper around creating a `RawCallBuilder` with the data set to
 the bytecode concatenated with the constructor's ABI-encoded arguments.*/
     #[inline]
     pub fn deploy_builder<
-        T: alloy_contract::private::Transport + ::core::clone::Clone,
-        P: alloy_contract::private::Provider<T, N>,
+        P: alloy_contract::private::Provider<N>,
         N: alloy_contract::private::Network,
-    >(provider: P) -> alloy_contract::RawCallBuilder<T, P, N> {
-        PegManagerInstance::<T, P, N>::deploy_builder(provider)
+    >(provider: P) -> alloy_contract::RawCallBuilder<P, N> {
+        PegManagerInstance::<P, N>::deploy_builder(provider)
     }
     /**A [`PegManager`](self) instance.
 
@@ -13492,13 +14851,13 @@ be used to deploy a new instance of the contract.
 
 See the [module-level documentation](self) for all the available methods.*/
     #[derive(Clone)]
-    pub struct PegManagerInstance<T, P, N = alloy_contract::private::Ethereum> {
+    pub struct PegManagerInstance<P, N = alloy_contract::private::Ethereum> {
         address: alloy_sol_types::private::Address,
         provider: P,
-        _network_transport: ::core::marker::PhantomData<(N, T)>,
+        _network: ::core::marker::PhantomData<N>,
     }
     #[automatically_derived]
-    impl<T, P, N> ::core::fmt::Debug for PegManagerInstance<T, P, N> {
+    impl<P, N> ::core::fmt::Debug for PegManagerInstance<P, N> {
         #[inline]
         fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
             f.debug_tuple("PegManagerInstance").field(&self.address).finish()
@@ -13507,10 +14866,9 @@ See the [module-level documentation](self) for all the available methods.*/
     /// Instantiation and getters/setters.
     #[automatically_derived]
     impl<
-        T: alloy_contract::private::Transport + ::core::clone::Clone,
-        P: alloy_contract::private::Provider<T, N>,
+        P: alloy_contract::private::Provider<N>,
         N: alloy_contract::private::Network,
-    > PegManagerInstance<T, P, N> {
+    > PegManagerInstance<P, N> {
         /**Creates a new wrapper around an on-chain [`PegManager`](self) contract instance.
 
 See the [wrapper's documentation](`PegManagerInstance`) for more details.*/
@@ -13522,7 +14880,7 @@ See the [wrapper's documentation](`PegManagerInstance`) for more details.*/
             Self {
                 address,
                 provider,
-                _network_transport: ::core::marker::PhantomData,
+                _network: ::core::marker::PhantomData,
             }
         }
         /**Deploys this contract using the given `provider` and constructor arguments, if any.
@@ -13533,7 +14891,7 @@ For more fine-grained control over the deployment process, use [`deploy_builder`
         #[inline]
         pub async fn deploy(
             provider: P,
-        ) -> alloy_contract::Result<PegManagerInstance<T, P, N>> {
+        ) -> alloy_contract::Result<PegManagerInstance<P, N>> {
             let call_builder = Self::deploy_builder(provider);
             let contract_address = call_builder.deploy().await?;
             Ok(Self::new(contract_address, call_builder.provider))
@@ -13544,7 +14902,7 @@ and constructor arguments, if any.
 This is a simple wrapper around creating a `RawCallBuilder` with the data set to
 the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         #[inline]
-        pub fn deploy_builder(provider: P) -> alloy_contract::RawCallBuilder<T, P, N> {
+        pub fn deploy_builder(provider: P) -> alloy_contract::RawCallBuilder<P, N> {
             alloy_contract::RawCallBuilder::new_raw_deploy(
                 provider,
                 ::core::clone::Clone::clone(&BYTECODE),
@@ -13571,24 +14929,23 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             &self.provider
         }
     }
-    impl<T, P: ::core::clone::Clone, N> PegManagerInstance<T, &P, N> {
+    impl<P: ::core::clone::Clone, N> PegManagerInstance<&P, N> {
         /// Clones the provider and returns a new instance with the cloned provider.
         #[inline]
-        pub fn with_cloned_provider(self) -> PegManagerInstance<T, P, N> {
+        pub fn with_cloned_provider(self) -> PegManagerInstance<P, N> {
             PegManagerInstance {
                 address: self.address,
                 provider: ::core::clone::Clone::clone(&self.provider),
-                _network_transport: ::core::marker::PhantomData,
+                _network: ::core::marker::PhantomData,
             }
         }
     }
     /// Function calls.
     #[automatically_derived]
     impl<
-        T: alloy_contract::private::Transport + ::core::clone::Clone,
-        P: alloy_contract::private::Provider<T, N>,
+        P: alloy_contract::private::Provider<N>,
         N: alloy_contract::private::Network,
-    > PegManagerInstance<T, P, N> {
+    > PegManagerInstance<P, N> {
         /// Creates a new call builder using this contract instance's provider and address.
         ///
         /// Note that the call can be any function call, not just those defined in this
@@ -13596,20 +14953,20 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         pub fn call_builder<C: alloy_sol_types::SolCall>(
             &self,
             call: &C,
-        ) -> alloy_contract::SolCallBuilder<T, &P, C, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, C, N> {
             alloy_contract::SolCallBuilder::new_sol(&self.provider, &self.address, call)
         }
         ///Creates a new call builder for the [`UPGRADE_INTERFACE_VERSION`] function.
         pub fn UPGRADE_INTERFACE_VERSION(
             &self,
-        ) -> alloy_contract::SolCallBuilder<T, &P, UPGRADE_INTERFACE_VERSIONCall, N> {
-            self.call_builder(&UPGRADE_INTERFACE_VERSIONCall {})
+        ) -> alloy_contract::SolCallBuilder<&P, UPGRADE_INTERFACE_VERSIONCall, N> {
+            self.call_builder(&UPGRADE_INTERFACE_VERSIONCall)
         }
         ///Creates a new call builder for the [`__BaseProxy_init`] function.
         pub fn __BaseProxy_init(
             &self,
             _initialOwner: alloy::sol_types::private::Address,
-        ) -> alloy_contract::SolCallBuilder<T, &P, __BaseProxy_initCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, __BaseProxy_initCall, N> {
             self.call_builder(
                 &__BaseProxy_initCall {
                     _initialOwner,
@@ -13620,7 +14977,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         pub fn __ProofValidator_init(
             &self,
             _bridgeAddress: alloy::sol_types::private::Address,
-        ) -> alloy_contract::SolCallBuilder<T, &P, __ProofValidator_initCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, __ProofValidator_initCall, N> {
             self.call_builder(
                 &__ProofValidator_initCall {
                     _bridgeAddress,
@@ -13631,7 +14988,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         pub fn acceptPegin(
             &self,
             _peginAcceptedTxSPVProof: <BtcTxSPVProof as alloy::sol_types::SolType>::RustType,
-        ) -> alloy_contract::SolCallBuilder<T, &P, acceptPeginCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, acceptPeginCall, N> {
             self.call_builder(
                 &acceptPeginCall {
                     _peginAcceptedTxSPVProof,
@@ -13641,30 +14998,30 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         ///Creates a new call builder for the [`bitcoinManager`] function.
         pub fn bitcoinManager(
             &self,
-        ) -> alloy_contract::SolCallBuilder<T, &P, bitcoinManagerCall, N> {
-            self.call_builder(&bitcoinManagerCall {})
+        ) -> alloy_contract::SolCallBuilder<&P, bitcoinManagerCall, N> {
+            self.call_builder(&bitcoinManagerCall)
         }
         ///Creates a new call builder for the [`bridge`] function.
-        pub fn bridge(&self) -> alloy_contract::SolCallBuilder<T, &P, bridgeCall, N> {
-            self.call_builder(&bridgeCall {})
+        pub fn bridge(&self) -> alloy_contract::SolCallBuilder<&P, bridgeCall, N> {
+            self.call_builder(&bridgeCall)
         }
         ///Creates a new call builder for the [`committeeRegistry`] function.
         pub fn committeeRegistry(
             &self,
-        ) -> alloy_contract::SolCallBuilder<T, &P, committeeRegistryCall, N> {
-            self.call_builder(&committeeRegistryCall {})
+        ) -> alloy_contract::SolCallBuilder<&P, committeeRegistryCall, N> {
+            self.call_builder(&committeeRegistryCall)
         }
         ///Creates a new call builder for the [`getImplementation`] function.
         pub fn getImplementation(
             &self,
-        ) -> alloy_contract::SolCallBuilder<T, &P, getImplementationCall, N> {
-            self.call_builder(&getImplementationCall {})
+        ) -> alloy_contract::SolCallBuilder<&P, getImplementationCall, N> {
+            self.call_builder(&getImplementationCall)
         }
         ///Creates a new call builder for the [`getPeginRequest`] function.
         pub fn getPeginRequest(
             &self,
             _btcTxHash: alloy::sol_types::private::FixedBytes<32>,
-        ) -> alloy_contract::SolCallBuilder<T, &P, getPeginRequestCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, getPeginRequestCall, N> {
             self.call_builder(&getPeginRequestCall { _btcTxHash })
         }
         ///Creates a new call builder for the [`getPegoutSignatureHash`] function.
@@ -13673,7 +15030,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             streamId: u64,
             packetNumber: u64,
             slotId: u64,
-        ) -> alloy_contract::SolCallBuilder<T, &P, getPegoutSignatureHashCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, getPegoutSignatureHashCall, N> {
             self.call_builder(
                 &getPegoutSignatureHashCall {
                     streamId,
@@ -13686,7 +15043,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         pub fn getPegoutTempInfo(
             &self,
             _acceptPeginTxHash: alloy::sol_types::private::FixedBytes<32>,
-        ) -> alloy_contract::SolCallBuilder<T, &P, getPegoutTempInfoCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, getPegoutTempInfoCall, N> {
             self.call_builder(
                 &getPegoutTempInfoCall {
                     _acceptPeginTxHash,
@@ -13697,7 +15054,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         pub fn getRequestPeginTempInfo(
             &self,
             _btcTxHash: alloy::sol_types::private::FixedBytes<32>,
-        ) -> alloy_contract::SolCallBuilder<T, &P, getRequestPeginTempInfoCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, getRequestPeginTempInfoCall, N> {
             self.call_builder(
                 &getRequestPeginTempInfoCall {
                     _btcTxHash,
@@ -13708,7 +15065,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         pub fn getStreamPosition(
             &self,
             _btcTxHash: alloy::sol_types::private::FixedBytes<32>,
-        ) -> alloy_contract::SolCallBuilder<T, &P, getStreamPositionCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, getStreamPositionCall, N> {
             self.call_builder(
                 &getStreamPositionCall {
                     _btcTxHash,
@@ -13721,7 +15078,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             _rootstockDepositAddress: alloy::sol_types::private::Address,
             _value: u64,
             _btcReimbursementPubKey: alloy::sol_types::private::FixedBytes<32>,
-        ) -> alloy_contract::SolCallBuilder<T, &P, getTemporaryPeginAddressCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, getTemporaryPeginAddressCall, N> {
             self.call_builder(
                 &getTemporaryPeginAddressCall {
                     _rootstockDepositAddress,
@@ -13737,7 +15094,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             _bridgeAddress: alloy::sol_types::private::Address,
             _committeeRegistry: alloy::sol_types::private::Address,
             _bitcoinManager: alloy::sol_types::private::Address,
-        ) -> alloy_contract::SolCallBuilder<T, &P, initializeCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, initializeCall, N> {
             self.call_builder(
                 &initializeCall {
                     _initialOwner,
@@ -13748,20 +15105,20 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             )
         }
         ///Creates a new call builder for the [`owner`] function.
-        pub fn owner(&self) -> alloy_contract::SolCallBuilder<T, &P, ownerCall, N> {
-            self.call_builder(&ownerCall {})
+        pub fn owner(&self) -> alloy_contract::SolCallBuilder<&P, ownerCall, N> {
+            self.call_builder(&ownerCall)
         }
         ///Creates a new call builder for the [`proxiableUUID`] function.
         pub fn proxiableUUID(
             &self,
-        ) -> alloy_contract::SolCallBuilder<T, &P, proxiableUUIDCall, N> {
-            self.call_builder(&proxiableUUIDCall {})
+        ) -> alloy_contract::SolCallBuilder<&P, proxiableUUIDCall, N> {
+            self.call_builder(&proxiableUUIDCall)
         }
         ///Creates a new call builder for the [`registerPegout`] function.
         pub fn registerPegout(
             &self,
             _pegoutTxSPVProof: <BtcTxSPVProof as alloy::sol_types::SolType>::RustType,
-        ) -> alloy_contract::SolCallBuilder<T, &P, registerPegoutCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, registerPegoutCall, N> {
             self.call_builder(
                 &registerPegoutCall {
                     _pegoutTxSPVProof,
@@ -13771,14 +15128,14 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         ///Creates a new call builder for the [`renounceOwnership`] function.
         pub fn renounceOwnership(
             &self,
-        ) -> alloy_contract::SolCallBuilder<T, &P, renounceOwnershipCall, N> {
-            self.call_builder(&renounceOwnershipCall {})
+        ) -> alloy_contract::SolCallBuilder<&P, renounceOwnershipCall, N> {
+            self.call_builder(&renounceOwnershipCall)
         }
         ///Creates a new call builder for the [`requestPegin`] function.
         pub fn requestPegin(
             &self,
             _peginRequestTxSPVProof: <BtcTxSPVProof as alloy::sol_types::SolType>::RustType,
-        ) -> alloy_contract::SolCallBuilder<T, &P, requestPeginCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, requestPeginCall, N> {
             self.call_builder(
                 &requestPeginCall {
                     _peginRequestTxSPVProof,
@@ -13789,7 +15146,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         pub fn setSignatureManager(
             &self,
             _signatureManager: alloy::sol_types::private::Address,
-        ) -> alloy_contract::SolCallBuilder<T, &P, setSignatureManagerCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, setSignatureManagerCall, N> {
             self.call_builder(
                 &setSignatureManagerCall {
                     _signatureManager,
@@ -13800,7 +15157,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         pub fn setStreamManager(
             &self,
             _streamManager: alloy::sol_types::private::Address,
-        ) -> alloy_contract::SolCallBuilder<T, &P, setStreamManagerCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, setStreamManagerCall, N> {
             self.call_builder(
                 &setStreamManagerCall {
                     _streamManager,
@@ -13810,27 +15167,27 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         ///Creates a new call builder for the [`signatureManager`] function.
         pub fn signatureManager(
             &self,
-        ) -> alloy_contract::SolCallBuilder<T, &P, signatureManagerCall, N> {
-            self.call_builder(&signatureManagerCall {})
+        ) -> alloy_contract::SolCallBuilder<&P, signatureManagerCall, N> {
+            self.call_builder(&signatureManagerCall)
         }
         ///Creates a new call builder for the [`streamManager`] function.
         pub fn streamManager(
             &self,
-        ) -> alloy_contract::SolCallBuilder<T, &P, streamManagerCall, N> {
-            self.call_builder(&streamManagerCall {})
+        ) -> alloy_contract::SolCallBuilder<&P, streamManagerCall, N> {
+            self.call_builder(&streamManagerCall)
         }
         ///Creates a new call builder for the [`transferOwnership`] function.
         pub fn transferOwnership(
             &self,
             newOwner: alloy::sol_types::private::Address,
-        ) -> alloy_contract::SolCallBuilder<T, &P, transferOwnershipCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, transferOwnershipCall, N> {
             self.call_builder(&transferOwnershipCall { newOwner })
         }
         ///Creates a new call builder for the [`tryPegout`] function.
         pub fn tryPegout(
             &self,
             _userPubKey: alloy::sol_types::private::Bytes,
-        ) -> alloy_contract::SolCallBuilder<T, &P, tryPegoutCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, tryPegoutCall, N> {
             self.call_builder(&tryPegoutCall { _userPubKey })
         }
         ///Creates a new call builder for the [`upgradeToAndCall`] function.
@@ -13838,7 +15195,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             &self,
             newImplementation: alloy::sol_types::private::Address,
             data: alloy::sol_types::private::Bytes,
-        ) -> alloy_contract::SolCallBuilder<T, &P, upgradeToAndCallCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, upgradeToAndCallCall, N> {
             self.call_builder(
                 &upgradeToAndCallCall {
                     newImplementation,
@@ -13850,57 +15207,54 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
     /// Event filters.
     #[automatically_derived]
     impl<
-        T: alloy_contract::private::Transport + ::core::clone::Clone,
-        P: alloy_contract::private::Provider<T, N>,
+        P: alloy_contract::private::Provider<N>,
         N: alloy_contract::private::Network,
-    > PegManagerInstance<T, P, N> {
+    > PegManagerInstance<P, N> {
         /// Creates a new event filter using this contract instance's provider and address.
         ///
         /// Note that the type can be any event, not just those defined in this contract.
         /// Prefer using the other methods for building type-safe event filters.
         pub fn event_filter<E: alloy_sol_types::SolEvent>(
             &self,
-        ) -> alloy_contract::Event<T, &P, E, N> {
+        ) -> alloy_contract::Event<&P, E, N> {
             alloy_contract::Event::new_sol(&self.provider, &self.address)
         }
         ///Creates a new event filter for the [`Initialized`] event.
-        pub fn Initialized_filter(
-            &self,
-        ) -> alloy_contract::Event<T, &P, Initialized, N> {
+        pub fn Initialized_filter(&self) -> alloy_contract::Event<&P, Initialized, N> {
             self.event_filter::<Initialized>()
         }
         ///Creates a new event filter for the [`OwnershipTransferred`] event.
         pub fn OwnershipTransferred_filter(
             &self,
-        ) -> alloy_contract::Event<T, &P, OwnershipTransferred, N> {
+        ) -> alloy_contract::Event<&P, OwnershipTransferred, N> {
             self.event_filter::<OwnershipTransferred>()
         }
         ///Creates a new event filter for the [`PeginAccepted`] event.
         pub fn PeginAccepted_filter(
             &self,
-        ) -> alloy_contract::Event<T, &P, PeginAccepted, N> {
+        ) -> alloy_contract::Event<&P, PeginAccepted, N> {
             self.event_filter::<PeginAccepted>()
         }
         ///Creates a new event filter for the [`PeginRequested`] event.
         pub fn PeginRequested_filter(
             &self,
-        ) -> alloy_contract::Event<T, &P, PeginRequested, N> {
+        ) -> alloy_contract::Event<&P, PeginRequested, N> {
             self.event_filter::<PeginRequested>()
         }
         ///Creates a new event filter for the [`PegoutRegistered`] event.
         pub fn PegoutRegistered_filter(
             &self,
-        ) -> alloy_contract::Event<T, &P, PegoutRegistered, N> {
+        ) -> alloy_contract::Event<&P, PegoutRegistered, N> {
             self.event_filter::<PegoutRegistered>()
         }
         ///Creates a new event filter for the [`PegoutRequested`] event.
         pub fn PegoutRequested_filter(
             &self,
-        ) -> alloy_contract::Event<T, &P, PegoutRequested, N> {
+        ) -> alloy_contract::Event<&P, PegoutRequested, N> {
             self.event_filter::<PegoutRequested>()
         }
         ///Creates a new event filter for the [`Upgraded`] event.
-        pub fn Upgraded_filter(&self) -> alloy_contract::Event<T, &P, Upgraded, N> {
+        pub fn Upgraded_filter(&self) -> alloy_contract::Event<&P, Upgraded, N> {
             self.event_filter::<Upgraded>()
         }
     }
