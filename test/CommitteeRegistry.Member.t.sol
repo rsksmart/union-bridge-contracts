@@ -668,7 +668,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
             minimumDeposit,
             "member pre-staked should match the minimum deposit for stream"
         );
-        // Assert that requestedRoles[stream] is set
+        // Assert that requested role is set
         assertTrue(
             registry.getMemberRequestedRole(user, stream) == requestedRole,
             "member requested role should match the requested role for stream"
@@ -708,7 +708,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
             0,
             "member pre-staked should be 0 after unsuscribing for stream"
         );
-        // Assert that requestedRoles[stream] == Role.NONE
+        // Assert that requested role is NONE
         assertTrue(
             registry.getMemberRequestedRole(user, stream) == Role.NONE,
             "member requested role should be None after unsuscribing for stream"

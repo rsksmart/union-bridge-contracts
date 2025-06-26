@@ -48,7 +48,6 @@ struct PublicKeyRegistration {
 
 struct Member {
     bytes32[] publicKeys; // Public keys of the member using enum PublicKeyIndex
-    mapping(StreamDenomination => Role) requestedRoles;
     Balance balance;
     mapping(string key => string value) data;
 }
