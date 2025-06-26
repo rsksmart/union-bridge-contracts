@@ -1,18 +1,42 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-// Obtained from https://github.com/GNSPS/solidity-bytes-utils/blob/master/contracts/BytesLib.sol
+/// @title BytesHelper
+/// @notice Library for efficient bytes manipulation and conversion operations
+/// @dev Provides utility functions for working with bytes arrays and converting between data types
+/// @dev Used throughout the union bridge for Bitcoin transaction data manipulation
+/// @dev Obtained from https://github.com/GNSPS/solidity-bytes-utils/blob/master/contracts/BytesLib.sol
 library BytesHelper {
+    /// @notice Error thrown when attempting to access bytes beyond the array bounds
+    /// @param length The total length of the bytes array
+    /// @param from The starting index of the access
+    /// @param upTo The ending index of the access
     error indexOverflow(uint256 length, uint256 from, uint256 upTo);
 
+    /// @notice Compares two bytes arrays for equality
+    /// @dev Uses keccak256 hash comparison for efficient equality checking
+    /// @param a The first bytes array to compare
+    /// @param b The second bytes array to compare
+    /// @return true if the arrays are equal, false otherwise
     function compare(bytes memory a, bytes memory b) internal pure returns (bool) {
         return (a.length == b.length) && (keccak256(a) == keccak256(b));
     }
 
+    /// @notice Compares two strings for equality
+    /// @dev Converts strings to bytes and uses the compare function
+    /// @param a The first string to compare
+    /// @param b The second string to compare
+    /// @return true if the strings are equal, false otherwise
     function stringCompare(string memory a, string memory b) internal pure returns (bool) {
         return compare(bytes(a), bytes(b));
     }
 
+    /// @notice Extracts a substring from bytes array
+    /// @dev Converts the specified bytes range to a string
+    /// @param _bytes The source bytes array
+    /// @param _from The starting index (inclusive)
+    /// @param _length The number of bytes to extract
+    /// @return The extracted string
     function getBytesToString(bytes memory _bytes, uint256 _from, uint256 _length)
         internal
         pure
@@ -28,6 +52,11 @@ library BytesHelper {
         return string(slice(_bytes, _from, _length));
     }
 
+    /// @notice Extracts a bytes32 value from a bytes array
+    /// @dev Reads 32 bytes starting from the specified index
+    /// @param _bytes The source bytes array
+    /// @param _from The starting index
+    /// @return The extracted bytes32 value
     function bytesToBytes32(bytes memory _bytes, uint256 _from) internal pure returns (bytes32) {
         uint256 upTo = _from + 32;
         if (_bytes.length < upTo) {
@@ -41,6 +70,11 @@ library BytesHelper {
         return tempBytes32;
     }
 
+    /// @notice Extracts an address value from a bytes array
+    /// @dev Reads 20 bytes starting from the specified index
+    /// @param _bytes The source bytes array
+    /// @param _from The starting index
+    /// @return The extracted address value
     function bytesToAddress(bytes memory _bytes, uint256 _from) internal pure returns (address) {
         // Address are 20 bytes long
         uint256 upTo = _from + 20;
@@ -54,6 +88,11 @@ library BytesHelper {
         return tempAddress;
     }
 
+    /// @notice Extracts a uint64 value from a bytes array
+    /// @dev Reads 8 bytes starting from the specified index
+    /// @param _bytes The source bytes array
+    /// @param _from The starting index
+    /// @return The extracted uint64 value
     function bytesToUint64(bytes memory _bytes, uint256 _from) internal pure returns (uint64) {
         // uint64 are 8 bytes long
         uint256 upTo = _from + 8;
@@ -67,6 +106,11 @@ library BytesHelper {
         return tempUint;
     }
 
+    /// @notice Extracts a uint32 value from a bytes array
+    /// @dev Reads 4 bytes starting from the specified index
+    /// @param _bytes The source bytes array
+    /// @param _from The starting index
+    /// @return The extracted uint32 value
     function bytesToUint32(bytes memory _bytes, uint256 _from) internal pure returns (uint32) {
         // uint32 are 4 bytes long
         uint256 upTo = _from + 4;
@@ -80,6 +124,11 @@ library BytesHelper {
         return tempUint;
     }
 
+    /// @notice Extracts a uint24 value from a bytes array
+    /// @dev Reads 3 bytes starting from the specified index
+    /// @param _bytes The source bytes array
+    /// @param _from The starting index
+    /// @return The extracted uint24 value
     function bytesToUint24(bytes memory _bytes, uint256 _from) internal pure returns (uint24) {
         // uint24 are 3 bytes long
         uint256 upTo = _from + 3;
@@ -93,6 +142,11 @@ library BytesHelper {
         return tempUint;
     }
 
+    /// @notice Extracts a uint16 value from a bytes array
+    /// @dev Reads 2 bytes starting from the specified index
+    /// @param _bytes The source bytes array
+    /// @param _from The starting index
+    /// @return The extracted uint16 value
     function bytesToUint16(bytes memory _bytes, uint256 _from) internal pure returns (uint16) {
         // uint16 are 2 bytes long
         uint256 upTo = _from + 2;
@@ -106,6 +160,13 @@ library BytesHelper {
         return tempUint;
     }
 
+    /// @notice Extracts a slice of bytes from a bytes array
+    /// @dev Creates a new bytes array containing the specified range
+    /// @dev Uses assembly for efficient memory operations
+    /// @param _bytes The source bytes array
+    /// @param _start The starting index (inclusive)
+    /// @param _length The number of bytes to extract
+    /// @return The extracted bytes slice
     function slice(bytes memory _bytes, uint256 _start, uint256 _length) internal pure returns (bytes memory) {
         if (_length + 31 < _length) {
             // slice_overflow

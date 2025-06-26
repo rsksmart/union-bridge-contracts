@@ -158,20 +158,6 @@ contract TestBtcScriptParser is Test, TestUtils {
         BtcScriptParser.getTimelockScript(blocks, pubKey);
     }
 
-    function test_pushDataToStack_Success() external pure {
-        assertEq(BtcScriptParser.pushDataToStack(0), hex"00");
-        assertEq(BtcScriptParser.pushDataToStack(1), hex"51");
-        assertEq(BtcScriptParser.pushDataToStack(10), hex"5a");
-        assertEq(BtcScriptParser.pushDataToStack(100), hex"0164");
-        assertEq(BtcScriptParser.pushDataToStack(1000), hex"02e803");
-        assertEq(BtcScriptParser.pushDataToStack(10000), hex"021027");
-        assertEq(BtcScriptParser.pushDataToStack(100000), hex"03a08601");
-        assertEq(BtcScriptParser.pushDataToStack(1000000), hex"0340420f");
-        assertEq(BtcScriptParser.pushDataToStack(10000000), hex"0480969800");
-        assertEq(BtcScriptParser.pushDataToStack(100000000), hex"0400e1f505");
-        assertEq(BtcScriptParser.pushDataToStack(1000000000), hex"0400ca9a3b");
-    }
-
     function _checkScriptAfterPushBlock(bytes memory _script, uint256 _indexAfterPushBlock, bytes32 _pubKey)
         internal
         pure

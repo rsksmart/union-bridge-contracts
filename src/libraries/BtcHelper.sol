@@ -9,14 +9,16 @@ import "./Constants.sol";
  */
 
 library BtcHelper {
-    /// @dev returns hex bytes with _size in btc compact _size
-    /// The first byte indicates which bytes encode the integer:
-    /// <= FC – This byte (0 - 252)
-    /// FD – The next two bytes (253 - 65535)
-    /// FE – The next four bytes (65536 - 4294967295)
-    /// FF – The next eight bytes (4294967296 - 18446744073709551615)
-    // Note: Bytes encoding the integer are in little endian.
-    // https://learnmeabitcoin.com/technical/general/compact-_size/
+    /// @notice Converts a size value to Bitcoin's compact size format
+    /// @dev The first byte indicates which bytes encode the integer:
+    /// @dev <= FC – This byte (0 - 252)
+    /// @dev FD – The next two bytes (253 - 65535)
+    /// @dev FE – The next four bytes (65536 - 4294967295)
+    /// @dev FF – The next eight bytes (4294967296 - 18446744073709551615)
+    /// @dev Note: Bytes encoding the integer are in little endian
+    /// @dev See: https://learnmeabitcoin.com/technical/general/compact-_size/
+    /// @param _size The size value to convert
+    /// @return The compact size encoded bytes
     function toCompactSize(uint256 _size) internal pure returns (bytes memory) {
         if (_size <= 252) {
             return abi.encodePacked(uint8(_size));
@@ -28,27 +30,33 @@ library BtcHelper {
         return abi.encodePacked(uint8(0xFF), BtcHelper.reverseUint64(uint64(_size)));
     }
 
-    /// @notice          Implements bitcoin's hash160 (rmd160(sha2()))
-    /// @dev             abi.encodePacked changes the return to bytes instead of bytes32
-    /// @param _b        The pre-image
-    /// @return          The digest
-    /// https://github.com/bob-collective/bitcoin-spv/blob/master/src/BTCUtils.sol#L192C5-L198C6
+    /// @notice Implements Bitcoin's hash160 (RIPEMD160(SHA256()))
+    /// @dev abi.encodePacked changes the return to bytes instead of bytes32
+    /// @dev Used for creating Bitcoin addresses from public keys
+    /// @param _b The pre-image to hash
+    /// @return The RIPEMD160(SHA256()) digest
+    /// @dev See: https://github.com/bob-collective/bitcoin-spv/blob/master/src/BTCUtils.sol#L192C5-L198C6
     function hash160(bytes memory _b) internal pure returns (bytes20) {
         return ripemd160(abi.encodePacked(sha256(_b)));
     }
 
-    /// @dev This is how Bitcoin calls double sha256 and we reverse it to correct endian
+    /// @notice Implements Bitcoin's double SHA256 hash with endianness correction
+    /// @dev This is how Bitcoin calls double SHA256 and we reverse it to correct endian
+    /// @dev Converts from little endian (used by Bitcoin) to big endian (used by humans)
+    /// @dev See: https://learnmeabitcoin.com/technical/general/byte-order/
+    /// @param _toHash The data to hash
+    /// @return The double SHA256 hash in big endian format
     function hash256(bytes memory _toHash) internal pure returns (bytes32) {
         bytes32 littleEndianHash = sha256(abi.encode(sha256(_toHash)));
-        // reverse bits
-        // converts from little endian (used by Bitcoin) to big endian (used by humans)
-        // https://learnmeabitcoin.com/technical/general/byte-order/#:~:text=In%20both%20transaction%20and%20block,we%20humans%20write%20numbers%20down.
         return reverseBytes32(littleEndianHash);
     }
 
+    /// @notice Reverses the byte order of a bytes32 value
+    /// @dev Used to convert between little endian (used by Bitcoin) and big endian (used by humans)
+    /// @dev See: https://ethereum.stackexchange.com/questions/83626/how-to-reverse-byte-order-in-uint256-or-bytes32#answer-83627
+    /// @param _input The bytes32 value to reverse
+    /// @return v The reversed bytes32 value
     function reverseBytes32(bytes32 _input) internal pure returns (bytes32 v) {
-        // Function to reverse bytes
-        // https://ethereum.stackexchange.com/questions/83626/how-to-reverse-byte-order-in-uint256-or-bytes32#answer-83627
         v = _input;
 
         // swap bytes
@@ -71,10 +79,11 @@ library BtcHelper {
         v = (v >> 128) | (v << 128);
     }
 
-    /// @notice          Changes the endianness of a uint64
-    /// @param _b        The unsigned integer to reverse
-    /// @return v        The reversed value
-    /// https://github.com/bob-collective/bitcoin-spv/blob/master/src/BTCUtils.sol#L127
+    /// @notice Changes the endianness of a uint64
+    /// @dev Converts between little endian (used by Bitcoin) and big endian (used by humans)
+    /// @param _b The unsigned integer to reverse
+    /// @return v The reversed value
+    /// @dev See: https://github.com/bob-collective/bitcoin-spv/blob/master/src/BTCUtils.sol#L127
     function reverseUint64(uint64 _b) internal pure returns (uint64 v) {
         v = _b;
 
@@ -86,10 +95,11 @@ library BtcHelper {
         v = (v >> 32) | (v << 32);
     }
 
-    /// @notice          Changes the endianness of a uint32
-    /// @param _b        The unsigned integer to reverse
-    /// @return v        The reversed value
-    /// https://github.com/bob-collective/bitcoin-spv/blob/master/src/BTCUtils.sol#L143
+    /// @notice Changes the endianness of a uint32
+    /// @dev Converts between little endian (used by Bitcoin) and big endian (used by humans)
+    /// @param _b The unsigned integer to reverse
+    /// @return v The reversed value
+    /// @dev See: https://github.com/bob-collective/bitcoin-spv/blob/master/src/BTCUtils.sol#L143
     function reverseUint32(uint32 _b) internal pure returns (uint32 v) {
         v = _b;
 
@@ -99,30 +109,45 @@ library BtcHelper {
         v = (v >> 16) | (v << 16);
     }
 
-    /// @notice          Changes the endianness of a uint24
-    /// @param _b        The unsigned integer to reverse
-    /// @return v        The reversed value
+    /// @notice Changes the endianness of a uint24
+    /// @dev Converts between little endian (used by Bitcoin) and big endian (used by humans)
+    /// @param _b The unsigned integer to reverse
+    /// @return v The reversed value
     function reverseUint24(uint24 _b) internal pure returns (uint24 v) {
         v = (_b << 16) | (_b & 0x00FF00) | (_b >> 16);
     }
 
-    /// @notice          Changes the endianness of a uint16
-    /// @param _b        The unsigned integer to reverse
-    /// @return v        The reversed value
-    /// https://github.com/bob-collective/bitcoin-spv/blob/master/src/BTCUtils.sol#L163
+    /// @notice Changes the endianness of a uint16
+    /// @dev Converts between little endian (used by Bitcoin) and big endian (used by humans)
+    /// @param _b The unsigned integer to reverse
+    /// @return v The reversed value
+    /// @dev See: https://github.com/bob-collective/bitcoin-spv/blob/master/src/BTCUtils.sol#L163
     function reverseUint16(uint16 _b) internal pure returns (uint16 v) {
         v = (_b << 8) | (_b >> 8);
     }
 
-    // TODO calculate fee and speed up properly from the amount
-    function calculateFeeAndSpeedUp(uint64) internal pure returns (uint64, uint64) {
+    /// @notice Calculate fee and speed-up amounts for Bitcoin transactions
+    /// @dev TODO: calculate fee and speed up properly from the amount
+    /// @dev Currently returns fixed values from Constants
+    /// @param _amount The transaction amount (currently unused)
+    /// @return The fee amount in satoshis
+    /// @return The speed-up amount in satoshis
+    function calculateFeeAndSpeedUp(uint64 _amount) internal pure returns (uint64, uint64) {
         return (Constants.P2TR_FEE, Constants.SPEED_UP_AMOUNT);
     }
 
+    /// @notice Convert wei amount to satoshis
+    /// @dev Divides by 10^10 to convert from wei used in RSK to satoshis used in Bitcoin
+    /// @param _amount The amount in wei
+    /// @return The amount in satoshis
     function weiToSatoshi(uint256 _amount) internal pure returns (uint256) {
         return _amount / 10 ** 10;
     }
 
+    /// @notice Convert satoshis to wei amount
+    /// @dev Multiplies by 10^10 to convert from satoshis used in Bitcoin to wei used in RSK
+    /// @param _amount The amount in satoshis
+    /// @return The amount in wei
     function satoshiToWei(uint256 _amount) internal pure returns (uint256) {
         return _amount * 10 ** 10;
     }
