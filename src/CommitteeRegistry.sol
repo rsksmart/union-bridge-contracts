@@ -345,9 +345,9 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     function _getMemberApplicationData(address _address, StreamDenomination _denomination)
         internal
         view
-        returns (ApplicationData memory applicationData)
+        returns (ApplicationData storage)
     {
-        applicationData = _getMember(_address).balance.applications[uint8(_denomination)];
+        return _getMember(_address).balance.applications[uint8(_denomination)];
     }
 
     function getMemberRequestedRole(address _memberAddress, StreamDenomination _denomination)
@@ -735,7 +735,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         emit CommitteeMinMembersUpdated(_minMembers);
     }
 
-    function releaseCommittee(uint64 _streamId, uint64 _packetNumber) external {
+    function releaseCommittee(uint64 _streamId, uint64 _packetNumber) external onlyPegManager {
         uint256 committeeId = streamManager.getCommitteeId(_streamId, _packetNumber);
         CommitteeMember[] memory committeeMembers = _getCommitteeMembers(committeeId);
 
@@ -746,7 +746,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
             if (application.reApply && application.requestedRole == Role.NONE) {
                 // If the member has reApply set to true, we should move the staked amount to pre-staked
                 // and set them as candidate again (except the case they are already a candidate which can happen in some edge cases)
-                _resetMemberAplication(
+                _reapplyToStream(
                     committeeMembers[i].memberAddress,
                     StreamDenomination(_streamId),
                     _packetNumber,
@@ -759,7 +759,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         }
     }
 
-    function _resetMemberAplication(
+    function _reapplyToStream(
         address _memberAddress,
         StreamDenomination _denomination,
         uint64 _packetNumber,
@@ -785,8 +785,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     function _moveStakedToAvailable(address _memberAddress, StreamDenomination _denomination, uint64 _packetNumber)
         internal
     {
-        Member storage member = _getMember(_memberAddress);
-        Balance storage balance = member.balance;
+        Balance storage balance = _getMember(_memberAddress).balance;
         uint256 stakedAmount = balance.staked[uint8(_denomination)][_packetNumber];
         balance.available += stakedAmount;
         balance.staked[uint8(_denomination)][_packetNumber] = 0;
@@ -794,21 +793,16 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         emit NewAvailableBalance(_memberAddress, balance.available, stakedAmount);
     }
 
-    function setReApplyForStream(address _memberAddress, StreamDenomination _denomination, bool _reApply) external {
-        Member storage member = _getMember(_memberAddress);
-        ApplicationData storage applicationData = member.balance.applications[uint8(_denomination)];
+    function setReApplyForStream(StreamDenomination _denomination, bool _reApply) external {
+        // ApplicationData storage applicationData = _getMember(msg.sender).balance.applications[uint8(_denomination)];
+        ApplicationData storage applicationData = _getMemberApplicationData(msg.sender, _denomination);
         applicationData.reApply = _reApply;
-        emit MemberReApplySet(_memberAddress, _denomination, _reApply);
+
+        emit MemberReApplyUpdated(msg.sender, _denomination, _reApply);
     }
 
-    function getReApplyForStream(address _memberAddress, StreamDenomination _denomination)
-        external
-        view
-        returns (bool)
-    {
-        Member storage member = _getMember(_memberAddress);
-        ApplicationData storage applicationData = member.balance.applications[uint8(_denomination)];
-        return applicationData.reApply;
+    function getReApplyForStream(StreamDenomination _denomination) external view returns (bool) {
+        return _getMemberApplicationData(msg.sender, _denomination).reApply;
     }
 
     /// ==== Modifiers ====

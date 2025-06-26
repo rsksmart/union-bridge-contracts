@@ -78,7 +78,8 @@ contract TestCommitteeRegistry is Test, HelperContract {
             minimumDeposit,
             "member pre-staked should match the minimum deposit"
         );
-        assertTrue(registry.getReApplyForStream(user, DEFAULT_STREAM), "reApply should be true by default");
+        vm.prank(user);
+        assertTrue(registry.getReApplyForStream(DEFAULT_STREAM), "reApply should be true by default");
 
         address[] memory roleCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, _role);
         address[] memory oppositeRoleCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, oppositeRole);
@@ -988,26 +989,28 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Set reApply to false
         // Assert
         vm.expectEmit(address(registry));
-        emit ICommitteeRegistry.MemberReApplySet(user, DEFAULT_STREAM, false);
+        emit ICommitteeRegistry.MemberReApplyUpdated(user, DEFAULT_STREAM, false);
 
         // Act
         vm.prank(user);
-        registry.setReApplyForStream(user, DEFAULT_STREAM, false);
+        registry.setReApplyForStream(DEFAULT_STREAM, false);
 
         // Assert
-        assertFalse(registry.getReApplyForStream(user, DEFAULT_STREAM), "reApply should be false at this point");
+        vm.prank(user);
+        assertFalse(registry.getReApplyForStream(DEFAULT_STREAM), "reApply should be false at this point");
 
         // Set reApply to true
         // Assert
         vm.expectEmit(address(registry));
-        emit ICommitteeRegistry.MemberReApplySet(user, DEFAULT_STREAM, true);
+        emit ICommitteeRegistry.MemberReApplyUpdated(user, DEFAULT_STREAM, true);
 
         // Act
         vm.prank(user);
-        registry.setReApplyForStream(user, DEFAULT_STREAM, true);
+        registry.setReApplyForStream(DEFAULT_STREAM, true);
 
         // Assert
-        assertTrue(registry.getReApplyForStream(user, DEFAULT_STREAM), "reApply should be true at this point");
+        vm.prank(user);
+        assertTrue(registry.getReApplyForStream(DEFAULT_STREAM), "reApply should be true at this point");
     }
 
     function test_setReApplyForStream_Success_beforeApply() external {
@@ -1015,69 +1018,75 @@ contract TestCommitteeRegistry is Test, HelperContract {
         uint256 privKey = uint256(1);
         PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(privKey);
         address user = vm.addr(privKey);
+        StreamDenomination denomination = StreamDenomination._0_001BTC;
+        StreamDenomination differentDenomination = StreamDenomination._0_01BTC;
+
         // Register the user to a different stream to ensure the user is registered
-        step_applyToStreamForStream(user, pubKeysRegistration, StreamDenomination._1BTC, Role.OPERATOR);
+        step_applyToStreamForStream(user, pubKeysRegistration, differentDenomination, Role.OPERATOR);
 
         // Assert
-        assertTrue(registry.getReApplyForStream(user, DEFAULT_STREAM), "reApply should be true at this point");
+        vm.prank(user);
+        assertTrue(registry.getReApplyForStream(denomination), "reApply should be true at this point");
 
-        // Act
+        // Arrange
         // Set reApply to false
         vm.prank(user);
-        registry.setReApplyForStream(user, DEFAULT_STREAM, false);
+        registry.setReApplyForStream(denomination, false);
 
-        // Assert
-        assertFalse(registry.getReApplyForStream(user, DEFAULT_STREAM), "reApply should be false at this point");
-
+        // Act
         // Apply to the default stream
-        step_applyToStreamForStream(user, pubKeysRegistration, DEFAULT_STREAM, Role.OPERATOR);
+        step_applyToStreamForStream(user, pubKeysRegistration, denomination, Role.OPERATOR);
 
         // Assert that it hasn't changed after applying to that stream
-        assertFalse(registry.getReApplyForStream(user, DEFAULT_STREAM), "reApply should be false at this point");
+        vm.prank(user);
+        assertFalse(registry.getReApplyForStream(denomination), "reApply should be false at this point");
     }
 
     function test_setReApplyForStream_Revert_MemberNotRegistered() external {
         // Arrange
-        uint256 privKey = uint256(1);
-        address user = vm.addr(privKey);
+        address user = vm.addr(uint256(1));
 
         // Assert
         vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.MemberNotRegistered.selector, user));
 
         // Act
         vm.prank(user);
-        registry.setReApplyForStream(user, DEFAULT_STREAM, true);
+        registry.setReApplyForStream(DEFAULT_STREAM, true);
     }
 
     function test_getReApplyForStream_Revert_MemberNotRegistered() external {
         // Arrange
-        uint256 privKey = uint256(1);
-        address user = vm.addr(privKey);
+        address user = vm.addr(uint256(1));
 
         // Assert
         vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.MemberNotRegistered.selector, user));
 
         // Act
         vm.prank(user);
-        registry.getReApplyForStream(user, DEFAULT_STREAM);
+        registry.getReApplyForStream(DEFAULT_STREAM);
+    }
+
+    function assertCandidateAmount(StreamDenomination denomination, uint256 expectedAmount) internal view {
+        uint256 candidatesAmount = registry.getCommitteeCandidates(denomination, Role.OPERATOR).length;
+        candidatesAmount += registry.getCommitteeCandidates(denomination, Role.WATCHTOWER).length;
+        assertEq(candidatesAmount, expectedAmount, "Candidate amount doesn't match expected amount");
     }
 
     function test_integration_onPacketClosed_reapplyTrue() external {
         // Arrange
         StreamDenomination denomination = StreamDenomination._0_01BTC;
-        Committee memory committee;
         RegisterPegoutSetup memory setup;
-        (committee,) = setup_completeCommittee();
+        (Committee memory committee,) = setup_completeCommittee();
         uint256 minimumDeposit = registry.getMinimumDeposit(denomination);
 
         // Perform peg flow for all slots in the packet except the last one
-        for (uint256 i = 0; i < Constants.SLOTS_PER_PACKET - 1; i++) {
-            setup = setup_pegout();
-            pm.registerPegout(setup.pegoutTxSPVProof);
-        }
+        setup_multiplePegFlows(Constants.SLOTS_PER_PACKET - 1);
 
-        // Perform peg flow for the last slot up until try pegout
+        // Perform peg flow up until try pegout for the last slot
         setup = setup_pegout();
+
+        // get the amount of candidates before the packet is closed
+        assertCandidateAmount(denomination, 0);
 
         // Assert
         vm.expectEmit(address(pm));
@@ -1086,12 +1095,16 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Act
         pm.registerPegout(setup.pegoutTxSPVProof);
 
+        // Assert that the amount of candidates after the packet is closed is equal to the committee size
+        assertCandidateAmount(denomination, committee.members.length);
+
         // Assert that member reapplied correctly
         for (uint256 i = 0; i < committee.members.length; i++) {
             address user = committee.members[i].memberAddress;
 
             // Assert
-            assertTrue(registry.getReApplyForStream(user, denomination), "reApply should be true at this point");
+            vm.prank(user);
+            assertTrue(registry.getReApplyForStream(denomination), "reApply should be true at this point");
             assertEq(
                 registry.getMemberPreStakedBalance(user, denomination),
                 minimumDeposit,
@@ -1100,6 +1113,10 @@ contract TestCommitteeRegistry is Test, HelperContract {
             assertTrue(
                 registry.getMemberRequestedRole(user, denomination) == committee.members[i].role,
                 "member requested role should match the requested role"
+            );
+            assertTrue(
+                registry.getMemberRequestedRole(user, denomination) != Role.NONE,
+                "member requested role should not be NONE"
             );
             assertEq(registry.getMemberAvailableBalance(user), 0, "member available balance should be 0");
             assertTrue(
@@ -1118,18 +1135,16 @@ contract TestCommitteeRegistry is Test, HelperContract {
         uint256 minimumDeposit = registry.getMinimumDeposit(denomination);
 
         // Perform peg flow for all slots in the packet except the last one
-        for (uint256 i = 0; i < Constants.SLOTS_PER_PACKET - 1; i++) {
-            setup = setup_pegout();
-            pm.registerPegout(setup.pegoutTxSPVProof);
-        }
+        setup_multiplePegFlows(Constants.SLOTS_PER_PACKET - 1);
 
-        // Perform peg flow for the last slot up until try pegout
+        // Perform peg flow up until try pegout for the last slot
         setup = setup_pegout();
 
         for (uint256 i = 0; i < committee.members.length; i++) {
             address user = committee.members[i].memberAddress;
             // Set reApply to false
-            registry.setReApplyForStream(user, denomination, false);
+            vm.prank(user);
+            registry.setReApplyForStream(denomination, false);
         }
 
         // Assert
@@ -1139,12 +1154,16 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Act
         pm.registerPegout(setup.pegoutTxSPVProof);
 
-        // Assert that member reapplied correctly
+        // Assert that the amount of candidates after the packet is closed is equal to 0
+        assertCandidateAmount(denomination, 0);
+
+        // Assert that all members reapplied correctly
         for (uint256 i = 0; i < committee.members.length; i++) {
             address user = committee.members[i].memberAddress;
 
             // Assert
-            assertFalse(registry.getReApplyForStream(user, denomination), "reApply should be false at this point");
+            vm.prank(user);
+            assertFalse(registry.getReApplyForStream(denomination), "reApply should be false at this point");
             assertTrue(
                 registry.getMemberPreStakedBalance(user, denomination) == 0,
                 "member pre-staked should be 0 after packet closed"
@@ -1166,28 +1185,20 @@ contract TestCommitteeRegistry is Test, HelperContract {
     function test_integration_onPacketClosed_alreadyCandidate() external {
         // Arrange
         StreamDenomination denomination = StreamDenomination._0_01BTC;
-        Committee memory committee;
         RegisterPegoutSetup memory setup;
-        (committee,) = setup_completeCommittee();
+        (Committee memory committee,) = setup_completeCommittee();
         uint256 minimumDeposit = registry.getMinimumDeposit(denomination);
 
         // Perform peg flow for all slots in the packet except the last one
-        for (uint256 i = 0; i < Constants.SLOTS_PER_PACKET - 1; i++) {
-            setup = setup_pegout();
-            pm.registerPegout(setup.pegoutTxSPVProof);
-        }
+        setup_multiplePegFlows(Constants.SLOTS_PER_PACKET - 1);
 
-        // Perform peg flow for the last slot up until try pegout
+        // Perform peg flow up until try pegout for the last slot
         setup = setup_pegout();
 
-        for (uint256 i = 0; i < committee.members.length; i++) {
-            address user = committee.members[i].memberAddress;
-            // Set reApply to false
-            PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(uint256(uint160(user))); // Generate public keys based on the address
-            vm.deal(user, minimumDeposit);
-            vm.prank(user);
-            registry.applyToStream{value: minimumDeposit}(denomination, committee.members[i].role, pubKeysRegistration);
-        }
+        setup_applyToStream_MultipleMembers(denomination, committee.members);
+
+        // Assert that the amount of candidates before the packet is closed is equal to the committee size
+        assertCandidateAmount(denomination, committee.members.length);
 
         // Assert
         vm.expectEmit(address(pm));
@@ -1196,12 +1207,16 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Act
         pm.registerPegout(setup.pegoutTxSPVProof);
 
+        // Assert that the amount of candidates after the packet is closed is equal to the committee size
+        assertCandidateAmount(denomination, committee.members.length);
+
         // Assert that member reapplied correctly
         for (uint256 i = 0; i < committee.members.length; i++) {
             address user = committee.members[i].memberAddress;
 
             // Assert
-            assertTrue(registry.getReApplyForStream(user, denomination), "reApply should be true at this point");
+            vm.prank(user);
+            assertTrue(registry.getReApplyForStream(denomination), "reApply should be true at this point");
             assertTrue(
                 registry.getMemberPreStakedBalance(user, denomination) == minimumDeposit,
                 "member pre-staked should be the minimum deposit"

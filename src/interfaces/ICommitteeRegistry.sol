@@ -175,23 +175,18 @@ interface ICommitteeRegistry {
         external
         returns (address);
 
-    /// @notice Release the committee members from a package (return or reapply staked money)
+    /// @notice Release the committee members from a packet (return or reapply staked money)
     function releaseCommittee(uint64 _streamId, uint64 _packetNumber) external;
 
     /// @notice Set the ReApply flag for a stream
-    /// @param _memberAddress The address of the member
     /// @param _denomination The denomination of the stream
     /// @param _reApply The reapply flag to set
-    function setReApplyForStream(address _memberAddress, StreamDenomination _denomination, bool _reApply) external;
+    function setReApplyForStream(StreamDenomination _denomination, bool _reApply) external;
 
     /// @notice Get the ReApply flag for a stream
-    /// @param _memberAddress The address of the member
     /// @param _denomination The denomination of the stream
     /// @return reApply The reapply flag for the stream
-    function getReApplyForStream(address _memberAddress, StreamDenomination _denomination)
-        external
-        view
-        returns (bool);
+    function getReApplyForStream(StreamDenomination _denomination) external view returns (bool);
 
     /// ===================== Events =========================
     event NewCommittee(uint256 indexed committeeId, Committee _committee);
@@ -217,7 +212,7 @@ interface ICommitteeRegistry {
     event MemberReApplied(
         address indexed memberAddress, StreamDenomination denomination, Role role, uint256 preStakedBalance
     );
-    event MemberReApplySet(address indexed memberAddress, StreamDenomination denomination, bool reApply);
+    event MemberReApplyUpdated(address indexed memberAddress, StreamDenomination denomination, bool reApply);
 
     /// ==================== Errors =====================
     error RequestedDifferentStreamsAndRolesLength(uint256 streamsLength, uint256 rolesLength);
