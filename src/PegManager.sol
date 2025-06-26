@@ -53,24 +53,26 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
 
     /// @notice Mapping from accept peg-in transaction hash to temporary peg-out information
     mapping(bytes32 acceptPeginTxHash => PegoutTempInfo tempInfo) internal pegoutTempInfo;
+
+    /// @notice Mapping from peg-out signature hash to accept peg-in transaction hash
     mapping(bytes32 pegoutSignatureHash => bytes32 acceptPeginTxHash) internal pegoutToPeginTxHash;
 
     /// @notice Mapping from stream/packet/slot key to peg-out signature hash
     /// @dev Key = keccak256(abi.encodePacked(streamId, packetNumber, slotId))
     mapping(bytes32 key => bytes32 pegoutSignatureHash) internal pegoutSighashes;
 
-<<<<<<< HEAD
+    /// @notice Timeout for user take operations
     uint256 public userTakeTimeout;
+
+    /// @notice Timeout for operator take operations
     uint256 public operatorTakeTimeout;
 
-=======
     /// @notice Initializes the PegManager contract
     /// @param _initialOwner The initial owner of the contract
     /// @param _bridgeAddress The address of the pow-peg bridge contract
     /// @param _committeeRegistry The committee registry contract address
     /// @param _bitcoinManager The Bitcoin manager contract address
     /// @dev This function can only be called once during contract deployment
->>>>>>> 43c660e (NatSpec for contracts)
     function initialize(
         address _initialOwner,
         address payable _bridgeAddress,
