@@ -151,6 +151,8 @@ interface IPegManager {
         uint256 expireAt
     );
 
+    event PacketClosed(uint64 indexed streamId, uint64 indexed packetNumber);
+
     // ===================== Errors =====================
     error BitcoinManagerAddressZero();
     error CommitteeRegistryAddressZero();

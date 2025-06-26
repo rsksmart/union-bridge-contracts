@@ -344,7 +344,7 @@ abstract contract HelperContract is Test, TestUtils {
 
     function setup_pegout() internal returns (RegisterPegoutSetup memory setup) {
         // =========== Request Peg-In & Accept Peg-In ============
-        (BtcTransaction memory requestPeginTx, BtcTransaction memory acceptPeginTx) = setup_requestAndAcceptPeginFlow();
+        (, BtcTransaction memory acceptPeginTx) = setup_requestAndAcceptPeginFlow();
 
         // Get the accept peg-in tx hash that will be spent in the peg-out
         setup.acceptPeginTxHash = bitcoinManager.getBtcTxHash(acceptPeginTx);

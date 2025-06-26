@@ -20,7 +20,8 @@ import {
     PublicKeyIndex,
     PublicKeyRegistration,
     PUBLIC_KEYS_INDEX_LENGTH,
-    ApplicationData
+    ApplicationData,
+    Balance
 } from "./interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination, IStreamManager} from "./interfaces/IStreamManager.sol";
 import {IPegManager} from "./interfaces/IPegManager.sol";
@@ -69,7 +70,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         _member.balance.available = 0;
         for (uint256 i = 0; i < streamsLength; i++) {
             _member.balance.staked.push();
-            _member.balance.applications.push(ApplicationData({requestedRole: Role.NONE, preStaked: 0}));
+            _member.balance.applications.push(ApplicationData({requestedRole: Role.NONE, preStaked: 0, reApply: true}));
         }
     }
 
@@ -176,7 +177,8 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         internal
     {
         ApplicationData memory originalData = _member.balance.applications[uint8(_denomination)];
-        _member.balance.applications[uint8(_denomination)] = ApplicationData({requestedRole: Role.NONE, preStaked: 0});
+        _member.balance.applications[uint8(_denomination)] =
+            ApplicationData({requestedRole: Role.NONE, preStaked: 0, reApply: true});
 
         _member.balance.available += originalData.preStaked;
         emit NewAvailableBalance(_memberAddress, _member.balance.available, originalData.preStaked);
@@ -189,7 +191,8 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         Member storage member = _getMember(_memberAddress);
 
         ApplicationData memory originalData = member.balance.applications[uint8(_denomination)];
-        member.balance.applications[uint8(_denomination)] = ApplicationData({requestedRole: Role.NONE, preStaked: 0});
+        member.balance.applications[uint8(_denomination)] =
+            ApplicationData({requestedRole: Role.NONE, preStaked: 0, reApply: originalData.reApply});
 
         // Save the pre-staked amount to the staked balance
         member.balance.staked[uint8(_denomination)][_packetNumber] = originalData.preStaked;
@@ -319,6 +322,10 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     }
 
     function getCommitteeMembers(uint256 _committeeId) external view returns (CommitteeMember[] memory) {
+        return _getCommitteeMembers(_committeeId);
+    }
+
+    function _getCommitteeMembers(uint256 _committeeId) internal view returns (CommitteeMember[] memory) {
         return _getCommittee(_committeeId).members;
     }
 
@@ -726,6 +733,82 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         }
         minCommitteeMembers = _minMembers;
         emit CommitteeMinMembersUpdated(_minMembers);
+    }
+
+    function releaseCommittee(uint64 _streamId, uint64 _packetNumber) external {
+        uint256 committeeId = streamManager.getCommitteeId(_streamId, _packetNumber);
+        CommitteeMember[] memory committeeMembers = _getCommitteeMembers(committeeId);
+
+        for (uint256 i = 0; i < committeeMembers.length; i++) {
+            Member storage member = _getMember(committeeMembers[i].memberAddress);
+            ApplicationData storage application = member.balance.applications[uint8(_streamId)];
+
+            if (application.reApply && application.requestedRole == Role.NONE) {
+                // If the member has reApply set to true, we should move the staked amount to pre-staked
+                // and set them as candidate again (except the case they are already a candidate which can happen in some edge cases)
+                _resetMemberAplication(
+                    committeeMembers[i].memberAddress,
+                    StreamDenomination(_streamId),
+                    _packetNumber,
+                    committeeMembers[i].role
+                );
+            } else {
+                // If the member has reApply set to false, we should move the staked amount to available
+                _moveStakedToAvailable(committeeMembers[i].memberAddress, StreamDenomination(_streamId), _packetNumber);
+            }
+        }
+    }
+
+    function _resetMemberAplication(
+        address _memberAddress,
+        StreamDenomination _denomination,
+        uint64 _packetNumber,
+        Role _role
+    ) internal {
+        Balance storage balance = _getMember(_memberAddress).balance;
+        ApplicationData storage application = balance.applications[uint8(_denomination)];
+
+        if (application.preStaked != 0) {
+            revert _inconsistentPreStakedBalanceAndRole(
+                _memberAddress, _denomination, application.preStaked, application.requestedRole
+            );
+        }
+        application.preStaked = balance.staked[uint8(_denomination)][_packetNumber];
+        balance.staked[uint8(_denomination)][_packetNumber] = 0;
+        application.requestedRole = _role;
+
+        committeesCandidates[_denomination][_role].push(_memberAddress);
+
+        emit MemberReApplied(_memberAddress, _denomination, _role, application.preStaked);
+    }
+
+    function _moveStakedToAvailable(address _memberAddress, StreamDenomination _denomination, uint64 _packetNumber)
+        internal
+    {
+        Member storage member = _getMember(_memberAddress);
+        Balance storage balance = member.balance;
+        uint256 stakedAmount = balance.staked[uint8(_denomination)][_packetNumber];
+        balance.available += stakedAmount;
+        balance.staked[uint8(_denomination)][_packetNumber] = 0;
+
+        emit NewAvailableBalance(_memberAddress, balance.available, stakedAmount);
+    }
+
+    function setReApplyForStream(address _memberAddress, StreamDenomination _denomination, bool _reApply) external {
+        Member storage member = _getMember(_memberAddress);
+        ApplicationData storage applicationData = member.balance.applications[uint8(_denomination)];
+        applicationData.reApply = _reApply;
+        emit MemberReApplySet(_memberAddress, _denomination, _reApply);
+    }
+
+    function getReApplyForStream(address _memberAddress, StreamDenomination _denomination)
+        external
+        view
+        returns (bool)
+    {
+        Member storage member = _getMember(_memberAddress);
+        ApplicationData storage applicationData = member.balance.applications[uint8(_denomination)];
+        return applicationData.reApply;
     }
 
     /// ==== Modifiers ====
