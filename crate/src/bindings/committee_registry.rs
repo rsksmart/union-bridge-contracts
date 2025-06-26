@@ -2099,12 +2099,12 @@ pub mod CommitteeRegistry {
             pub const NAME: &'static str = stringify!(@ name);
             /// Convert from the underlying value type.
             #[inline]
-            pub const fn from(value: u8) -> Self {
+            pub const fn from_underlying(value: u8) -> Self {
                 Self(value)
             }
             /// Return the underlying value.
             #[inline]
-            pub const fn into(self) -> u8 {
+            pub const fn into_underlying(self) -> u8 {
                 self.0
             }
             /// Return the single encoding of this value, delegating to the
@@ -2118,6 +2118,18 @@ pub mod CommitteeRegistry {
             #[inline]
             pub fn abi_encode_packed(&self) -> alloy_sol_types::private::Vec<u8> {
                 <Self as alloy_sol_types::SolType>::abi_encode_packed(&self.0)
+            }
+        }
+        #[automatically_derived]
+        impl From<u8> for PendingCommitteeStatus {
+            fn from(value: u8) -> Self {
+                Self::from_underlying(value)
+            }
+        }
+        #[automatically_derived]
+        impl From<PendingCommitteeStatus> for u8 {
+            fn from(value: PendingCommitteeStatus) -> Self {
+                value.into_underlying()
             }
         }
         #[automatically_derived]
@@ -2225,12 +2237,12 @@ pub mod CommitteeRegistry {
             pub const NAME: &'static str = stringify!(@ name);
             /// Convert from the underlying value type.
             #[inline]
-            pub const fn from(value: u8) -> Self {
+            pub const fn from_underlying(value: u8) -> Self {
                 Self(value)
             }
             /// Return the underlying value.
             #[inline]
-            pub const fn into(self) -> u8 {
+            pub const fn into_underlying(self) -> u8 {
                 self.0
             }
             /// Return the single encoding of this value, delegating to the
@@ -2244,6 +2256,18 @@ pub mod CommitteeRegistry {
             #[inline]
             pub fn abi_encode_packed(&self) -> alloy_sol_types::private::Vec<u8> {
                 <Self as alloy_sol_types::SolType>::abi_encode_packed(&self.0)
+            }
+        }
+        #[automatically_derived]
+        impl From<u8> for Role {
+            fn from(value: u8) -> Self {
+                Self::from_underlying(value)
+            }
+        }
+        #[automatically_derived]
+        impl From<Role> for u8 {
+            fn from(value: Role) -> Self {
+                value.into_underlying()
             }
         }
         #[automatically_derived]
@@ -2351,12 +2375,12 @@ pub mod CommitteeRegistry {
             pub const NAME: &'static str = stringify!(@ name);
             /// Convert from the underlying value type.
             #[inline]
-            pub const fn from(value: u8) -> Self {
+            pub const fn from_underlying(value: u8) -> Self {
                 Self(value)
             }
             /// Return the underlying value.
             #[inline]
-            pub const fn into(self) -> u8 {
+            pub const fn into_underlying(self) -> u8 {
                 self.0
             }
             /// Return the single encoding of this value, delegating to the
@@ -2370,6 +2394,18 @@ pub mod CommitteeRegistry {
             #[inline]
             pub fn abi_encode_packed(&self) -> alloy_sol_types::private::Vec<u8> {
                 <Self as alloy_sol_types::SolType>::abi_encode_packed(&self.0)
+            }
+        }
+        #[automatically_derived]
+        impl From<u8> for StreamDenomination {
+            fn from(value: u8) -> Self {
+                Self::from_underlying(value)
+            }
+        }
+        #[automatically_derived]
+        impl From<StreamDenomination> for u8 {
+            fn from(value: StreamDenomination) -> Self {
+                value.into_underlying()
             }
         }
         #[automatically_derived]
@@ -3250,6 +3286,13 @@ error AddressEmptyCode(address target);
                     ),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -3327,6 +3370,13 @@ error AlreadyRegisteredCommittee(uint256 committeeId);
                     > as alloy_sol_types::SolType>::tokenize(&self.committeeId),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -3400,6 +3450,13 @@ error AlreadyRegisteredMember(address memberAddress);
                     ),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -3472,6 +3529,13 @@ error CommitteeIsNotPending(uint64 streamId);
                         64,
                     > as alloy_sol_types::SolType>::tokenize(&self.streamId),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -3547,6 +3611,13 @@ error CommitteeNotFound(uint256 committeeId);
                         256,
                     > as alloy_sol_types::SolType>::tokenize(&self.committeeId),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -3635,6 +3706,13 @@ error DespositBondTooLow(uint256 sent, uint256 minDeposit);
                     > as alloy_sol_types::SolType>::tokenize(&self.minDeposit),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -3645,7 +3723,7 @@ error ECDSAInvalidSignature();
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct ECDSAInvalidSignature {}
+    pub struct ECDSAInvalidSignature;
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -3680,7 +3758,7 @@ error ECDSAInvalidSignature();
         #[doc(hidden)]
         impl ::core::convert::From<UnderlyingRustTuple<'_>> for ECDSAInvalidSignature {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self {}
+                Self
             }
         }
         #[automatically_derived]
@@ -3700,6 +3778,13 @@ error ECDSAInvalidSignature();
             #[inline]
             fn tokenize(&self) -> Self::Token<'_> {
                 ()
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -3778,6 +3863,13 @@ error ECDSAInvalidSignatureLength(uint256 length);
                     > as alloy_sol_types::SolType>::tokenize(&self.length),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -3850,6 +3942,13 @@ error ECDSAInvalidSignatureS(bytes32 s);
                         32,
                     > as alloy_sol_types::SolType>::tokenize(&self.s),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -3926,6 +4025,13 @@ error ERC1967InvalidImplementation(address implementation);
                     ),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -3936,7 +4042,7 @@ error ERC1967NonPayable();
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct ERC1967NonPayable {}
+    pub struct ERC1967NonPayable;
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -3971,7 +4077,7 @@ error ERC1967NonPayable();
         #[doc(hidden)]
         impl ::core::convert::From<UnderlyingRustTuple<'_>> for ERC1967NonPayable {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self {}
+                Self
             }
         }
         #[automatically_derived]
@@ -3992,6 +4098,13 @@ error ERC1967NonPayable();
             fn tokenize(&self) -> Self::Token<'_> {
                 ()
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -4002,7 +4115,7 @@ error FailedCall();
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct FailedCall {}
+    pub struct FailedCall;
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -4037,7 +4150,7 @@ error FailedCall();
         #[doc(hidden)]
         impl ::core::convert::From<UnderlyingRustTuple<'_>> for FailedCall {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self {}
+                Self
             }
         }
         #[automatically_derived]
@@ -4057,6 +4170,13 @@ error FailedCall();
             #[inline]
             fn tokenize(&self) -> Self::Token<'_> {
                 ()
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -4145,6 +4265,13 @@ error FailedToSendRSK(address memberAddress, uint256 amount);
                     > as alloy_sol_types::SolType>::tokenize(&self.amount),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -4155,7 +4282,7 @@ error InvalidAgregatedKey();
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct InvalidAgregatedKey {}
+    pub struct InvalidAgregatedKey;
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -4190,7 +4317,7 @@ error InvalidAgregatedKey();
         #[doc(hidden)]
         impl ::core::convert::From<UnderlyingRustTuple<'_>> for InvalidAgregatedKey {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self {}
+                Self
             }
         }
         #[automatically_derived]
@@ -4211,6 +4338,13 @@ error InvalidAgregatedKey();
             fn tokenize(&self) -> Self::Token<'_> {
                 ()
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -4221,7 +4355,7 @@ error InvalidInitialization();
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct InvalidInitialization {}
+    pub struct InvalidInitialization;
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -4256,7 +4390,7 @@ error InvalidInitialization();
         #[doc(hidden)]
         impl ::core::convert::From<UnderlyingRustTuple<'_>> for InvalidInitialization {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self {}
+                Self
             }
         }
         #[automatically_derived]
@@ -4276,6 +4410,13 @@ error InvalidInitialization();
             #[inline]
             fn tokenize(&self) -> Self::Token<'_> {
                 ()
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -4378,6 +4519,13 @@ error InvalidMinMembers(uint256 minMembers, uint256 minCommitteWatchtowers, uint
                     > as alloy_sol_types::SolType>::tokenize(&self.minCommitteOperators),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -4478,6 +4626,13 @@ error InvalidMinOperators(uint256 minMembers, uint256 minCommitteWatchtowers, ui
                         256,
                     > as alloy_sol_types::SolType>::tokenize(&self.minCommitteOperators),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -4580,6 +4735,13 @@ error InvalidMinWatchtowers(uint256 minMembers, uint256 minCommitteWatchtowers, 
                     > as alloy_sol_types::SolType>::tokenize(&self.minCommitteOperators),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -4666,6 +4828,13 @@ error InvalidPublicKeysLength(uint256 publicKeysLength, uint256 expectedLength);
                         256,
                     > as alloy_sol_types::SolType>::tokenize(&self.expectedLength),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -4775,6 +4944,13 @@ error InvalidSignature(uint256 index, PublicKeyRegistration publicKey, address r
                     ),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -4785,7 +4961,7 @@ error InvalidZeroAddress();
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct InvalidZeroAddress {}
+    pub struct InvalidZeroAddress;
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -4820,7 +4996,7 @@ error InvalidZeroAddress();
         #[doc(hidden)]
         impl ::core::convert::From<UnderlyingRustTuple<'_>> for InvalidZeroAddress {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self {}
+                Self
             }
         }
         #[automatically_derived]
@@ -4840,6 +5016,13 @@ error InvalidZeroAddress();
             #[inline]
             fn tokenize(&self) -> Self::Token<'_> {
                 ()
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -4936,6 +5119,13 @@ error InvalidZeroPublicKey(uint256 index, bytes32 publicKeyX, bytes32 publicKeyY
                     > as alloy_sol_types::SolType>::tokenize(&self.publicKeyY),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -5023,6 +5213,13 @@ error InvalidZeroSignature(uint256 index, PublicKeyRegistration publicKey);
                     ),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -5033,7 +5230,7 @@ error InvalidZeroValue();
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct InvalidZeroValue {}
+    pub struct InvalidZeroValue;
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -5068,7 +5265,7 @@ error InvalidZeroValue();
         #[doc(hidden)]
         impl ::core::convert::From<UnderlyingRustTuple<'_>> for InvalidZeroValue {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self {}
+                Self
             }
         }
         #[automatically_derived]
@@ -5088,6 +5285,13 @@ error InvalidZeroValue();
             #[inline]
             fn tokenize(&self) -> Self::Token<'_> {
                 ()
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -5195,6 +5399,13 @@ error MemberAlreadyRegisteredForStream(address memberAddress, StreamDenomination
                     <Role as alloy_sol_types::SolType>::tokenize(&self.currentRole),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -5269,6 +5480,13 @@ error MemberInfoAlreadyDeposited(address memberAddress);
                         &self.memberAddress,
                     ),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -5359,6 +5577,13 @@ error MemberIsInPendingCommittee(address memberAddress, StreamDenomination denom
                     ),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -5448,6 +5673,13 @@ error MemberIsNotCandidateForStream(address member, StreamDenomination stream);
                     ),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -5520,6 +5752,13 @@ error MemberNotFound(address memberAddress);
                         &self.memberAddress,
                     ),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -5605,6 +5844,13 @@ error MemberNotInCommittee(uint64 streamId, address memberAddress);
                     ),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -5677,6 +5923,13 @@ error MemberNotRegistered(address memberAddress);
                         &self.memberAddress,
                     ),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -5753,6 +6006,13 @@ error NoAvailableBalanceToWithdraw(address member);
                     ),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -5763,7 +6023,7 @@ error NoCommitteeMembers();
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct NoCommitteeMembers {}
+    pub struct NoCommitteeMembers;
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -5798,7 +6058,7 @@ error NoCommitteeMembers();
         #[doc(hidden)]
         impl ::core::convert::From<UnderlyingRustTuple<'_>> for NoCommitteeMembers {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self {}
+                Self
             }
         }
         #[automatically_derived]
@@ -5818,6 +6078,13 @@ error NoCommitteeMembers();
             #[inline]
             fn tokenize(&self) -> Self::Token<'_> {
                 ()
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -5892,6 +6159,13 @@ error NotEnoughMembers(uint64 streamId);
                     > as alloy_sol_types::SolType>::tokenize(&self.streamId),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -5964,6 +6238,13 @@ error NotEnoughOperators(uint64 streamId);
                         64,
                     > as alloy_sol_types::SolType>::tokenize(&self.streamId),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -6038,6 +6319,13 @@ error NotEnoughWatchtowers(uint64 streamId);
                     > as alloy_sol_types::SolType>::tokenize(&self.streamId),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -6048,7 +6336,7 @@ error NotInitializing();
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct NotInitializing {}
+    pub struct NotInitializing;
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -6083,7 +6371,7 @@ error NotInitializing();
         #[doc(hidden)]
         impl ::core::convert::From<UnderlyingRustTuple<'_>> for NotInitializing {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self {}
+                Self
             }
         }
         #[automatically_derived]
@@ -6103,6 +6391,13 @@ error NotInitializing();
             #[inline]
             fn tokenize(&self) -> Self::Token<'_> {
                 ()
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -6176,6 +6471,13 @@ error OwnableInvalidOwner(address owner);
                         &self.owner,
                     ),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -6251,6 +6553,13 @@ error OwnableUnauthorizedAccount(address account);
                         &self.account,
                     ),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -6349,6 +6658,13 @@ error PendingCommitteeNotExpired(uint64 streamId, uint256 createdAt, uint256 exp
                     > as alloy_sol_types::SolType>::tokenize(&self.expireAt),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -6443,6 +6759,13 @@ error PublicKeyMismatch(uint256 index, bytes32 currentPubKey, bytes32 newPubKey)
                         32,
                     > as alloy_sol_types::SolType>::tokenize(&self.newPubKey),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -6552,6 +6875,13 @@ error RepeatedPublicKeys(uint256 index, bytes32 publicKeyX, uint256 repeatedInde
                     > as alloy_sol_types::SolType>::tokenize(&self.repeatedPublicKeyX),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -6640,6 +6970,13 @@ error RequestedDifferentStreamsAndRolesLength(uint256 streamsLength, uint256 rol
                         256,
                     > as alloy_sol_types::SolType>::tokenize(&self.rolesLength),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -6730,6 +7067,13 @@ error RequestedMultipleRolesForStream(StreamDenomination stream, Role role1, Rol
                     <Role as alloy_sol_types::SolType>::tokenize(&self.role2),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -6740,7 +7084,7 @@ error RequestedNoRoles();
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct RequestedNoRoles {}
+    pub struct RequestedNoRoles;
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -6775,7 +7119,7 @@ error RequestedNoRoles();
         #[doc(hidden)]
         impl ::core::convert::From<UnderlyingRustTuple<'_>> for RequestedNoRoles {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self {}
+                Self
             }
         }
         #[automatically_derived]
@@ -6795,6 +7139,13 @@ error RequestedNoRoles();
             #[inline]
             fn tokenize(&self) -> Self::Token<'_> {
                 ()
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -6873,6 +7224,13 @@ error RequestedNoneRoleForStream(StreamDenomination stream);
                     ),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -6947,6 +7305,13 @@ error TooManyMembers(uint256 maxMembers);
                         256,
                     > as alloy_sol_types::SolType>::tokenize(&self.maxMembers),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -7029,6 +7394,13 @@ error TooManyMembersPerComitee(uint256 maxMemebersPerCommittee);
                     ),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -7039,7 +7411,7 @@ error UUPSUnauthorizedCallContext();
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct UUPSUnauthorizedCallContext {}
+    pub struct UUPSUnauthorizedCallContext;
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -7076,7 +7448,7 @@ error UUPSUnauthorizedCallContext();
         impl ::core::convert::From<UnderlyingRustTuple<'_>>
         for UUPSUnauthorizedCallContext {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self {}
+                Self
             }
         }
         #[automatically_derived]
@@ -7096,6 +7468,13 @@ error UUPSUnauthorizedCallContext();
             #[inline]
             fn tokenize(&self) -> Self::Token<'_> {
                 ()
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -7172,6 +7551,13 @@ error UUPSUnsupportedProxiableUUID(bytes32 slot);
                     > as alloy_sol_types::SolType>::tokenize(&self.slot),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -7244,6 +7630,13 @@ error UnauthorizedAccount(address account);
                         &self.account,
                     ),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -7334,6 +7727,13 @@ error _FailedToCreateCommittee(uint64 streamId, PendingCommitteeStatus status);
                     ),
                 )
             }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
+            }
         }
     };
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -7406,6 +7806,13 @@ error _MemberIndexOutOfBounds(uint16 memberIndex);
                         16,
                     > as alloy_sol_types::SolType>::tokenize(&self.memberIndex),
                 )
+            }
+            #[inline]
+            fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
+                <Self::Parameters<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(Self::new)
             }
         }
     };
@@ -9703,7 +10110,7 @@ function MAX_COMMITTEES_SIZE() external view returns (uint256);
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct MAX_COMMITTEES_SIZECall {}
+    pub struct MAX_COMMITTEES_SIZECall;
     #[derive(serde::Serialize, serde::Deserialize)]
     #[derive(Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`MAX_COMMITTEES_SIZE()`](MAX_COMMITTEES_SIZECall) function.
@@ -9750,7 +10157,7 @@ function MAX_COMMITTEES_SIZE() external view returns (uint256);
             impl ::core::convert::From<UnderlyingRustTuple<'_>>
             for MAX_COMMITTEES_SIZECall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self {}
+                    Self
                 }
             }
         }
@@ -9795,7 +10202,7 @@ function MAX_COMMITTEES_SIZE() external view returns (uint256);
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = MAX_COMMITTEES_SIZEReturn;
+            type Return = alloy::sol_types::private::primitives::aliases::U256;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Uint<256>,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -9813,14 +10220,34 @@ function MAX_COMMITTEES_SIZE() external view returns (uint256);
                 ()
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::Uint<
+                        256,
+                    > as alloy_sol_types::SolType>::tokenize(ret),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: MAX_COMMITTEES_SIZEReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: MAX_COMMITTEES_SIZEReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -9832,7 +10259,7 @@ function MAX_MEMBERS_PER_COMMITTEE() external view returns (uint256);
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct MAX_MEMBERS_PER_COMMITTEECall {}
+    pub struct MAX_MEMBERS_PER_COMMITTEECall;
     #[derive(serde::Serialize, serde::Deserialize)]
     #[derive(Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`MAX_MEMBERS_PER_COMMITTEE()`](MAX_MEMBERS_PER_COMMITTEECall) function.
@@ -9879,7 +10306,7 @@ function MAX_MEMBERS_PER_COMMITTEE() external view returns (uint256);
             impl ::core::convert::From<UnderlyingRustTuple<'_>>
             for MAX_MEMBERS_PER_COMMITTEECall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self {}
+                    Self
                 }
             }
         }
@@ -9924,7 +10351,7 @@ function MAX_MEMBERS_PER_COMMITTEE() external view returns (uint256);
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = MAX_MEMBERS_PER_COMMITTEEReturn;
+            type Return = alloy::sol_types::private::primitives::aliases::U256;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Uint<256>,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -9942,14 +10369,34 @@ function MAX_MEMBERS_PER_COMMITTEE() external view returns (uint256);
                 ()
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::Uint<
+                        256,
+                    > as alloy_sol_types::SolType>::tokenize(ret),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: MAX_MEMBERS_PER_COMMITTEEReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: MAX_MEMBERS_PER_COMMITTEEReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -9961,7 +10408,7 @@ function UPGRADE_INTERFACE_VERSION() external view returns (string memory);
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct UPGRADE_INTERFACE_VERSIONCall {}
+    pub struct UPGRADE_INTERFACE_VERSIONCall;
     #[derive(serde::Serialize, serde::Deserialize)]
     #[derive(Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`UPGRADE_INTERFACE_VERSION()`](UPGRADE_INTERFACE_VERSIONCall) function.
@@ -10008,7 +10455,7 @@ function UPGRADE_INTERFACE_VERSION() external view returns (string memory);
             impl ::core::convert::From<UnderlyingRustTuple<'_>>
             for UPGRADE_INTERFACE_VERSIONCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self {}
+                    Self
                 }
             }
         }
@@ -10051,7 +10498,7 @@ function UPGRADE_INTERFACE_VERSION() external view returns (string memory);
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = UPGRADE_INTERFACE_VERSIONReturn;
+            type Return = alloy::sol_types::private::String;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::String,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -10069,14 +10516,34 @@ function UPGRADE_INTERFACE_VERSION() external view returns (string memory);
                 ()
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::String as alloy_sol_types::SolType>::tokenize(
+                        ret,
+                    ),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: UPGRADE_INTERFACE_VERSIONReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: UPGRADE_INTERFACE_VERSIONReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -10170,6 +10637,13 @@ function __BaseProxy_init(address _initialOwner) external;
                 }
             }
         }
+        impl __BaseProxy_initReturn {
+            fn _tokenize(
+                &self,
+            ) -> <__BaseProxy_initCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for __BaseProxy_initCall {
             type Parameters<'a> = (alloy::sol_types::sol_data::Address,);
@@ -10198,13 +10672,23 @@ function __BaseProxy_init(address _initialOwner) external;
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                __BaseProxy_initReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -10315,6 +10799,13 @@ function applyToStream(StreamDenomination _stream, Role _role, PublicKeyRegistra
                 }
             }
         }
+        impl applyToStreamReturn {
+            fn _tokenize(
+                &self,
+            ) -> <applyToStreamCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for applyToStreamCall {
             type Parameters<'a> = (
@@ -10351,13 +10842,23 @@ function applyToStream(StreamDenomination _stream, Role _role, PublicKeyRegistra
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                applyToStreamReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -10450,6 +10951,13 @@ function createCommittee(uint64 _streamId) external;
                 }
             }
         }
+        impl createCommitteeReturn {
+            fn _tokenize(
+                &self,
+            ) -> <createCommitteeCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for createCommitteeCall {
             type Parameters<'a> = (alloy::sol_types::sol_data::Uint<64>,);
@@ -10478,13 +10986,23 @@ function createCommittee(uint64 _streamId) external;
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                createCommitteeReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -10590,6 +11108,15 @@ function depositMemberInfoForCommittee(uint64 _streamId, bytes32 _aggregatedKey)
                 }
             }
         }
+        impl depositMemberInfoForCommitteeReturn {
+            fn _tokenize(
+                &self,
+            ) -> <depositMemberInfoForCommitteeCall as alloy_sol_types::SolCall>::ReturnToken<
+                '_,
+            > {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for depositMemberInfoForCommitteeCall {
             type Parameters<'a> = (
@@ -10624,13 +11151,23 @@ function depositMemberInfoForCommittee(uint64 _streamId, bytes32 _aggregatedKey)
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                depositMemberInfoForCommitteeReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -10736,7 +11273,7 @@ function getCommittee(uint256 _committeeId) external view returns (Committee mem
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = getCommitteeReturn;
+            type Return = <Committee as alloy::sol_types::SolType>::RustType;
             type ReturnTuple<'a> = (Committee,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -10758,14 +11295,30 @@ function getCommittee(uint256 _committeeId) external view returns (Committee mem
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (<Committee as alloy_sol_types::SolType>::tokenize(ret),)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: getCommitteeReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: getCommitteeReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -10882,7 +11435,9 @@ function getCommitteeCandidates(StreamDenomination _denomination, Role _role) ex
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = getCommitteeCandidatesReturn;
+            type Return = alloy::sol_types::private::Vec<
+                alloy::sol_types::private::Address,
+            >;
             type ReturnTuple<'a> = (
                 alloy::sol_types::sol_data::Array<alloy::sol_types::sol_data::Address>,
             );
@@ -10907,14 +11462,34 @@ function getCommitteeCandidates(StreamDenomination _denomination, Role _role) ex
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::Array<
+                        alloy::sol_types::sol_data::Address,
+                    > as alloy_sol_types::SolType>::tokenize(ret),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: getCommitteeCandidatesReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: getCommitteeCandidatesReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -11029,7 +11604,9 @@ function getCommitteeMembers(uint256 _committeeId) external view returns (Commit
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = getCommitteeMembersReturn;
+            type Return = alloy::sol_types::private::Vec<
+                <CommitteeMember as alloy::sol_types::SolType>::RustType,
+            >;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Array<CommitteeMember>,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -11051,14 +11628,34 @@ function getCommitteeMembers(uint256 _committeeId) external view returns (Commit
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::Array<
+                        CommitteeMember,
+                    > as alloy_sol_types::SolType>::tokenize(ret),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: getCommitteeMembersReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: getCommitteeMembersReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -11070,7 +11667,7 @@ function getImplementation() external view returns (address);
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct getImplementationCall {}
+    pub struct getImplementationCall;
     #[derive(serde::Serialize, serde::Deserialize)]
     #[derive(Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`getImplementation()`](getImplementationCall) function.
@@ -11117,7 +11714,7 @@ function getImplementation() external view returns (address);
             impl ::core::convert::From<UnderlyingRustTuple<'_>>
             for getImplementationCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self {}
+                    Self
                 }
             }
         }
@@ -11160,7 +11757,7 @@ function getImplementation() external view returns (address);
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = getImplementationReturn;
+            type Return = alloy::sol_types::private::Address;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Address,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -11178,14 +11775,34 @@ function getImplementation() external view returns (address);
                 ()
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::Address as alloy_sol_types::SolType>::tokenize(
+                        ret,
+                    ),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: getImplementationReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: getImplementationReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -11292,7 +11909,7 @@ function getMemberAvailableBalance(address _address) external view returns (uint
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = getMemberAvailableBalanceReturn;
+            type Return = alloy::sol_types::private::primitives::aliases::U256;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Uint<256>,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -11314,14 +11931,34 @@ function getMemberAvailableBalance(address _address) external view returns (uint
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::Uint<
+                        256,
+                    > as alloy_sol_types::SolType>::tokenize(ret),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: getMemberAvailableBalanceReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: getMemberAvailableBalanceReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -11442,7 +12079,7 @@ function getMemberPreStakedBalance(address _memberAddress, StreamDenomination _d
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = getMemberPreStakedBalanceReturn;
+            type Return = alloy::sol_types::private::primitives::aliases::U256;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Uint<256>,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -11467,14 +12104,34 @@ function getMemberPreStakedBalance(address _memberAddress, StreamDenomination _d
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::Uint<
+                        256,
+                    > as alloy_sol_types::SolType>::tokenize(ret),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: getMemberPreStakedBalanceReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: getMemberPreStakedBalanceReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -11589,7 +12246,9 @@ function getMemberPublicKeys(address _address) external view returns (bytes32[] 
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = getMemberPublicKeysReturn;
+            type Return = alloy::sol_types::private::Vec<
+                alloy::sol_types::private::FixedBytes<32>,
+            >;
             type ReturnTuple<'a> = (
                 alloy::sol_types::sol_data::Array<
                     alloy::sol_types::sol_data::FixedBytes<32>,
@@ -11615,14 +12274,34 @@ function getMemberPublicKeys(address _address) external view returns (bytes32[] 
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::Array<
+                        alloy::sol_types::sol_data::FixedBytes<32>,
+                    > as alloy_sol_types::SolType>::tokenize(ret),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: getMemberPublicKeysReturn = r.into();
+                        r.publicKeys
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: getMemberPublicKeysReturn = r.into();
+                        r.publicKeys
+                    })
             }
         }
     };
@@ -11743,7 +12422,7 @@ function getMemberRequestedRole(address _memberAddress, StreamDenomination _deno
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = getMemberRequestedRoleReturn;
+            type Return = <Role as alloy::sol_types::SolType>::RustType;
             type ReturnTuple<'a> = (Role,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -11768,14 +12447,30 @@ function getMemberRequestedRole(address _memberAddress, StreamDenomination _deno
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (<Role as alloy_sol_types::SolType>::tokenize(ret),)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: getMemberRequestedRoleReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: getMemberRequestedRoleReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -11902,7 +12597,7 @@ function getMemberStakedBalance(address _address, StreamDenomination _denominati
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = getMemberStakedBalanceReturn;
+            type Return = alloy::sol_types::private::primitives::aliases::U256;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Uint<256>,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -11930,14 +12625,34 @@ function getMemberStakedBalance(address _address, StreamDenomination _denominati
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::Uint<
+                        256,
+                    > as alloy_sol_types::SolType>::tokenize(ret),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: getMemberStakedBalanceReturn = r.into();
+                        r.amount
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: getMemberStakedBalanceReturn = r.into();
+                        r.amount
+                    })
             }
         }
     };
@@ -12042,7 +12757,7 @@ function getMemberTakePubKey(address _address) external view returns (bytes32);
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = getMemberTakePubKeyReturn;
+            type Return = alloy::sol_types::private::FixedBytes<32>;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::FixedBytes<32>,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -12064,14 +12779,34 @@ function getMemberTakePubKey(address _address) external view returns (bytes32);
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::FixedBytes<
+                        32,
+                    > as alloy_sol_types::SolType>::tokenize(ret),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: getMemberTakePubKeyReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: getMemberTakePubKeyReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -12180,7 +12915,7 @@ function getMinimumDeposit(StreamDenomination _denomination) external view retur
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = getMinimumDepositReturn;
+            type Return = alloy::sol_types::private::primitives::aliases::U256;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Uint<256>,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -12202,14 +12937,34 @@ function getMinimumDeposit(StreamDenomination _denomination) external view retur
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::Uint<
+                        256,
+                    > as alloy_sol_types::SolType>::tokenize(ret),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: getMinimumDepositReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: getMinimumDepositReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -12324,6 +13079,21 @@ function getPendingCommittee(uint64 _streamId) external view returns (Committee 
                 }
             }
         }
+        impl getPendingCommitteeReturn {
+            fn _tokenize(
+                &self,
+            ) -> <getPendingCommitteeCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
+                (
+                    <Committee as alloy_sol_types::SolType>::tokenize(&self.committee),
+                    <alloy::sol_types::sol_data::Uint<
+                        256,
+                    > as alloy_sol_types::SolType>::tokenize(&self.createdAt),
+                    <alloy::sol_types::sol_data::Uint<
+                        256,
+                    > as alloy_sol_types::SolType>::tokenize(&self.missingData),
+                )
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for getPendingCommitteeCall {
             type Parameters<'a> = (alloy::sol_types::sol_data::Uint<64>,);
@@ -12356,13 +13126,23 @@ function getPendingCommittee(uint64 _streamId) external view returns (Committee 
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                getPendingCommitteeReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -12453,6 +13233,13 @@ function initialize(address _initialOwner) external;
                 }
             }
         }
+        impl initializeReturn {
+            fn _tokenize(
+                &self,
+            ) -> <initializeCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for initializeCall {
             type Parameters<'a> = (alloy::sol_types::sol_data::Address,);
@@ -12481,13 +13268,23 @@ function initialize(address _initialOwner) external;
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                initializeReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -12593,7 +13390,7 @@ function isPendingCommitteeExpired(uint64 _streamId) external view returns (bool
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = isPendingCommitteeExpiredReturn;
+            type Return = bool;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Bool,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -12615,14 +13412,34 @@ function isPendingCommitteeExpired(uint64 _streamId) external view returns (bool
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::Bool as alloy_sol_types::SolType>::tokenize(
+                        ret,
+                    ),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: isPendingCommitteeExpiredReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: isPendingCommitteeExpiredReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -12634,7 +13451,7 @@ function minCommitteeMembers() external view returns (uint256);
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct minCommitteeMembersCall {}
+    pub struct minCommitteeMembersCall;
     #[derive(serde::Serialize, serde::Deserialize)]
     #[derive(Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`minCommitteeMembers()`](minCommitteeMembersCall) function.
@@ -12681,7 +13498,7 @@ function minCommitteeMembers() external view returns (uint256);
             impl ::core::convert::From<UnderlyingRustTuple<'_>>
             for minCommitteeMembersCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self {}
+                    Self
                 }
             }
         }
@@ -12726,7 +13543,7 @@ function minCommitteeMembers() external view returns (uint256);
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = minCommitteeMembersReturn;
+            type Return = alloy::sol_types::private::primitives::aliases::U256;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Uint<256>,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -12744,14 +13561,34 @@ function minCommitteeMembers() external view returns (uint256);
                 ()
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::Uint<
+                        256,
+                    > as alloy_sol_types::SolType>::tokenize(ret),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: minCommitteeMembersReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: minCommitteeMembersReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -12763,7 +13600,7 @@ function minCommitteeOperators() external view returns (uint256);
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct minCommitteeOperatorsCall {}
+    pub struct minCommitteeOperatorsCall;
     #[derive(serde::Serialize, serde::Deserialize)]
     #[derive(Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`minCommitteeOperators()`](minCommitteeOperatorsCall) function.
@@ -12810,7 +13647,7 @@ function minCommitteeOperators() external view returns (uint256);
             impl ::core::convert::From<UnderlyingRustTuple<'_>>
             for minCommitteeOperatorsCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self {}
+                    Self
                 }
             }
         }
@@ -12855,7 +13692,7 @@ function minCommitteeOperators() external view returns (uint256);
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = minCommitteeOperatorsReturn;
+            type Return = alloy::sol_types::private::primitives::aliases::U256;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Uint<256>,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -12873,14 +13710,34 @@ function minCommitteeOperators() external view returns (uint256);
                 ()
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::Uint<
+                        256,
+                    > as alloy_sol_types::SolType>::tokenize(ret),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: minCommitteeOperatorsReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: minCommitteeOperatorsReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -12892,7 +13749,7 @@ function minCommitteeWatchtowers() external view returns (uint256);
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct minCommitteeWatchtowersCall {}
+    pub struct minCommitteeWatchtowersCall;
     #[derive(serde::Serialize, serde::Deserialize)]
     #[derive(Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`minCommitteeWatchtowers()`](minCommitteeWatchtowersCall) function.
@@ -12939,7 +13796,7 @@ function minCommitteeWatchtowers() external view returns (uint256);
             impl ::core::convert::From<UnderlyingRustTuple<'_>>
             for minCommitteeWatchtowersCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self {}
+                    Self
                 }
             }
         }
@@ -12984,7 +13841,7 @@ function minCommitteeWatchtowers() external view returns (uint256);
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = minCommitteeWatchtowersReturn;
+            type Return = alloy::sol_types::private::primitives::aliases::U256;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Uint<256>,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -13002,14 +13859,34 @@ function minCommitteeWatchtowers() external view returns (uint256);
                 ()
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::Uint<
+                        256,
+                    > as alloy_sol_types::SolType>::tokenize(ret),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: minCommitteeWatchtowersReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: minCommitteeWatchtowersReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -13021,7 +13898,7 @@ function owner() external view returns (address);
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct ownerCall {}
+    pub struct ownerCall;
     #[derive(serde::Serialize, serde::Deserialize)]
     #[derive(Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`owner()`](ownerCall) function.
@@ -13066,7 +13943,7 @@ function owner() external view returns (address);
             #[doc(hidden)]
             impl ::core::convert::From<UnderlyingRustTuple<'_>> for ownerCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self {}
+                    Self
                 }
             }
         }
@@ -13107,7 +13984,7 @@ function owner() external view returns (address);
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = ownerReturn;
+            type Return = alloy::sol_types::private::Address;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Address,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -13125,14 +14002,34 @@ function owner() external view returns (address);
                 ()
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::Address as alloy_sol_types::SolType>::tokenize(
+                        ret,
+                    ),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: ownerReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: ownerReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -13144,7 +14041,7 @@ function pendingCommitteeTimeout() external view returns (uint256);
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct pendingCommitteeTimeoutCall {}
+    pub struct pendingCommitteeTimeoutCall;
     #[derive(serde::Serialize, serde::Deserialize)]
     #[derive(Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`pendingCommitteeTimeout()`](pendingCommitteeTimeoutCall) function.
@@ -13191,7 +14088,7 @@ function pendingCommitteeTimeout() external view returns (uint256);
             impl ::core::convert::From<UnderlyingRustTuple<'_>>
             for pendingCommitteeTimeoutCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self {}
+                    Self
                 }
             }
         }
@@ -13236,7 +14133,7 @@ function pendingCommitteeTimeout() external view returns (uint256);
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = pendingCommitteeTimeoutReturn;
+            type Return = alloy::sol_types::private::primitives::aliases::U256;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Uint<256>,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -13254,14 +14151,34 @@ function pendingCommitteeTimeout() external view returns (uint256);
                 ()
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::Uint<
+                        256,
+                    > as alloy_sol_types::SolType>::tokenize(ret),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: pendingCommitteeTimeoutReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: pendingCommitteeTimeoutReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -13273,7 +14190,7 @@ function proxiableUUID() external view returns (bytes32);
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct proxiableUUIDCall {}
+    pub struct proxiableUUIDCall;
     #[derive(serde::Serialize, serde::Deserialize)]
     #[derive(Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`proxiableUUID()`](proxiableUUIDCall) function.
@@ -13318,7 +14235,7 @@ function proxiableUUID() external view returns (bytes32);
             #[doc(hidden)]
             impl ::core::convert::From<UnderlyingRustTuple<'_>> for proxiableUUIDCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self {}
+                    Self
                 }
             }
         }
@@ -13359,7 +14276,7 @@ function proxiableUUID() external view returns (bytes32);
             type Token<'a> = <Self::Parameters<
                 'a,
             > as alloy_sol_types::SolType>::Token<'a>;
-            type Return = proxiableUUIDReturn;
+            type Return = alloy::sol_types::private::FixedBytes<32>;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::FixedBytes<32>,);
             type ReturnToken<'a> = <Self::ReturnTuple<
                 'a,
@@ -13377,14 +14294,34 @@ function proxiableUUID() external view returns (bytes32);
                 ()
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                (
+                    <alloy::sol_types::sol_data::FixedBytes<
+                        32,
+                    > as alloy_sol_types::SolType>::tokenize(ret),
+                )
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(|r| {
+                        let r: proxiableUUIDReturn = r.into();
+                        r._0
+                    })
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
-                    .map(Into::into)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
+                    .map(|r| {
+                        let r: proxiableUUIDReturn = r.into();
+                        r._0
+                    })
             }
         }
     };
@@ -13396,7 +14333,7 @@ function renounceOwnership() external;
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct renounceOwnershipCall {}
+    pub struct renounceOwnershipCall;
     ///Container type for the return parameters of the [`renounceOwnership()`](renounceOwnershipCall) function.
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
@@ -13438,7 +14375,7 @@ function renounceOwnership() external;
             impl ::core::convert::From<UnderlyingRustTuple<'_>>
             for renounceOwnershipCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self {}
+                    Self
                 }
             }
         }
@@ -13475,6 +14412,13 @@ function renounceOwnership() external;
                 }
             }
         }
+        impl renounceOwnershipReturn {
+            fn _tokenize(
+                &self,
+            ) -> <renounceOwnershipCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for renounceOwnershipCall {
             type Parameters<'a> = ();
@@ -13499,13 +14443,23 @@ function renounceOwnership() external;
                 ()
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                renounceOwnershipReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -13600,6 +14554,15 @@ function restartPendingCommittee(uint64 _streamId) external;
                 }
             }
         }
+        impl restartPendingCommitteeReturn {
+            fn _tokenize(
+                &self,
+            ) -> <restartPendingCommitteeCall as alloy_sol_types::SolCall>::ReturnToken<
+                '_,
+            > {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for restartPendingCommitteeCall {
             type Parameters<'a> = (alloy::sol_types::sol_data::Uint<64>,);
@@ -13628,13 +14591,23 @@ function restartPendingCommittee(uint64 _streamId) external;
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                restartPendingCommitteeReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -13731,6 +14704,15 @@ function setCommitteeMinMembers(uint256 _minMembers) external;
                 }
             }
         }
+        impl setCommitteeMinMembersReturn {
+            fn _tokenize(
+                &self,
+            ) -> <setCommitteeMinMembersCall as alloy_sol_types::SolCall>::ReturnToken<
+                '_,
+            > {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for setCommitteeMinMembersCall {
             type Parameters<'a> = (alloy::sol_types::sol_data::Uint<256>,);
@@ -13759,13 +14741,23 @@ function setCommitteeMinMembers(uint256 _minMembers) external;
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                setCommitteeMinMembersReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -13862,6 +14854,15 @@ function setCommitteeMinOperators(uint256 _minOperators) external;
                 }
             }
         }
+        impl setCommitteeMinOperatorsReturn {
+            fn _tokenize(
+                &self,
+            ) -> <setCommitteeMinOperatorsCall as alloy_sol_types::SolCall>::ReturnToken<
+                '_,
+            > {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for setCommitteeMinOperatorsCall {
             type Parameters<'a> = (alloy::sol_types::sol_data::Uint<256>,);
@@ -13890,13 +14891,23 @@ function setCommitteeMinOperators(uint256 _minOperators) external;
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                setCommitteeMinOperatorsReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -13993,6 +15004,15 @@ function setCommitteeMinWatchtowers(uint256 _minWatchtowers) external;
                 }
             }
         }
+        impl setCommitteeMinWatchtowersReturn {
+            fn _tokenize(
+                &self,
+            ) -> <setCommitteeMinWatchtowersCall as alloy_sol_types::SolCall>::ReturnToken<
+                '_,
+            > {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for setCommitteeMinWatchtowersCall {
             type Parameters<'a> = (alloy::sol_types::sol_data::Uint<256>,);
@@ -14021,13 +15041,23 @@ function setCommitteeMinWatchtowers(uint256 _minWatchtowers) external;
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                setCommitteeMinWatchtowersReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -14118,6 +15148,13 @@ function setPegManager(address _pegManager) external;
                 }
             }
         }
+        impl setPegManagerReturn {
+            fn _tokenize(
+                &self,
+            ) -> <setPegManagerCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for setPegManagerCall {
             type Parameters<'a> = (alloy::sol_types::sol_data::Address,);
@@ -14146,13 +15183,23 @@ function setPegManager(address _pegManager) external;
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                setPegManagerReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -14249,6 +15296,15 @@ function setPendingCommitteeTimeout(uint256 _timeout) external;
                 }
             }
         }
+        impl setPendingCommitteeTimeoutReturn {
+            fn _tokenize(
+                &self,
+            ) -> <setPendingCommitteeTimeoutCall as alloy_sol_types::SolCall>::ReturnToken<
+                '_,
+            > {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for setPendingCommitteeTimeoutCall {
             type Parameters<'a> = (alloy::sol_types::sol_data::Uint<256>,);
@@ -14277,13 +15333,23 @@ function setPendingCommitteeTimeout(uint256 _timeout) external;
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                setPendingCommitteeTimeoutReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -14378,6 +15444,13 @@ function setStreamManager(address _streamManager) external;
                 }
             }
         }
+        impl setStreamManagerReturn {
+            fn _tokenize(
+                &self,
+            ) -> <setStreamManagerCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for setStreamManagerCall {
             type Parameters<'a> = (alloy::sol_types::sol_data::Address,);
@@ -14406,13 +15479,23 @@ function setStreamManager(address _streamManager) external;
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                setStreamManagerReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -14507,6 +15590,13 @@ function transferOwnership(address newOwner) external;
                 }
             }
         }
+        impl transferOwnershipReturn {
+            fn _tokenize(
+                &self,
+            ) -> <transferOwnershipCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for transferOwnershipCall {
             type Parameters<'a> = (alloy::sol_types::sol_data::Address,);
@@ -14535,13 +15625,23 @@ function transferOwnership(address newOwner) external;
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                transferOwnershipReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -14638,6 +15738,15 @@ function unsubscribeFromStream(StreamDenomination _denomination) external;
                 }
             }
         }
+        impl unsubscribeFromStreamReturn {
+            fn _tokenize(
+                &self,
+            ) -> <unsubscribeFromStreamCall as alloy_sol_types::SolCall>::ReturnToken<
+                '_,
+            > {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for unsubscribeFromStreamCall {
             type Parameters<'a> = (StreamDenomination,);
@@ -14666,13 +15775,23 @@ function unsubscribeFromStream(StreamDenomination _denomination) external;
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                unsubscribeFromStreamReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -14778,6 +15897,13 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 }
             }
         }
+        impl upgradeToAndCallReturn {
+            fn _tokenize(
+                &self,
+            ) -> <upgradeToAndCallCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for upgradeToAndCallCall {
             type Parameters<'a> = (
@@ -14812,13 +15938,23 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 )
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                upgradeToAndCallReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -14831,7 +15967,7 @@ function withdrawAvailableBalance() external;
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
-    pub struct withdrawAvailableBalanceCall {}
+    pub struct withdrawAvailableBalanceCall;
     ///Container type for the return parameters of the [`withdrawAvailableBalance()`](withdrawAvailableBalanceCall) function.
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
@@ -14873,7 +16009,7 @@ function withdrawAvailableBalance() external;
             impl ::core::convert::From<UnderlyingRustTuple<'_>>
             for withdrawAvailableBalanceCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self {}
+                    Self
                 }
             }
         }
@@ -14910,6 +16046,15 @@ function withdrawAvailableBalance() external;
                 }
             }
         }
+        impl withdrawAvailableBalanceReturn {
+            fn _tokenize(
+                &self,
+            ) -> <withdrawAvailableBalanceCall as alloy_sol_types::SolCall>::ReturnToken<
+                '_,
+            > {
+                ()
+            }
+        }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for withdrawAvailableBalanceCall {
             type Parameters<'a> = ();
@@ -14934,13 +16079,23 @@ function withdrawAvailableBalance() external;
                 ()
             }
             #[inline]
-            fn abi_decode_returns(
+            fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
+                withdrawAvailableBalanceReturn::_tokenize(ret)
+            }
+            #[inline]
+            fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<
+                    '_,
+                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                    .map(Into::into)
+            }
+            #[inline]
+            fn abi_decode_returns_validate(
                 data: &[u8],
-                validate: bool,
             ) -> alloy_sol_types::Result<Self::Return> {
                 <Self::ReturnTuple<
                     '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data, validate)
+                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
                     .map(Into::into)
             }
         }
@@ -15216,20 +16371,16 @@ function withdrawAvailableBalance() external;
         fn abi_decode_raw(
             selector: [u8; 4],
             data: &[u8],
-            validate: bool,
         ) -> alloy_sol_types::Result<Self> {
             static DECODE_SHIMS: &[fn(
                 &[u8],
-                bool,
             ) -> alloy_sol_types::Result<CommitteeRegistryCalls>] = &[
                 {
                     fn getCommittee(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
                         <getCommitteeCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryCalls::getCommittee)
                     }
@@ -15238,11 +16389,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn getMemberTakePubKey(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
                         <getMemberTakePubKeyCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryCalls::getMemberTakePubKey)
                     }
@@ -15251,11 +16400,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn unsubscribeFromStream(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
                         <unsubscribeFromStreamCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryCalls::unsubscribeFromStream)
                     }
@@ -15264,11 +16411,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn setStreamManager(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
                         <setStreamManagerCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryCalls::setStreamManager)
                     }
@@ -15277,11 +16422,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn depositMemberInfoForCommittee(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
                         <depositMemberInfoForCommitteeCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryCalls::depositMemberInfoForCommittee)
                     }
@@ -15290,11 +16433,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn getMemberPublicKeys(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
                         <getMemberPublicKeysCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryCalls::getMemberPublicKeys)
                     }
@@ -15303,11 +16444,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn getPendingCommittee(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
                         <getPendingCommitteeCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryCalls::getPendingCommittee)
                     }
@@ -15316,11 +16455,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn setCommitteeMinOperators(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
                         <setCommitteeMinOperatorsCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryCalls::setCommitteeMinOperators)
                     }
@@ -15329,11 +16466,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn getCommitteeCandidates(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
                         <getCommitteeCandidatesCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryCalls::getCommitteeCandidates)
                     }
@@ -15342,11 +16477,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn upgradeToAndCall(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
                         <upgradeToAndCallCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryCalls::upgradeToAndCall)
                     }
@@ -15355,11 +16488,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn getMinimumDeposit(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
                         <getMinimumDepositCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryCalls::getMinimumDeposit)
                     }
@@ -15368,11 +16499,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn proxiableUUID(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
                         <proxiableUUIDCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryCalls::proxiableUUID)
                     }
@@ -15381,11 +16510,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn setPegManager(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
                         <setPegManagerCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryCalls::setPegManager)
                     }
@@ -15394,11 +16521,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn pendingCommitteeTimeout(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
                         <pendingCommitteeTimeoutCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryCalls::pendingCommitteeTimeout)
                     }
@@ -15407,11 +16532,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn createCommittee(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
                         <createCommitteeCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryCalls::createCommittee)
                     }
@@ -15420,11 +16543,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn MAX_COMMITTEES_SIZE(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
                         <MAX_COMMITTEES_SIZECall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryCalls::MAX_COMMITTEES_SIZE)
                     }
@@ -15433,11 +16554,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn renounceOwnership(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
                         <renounceOwnershipCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryCalls::renounceOwnership)
                     }
@@ -15446,12 +16565,8 @@ function withdrawAvailableBalance() external;
                 {
                     fn owner(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
-                        <ownerCall as alloy_sol_types::SolCall>::abi_decode_raw(
-                                data,
-                                validate,
-                            )
+                        <ownerCall as alloy_sol_types::SolCall>::abi_decode_raw(data)
                             .map(CommitteeRegistryCalls::owner)
                     }
                     owner
@@ -15459,11 +16574,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn getMemberStakedBalance(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
                         <getMemberStakedBalanceCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryCalls::getMemberStakedBalance)
                     }
@@ -15472,11 +16585,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn minCommitteeMembers(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
                         <minCommitteeMembersCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryCalls::minCommitteeMembers)
                     }
@@ -15485,11 +16596,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn isPendingCommitteeExpired(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
                         <isPendingCommitteeExpiredCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryCalls::isPendingCommitteeExpired)
                     }
@@ -15498,11 +16607,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn restartPendingCommittee(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
                         <restartPendingCommitteeCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryCalls::restartPendingCommittee)
                     }
@@ -15511,11 +16618,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn applyToStream(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
                         <applyToStreamCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryCalls::applyToStream)
                     }
@@ -15524,11 +16629,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn MAX_MEMBERS_PER_COMMITTEE(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
                         <MAX_MEMBERS_PER_COMMITTEECall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryCalls::MAX_MEMBERS_PER_COMMITTEE)
                     }
@@ -15537,11 +16640,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn setPendingCommitteeTimeout(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
                         <setPendingCommitteeTimeoutCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryCalls::setPendingCommitteeTimeout)
                     }
@@ -15550,11 +16651,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn getImplementation(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
                         <getImplementationCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryCalls::getImplementation)
                     }
@@ -15563,11 +16662,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn UPGRADE_INTERFACE_VERSION(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
                         <UPGRADE_INTERFACE_VERSIONCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryCalls::UPGRADE_INTERFACE_VERSION)
                     }
@@ -15576,11 +16673,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn withdrawAvailableBalance(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
                         <withdrawAvailableBalanceCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryCalls::withdrawAvailableBalance)
                     }
@@ -15589,11 +16684,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn getMemberPreStakedBalance(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
                         <getMemberPreStakedBalanceCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryCalls::getMemberPreStakedBalance)
                     }
@@ -15602,11 +16695,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn minCommitteeOperators(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
                         <minCommitteeOperatorsCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryCalls::minCommitteeOperators)
                     }
@@ -15615,11 +16706,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn setCommitteeMinMembers(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
                         <setCommitteeMinMembersCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryCalls::setCommitteeMinMembers)
                     }
@@ -15628,11 +16717,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn __BaseProxy_init(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
                         <__BaseProxy_initCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryCalls::__BaseProxy_init)
                     }
@@ -15641,11 +16728,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn initialize(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
                         <initializeCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryCalls::initialize)
                     }
@@ -15654,11 +16739,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn getMemberRequestedRole(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
                         <getMemberRequestedRoleCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryCalls::getMemberRequestedRole)
                     }
@@ -15667,11 +16750,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn getCommitteeMembers(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
                         <getCommitteeMembersCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryCalls::getCommitteeMembers)
                     }
@@ -15680,11 +16761,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn transferOwnership(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
                         <transferOwnershipCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryCalls::transferOwnership)
                     }
@@ -15693,11 +16772,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn setCommitteeMinWatchtowers(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
                         <setCommitteeMinWatchtowersCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryCalls::setCommitteeMinWatchtowers)
                     }
@@ -15706,11 +16783,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn minCommitteeWatchtowers(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
                         <minCommitteeWatchtowersCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryCalls::minCommitteeWatchtowers)
                     }
@@ -15719,11 +16794,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn getMemberAvailableBalance(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
                         <getMemberAvailableBalanceCall as alloy_sol_types::SolCall>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryCalls::getMemberAvailableBalance)
                     }
@@ -15738,7 +16811,456 @@ function withdrawAvailableBalance() external;
                     ),
                 );
             };
-            DECODE_SHIMS[idx](data, validate)
+            DECODE_SHIMS[idx](data)
+        }
+        #[inline]
+        #[allow(non_snake_case)]
+        fn abi_decode_raw_validate(
+            selector: [u8; 4],
+            data: &[u8],
+        ) -> alloy_sol_types::Result<Self> {
+            static DECODE_VALIDATE_SHIMS: &[fn(
+                &[u8],
+            ) -> alloy_sol_types::Result<CommitteeRegistryCalls>] = &[
+                {
+                    fn getCommittee(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
+                        <getCommitteeCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryCalls::getCommittee)
+                    }
+                    getCommittee
+                },
+                {
+                    fn getMemberTakePubKey(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
+                        <getMemberTakePubKeyCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryCalls::getMemberTakePubKey)
+                    }
+                    getMemberTakePubKey
+                },
+                {
+                    fn unsubscribeFromStream(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
+                        <unsubscribeFromStreamCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryCalls::unsubscribeFromStream)
+                    }
+                    unsubscribeFromStream
+                },
+                {
+                    fn setStreamManager(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
+                        <setStreamManagerCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryCalls::setStreamManager)
+                    }
+                    setStreamManager
+                },
+                {
+                    fn depositMemberInfoForCommittee(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
+                        <depositMemberInfoForCommitteeCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryCalls::depositMemberInfoForCommittee)
+                    }
+                    depositMemberInfoForCommittee
+                },
+                {
+                    fn getMemberPublicKeys(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
+                        <getMemberPublicKeysCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryCalls::getMemberPublicKeys)
+                    }
+                    getMemberPublicKeys
+                },
+                {
+                    fn getPendingCommittee(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
+                        <getPendingCommitteeCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryCalls::getPendingCommittee)
+                    }
+                    getPendingCommittee
+                },
+                {
+                    fn setCommitteeMinOperators(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
+                        <setCommitteeMinOperatorsCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryCalls::setCommitteeMinOperators)
+                    }
+                    setCommitteeMinOperators
+                },
+                {
+                    fn getCommitteeCandidates(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
+                        <getCommitteeCandidatesCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryCalls::getCommitteeCandidates)
+                    }
+                    getCommitteeCandidates
+                },
+                {
+                    fn upgradeToAndCall(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
+                        <upgradeToAndCallCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryCalls::upgradeToAndCall)
+                    }
+                    upgradeToAndCall
+                },
+                {
+                    fn getMinimumDeposit(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
+                        <getMinimumDepositCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryCalls::getMinimumDeposit)
+                    }
+                    getMinimumDeposit
+                },
+                {
+                    fn proxiableUUID(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
+                        <proxiableUUIDCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryCalls::proxiableUUID)
+                    }
+                    proxiableUUID
+                },
+                {
+                    fn setPegManager(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
+                        <setPegManagerCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryCalls::setPegManager)
+                    }
+                    setPegManager
+                },
+                {
+                    fn pendingCommitteeTimeout(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
+                        <pendingCommitteeTimeoutCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryCalls::pendingCommitteeTimeout)
+                    }
+                    pendingCommitteeTimeout
+                },
+                {
+                    fn createCommittee(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
+                        <createCommitteeCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryCalls::createCommittee)
+                    }
+                    createCommittee
+                },
+                {
+                    fn MAX_COMMITTEES_SIZE(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
+                        <MAX_COMMITTEES_SIZECall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryCalls::MAX_COMMITTEES_SIZE)
+                    }
+                    MAX_COMMITTEES_SIZE
+                },
+                {
+                    fn renounceOwnership(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
+                        <renounceOwnershipCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryCalls::renounceOwnership)
+                    }
+                    renounceOwnership
+                },
+                {
+                    fn owner(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
+                        <ownerCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryCalls::owner)
+                    }
+                    owner
+                },
+                {
+                    fn getMemberStakedBalance(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
+                        <getMemberStakedBalanceCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryCalls::getMemberStakedBalance)
+                    }
+                    getMemberStakedBalance
+                },
+                {
+                    fn minCommitteeMembers(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
+                        <minCommitteeMembersCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryCalls::minCommitteeMembers)
+                    }
+                    minCommitteeMembers
+                },
+                {
+                    fn isPendingCommitteeExpired(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
+                        <isPendingCommitteeExpiredCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryCalls::isPendingCommitteeExpired)
+                    }
+                    isPendingCommitteeExpired
+                },
+                {
+                    fn restartPendingCommittee(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
+                        <restartPendingCommitteeCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryCalls::restartPendingCommittee)
+                    }
+                    restartPendingCommittee
+                },
+                {
+                    fn applyToStream(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
+                        <applyToStreamCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryCalls::applyToStream)
+                    }
+                    applyToStream
+                },
+                {
+                    fn MAX_MEMBERS_PER_COMMITTEE(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
+                        <MAX_MEMBERS_PER_COMMITTEECall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryCalls::MAX_MEMBERS_PER_COMMITTEE)
+                    }
+                    MAX_MEMBERS_PER_COMMITTEE
+                },
+                {
+                    fn setPendingCommitteeTimeout(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
+                        <setPendingCommitteeTimeoutCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryCalls::setPendingCommitteeTimeout)
+                    }
+                    setPendingCommitteeTimeout
+                },
+                {
+                    fn getImplementation(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
+                        <getImplementationCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryCalls::getImplementation)
+                    }
+                    getImplementation
+                },
+                {
+                    fn UPGRADE_INTERFACE_VERSION(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
+                        <UPGRADE_INTERFACE_VERSIONCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryCalls::UPGRADE_INTERFACE_VERSION)
+                    }
+                    UPGRADE_INTERFACE_VERSION
+                },
+                {
+                    fn withdrawAvailableBalance(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
+                        <withdrawAvailableBalanceCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryCalls::withdrawAvailableBalance)
+                    }
+                    withdrawAvailableBalance
+                },
+                {
+                    fn getMemberPreStakedBalance(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
+                        <getMemberPreStakedBalanceCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryCalls::getMemberPreStakedBalance)
+                    }
+                    getMemberPreStakedBalance
+                },
+                {
+                    fn minCommitteeOperators(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
+                        <minCommitteeOperatorsCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryCalls::minCommitteeOperators)
+                    }
+                    minCommitteeOperators
+                },
+                {
+                    fn setCommitteeMinMembers(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
+                        <setCommitteeMinMembersCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryCalls::setCommitteeMinMembers)
+                    }
+                    setCommitteeMinMembers
+                },
+                {
+                    fn __BaseProxy_init(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
+                        <__BaseProxy_initCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryCalls::__BaseProxy_init)
+                    }
+                    __BaseProxy_init
+                },
+                {
+                    fn initialize(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
+                        <initializeCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryCalls::initialize)
+                    }
+                    initialize
+                },
+                {
+                    fn getMemberRequestedRole(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
+                        <getMemberRequestedRoleCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryCalls::getMemberRequestedRole)
+                    }
+                    getMemberRequestedRole
+                },
+                {
+                    fn getCommitteeMembers(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
+                        <getCommitteeMembersCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryCalls::getCommitteeMembers)
+                    }
+                    getCommitteeMembers
+                },
+                {
+                    fn transferOwnership(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
+                        <transferOwnershipCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryCalls::transferOwnership)
+                    }
+                    transferOwnership
+                },
+                {
+                    fn setCommitteeMinWatchtowers(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
+                        <setCommitteeMinWatchtowersCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryCalls::setCommitteeMinWatchtowers)
+                    }
+                    setCommitteeMinWatchtowers
+                },
+                {
+                    fn minCommitteeWatchtowers(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
+                        <minCommitteeWatchtowersCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryCalls::minCommitteeWatchtowers)
+                    }
+                    minCommitteeWatchtowers
+                },
+                {
+                    fn getMemberAvailableBalance(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryCalls> {
+                        <getMemberAvailableBalanceCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryCalls::getMemberAvailableBalance)
+                    }
+                    getMemberAvailableBalance
+                },
+            ];
+            let Ok(idx) = Self::SELECTORS.binary_search(&selector) else {
+                return Err(
+                    alloy_sol_types::Error::unknown_selector(
+                        <Self as alloy_sol_types::SolInterface>::NAME,
+                        selector,
+                    ),
+                );
+            };
+            DECODE_VALIDATE_SHIMS[idx](data)
         }
         #[inline]
         fn abi_encoded_size(&self) -> usize {
@@ -16530,20 +18052,16 @@ function withdrawAvailableBalance() external;
         fn abi_decode_raw(
             selector: [u8; 4],
             data: &[u8],
-            validate: bool,
         ) -> alloy_sol_types::Result<Self> {
             static DECODE_SHIMS: &[fn(
                 &[u8],
-                bool,
             ) -> alloy_sol_types::Result<CommitteeRegistryErrors>] = &[
                 {
                     fn MemberAlreadyRegisteredForStream(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <MemberAlreadyRegisteredForStream as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(
                                 CommitteeRegistryErrors::MemberAlreadyRegisteredForStream,
@@ -16554,11 +18072,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn DespositBondTooLow(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <DespositBondTooLow as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::DespositBondTooLow)
                     }
@@ -16567,11 +18083,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn OwnableUnauthorizedAccount(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <OwnableUnauthorizedAccount as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::OwnableUnauthorizedAccount)
                     }
@@ -16580,11 +18094,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn PendingCommitteeNotExpired(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <PendingCommitteeNotExpired as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::PendingCommitteeNotExpired)
                     }
@@ -16593,11 +18105,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn InvalidSignature(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <InvalidSignature as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::InvalidSignature)
                     }
@@ -16606,11 +18116,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn FailedToSendRSK(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <FailedToSendRSK as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::FailedToSendRSK)
                     }
@@ -16619,11 +18127,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn TooManyMembersPerComitee(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <TooManyMembersPerComitee as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::TooManyMembersPerComitee)
                     }
@@ -16632,11 +18138,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn OwnableInvalidOwner(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <OwnableInvalidOwner as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::OwnableInvalidOwner)
                     }
@@ -16645,11 +18149,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn UnauthorizedAccount(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <UnauthorizedAccount as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::UnauthorizedAccount)
                     }
@@ -16658,11 +18160,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn PublicKeyMismatch(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <PublicKeyMismatch as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::PublicKeyMismatch)
                     }
@@ -16671,11 +18171,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn InvalidPublicKeysLength(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <InvalidPublicKeysLength as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::InvalidPublicKeysLength)
                     }
@@ -16684,11 +18182,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn InvalidMinOperators(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <InvalidMinOperators as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::InvalidMinOperators)
                     }
@@ -16697,11 +18193,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn ERC1967InvalidImplementation(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <ERC1967InvalidImplementation as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::ERC1967InvalidImplementation)
                     }
@@ -16710,11 +18204,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn NotEnoughWatchtowers(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <NotEnoughWatchtowers as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::NotEnoughWatchtowers)
                     }
@@ -16723,11 +18215,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn MemberNotFound(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <MemberNotFound as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::MemberNotFound)
                     }
@@ -16736,11 +18226,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn RequestedMultipleRolesForStream(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <RequestedMultipleRolesForStream as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(
                                 CommitteeRegistryErrors::RequestedMultipleRolesForStream,
@@ -16751,11 +18239,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn _MemberIndexOutOfBounds(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <_MemberIndexOutOfBounds as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::_MemberIndexOutOfBounds)
                     }
@@ -16764,11 +18250,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn InvalidMinMembers(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <InvalidMinMembers as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::InvalidMinMembers)
                     }
@@ -16777,11 +18261,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn CommitteeIsNotPending(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <CommitteeIsNotPending as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::CommitteeIsNotPending)
                     }
@@ -16790,11 +18272,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn AlreadyRegisteredCommittee(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <AlreadyRegisteredCommittee as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::AlreadyRegisteredCommittee)
                     }
@@ -16803,11 +18283,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn AlreadyRegisteredMember(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <AlreadyRegisteredMember as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::AlreadyRegisteredMember)
                     }
@@ -16816,11 +18294,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn NotEnoughMembers(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <NotEnoughMembers as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::NotEnoughMembers)
                     }
@@ -16829,11 +18305,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn InvalidAgregatedKey(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <InvalidAgregatedKey as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::InvalidAgregatedKey)
                     }
@@ -16842,11 +18316,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn RepeatedPublicKeys(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <RepeatedPublicKeys as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::RepeatedPublicKeys)
                     }
@@ -16855,11 +18327,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn _FailedToCreateCommittee(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <_FailedToCreateCommittee as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::_FailedToCreateCommittee)
                     }
@@ -16868,11 +18338,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn AddressEmptyCode(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <AddressEmptyCode as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::AddressEmptyCode)
                     }
@@ -16881,11 +18349,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn TooManyMembers(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <TooManyMembers as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::TooManyMembers)
                     }
@@ -16894,11 +18360,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn NotEnoughOperators(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <NotEnoughOperators as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::NotEnoughOperators)
                     }
@@ -16907,11 +18371,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn MemberInfoAlreadyDeposited(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <MemberInfoAlreadyDeposited as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::MemberInfoAlreadyDeposited)
                     }
@@ -16920,11 +18382,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn UUPSUnsupportedProxiableUUID(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <UUPSUnsupportedProxiableUUID as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::UUPSUnsupportedProxiableUUID)
                     }
@@ -16933,11 +18393,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn MemberNotInCommittee(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <MemberNotInCommittee as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::MemberNotInCommittee)
                     }
@@ -16946,11 +18404,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn MemberIsNotCandidateForStream(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <MemberIsNotCandidateForStream as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::MemberIsNotCandidateForStream)
                     }
@@ -16959,11 +18415,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn ERC1967NonPayable(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <ERC1967NonPayable as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::ERC1967NonPayable)
                     }
@@ -16972,11 +18426,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn RequestedNoneRoleForStream(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <RequestedNoneRoleForStream as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::RequestedNoneRoleForStream)
                     }
@@ -16985,11 +18437,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn MemberNotRegistered(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <MemberNotRegistered as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::MemberNotRegistered)
                     }
@@ -16998,11 +18448,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn RequestedDifferentStreamsAndRolesLength(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <RequestedDifferentStreamsAndRolesLength as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(
                                 CommitteeRegistryErrors::RequestedDifferentStreamsAndRolesLength,
@@ -17013,11 +18461,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn MemberIsInPendingCommittee(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <MemberIsInPendingCommittee as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::MemberIsInPendingCommittee)
                     }
@@ -17026,11 +18472,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn RequestedNoRoles(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <RequestedNoRoles as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::RequestedNoRoles)
                     }
@@ -17039,11 +18483,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn InvalidZeroSignature(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <InvalidZeroSignature as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::InvalidZeroSignature)
                     }
@@ -17052,12 +18494,8 @@ function withdrawAvailableBalance() external;
                 {
                     fn FailedCall(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
-                        <FailedCall as alloy_sol_types::SolError>::abi_decode_raw(
-                                data,
-                                validate,
-                            )
+                        <FailedCall as alloy_sol_types::SolError>::abi_decode_raw(data)
                             .map(CommitteeRegistryErrors::FailedCall)
                     }
                     FailedCall
@@ -17065,11 +18503,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn ECDSAInvalidSignatureS(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <ECDSAInvalidSignatureS as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::ECDSAInvalidSignatureS)
                     }
@@ -17078,11 +18514,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn NotInitializing(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <NotInitializing as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::NotInitializing)
                     }
@@ -17091,11 +18525,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn UUPSUnauthorizedCallContext(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <UUPSUnauthorizedCallContext as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::UUPSUnauthorizedCallContext)
                     }
@@ -17104,11 +18536,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn NoCommitteeMembers(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <NoCommitteeMembers as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::NoCommitteeMembers)
                     }
@@ -17117,11 +18547,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn InvalidZeroPublicKey(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <InvalidZeroPublicKey as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::InvalidZeroPublicKey)
                     }
@@ -17130,11 +18558,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn NoAvailableBalanceToWithdraw(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <NoAvailableBalanceToWithdraw as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::NoAvailableBalanceToWithdraw)
                     }
@@ -17143,11 +18569,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn InvalidMinWatchtowers(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <InvalidMinWatchtowers as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::InvalidMinWatchtowers)
                     }
@@ -17156,11 +18580,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn InvalidZeroValue(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <InvalidZeroValue as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::InvalidZeroValue)
                     }
@@ -17169,11 +18591,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn ECDSAInvalidSignature(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <ECDSAInvalidSignature as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::ECDSAInvalidSignature)
                     }
@@ -17182,11 +18602,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn InvalidZeroAddress(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <InvalidZeroAddress as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::InvalidZeroAddress)
                     }
@@ -17195,11 +18613,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn InvalidInitialization(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <InvalidInitialization as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::InvalidInitialization)
                     }
@@ -17208,11 +18624,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn CommitteeNotFound(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <CommitteeNotFound as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::CommitteeNotFound)
                     }
@@ -17221,11 +18635,9 @@ function withdrawAvailableBalance() external;
                 {
                     fn ECDSAInvalidSignatureLength(
                         data: &[u8],
-                        validate: bool,
                     ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
                         <ECDSAInvalidSignatureLength as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
-                                validate,
                             )
                             .map(CommitteeRegistryErrors::ECDSAInvalidSignatureLength)
                     }
@@ -17240,7 +18652,616 @@ function withdrawAvailableBalance() external;
                     ),
                 );
             };
-            DECODE_SHIMS[idx](data, validate)
+            DECODE_SHIMS[idx](data)
+        }
+        #[inline]
+        #[allow(non_snake_case)]
+        fn abi_decode_raw_validate(
+            selector: [u8; 4],
+            data: &[u8],
+        ) -> alloy_sol_types::Result<Self> {
+            static DECODE_VALIDATE_SHIMS: &[fn(
+                &[u8],
+            ) -> alloy_sol_types::Result<CommitteeRegistryErrors>] = &[
+                {
+                    fn MemberAlreadyRegisteredForStream(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <MemberAlreadyRegisteredForStream as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(
+                                CommitteeRegistryErrors::MemberAlreadyRegisteredForStream,
+                            )
+                    }
+                    MemberAlreadyRegisteredForStream
+                },
+                {
+                    fn DespositBondTooLow(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <DespositBondTooLow as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::DespositBondTooLow)
+                    }
+                    DespositBondTooLow
+                },
+                {
+                    fn OwnableUnauthorizedAccount(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <OwnableUnauthorizedAccount as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::OwnableUnauthorizedAccount)
+                    }
+                    OwnableUnauthorizedAccount
+                },
+                {
+                    fn PendingCommitteeNotExpired(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <PendingCommitteeNotExpired as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::PendingCommitteeNotExpired)
+                    }
+                    PendingCommitteeNotExpired
+                },
+                {
+                    fn InvalidSignature(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <InvalidSignature as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::InvalidSignature)
+                    }
+                    InvalidSignature
+                },
+                {
+                    fn FailedToSendRSK(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <FailedToSendRSK as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::FailedToSendRSK)
+                    }
+                    FailedToSendRSK
+                },
+                {
+                    fn TooManyMembersPerComitee(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <TooManyMembersPerComitee as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::TooManyMembersPerComitee)
+                    }
+                    TooManyMembersPerComitee
+                },
+                {
+                    fn OwnableInvalidOwner(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <OwnableInvalidOwner as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::OwnableInvalidOwner)
+                    }
+                    OwnableInvalidOwner
+                },
+                {
+                    fn UnauthorizedAccount(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <UnauthorizedAccount as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::UnauthorizedAccount)
+                    }
+                    UnauthorizedAccount
+                },
+                {
+                    fn PublicKeyMismatch(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <PublicKeyMismatch as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::PublicKeyMismatch)
+                    }
+                    PublicKeyMismatch
+                },
+                {
+                    fn InvalidPublicKeysLength(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <InvalidPublicKeysLength as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::InvalidPublicKeysLength)
+                    }
+                    InvalidPublicKeysLength
+                },
+                {
+                    fn InvalidMinOperators(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <InvalidMinOperators as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::InvalidMinOperators)
+                    }
+                    InvalidMinOperators
+                },
+                {
+                    fn ERC1967InvalidImplementation(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <ERC1967InvalidImplementation as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::ERC1967InvalidImplementation)
+                    }
+                    ERC1967InvalidImplementation
+                },
+                {
+                    fn NotEnoughWatchtowers(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <NotEnoughWatchtowers as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::NotEnoughWatchtowers)
+                    }
+                    NotEnoughWatchtowers
+                },
+                {
+                    fn MemberNotFound(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <MemberNotFound as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::MemberNotFound)
+                    }
+                    MemberNotFound
+                },
+                {
+                    fn RequestedMultipleRolesForStream(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <RequestedMultipleRolesForStream as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(
+                                CommitteeRegistryErrors::RequestedMultipleRolesForStream,
+                            )
+                    }
+                    RequestedMultipleRolesForStream
+                },
+                {
+                    fn _MemberIndexOutOfBounds(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <_MemberIndexOutOfBounds as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::_MemberIndexOutOfBounds)
+                    }
+                    _MemberIndexOutOfBounds
+                },
+                {
+                    fn InvalidMinMembers(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <InvalidMinMembers as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::InvalidMinMembers)
+                    }
+                    InvalidMinMembers
+                },
+                {
+                    fn CommitteeIsNotPending(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <CommitteeIsNotPending as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::CommitteeIsNotPending)
+                    }
+                    CommitteeIsNotPending
+                },
+                {
+                    fn AlreadyRegisteredCommittee(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <AlreadyRegisteredCommittee as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::AlreadyRegisteredCommittee)
+                    }
+                    AlreadyRegisteredCommittee
+                },
+                {
+                    fn AlreadyRegisteredMember(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <AlreadyRegisteredMember as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::AlreadyRegisteredMember)
+                    }
+                    AlreadyRegisteredMember
+                },
+                {
+                    fn NotEnoughMembers(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <NotEnoughMembers as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::NotEnoughMembers)
+                    }
+                    NotEnoughMembers
+                },
+                {
+                    fn InvalidAgregatedKey(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <InvalidAgregatedKey as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::InvalidAgregatedKey)
+                    }
+                    InvalidAgregatedKey
+                },
+                {
+                    fn RepeatedPublicKeys(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <RepeatedPublicKeys as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::RepeatedPublicKeys)
+                    }
+                    RepeatedPublicKeys
+                },
+                {
+                    fn _FailedToCreateCommittee(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <_FailedToCreateCommittee as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::_FailedToCreateCommittee)
+                    }
+                    _FailedToCreateCommittee
+                },
+                {
+                    fn AddressEmptyCode(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <AddressEmptyCode as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::AddressEmptyCode)
+                    }
+                    AddressEmptyCode
+                },
+                {
+                    fn TooManyMembers(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <TooManyMembers as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::TooManyMembers)
+                    }
+                    TooManyMembers
+                },
+                {
+                    fn NotEnoughOperators(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <NotEnoughOperators as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::NotEnoughOperators)
+                    }
+                    NotEnoughOperators
+                },
+                {
+                    fn MemberInfoAlreadyDeposited(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <MemberInfoAlreadyDeposited as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::MemberInfoAlreadyDeposited)
+                    }
+                    MemberInfoAlreadyDeposited
+                },
+                {
+                    fn UUPSUnsupportedProxiableUUID(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <UUPSUnsupportedProxiableUUID as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::UUPSUnsupportedProxiableUUID)
+                    }
+                    UUPSUnsupportedProxiableUUID
+                },
+                {
+                    fn MemberNotInCommittee(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <MemberNotInCommittee as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::MemberNotInCommittee)
+                    }
+                    MemberNotInCommittee
+                },
+                {
+                    fn MemberIsNotCandidateForStream(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <MemberIsNotCandidateForStream as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::MemberIsNotCandidateForStream)
+                    }
+                    MemberIsNotCandidateForStream
+                },
+                {
+                    fn ERC1967NonPayable(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <ERC1967NonPayable as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::ERC1967NonPayable)
+                    }
+                    ERC1967NonPayable
+                },
+                {
+                    fn RequestedNoneRoleForStream(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <RequestedNoneRoleForStream as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::RequestedNoneRoleForStream)
+                    }
+                    RequestedNoneRoleForStream
+                },
+                {
+                    fn MemberNotRegistered(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <MemberNotRegistered as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::MemberNotRegistered)
+                    }
+                    MemberNotRegistered
+                },
+                {
+                    fn RequestedDifferentStreamsAndRolesLength(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <RequestedDifferentStreamsAndRolesLength as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(
+                                CommitteeRegistryErrors::RequestedDifferentStreamsAndRolesLength,
+                            )
+                    }
+                    RequestedDifferentStreamsAndRolesLength
+                },
+                {
+                    fn MemberIsInPendingCommittee(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <MemberIsInPendingCommittee as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::MemberIsInPendingCommittee)
+                    }
+                    MemberIsInPendingCommittee
+                },
+                {
+                    fn RequestedNoRoles(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <RequestedNoRoles as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::RequestedNoRoles)
+                    }
+                    RequestedNoRoles
+                },
+                {
+                    fn InvalidZeroSignature(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <InvalidZeroSignature as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::InvalidZeroSignature)
+                    }
+                    InvalidZeroSignature
+                },
+                {
+                    fn FailedCall(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <FailedCall as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::FailedCall)
+                    }
+                    FailedCall
+                },
+                {
+                    fn ECDSAInvalidSignatureS(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <ECDSAInvalidSignatureS as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::ECDSAInvalidSignatureS)
+                    }
+                    ECDSAInvalidSignatureS
+                },
+                {
+                    fn NotInitializing(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <NotInitializing as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::NotInitializing)
+                    }
+                    NotInitializing
+                },
+                {
+                    fn UUPSUnauthorizedCallContext(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <UUPSUnauthorizedCallContext as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::UUPSUnauthorizedCallContext)
+                    }
+                    UUPSUnauthorizedCallContext
+                },
+                {
+                    fn NoCommitteeMembers(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <NoCommitteeMembers as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::NoCommitteeMembers)
+                    }
+                    NoCommitteeMembers
+                },
+                {
+                    fn InvalidZeroPublicKey(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <InvalidZeroPublicKey as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::InvalidZeroPublicKey)
+                    }
+                    InvalidZeroPublicKey
+                },
+                {
+                    fn NoAvailableBalanceToWithdraw(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <NoAvailableBalanceToWithdraw as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::NoAvailableBalanceToWithdraw)
+                    }
+                    NoAvailableBalanceToWithdraw
+                },
+                {
+                    fn InvalidMinWatchtowers(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <InvalidMinWatchtowers as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::InvalidMinWatchtowers)
+                    }
+                    InvalidMinWatchtowers
+                },
+                {
+                    fn InvalidZeroValue(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <InvalidZeroValue as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::InvalidZeroValue)
+                    }
+                    InvalidZeroValue
+                },
+                {
+                    fn ECDSAInvalidSignature(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <ECDSAInvalidSignature as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::ECDSAInvalidSignature)
+                    }
+                    ECDSAInvalidSignature
+                },
+                {
+                    fn InvalidZeroAddress(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <InvalidZeroAddress as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::InvalidZeroAddress)
+                    }
+                    InvalidZeroAddress
+                },
+                {
+                    fn InvalidInitialization(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <InvalidInitialization as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::InvalidInitialization)
+                    }
+                    InvalidInitialization
+                },
+                {
+                    fn CommitteeNotFound(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <CommitteeNotFound as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::CommitteeNotFound)
+                    }
+                    CommitteeNotFound
+                },
+                {
+                    fn ECDSAInvalidSignatureLength(
+                        data: &[u8],
+                    ) -> alloy_sol_types::Result<CommitteeRegistryErrors> {
+                        <ECDSAInvalidSignatureLength as alloy_sol_types::SolError>::abi_decode_raw_validate(
+                                data,
+                            )
+                            .map(CommitteeRegistryErrors::ECDSAInvalidSignatureLength)
+                    }
+                    ECDSAInvalidSignatureLength
+                },
+            ];
+            let Ok(idx) = Self::SELECTORS.binary_search(&selector) else {
+                return Err(
+                    alloy_sol_types::Error::unknown_selector(
+                        <Self as alloy_sol_types::SolInterface>::NAME,
+                        selector,
+                    ),
+                );
+            };
+            DECODE_VALIDATE_SHIMS[idx](data)
         }
         #[inline]
         fn abi_encoded_size(&self) -> usize {
@@ -17994,7 +20015,6 @@ function withdrawAvailableBalance() external;
         fn decode_raw_log(
             topics: &[alloy_sol_types::Word],
             data: &[u8],
-            validate: bool,
         ) -> alloy_sol_types::Result<Self> {
             match topics.first().copied() {
                 Some(
@@ -18003,7 +20023,6 @@ function withdrawAvailableBalance() external;
                     <AvailableBalanceRetrieved as alloy_sol_types::SolEvent>::decode_raw_log(
                             topics,
                             data,
-                            validate,
                         )
                         .map(Self::AvailableBalanceRetrieved)
                 }
@@ -18013,7 +20032,6 @@ function withdrawAvailableBalance() external;
                     <CommitteeMinMembersUpdated as alloy_sol_types::SolEvent>::decode_raw_log(
                             topics,
                             data,
-                            validate,
                         )
                         .map(Self::CommitteeMinMembersUpdated)
                 }
@@ -18023,7 +20041,6 @@ function withdrawAvailableBalance() external;
                     <CommitteeMinOperatorsUpdated as alloy_sol_types::SolEvent>::decode_raw_log(
                             topics,
                             data,
-                            validate,
                         )
                         .map(Self::CommitteeMinOperatorsUpdated)
                 }
@@ -18033,7 +20050,6 @@ function withdrawAvailableBalance() external;
                     <CommitteeMinWatchtowersUpdated as alloy_sol_types::SolEvent>::decode_raw_log(
                             topics,
                             data,
-                            validate,
                         )
                         .map(Self::CommitteeMinWatchtowersUpdated)
                 }
@@ -18041,7 +20057,6 @@ function withdrawAvailableBalance() external;
                     <Initialized as alloy_sol_types::SolEvent>::decode_raw_log(
                             topics,
                             data,
-                            validate,
                         )
                         .map(Self::Initialized)
                 }
@@ -18051,7 +20066,6 @@ function withdrawAvailableBalance() external;
                     <MemberInfoDeposited as alloy_sol_types::SolEvent>::decode_raw_log(
                             topics,
                             data,
-                            validate,
                         )
                         .map(Self::MemberInfoDeposited)
                 }
@@ -18061,7 +20075,6 @@ function withdrawAvailableBalance() external;
                     <MemberUnsubscribedFromStream as alloy_sol_types::SolEvent>::decode_raw_log(
                             topics,
                             data,
-                            validate,
                         )
                         .map(Self::MemberUnsubscribedFromStream)
                 }
@@ -18069,7 +20082,6 @@ function withdrawAvailableBalance() external;
                     <MissingMembers as alloy_sol_types::SolEvent>::decode_raw_log(
                             topics,
                             data,
-                            validate,
                         )
                         .map(Self::MissingMembers)
                 }
@@ -18077,7 +20089,6 @@ function withdrawAvailableBalance() external;
                     <MissingOperators as alloy_sol_types::SolEvent>::decode_raw_log(
                             topics,
                             data,
-                            validate,
                         )
                         .map(Self::MissingOperators)
                 }
@@ -18087,7 +20098,6 @@ function withdrawAvailableBalance() external;
                     <MissingWatchtowers as alloy_sol_types::SolEvent>::decode_raw_log(
                             topics,
                             data,
-                            validate,
                         )
                         .map(Self::MissingWatchtowers)
                 }
@@ -18097,7 +20107,6 @@ function withdrawAvailableBalance() external;
                     <NewAvailableBalance as alloy_sol_types::SolEvent>::decode_raw_log(
                             topics,
                             data,
-                            validate,
                         )
                         .map(Self::NewAvailableBalance)
                 }
@@ -18105,7 +20114,6 @@ function withdrawAvailableBalance() external;
                     <NewCommittee as alloy_sol_types::SolEvent>::decode_raw_log(
                             topics,
                             data,
-                            validate,
                         )
                         .map(Self::NewCommittee)
                 }
@@ -18113,7 +20121,6 @@ function withdrawAvailableBalance() external;
                     <NewMember as alloy_sol_types::SolEvent>::decode_raw_log(
                             topics,
                             data,
-                            validate,
                         )
                         .map(Self::NewMember)
                 }
@@ -18123,7 +20130,6 @@ function withdrawAvailableBalance() external;
                     <NewPendingCommittee as alloy_sol_types::SolEvent>::decode_raw_log(
                             topics,
                             data,
-                            validate,
                         )
                         .map(Self::NewPendingCommittee)
                 }
@@ -18133,7 +20139,6 @@ function withdrawAvailableBalance() external;
                     <NewSecurityBondDeposit as alloy_sol_types::SolEvent>::decode_raw_log(
                             topics,
                             data,
-                            validate,
                         )
                         .map(Self::NewSecurityBondDeposit)
                 }
@@ -18143,7 +20148,6 @@ function withdrawAvailableBalance() external;
                     <OwnershipTransferred as alloy_sol_types::SolEvent>::decode_raw_log(
                             topics,
                             data,
-                            validate,
                         )
                         .map(Self::OwnershipTransferred)
                 }
@@ -18153,7 +20157,6 @@ function withdrawAvailableBalance() external;
                     <PegManagerUpdated as alloy_sol_types::SolEvent>::decode_raw_log(
                             topics,
                             data,
-                            validate,
                         )
                         .map(Self::PegManagerUpdated)
                 }
@@ -18163,7 +20166,6 @@ function withdrawAvailableBalance() external;
                     <PendingCommitteeTimeoutUpdated as alloy_sol_types::SolEvent>::decode_raw_log(
                             topics,
                             data,
-                            validate,
                         )
                         .map(Self::PendingCommitteeTimeoutUpdated)
                 }
@@ -18173,16 +20175,11 @@ function withdrawAvailableBalance() external;
                     <StreamManagerUpdated as alloy_sol_types::SolEvent>::decode_raw_log(
                             topics,
                             data,
-                            validate,
                         )
                         .map(Self::StreamManagerUpdated)
                 }
                 Some(<Upgraded as alloy_sol_types::SolEvent>::SIGNATURE_HASH) => {
-                    <Upgraded as alloy_sol_types::SolEvent>::decode_raw_log(
-                            topics,
-                            data,
-                            validate,
-                        )
+                    <Upgraded as alloy_sol_types::SolEvent>::decode_raw_log(topics, data)
                         .map(Self::Upgraded)
                 }
                 _ => {
@@ -18336,14 +20333,13 @@ function withdrawAvailableBalance() external;
 See the [wrapper's documentation](`CommitteeRegistryInstance`) for more details.*/
     #[inline]
     pub const fn new<
-        T: alloy_contract::private::Transport + ::core::clone::Clone,
-        P: alloy_contract::private::Provider<T, N>,
+        P: alloy_contract::private::Provider<N>,
         N: alloy_contract::private::Network,
     >(
         address: alloy_sol_types::private::Address,
         provider: P,
-    ) -> CommitteeRegistryInstance<T, P, N> {
-        CommitteeRegistryInstance::<T, P, N>::new(address, provider)
+    ) -> CommitteeRegistryInstance<P, N> {
+        CommitteeRegistryInstance::<P, N>::new(address, provider)
     }
     /**Deploys this contract using the given `provider` and constructor arguments, if any.
 
@@ -18352,15 +20348,14 @@ Returns a new instance of the contract, if the deployment was successful.
 For more fine-grained control over the deployment process, use [`deploy_builder`] instead.*/
     #[inline]
     pub fn deploy<
-        T: alloy_contract::private::Transport + ::core::clone::Clone,
-        P: alloy_contract::private::Provider<T, N>,
+        P: alloy_contract::private::Provider<N>,
         N: alloy_contract::private::Network,
     >(
         provider: P,
     ) -> impl ::core::future::Future<
-        Output = alloy_contract::Result<CommitteeRegistryInstance<T, P, N>>,
+        Output = alloy_contract::Result<CommitteeRegistryInstance<P, N>>,
     > {
-        CommitteeRegistryInstance::<T, P, N>::deploy(provider)
+        CommitteeRegistryInstance::<P, N>::deploy(provider)
     }
     /**Creates a `RawCallBuilder` for deploying this contract using the given `provider`
 and constructor arguments, if any.
@@ -18369,11 +20364,10 @@ This is a simple wrapper around creating a `RawCallBuilder` with the data set to
 the bytecode concatenated with the constructor's ABI-encoded arguments.*/
     #[inline]
     pub fn deploy_builder<
-        T: alloy_contract::private::Transport + ::core::clone::Clone,
-        P: alloy_contract::private::Provider<T, N>,
+        P: alloy_contract::private::Provider<N>,
         N: alloy_contract::private::Network,
-    >(provider: P) -> alloy_contract::RawCallBuilder<T, P, N> {
-        CommitteeRegistryInstance::<T, P, N>::deploy_builder(provider)
+    >(provider: P) -> alloy_contract::RawCallBuilder<P, N> {
+        CommitteeRegistryInstance::<P, N>::deploy_builder(provider)
     }
     /**A [`CommitteeRegistry`](self) instance.
 
@@ -18387,13 +20381,13 @@ be used to deploy a new instance of the contract.
 
 See the [module-level documentation](self) for all the available methods.*/
     #[derive(Clone)]
-    pub struct CommitteeRegistryInstance<T, P, N = alloy_contract::private::Ethereum> {
+    pub struct CommitteeRegistryInstance<P, N = alloy_contract::private::Ethereum> {
         address: alloy_sol_types::private::Address,
         provider: P,
-        _network_transport: ::core::marker::PhantomData<(N, T)>,
+        _network: ::core::marker::PhantomData<N>,
     }
     #[automatically_derived]
-    impl<T, P, N> ::core::fmt::Debug for CommitteeRegistryInstance<T, P, N> {
+    impl<P, N> ::core::fmt::Debug for CommitteeRegistryInstance<P, N> {
         #[inline]
         fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
             f.debug_tuple("CommitteeRegistryInstance").field(&self.address).finish()
@@ -18402,10 +20396,9 @@ See the [module-level documentation](self) for all the available methods.*/
     /// Instantiation and getters/setters.
     #[automatically_derived]
     impl<
-        T: alloy_contract::private::Transport + ::core::clone::Clone,
-        P: alloy_contract::private::Provider<T, N>,
+        P: alloy_contract::private::Provider<N>,
         N: alloy_contract::private::Network,
-    > CommitteeRegistryInstance<T, P, N> {
+    > CommitteeRegistryInstance<P, N> {
         /**Creates a new wrapper around an on-chain [`CommitteeRegistry`](self) contract instance.
 
 See the [wrapper's documentation](`CommitteeRegistryInstance`) for more details.*/
@@ -18417,7 +20410,7 @@ See the [wrapper's documentation](`CommitteeRegistryInstance`) for more details.
             Self {
                 address,
                 provider,
-                _network_transport: ::core::marker::PhantomData,
+                _network: ::core::marker::PhantomData,
             }
         }
         /**Deploys this contract using the given `provider` and constructor arguments, if any.
@@ -18428,7 +20421,7 @@ For more fine-grained control over the deployment process, use [`deploy_builder`
         #[inline]
         pub async fn deploy(
             provider: P,
-        ) -> alloy_contract::Result<CommitteeRegistryInstance<T, P, N>> {
+        ) -> alloy_contract::Result<CommitteeRegistryInstance<P, N>> {
             let call_builder = Self::deploy_builder(provider);
             let contract_address = call_builder.deploy().await?;
             Ok(Self::new(contract_address, call_builder.provider))
@@ -18439,7 +20432,7 @@ and constructor arguments, if any.
 This is a simple wrapper around creating a `RawCallBuilder` with the data set to
 the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         #[inline]
-        pub fn deploy_builder(provider: P) -> alloy_contract::RawCallBuilder<T, P, N> {
+        pub fn deploy_builder(provider: P) -> alloy_contract::RawCallBuilder<P, N> {
             alloy_contract::RawCallBuilder::new_raw_deploy(
                 provider,
                 ::core::clone::Clone::clone(&BYTECODE),
@@ -18466,24 +20459,23 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             &self.provider
         }
     }
-    impl<T, P: ::core::clone::Clone, N> CommitteeRegistryInstance<T, &P, N> {
+    impl<P: ::core::clone::Clone, N> CommitteeRegistryInstance<&P, N> {
         /// Clones the provider and returns a new instance with the cloned provider.
         #[inline]
-        pub fn with_cloned_provider(self) -> CommitteeRegistryInstance<T, P, N> {
+        pub fn with_cloned_provider(self) -> CommitteeRegistryInstance<P, N> {
             CommitteeRegistryInstance {
                 address: self.address,
                 provider: ::core::clone::Clone::clone(&self.provider),
-                _network_transport: ::core::marker::PhantomData,
+                _network: ::core::marker::PhantomData,
             }
         }
     }
     /// Function calls.
     #[automatically_derived]
     impl<
-        T: alloy_contract::private::Transport + ::core::clone::Clone,
-        P: alloy_contract::private::Provider<T, N>,
+        P: alloy_contract::private::Provider<N>,
         N: alloy_contract::private::Network,
-    > CommitteeRegistryInstance<T, P, N> {
+    > CommitteeRegistryInstance<P, N> {
         /// Creates a new call builder using this contract instance's provider and address.
         ///
         /// Note that the call can be any function call, not just those defined in this
@@ -18491,32 +20483,32 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         pub fn call_builder<C: alloy_sol_types::SolCall>(
             &self,
             call: &C,
-        ) -> alloy_contract::SolCallBuilder<T, &P, C, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, C, N> {
             alloy_contract::SolCallBuilder::new_sol(&self.provider, &self.address, call)
         }
         ///Creates a new call builder for the [`MAX_COMMITTEES_SIZE`] function.
         pub fn MAX_COMMITTEES_SIZE(
             &self,
-        ) -> alloy_contract::SolCallBuilder<T, &P, MAX_COMMITTEES_SIZECall, N> {
-            self.call_builder(&MAX_COMMITTEES_SIZECall {})
+        ) -> alloy_contract::SolCallBuilder<&P, MAX_COMMITTEES_SIZECall, N> {
+            self.call_builder(&MAX_COMMITTEES_SIZECall)
         }
         ///Creates a new call builder for the [`MAX_MEMBERS_PER_COMMITTEE`] function.
         pub fn MAX_MEMBERS_PER_COMMITTEE(
             &self,
-        ) -> alloy_contract::SolCallBuilder<T, &P, MAX_MEMBERS_PER_COMMITTEECall, N> {
-            self.call_builder(&MAX_MEMBERS_PER_COMMITTEECall {})
+        ) -> alloy_contract::SolCallBuilder<&P, MAX_MEMBERS_PER_COMMITTEECall, N> {
+            self.call_builder(&MAX_MEMBERS_PER_COMMITTEECall)
         }
         ///Creates a new call builder for the [`UPGRADE_INTERFACE_VERSION`] function.
         pub fn UPGRADE_INTERFACE_VERSION(
             &self,
-        ) -> alloy_contract::SolCallBuilder<T, &P, UPGRADE_INTERFACE_VERSIONCall, N> {
-            self.call_builder(&UPGRADE_INTERFACE_VERSIONCall {})
+        ) -> alloy_contract::SolCallBuilder<&P, UPGRADE_INTERFACE_VERSIONCall, N> {
+            self.call_builder(&UPGRADE_INTERFACE_VERSIONCall)
         }
         ///Creates a new call builder for the [`__BaseProxy_init`] function.
         pub fn __BaseProxy_init(
             &self,
             _initialOwner: alloy::sol_types::private::Address,
-        ) -> alloy_contract::SolCallBuilder<T, &P, __BaseProxy_initCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, __BaseProxy_initCall, N> {
             self.call_builder(
                 &__BaseProxy_initCall {
                     _initialOwner,
@@ -18531,7 +20523,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             _publicKeys: alloy::sol_types::private::Vec<
                 <PublicKeyRegistration as alloy::sol_types::SolType>::RustType,
             >,
-        ) -> alloy_contract::SolCallBuilder<T, &P, applyToStreamCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, applyToStreamCall, N> {
             self.call_builder(
                 &applyToStreamCall {
                     _stream,
@@ -18544,7 +20536,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         pub fn createCommittee(
             &self,
             _streamId: u64,
-        ) -> alloy_contract::SolCallBuilder<T, &P, createCommitteeCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, createCommitteeCall, N> {
             self.call_builder(&createCommitteeCall { _streamId })
         }
         ///Creates a new call builder for the [`depositMemberInfoForCommittee`] function.
@@ -18552,12 +20544,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             &self,
             _streamId: u64,
             _aggregatedKey: alloy::sol_types::private::FixedBytes<32>,
-        ) -> alloy_contract::SolCallBuilder<
-            T,
-            &P,
-            depositMemberInfoForCommitteeCall,
-            N,
-        > {
+        ) -> alloy_contract::SolCallBuilder<&P, depositMemberInfoForCommitteeCall, N> {
             self.call_builder(
                 &depositMemberInfoForCommitteeCall {
                     _streamId,
@@ -18569,7 +20556,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         pub fn getCommittee(
             &self,
             _committeeId: alloy::sol_types::private::primitives::aliases::U256,
-        ) -> alloy_contract::SolCallBuilder<T, &P, getCommitteeCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, getCommitteeCall, N> {
             self.call_builder(&getCommitteeCall { _committeeId })
         }
         ///Creates a new call builder for the [`getCommitteeCandidates`] function.
@@ -18577,7 +20564,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             &self,
             _denomination: <StreamDenomination as alloy::sol_types::SolType>::RustType,
             _role: <Role as alloy::sol_types::SolType>::RustType,
-        ) -> alloy_contract::SolCallBuilder<T, &P, getCommitteeCandidatesCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, getCommitteeCandidatesCall, N> {
             self.call_builder(
                 &getCommitteeCandidatesCall {
                     _denomination,
@@ -18589,7 +20576,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         pub fn getCommitteeMembers(
             &self,
             _committeeId: alloy::sol_types::private::primitives::aliases::U256,
-        ) -> alloy_contract::SolCallBuilder<T, &P, getCommitteeMembersCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, getCommitteeMembersCall, N> {
             self.call_builder(
                 &getCommitteeMembersCall {
                     _committeeId,
@@ -18599,14 +20586,14 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         ///Creates a new call builder for the [`getImplementation`] function.
         pub fn getImplementation(
             &self,
-        ) -> alloy_contract::SolCallBuilder<T, &P, getImplementationCall, N> {
-            self.call_builder(&getImplementationCall {})
+        ) -> alloy_contract::SolCallBuilder<&P, getImplementationCall, N> {
+            self.call_builder(&getImplementationCall)
         }
         ///Creates a new call builder for the [`getMemberAvailableBalance`] function.
         pub fn getMemberAvailableBalance(
             &self,
             _address: alloy::sol_types::private::Address,
-        ) -> alloy_contract::SolCallBuilder<T, &P, getMemberAvailableBalanceCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, getMemberAvailableBalanceCall, N> {
             self.call_builder(
                 &getMemberAvailableBalanceCall {
                     _address,
@@ -18618,7 +20605,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             &self,
             _memberAddress: alloy::sol_types::private::Address,
             _denomination: <StreamDenomination as alloy::sol_types::SolType>::RustType,
-        ) -> alloy_contract::SolCallBuilder<T, &P, getMemberPreStakedBalanceCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, getMemberPreStakedBalanceCall, N> {
             self.call_builder(
                 &getMemberPreStakedBalanceCall {
                     _memberAddress,
@@ -18630,7 +20617,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         pub fn getMemberPublicKeys(
             &self,
             _address: alloy::sol_types::private::Address,
-        ) -> alloy_contract::SolCallBuilder<T, &P, getMemberPublicKeysCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, getMemberPublicKeysCall, N> {
             self.call_builder(
                 &getMemberPublicKeysCall {
                     _address,
@@ -18642,7 +20629,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             &self,
             _memberAddress: alloy::sol_types::private::Address,
             _denomination: <StreamDenomination as alloy::sol_types::SolType>::RustType,
-        ) -> alloy_contract::SolCallBuilder<T, &P, getMemberRequestedRoleCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, getMemberRequestedRoleCall, N> {
             self.call_builder(
                 &getMemberRequestedRoleCall {
                     _memberAddress,
@@ -18656,7 +20643,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             _address: alloy::sol_types::private::Address,
             _denomination: <StreamDenomination as alloy::sol_types::SolType>::RustType,
             _packetNumber: u64,
-        ) -> alloy_contract::SolCallBuilder<T, &P, getMemberStakedBalanceCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, getMemberStakedBalanceCall, N> {
             self.call_builder(
                 &getMemberStakedBalanceCall {
                     _address,
@@ -18669,7 +20656,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         pub fn getMemberTakePubKey(
             &self,
             _address: alloy::sol_types::private::Address,
-        ) -> alloy_contract::SolCallBuilder<T, &P, getMemberTakePubKeyCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, getMemberTakePubKeyCall, N> {
             self.call_builder(
                 &getMemberTakePubKeyCall {
                     _address,
@@ -18680,7 +20667,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         pub fn getMinimumDeposit(
             &self,
             _denomination: <StreamDenomination as alloy::sol_types::SolType>::RustType,
-        ) -> alloy_contract::SolCallBuilder<T, &P, getMinimumDepositCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, getMinimumDepositCall, N> {
             self.call_builder(
                 &getMinimumDepositCall {
                     _denomination,
@@ -18691,7 +20678,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         pub fn getPendingCommittee(
             &self,
             _streamId: u64,
-        ) -> alloy_contract::SolCallBuilder<T, &P, getPendingCommitteeCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, getPendingCommitteeCall, N> {
             self.call_builder(
                 &getPendingCommitteeCall {
                     _streamId,
@@ -18702,14 +20689,14 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         pub fn initialize(
             &self,
             _initialOwner: alloy::sol_types::private::Address,
-        ) -> alloy_contract::SolCallBuilder<T, &P, initializeCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, initializeCall, N> {
             self.call_builder(&initializeCall { _initialOwner })
         }
         ///Creates a new call builder for the [`isPendingCommitteeExpired`] function.
         pub fn isPendingCommitteeExpired(
             &self,
             _streamId: u64,
-        ) -> alloy_contract::SolCallBuilder<T, &P, isPendingCommitteeExpiredCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, isPendingCommitteeExpiredCall, N> {
             self.call_builder(
                 &isPendingCommitteeExpiredCall {
                     _streamId,
@@ -18719,48 +20706,48 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         ///Creates a new call builder for the [`minCommitteeMembers`] function.
         pub fn minCommitteeMembers(
             &self,
-        ) -> alloy_contract::SolCallBuilder<T, &P, minCommitteeMembersCall, N> {
-            self.call_builder(&minCommitteeMembersCall {})
+        ) -> alloy_contract::SolCallBuilder<&P, minCommitteeMembersCall, N> {
+            self.call_builder(&minCommitteeMembersCall)
         }
         ///Creates a new call builder for the [`minCommitteeOperators`] function.
         pub fn minCommitteeOperators(
             &self,
-        ) -> alloy_contract::SolCallBuilder<T, &P, minCommitteeOperatorsCall, N> {
-            self.call_builder(&minCommitteeOperatorsCall {})
+        ) -> alloy_contract::SolCallBuilder<&P, minCommitteeOperatorsCall, N> {
+            self.call_builder(&minCommitteeOperatorsCall)
         }
         ///Creates a new call builder for the [`minCommitteeWatchtowers`] function.
         pub fn minCommitteeWatchtowers(
             &self,
-        ) -> alloy_contract::SolCallBuilder<T, &P, minCommitteeWatchtowersCall, N> {
-            self.call_builder(&minCommitteeWatchtowersCall {})
+        ) -> alloy_contract::SolCallBuilder<&P, minCommitteeWatchtowersCall, N> {
+            self.call_builder(&minCommitteeWatchtowersCall)
         }
         ///Creates a new call builder for the [`owner`] function.
-        pub fn owner(&self) -> alloy_contract::SolCallBuilder<T, &P, ownerCall, N> {
-            self.call_builder(&ownerCall {})
+        pub fn owner(&self) -> alloy_contract::SolCallBuilder<&P, ownerCall, N> {
+            self.call_builder(&ownerCall)
         }
         ///Creates a new call builder for the [`pendingCommitteeTimeout`] function.
         pub fn pendingCommitteeTimeout(
             &self,
-        ) -> alloy_contract::SolCallBuilder<T, &P, pendingCommitteeTimeoutCall, N> {
-            self.call_builder(&pendingCommitteeTimeoutCall {})
+        ) -> alloy_contract::SolCallBuilder<&P, pendingCommitteeTimeoutCall, N> {
+            self.call_builder(&pendingCommitteeTimeoutCall)
         }
         ///Creates a new call builder for the [`proxiableUUID`] function.
         pub fn proxiableUUID(
             &self,
-        ) -> alloy_contract::SolCallBuilder<T, &P, proxiableUUIDCall, N> {
-            self.call_builder(&proxiableUUIDCall {})
+        ) -> alloy_contract::SolCallBuilder<&P, proxiableUUIDCall, N> {
+            self.call_builder(&proxiableUUIDCall)
         }
         ///Creates a new call builder for the [`renounceOwnership`] function.
         pub fn renounceOwnership(
             &self,
-        ) -> alloy_contract::SolCallBuilder<T, &P, renounceOwnershipCall, N> {
-            self.call_builder(&renounceOwnershipCall {})
+        ) -> alloy_contract::SolCallBuilder<&P, renounceOwnershipCall, N> {
+            self.call_builder(&renounceOwnershipCall)
         }
         ///Creates a new call builder for the [`restartPendingCommittee`] function.
         pub fn restartPendingCommittee(
             &self,
             _streamId: u64,
-        ) -> alloy_contract::SolCallBuilder<T, &P, restartPendingCommitteeCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, restartPendingCommitteeCall, N> {
             self.call_builder(
                 &restartPendingCommitteeCall {
                     _streamId,
@@ -18771,7 +20758,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         pub fn setCommitteeMinMembers(
             &self,
             _minMembers: alloy::sol_types::private::primitives::aliases::U256,
-        ) -> alloy_contract::SolCallBuilder<T, &P, setCommitteeMinMembersCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, setCommitteeMinMembersCall, N> {
             self.call_builder(
                 &setCommitteeMinMembersCall {
                     _minMembers,
@@ -18782,7 +20769,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         pub fn setCommitteeMinOperators(
             &self,
             _minOperators: alloy::sol_types::private::primitives::aliases::U256,
-        ) -> alloy_contract::SolCallBuilder<T, &P, setCommitteeMinOperatorsCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, setCommitteeMinOperatorsCall, N> {
             self.call_builder(
                 &setCommitteeMinOperatorsCall {
                     _minOperators,
@@ -18793,7 +20780,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         pub fn setCommitteeMinWatchtowers(
             &self,
             _minWatchtowers: alloy::sol_types::private::primitives::aliases::U256,
-        ) -> alloy_contract::SolCallBuilder<T, &P, setCommitteeMinWatchtowersCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, setCommitteeMinWatchtowersCall, N> {
             self.call_builder(
                 &setCommitteeMinWatchtowersCall {
                     _minWatchtowers,
@@ -18804,14 +20791,14 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         pub fn setPegManager(
             &self,
             _pegManager: alloy::sol_types::private::Address,
-        ) -> alloy_contract::SolCallBuilder<T, &P, setPegManagerCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, setPegManagerCall, N> {
             self.call_builder(&setPegManagerCall { _pegManager })
         }
         ///Creates a new call builder for the [`setPendingCommitteeTimeout`] function.
         pub fn setPendingCommitteeTimeout(
             &self,
             _timeout: alloy::sol_types::private::primitives::aliases::U256,
-        ) -> alloy_contract::SolCallBuilder<T, &P, setPendingCommitteeTimeoutCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, setPendingCommitteeTimeoutCall, N> {
             self.call_builder(
                 &setPendingCommitteeTimeoutCall {
                     _timeout,
@@ -18822,7 +20809,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         pub fn setStreamManager(
             &self,
             _streamManager: alloy::sol_types::private::Address,
-        ) -> alloy_contract::SolCallBuilder<T, &P, setStreamManagerCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, setStreamManagerCall, N> {
             self.call_builder(
                 &setStreamManagerCall {
                     _streamManager,
@@ -18833,14 +20820,14 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         pub fn transferOwnership(
             &self,
             newOwner: alloy::sol_types::private::Address,
-        ) -> alloy_contract::SolCallBuilder<T, &P, transferOwnershipCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, transferOwnershipCall, N> {
             self.call_builder(&transferOwnershipCall { newOwner })
         }
         ///Creates a new call builder for the [`unsubscribeFromStream`] function.
         pub fn unsubscribeFromStream(
             &self,
             _denomination: <StreamDenomination as alloy::sol_types::SolType>::RustType,
-        ) -> alloy_contract::SolCallBuilder<T, &P, unsubscribeFromStreamCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, unsubscribeFromStreamCall, N> {
             self.call_builder(
                 &unsubscribeFromStreamCall {
                     _denomination,
@@ -18852,7 +20839,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             &self,
             newImplementation: alloy::sol_types::private::Address,
             data: alloy::sol_types::private::Bytes,
-        ) -> alloy_contract::SolCallBuilder<T, &P, upgradeToAndCallCall, N> {
+        ) -> alloy_contract::SolCallBuilder<&P, upgradeToAndCallCall, N> {
             self.call_builder(
                 &upgradeToAndCallCall {
                     newImplementation,
@@ -18863,140 +20850,135 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         ///Creates a new call builder for the [`withdrawAvailableBalance`] function.
         pub fn withdrawAvailableBalance(
             &self,
-        ) -> alloy_contract::SolCallBuilder<T, &P, withdrawAvailableBalanceCall, N> {
-            self.call_builder(&withdrawAvailableBalanceCall {})
+        ) -> alloy_contract::SolCallBuilder<&P, withdrawAvailableBalanceCall, N> {
+            self.call_builder(&withdrawAvailableBalanceCall)
         }
     }
     /// Event filters.
     #[automatically_derived]
     impl<
-        T: alloy_contract::private::Transport + ::core::clone::Clone,
-        P: alloy_contract::private::Provider<T, N>,
+        P: alloy_contract::private::Provider<N>,
         N: alloy_contract::private::Network,
-    > CommitteeRegistryInstance<T, P, N> {
+    > CommitteeRegistryInstance<P, N> {
         /// Creates a new event filter using this contract instance's provider and address.
         ///
         /// Note that the type can be any event, not just those defined in this contract.
         /// Prefer using the other methods for building type-safe event filters.
         pub fn event_filter<E: alloy_sol_types::SolEvent>(
             &self,
-        ) -> alloy_contract::Event<T, &P, E, N> {
+        ) -> alloy_contract::Event<&P, E, N> {
             alloy_contract::Event::new_sol(&self.provider, &self.address)
         }
         ///Creates a new event filter for the [`AvailableBalanceRetrieved`] event.
         pub fn AvailableBalanceRetrieved_filter(
             &self,
-        ) -> alloy_contract::Event<T, &P, AvailableBalanceRetrieved, N> {
+        ) -> alloy_contract::Event<&P, AvailableBalanceRetrieved, N> {
             self.event_filter::<AvailableBalanceRetrieved>()
         }
         ///Creates a new event filter for the [`CommitteeMinMembersUpdated`] event.
         pub fn CommitteeMinMembersUpdated_filter(
             &self,
-        ) -> alloy_contract::Event<T, &P, CommitteeMinMembersUpdated, N> {
+        ) -> alloy_contract::Event<&P, CommitteeMinMembersUpdated, N> {
             self.event_filter::<CommitteeMinMembersUpdated>()
         }
         ///Creates a new event filter for the [`CommitteeMinOperatorsUpdated`] event.
         pub fn CommitteeMinOperatorsUpdated_filter(
             &self,
-        ) -> alloy_contract::Event<T, &P, CommitteeMinOperatorsUpdated, N> {
+        ) -> alloy_contract::Event<&P, CommitteeMinOperatorsUpdated, N> {
             self.event_filter::<CommitteeMinOperatorsUpdated>()
         }
         ///Creates a new event filter for the [`CommitteeMinWatchtowersUpdated`] event.
         pub fn CommitteeMinWatchtowersUpdated_filter(
             &self,
-        ) -> alloy_contract::Event<T, &P, CommitteeMinWatchtowersUpdated, N> {
+        ) -> alloy_contract::Event<&P, CommitteeMinWatchtowersUpdated, N> {
             self.event_filter::<CommitteeMinWatchtowersUpdated>()
         }
         ///Creates a new event filter for the [`Initialized`] event.
-        pub fn Initialized_filter(
-            &self,
-        ) -> alloy_contract::Event<T, &P, Initialized, N> {
+        pub fn Initialized_filter(&self) -> alloy_contract::Event<&P, Initialized, N> {
             self.event_filter::<Initialized>()
         }
         ///Creates a new event filter for the [`MemberInfoDeposited`] event.
         pub fn MemberInfoDeposited_filter(
             &self,
-        ) -> alloy_contract::Event<T, &P, MemberInfoDeposited, N> {
+        ) -> alloy_contract::Event<&P, MemberInfoDeposited, N> {
             self.event_filter::<MemberInfoDeposited>()
         }
         ///Creates a new event filter for the [`MemberUnsubscribedFromStream`] event.
         pub fn MemberUnsubscribedFromStream_filter(
             &self,
-        ) -> alloy_contract::Event<T, &P, MemberUnsubscribedFromStream, N> {
+        ) -> alloy_contract::Event<&P, MemberUnsubscribedFromStream, N> {
             self.event_filter::<MemberUnsubscribedFromStream>()
         }
         ///Creates a new event filter for the [`MissingMembers`] event.
         pub fn MissingMembers_filter(
             &self,
-        ) -> alloy_contract::Event<T, &P, MissingMembers, N> {
+        ) -> alloy_contract::Event<&P, MissingMembers, N> {
             self.event_filter::<MissingMembers>()
         }
         ///Creates a new event filter for the [`MissingOperators`] event.
         pub fn MissingOperators_filter(
             &self,
-        ) -> alloy_contract::Event<T, &P, MissingOperators, N> {
+        ) -> alloy_contract::Event<&P, MissingOperators, N> {
             self.event_filter::<MissingOperators>()
         }
         ///Creates a new event filter for the [`MissingWatchtowers`] event.
         pub fn MissingWatchtowers_filter(
             &self,
-        ) -> alloy_contract::Event<T, &P, MissingWatchtowers, N> {
+        ) -> alloy_contract::Event<&P, MissingWatchtowers, N> {
             self.event_filter::<MissingWatchtowers>()
         }
         ///Creates a new event filter for the [`NewAvailableBalance`] event.
         pub fn NewAvailableBalance_filter(
             &self,
-        ) -> alloy_contract::Event<T, &P, NewAvailableBalance, N> {
+        ) -> alloy_contract::Event<&P, NewAvailableBalance, N> {
             self.event_filter::<NewAvailableBalance>()
         }
         ///Creates a new event filter for the [`NewCommittee`] event.
-        pub fn NewCommittee_filter(
-            &self,
-        ) -> alloy_contract::Event<T, &P, NewCommittee, N> {
+        pub fn NewCommittee_filter(&self) -> alloy_contract::Event<&P, NewCommittee, N> {
             self.event_filter::<NewCommittee>()
         }
         ///Creates a new event filter for the [`NewMember`] event.
-        pub fn NewMember_filter(&self) -> alloy_contract::Event<T, &P, NewMember, N> {
+        pub fn NewMember_filter(&self) -> alloy_contract::Event<&P, NewMember, N> {
             self.event_filter::<NewMember>()
         }
         ///Creates a new event filter for the [`NewPendingCommittee`] event.
         pub fn NewPendingCommittee_filter(
             &self,
-        ) -> alloy_contract::Event<T, &P, NewPendingCommittee, N> {
+        ) -> alloy_contract::Event<&P, NewPendingCommittee, N> {
             self.event_filter::<NewPendingCommittee>()
         }
         ///Creates a new event filter for the [`NewSecurityBondDeposit`] event.
         pub fn NewSecurityBondDeposit_filter(
             &self,
-        ) -> alloy_contract::Event<T, &P, NewSecurityBondDeposit, N> {
+        ) -> alloy_contract::Event<&P, NewSecurityBondDeposit, N> {
             self.event_filter::<NewSecurityBondDeposit>()
         }
         ///Creates a new event filter for the [`OwnershipTransferred`] event.
         pub fn OwnershipTransferred_filter(
             &self,
-        ) -> alloy_contract::Event<T, &P, OwnershipTransferred, N> {
+        ) -> alloy_contract::Event<&P, OwnershipTransferred, N> {
             self.event_filter::<OwnershipTransferred>()
         }
         ///Creates a new event filter for the [`PegManagerUpdated`] event.
         pub fn PegManagerUpdated_filter(
             &self,
-        ) -> alloy_contract::Event<T, &P, PegManagerUpdated, N> {
+        ) -> alloy_contract::Event<&P, PegManagerUpdated, N> {
             self.event_filter::<PegManagerUpdated>()
         }
         ///Creates a new event filter for the [`PendingCommitteeTimeoutUpdated`] event.
         pub fn PendingCommitteeTimeoutUpdated_filter(
             &self,
-        ) -> alloy_contract::Event<T, &P, PendingCommitteeTimeoutUpdated, N> {
+        ) -> alloy_contract::Event<&P, PendingCommitteeTimeoutUpdated, N> {
             self.event_filter::<PendingCommitteeTimeoutUpdated>()
         }
         ///Creates a new event filter for the [`StreamManagerUpdated`] event.
         pub fn StreamManagerUpdated_filter(
             &self,
-        ) -> alloy_contract::Event<T, &P, StreamManagerUpdated, N> {
+        ) -> alloy_contract::Event<&P, StreamManagerUpdated, N> {
             self.event_filter::<StreamManagerUpdated>()
         }
         ///Creates a new event filter for the [`Upgraded`] event.
-        pub fn Upgraded_filter(&self) -> alloy_contract::Event<T, &P, Upgraded, N> {
+        pub fn Upgraded_filter(&self) -> alloy_contract::Event<&P, Upgraded, N> {
             self.event_filter::<Upgraded>()
         }
     }
