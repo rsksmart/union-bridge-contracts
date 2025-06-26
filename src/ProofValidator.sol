@@ -12,22 +12,61 @@ import {
 } from "./interfaces/IBridge.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-/// @title ProofValidator
-/// @notice Simple proof validator for proving Bitcoin Tx in RSK
+/// @title Proof Validator
+/// @notice Simple proof validator for proving Bitcoin transactions in RSK
+/// @dev Provides functionality to verify Bitcoin transaction confirmations using the RSK Bridge
+/// @dev Uses the RSK Bridge precompiled contract to validate transaction proofs
 abstract contract ProofValidator is Initializable {
+    /// @notice The RSK Bridge contract used for Bitcoin transaction verification
+    /// @dev This contract provides access to Bitcoin transaction confirmation data
     IBridge public bridge;
 
+    // Errors
+    /// @notice Error thrown when the provided Bitcoin block hash doesn't exist
+    /// @param blockHash The non-existent block hash that was provided
     error BridgeBtcInexistantBlockHash(bytes32 blockHash);
+
+    /// @notice Error thrown when the provided Bitcoin block is not in the best chain
+    /// @param blockHash The block hash that is not in the best chain
     error BridgeBtcBlockNotInBestChain(bytes32 blockHash);
+
+    /// @notice Error thrown when the provided Bitcoin block data is inconsistent
+    /// @param blockHash The block hash with inconsistent data
     error BridgeBtcInconsistentBlock(bytes32 blockHash);
+
+    /// @notice Error thrown when the provided Bitcoin block is too old (> 1 month)
+    /// @param maxDepth The maximum allowed depth for block retrieval
     error BridgeBtcBlockTooOld(int256 maxDepth);
+
+    /// @notice Error thrown when the merkle proof for a Bitcoin transaction is invalid
+    /// @param txHash The transaction hash that failed merkle proof verification
+    /// @param merkleBranchPath The merkle branch path that was used
+    /// @param merkleBranchHashes The merkle branch hashes that were provided
     error BridgeBtcTxInvalidMerkleBranch(bytes32 txHash, uint256 merkleBranchPath, bytes32[] merkleBranchHashes);
+
+    /// @notice Error thrown when the RSK Bridge returns an unknown error code
+    /// @param errorCode The unknown error code returned by the bridge
     error BridgeBtcUnknownError(int256 errorCode);
+
+    /// @notice Error thrown when a transaction doesn't have enough confirmations
+    /// @param actual The actual number of confirmations the transaction has
+    /// @param expected The minimum number of confirmations required
     error NotEnoughConfirmations(int256 actual, uint256 expected);
+
+    /// @notice Error thrown when the bridge address is set to zero
     error BridgeAddressZero();
+
+    /// @notice Error thrown when an unauthorized caller attempts to access bridge functionality
     error BridgeUnauthorizedCaller();
+
+    /// @notice Error thrown when the locking cap is exceeded
+    /// @param amount The amount that would exceed the locking cap
     error BridgeExceededLockingCap(uint256 amount);
 
+    /// @notice Initializes the ProofValidator contract
+    /// @dev Sets up the RSK Bridge address for Bitcoin transaction verification
+    /// @dev Can only be called once during contract deployment
+    /// @param _bridgeAddress The address of the RSK Bridge contract
     function __ProofValidator_init(address payable _bridgeAddress) public initializer {
         if (_bridgeAddress == address(0)) {
             revert BridgeAddressZero();

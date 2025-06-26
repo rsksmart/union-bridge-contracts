@@ -27,29 +27,46 @@ import {StreamDenomination, IStreamManager} from "./interfaces/IStreamManager.so
 import {IPegManager} from "./interfaces/IPegManager.sol";
 import {SignatureData} from "./interfaces/ISignatureManager.sol";
 
+/// @title CommitteeRegistry
+/// @notice Manages registration, application, and selection of committee members for the union bridge system
+/// @dev Handles member registration, role assignment, committee formation, staking, and candidate management for all streams
 contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
+    /// @notice Mapping of member addresses to their member data
     mapping(address => Member) internal members;
 
+    /// @notice Maximum number of committees that can exist
     uint256 public constant MAX_COMMITTEES_SIZE = 100;
+    /// @notice Maximum number of members allowed per committee
     uint256 public constant MAX_MEMBERS_PER_COMMITTEE = 100;
 
-    // Committee selection constants
+    /// @notice Minimum number of watchtowers required for a committee
     uint256 public minCommitteeWatchtowers;
+    /// @notice Minimum number of operators required for a committee
     uint256 public minCommitteeOperators;
+    /// @notice Minimum number of members required for a committee
     uint256 public minCommitteeMembers;
 
+    /// @notice Mapping of streamId to pending committee data
     mapping(uint64 streamId => PendingCommittee) internal pendingCommittees;
+    /// @notice Mapping of committeeId to committee data
     mapping(uint256 committeeId => Committee) internal committeesById;
+    /// @notice Mapping of streamId to flag indicating if a committee should be created
     mapping(uint64 streamId => bool createCommittee) internal shouldCreateCommittee;
 
+    /// @notice Stream manager contract for managing streams and packets
     IStreamManager streamManager;
+    /// @notice Peg manager contract for peg-in/peg-out coordination
     IPegManager pegManager;
 
+    /// @notice Timeout in seconds for pending committee formation
     uint256 public pendingCommitteeTimeout;
 
+    /// @notice Mapping of stream denomination and role to candidate addresses
     mapping(StreamDenomination denomination => mapping(Role role => address[] membersAddress)) internal
         committeesCandidates;
 
+    /// @notice Initializes the CommitteeRegistry contract
+    /// @param _initialOwner The initial owner of the contract
     function initialize(address _initialOwner) public virtual initializer {
         __BaseProxy_init(_initialOwner);
         pendingCommitteeTimeout = 1 days; // Default timeout for pending committees
@@ -61,6 +78,9 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         minCommitteeMembers = 10;
     }
 
+    /// @notice Gets the minimum deposit required for a stream
+    /// @param _denomination The stream denomination
+    /// @return The minimum deposit amount in wei
     function getMinimumDeposit(StreamDenomination _denomination) public view returns (uint256) {
         return streamManager.getStreamById(uint64(_denomination)).securityBondValue;
     }
@@ -98,6 +118,11 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         return member;
     }
 
+    /// @notice Applies to participate in a stream with a specific role
+    /// @dev Registers public keys and deposits required bond for the requested role
+    /// @param _stream The stream denomination to apply for
+    /// @param _role The role requested in the committee
+    /// @param _publicKeys Array of public key registrations for TAKE, COVENANT, and COMMUNICATION
     function applyToStream(StreamDenomination _stream, Role _role, PublicKeyRegistration[] calldata _publicKeys)
         external
         payable
@@ -144,6 +169,8 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         committeesCandidates[_stream][_role].push(_memberAddress);
     }
 
+    /// @notice Unsubscribes from a stream and sets the pre-staked balance as available
+    /// @param _denomination The stream denomination to unsubscribe from
     function unsubscribeFromStream(StreamDenomination _denomination) external {
         if (_isInPendingCommittee(msg.sender, uint64(_denomination))) {
             revert MemberIsInPendingCommittee(msg.sender, _denomination);
@@ -224,6 +251,8 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         }
     }
 
+    /// @notice Withdraws available balance to the caller's address
+    /// @dev Can only withdraw balance that is not pre-staked or staked
     function withdrawAvailableBalance() external {
         Member storage member = _getMember(msg.sender);
         uint256 amount = member.balance.available;
@@ -309,6 +338,9 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         emit NewCommittee(_committeeId, _committee);
     }
 
+    /// @notice Gets a committee by its ID
+    /// @param _committeeId The committee ID
+    /// @return Committee The complete committee information
     function getCommittee(uint256 _committeeId) external view returns (Committee memory) {
         return _getCommittee(_committeeId);
     }
@@ -321,6 +353,9 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         return committee;
     }
 
+    /// @notice Gets all members of a specific committee
+    /// @param _committeeId The committee ID
+    /// @return Array of committee members with their roles
     function getCommitteeMembers(uint256 _committeeId) external view returns (CommitteeMember[] memory) {
         return _getCommitteeMembers(_committeeId);
     }
@@ -329,10 +364,16 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         return _getCommittee(_committeeId).members;
     }
 
+    /// @notice Gets the TAKE public key for a specific member
+    /// @param _address The member's address
+    /// @return The TAKE public key (x-coordinate only)
     function getMemberTakePubKey(address _address) external view returns (bytes32) {
         return _getMemberTakePubKey(_address);
     }
 
+    /// @notice Retrieves all public keys for a specific member
+    /// @param _address The member's address
+    /// @return publicKeys Array of public keys indexed by PublicKeyIndex
     function getMemberPublicKeys(address _address) external view returns (bytes32[] memory publicKeys) {
         Member storage member = _getMember(_address);
         publicKeys = new bytes32[](PUBLIC_KEYS_INDEX_LENGTH);
@@ -350,6 +391,10 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         return _getMember(_address).balance.applications[uint8(_denomination)];
     }
 
+    /// @notice Gets the requested role for a member in a specific stream
+    /// @param _memberAddress The member's address
+    /// @param _denomination The stream denomination
+    /// @return The requested role for the member
     function getMemberRequestedRole(address _memberAddress, StreamDenomination _denomination)
         external
         view
@@ -358,10 +403,17 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         return _getMemberApplicationData(_memberAddress, _denomination).requestedRole;
     }
 
+    /// @notice Gets the available balance for a member
+    /// @param _address The member's address
+    /// @return The available balance that can be withdrawn
     function getMemberAvailableBalance(address _address) external view returns (uint256) {
         return _getMember(_address).balance.available;
     }
 
+    /// @notice Gets the pre-staked balance for a member in a specific stream
+    /// @param _memberAddress The member's address
+    /// @param _denomination The stream denomination
+    /// @return The pre-staked balance for the stream
     function getMemberPreStakedBalance(address _memberAddress, StreamDenomination _denomination)
         external
         view
@@ -370,6 +422,11 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         return _getMemberApplicationData(_memberAddress, _denomination).preStaked;
     }
 
+    /// @notice Gets the staked balance for a member in a specific packet
+    /// @param _address The member's address
+    /// @param _denomination The stream denomination
+    /// @param _packetNumber The packet number
+    /// @return amount The staked amount in the packet
     function getMemberStakedBalance(address _address, StreamDenomination _denomination, uint64 _packetNumber)
         external
         view
@@ -402,6 +459,9 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         _createCommittee(_streamId);
     }
 
+    /// @notice Creates a new committee for a stream
+    /// @dev This function is called when the slot usage threshold is reached
+    /// @param _streamId The stream ID to create a new committee for
     function createCommittee(uint64 _streamId) external onlyPegManager {
         // NOTE: This method is called from the pegManager, so we should not revert.
 
@@ -478,6 +538,10 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         return PendingCommitteeStatus.SUCCESS;
     }
 
+    /// @notice Deposits member information for committee formation
+    /// @dev Called by members to provide their aggregated key for pending committee
+    /// @param _streamId The stream ID for the pending committee
+    /// @param _aggregatedKey The aggregated public key provided by the member
     function depositMemberInfoForCommittee(uint64 _streamId, bytes32 _aggregatedKey) external {
         PendingCommittee storage pendingCommittee = pendingCommittees[_streamId];
         if (pendingCommittee.createdAt == 0) {
@@ -531,6 +595,12 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         // TODO: slash the members. Sasasaaa.
     }
 
+    /// @notice Returns the pending committee for the stream
+    /// @dev This function will revert if the committee is not pending or if it's expired
+    /// @param _streamId The stream ID to get the pending committee for
+    /// @return committee The pending committee
+    /// @return createdAt The timestamp when the pending committee was created
+    /// @return missingData The number of members that have not provided their data yet
     function getPendingCommittee(uint64 _streamId)
         public
         view
@@ -545,6 +615,9 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         missingData = pendingCommittee.missingData;
     }
 
+    /// @notice Checks if there is a pending committee for the stream and if it's expired
+    /// @param _streamId The stream ID to check for a pending committee
+    /// @return True if the pending committee exists and is expired
     function isPendingCommitteeExpired(uint64 _streamId) external view returns (bool) {
         uint256 createdAt = pendingCommittees[_streamId].createdAt;
         // If no pending committee in proccess we return false
@@ -564,6 +637,10 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         delete pendingCommittees[_streamId];
     }
 
+    /// @notice Gets all candidates for a specific role in a stream
+    /// @param _denomination The stream denomination
+    /// @param _role The role to get candidates for
+    /// @return Array of candidate addresses
     function getCommitteeCandidates(StreamDenomination _denomination, Role _role)
         external
         view
@@ -653,6 +730,13 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         return (selectedMembers, PendingCommitteeStatus.SUCCESS);
     }
 
+    /// @notice Gets the next available operator address for take operations
+    /// @dev Rotates through committee operators to distribute take responsibilities
+    /// @dev Only operators with valid signatures are eligible for take operations
+    /// @param _committeeId The committee ID to get the operator from
+    /// @param _signatureData Array of signature data for committee members
+    /// @return The address of the next available operator for take operations
+    /// @dev Reverts with TakeOperatorNotFound if no eligible operator is found
     function getOperatorTakeAddress(uint256 _committeeId, SignatureData[] memory _signatureData)
         external
         onlyPegManager
@@ -678,6 +762,9 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         revert TakeOperatorNotFound(_committeeId);
     }
 
+    /// @notice Sets the Stream Manager contract address
+    /// @dev Only callable by the contract owner
+    /// @param _streamManager The address of the Stream Manager contract
     function setStreamManager(IStreamManager _streamManager) external onlyOwner {
         if (address(_streamManager) == address(0)) {
             revert InvalidZeroAddress();
@@ -686,6 +773,9 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         emit StreamManagerUpdated(address(_streamManager));
     }
 
+    /// @notice Sets the Peg Manager contract address
+    /// @dev Only callable by the contract owner
+    /// @param _pegManager The address of the Peg Manager contract
     function setPegManager(IPegManager _pegManager) external onlyOwner {
         if (address(_pegManager) == address(0)) {
             revert InvalidZeroAddress();
@@ -694,6 +784,9 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         emit PegManagerUpdated(address(_pegManager));
     }
 
+    /// @notice Sets the pending committee timeout
+    /// @dev Only callable by the contract owner
+    /// @param _timeout The timeout in seconds for the pending committee
     function setPendingCommitteeTimeout(uint256 _timeout) external onlyOwner {
         if (_timeout == 0) {
             revert InvalidZeroValue();
@@ -702,6 +795,9 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         emit PendingCommitteeTimeoutUpdated(_timeout);
     }
 
+    /// @notice Sets the minimum watchtowers required for a committee
+    /// @dev Only callable by the contract owner
+    /// @param _minWatchtowers The minimum watchtowers required for a committee
     function setCommitteeMinWatchtowers(uint256 _minWatchtowers) external onlyOwner {
         if (_minWatchtowers == 0) {
             revert InvalidZeroValue();
@@ -713,6 +809,9 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         emit CommitteeMinWatchtowersUpdated(_minWatchtowers);
     }
 
+    /// @notice Sets the minimum operators required for a committee
+    /// @dev Only callable by the contract owner
+    /// @param _minOperators The minimum operators required for a committee
     function setCommitteeMinOperators(uint256 _minOperators) external onlyOwner {
         if (_minOperators == 0) {
             revert InvalidZeroValue();
@@ -724,6 +823,9 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         emit CommitteeMinOperatorsUpdated(_minOperators);
     }
 
+    /// @notice Sets the minimum members required for a committee
+    /// @dev Only callable by the contract owner
+    /// @param _minMembers The minimum number of members required for a committee
     function setCommitteeMinMembers(uint256 _minMembers) external onlyOwner {
         if (_minMembers == 0) {
             revert InvalidZeroValue();
@@ -735,6 +837,11 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         emit CommitteeMinMembersUpdated(_minMembers);
     }
 
+    /// @notice Releases committee members from a packet and handles their staked balance
+    /// @dev Called by PegManager to release committee members after packet completion
+    /// @dev Members with reApply=true will be re-added as candidates, others get their balance as available
+    /// @param _streamId The stream ID for the committee
+    /// @param _packetNumber The packet number where the committee was active
     function releaseCommittee(uint64 _streamId, uint64 _packetNumber) external onlyPegManager {
         uint256 committeeId = streamManager.getCommitteeId(_streamId, _packetNumber);
         CommitteeMember[] memory committeeMembers = _getCommitteeMembers(committeeId);
@@ -793,19 +900,27 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         emit NewAvailableBalance(_memberAddress, balance.available, stakedAmount);
     }
 
+    /// @notice Sets the reapply flag for a member in a specific stream
+    /// @dev Controls whether the member will automatically reapply after committee release
+    /// @param _denomination The stream denomination to set the flag for
+    /// @param _reApply True to automatically reapply, false to receive balance as available
     function setReApplyForStream(StreamDenomination _denomination, bool _reApply) external {
-        // ApplicationData storage applicationData = _getMember(msg.sender).balance.applications[uint8(_denomination)];
         ApplicationData storage applicationData = _getMemberApplicationData(msg.sender, _denomination);
         applicationData.reApply = _reApply;
 
         emit MemberReApplyUpdated(msg.sender, _denomination, _reApply);
     }
 
+    /// @notice Gets the reapply flag for a member in a specific stream
+    /// @param _denomination The stream denomination to check
+    /// @return True if the member will automatically reapply, false otherwise
     function getReApplyForStream(StreamDenomination _denomination) external view returns (bool) {
         return _getMemberApplicationData(msg.sender, _denomination).reApply;
     }
 
-    /// ==== Modifiers ====
+    // ===================== Modifiers =====================
+    /// @notice Modifier to restrict access to the PegManager contract
+    /// @dev Reverts if the caller is not the PegManager
     modifier onlyPegManager() {
         if (address(pegManager) != msg.sender) {
             revert UnauthorizedAccount(msg.sender);

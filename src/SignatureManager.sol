@@ -8,15 +8,25 @@ import {
 import {Committee, CommitteeMember, ICommitteeRegistry, Role} from "./interfaces/ICommitteeRegistry.sol";
 import {AccessControl} from "./AccessControl.sol";
 
-/// @title SignatureManager
+/// @title Signature Manager
 /// @notice Manages signatures for peg-in and peg-out operations
+/// @dev Handles multi-signature operations for committee members using Musig2 protocol
+/// @dev Manages both signature collection and Take1 transaction hash collection
 contract SignatureManager is ISignatureManager, AccessControl {
+    /// @notice The committee registry contract that manages committee membership
+    /// @dev Used to verify committee membership and get member information
     ICommitteeRegistry public committeeRegistry;
 
     // Signatures waiting for the committee to sign
     mapping(bytes32 hashToSign => Signatures signatures) internal committeeSignatures;
     mapping(bytes32 acceptPeginTxHash => Take1TxHashes take1TxHashes) internal take1TxHashesMap;
 
+    /// @notice Initializes the SignatureManager contract
+    /// @dev Sets up the committee registry and access control
+    /// @dev Can only be called once during contract deployment
+    /// @param _initialOwner The address that will be set as the initial owner
+    /// @param _pegManager The address of the PegManager contract
+    /// @param _committeeRegistry The address of the CommitteeRegistry contract
     function initialize(address _initialOwner, address _pegManager, ICommitteeRegistry _committeeRegistry)
         public
         initializer
@@ -44,6 +54,11 @@ contract SignatureManager is ISignatureManager, AccessControl {
         return role;
     }
 
+    /// @notice Adds a nonce for a committee member to the signature collection
+    /// @dev Nonces are required for Musig2 signature aggregation
+    /// @param _hashToSign The hash that needs to be signed by the committee
+    /// @param _nonce The 66-byte nonce for the Musig2 protocol
+    /// @return true if all nonces are now present, false otherwise
     function addMemberNonce(bytes32 _hashToSign, bytes memory _nonce) external returns (bool) {
         // Check that nonce is 66 bytes
         if (_nonce.length != Constants.SIGNATURE_NONCE_LENGTH) {
@@ -74,6 +89,11 @@ contract SignatureManager is ISignatureManager, AccessControl {
         return true;
     }
 
+    /// @notice Adds a signature for a committee member to the signature collection
+    /// @dev Signatures can only be added after all nonces are present
+    /// @param _hashToSign The hash that needs to be signed by the committee
+    /// @param _signature The signature for the hash
+    /// @return true if all signatures are now present, false otherwise
     function addMemberSignature(bytes32 _hashToSign, bytes32 _signature) external returns (bool) {
         // Check if all nonces are present
         Signatures storage signatures = _getSignatures(_hashToSign);
@@ -108,11 +128,18 @@ contract SignatureManager is ISignatureManager, AccessControl {
         return true;
     }
 
+    /// @notice Checks if all signatures are ready for a given hash
+    /// @param _hashToSign The hash to check signatures for
+    /// @return true if all signatures are present, false otherwise
     function checkAllSignaturesReady(bytes32 _hashToSign) external view returns (bool) {
         Signatures storage signatures = _getSignatures(_hashToSign);
         return signatures.committeeId != 0 && signatures.missingSignatures == 0;
     }
 
+    /// @notice Gets all partial signatures for a given hash
+    /// @dev Returns signatures in the same order as committee members for Musig2 compatibility
+    /// @param _hashToSign The hash to get signatures for
+    /// @return Array of signature data for all committee members
     function getPartialSignatures(bytes32 _hashToSign) external view returns (SignatureData[] memory) {
         Signatures storage signatures = _getSignatures(_hashToSign);
         CommitteeMember[] memory members = committeeRegistry.getCommitteeMembers(signatures.committeeId);
@@ -125,6 +152,11 @@ contract SignatureManager is ISignatureManager, AccessControl {
         return partialSignaturesData;
     }
 
+    /// @notice Gets the status of signatures for a given hash
+    /// @param _hashToSign The hash to get status for
+    /// @return missingSignatures Number of missing signatures
+    /// @return missingNonces Number of missing nonces
+    /// @return committeeId The committee ID for this signature collection
     function getSignaturesStatus(bytes32 _hashToSign) external view returns (uint8, uint8, uint256) {
         Signatures storage signatures = _getSignatures(_hashToSign);
         return (signatures.missingSignatures, signatures.missingNonces, signatures.committeeId);
@@ -139,6 +171,10 @@ contract SignatureManager is ISignatureManager, AccessControl {
         return committeeSignatures[_hashToSign];
     }
 
+    /// @notice Initializes signature collection for a given hash
+    /// @dev Can only be called by the PegManager
+    /// @param _hashToSign The hash that needs to be signed
+    /// @param _committeeId The committee ID that will sign the hash
     function initSignatures(bytes32 _hashToSign, uint256 _committeeId) external onlyPegManager {
         // Check if the signature hash is not empty
         if (_hashToSign == "") {
@@ -160,6 +196,10 @@ contract SignatureManager is ISignatureManager, AccessControl {
         signatures.committeeId = _committeeId;
     }
 
+    /// @notice Initializes Take1 transaction hash collection for a given accept peg-in transaction
+    /// @dev Can only be called by the PegManager
+    /// @param _acceptPeginTxHash The accept peg-in transaction hash
+    /// @param _committeeId The committee ID that will provide Take1 transaction hashes
     function initTake1TxHashes(bytes32 _acceptPeginTxHash, uint256 _committeeId) external onlyPegManager {
         // Check if the accept pegin tx hash is not empty
         if (_acceptPeginTxHash == bytes32(0)) {
@@ -194,6 +234,10 @@ contract SignatureManager is ISignatureManager, AccessControl {
         return take1TxHashesMap[_acceptPeginTxHash];
     }
 
+    /// @notice Adds a Take1 transaction hash for an operator
+    /// @dev Only operators can add Take1 transaction hashes
+    /// @param _acceptPeginTxHash The accept peg-in transaction hash
+    /// @param _hash The Take1 transaction hash to add
     function addTake1TxHash(bytes32 _acceptPeginTxHash, bytes32 _hash) external {
         Take1TxHashes storage take1TxHashes = _getTake1TxHashes(_acceptPeginTxHash);
 
@@ -230,11 +274,17 @@ contract SignatureManager is ISignatureManager, AccessControl {
         }
     }
 
+    /// @notice Checks if all Take1 transaction hashes are ready for a given accept peg-in transaction
+    /// @param _acceptPeginTxHash The accept peg-in transaction hash to check
+    /// @return true if all Take1 transaction hashes are present, false otherwise
     function checkAllTake1HashesReady(bytes32 _acceptPeginTxHash) external view returns (bool) {
         Take1TxHashes storage take1TxHashes = _getTake1TxHashes(_acceptPeginTxHash);
         return (take1TxHashes.missingHashes == 0);
     }
 
+    /// @notice Gets all Take1 transaction data for a given accept peg-in transaction
+    /// @param _acceptPeginTxHash The accept peg-in transaction hash
+    /// @return Array of Take1 transaction data for all operators
     function getTake1Data(bytes32 _acceptPeginTxHash) external view returns (Take1Data[] memory) {
         Take1TxHashes storage take1TxHashes = _getTake1TxHashes(_acceptPeginTxHash);
         uint256 operatorsCount = 0;
@@ -257,6 +307,9 @@ contract SignatureManager is ISignatureManager, AccessControl {
         return take1Data;
     }
 
+    /// @notice Gets the committee ID for a given accept peg-in transaction hash
+    /// @param _acceptPeginTxHash The accept peg-in transaction hash
+    /// @return The committee ID associated with this transaction hash
     function getCommitteeIdByAcceptPeginTxHash(bytes32 _acceptPeginTxHash) external view returns (uint256) {
         Take1TxHashes storage take1TxHashes = _getTake1TxHashes(_acceptPeginTxHash);
         return take1TxHashes.committeeId;

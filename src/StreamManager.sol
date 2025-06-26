@@ -9,14 +9,25 @@ import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {IPegManager} from "src/interfaces/IPegManager.sol";
 
 /// @title Stream Manager
-/// @notice Manages streams
+/// @notice Manages streams for the union bridge system
+/// @dev Handles stream creation, packet management, and slot allocation for peg-in/peg-out operations
+/// @dev Each stream represents a specific Bitcoin denomination with its own packet and slot management
 contract StreamManager is IStreamManager, AccessControl {
     Stream[] internal streams;
+    /// @notice Mapping from stream ID to array of packets for that stream
+    /// @dev Each packet contains committee information for processing transactions
     mapping(uint64 streamId => Packet[]) public packets;
     mapping(uint64 streamId => mapping(uint64 packerNumber => Slot[])) internal slots;
+    /// @notice The committee registry contract that manages committee membership
+    /// @dev Used to create new packets when committees are formed
     ICommitteeRegistry public committeeRegistry;
 
-    /// @dev Initializes the streams with their denominations and parameters
+    /// @notice Initializes the streams with their denominations and parameters
+    /// @dev Creates streams for each denomination with default security bond and confirmation settings
+    /// @param _initialOwner The address that will be set as the initial owner
+    /// @param _pegManager The PegManager contract address
+    /// @param _committeeRegistry The CommitteeRegistry contract address
+    /// @param _denominations Array of Bitcoin denominations in satoshis for each stream
     function initialize(
         address _initialOwner,
         IPegManager _pegManager,
@@ -51,6 +62,11 @@ contract StreamManager is IStreamManager, AccessControl {
         committeeRegistry = _committeeRegistry;
     }
 
+    /// @notice Creates a new packet for a stream
+    /// @dev Can only be called by the CommitteeRegistry when a new committee is formed
+    /// @param _streamId The ID of the stream to create a packet for
+    /// @param _committeeId The ID of the committee that will process this packet
+    /// @param _committeePubKey The public key of the committee for Bitcoin operations
     function createNewPacket(uint64 _streamId, uint256 _committeeId, bytes32 _committeePubKey)
         external
         onlyCommitteeRegistry
@@ -66,6 +82,9 @@ contract StreamManager is IStreamManager, AccessControl {
         emit PacketCreated(_streamId, packetNumber);
     }
 
+    /// @notice Gets a stream by its denomination
+    /// @param _denomination The Bitcoin denomination in satoshis
+    /// @return The stream data for the given denomination
     function getStream(uint64 _denomination) external view returns (Stream memory) {
         uint256 length = streams.length;
         for (uint256 i = 0; i < length; i++) {
@@ -76,18 +95,30 @@ contract StreamManager is IStreamManager, AccessControl {
         revert StreamNotFoundByDenomination(_denomination);
     }
 
+    /// @notice Gets a stream by its ID
+    /// @param _streamId The ID of the stream
+    /// @return The stream data for the given ID
     function getStreamById(uint64 _streamId) external view returns (Stream memory) {
         return streams[_streamId];
     }
 
+    /// @notice Gets the total number of streams
+    /// @return The number of streams in the system
     function getStreamsLength() external view returns (uint64) {
         return uint64(streams.length);
     }
 
+    /// @notice Gets the number of packets in a stream
+    /// @param _streamId The ID of the stream
+    /// @return The number of packets in the stream
     function getPacketsLength(uint64 _streamId) external view returns (uint64) {
         return uint64(packets[_streamId].length);
     }
 
+    /// @notice Gets a specific packet from a stream
+    /// @param _streamId The ID of the stream
+    /// @param _packetNumber The packet number to retrieve
+    /// @return The packet data
     function getPacket(uint64 _streamId, uint64 _packetNumber) public view returns (Packet memory) {
         if (_streamId >= streams.length) {
             revert StreamNotFoundById(_streamId);
@@ -99,6 +130,9 @@ contract StreamManager is IStreamManager, AccessControl {
         return packets[_streamId][_packetNumber];
     }
 
+    /// @notice Gets the committee ID for the current packet being processed in a stream
+    /// @param _streamId The ID of the stream
+    /// @return The committee ID, or 0 if no current packet
     function getCurrentPacketCommitteeId(uint64 _streamId) external view returns (uint256) {
         Stream storage stream = streams[_streamId];
         if (stream.peginPacketPointer >= packets[_streamId].length) {
@@ -136,7 +170,11 @@ contract StreamManager is IStreamManager, AccessControl {
         return slotId;
     }
 
-    /// @dev Returns the first filled slot, lock it and updates the pegout pointers
+    /// @notice Returns the first filled slot, locks it, and updates the peg-out pointers
+    /// @dev Can only be called by the PegManager
+    /// @param _streamId The ID of the stream
+    /// @return slot The locked slot data
+    /// @return packetNumber The packet number containing the slot
     function lockSlot(uint64 _streamId) external onlyPegManager returns (Slot memory, uint64 packetNumber) {
         uint256 packetCount = packets[_streamId].length;
         // No packets created yet
@@ -180,6 +218,11 @@ contract StreamManager is IStreamManager, AccessControl {
         return (slot, packetNumber);
     }
 
+    /// @notice Gets a specific slot from a stream
+    /// @param _streamId The ID of the stream
+    /// @param _packetNumber The packet number
+    /// @param _slotNumber The slot number within the packet
+    /// @return The slot data
     function getSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotNumber) external view returns (Slot memory) {
         if (_packetNumber >= packets[_streamId].length) {
             revert NonExistentSlot(_streamId, _packetNumber, _slotNumber);
@@ -190,7 +233,14 @@ contract StreamManager is IStreamManager, AccessControl {
         return slots[_streamId][_packetNumber][_slotNumber];
     }
 
-    /// @dev Looks for the first empty slot and asigns the Pegin Tx in prepared state
+    /// @notice Looks for the first empty slot and assigns the peg-in transaction in prepared state
+    /// @dev Can only be called by the PegManager
+    /// @param _streamId The ID of the stream
+    /// @param _packetNumber The packet number
+    /// @param _acceptPeginAmount The amount of the accept peg-in transaction
+    /// @param _acceptPeginTx The hash of the accept peg-in transaction
+    /// @param _scriptPubKey The script pub key for the transaction
+    /// @return The slot ID that was filled
     function fillAcceptPeginTx(
         uint64 _streamId,
         uint64 _packetNumber,
@@ -213,14 +263,29 @@ contract StreamManager is IStreamManager, AccessControl {
         );
     }
 
+    /// @notice Gets the committee ID for a specific packet
+    /// @param _streamId The ID of the stream
+    /// @param _packetNumber The packet number
+    /// @return The committee ID for the packet
     function getCommitteeId(uint64 _streamId, uint64 _packetNumber) external view returns (uint256) {
         return getPacket(_streamId, _packetNumber).committeeId;
     }
 
+    /// @notice Gets the committee public key for a specific packet
+    /// @param _streamId The ID of the stream
+    /// @param _packetNumber The packet number
+    /// @return The committee public key for the packet
     function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes32) {
         return getPacket(_streamId, _packetNumber).committeePubKey;
     }
 
+    /// @notice Marks a slot as paid and stores the take0 transaction hash
+    /// @dev Can only be called by the PegManager
+    /// @param _streamId The ID of the stream
+    /// @param _packetNumber The packet number
+    /// @param _slotId The slot ID
+    /// @param _acceptPeginTxHash The hash of the accept peg-in transaction
+    /// @param _take0Tx The hash of the take0 transaction
     function paidSlot(
         uint64 _streamId,
         uint64 _packetNumber,
@@ -250,6 +315,10 @@ contract StreamManager is IStreamManager, AccessControl {
         slot.take0Tx = _take0Tx;
     }
 
+    /// @notice Sets the security bond value for a stream
+    /// @dev Can only be called by the owner
+    /// @param _streamId The ID of the stream
+    /// @param _securityBondValue The new security bond value in wei
     function setSecurityBond(uint64 _streamId, uint256 _securityBondValue) external streamExists(_streamId) onlyOwner {
         if (_securityBondValue == 0) {
             revert InvalidSecurityBondValue(_securityBondValue);
@@ -258,6 +327,10 @@ contract StreamManager is IStreamManager, AccessControl {
         streams[_streamId].securityBondValue = _securityBondValue;
     }
 
+    /// @notice Sets the number of confirmations required for peg-in transactions
+    /// @dev Can only be called by the owner
+    /// @param _streamId The ID of the stream
+    /// @param _confirmations The number of confirmations required
     function setPeginConfirmations(uint64 _streamId, uint8 _confirmations) external streamExists(_streamId) onlyOwner {
         if (_confirmations == 0) {
             revert InvalidPeginConfirmations(_confirmations);
@@ -266,6 +339,10 @@ contract StreamManager is IStreamManager, AccessControl {
         streams[_streamId].peginConfirmations = _confirmations;
     }
 
+    /// @notice Sets the number of confirmations required for peg-out transactions
+    /// @dev Can only be called by the owner
+    /// @param _streamId The ID of the stream
+    /// @param _confirmations The number of confirmations required
     function setPegoutConfirmations(uint64 _streamId, uint8 _confirmations)
         external
         streamExists(_streamId)
@@ -278,6 +355,9 @@ contract StreamManager is IStreamManager, AccessControl {
         streams[_streamId].pegoutConfirmations = _confirmations;
     }
 
+    /// @notice Sets the committee registry contract address
+    /// @dev Can only be called by the owner
+    /// @param _committeeRegistry The new committee registry contract address
     function setCommitteeRegistry(ICommitteeRegistry _committeeRegistry) external onlyOwner {
         if (address(_committeeRegistry) == address(0)) {
             revert InvalidZeroAddress();
