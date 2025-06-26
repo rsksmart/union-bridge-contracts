@@ -24,6 +24,7 @@ import {
 } from "./interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination, IStreamManager} from "./interfaces/IStreamManager.sol";
 import {IPegManager} from "./interfaces/IPegManager.sol";
+import {SignatureData} from "./interfaces/ISignatureManager.sol";
 
 contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     mapping(address => Member) internal members;
@@ -37,7 +38,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     uint256 public minCommitteeMembers;
 
     mapping(uint64 streamId => PendingCommittee) internal pendingCommittees;
-    mapping(uint256 committeeId => Committee) internal committeesByKey;
+    mapping(uint256 committeeId => Committee) internal committeesById;
     mapping(uint64 streamId => bool createCommittee) internal shouldCreateCommittee;
 
     IStreamManager streamManager;
@@ -301,12 +302,16 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     }
 
     function _registerCommittee(uint256 _committeeId, Committee storage _committee) internal {
-        committeesByKey[_committeeId] = _committee;
+        committeesById[_committeeId] = _committee;
         emit NewCommittee(_committeeId, _committee);
     }
 
-    function getCommittee(uint256 _committeeId) public view returns (Committee memory) {
-        Committee memory committee = committeesByKey[_committeeId];
+    function getCommittee(uint256 _committeeId) external view returns (Committee memory) {
+        return _getCommittee(_committeeId);
+    }
+
+    function _getCommittee(uint256 _committeeId) internal view returns (Committee storage) {
+        Committee storage committee = committeesById[_committeeId];
         if (committee.members.length == 0) {
             revert CommitteeNotFound(_committeeId);
         }
@@ -314,7 +319,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     }
 
     function getCommitteeMembers(uint256 _committeeId) external view returns (CommitteeMember[] memory) {
-        return getCommittee(_committeeId).members;
+        return _getCommittee(_committeeId).members;
     }
 
     function getMemberTakePubKey(address _address) external view returns (bytes32) {
@@ -639,6 +644,31 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         }
 
         return (selectedMembers, PendingCommitteeStatus.SUCCESS);
+    }
+
+    function getOperatorTakeAddress(uint256 _committeeId, SignatureData[] memory _signatureData)
+        external
+        onlyPegManager
+        returns (address)
+    {
+        Committee storage committee = _getCommittee(_committeeId);
+        uint256 membersLength = committee.members.length;
+        // This is the last operator that did the advancement of funds. Start from the next one.
+        uint256 operatorTakeIndex = (committee.operatorTakeIndex + 1) % membersLength;
+
+        for (uint256 i = 0; i < membersLength; i++) {
+            if (
+                committee.members[operatorTakeIndex].role == Role.OPERATOR
+                    && _signatureData[operatorTakeIndex].signature != bytes32(0)
+            ) {
+                committee.operatorTakeIndex = operatorTakeIndex;
+                return committee.members[operatorTakeIndex].memberAddress;
+            }
+
+            operatorTakeIndex = (operatorTakeIndex + 1) % membersLength;
+        }
+
+        revert TakeOperatorNotFound(_committeeId);
     }
 
     function setStreamManager(IStreamManager _streamManager) external onlyOwner {

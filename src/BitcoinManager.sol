@@ -162,9 +162,7 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         validateRequestPeginInputs(_btcReimbursementPubKey, _committeePubKey, _rskDestinationAddress, _value);
         bytes memory p2trScriptPubKey =
             getPeginRequestP2TRScriptPub(_rskDestinationAddress, _value, _btcReimbursementPubKey, _committeePubKey);
-        if (!BytesHelper.compare(_p2trOut.scriptPubKey, p2trScriptPubKey)) {
-            revert IncorrectOutputScript(_p2trOut.scriptPubKey, p2trScriptPubKey);
-        }
+        _compareOutputPubKey(_p2trOut.scriptPubKey, p2trScriptPubKey);
     }
 
     /// @dev Generates the PeginRequest Taproot output script pub key with both key spend and script spend paths
@@ -179,13 +177,24 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         return BtcTaproot.getP2TRScriptPubKey(tweakedPublicKey);
     }
 
+    function _compareOutputPubKey(bytes memory outputPubKey, bytes memory expectedPubKey) internal pure {
+        // Validate that the output script matches the expected P2WPKH script
+        if (!BytesHelper.compare(outputPubKey, expectedPubKey)) {
+            revert IncorrectOutputScript(outputPubKey, expectedPubKey);
+        }
+    }
+
     function validatePegoutUserOutput(BtcTxOut calldata _userOutput, bytes memory _userPubKey) external pure {
         bytes memory expectedScriptPubKey = BtcScriptParser.getP2WPKHScript(_userPubKey);
 
-        // Validate that the output script matches the expected P2WPKH script
-        if (!BytesHelper.compare(_userOutput.scriptPubKey, expectedScriptPubKey)) {
-            revert IncorrectOutputScript(_userOutput.scriptPubKey, expectedScriptPubKey);
-        }
+        _compareOutputPubKey(_userOutput.scriptPubKey, expectedScriptPubKey);
+    }
+
+    function validatePegoutMemberOutput(BtcTxOut calldata _userOutput, bytes32 _memberPubKey) external pure {
+        bytes memory expectedScriptPubKey =
+            BtcScriptParser.getP2WPKHScript(abi.encodePacked(uint8(0x02), _memberPubKey));
+
+        _compareOutputPubKey(_userOutput.scriptPubKey, expectedScriptPubKey);
     }
 
     // ========================== Peg In Accept ==========================
@@ -261,9 +270,7 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
             revert InvalidOutputAmount(_p2trOut.amount, inputMinusFees);
         }
         bytes memory p2trScriptPubKey = getAcceptPeginP2TRScriptPub(_committeePubKey);
-        if (!BytesHelper.compare(_p2trOut.scriptPubKey, p2trScriptPubKey)) {
-            revert IncorrectOutputScript(_p2trOut.scriptPubKey, p2trScriptPubKey);
-        }
+        _compareOutputPubKey(_p2trOut.scriptPubKey, p2trScriptPubKey);
     }
 
     /// @dev Generates the PeginRequest Taproot output script pub key with both key spend and script spend paths
@@ -279,9 +286,7 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
             revert InvalidValue(_speedUpOut.amount, Constants.SPEED_UP_AMOUNT);
         }
         bytes memory p2wpkhScriptPubKey = getSpeedUpScriptPub(_pubKey);
-        if (!BytesHelper.compare(_speedUpOut.scriptPubKey, p2wpkhScriptPubKey)) {
-            revert IncorrectOutputScript(_speedUpOut.scriptPubKey, p2wpkhScriptPubKey);
-        }
+        _compareOutputPubKey(_speedUpOut.scriptPubKey, p2wpkhScriptPubKey);
     }
 
     /// @dev Generates the PeginRequest Taproot output script pub key with both key spend and script spend paths

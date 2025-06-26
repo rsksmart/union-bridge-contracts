@@ -18,7 +18,13 @@ contract PegManagerHarness is PegManager {
     }
 
     function setPegoutTempInfoHarness(bytes32 _acceptPeginTxHash, bytes memory _userPubKey) external {
-        pegoutTempInfo[_acceptPeginTxHash] = PegoutTempInfo({userPubKey: _userPubKey});
+        pegoutTempInfo[_acceptPeginTxHash] = PegoutTempInfo({
+            userPubKey: _userPubKey,
+            createdAt: block.timestamp,
+            operatorTakeUpdatedAt: 0,
+            takeOperator: address(0),
+            committeeId: 0
+        });
     }
 
     function setStreamPositionHarness(

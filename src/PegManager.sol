@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import {BaseProxy} from "./BaseProxy.sol";
 import {ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
-import {ISignatureManager} from "./interfaces/ISignatureManager.sol";
+import {ISignatureManager, SignatureData} from "./interfaces/ISignatureManager.sol";
 import {PrevoutData, BtcTransaction, BtcTxOut, IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
 import {
     BtcTxSPVProof,
@@ -33,9 +33,13 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
     mapping(bytes32 acceptPeginTxhash => StreamPosition streamPosition) internal streamPosition;
     mapping(bytes32 requestPeginTxHash => RequestPeginTempInfo tempInfo) internal peginTempInfo;
     mapping(bytes32 acceptPeginTxHash => PegoutTempInfo tempInfo) internal pegoutTempInfo;
+    mapping(bytes32 pegoutSignatureHash => bytes32 acceptPeginTxHash) internal pegoutToPeginTxHash;
 
     // key = keccak256(abi.encodePacked(streamId, packetNumber, slotId))
     mapping(bytes32 key => bytes32 pegoutSignatureHash) internal pegoutSighashes;
+
+    uint256 public userTakeTimeout;
+    uint256 public operatorTakeTimeout;
 
     function initialize(
         address _initialOwner,
@@ -56,6 +60,9 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
 
         __BaseProxy_init(_initialOwner);
         __ProofValidator_init(_bridgeAddress);
+
+        userTakeTimeout = Constants.TAKE_0_TIMEOUT_DEFAULT;
+        operatorTakeTimeout = Constants.TAKE_1_TIMEOUT_DEFAULT;
     }
 
     function setStreamManager(IStreamManager _streamManager) external onlyOwner {
@@ -334,12 +341,20 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         (bytes32 pegoutSignatureHash, bytes memory pegoutSignatureMessage) =
             bitcoinManager.getPegoutSignatureHash(_userPubKey, slot.acceptPeginTx, prevoutData);
 
-        // Store the pegout transaction info for efficient lookup during registration
-        pegoutTempInfo[slot.acceptPeginTx] = PegoutTempInfo({userPubKey: _userPubKey});
-
-        // Store the peg-out transaction hash on-chain and initialize the signatures
         uint256 committeeId =
-            storePegoutAndInitSignatures(pegoutSignatureHash, stream.streamId, packetNumber, slot.slotId);
+            _storePegoutAndInitSignatures(pegoutSignatureHash, stream.streamId, packetNumber, slot.slotId);
+
+        pegoutTempInfo[slot.acceptPeginTx] = PegoutTempInfo({
+            userPubKey: _userPubKey,
+            createdAt: block.timestamp,
+            operatorTakeUpdatedAt: 0,
+            takeOperator: address(0),
+            committeeId: committeeId
+        });
+        streamPosition[slot.acceptPeginTx].pegStatus = PegStatus.USER_TAKE;
+
+        // Store the pegout to pegin tx hash mapping
+        pegoutToPeginTxHash[pegoutSignatureHash] = slot.acceptPeginTx;
 
         // TODO: return RBTC to the RSK Legacy Bridge following https://github.com/rsksmart/RSKIPs/pull/502
 
@@ -375,15 +390,15 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         }
 
         // Calculate the transaction hash for verification
-        bytes32 requestPeginTxHash = bitcoinManager.getBtcTxHash(_pegoutTxSPVProof.btcTx);
+        bytes32 requestPegoutTxHash = bitcoinManager.getBtcTxHash(_pegoutTxSPVProof.btcTx);
 
         // Get the stream to check confirmations
         Stream memory stream = streamManager.getStreamById(streamInfo.streamId);
 
-        // Verify the requestPeginTxHash is part of the Merkle Root and has enough confirmations
+        // Verify the requestPegoutTxHash is part of the Merkle Root and has enough confirmations
         verifyTxConfirmations(
             stream.pegoutConfirmations,
-            requestPeginTxHash,
+            requestPegoutTxHash,
             _pegoutTxSPVProof.blockHash,
             _pegoutTxSPVProof.merkleBranchPath,
             _pegoutTxSPVProof.merkleBranchHashes
@@ -395,7 +410,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
 
         // Update slot status
         streamManager.paidSlot(
-            streamInfo.streamId, streamInfo.packetNumber, streamInfo.slotId, acceptPeginTxHash, requestPeginTxHash
+            streamInfo.streamId, streamInfo.packetNumber, streamInfo.slotId, acceptPeginTxHash, requestPegoutTxHash
         );
 
         // update the peg status to PAID
@@ -403,7 +418,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
 
         emit PegoutRegistered(
             _pegoutTxSPVProof.blockHash,
-            requestPeginTxHash,
+            requestPegoutTxHash,
             acceptPeginTxHash,
             streamInfo.streamId,
             streamInfo.packetNumber,
@@ -424,7 +439,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         return streamPosition[peginRequests[_btcTxHash]];
     }
 
-    function storePegoutAndInitSignatures(
+    function _storePegoutAndInitSignatures(
         bytes32 _pegoutSignatureHash,
         uint64 _streamId,
         uint64 _packetNumber,
@@ -441,5 +456,131 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         signatureManager.initSignatures(_pegoutSignatureHash, committeeId);
 
         return committeeId;
+    }
+
+    function triggerOperatorTake(bytes32 _pegoutSignatureHash) external {
+        // This method trigger the operator take for a pegout.
+        // It could be after a User Take expiration or after an Operator Take expiration.
+        // Each case has its own timeout and before triggering the operator take (after a User Take expiration)
+        // signatures should be checked to see if the User Take was already signed.
+        // Partial signatures are used to skip those operators that has not signed the User Take.
+
+        bytes32 acceptPeginTxHash = pegoutToPeginTxHash[_pegoutSignatureHash];
+        if (acceptPeginTxHash == bytes32(0)) {
+            revert PegoutSignatureHashNotFound(_pegoutSignatureHash);
+        }
+
+        PegoutTempInfo storage pegoutInfo = pegoutTempInfo[acceptPeginTxHash];
+        StreamPosition storage streamInfo = streamPosition[acceptPeginTxHash];
+        if (streamInfo.pegStatus == PegStatus.USER_TAKE) {
+            (uint8 missingSignatures,,) = signatureManager.getSignaturesStatus(_pegoutSignatureHash);
+            if (missingSignatures == 0) {
+                revert UserTakeAlreadySigned(_pegoutSignatureHash);
+            }
+
+            if (block.timestamp <= pegoutInfo.createdAt + userTakeTimeout) {
+                revert UserTakeTimeoutNotExpired(pegoutInfo.createdAt, pegoutInfo.createdAt + userTakeTimeout);
+            }
+
+            streamInfo.pegStatus = PegStatus.OPERATOR_TAKE;
+        } else if (streamInfo.pegStatus == PegStatus.OPERATOR_TAKE) {
+            if (block.timestamp <= pegoutInfo.operatorTakeUpdatedAt + operatorTakeTimeout) {
+                revert OperatorTakeTimeoutNotExpired(
+                    pegoutInfo.operatorTakeUpdatedAt, pegoutInfo.operatorTakeUpdatedAt + operatorTakeTimeout
+                );
+            }
+        } else {
+            revert InvalidPegStatus(streamInfo.pegStatus);
+        }
+
+        SignatureData[] memory signatureData = signatureManager.getPartialSignatures(_pegoutSignatureHash);
+        address takeOperator = committeeRegistry.getOperatorTakeAddress(pegoutInfo.committeeId, signatureData);
+
+        pegoutInfo.operatorTakeUpdatedAt = block.timestamp;
+        pegoutInfo.takeOperator = takeOperator;
+        emit OperatorTakeTriggered(
+            _pegoutSignatureHash,
+            pegoutInfo.committeeId,
+            acceptPeginTxHash,
+            takeOperator,
+            pegoutInfo.userPubKey,
+            pegoutInfo.createdAt,
+            block.timestamp,
+            block.timestamp + operatorTakeTimeout
+        );
+    }
+
+    function depositOperatorTakeProof(BtcTxSPVProof calldata _pegoutTxSPVProof) external {
+        // Get the accept peg-in tx hash from the first input (this is what gets spent)
+        bytes32 acceptPeginTxHash = _pegoutTxSPVProof.btcTx.inputs[0].txId;
+        uint32 vout = _pegoutTxSPVProof.btcTx.inputs[0].vout;
+
+        // get the stream data for this pegout
+        StreamPosition memory streamInfo = streamPosition[acceptPeginTxHash];
+
+        if (streamInfo.pegStatus == PegStatus.NOT_REGISTERED) {
+            revert PeginNotRequested(acceptPeginTxHash);
+        }
+
+        if (streamInfo.pegStatus != PegStatus.OPERATOR_TAKE) {
+            revert InvalidPegStatus(streamInfo.pegStatus);
+        }
+
+        // Validate that the vout is correct
+        if (vout != Constants.VOUT_INDEX_TAPTREE) {
+            revert IncorrectVout(vout, Constants.VOUT_INDEX_TAPTREE);
+        }
+
+        // Calculate the transaction hash for verification
+        bytes32 txHash = bitcoinManager.getBtcTxHash(_pegoutTxSPVProof.btcTx);
+
+        // Get the stream to check confirmations
+        Stream memory stream = streamManager.getStreamById(streamInfo.streamId);
+
+        // Verify the txHash is part of the Merkle Root and has enough confirmations
+        verifyTxConfirmations(
+            stream.pegoutConfirmations,
+            txHash,
+            _pegoutTxSPVProof.blockHash,
+            _pegoutTxSPVProof.merkleBranchPath,
+            _pegoutTxSPVProof.merkleBranchHashes
+        );
+
+        // Validate that the first output is a P2WPKH paying the member
+        bytes32 memberPubKey = committeeRegistry.getMemberTakePubKey(msg.sender);
+        bitcoinManager.validatePegoutMemberOutput(_pegoutTxSPVProof.btcTx.outputs[0], memberPubKey);
+
+        // Update slot status
+        streamManager.paidSlot(
+            streamInfo.streamId, streamInfo.packetNumber, streamInfo.slotId, acceptPeginTxHash, txHash
+        );
+
+        // update the peg status to PAID
+        streamPosition[acceptPeginTxHash].pegStatus = PegStatus.PAID;
+
+        emit PegoutRegistered(
+            _pegoutTxSPVProof.blockHash,
+            txHash,
+            acceptPeginTxHash,
+            streamInfo.streamId,
+            streamInfo.packetNumber,
+            streamInfo.slotId
+        );
+    }
+
+    function setUserTakeTimeout(uint256 _timeout) external onlyOwner {
+        if (_timeout == 0) {
+            revert InvalidTimeout(_timeout);
+        }
+        userTakeTimeout = _timeout;
+        emit UserTakeTimeoutUpdated(userTakeTimeout);
+    }
+
+    function setOperatorTakeTimeout(uint256 _timeout) external onlyOwner {
+        if (_timeout == 0) {
+            revert InvalidTimeout(_timeout);
+        }
+        operatorTakeTimeout = _timeout;
+        emit OperatorTakeTimeoutUpdated(operatorTakeTimeout);
     }
 }

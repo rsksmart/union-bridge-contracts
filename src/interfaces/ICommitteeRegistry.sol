@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import {StreamDenomination, IStreamManager} from "./IStreamManager.sol";
 import {IPegManager} from "./IPegManager.sol";
+import {SignatureData} from "./ISignatureManager.sol";
 
 enum Role {
     NONE,
@@ -60,6 +61,7 @@ struct Committee {
     bytes32 aggregatedKey; // BTC public key of the commitee
     CommitteeMember[] members;
     address leaderAddress; // TODO add leader logic
+    uint256 operatorTakeIndex;
 }
 
 struct PendingCommittee {
@@ -169,6 +171,10 @@ interface ICommitteeRegistry {
     /// @notice Get the minimun members required for a committee
     function minCommitteeMembers() external view returns (uint256);
 
+    function getOperatorTakeAddress(uint256 committeeId, SignatureData[] memory signatureData)
+        external
+        returns (address);
+
     /// ===================== Events =========================
     event NewCommittee(uint256 indexed committeeId, Committee _committee);
     event NewPendingCommittee(uint256 indexed streamId, Committee _committee);
@@ -189,6 +195,7 @@ interface ICommitteeRegistry {
     event CommitteeMinOperatorsUpdated(uint256 minOperators);
     event CommitteeMinMembersUpdated(uint256 minMembers);
     event MemberInfoDeposited(uint64 indexed streamId, address indexed member, bytes32 aggregatedKey);
+    event NoRemainingHonestOperators(uint256 committeeId);
 
     /// ==================== Errors =====================
     error RequestedDifferentStreamsAndRolesLength(uint256 streamsLength, uint256 rolesLength);
@@ -233,8 +240,12 @@ interface ICommitteeRegistry {
     error InvalidMinOperators(uint256 minMembers, uint256 minCommitteWatchtowers, uint256 minCommitteOperators);
     error InvalidMinWatchtowers(uint256 minMembers, uint256 minCommitteWatchtowers, uint256 minCommitteOperators);
     error MemberIsInPendingCommittee(address memberAddress, StreamDenomination denomination);
+    error TakeOperatorNotFound(uint256 committeeId);
 
     /// ================ Internal Errors =================
     error _MemberIndexOutOfBounds(uint16 memberIndex);
     error _FailedToCreateCommittee(uint64 streamId, PendingCommitteeStatus status);
+    error _InvalidTake1PubKey(
+        uint256 committeeId, address memberAddress, bytes32 memberPubKey, bytes32 signaturePubKeyX
+    );
 }

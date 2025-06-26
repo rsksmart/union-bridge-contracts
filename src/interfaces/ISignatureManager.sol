@@ -4,7 +4,6 @@ pragma solidity ^0.8.20;
 import {IAccessControl} from "./IAccessControl.sol";
 
 struct SignatureData {
-    bytes32 memberPublicKey;
     bytes32 signature;
     bytes nonce; // Should be 66 bytes
 }
@@ -13,7 +12,6 @@ struct Signatures {
     mapping(address memberAddress => SignatureData) partialSignaturesData;
     uint8 missingSignatures;
     uint8 missingNonces;
-    uint256 timestamp;
     uint256 committeeId;
 }
 
@@ -50,9 +48,9 @@ interface ISignatureManager is IAccessControl {
     function getTake1Data(bytes32 _acceptPeginTxHash) external view returns (Take1Data[] memory);
     function getCommitteeIdByAcceptPeginTxHash(bytes32 _acceptPeginTxHash) external view returns (uint256);
 
-    event NonceAdded(bytes32 indexed hashToSign, bytes32 indexed memberPubKey, bytes nonce);
+    event NonceAdded(bytes32 indexed hashToSign, address indexed memberAddress, bytes nonce);
     event AllNoncesReady(bytes32 indexed hashToSign);
-    event SignatureAdded(bytes32 indexed hashToSign, bytes32 indexed memberPubKey, bytes32 signature);
+    event SignatureAdded(bytes32 indexed hashToSign, address indexed memberAddress, bytes32 signature);
     event AllSignaturesReady(bytes32 indexed hashToSign);
     event Take1TxHashAdded(bytes32 acceptPeginTxHash, address memberAddress, bytes32 hash);
     event AllTake1TxHashesAdded(bytes32 acceptPeginTxHash);
@@ -60,10 +58,10 @@ interface ISignatureManager is IAccessControl {
     error CommitteeRegistryAddressZero();
     error HashToSignNotFound(bytes32 hashToSign);
     error InvalidNonceLength(uint256 actual, uint8 expected);
-    error MemberAlreadyAddedNonce(bytes32 memberPubKey, address memberAddress, bytes nonce);
+    error MemberAlreadyAddedNonce(address memberAddress, bytes nonce);
     error AllNoncesAreNotPresent(bytes32 hashToSign);
     error InvalidSignature();
-    error MemberHasAlreadySigned(bytes32 memberPubKey, address memberAddress, bytes32 pegoutTxHash);
+    error MemberHasAlreadySigned(address memberAddress, bytes32 pegoutTxHash);
     error MemberNotFound(address memberAddress);
     error MemberNotFoundInCommittee(uint256 committeeId, address memberAddress);
     error InvalidHashToSign(bytes32 hashToSign);

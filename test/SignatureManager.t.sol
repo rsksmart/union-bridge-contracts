@@ -49,12 +49,11 @@ contract TestSignatureManager is Test, HelperContract {
         bytes memory nonce =
             hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
         address committeeMember0adr = vm.addr(1);
-        bytes32 committeeMember0Pubkey = generatePubKey(uint256(uint160(committeeMember0adr)));
 
         // Assert
         // We emit the event we expect to see.
         vm.expectEmit(address(signatureManager));
-        emit ISignatureManager.NonceAdded(hashToSign, committeeMember0Pubkey, nonce);
+        emit ISignatureManager.NonceAdded(hashToSign, committeeMember0adr, nonce);
 
         // Act
         vm.prank(committeeMember0adr);
@@ -70,16 +69,15 @@ contract TestSignatureManager is Test, HelperContract {
         // The nonce values are dummy values
         bytes memory nonce =
             hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
-        setup_membersNonces(hashToSign, 0, registry.minCommitteeMembers() - 2);
+        setup_addMemberNonce_MultipleMembers(hashToSign, 0, registry.minCommitteeMembers() - 1);
         (hashToSign);
         uint256 lastMemberIndex = registry.minCommitteeMembers() - 1;
         address lastMemberAddress = vm.addr(lastMemberIndex + 1);
-        bytes32 lastMemberPubkey = generatePubKey(uint256(uint160(lastMemberAddress)));
 
         // Assert
         // We emit the event we expect to see.
         vm.expectEmit(address(signatureManager));
-        emit ISignatureManager.NonceAdded(hashToSign, lastMemberPubkey, nonce);
+        emit ISignatureManager.NonceAdded(hashToSign, lastMemberAddress, nonce);
 
         // We emit the event we expect to see.
         vm.expectEmit(address(signatureManager));
@@ -102,12 +100,11 @@ contract TestSignatureManager is Test, HelperContract {
         bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
         uint256 memberIndex = 0;
         address committeeMember0adr = vm.addr(memberIndex + 1);
-        bytes32 memberPubKey = generatePubKey(uint256(uint160(committeeMember0adr)));
 
         // We emit the event we expect to see.
         // Assert
         vm.expectEmit(address(signatureManager));
-        emit ISignatureManager.SignatureAdded(hashToSign, memberPubKey, signature);
+        emit ISignatureManager.SignatureAdded(hashToSign, committeeMember0adr, signature);
 
         // Act
         vm.prank(committeeMember0adr);
@@ -134,12 +131,6 @@ contract TestSignatureManager is Test, HelperContract {
 
         CommitteeMember[] memory members = registry.getCommitteeMembers(committeeId);
         for (uint256 i = 0; i < members.length; i++) {
-            assertEq(
-                signatures[i].memberPublicKey,
-                generatePubKey(uint256(uint160(members[i].memberAddress))),
-                "signatures[i].memberPublicKey should be equal to the committee member key"
-            );
-
             if (members[i].memberAddress != committeeMember0adr) {
                 assertEq(
                     signatures[i].signature,
@@ -163,16 +154,16 @@ contract TestSignatureManager is Test, HelperContract {
         setup_addAllNonces(hashToSign);
         // The signature an nonce values are dummy values
         bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
-        uint256 lastMemberIndex = registry.minCommitteeMembers() - 1;
-        setup_membersSignatures(hashToSign, 0, lastMemberIndex - 1);
+        uint256 memberCount = registry.minCommitteeMembers();
+        setup_addMemberSignature_MultipleMembers(hashToSign, 0, memberCount - 1);
         // Pub key and address are generated based on the member index + 1
+        uint256 lastMemberIndex = registry.minCommitteeMembers() - 1;
         address lastMemberAddress = vm.addr(lastMemberIndex + 1);
-        bytes32 lastMemberPubKey = generatePubKey(uint256(uint160(lastMemberAddress)));
 
         // Assert
         // We emit the event we expect to see.
         vm.expectEmit(address(signatureManager));
-        emit ISignatureManager.SignatureAdded(hashToSign, lastMemberPubKey, signature);
+        emit ISignatureManager.SignatureAdded(hashToSign, lastMemberAddress, signature);
 
         // We emit the event we expect to see.
         vm.expectEmit(address(signatureManager));
@@ -198,11 +189,6 @@ contract TestSignatureManager is Test, HelperContract {
 
         CommitteeMember[] memory members = registry.getCommitteeMembers(committeeId);
         for (uint256 i = 0; i < members.length; i++) {
-            assertEq(
-                signatures[i].memberPublicKey,
-                generatePubKey(uint256(uint160(members[i].memberAddress))),
-                "signatures[i].memberPublicKey should be equal to the committee member key"
-            );
             assertNotEq(signatures[i].signature, bytes32(0), "signatures[i].signature should not be empty");
         }
     }
@@ -238,37 +224,6 @@ contract TestSignatureManager is Test, HelperContract {
         signatureManager.addMemberSignature(hashToSign, signature);
     }
 
-    function test_addMemberNonce_Revert_MemberNotRegistered() external {
-        bytes32 hashToSign = setup_initSignatures();
-
-        // The nonce values are dummy values
-        bytes memory nonce =
-            hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
-
-        // Assert
-        address memberAddress = address(0);
-        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.MemberNotRegistered.selector, memberAddress));
-
-        vm.prank(memberAddress);
-        signatureManager.addMemberNonce(hashToSign, nonce);
-    }
-
-    function test_addMemberSignature_Revert_MemberNotRegistered() external {
-        // Init signatures and add all nonces
-        bytes32 hashToSign = setup_initSignatures();
-        setup_addAllNonces(hashToSign);
-
-        // The signature values are dummy values
-        bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
-
-        // Assert
-        address memberAddress = vm.addr(registry.minCommitteeMembers() + 1);
-        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.MemberNotRegistered.selector, memberAddress));
-
-        vm.prank(memberAddress);
-        signatureManager.addMemberSignature(hashToSign, signature);
-    }
-
     function test_addMemberNonce_Revert_MemberHasAlreadySigned() external {
         // Arrange
         // Init signatures
@@ -277,7 +232,6 @@ contract TestSignatureManager is Test, HelperContract {
         bytes memory nonce =
             hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
         address committeeMember0adr = vm.addr(1);
-        bytes32 committeeMember0Pubkey = generatePubKey(uint256(uint160(committeeMember0adr)));
 
         // First time adding the nonce
         vm.prank(committeeMember0adr);
@@ -285,13 +239,9 @@ contract TestSignatureManager is Test, HelperContract {
 
         // Assert
         vm.expectRevert(
-            abi.encodeWithSelector(
-                ISignatureManager.MemberAlreadyAddedNonce.selector, committeeMember0Pubkey, committeeMember0adr, nonce
-            )
+            abi.encodeWithSelector(ISignatureManager.MemberAlreadyAddedNonce.selector, committeeMember0adr, nonce)
         );
 
-        // MemberAlreadyAddedNonce(0x0000000000000000000000000000000000000000000000000000000000000001, 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf, 0xf8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000) !=
-        // MemberAlreadyAddedNonce(0x0000000000000000000000000000000000000000000000000000000000000002, 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf, 0xf8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000)]
         // Act add nonce a second time with the same committee member
         vm.prank(committeeMember0adr);
         signatureManager.addMemberNonce(hashToSign, nonce);
@@ -305,7 +255,6 @@ contract TestSignatureManager is Test, HelperContract {
         // The signature values are dummy values
         bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
         address committeeMember0adr = vm.addr(1);
-        bytes32 committeeMember0Pubkey = generatePubKey(uint256(uint160(committeeMember0adr)));
 
         // Sign the first time
         vm.prank(committeeMember0adr);
@@ -313,12 +262,7 @@ contract TestSignatureManager is Test, HelperContract {
 
         // Assert
         vm.expectRevert(
-            abi.encodeWithSelector(
-                ISignatureManager.MemberHasAlreadySigned.selector,
-                committeeMember0Pubkey,
-                committeeMember0adr,
-                hashToSign
-            )
+            abi.encodeWithSelector(ISignatureManager.MemberHasAlreadySigned.selector, committeeMember0adr, hashToSign)
         );
 
         // Act sign a second time with the same committee member
@@ -403,7 +347,6 @@ contract TestSignatureManager is Test, HelperContract {
         // Arrange
         uint8 committeeMemberCount = uint8(registry.minCommitteeMembers());
         bytes32 hashToSign = 0x1000000000000000000000000000000000000000000000000000000000000001;
-        CommitteeMember[] memory members = registry.getCommitteeMembers(COMMITTEE_ID_STREAM_1_PACKET_0);
 
         // Act
         vm.prank(address(pm));
@@ -423,11 +366,6 @@ contract TestSignatureManager is Test, HelperContract {
         );
 
         for (uint256 i = 0; i < signatures.length; i++) {
-            assertEq(
-                signatures[i].memberPublicKey,
-                generatePubKey(uint256(uint160(members[i].memberAddress))),
-                "signatures[i].memberPublicKey should be equal to the committee member key"
-            );
             assertEq(signatures[i].signature, bytes32(0), "signatures[i].signature should be empty");
             assertEq(signatures[i].nonce.length, 0, "signatures[i].nonce should be empty");
         }
@@ -496,29 +434,8 @@ contract TestSignatureManager is Test, HelperContract {
         return hashToSign;
     }
 
-    function setup_membersNonces(bytes32 hashToSign, uint256 memberIndexStart, uint256 memberIndexEnd) internal {
-        for (uint256 i = memberIndexStart; i <= memberIndexEnd; i++) {
-            // The nonce values are dummy values
-            bytes memory nonce =
-                hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
-            address memberAddress = vm.addr(i + 1);
-            vm.prank(memberAddress);
-            signatureManager.addMemberNonce(hashToSign, nonce);
-        }
-    }
-
-    function setup_membersSignatures(bytes32 hashToSign, uint256 memberIndexStart, uint256 memberIndexEnd) internal {
-        for (uint256 i = memberIndexStart; i <= memberIndexEnd; i++) {
-            // The signarture values are dummy values
-            bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
-            address memberAddress = vm.addr(i + 1);
-            vm.prank(memberAddress);
-            signatureManager.addMemberSignature(hashToSign, signature);
-        }
-    }
-
     function setup_addAllNonces(bytes32 hashToSign) internal {
-        setup_membersNonces(hashToSign, 0, registry.minCommitteeMembers() - 1);
+        setup_addMemberNonce_MultipleMembers(hashToSign, 0, registry.minCommitteeMembers());
     }
 
     function setup_initTake1TxHashes() internal returns (bytes32) {

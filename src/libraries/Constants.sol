@@ -28,4 +28,7 @@ library Constants {
     uint8 constant PEGIN_CONFIRMATION_DEFAULT = 10;
     uint8 constant PEGOUT_CONFIRMATION_DEFAULT = 10;
     uint64 constant MAX_DENOMINATIONS_SIZE = 10;
+
+    uint256 constant TAKE_0_TIMEOUT_DEFAULT = 2 hours;
+    uint256 constant TAKE_1_TIMEOUT_DEFAULT = 2 hours;
 }

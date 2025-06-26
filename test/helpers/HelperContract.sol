@@ -17,7 +17,7 @@ import {
     CommitteeRegistry,
     PublicKeyRegistration
 } from "src/CommitteeRegistry.sol";
-import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
+import {StreamDenomination, Slot} from "src/interfaces/IStreamManager.sol";
 import {BtcTxIn, BtcTxOut, BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
 import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
@@ -338,44 +338,53 @@ abstract contract HelperContract is Test, TestUtils {
         uint64 slotId;
         bytes32 acceptPeginTxHash;
         bytes userPubKey;
-        bytes32 expectedTxHash;
+        bytes32 pegoutTxHash;
+        bytes32 pegoutSignatureHash;
     }
 
-    function setup_registerPegoutScenario() public returns (RegisterPegoutSetup memory setup) {
+    function setup_pegout() internal returns (RegisterPegoutSetup memory setup) {
+        // =========== Request Peg-In & Accept Peg-In ============
+        (BtcTransaction memory requestPeginTx, BtcTransaction memory acceptPeginTx) = setup_requestAndAcceptPeginFlow();
+
+        // Get the accept peg-in tx hash that will be spent in the peg-out
+        setup.acceptPeginTxHash = bitcoinManager.getBtcTxHash(acceptPeginTx);
         setup.stream = streamManager.getStream(VALUE);
-        setup.packetNumber = 0;
         setup.userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
 
-        // peg-in tx hash
-        setup.acceptPeginTxHash = 0x30b6a2cae94d89540a99e0dfa39cf88e6de40dca9142810fdce7a95c00faff47;
+        // =================== Request Peg-Out ===================
+        uint64 pegoutAmount = VALUE; // Same amount as peg-in
+        uint256 pegoutAmountInWei = BtcHelper.satoshiToWei(pegoutAmount);
+
+        // Calculate expected values
+        Stream memory stream = streamManager.getStream(pegoutAmount);
+        setup.packetNumber = stream.pegoutPacketPointer;
+        setup.slotId = stream.pegoutSlotPointer;
+
+        // Request peg-out
+        pm.tryPegout{value: pegoutAmountInWei}(setup.userPubKey);
+
+        // Verify slot was locked
+        Slot memory slot = streamManager.getSlot(stream.streamId, setup.packetNumber, setup.slotId);
+        assertEq(uint256(slot.state), uint256(SlotState.LOCKED), "Slot should be locked after peg-out request");
+        assertEq(slot.acceptPeginTx, setup.acceptPeginTxHash, "Slot should reference the correct accept peg-in tx");
 
         // Create a peg-out transaction that spends the accept peg-in UTXO
-        setup.pegoutTx = createPegoutTx(setup.acceptPeginTxHash, setup.userPubKey, VALUE);
-
-        setup.slotId = streamManager.setSlotHarness(
-            setup.stream.streamId,
-            setup.packetNumber,
-            hex"00143fd2e14f4b448a071e074e1e1879318447f2a266",
-            setup.acceptPeginTxHash,
-            VALUE
-        );
-
-        // Set the slot state to LOCKED
-        streamManager.setSlotStateHarness(setup.stream.streamId, setup.packetNumber, setup.slotId, SlotState.LOCKED);
-
-        // Set up the pegoutTxs mapping
-        pm.setPegoutTempInfoHarness(setup.acceptPeginTxHash, setup.userPubKey);
-        pm.setStreamPositionHarness(
-            setup.acceptPeginTxHash, setup.stream.streamId, setup.packetNumber, setup.slotId, PegStatus.ACCEPTED
-        );
+        // TODO: Fix this function, it's different that BitcoinManager so it then creates a different pegoutSignatureHash
+        setup.pegoutTx = createPegoutTx(setup.acceptPeginTxHash, setup.userPubKey, slot.acceptPeginAmount);
 
         // Create SPV proof for the peg-out transaction
         setup.pegoutTxSPVProof = createBtcTxSPVProof(setup.pegoutTx);
 
         // Calculate the expected transaction hash
-        setup.expectedTxHash = bitcoinManager.getBtcTxHash(setup.pegoutTx);
+        // Hardcoded for packet 0, slot 0. This should be fixed when update createPegoutTx
+        setup.pegoutSignatureHash = hex"772f88b4a710480e59273515298d2830db5239e54152de486a9a3e6a5adc5c6a";
 
-        return setup;
+        setup.pegoutTxHash = bitcoinManager.getBtcTxHash(setup.pegoutTx);
+    }
+
+    function setup_pegoutAndMemberNonces() internal returns (RegisterPegoutSetup memory setup) {
+        setup = setup_pegout();
+        setup_addMemberNonce_MultipleMembers(setup.pegoutSignatureHash, 0, registry.minCommitteeMembers());
     }
 
     function setup_depositMemberInfo(uint64 _streamId, address _memberAddress) internal {
@@ -443,7 +452,8 @@ abstract contract HelperContract is Test, TestUtils {
         Committee memory committee = Committee({
             aggregatedKey: bytes32(0),
             members: new CommitteeMember[](registry.minCommitteeMembers()),
-            leaderAddress: address(0)
+            leaderAddress: address(0),
+            operatorTakeIndex: 0
         });
 
         committee.members[0] = CommitteeMember({memberAddress: vm.addr(17 + 1), role: Role.OPERATOR});
@@ -466,7 +476,8 @@ abstract contract HelperContract is Test, TestUtils {
         Committee memory committee = Committee({
             aggregatedKey: bytes32(0),
             members: new CommitteeMember[](registry.minCommitteeMembers()),
-            leaderAddress: address(0)
+            leaderAddress: address(0),
+            operatorTakeIndex: 0
         });
 
         committee.members[0] = CommitteeMember({memberAddress: vm.addr(7 + 1), role: Role.OPERATOR});
@@ -500,7 +511,8 @@ abstract contract HelperContract is Test, TestUtils {
         Committee memory committee = Committee({
             aggregatedKey: bytes32(0),
             members: new CommitteeMember[](registry.minCommitteeMembers()),
-            leaderAddress: address(0)
+            leaderAddress: address(0),
+            operatorTakeIndex: 0
         });
 
         committee.members[0] = CommitteeMember({memberAddress: vm.addr(7 + 1), role: Role.OPERATOR});
@@ -515,5 +527,40 @@ abstract contract HelperContract is Test, TestUtils {
         committee.members[9] = CommitteeMember({memberAddress: vm.addr(1 + 1), role: Role.WATCHTOWER});
 
         return committee;
+    }
+
+    function setup_addMemberNonce(address _memberAddress, bytes32 _hashToSign, bytes memory _nonce) internal {
+        vm.prank(_memberAddress);
+        signatureManager.addMemberNonce(_hashToSign, _nonce);
+    }
+
+    function setup_addMemberNonce_MultipleMembers(bytes32 _hashToSign, uint256 _memberIndexStart, uint256 _memberCount)
+        internal
+    {
+        uint256 memberIndexEnd = _memberIndexStart + _memberCount;
+        for (uint256 i = _memberIndexStart; i < memberIndexEnd; i++) {
+            // The nonce values are dummy values
+            bytes memory nonce =
+                hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
+            setup_addMemberNonce(vm.addr(i + 1), _hashToSign, nonce);
+        }
+    }
+
+    function setup_addMemberSignature(address _memberAddress, bytes32 _hashToSign, bytes32 _signature) internal {
+        vm.prank(_memberAddress);
+        signatureManager.addMemberSignature(_hashToSign, _signature);
+    }
+
+    function setup_addMemberSignature_MultipleMembers(
+        bytes32 _hashToSign,
+        uint256 _memberIndexStart,
+        uint256 _membersCount
+    ) internal {
+        uint256 memberIndexEnd = _memberIndexStart + _membersCount;
+        for (uint256 i = _memberIndexStart; i < memberIndexEnd; i++) {
+            // The signarture values are dummy values
+            bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
+            setup_addMemberSignature(vm.addr(i + 1), _hashToSign, signature);
+        }
     }
 }

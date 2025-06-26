@@ -20,12 +20,11 @@ enum PegStatus {
     NOT_REGISTERED,
     REGISTERED,
     ACCEPTED,
+    USER_TAKE,
+    OPERATOR_TAKE,
+    OPERATOR_WON,
     PAID
 }
-// USER_TAKEN, // User take: Key spend (everybody signs)
-// TAKE_0, // Undispute advancement of funds
-// TAKE_1, // Take Signal
-// TAKE_2 // Disputed peg-out (Kick Off BitVMX)
 
 struct StreamPosition {
     uint64 streamId;
@@ -42,6 +41,10 @@ struct RequestPeginTempInfo {
 
 struct PegoutTempInfo {
     bytes userPubKey;
+    uint256 createdAt;
+    uint256 operatorTakeUpdatedAt;
+    address takeOperator; // The operator that will do the advancement of funds
+    uint256 committeeId;
 }
 
 interface IPegManager {
@@ -127,6 +130,27 @@ interface IPegManager {
         uint64 slotId
     );
 
+    function setUserTakeTimeout(uint256 _timeout) external;
+    function setOperatorTakeTimeout(uint256 _timeout) external;
+    function userTakeTimeout() external view returns (uint256);
+    function operatorTakeTimeout() external view returns (uint256);
+
+    function depositOperatorTakeProof(BtcTxSPVProof calldata _pegoutTxSPVProof) external;
+
+    // ===================== Events =====================
+    event UserTakeTimeoutUpdated(uint256 newTimeout);
+    event OperatorTakeTimeoutUpdated(uint256 newTimeout);
+    event OperatorTakeTriggered(
+        bytes32 pegoutSignatureHash,
+        uint256 committeeId,
+        bytes32 acceptPeginTxHash,
+        address operator,
+        bytes userPubKey,
+        uint256 userTakeCreatedAt,
+        uint256 updatedAt,
+        uint256 expireAt
+    );
+
     // ===================== Errors =====================
     error BitcoinManagerAddressZero();
     error CommitteeRegistryAddressZero();
@@ -145,4 +169,10 @@ interface IPegManager {
     error InvalidSlotState(SlotState actual, SlotState expected);
     error IncorrectVout(uint32 actual, uint32 expected);
     error IncorrectOutputScript(bytes actual, bytes expected);
+    error InvalidTimeout(uint256 timeout);
+    error InvalidPegStatus(PegStatus actual);
+    error UserTakeTimeoutNotExpired(uint256 createdAt, uint256 expireAt);
+    error UserTakeAlreadySigned(bytes32 pegoutSignatureHash);
+    error OperatorTakeTimeoutNotExpired(uint256 createdAt, uint256 expireAt);
+    error PegoutSignatureHashNotFound(bytes32 pegoutSignatureHash);
 }

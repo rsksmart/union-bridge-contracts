@@ -132,6 +132,8 @@ interface IBitcoinManager {
     /// @param _userPubKey The user's public key that should receive the funds
     function validatePegoutUserOutput(BtcTxOut calldata _pegoutOutput, bytes memory _userPubKey) external pure;
 
+    function validatePegoutMemberOutput(BtcTxOut calldata _pegoutOutput, bytes32 _memberPubKey) external pure;
+
     error InvalidOpReturnLength(uint256 actual, uint256 expected);
     error IncorrectlyFormedOpReturn(uint256 index);
     error IncorrectOutputScript(bytes actual, bytes expected);
