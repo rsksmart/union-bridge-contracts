@@ -131,7 +131,7 @@ interface IBitcoinManager {
     /// @notice Generates a Taproot script pub key for peg-in request transactions
     /// @dev Creates a P2TR script with both key spend and script spend paths for committee and user keys
     /// @param _rskDestinationAddress The RSK address that will receive the RBTC
-    /// @param _value The amount in satoshis (must equal stream denomination)
+    /// @param _value The amount in satoshis (must match stream denomination)
     /// @param _btcReimbursementPubKey The user's public key (x-coordinate only, 32 bytes)
     /// @param _committeePubKey The committee's public key (x-coordinate only, 32 bytes)
     /// @return The generated Taproot script pub key
