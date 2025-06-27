@@ -185,7 +185,7 @@ interface ICommitteeRegistry {
         view
         returns (uint256);
 
-    /// @notice Gets the staked balance for a member in a specific packet
+    /// @notice Gets the staked balance for a member in a specific stream and packet
     /// @param _address The member's address
     /// @param _denomination The stream denomination
     /// @param _packetNumber The packet number
@@ -224,13 +224,13 @@ interface ICommitteeRegistry {
     /// @return The minimum deposit amount in wei
     function getMinimumDeposit(StreamDenomination _denomination) external view returns (uint256);
 
-    /// @notice Deposits member information for committee formation
-    /// @dev Called by members to provide their aggregated key for pending committee
+    /// @notice Allows a member to deposit information for committee formation
+    /// @dev Called by members to provide their aggregated key for a pending committee
     /// @param _streamId The stream ID for the pending committee
     /// @param _aggregatedKey The aggregated public key provided by the member
     function depositMemberInfoForCommittee(uint64 _streamId, bytes32 _aggregatedKey) external;
 
-    /// @notice Creates a new committee for a stream
+    /// @notice Triggers the creation of a new committee for a stream if the timeout has expired
     /// @dev This function is called when the slot usage threshold is reached
     /// @param _streamId The stream ID to create a new committee for
     function createCommittee(uint64 _streamId) external;
@@ -241,7 +241,7 @@ interface ICommitteeRegistry {
     function isPendingCommitteeExpired(uint64 _streamId) external view returns (bool);
 
     /// @notice Returns the pending committee for the stream
-    /// @dev This function will revert if the committee is not pending or if it's expired
+    /// @dev This function will revert if  there is no pending committee or if it's expired
     /// @param _streamId The stream ID to get the pending committee for
     /// @return committee The pending committee
     /// @return createdAt The timestamp when the pending committee was created

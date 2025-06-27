@@ -42,30 +42,24 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
     /// @notice Signature manager contract for handling multi-signature operations
     ISignatureManager public signatureManager;
 
-    /// @notice Mapping from request peg-in transaction hash to accept peg-in transaction hash
-    mapping(bytes32 requestPeginTxHash => bytes32 acceptPeginTxhash) internal peginRequests;
-
-    /// @notice Mapping from accept peg-in transaction hash to stream position information
-    mapping(bytes32 acceptPeginTxhash => StreamPosition streamPosition) internal streamPosition;
-
-    /// @notice Mapping from request peg-in transaction hash to temporary peg-in information
-    mapping(bytes32 requestPeginTxHash => RequestPeginTempInfo tempInfo) internal peginTempInfo;
-
-    /// @notice Mapping from accept peg-in transaction hash to temporary peg-out information
-    mapping(bytes32 acceptPeginTxHash => PegoutTempInfo tempInfo) internal pegoutTempInfo;
-
-    /// @notice Mapping from peg-out signature hash to accept peg-in transaction hash
-    mapping(bytes32 pegoutSignatureHash => bytes32 acceptPeginTxHash) internal pegoutToPeginTxHash;
-
-    /// @notice Mapping from stream/packet/slot key to peg-out signature hash
-    /// @dev Key = keccak256(abi.encodePacked(streamId, packetNumber, slotId))
-    mapping(bytes32 key => bytes32 pegoutSignatureHash) internal pegoutSighashes;
-
     /// @notice Timeout for user take operations
     uint256 public userTakeTimeout;
 
     /// @notice Timeout for operator take operations
     uint256 public operatorTakeTimeout;
+
+    mapping(bytes32 requestPeginTxHash => bytes32 acceptPeginTxhash) internal peginRequests;
+
+    mapping(bytes32 acceptPeginTxhash => StreamPosition streamPosition) internal streamPosition;
+
+    mapping(bytes32 requestPeginTxHash => RequestPeginTempInfo tempInfo) internal peginTempInfo;
+
+    mapping(bytes32 acceptPeginTxHash => PegoutTempInfo tempInfo) internal pegoutTempInfo;
+
+    mapping(bytes32 pegoutSignatureHash => bytes32 acceptPeginTxHash) internal pegoutToPeginTxHash;
+
+    // Key = keccak256(abi.encodePacked(streamId, packetNumber, slotId))
+    mapping(bytes32 key => bytes32 pegoutSignatureHash) internal pegoutSighashes;
 
     /// @notice Initializes the PegManager contract
     /// @param _initialOwner The initial owner of the contract

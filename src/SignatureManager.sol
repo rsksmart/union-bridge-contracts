@@ -156,7 +156,7 @@ contract SignatureManager is ISignatureManager, AccessControl {
         return partialSignaturesData;
     }
 
-    /// @notice Gets the status of signatures for a given hash
+    /// @notice Gets the status of the signatures for a given hash
     /// @param _hashToSign The hash to get status for
     /// @return missingSignatures Number of missing signatures
     /// @return missingNonces Number of missing nonces
