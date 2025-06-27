@@ -212,7 +212,7 @@ interface IStreamManager is IAccessControl {
     /// @notice Gets the committee ID for the current packet in a stream
     /// @param _streamId The index of the stream
     /// @return uint256 The committee ID for the current packet (returns 0 if no current packet)
-    function getCurrentPacketCommitteeId(uint64 _streamId) external view returns (uint256);
+    function getAvailablePeginCommitteeId(uint64 _streamId) external view returns (uint256);
 
     // Events
     /// @notice Event emitted when a new stream is created

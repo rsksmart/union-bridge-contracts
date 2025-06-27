@@ -338,7 +338,7 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
     }
 
     // ========================== Peg Out Signature Hash ==========================
-    /// @notice Gets the signature hash for a peg-out transaction
+    /// @notice Generates the signature hash for a peg-out transaction
     /// @param _userPubKey The user's public key for the peg-out
     /// @param _acceptPeginTx The hash of the accept peg-in transaction
     /// @param _prevoutData The previous output data for the input

@@ -130,10 +130,10 @@ contract StreamManager is IStreamManager, AccessControl {
         return packets[_streamId][_packetNumber];
     }
 
-    /// @notice Gets the committee ID for the current packet being processed in a stream
+    /// @notice Gets the committee ID for the available pegin packet in a stream
     /// @param _streamId The ID of the stream
     /// @return The committee ID, or 0 if no current packet
-    function getCurrentPacketCommitteeId(uint64 _streamId) external view returns (uint256) {
+    function getAvailablePeginCommitteeId(uint64 _streamId) external view returns (uint256) {
         Stream storage stream = streams[_streamId];
         if (stream.peginPacketPointer >= packets[_streamId].length) {
             return 0;
@@ -218,7 +218,7 @@ contract StreamManager is IStreamManager, AccessControl {
         return (slot, packetNumber);
     }
 
-    /// @notice Gets a specific slot from a stream
+    /// @notice Gets a specific slot from a stream and packet
     /// @param _streamId The ID of the stream
     /// @param _packetNumber The packet number
     /// @param _slotNumber The slot number within the packet

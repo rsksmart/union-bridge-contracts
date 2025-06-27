@@ -233,23 +233,23 @@ contract TestStreamManager is Test, HelperContract {
         streamManager.setPeginConfirmations(streamId, 10);
     }
 
-    function test_getCurrentPacketCommitteeId_Success() external {
+    function test_getAvailablePeginCommitteeId_Success() external {
         // Arrange
         setup_multipleRequestAndAcceptPeginFlows(Constants.SLOTS_PER_PACKET - 1, setupStreamId);
 
         // Act
-        uint256 currentPacketCommitteeId = streamManager.getCurrentPacketCommitteeId(setupStreamId);
+        uint256 currentPacketCommitteeId = streamManager.getAvailablePeginCommitteeId(setupStreamId);
 
         // Assert
         assertEq(currentPacketCommitteeId, COMMITTEE_ID_STREAM_1_PACKET_0, "Current packet committee ID should match");
     }
 
-    function test_getCurrentPacketCommitteeId_Success_NoCommitteeForCurrentPacket() external {
+    function test_getAvailablePeginCommitteeId_Success_NoCommitteeForCurrentPacket() external {
         // Arrange
         setup_multipleRequestAndAcceptPeginFlows(Constants.SLOTS_PER_PACKET, setupStreamId);
 
         // Act
-        uint256 currentPacketCommitteeId = streamManager.getCurrentPacketCommitteeId(setupStreamId);
+        uint256 currentPacketCommitteeId = streamManager.getAvailablePeginCommitteeId(setupStreamId);
 
         // Assert
         assertEq(currentPacketCommitteeId, 0, "Current packet committee ID should be 0 when no committee exists");
