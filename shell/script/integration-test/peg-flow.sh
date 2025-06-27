@@ -18,6 +18,7 @@ CURRENT_PATH=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 SCRIPT_DIR="$CURRENT_PATH/.."
 
 bash "$SCRIPT_DIR/integration-test/packet-creation-flow.sh"
+bash "$SCRIPT_DIR/get-temporary-address.sh"
 bash "$SCRIPT_DIR/request-pegin.sh"
 bash "$SCRIPT_DIR/signatures/add-every-member-nonce-and-signature.sh" -h "$PEGIN_SIGNATURE_HASH"
 bash "$SCRIPT_DIR/accept-pegin.sh"
