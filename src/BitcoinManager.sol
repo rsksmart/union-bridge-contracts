@@ -257,7 +257,7 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
 
         // Calculate fee and speedUpAmount from amount
         // TODO: atm is returning hardcoded values, should be calculated
-        (uint64 fee, uint64 speedUpAmount) = BtcHelper.calculateFeeAndSpeedUp(_prevoutData.value);
+        (uint64 fee, uint64 speedUpAmount) = BtcHelper.calculateFeeAndSpeedUp();
 
         // Committee accept pegin
         bytes memory scriptPubKey = getAcceptPeginP2TRScriptPub(_committeePubKey);
@@ -368,7 +368,7 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
 
         // Calculate fee and speedUpAmount from amount
         // TODO: atm is returning hardcoded values, should be calculated
-        (uint64 fee, uint64 speedUpAmount) = BtcHelper.calculateFeeAndSpeedUp(_prevoutData.value);
+        (uint64 fee, uint64 speedUpAmount) = BtcHelper.calculateFeeAndSpeedUp();
 
         // User pegout
         bytes memory scriptPubKey = BtcScriptParser.getP2WPKHScript(_userPubKey);
