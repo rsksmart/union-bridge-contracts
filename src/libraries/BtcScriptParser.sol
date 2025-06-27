@@ -4,31 +4,47 @@ pragma solidity ^0.8.20;
 import {OpCodes} from "./OpCodes.sol";
 import {BtcHelper} from "./BtcHelper.sol";
 
-/**
- * @title Bitcoin Script Parser
- * @notice Allows to encode / decode Bitcoin Scripts
- * @author Fairgate
- */
+/// @title Bitcoin Script Parser
+/// @notice Library for encoding and decoding Bitcoin scripts
+/// @dev Provides functions to create various Bitcoin script types and push data to the stack
+/// @dev Used for creating Bitcoin transaction scripts in the union bridge
+/// @author Fairgate
 library BtcScriptParser {
+    /// @dev Maximum block timelock value allowed in scripts
+    /// @dev Used to prevent excessive timelock values
     uint256 constant MAX_BLOCK_TIMELOCK = 65535;
-    // Errors
 
+    // Errors
+    /// @notice Error thrown when a number exceeds the maximum allowed value
+    /// @param actual The actual number value that was too large
+    /// @param max The maximum allowed value
     error NumberTooLarge(uint256 actual, uint256 max);
 
-    // Pay To Witness Public Key Hash
+    /// @notice Creates a Pay-to-Witness-Public-Key-Hash (P2WPKH) script
+    /// @dev Creates a native SegWit script for spending to a public key hash
+    /// @param _userPubKey The user's public key to hash
+    /// @return The P2WPKH script bytes
     function getP2WPKHScript(bytes memory _userPubKey) internal pure returns (bytes memory) {
         bytes20 pubKeyHash = BtcHelper.hash160(_userPubKey);
 
         return abi.encodePacked(OpCodes.OP_0, OpCodes.OP_PUSHBYTES_20, pubKeyHash);
     }
 
-    // Pay To Witness Script Hash
+    /// @notice Creates a Pay-to-Witness-Script-Hash (P2WSH) script
+    /// @dev Creates a native SegWit script for spending to a script hash
+    /// @param _script The script to hash
+    /// @return The P2WSH script bytes
     function getP2WSHScript(bytes memory _script) internal pure returns (bytes memory) {
         bytes32 scriptHash = sha256(_script);
 
         return abi.encodePacked(OpCodes.OP_0, OpCodes.OP_PUSHBYTES_32, scriptHash);
     }
 
+    /// @notice Pushes a number onto the Bitcoin script stack
+    /// @dev Handles different number ranges with appropriate opcodes and encoding
+    /// @dev Uses minimal encoding for numbers to optimize script size
+    /// @param _number The number to push onto the stack
+    /// @return The script bytes for pushing the number
     function pushNumberToStack(uint256 _number) internal pure returns (bytes memory) {
         if (_number == 0) {
             return abi.encodePacked(OpCodes.OP_0);
@@ -56,6 +72,12 @@ library BtcScriptParser {
         revert NumberTooLarge(_number, 2147483647);
     }
 
+    /// @notice Creates a timelock script with OP_CHECKSEQUENCEVERIFY
+    /// @dev If the specified number of blocks have passed since transaction confirmation,
+    /// @dev the timelocked public key can spend the funds
+    /// @param _blocks The number of blocks to wait before the script can be spent
+    /// @param _publicKey The 32-byte x-coordinate of the public key (Taproot format)
+    /// @return The timelock script bytes
     function getTimelockScript(uint32 _blocks, bytes32 _publicKey) internal pure returns (bytes memory) {
         if (_blocks > MAX_BLOCK_TIMELOCK) {
             revert NumberTooLarge(_blocks, MAX_BLOCK_TIMELOCK);
@@ -70,81 +92,5 @@ library BtcScriptParser {
             _publicKey, // public key is the 32-byte x-coordinate only.
             OpCodes.OP_CHECKSIG
         );
-    }
-
-    /**
-     * @dev Returns the Bitcoin script bytes to push a number onto the stack
-     * @param _number The number to push onto the stack
-     * @return The script bytes (opcodes and data) for pushing the number
-     */
-    function pushDataToStack(uint256 _number) internal pure returns (bytes memory) {
-        // If number is 0, return OP_0 (0x00)
-        if (_number == 0) {
-            return hex"00";
-        }
-
-        // If number is 1-16, use OP_1 through OP_16 (0x51-0x60)
-        if (_number >= 1 && _number <= 16) {
-            bytes1 opcode = bytes1(uint8(0x50) + uint8(_number));
-            return abi.encodePacked(opcode);
-        }
-
-        // For any other number, we need to convert it to a minimally encoded byte array
-        bytes memory numberBytes = encodeMinimalNumber(_number);
-        uint8 length = uint8(numberBytes.length);
-
-        // Based on length, use appropriate PUSHDATA opcode
-        if (length <= 75) {
-            // Direct length byte (0x01-0x4b)
-            return abi.encodePacked(bytes1(length), numberBytes);
-        } else if (length <= 255) {
-            // OP_PUSHDATA1 (0x4c) + 1 byte length
-            return abi.encodePacked(bytes1(0x4c), bytes1(length), numberBytes);
-        } else if (length <= 65535) {
-            // OP_PUSHDATA2 (0x4d) + 2 byte length
-            return abi.encodePacked(bytes1(0x4d), bytes2(uint16(length)), numberBytes);
-        } else {
-            // OP_PUSHDATA4 (0x4e) + 4 byte length
-            return abi.encodePacked(bytes1(0x4e), bytes4(uint32(length)), numberBytes);
-        }
-    }
-
-    /**
-     * @dev Encodes a number in Bitcoin's minimal encoding format
-     * In Bitcoin, numbers are stored as little-endian with the most significant bit
-     * indicating the sign
-     * @param _number The number to encode
-     * @return Minimally encoded bytes for the number
-     */
-    function encodeMinimalNumber(uint256 _number) internal pure returns (bytes memory) {
-        if (_number == 0) {
-            return "";
-        }
-
-        // Count how many bytes we need
-        uint256 tempNum = _number;
-        uint256 length = 0;
-        while (tempNum > 0) {
-            tempNum >>= 8;
-            length++;
-        }
-
-        // Add an extra byte if the highest bit of the last byte would be set
-        // This prevents the number from being interpreted as negative
-        if ((_number >> ((length * 8) - 1)) & 1 == 1) {
-            length++;
-        }
-
-        // Create the result array with the correct length
-        bytes memory result = new bytes(length);
-        tempNum = _number;
-
-        // Fill the array in little-endian order
-        for (uint256 i = 0; i < length; i++) {
-            result[i] = bytes1(uint8(tempNum & 0xFF));
-            tempNum >>= 8;
-        }
-
-        return result;
     }
 }

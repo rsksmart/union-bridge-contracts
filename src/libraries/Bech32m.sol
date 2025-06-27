@@ -3,19 +3,52 @@ pragma solidity ^0.8.0;
 
 import {BtcNetwork} from "./Network.sol";
 
-// contract Bech32m {
+/// @title Bech32m
+/// @notice Library for Bech32m encoding and decoding used in Bitcoin Taproot addresses
+/// @dev Implements the Bech32m checksum algorithm as specified in BIP-0350
+/// @dev Used for encoding Taproot addresses (P2TR) in the union bridge
 library Bech32m {
-    // Constants
+    /// @notice Error thrown when an invalid Bitcoin network is provided
+    /// @param network The invalid network value that was provided
+    error InvalidNetwork(BtcNetwork network);
+
+    /// @notice Error thrown when invalid padding is detected during bit conversion
+    /// @dev Occurs when the padding flag is false but padding would be required
+    error InvalidPadding();
+
+    /// @notice Error thrown when a value exceeds the maximum allowed for the given bit size
+    /// @param value The value that exceeded the maximum allowed range
+    error InvalidValue(uint256 value);
+
+    // Bech32m Constants
+    /// @dev Character set for Bech32m encoding (32 characters)
+    /// @dev Used to convert 5-bit values to human-readable characters
     bytes constant CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
+
+    /// @dev Bech32m constant for checksum calculation
+    /// @dev XORed with the polynomial modulo result to create the checksum
     uint32 constant BECH32M_CONST = 0x2bc830a3;
 
-    // Generator constants for polymod
+    // Generator Constants for Polymod
+    /// @dev Generator constant 0 for polynomial modulo calculation
     uint32 constant GENERATOR_0 = 0x3b6a57b2;
+
+    /// @dev Generator constant 1 for polynomial modulo calculation
     uint32 constant GENERATOR_1 = 0x26508e6d;
+
+    /// @dev Generator constant 2 for polynomial modulo calculation
     uint32 constant GENERATOR_2 = 0x1ea119fa;
+
+    /// @dev Generator constant 3 for polynomial modulo calculation
     uint32 constant GENERATOR_3 = 0x3d4233dd;
+
+    /// @dev Generator constant 4 for polynomial modulo calculation
     uint32 constant GENERATOR_4 = 0x2a1462b3;
 
+    /// @notice Calculate the polynomial modulo for Bech32m checksum
+    /// @dev Implements the polynomial modulo algorithm used in Bech32m
+    /// @param values Array of 5-bit values to process
+    /// @return The polynomial modulo result
     function bech32Polymod(uint8[] memory values) internal pure returns (uint32) {
         uint32 chk = 1;
         for (uint256 i = 0; i < values.length; i++) {
@@ -34,6 +67,10 @@ library Bech32m {
         return chk;
     }
 
+    /// @notice Expand the human-readable part (HRP) for checksum calculation
+    /// @dev Converts the HRP string into an array of 5-bit values
+    /// @param hrp Human-readable part string (e.g., "bc", "tb", "bcrt")
+    /// @return Array of 5-bit values representing the expanded HRP
     function bech32HrpExpand(string memory hrp) internal pure returns (uint8[] memory) {
         bytes memory hrpBytes = bytes(hrp);
         uint8[] memory expand = new uint8[](2 * hrpBytes.length + 1);
@@ -46,6 +83,13 @@ library Bech32m {
         return expand;
     }
 
+    /// @notice Convert data between different bit sizes
+    /// @dev Converts data from fromBits to toBits, with optional padding
+    /// @param data Input data to convert
+    /// @param fromBits Source bit size
+    /// @param toBits Target bit size
+    /// @param pad Whether to pad the output if necessary
+    /// @return Array of converted data in the target bit size
     function convertBits(bytes memory data, uint8 fromBits, uint8 toBits, bool pad)
         internal
         pure
@@ -62,7 +106,7 @@ library Bech32m {
         for (uint256 i = 0; i < data.length; i++) {
             uint256 value = uint8(data[i]);
             if (value >> fromBits != 0) {
-                revert("Invalid value");
+                revert InvalidValue(value);
             }
             acc = ((acc << fromBits) | value) & maxacc;
             bits += fromBits;
@@ -77,7 +121,7 @@ library Bech32m {
                 ret[outLen++] = uint8((acc << (toBits - bits)) & maxv);
             }
         } else if (bits >= fromBits || ((acc << (toBits - bits)) & maxv) != 0) {
-            revert("Invalid padding");
+            revert InvalidPadding();
         }
 
         // Resize array to actual length
@@ -87,6 +131,11 @@ library Bech32m {
         return ret;
     }
 
+    /// @notice Create a Bech32m checksum for the given HRP and data
+    /// @dev Calculates the 6-character checksum using the Bech32m algorithm
+    /// @param hrp Human-readable part string
+    /// @param data Array of 5-bit data values
+    /// @return Array of 6 checksum values
     function bech32CreateChecksum(string memory hrp, uint8[] memory data) internal pure returns (uint8[] memory) {
         uint8[] memory hrpExpanded = bech32HrpExpand(hrp);
         uint8[] memory values = new uint8[](hrpExpanded.length + data.length + 6);
@@ -107,6 +156,11 @@ library Bech32m {
         return checksum;
     }
 
+    /// @notice Encode a Taproot public key as a Bech32m address
+    /// @dev Creates a P2TR (Pay-to-Taproot) address from a tweaked public key
+    /// @param tweakedPubKey The 32-byte tweaked public key
+    /// @param network The Bitcoin network (mainnet, testnet, or regtest)
+    /// @return The encoded Bech32m Taproot address
     function encodeTaprootAddress(bytes memory tweakedPubKey, BtcNetwork network)
         internal
         pure
@@ -131,7 +185,7 @@ library Bech32m {
         } else if (network == BtcNetwork.REGTEST) {
             hrp = "bcrt";
         } else {
-            revert("Invalid network");
+            revert InvalidNetwork(network);
         }
 
         // Get checksum
