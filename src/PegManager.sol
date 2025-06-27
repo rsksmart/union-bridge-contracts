@@ -263,7 +263,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         // Initialize the signatures needed for a given aggregated key
         uint256 committeeId = streamManager.getCommitteeId(_streamId, _packetNumber);
         signatureManager.initSignatures(acceptPeginSignatureHash, committeeId);
-        signatureManager.initTake1TxHashes(acceptPeginTxHash, committeeId);
+        signatureManager.initOperatorTakeTxHashes(acceptPeginTxHash, committeeId);
 
         emit PeginRequested(
             streamManager.getCommitteeId(_streamId, _packetNumber),
@@ -517,7 +517,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         return pegoutSighashes[key];
     }
 
-    /// @notice Gets the stream position information for a given Bitcoin transaction hash
+    /// @notice Gets the stream position information for a given Bitcoin Pegin request transaction hash
     /// @param _btcTxHash The Bitcoin transaction hash
     /// @return The stream position information
     function getStreamPosition(bytes32 _btcTxHash) public view returns (StreamPosition memory) {

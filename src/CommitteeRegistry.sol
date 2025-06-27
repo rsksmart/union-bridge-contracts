@@ -34,8 +34,6 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     /// @notice Mapping of member addresses to their member data
     mapping(address => Member) internal members;
 
-    /// @notice Maximum number of committees that can exist
-    uint256 public constant MAX_COMMITTEES_SIZE = 100;
     /// @notice Maximum number of members allowed per committee
     uint256 public constant MAX_MEMBERS_PER_COMMITTEE = 100;
 

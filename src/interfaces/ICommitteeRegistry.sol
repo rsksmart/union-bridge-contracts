@@ -623,7 +623,7 @@ interface ICommitteeRegistry {
     /// @param memberAddress The member's address
     /// @param memberPubKey The member's registered take public key
     /// @param signaturePubKeyX The public key X-coordinate from the signature
-    error _InvalidTake1PubKey(
+    error _InvalidOperatorTakePubKey(
         uint256 committeeId, address memberAddress, bytes32 memberPubKey, bytes32 signaturePubKeyX
     );
 
