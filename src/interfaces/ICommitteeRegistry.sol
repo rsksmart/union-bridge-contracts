@@ -401,10 +401,24 @@ interface ICommitteeRegistry {
     /// @param member The member's address
     /// @param aggregatedKey The aggregated key provided by the member
     event MemberInfoDeposited(uint64 indexed streamId, address indexed member, bytes32 aggregatedKey);
+
+    /// @notice Event emitted when no honest operators remain in a committee
+    /// @param committeeId The ID of the committee with no honest operators
     event NoRemainingHonestOperators(uint256 committeeId);
+
+    /// @notice Event emitted when a member reapplies to a stream
+    /// @param memberAddress The member's address
+    /// @param denomination The stream denomination
+    /// @param role The role requested by the member
+    /// @param preStakedBalance The pre-staked balance for the application
     event MemberReApplied(
         address indexed memberAddress, StreamDenomination denomination, Role role, uint256 preStakedBalance
     );
+
+    /// @notice Event emitted when a member's reapply flag is updated
+    /// @param memberAddress The member's address
+    /// @param denomination The stream denomination
+    /// @param reApply The new reapply flag value
     event MemberReApplyUpdated(address indexed memberAddress, StreamDenomination denomination, bool reApply);
 
     // Errors
@@ -589,6 +603,9 @@ interface ICommitteeRegistry {
     /// @param memberAddress The member's address
     /// @param denomination The stream denomination
     error MemberIsInPendingCommittee(address memberAddress, StreamDenomination denomination);
+
+    /// @notice Thrown when no eligible operator is found for take operations
+    /// @param committeeId The ID of the committee where no operator was found
     error TakeOperatorNotFound(uint256 committeeId);
 
     // Internal Errors
@@ -600,9 +617,21 @@ interface ICommitteeRegistry {
     /// @param streamId The stream ID
     /// @param status The status indicating why creation failed
     error _FailedToCreateCommittee(uint64 streamId, PendingCommitteeStatus status);
+
+    /// @notice Thrown when a member's take public key doesn't match the signature public key
+    /// @param committeeId The ID of the committee
+    /// @param memberAddress The member's address
+    /// @param memberPubKey The member's registered take public key
+    /// @param signaturePubKeyX The public key X-coordinate from the signature
     error _InvalidTake1PubKey(
         uint256 committeeId, address memberAddress, bytes32 memberPubKey, bytes32 signaturePubKeyX
     );
+
+    /// @notice Thrown when a member's pre-staked balance doesn't match their requested role requirements
+    /// @param memberAddress The member's address
+    /// @param denomination The stream denomination
+    /// @param preStakedBalance The member's pre-staked balance
+    /// @param requestedRole The role requested by the member
     error _inconsistentPreStakedBalanceAndRole(
         address memberAddress, StreamDenomination denomination, uint256 preStakedBalance, Role requestedRole
     );
