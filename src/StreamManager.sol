@@ -279,19 +279,19 @@ contract StreamManager is IStreamManager, AccessControl {
         return getPacket(_streamId, _packetNumber).committeePubKey;
     }
 
-    /// @notice Marks a slot as paid and stores the take0 transaction hash
+    /// @notice Marks a slot as paid and stores the UserTake transaction hash
     /// @dev Can only be called by the PegManager
     /// @param _streamId The ID of the stream
     /// @param _packetNumber The packet number
     /// @param _slotId The slot ID
     /// @param _acceptPeginTxHash The hash of the accept peg-in transaction
-    /// @param _take0Tx The hash of the take0 transaction
+    /// @param _userTakeTx The hash of the UserTake transaction
     function paidSlot(
         uint64 _streamId,
         uint64 _packetNumber,
         uint64 _slotId,
         bytes32 _acceptPeginTxHash,
-        bytes32 _take0Tx
+        bytes32 _userTakeTx
     ) external onlyPegManager {
         // Validate that the packet exists
         if (_packetNumber >= packets[_streamId].length) {
@@ -310,9 +310,9 @@ contract StreamManager is IStreamManager, AccessControl {
             revert InvalidAcceptPeginTxHash(slot.acceptPeginTx, _acceptPeginTxHash);
         }
 
-        // Update the slot state to PAID and store the take0Tx
+        // Update the slot state to PAID and store the user take tx hash
         slot.state = SlotState.PAID;
-        slot.take0Tx = _take0Tx;
+        slot.take0Tx = _userTakeTx;
     }
 
     /// @notice Sets the security bond value for a stream

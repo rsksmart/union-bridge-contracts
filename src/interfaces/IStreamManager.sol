@@ -182,13 +182,13 @@ interface IStreamManager is IAccessControl {
     /// @param _packetNumber The index of the packet within the stream
     /// @param _slotId The index of the slot within the packet
     /// @param _acceptPeginTxHash The expected accept peg-in transaction hash for validation
-    /// @param _take0Tx The transaction ID of the normal peg-out transaction
+    /// @param _userTakeTx The transaction ID of the normal peg-out transaction
     function paidSlot(
         uint64 _streamId,
         uint64 _packetNumber,
         uint64 _slotId,
         bytes32 _acceptPeginTxHash,
-        bytes32 _take0Tx
+        bytes32 _userTakeTx
     ) external;
 
     /// @notice Sets the security bond value for a specific stream

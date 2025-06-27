@@ -281,10 +281,8 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         return (txHash, acceptPeginSignatureHash, acceptPeginSignatureMessage);
     }
 
-    /// @dev Generates the PeginAccept Taproot output script pub key with both key spend and script spend paths
+    /// @dev Generates the Accept Pegin Taproot output script pub key with both key spend and script spend paths
     function getAcceptPeginTweakedPublicKey(bytes32 _committeePubKey) internal pure returns (bytes32) {
-        // TODO add necesary tap scripts for take0, take1, etc
-
         // Currently we only consider the key spend path (user take)
         bytes32 tweak = BtcTaproot.getTweak(abi.encodePacked(_committeePubKey));
         bytes32 tweakedPublicKey = BtcTaproot.getTweakedPublicKey(_committeePubKey, tweak);
@@ -310,7 +308,7 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         _compareOutputPubKey(_p2trOut.scriptPubKey, p2trScriptPubKey);
     }
 
-    /// @notice Generates the PeginAccept Taproot output script pub key with both key spend and script spend paths
+    /// @notice Generates the Accept Pegin Taproot output script pub key with both key spend and script spend paths
     /// @param _committeePubKey The committee's public key (x-only)
     /// @return The P2TR script pub key bytes
     function getAcceptPeginP2TRScriptPub(bytes32 _committeePubKey) public pure returns (bytes memory) {
