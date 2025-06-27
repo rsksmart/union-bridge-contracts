@@ -121,8 +121,8 @@ contract TestCommitteeRegistry is Test, HelperContract {
         uint256 privKey2 = uint256(2);
         PublicKeyRegistration[] memory pubKeysRegistration2 = generatePublicKeysRegistration(privKey2);
         address user2 = vm.addr(privKey2);
-        step_applyToStreamForStream(user1, pubKeysRegistration1, DEFAULT_STREAM, Role.OPERATOR);
-        step_applyToStreamForStream(user2, pubKeysRegistration2, DEFAULT_STREAM, Role.OPERATOR);
+        setup_applyToStream(user1, pubKeysRegistration1, DEFAULT_STREAM, Role.OPERATOR);
+        setup_applyToStream(user2, pubKeysRegistration2, DEFAULT_STREAM, Role.OPERATOR);
     }
 
     function test_applyToStream_Revert_PublicKeyMismatch() external {
@@ -645,7 +645,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         registry.withdrawAvailableBalance();
     }
 
-    function step_applyToStreamForStream(
+    function setup_applyToStream(
         address user,
         PublicKeyRegistration[] memory pubKeysRegistration,
         StreamDenomination stream,
@@ -740,8 +740,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // 1. Deposit in All Streams
         for (uint8 i = 0; i <= uint8(StreamDenomination._10BTC); i++) {
-            totalDeposited +=
-                step_applyToStreamForStream(user, pubKeysRegistration, StreamDenomination(i), requestedRole);
+            totalDeposited += setup_applyToStream(user, pubKeysRegistration, StreamDenomination(i), requestedRole);
         }
 
         // 2. Unsubscribe from All Streams
@@ -984,7 +983,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         uint256 privKey = uint256(1);
         PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(privKey);
         address user = vm.addr(privKey);
-        step_applyToStreamForStream(user, pubKeysRegistration, DEFAULT_STREAM, Role.OPERATOR);
+        setup_applyToStream(user, pubKeysRegistration, DEFAULT_STREAM, Role.OPERATOR);
 
         // Set reApply to false
         // Assert
@@ -1022,7 +1021,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         StreamDenomination differentDenomination = StreamDenomination._0_01BTC;
 
         // Register the user to a different stream to ensure the user is registered
-        step_applyToStreamForStream(user, pubKeysRegistration, differentDenomination, Role.OPERATOR);
+        setup_applyToStream(user, pubKeysRegistration, differentDenomination, Role.OPERATOR);
 
         // Assert
         vm.prank(user);
@@ -1035,7 +1034,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Act
         // Apply to the default stream
-        step_applyToStreamForStream(user, pubKeysRegistration, denomination, Role.OPERATOR);
+        setup_applyToStream(user, pubKeysRegistration, denomination, Role.OPERATOR);
 
         // Assert that it hasn't changed after applying to that stream
         vm.prank(user);
@@ -1119,8 +1118,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
                 "member requested role should not be NONE"
             );
             assertEq(registry.getMemberAvailableBalance(user), 0, "member available balance should be 0");
-            assertTrue(
-                registry.getMemberStakedBalance(user, denomination, 0) == 0,
+            assertEq(
+                registry.getMemberStakedBalance(user, denomination, 0),
+                0,
                 "member staked balance should be 0 after packet closed"
             );
         }
@@ -1129,9 +1129,8 @@ contract TestCommitteeRegistry is Test, HelperContract {
     function test_integration_onPacketClosed_reapplyFalse() external {
         // Arrange
         StreamDenomination denomination = StreamDenomination._0_01BTC;
-        Committee memory committee;
         RegisterPegoutSetup memory setup;
-        (committee,) = setup_completeCommittee();
+        (Committee memory committee,) = setup_completeCommittee();
         uint256 minimumDeposit = registry.getMinimumDeposit(denomination);
 
         // Perform peg flow for all slots in the packet except the last one
@@ -1164,19 +1163,22 @@ contract TestCommitteeRegistry is Test, HelperContract {
             // Assert
             vm.prank(user);
             assertFalse(registry.getReApplyForStream(denomination), "reApply should be false at this point");
-            assertTrue(
-                registry.getMemberPreStakedBalance(user, denomination) == 0,
+            assertEq(
+                registry.getMemberPreStakedBalance(user, denomination),
+                0,
                 "member pre-staked should be 0 after packet closed"
             );
             assertTrue(
                 registry.getMemberRequestedRole(user, denomination) == Role.NONE, "member requested role should be NONE"
             );
-            assertTrue(
-                registry.getMemberAvailableBalance(user) == minimumDeposit,
+            assertEq(
+                registry.getMemberAvailableBalance(user),
+                minimumDeposit,
                 "member available balance should be the minimum deposit"
             );
-            assertTrue(
-                registry.getMemberStakedBalance(user, denomination, 0) == 0,
+            assertEq(
+                registry.getMemberStakedBalance(user, denomination, 0),
+                0,
                 "member staked balance should be 0 after packet closed"
             );
         }
@@ -1217,20 +1219,23 @@ contract TestCommitteeRegistry is Test, HelperContract {
             // Assert
             vm.prank(user);
             assertTrue(registry.getReApplyForStream(denomination), "reApply should be true at this point");
-            assertTrue(
-                registry.getMemberPreStakedBalance(user, denomination) == minimumDeposit,
+            assertEq(
+                registry.getMemberPreStakedBalance(user, denomination),
+                minimumDeposit,
                 "member pre-staked should be the minimum deposit"
             );
             assertTrue(
                 registry.getMemberRequestedRole(user, denomination) == committee.members[i].role,
                 "member requested role should be the same as before"
             );
-            assertTrue(
-                registry.getMemberAvailableBalance(user) == minimumDeposit,
+            assertEq(
+                registry.getMemberAvailableBalance(user),
+                minimumDeposit,
                 "member available balance should be the minimum deposit"
             );
-            assertTrue(
-                registry.getMemberStakedBalance(user, denomination, 0) == 0,
+            assertEq(
+                registry.getMemberStakedBalance(user, denomination, 0),
+                0,
                 "member staked balance should be 0 after packet closed"
             );
         }
