@@ -89,6 +89,20 @@ abstract contract HelperContract is Test, TestUtils {
         registry.applyToStream{value: minimumDeposit}(_denomination, _role, _publicKeysRegistration);
     }
 
+    function setup_applyToStream_MultipleMembers(
+        StreamDenomination _denomination,
+        CommitteeMember[] memory _committeeMembers
+    ) internal {
+        uint256 totalMembers = _committeeMembers.length;
+
+        for (uint256 i = 0; i < totalMembers; i++) {
+            CommitteeMember memory member = _committeeMembers[i];
+            PublicKeyRegistration[] memory pubKeysRegistration =
+                generatePublicKeysRegistration(uint256(uint160(member.memberAddress))); // Generate public keys based on the address
+            setup_applyToStream(_denomination, member.memberAddress, pubKeysRegistration, member.role);
+        }
+    }
+
     // This function should be used for members that has been already registered. But it won't fail if the member is not registered.
     // It will just apply to the stream with the given denomination and role.
     function setup_applyToStream_MultipleMembers(
@@ -344,7 +358,7 @@ abstract contract HelperContract is Test, TestUtils {
 
     function setup_pegout() internal returns (RegisterPegoutSetup memory setup) {
         // =========== Request Peg-In & Accept Peg-In ============
-        (BtcTransaction memory requestPeginTx, BtcTransaction memory acceptPeginTx) = setup_requestAndAcceptPeginFlow();
+        (, BtcTransaction memory acceptPeginTx) = setup_requestAndAcceptPeginFlow();
 
         // Get the accept peg-in tx hash that will be spent in the peg-out
         setup.acceptPeginTxHash = bitcoinManager.getBtcTxHash(acceptPeginTx);
@@ -380,6 +394,20 @@ abstract contract HelperContract is Test, TestUtils {
         setup.pegoutSignatureHash = hex"772f88b4a710480e59273515298d2830db5239e54152de486a9a3e6a5adc5c6a";
 
         setup.pegoutTxHash = bitcoinManager.getBtcTxHash(setup.pegoutTx);
+    }
+
+    function setup_pegFlow() internal returns (RegisterPegoutSetup memory setup) {
+        setup = setup_pegout();
+        pm.registerPegout(setup.pegoutTxSPVProof);
+
+        return setup;
+    }
+
+    function setup_multiplePegFlows(uint8 amount) internal returns (RegisterPegoutSetup[] memory setups) {
+        setups = new RegisterPegoutSetup[](amount);
+        for (uint8 i = 0; i < amount; i++) {
+            setups[i] = setup_pegFlow();
+        }
     }
 
     function setup_pegoutAndMemberNonces() internal returns (RegisterPegoutSetup memory setup) {

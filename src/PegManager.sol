@@ -424,6 +424,12 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             streamInfo.packetNumber,
             streamInfo.slotId
         );
+
+        if (streamInfo.slotId == Constants.SLOTS_PER_PACKET - 1) {
+            // if the last slot of the packet was paid, we can release the members of the committee
+            committeeRegistry.releaseCommittee(streamInfo.streamId, streamInfo.packetNumber);
+            emit PacketClosed(streamInfo.streamId, streamInfo.packetNumber);
+        }
     }
 
     function getPegoutSignatureHash(uint64 streamId, uint64 packetNumber, uint64 slotId)

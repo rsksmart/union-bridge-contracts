@@ -27,6 +27,7 @@ struct Balance {
 struct ApplicationData {
     Role requestedRole;
     uint256 preStaked;
+    bool reApply;
 }
 
 enum PublicKeyIndex {
@@ -47,7 +48,6 @@ struct PublicKeyRegistration {
 
 struct Member {
     bytes32[] publicKeys; // Public keys of the member using enum PublicKeyIndex
-    mapping(StreamDenomination => Role) requestedRoles;
     Balance balance;
     mapping(string key => string value) data;
 }
@@ -175,6 +175,19 @@ interface ICommitteeRegistry {
         external
         returns (address);
 
+    /// @notice Release the committee members from a packet (return or reapply staked money)
+    function releaseCommittee(uint64 _streamId, uint64 _packetNumber) external;
+
+    /// @notice Set the ReApply flag for a stream
+    /// @param _denomination The denomination of the stream
+    /// @param _reApply The reapply flag to set
+    function setReApplyForStream(StreamDenomination _denomination, bool _reApply) external;
+
+    /// @notice Get the ReApply flag for a stream
+    /// @param _denomination The denomination of the stream
+    /// @return reApply The reapply flag for the stream
+    function getReApplyForStream(StreamDenomination _denomination) external view returns (bool);
+
     /// ===================== Events =========================
     event NewCommittee(uint256 indexed committeeId, Committee _committee);
     event NewPendingCommittee(uint256 indexed streamId, Committee _committee);
@@ -196,6 +209,10 @@ interface ICommitteeRegistry {
     event CommitteeMinMembersUpdated(uint256 minMembers);
     event MemberInfoDeposited(uint64 indexed streamId, address indexed member, bytes32 aggregatedKey);
     event NoRemainingHonestOperators(uint256 committeeId);
+    event MemberReApplied(
+        address indexed memberAddress, StreamDenomination denomination, Role role, uint256 preStakedBalance
+    );
+    event MemberReApplyUpdated(address indexed memberAddress, StreamDenomination denomination, bool reApply);
 
     /// ==================== Errors =====================
     error RequestedDifferentStreamsAndRolesLength(uint256 streamsLength, uint256 rolesLength);
@@ -247,5 +264,8 @@ interface ICommitteeRegistry {
     error _FailedToCreateCommittee(uint64 streamId, PendingCommitteeStatus status);
     error _InvalidTake1PubKey(
         uint256 committeeId, address memberAddress, bytes32 memberPubKey, bytes32 signaturePubKeyX
+    );
+    error _inconsistentPreStakedBalanceAndRole(
+        address memberAddress, StreamDenomination denomination, uint256 preStakedBalance, Role requestedRole
     );
 }
