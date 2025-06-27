@@ -22,25 +22,51 @@ import {BtcScriptParser} from "./libraries/BtcScriptParser.sol";
 
 /// @title PegManager
 /// @notice Manages peg-in and peg-out operations between Bitcoin and Rootstock
-
+/// @dev This contract handles the complete lifecycle of Bitcoin peg operations including:
+/// - Requesting peg-ins with SPV proofs
+/// - Accepting peg-ins with committee signatures
+/// - Processing peg-outs and associated committee signatures
+/// - Managing temporary Bitcoin deposit addresses
+/// - Coordinating with StreamManager for slot allocation
+/// - Integrating with CommitteeRegistry for committee management
 contract PegManager is IPegManager, BaseProxy, ProofValidator {
+    /// @notice Bitcoin manager contract for Bitcoin transaction validation and address generation
     IBitcoinManager public bitcoinManager;
+
+    /// @notice Stream manager contract for managing union bridge streams and slots
     IStreamManager public streamManager;
+
+    /// @notice Committee registry contract for managing committee and members
     ICommitteeRegistry public committeeRegistry;
+
+    /// @notice Signature manager contract for handling multi-signature operations
     ISignatureManager public signatureManager;
 
-    mapping(bytes32 requestPeginTxHash => bytes32 acceptPeginTxhash) internal peginRequests;
-    mapping(bytes32 acceptPeginTxhash => StreamPosition streamPosition) internal streamPosition;
-    mapping(bytes32 requestPeginTxHash => RequestPeginTempInfo tempInfo) internal peginTempInfo;
-    mapping(bytes32 acceptPeginTxHash => PegoutTempInfo tempInfo) internal pegoutTempInfo;
-    mapping(bytes32 pegoutSignatureHash => bytes32 acceptPeginTxHash) internal pegoutToPeginTxHash;
-
-    // key = keccak256(abi.encodePacked(streamId, packetNumber, slotId))
-    mapping(bytes32 key => bytes32 pegoutSignatureHash) internal pegoutSighashes;
-
+    /// @notice Timeout for user take operations
     uint256 public userTakeTimeout;
+
+    /// @notice Timeout for operator take operations
     uint256 public operatorTakeTimeout;
 
+    mapping(bytes32 requestPeginTxHash => bytes32 acceptPeginTxhash) internal peginRequests;
+
+    mapping(bytes32 acceptPeginTxhash => StreamPosition streamPosition) internal streamPosition;
+
+    mapping(bytes32 requestPeginTxHash => RequestPeginTempInfo tempInfo) internal peginTempInfo;
+
+    mapping(bytes32 acceptPeginTxHash => PegoutTempInfo tempInfo) internal pegoutTempInfo;
+
+    mapping(bytes32 pegoutSignatureHash => bytes32 acceptPeginTxHash) internal pegoutToPeginTxHash;
+
+    // Key = keccak256(abi.encodePacked(streamId, packetNumber, slotId))
+    mapping(bytes32 key => bytes32 pegoutSignatureHash) internal pegoutSighashes;
+
+    /// @notice Initializes the PegManager contract
+    /// @param _initialOwner The initial owner of the contract
+    /// @param _bridgeAddress The address of the pow-peg bridge contract
+    /// @param _committeeRegistry The committee registry contract address
+    /// @param _bitcoinManager The Bitcoin manager contract address
+    /// @dev This function can only be called once during contract deployment
     function initialize(
         address _initialOwner,
         address payable _bridgeAddress,
@@ -65,6 +91,9 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         operatorTakeTimeout = Constants.TAKE_1_TIMEOUT_DEFAULT;
     }
 
+    /// @notice Sets the stream manager contract address
+    /// @param _streamManager The stream manager contract address
+    /// @dev Only callable by the contract owner
     function setStreamManager(IStreamManager _streamManager) external onlyOwner {
         if (address(_streamManager) == address(0)) {
             revert StreamManagerAddressZero();
@@ -72,6 +101,9 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         streamManager = _streamManager;
     }
 
+    /// @notice Sets the signature manager contract address
+    /// @param _signatureManager The signature manager contract address
+    /// @dev Only callable by the contract owner
     function setSignatureManager(ISignatureManager _signatureManager) external onlyOwner {
         if (address(_signatureManager) == address(0)) {
             revert SignatureManagerAddressZero();
@@ -79,18 +111,33 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         signatureManager = _signatureManager;
     }
 
-    function getPeginRequest(bytes32 _btcTxHash) external view returns (bytes32) {
-        return peginRequests[_btcTxHash];
+    /// @notice Gets the accept peg-in transaction hash for a given request peg-in transaction hash
+    /// @param _requestPeginTxHash The request peg-in transaction hash
+    /// @return The accept peg-in transaction hash
+    function getPeginRequest(bytes32 _requestPeginTxHash) external view returns (bytes32) {
+        return peginRequests[_requestPeginTxHash];
     }
 
+    /// @notice Gets the temporary peg-in information for a given request peg-in transaction hash
+    /// @param _btcTxHash The request peg-in transaction hash
+    /// @return The temporary peg-in information
     function getRequestPeginTempInfo(bytes32 _btcTxHash) external view returns (RequestPeginTempInfo memory) {
         return peginTempInfo[_btcTxHash];
     }
 
+    /// @notice Gets the temporary peg-out information for a given accept peg-in transaction hash
+    /// @param _acceptPeginTxHash The accept peg-in transaction hash
+    /// @return The temporary peg-out information
     function getPegoutTempInfo(bytes32 _acceptPeginTxHash) external view returns (PegoutTempInfo memory) {
         return pegoutTempInfo[_acceptPeginTxHash];
     }
 
+    /// @notice Generates a temporary Bitcoin deposit address for peg-in operations
+    /// @param _rootstockDepositAddress The Rootstock address where RBTC will be minted
+    /// @param _value The amount in satoshis for determining the appropriate stream
+    /// @param _btcReimbursementPubKey The Bitcoin public key for reimbursement transactions
+    /// @return bitcoinDepositAddress The generated Bitcoin deposit address
+    /// @dev This address is used for the initial peg-in request transaction
     function getTemporaryPeginAddress(address _rootstockDepositAddress, uint64 _value, bytes32 _btcReimbursementPubKey)
         external
         view
@@ -108,6 +155,11 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         );
     }
 
+    /// @notice Requests a peg-in operation by providing an SPV proof of the Bitcoin transaction
+    /// @param _peginRequestTxSPVProof The SPV proof containing the Bitcoin transaction and merkle proof
+    /// @dev This function validates the peg-in request transaction and initiates the peg-in process
+    /// @dev The transaction must have at least 2 outputs: one P2TR output and one OP_RETURN output
+    /// @dev Emits the PeginRequested event
     function requestPegin(BtcTxSPVProof calldata _peginRequestTxSPVProof) external {
         if (_peginRequestTxSPVProof.btcTx.version != Constants.BTC_TX_VERSION) {
             revert InvalidBtcTxVersion(_peginRequestTxSPVProof.btcTx.version, Constants.BTC_TX_VERSION);
@@ -205,7 +257,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         // Initialize the signatures needed for a given aggregated key
         uint256 committeeId = streamManager.getCommitteeId(_streamId, _packetNumber);
         signatureManager.initSignatures(acceptPeginSignatureHash, committeeId);
-        signatureManager.initTake1TxHashes(acceptPeginTxHash, committeeId);
+        signatureManager.initOperatorTakeTxHashes(acceptPeginTxHash, committeeId);
 
         emit PeginRequested(
             streamManager.getCommitteeId(_streamId, _packetNumber),
@@ -220,6 +272,11 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         );
     }
 
+    /// @notice Accepts a peg-in operation by providing an SPV proof of the accept peg-in transaction
+    /// @param _peginAcceptedTxSPVProof The SPV proof containing the accept peg-in Bitcoin transaction
+    /// @dev This function validates the accept peg-in transaction, it must spend the output from the request peg-in transaction
+    /// @dev Updates the stream position to ACCEPTED and stores the peg-in transaction in the stream
+    /// @dev Emits the PeginAccepted event
     function acceptPegin(BtcTxSPVProof calldata _peginAcceptedTxSPVProof) external {
         // The first input consumes the the peg in request utxo
         bytes32 requestPeginTxHash = _peginAcceptedTxSPVProof.btcTx.inputs[Constants.VOUT_INDEX_TAPTREE].txId;
@@ -325,6 +382,11 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         // TODO: validate who can request a peg-out
     }
 
+    /// @notice Initiates a peg-out operation by locking a slot and preparing the peg-out transaction
+    /// @param _userPubKey The user's compressed public key for the Bitcoin output
+    /// @dev This function LOCKS a slot in the appropriate stream and prepares the peg-out transaction
+    /// @dev The user must send the exact amount of RBTC they want to peg-out
+    /// @dev Emits the PegoutRequested event
     function tryPegout(bytes calldata _userPubKey) external payable {
         validatePegoutRequest(_userPubKey, msg.value);
 
@@ -372,6 +434,9 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
 
     /// @notice Register a peg-out transaction from Bitcoin
     /// @param _pegoutTxSPVProof The BTC SPV proof of the peg-out transaction
+    /// @dev This function validates the peg-out transaction and marks the slot as PAID
+    /// @dev The transaction must spend the accept peg-in output and pay to the user's address
+    /// @dev Emits the PegoutRegistered event
     function registerPegout(BtcTxSPVProof calldata _pegoutTxSPVProof) external {
         // Get the accept peg-in tx hash from the first input (this is what gets spent)
         bytes32 acceptPeginTxHash = _pegoutTxSPVProof.btcTx.inputs[0].txId;
@@ -432,6 +497,11 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         }
     }
 
+    /// @notice Gets the peg-out signature hash for a specific stream, packet, and slot
+    /// @param streamId The stream identifier
+    /// @param packetNumber The packet number within the stream
+    /// @param slotId The slot identifier within the packet
+    /// @return The peg-out signature hash
     function getPegoutSignatureHash(uint64 streamId, uint64 packetNumber, uint64 slotId)
         external
         view
@@ -441,6 +511,9 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         return pegoutSighashes[key];
     }
 
+    /// @notice Gets the stream position information for a given Bitcoin Pegin request transaction hash
+    /// @param _btcTxHash The Bitcoin transaction hash
+    /// @return The stream position information
     function getStreamPosition(bytes32 _btcTxHash) public view returns (StreamPosition memory) {
         return streamPosition[peginRequests[_btcTxHash]];
     }

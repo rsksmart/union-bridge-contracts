@@ -4,6 +4,10 @@ pragma solidity ^0.8.20;
 import {ERC1967Utils, UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
+/// @title Base Proxy
+/// @notice Abstract base contract for upgradeable proxy contracts
+/// @dev Provides UUPS upgradeability and ownership functionality
+/// @dev Inherits from OpenZeppelin's UUPSUpgradeable and OwnableUpgradeable
 abstract contract BaseProxy is UUPSUpgradeable, OwnableUpgradeable {
     /* ========== CONSTRUCTOR ========== */
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -11,6 +15,10 @@ abstract contract BaseProxy is UUPSUpgradeable, OwnableUpgradeable {
         _disableInitializers();
     }
 
+    /// @notice Initializes the BaseProxy contract
+    /// @dev Sets up the initial owner for the contract
+    /// @dev Can only be called once during contract deployment
+    /// @param _initialOwner The address that will be set as the initial owner
     function __BaseProxy_init(address _initialOwner) public initializer {
         // Validaton that the initial owner is not zero address is done in OwnableUpgradeable
         __Ownable_init_unchained(_initialOwner);
@@ -20,6 +28,9 @@ abstract contract BaseProxy is UUPSUpgradeable, OwnableUpgradeable {
     //solhint-disable-next-line no-empty-blocks
     function _authorizeUpgrade(address) internal override onlyOwner {}
 
+    /// @notice Gets the current implementation address of the proxy
+    /// @dev Returns the address of the implementation contract behind the proxy
+    /// @return The address of the current implementation contract
     function getImplementation() external view returns (address) {
         return ERC1967Utils.getImplementation();
     }

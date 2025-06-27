@@ -129,10 +129,9 @@ library BtcHelper {
     /// @notice Calculate fee and speed-up amounts for Bitcoin transactions
     /// @dev TODO: calculate fee and speed up properly from the amount
     /// @dev Currently returns fixed values from Constants
-    /// @param _amount The transaction amount (currently unused)
     /// @return The fee amount in satoshis
     /// @return The speed-up amount in satoshis
-    function calculateFeeAndSpeedUp(uint64 _amount) internal pure returns (uint64, uint64) {
+    function calculateFeeAndSpeedUp() internal pure returns (uint64, uint64) {
         return (Constants.P2TR_FEE, Constants.SPEED_UP_AMOUNT);
     }
 

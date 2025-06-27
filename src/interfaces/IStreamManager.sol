@@ -182,13 +182,13 @@ interface IStreamManager is IAccessControl {
     /// @param _packetNumber The index of the packet within the stream
     /// @param _slotId The index of the slot within the packet
     /// @param _acceptPeginTxHash The expected accept peg-in transaction hash for validation
-    /// @param _take0Tx The transaction ID of the normal peg-out transaction
+    /// @param _userTakeTx The transaction ID of the normal peg-out transaction
     function paidSlot(
         uint64 _streamId,
         uint64 _packetNumber,
         uint64 _slotId,
         bytes32 _acceptPeginTxHash,
-        bytes32 _take0Tx
+        bytes32 _userTakeTx
     ) external;
 
     /// @notice Sets the security bond value for a specific stream
@@ -212,7 +212,7 @@ interface IStreamManager is IAccessControl {
     /// @notice Gets the committee ID for the current packet in a stream
     /// @param _streamId The index of the stream
     /// @return uint256 The committee ID for the current packet (returns 0 if no current packet)
-    function getCurrentPacketCommitteeId(uint64 _streamId) external view returns (uint256);
+    function getAvailablePeginCommitteeId(uint64 _streamId) external view returns (uint256);
 
     // Events
     /// @notice Event emitted when a new stream is created

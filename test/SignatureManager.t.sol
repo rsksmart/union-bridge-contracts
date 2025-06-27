@@ -16,8 +16,8 @@ import {
     Signatures,
     SignatureData,
     ISignatureManager,
-    Take1TxHashes,
-    Take1Data
+    OperatorTakeTxHashes,
+    OperatorTakeData
 } from "src/interfaces/ISignatureManager.sol";
 import {Constants} from "src/libraries/Constants.sol";
 
@@ -438,15 +438,15 @@ contract TestSignatureManager is Test, HelperContract {
         setup_addMemberNonce_MultipleMembers(hashToSign, 0, registry.minCommitteeMembers());
     }
 
-    function setup_initTake1TxHashes() internal returns (bytes32) {
-        // initTake1TxHashes is executed when a new pegin request is created
+    function setup_initOperatorTakeTxHashes() internal returns (bytes32) {
+        // initOperatorTakeTxHashes is executed when a new pegin request is created
         setup_multipleRequestAndAcceptPeginFlows(1, setupStreamId);
         // Real acceptPeginTxHash value for first request
         bytes32 acceptPeginTxHash = ACCEPT_PEGIN_TX_HASH;
         return acceptPeginTxHash;
     }
 
-    function setup_addTake1_MultipleMembers(
+    function setup_addOperatorTake_MultipleMembers(
         bytes32 acceptPeginTxHash,
         uint256 operatorIndexStart,
         uint256 operatorCount
@@ -456,11 +456,11 @@ contract TestSignatureManager is Test, HelperContract {
             address memberAddress = vm.addr(i + 1);
             bytes32 txHash = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
             vm.prank(memberAddress);
-            signatureManager.addTake1TxHash(acceptPeginTxHash, txHash);
+            signatureManager.addOperatorTakeTxHash(acceptPeginTxHash, txHash);
         }
     }
 
-    function test_getTake1Data_Revert_AcceptPeginTxHashNotFound() external {
+    function test_getOperatorTakeData_Revert_AcceptPeginTxHashNotFound() external {
         // Arrange
         bytes32 acceptPeginTxHash = ACCEPT_PEGIN_TX_HASH;
 
@@ -468,58 +468,62 @@ contract TestSignatureManager is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(ISignatureManager.AcceptPeginTxHashNotFound.selector, acceptPeginTxHash));
 
         // Act
-        signatureManager.getTake1Data(acceptPeginTxHash);
+        signatureManager.getOperatorTakeData(acceptPeginTxHash);
     }
 
-    function countEmptyTake1TxHashes(Take1Data[] memory take1Data) internal pure returns (uint256) {
+    function countEmptyOperatorTakeTxHashes(OperatorTakeData[] memory operatorTakeData)
+        internal
+        pure
+        returns (uint256)
+    {
         uint256 emptyCount = 0;
-        for (uint256 i = 0; i < take1Data.length; i++) {
-            if (take1Data[i].txHash == bytes32(0)) {
+        for (uint256 i = 0; i < operatorTakeData.length; i++) {
+            if (operatorTakeData[i].txHash == bytes32(0)) {
                 emptyCount++;
             }
         }
         return emptyCount;
     }
 
-    function test_initTake1TxHashes_Success() external {
+    function test_initOperatorTakeTxHashes_Success() external {
         // Arrange
         uint256 operatorsCount = registry.minCommitteeMembers() / 2;
         bytes32 acceptPeginTxHash = ACCEPT_PEGIN_TX_HASH;
 
         // Act
         vm.prank(address(pm));
-        signatureManager.initTake1TxHashes(acceptPeginTxHash, COMMITTEE_ID_STREAM_1_PACKET_0);
+        signatureManager.initOperatorTakeTxHashes(acceptPeginTxHash, COMMITTEE_ID_STREAM_1_PACKET_0);
 
         // Assert
-        Take1Data[] memory take1Data = signatureManager.getTake1Data(acceptPeginTxHash);
-        uint256 missingHashes = countEmptyTake1TxHashes(take1Data);
+        OperatorTakeData[] memory operatorTakeData = signatureManager.getOperatorTakeData(acceptPeginTxHash);
+        uint256 missingHashes = countEmptyOperatorTakeTxHashes(operatorTakeData);
         assertEq(missingHashes, operatorsCount, "missingHashes should be equal to operatorsCount");
 
         uint256 committeeId = signatureManager.getCommitteeIdByAcceptPeginTxHash(acceptPeginTxHash);
         assertEq(committeeId, COMMITTEE_ID_STREAM_1_PACKET_0, "committeeId should match");
     }
 
-    function test_addTake1TxHash_Success() external {
+    function test_addOperatorTakeTxHash_Success() external {
         // Arrange
-        bytes32 acceptPeginTxHash = setup_initTake1TxHashes();
+        bytes32 acceptPeginTxHash = setup_initOperatorTakeTxHashes();
         uint256 operatorIndex = registry.minCommitteeMembers() / 2;
         address memberAddress = vm.addr(operatorIndex + 1);
-        bytes32 take1TxHash = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
+        bytes32 operatorTakeTxHash = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
 
         // Assert
         vm.expectEmit(address(signatureManager));
-        emit ISignatureManager.Take1TxHashAdded(acceptPeginTxHash, memberAddress, take1TxHash);
+        emit ISignatureManager.OperatorTakeTxHashAdded(acceptPeginTxHash, memberAddress, operatorTakeTxHash);
 
         vm.prank(memberAddress);
-        signatureManager.addTake1TxHash(acceptPeginTxHash, take1TxHash);
+        signatureManager.addOperatorTakeTxHash(acceptPeginTxHash, operatorTakeTxHash);
     }
 
-    function test_addTake1TxHash_Success_AllTake1TxHashesAdded() external {
+    function test_addOperatorTakeTxHash_Success_AllOperatorTakeTxHashesAdded() external {
         // Arrange
-        bytes32 acceptPeginTxHash = setup_initTake1TxHashes();
+        bytes32 acceptPeginTxHash = setup_initOperatorTakeTxHashes();
         uint256 operatorCount = registry.minCommitteeMembers() / 2;
         uint256 operatorIndexStart = registry.minCommitteeMembers() / 2;
-        setup_addTake1_MultipleMembers(acceptPeginTxHash, operatorIndexStart, operatorCount - 1);
+        setup_addOperatorTake_MultipleMembers(acceptPeginTxHash, operatorIndexStart, operatorCount - 1);
 
         uint256 lastOperatorIndex = registry.minCommitteeMembers() - 1;
         address lastMemberAddress = vm.addr(lastOperatorIndex + 1);
@@ -527,21 +531,21 @@ contract TestSignatureManager is Test, HelperContract {
 
         // Assert
         vm.expectEmit(address(signatureManager));
-        emit ISignatureManager.Take1TxHashAdded(acceptPeginTxHash, lastMemberAddress, lastMemberTxHash);
+        emit ISignatureManager.OperatorTakeTxHashAdded(acceptPeginTxHash, lastMemberAddress, lastMemberTxHash);
 
         vm.expectEmit(address(signatureManager));
-        emit ISignatureManager.AllTake1TxHashesAdded(acceptPeginTxHash);
+        emit ISignatureManager.AllOperatorTakeTxHashesAdded(acceptPeginTxHash);
 
         // Act
         vm.prank(lastMemberAddress);
-        signatureManager.addTake1TxHash(acceptPeginTxHash, lastMemberTxHash);
+        signatureManager.addOperatorTakeTxHash(acceptPeginTxHash, lastMemberTxHash);
     }
 
-    function test_addTake1TxHash_Revert_AcceptPeginTxHashNotFound() external {
+    function test_addOperatorTakeTxHash_Revert_AcceptPeginTxHashNotFound() external {
         // Arrange
         uint256 operatorIndex = registry.minCommitteeMembers() / 2;
         address memberAddress = vm.addr(operatorIndex + 1);
-        bytes32 take1TxHash = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
+        bytes32 operatorTakeTxHash = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
         // It wont exists because there was no pegin request yet
         bytes32 acceptPeginTxHash = ACCEPT_PEGIN_TX_HASH;
 
@@ -549,13 +553,13 @@ contract TestSignatureManager is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(ISignatureManager.AcceptPeginTxHashNotFound.selector, acceptPeginTxHash));
 
         vm.prank(memberAddress);
-        signatureManager.addTake1TxHash(acceptPeginTxHash, take1TxHash);
+        signatureManager.addOperatorTakeTxHash(acceptPeginTxHash, operatorTakeTxHash);
     }
 
-    function test_addTake1TxHash_Revert_MemberNotFoundInCommittee() external {
+    function test_addOperatorTakeTxHash_Revert_MemberNotFoundInCommittee() external {
         // Arrange
-        bytes32 acceptPeginTxHash = setup_initTake1TxHashes();
-        bytes32 take1TxHash = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
+        bytes32 acceptPeginTxHash = setup_initOperatorTakeTxHashes();
+        bytes32 operatorTakeTxHash = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
 
         // Register a new member that it's not in the committee
         uint256 notMemberIndex = registry.minCommitteeMembers();
@@ -572,15 +576,15 @@ contract TestSignatureManager is Test, HelperContract {
 
         // Act
         vm.prank(notMemberAddress);
-        signatureManager.addTake1TxHash(acceptPeginTxHash, take1TxHash);
+        signatureManager.addOperatorTakeTxHash(acceptPeginTxHash, operatorTakeTxHash);
     }
 
-    function test_addTake1TxHash_Revert_MemberIsNotOperator() external {
+    function test_addOperatorTakeTxHash_Revert_MemberIsNotOperator() external {
         // Arrange
-        bytes32 acceptPeginTxHash = setup_initTake1TxHashes();
+        bytes32 acceptPeginTxHash = setup_initOperatorTakeTxHashes();
         uint256 notOperatorIndex = 0;
         address notOperatorAddress = vm.addr(notOperatorIndex + 1);
-        bytes32 take1TxHash = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
+        bytes32 operatorTakeTxHash = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
 
         // Assert
         vm.expectRevert(
@@ -591,53 +595,56 @@ contract TestSignatureManager is Test, HelperContract {
 
         // Act
         vm.prank(notOperatorAddress);
-        signatureManager.addTake1TxHash(acceptPeginTxHash, take1TxHash);
+        signatureManager.addOperatorTakeTxHash(acceptPeginTxHash, operatorTakeTxHash);
     }
 
-    function test_addTake1TxHash_Revert_MemberHasAlreadyAddedTake1TxHash() external {
+    function test_addOperatorTakeTxHash_Revert_MemberHasAlreadyAddedoperatorTakeTxHash() external {
         // Arrange
-        bytes32 acceptPeginTxHash = setup_initTake1TxHashes();
+        bytes32 acceptPeginTxHash = setup_initOperatorTakeTxHashes();
         uint256 operatorIndex = registry.minCommitteeMembers() / 2;
         address memberAddress = vm.addr(operatorIndex + 1);
-        bytes32 take1TxHash = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
+        bytes32 operatorTakeTxHash = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
         vm.prank(memberAddress);
-        signatureManager.addTake1TxHash(acceptPeginTxHash, take1TxHash);
+        signatureManager.addOperatorTakeTxHash(acceptPeginTxHash, operatorTakeTxHash);
 
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(
-                ISignatureManager.MemberAlreadyAddedTake1TxHash.selector, acceptPeginTxHash, memberAddress, take1TxHash
+                ISignatureManager.MemberAlreadyAddedOperatorTakeTxHash.selector,
+                acceptPeginTxHash,
+                memberAddress,
+                operatorTakeTxHash
             )
         );
 
         // Act
         vm.prank(memberAddress);
-        signatureManager.addTake1TxHash(acceptPeginTxHash, take1TxHash);
+        signatureManager.addOperatorTakeTxHash(acceptPeginTxHash, operatorTakeTxHash);
     }
 
-    function test_addTake1TxHash_Revert_AllHashesAlreadyPresent() external {
+    function test_addOperatorTakeTxHash_Revert_AllHashesAlreadyPresent() external {
         // Arrange
-        bytes32 acceptPeginTxHash = setup_initTake1TxHashes();
+        bytes32 acceptPeginTxHash = setup_initOperatorTakeTxHashes();
         uint256 operatorCount = registry.minCommitteeMembers() / 2;
         uint256 operatorIndexStart = registry.minCommitteeMembers() / 2;
         uint256 lastOperatorIndex = registry.minCommitteeMembers() - 1;
         address lastMemberAddress = vm.addr(lastOperatorIndex + 1);
         bytes32 lastMemberTxHash = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
 
-        // Complet all operator take1 tx hashes here
-        setup_addTake1_MultipleMembers(acceptPeginTxHash, operatorIndexStart, operatorCount);
+        // Complet all operator OperatorTake tx hashes here
+        setup_addOperatorTake_MultipleMembers(acceptPeginTxHash, operatorIndexStart, operatorCount);
 
         // Assert
         vm.expectRevert(
-            abi.encodeWithSelector(ISignatureManager.AllTake1TxHashesAlreadyPresent.selector, acceptPeginTxHash)
+            abi.encodeWithSelector(ISignatureManager.AllOperatorTakeTxHashesAlreadyPresent.selector, acceptPeginTxHash)
         );
 
         // Act
         vm.prank(lastMemberAddress);
-        signatureManager.addTake1TxHash(acceptPeginTxHash, lastMemberTxHash);
+        signatureManager.addOperatorTakeTxHash(acceptPeginTxHash, lastMemberTxHash);
     }
 
-    function test_checkAllTake1HashesReady_Revert_AcceptPeginTxHashNotFound() external {
+    function test_checkAllOperatorTakesHashesReady_Revert_AcceptPeginTxHashNotFound() external {
         // Arrange
         bytes32 acceptPeginTxHash = ACCEPT_PEGIN_TX_HASH;
 
@@ -645,45 +652,45 @@ contract TestSignatureManager is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(ISignatureManager.AcceptPeginTxHashNotFound.selector, acceptPeginTxHash));
 
         // Act
-        signatureManager.checkAllTake1HashesReady(acceptPeginTxHash);
+        signatureManager.checkAllOperatorTakesHashesReady(acceptPeginTxHash);
     }
 
-    function test_checkAllTake1HashesReady_False() external {
+    function test_checkAllOperatorTakesHashesReady_False() external {
         // Arrange
-        bytes32 acceptPeginTxHash = setup_initTake1TxHashes();
+        bytes32 acceptPeginTxHash = setup_initOperatorTakeTxHashes();
 
         // Assert
-        bool allTake1HashesReady = signatureManager.checkAllTake1HashesReady(acceptPeginTxHash);
-        assertEq(allTake1HashesReady, false, "Not all take1 hashes should be ready at this point");
+        bool allOperatorTakeHashesReady = signatureManager.checkAllOperatorTakesHashesReady(acceptPeginTxHash);
+        assertEq(allOperatorTakeHashesReady, false, "Not all operator take hashes should be ready at this point");
     }
 
-    function test_checkAllTake1HashesReady_True() external {
+    function test_checkAllOperatorTakesHashesReady_True() external {
         // Arrange
-        bytes32 acceptPeginTxHash = setup_initTake1TxHashes();
+        bytes32 acceptPeginTxHash = setup_initOperatorTakeTxHashes();
         uint256 operatorCount = registry.minCommitteeMembers() / 2;
         uint256 operatorIndexStart = registry.minCommitteeMembers() / 2;
         uint256 lastOperator = operatorIndexStart + operatorCount;
-        bool allTake1HashesReady;
+        bool allOperatorTakeHashesReady;
 
         for (uint256 i = operatorIndexStart; i < lastOperator; i++) {
             address memberAddress = vm.addr(i + 1);
             bytes32 txHash = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
 
             // Act
-            allTake1HashesReady = signatureManager.checkAllTake1HashesReady(acceptPeginTxHash);
+            allOperatorTakeHashesReady = signatureManager.checkAllOperatorTakesHashesReady(acceptPeginTxHash);
 
             // Assert
-            assertEq(allTake1HashesReady, false, "Not all take1 hashes should be ready at this point");
+            assertEq(allOperatorTakeHashesReady, false, "Not all operator take hashes should be ready at this point");
 
-            // Arrange (Add new take1 tx hash)
+            // Arrange (Add new operator take tx hash)
             vm.prank(memberAddress);
-            signatureManager.addTake1TxHash(acceptPeginTxHash, txHash);
+            signatureManager.addOperatorTakeTxHash(acceptPeginTxHash, txHash);
         }
 
         // Act
-        allTake1HashesReady = signatureManager.checkAllTake1HashesReady(acceptPeginTxHash);
+        allOperatorTakeHashesReady = signatureManager.checkAllOperatorTakesHashesReady(acceptPeginTxHash);
 
         // Assert
-        assertEq(allTake1HashesReady, true, "All take1 hashes should be ready at this point");
+        assertEq(allOperatorTakeHashesReady, true, "All operator take hashes should be ready at this point");
     }
 }

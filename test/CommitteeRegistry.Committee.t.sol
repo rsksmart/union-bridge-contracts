@@ -1040,7 +1040,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         assertEq(stream.peginPacketPointer, 1, "Stream pegin packet pointer should be 1 after filling all slots");
 
         // Check that current packet does not have a committee
-        uint256 currentPacketCommitteeId = streamManager.getCurrentPacketCommitteeId(streamId);
+        uint256 currentPacketCommitteeId = streamManager.getAvailablePeginCommitteeId(streamId);
         assertEq(currentPacketCommitteeId, 0, "Current packet committee ID should be 0 when no committee exists");
 
         // Check there is no pending committee
