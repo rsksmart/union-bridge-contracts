@@ -7,12 +7,16 @@ import {
     ICommitteeRegistry,
     Role,
     PublicKeyRegistration,
-    PUBLIC_KEYS_INDEX_LENGTH
+    PUBLIC_KEYS_INDEX_LENGTH,
+    Role
 } from "src/interfaces/ICommitteeRegistry.sol";
-import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
+import {StreamDenomination, IStreamManager} from "src/interfaces/IStreamManager.sol";
+import {PegManager} from "src/PegManager.sol";
 
 contract ApplyToStreamScript is ScriptUtils {
     ICommitteeRegistry committeeRegistry;
+    PegManager pegManager;
+    IStreamManager streamManager;
     uint256 minimumDeposit;
     uint256 mnemonicIndex;
     uint256 streamId;
@@ -23,6 +27,8 @@ contract ApplyToStreamScript is ScriptUtils {
 
     function setUp(uint16 _mnemonicIndex, uint16 _streamIndex, uint16 _roleIndex) internal {
         committeeRegistry = ICommitteeRegistry(0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0);
+        pegManager = PegManager(0x0165878A594ca255338adfa4d48449f69242Eb8F);
+        streamManager = IStreamManager(pegManager.streamManager());
         // Read args from command line / env
         mnemonicIndex = _mnemonicIndex;
         if (mnemonicIndex > 9) {
@@ -37,7 +43,7 @@ contract ApplyToStreamScript is ScriptUtils {
             revert("ROLE_INDEX must be between 0 and 2");
         }
 
-        minimumDeposit = committeeRegistry.getMinimumDeposit(StreamDenomination(streamId));
+        minimumDeposit = streamManager.getMinimumDeposit(StreamDenomination(streamId), Role(role));
         privKey = getMemberKey(uint32(mnemonicIndex));
         user = vm.addr(privKey);
         PublicKeyRegistration[] memory pubKeysRegistrationMemory = generatePublicKeysRegistration(privKey);

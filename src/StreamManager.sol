@@ -1,11 +1,19 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import {Stream, Packet, Slot, SlotState, IStreamManager} from "./interfaces/IStreamManager.sol";
+import {
+    Stream,
+    Packet,
+    Slot,
+    SlotState,
+    IStreamManager,
+    StreamDenomination,
+    StreamManagerSettings
+} from "./interfaces/IStreamManager.sol";
 import {AccessControl} from "./AccessControl.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
-import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
+import {ICommitteeRegistry, Role} from "src/interfaces/ICommitteeRegistry.sol";
 import {IPegManager} from "src/interfaces/IPegManager.sol";
 
 /// @title Stream Manager
@@ -22,17 +30,24 @@ contract StreamManager is IStreamManager, AccessControl {
     /// @dev Used to create new packets when committees are formed
     ICommitteeRegistry public committeeRegistry;
 
+    // Security bond percentage in 10_000 format (e.g. 1000 = 10%)
+    mapping(Role role => uint16 percentage) public securityBondPercentage;
+    uint256 public disablementPaymentsPerChallenge; // Payments for disablement challenges in wei
+    uint256 public minimumSecurityDeposit; // Minimum security deposit in wei
+
     /// @notice Initializes the streams with their denominations and parameters
     /// @dev Creates streams for each denomination with default security bond and confirmation settings
     /// @param _initialOwner The address that will be set as the initial owner
     /// @param _pegManager The PegManager contract address
     /// @param _committeeRegistry The CommitteeRegistry contract address
     /// @param _denominations Array of Bitcoin denominations in satoshis for each stream
+    /// @param _settings The settings for the StreamManager including confirmation counts and security bond percentages
     function initialize(
         address _initialOwner,
         IPegManager _pegManager,
         ICommitteeRegistry _committeeRegistry,
-        uint64[] memory _denominations
+        uint64[] memory _denominations,
+        StreamManagerSettings memory _settings
     ) public virtual initializer {
         uint256 length = _denominations.length;
         if (length > Constants.MAX_DENOMINATIONS_SIZE) {
@@ -46,9 +61,8 @@ contract StreamManager is IStreamManager, AccessControl {
                     peginPacketPointer: 0,
                     pegoutPacketPointer: 0,
                     pegoutSlotPointer: 0,
-                    securityBondValue: BtcHelper.satoshiToWei(_denominations[i]) / 10,
-                    peginConfirmations: Constants.PEGIN_CONFIRMATION_DEFAULT,
-                    pegoutConfirmations: Constants.PEGOUT_CONFIRMATION_DEFAULT
+                    peginConfirmations: _settings.peginConfirmations,
+                    pegoutConfirmations: _settings.pegoutConfirmations
                 })
             );
             emit StreamCreated(i, _denominations[i]);
@@ -60,6 +74,18 @@ contract StreamManager is IStreamManager, AccessControl {
             revert InvalidZeroAddress();
         }
         committeeRegistry = _committeeRegistry;
+
+        if (_settings.securityBondPercentageWatchtower > 10_000) {
+            revert InvalidPercentage(_settings.securityBondPercentageWatchtower);
+        }
+        if (_settings.securityBondPercentageOperator > 10_000) {
+            revert InvalidPercentage(_settings.securityBondPercentageOperator);
+        }
+
+        securityBondPercentage[Role.WATCHTOWER] = _settings.securityBondPercentageWatchtower;
+        securityBondPercentage[Role.OPERATOR] = _settings.securityBondPercentageOperator;
+        minimumSecurityDeposit = _settings.minimumSecurityDeposit;
+        disablementPaymentsPerChallenge = _settings.disablementPaymentsPerChallenge;
     }
 
     /// @notice Creates a new packet for a stream
@@ -99,6 +125,13 @@ contract StreamManager is IStreamManager, AccessControl {
     /// @param _streamId The ID of the stream
     /// @return The stream data for the given ID
     function getStreamById(uint64 _streamId) external view returns (Stream memory) {
+        return _getStreamById(_streamId);
+    }
+
+    function _getStreamById(uint64 _streamId) internal view returns (Stream storage) {
+        if (_streamId >= streams.length) {
+            revert StreamNotFoundById(_streamId);
+        }
         return streams[_streamId];
     }
 
@@ -315,16 +348,17 @@ contract StreamManager is IStreamManager, AccessControl {
         slot.take0Tx = _userTakeTx;
     }
 
-    /// @notice Sets the security bond value for a stream
-    /// @dev Can only be called by the owner
-    /// @param _streamId The ID of the stream
-    /// @param _securityBondValue The new security bond value in wei
-    function setSecurityBond(uint64 _streamId, uint256 _securityBondValue) external streamExists(_streamId) onlyOwner {
-        if (_securityBondValue == 0) {
-            revert InvalidSecurityBondValue(_securityBondValue);
+    function getMinimumDeposit(StreamDenomination _denomination, Role _role) public view returns (uint256) {
+        if (_role == Role.NONE) {
+            revert InvalidRole(_role);
         }
 
-        streams[_streamId].securityBondValue = _securityBondValue;
+        uint256 denominationValue = BtcHelper.satoshiToWei(uint256(streams[uint8(_denomination)].denomination));
+        uint256 slotPercentage = denominationValue * securityBondPercentage[_role] / 10_000;
+        uint256 challengeCost = minimumSecurityDeposit + disablementPaymentsPerChallenge;
+
+        // Return the maximum
+        return slotPercentage > challengeCost ? slotPercentage : challengeCost;
     }
 
     /// @notice Sets the number of confirmations required for peg-in transactions
@@ -363,6 +397,39 @@ contract StreamManager is IStreamManager, AccessControl {
             revert InvalidZeroAddress();
         }
         committeeRegistry = _committeeRegistry;
+    }
+
+    /// @dev Sets the security bond percentage for a given role
+    /// @param _role The role for which to set the security bond percentage
+    /// @param _percentage The security bond percentage in 10_000 format (e.g. 1000 = 10%)
+    /// @notice Reverts if the role is NONE or if the percentage is 0 or greater than 10_000
+    function setSecurityBondPercentage(Role _role, uint16 _percentage) external onlyOwner {
+        if (_role == Role.NONE) {
+            revert InvalidRole(_role);
+        }
+
+        if (_percentage == 0 || _percentage > 10_000) {
+            revert InvalidPercentage(_percentage);
+        }
+
+        securityBondPercentage[_role] = _percentage;
+        emit SecurityBondPercentageUpdated(_role, _percentage);
+    }
+
+    function setMinimumSecurityDeposit(uint256 _cost) external onlyOwner {
+        if (_cost == 0) {
+            revert InvalidZeroValue();
+        }
+        minimumSecurityDeposit = _cost;
+        emit MinimumSecurityDepositUpdated(_cost);
+    }
+
+    function setDisablementPaymentsPerChallenge(uint256 _cost) external onlyOwner {
+        if (_cost == 0) {
+            revert InvalidZeroValue();
+        }
+        disablementPaymentsPerChallenge = _cost;
+        emit DisablementPaymentsPerChallengeUpdated(_cost);
     }
 
     modifier streamExists(uint64 _streamId) {

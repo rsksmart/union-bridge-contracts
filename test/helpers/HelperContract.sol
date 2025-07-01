@@ -82,7 +82,7 @@ abstract contract HelperContract is Test, TestUtils {
         PublicKeyRegistration[] memory _publicKeysRegistration,
         Role _role
     ) internal {
-        uint256 minimumDeposit = registry.getMinimumDeposit(_denomination);
+        uint256 minimumDeposit = streamManager.getMinimumDeposit(_denomination, _role);
         vm.deal(_address, minimumDeposit);
 
         vm.prank(_address); // Use a different address for each member

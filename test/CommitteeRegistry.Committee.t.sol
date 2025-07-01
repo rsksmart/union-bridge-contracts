@@ -1047,7 +1047,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.CommitteeIsNotPending.selector, streamId));
         registry.getPendingCommittee(streamId);
 
-        uint256 minimumDeposit = registry.getMinimumDeposit(denomination);
+        uint256 minimumDeposit = streamManager.getMinimumDeposit(denomination, userRole);
         vm.deal(userAddress, minimumDeposit);
         Committee memory expectedCommittee = setup_getExpectedSecondCommittee();
         vm.warp(BLOCK_TIMESTAMP_FOR_DETERMINISTIC_COMMITTEE);

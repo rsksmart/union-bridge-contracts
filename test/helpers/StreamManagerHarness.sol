@@ -2,8 +2,9 @@
 pragma solidity ^0.8.20;
 
 import {SlotState, Slot, StreamManager} from "src/StreamManager.sol";
-import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
+import {ICommitteeRegistry, Role} from "src/interfaces/ICommitteeRegistry.sol";
 import {IPegManager} from "src/interfaces/IPegManager.sol";
+import {StreamManagerSettings} from "src/interfaces/IStreamManager.sol";
 
 /// @notice Wrapper for testing StreamManager
 contract StreamManagerHarness is StreamManager {
@@ -11,9 +12,10 @@ contract StreamManagerHarness is StreamManager {
         address _initialOwner,
         IPegManager _pegManager,
         ICommitteeRegistry _committeeRegistry,
-        uint64[] memory _denominations
+        uint64[] memory _denominations,
+        StreamManagerSettings memory _settings
     ) public override initializer {
-        StreamManager.initialize(_initialOwner, _pegManager, _committeeRegistry, _denominations);
+        StreamManager.initialize(_initialOwner, _pegManager, _committeeRegistry, _denominations, _settings);
     }
 
     function setSlotHarness(uint64 _streamId, uint64 _packet, bytes memory _scriptPubKey, bytes32 _txId, uint64 _amount)
@@ -72,6 +74,17 @@ contract StreamManagerHarness is StreamManager {
             revert NoSlotsHarness(_streamId, _packet, _slotId);
         }
         slots[_streamId][_packet][_slotId].state = _state;
+    }
+
+    /// @dev Returns the security bond percentage for a given role
+    /// @param _role The role for which to get the security bond percentage
+    /// @return The security bond percentage in 10_000 format (e.g. 1000 = 10%)
+    /// @notice Reverts if the role is NONE
+    function getSecurityBondPercentage(Role _role) external view returns (uint16) {
+        if (_role == Role.NONE) {
+            revert InvalidRole(_role);
+        }
+        return securityBondPercentage[_role];
     }
 
     error NoSlotsHarness(uint64 streamId, uint64 packet, uint64 slot);

@@ -76,13 +76,6 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         minCommitteeMembers = 10;
     }
 
-    /// @notice Gets the minimum deposit required for a stream
-    /// @param _denomination The stream denomination
-    /// @return The minimum deposit amount in wei
-    function getMinimumDeposit(StreamDenomination _denomination) public view returns (uint256) {
-        return streamManager.getStreamById(uint64(_denomination)).securityBondValue;
-    }
-
     function _initMemberBalance(Member storage _member) internal {
         uint64 streamsLength = streamManager.getStreamsLength();
         _member.balance.available = 0;
@@ -144,7 +137,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
                 msg.sender, _stream, _role, member.balance.applications[uint8(_stream)].requestedRole
             );
         }
-        uint256 minDeposit = getMinimumDeposit(_stream);
+        uint256 minDeposit = streamManager.getMinimumDeposit(_stream, _role);
         if (msg.value < minDeposit) {
             revert DespositBondTooLow(msg.value, minDeposit);
         }

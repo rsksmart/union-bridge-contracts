@@ -79,6 +79,15 @@ struct PegoutTempInfo {
     uint256 committeeId;
 }
 
+struct PegManagerSettings {
+    /// @notice Timeout for the user to take the pegout
+    /// @dev This is the time the members has to sign the pegout transaction
+    uint256 userTakeTimeout; // Timeout for the user to take the pegout
+    /// @notice Timeout for the operator to take the pegout
+    /// @dev This is the time the operator has to advance the funds to the user and present the proof
+    uint256 operatorTakeTimeout; // Timeout for the operator to take the pegout
+}
+
 /// @notice Interface for managing peg-in and peg-out operations in the union bridge
 /// @dev This interface provides functions for processing Bitcoin to RSK and RSK to Bitcoin transfers
 /// @dev Handles the complete lifecycle of peg operations including request, acceptance, and completion
@@ -228,16 +237,44 @@ interface IPegManager {
         uint64 slotId
     );
 
+    /// @notice Sets User Take Timeout
+    /// @dev Allows the contract owner to update the timeout for user take actions
+    /// @param _timeout The new timeout value in seconds
+    /// @dev Emits UserTakeTimeoutUpdated event upon successful update
+    /// @dev Reverts if the timeout is zero
     function setUserTakeTimeout(uint256 _timeout) external;
-    function setOperatorTakeTimeout(uint256 _timeout) external;
-    function userTakeTimeout() external view returns (uint256);
-    function operatorTakeTimeout() external view returns (uint256);
 
+    /// @notice Sets Operator Take Timeout
+    /// @dev Allows the contract owner to update the timeout for operator take actions
+    /// @param _timeout The new timeout value in seconds
+    /// @dev Emits OperatorTakeTimeoutUpdated event upon successful update
+    /// @dev Reverts if the timeout is zero
+    function setOperatorTakeTimeout(uint256 _timeout) external;
+
+    /// @notice Registers the Bitcoin peg-out transaction to the operator account
+    /// @dev Validates the SPV proof and completes the peg-out process
+    /// @dev Emits PegoutRegistered event upon successful registration
+    /// @param _pegoutTxSPVProof The BTC SPV proof of the peg-out transaction
     function depositOperatorTakeProof(BtcTxSPVProof calldata _pegoutTxSPVProof) external;
 
     // ===================== Events =====================
+
+    /// @notice Event emitted when the user take timeout is updated
+    /// @param newTimeout The new timeout value in seconds
     event UserTakeTimeoutUpdated(uint256 newTimeout);
+
+    /// @notice Event emitted when the operator take timeout is updated
+    /// @param newTimeout The new timeout value in seconds
     event OperatorTakeTimeoutUpdated(uint256 newTimeout);
+
+    /// @notice Event emitted when a user take is triggered
+    /// @param pegoutSignatureHash The signature hash that committee members need to sign
+    /// @param committeeId The ID of the committee responsible for this peg-out
+    /// @param acceptPeginTxHash The hash of the accept peg-in transaction
+    /// @param userPubKey The user's public key that will receive the Bitcoin funds
+    /// @param userTakeCreatedAt The timestamp when the user take was created
+    /// @param updatedAt The timestamp when the operator take was last updated
+    /// @param expireAt The timestamp when the operator take expires
     event OperatorTakeTriggered(
         bytes32 pegoutSignatureHash,
         uint256 committeeId,
@@ -249,6 +286,11 @@ interface IPegManager {
         uint256 expireAt
     );
 
+    /// @notice Event emitted when a packet is closed in the stream
+    /// @param streamId The ID of the stream where the packet was closed
+    /// @param packetNumber The number of the packet that was closed
+    /// @dev Indicates that all slots in the packet have been processed and pegged out
+    /// @dev This event is used to track the lifecycle of packets in the stream
     event PacketClosed(uint64 indexed streamId, uint64 indexed packetNumber);
 
     // ===================== Errors =====================

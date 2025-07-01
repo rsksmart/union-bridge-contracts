@@ -61,19 +61,7 @@ library Constants {
     /// @dev When 80% of slots are filled, a new committee is created
     uint8 constant SLOT_USAGE_THRESHOLD = 80;
 
-    // Confirmation Constants
-    /// @dev Default number of confirmations required for peg-in transactions
-    /// @dev Ensures sufficient Bitcoin confirmations before accepting peg-ins
-    uint8 constant PEGIN_CONFIRMATION_DEFAULT = 10;
-
-    /// @dev Default number of confirmations required for peg-out transactions
-    /// @dev Ensures sufficient Bitcoin confirmations before completing peg-outs
-    uint8 constant PEGOUT_CONFIRMATION_DEFAULT = 10;
-
     /// @dev Maximum number of stream denominations supported by the bridge
     /// @dev Limits the number of different Bitcoin amounts that can be processed
     uint64 constant MAX_DENOMINATIONS_SIZE = 10;
-
-    uint256 constant TAKE_0_TIMEOUT_DEFAULT = 2 hours;
-    uint256 constant TAKE_1_TIMEOUT_DEFAULT = 2 hours;
 }

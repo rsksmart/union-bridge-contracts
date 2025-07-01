@@ -219,11 +219,6 @@ interface ICommitteeRegistry {
     /// @return The TAKE public key (x-coordinate only)
     function getMemberTakePubKey(address _memberAddress) external view returns (bytes32);
 
-    /// @notice Gets the minimum deposit required for a stream
-    /// @param _denomination The stream denomination
-    /// @return The minimum deposit amount in wei
-    function getMinimumDeposit(StreamDenomination _denomination) external view returns (uint256);
-
     /// @notice Allows a member to deposit information for committee formation
     /// @dev Called by members to provide their aggregated key for a pending committee
     /// @param _streamId The stream ID for the pending committee
@@ -280,18 +275,6 @@ interface ICommitteeRegistry {
     /// @dev Only callable by the contract owner
     /// @param _minMembers The minimum number of members required for a committee
     function setCommitteeMinMembers(uint256 _minMembers) external;
-
-    /// @notice Gets the minimum watchtowers required for a committee
-    /// @return The minimum number of watchtowers required
-    function minCommitteeWatchtowers() external view returns (uint256);
-
-    /// @notice Gets the minimum operators required for a committee
-    /// @return The minimum number of operators required
-    function minCommitteeOperators() external view returns (uint256);
-
-    /// @notice Gets the minimum members required for a committee
-    /// @return The minimum number of members required
-    function minCommitteeMembers() external view returns (uint256);
 
     /// @notice Gets the operator take address for a specific committee
     /// @param committeeId The ID of the committee

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {IAccessControl} from "./IAccessControl.sol";
+import {Role} from "./ICommitteeRegistry.sol";
 
 /// @notice Represents different Bitcoin denominations supported by the union bridge
 /// @dev Each denomination corresponds to a specific stream for efficient fund management
@@ -91,9 +92,21 @@ struct Stream {
     /// @notice Number of confirmations required for peg-out transactions
     /// @dev Ensures sufficient Bitcoin confirmations before completing peg-outs
     uint8 pegoutConfirmations;
-    /// @notice Required bond (in wei) that each committee member needs to deposit
-    /// @dev Provides security and incentive alignment for committee members
-    uint256 securityBondValue;
+}
+
+struct StreamManagerSettings {
+    /// @notice Number of confirmations required for peg-in transactions
+    uint8 peginConfirmations;
+    /// @notice Number of confirmations required for peg-out transactions
+    uint8 pegoutConfirmations;
+    /// @notice Percentage of security bond for the operator
+    uint16 securityBondPercentageOperator;
+    /// @notice Percentage of security bond for the watchtower
+    uint16 securityBondPercentageWatchtower;
+    /// @notice Minimum security deposit required for committee members
+    uint256 minimumSecurityDeposit;
+    /// @notice Amount of disablement payments per challenge
+    uint256 disablementPaymentsPerChallenge;
 }
 
 /// @notice Interface for managing streams, packets, and slots in the union bridge
@@ -191,12 +204,6 @@ interface IStreamManager is IAccessControl {
         bytes32 _userTakeTx
     ) external;
 
-    /// @notice Sets the security bond value for a specific stream
-    /// @dev Only callable by the contract owner
-    /// @param _streamId The index of the stream
-    /// @param _securityBondValue The value of the security bond in RBTC (wei)
-    function setSecurityBond(uint64 _streamId, uint256 _securityBondValue) external;
-
     /// @notice Sets the number of confirmations required for peg-in transactions
     /// @dev Only callable by the contract owner
     /// @param _streamId The index of the stream
@@ -214,6 +221,32 @@ interface IStreamManager is IAccessControl {
     /// @return uint256 The committee ID for the current packet (returns 0 if no current packet)
     function getAvailablePeginCommitteeId(uint64 _streamId) external view returns (uint256);
 
+    /// @notice Gets the minimum deposit required for a specific denomination and role
+    /// @param _denomination The denomination of the stream
+    /// @param _role The role of the user (e.g., OPERATOR, WATCHTOWER)
+    /// @return uint256 The minimum deposit required in wei
+    function getMinimumDeposit(StreamDenomination _denomination, Role _role) external view returns (uint256);
+
+    /// @notice Sets the security bond percentage for a specific role
+    /// @param _role The role for which to set the security bond percentage
+    /// @param _percentage The new security bond percentage to set
+    /// @dev The percentage must be between 0 and 10000, where 10000 represents 100%
+    /// @dev Only callable by the contract owner
+    /// @dev Emits a SecurityBondPercentageUpdated event on success
+    function setSecurityBondPercentage(Role _role, uint16 _percentage) external;
+
+    /// @notice Sets the minimum security deposit required for the system
+    /// @param _cost The new minimum security deposit in wei
+    /// @dev Only callable by the contract owner
+    /// @dev Emits a MinimumSecurityDepositUpdated event on success
+    function setMinimumSecurityDeposit(uint256 _cost) external;
+
+    /// @notice Sets the disablement payments per challenge
+    /// @param _cost The new disablement payments per challenge in wei
+    /// @dev Only callable by the contract owner
+    /// @dev Emits a DisablementPaymentsPerChallengeUpdated event on success
+    function setDisablementPaymentsPerChallenge(uint256 _cost) external;
+
     // Events
     /// @notice Event emitted when a new stream is created
     /// @param streamId The ID of the newly created stream
@@ -230,6 +263,21 @@ interface IStreamManager is IAccessControl {
     /// @param packetNumber The number of the packet containing the slot
     /// @param slotId The ID of the newly created slot
     event SlotCreated(uint64 streamId, uint64 packetNumber, uint64 slotId);
+
+    /// @notice Event emitted when Security Bond Percentage is updated
+    /// @param role The role for which the security bond percentage was updated
+    /// @param percentage The new security bond percentage for the role
+    /// @dev The percentage is represented as a value between 0 and 10000,
+    /// where 10000 represents 100%
+    event SecurityBondPercentageUpdated(Role role, uint16 percentage);
+
+    /// @notice Event emitted when the minimum security deposit is updated
+    /// @param cost The new minimum security deposit in wei
+    event MinimumSecurityDepositUpdated(uint256 cost);
+
+    /// @notice Event emitted when disablement payments per challenge are updated
+    /// @param newCost The new disablement payments per challenge in wei
+    event DisablementPaymentsPerChallengeUpdated(uint256 newCost);
 
     // Errors
     /// @notice Thrown when a stream is not found for the given denomination
@@ -293,10 +341,6 @@ interface IStreamManager is IAccessControl {
     /// @param confirmations The invalid number of confirmations
     error InvalidPegoutConfirmations(uint8 confirmations);
 
-    /// @notice Thrown when the security bond value is invalid
-    /// @param securityBond The invalid security bond value
-    error InvalidSecurityBondValue(uint256 securityBond);
-
     /// @notice Thrown when the slot state doesn't match the expected state
     /// @param actual The actual slot state
     /// @param expected The expected slot state
@@ -309,6 +353,18 @@ interface IStreamManager is IAccessControl {
 
     /// @notice Thrown when an address is zero
     error InvalidZeroAddress();
+
+    /// @notice Thrown when a percentage value is invalid
+    /// @param percentage The invalid percentage value
+    /// @dev The percentage must be between 0 and 10000, where 10000 represents 100%
+    error InvalidPercentage(uint16 percentage);
+
+    /// @notice Thrown when a role is invalid
+    /// @param role The invalid role
+    error InvalidRole(Role role);
+
+    /// @notice Thrown when a value is zero when it shouldn't be
+    error InvalidZeroValue();
 
     /// @notice Thrown when there is an inconsistent peg-out pointer
     /// @param streamId The stream ID

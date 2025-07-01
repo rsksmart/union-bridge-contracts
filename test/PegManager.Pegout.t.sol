@@ -32,6 +32,8 @@ bytes32 constant MEMBER_1_PUBKEY = 0xefc3606f43ef541fff3328af5ea0a16ad9e4ae67d8d
 address constant MEMBER_1_ADDRESS = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
 bytes32 constant MEMBER_2_PUBKEY = 0x1976ee2a061feb3976914ed2526369c7141b5490f48d5623485e833c2e9c5819;
 address constant MEMBER_2_ADDRESS = 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC;
+uint256 constant TAKE_0_TIMEOUT_DEFAULT = 2 hours;
+uint256 constant TAKE_1_TIMEOUT_DEFAULT = 2 hours;
 
 contract TestPegManager is Test, HelperContract {
     // Arrange
@@ -510,7 +512,7 @@ contract TestPegManager is Test, HelperContract {
         // Arrange
         RegisterPegoutSetup memory setup = setup_pegoutAndMemberNonces();
         uint256 createdAt = block.timestamp;
-        uint256 expireAt = createdAt + Constants.TAKE_0_TIMEOUT_DEFAULT;
+        uint256 expireAt = createdAt + TAKE_0_TIMEOUT_DEFAULT;
         setup_addMemberSignature_MultipleMembers(setup.pegoutSignatureHash, 0, registry.minCommitteeMembers() - 1);
 
         // Assert
@@ -525,7 +527,7 @@ contract TestPegManager is Test, HelperContract {
         RegisterPegoutSetup memory setup = setup_pegoutAndMemberNonces();
         uint256 createdAt = block.timestamp;
         // Expire TAKE_0
-        vm.warp(createdAt + Constants.TAKE_0_TIMEOUT_DEFAULT + 1);
+        vm.warp(createdAt + TAKE_0_TIMEOUT_DEFAULT + 1);
         // This depende on how they have been registered. First registered group are the watchtowers
         uint256 firstHonestOpIndex = registry.minCommitteeMembers() / 2 + 1;
         address firstHonestOpAddress = vm.addr(firstHonestOpIndex + 1);
@@ -543,7 +545,7 @@ contract TestPegManager is Test, HelperContract {
             setup.userPubKey,
             createdAt,
             block.timestamp,
-            block.timestamp + Constants.TAKE_1_TIMEOUT_DEFAULT
+            block.timestamp + TAKE_1_TIMEOUT_DEFAULT
         );
 
         // Act
@@ -554,7 +556,7 @@ contract TestPegManager is Test, HelperContract {
         // Arrange
         RegisterPegoutSetup memory setup = setup_pegoutAndMemberNonces();
         setup_addMemberSignature_MultipleMembers(setup.pegoutSignatureHash, 0, registry.minCommitteeMembers() - 1);
-        vm.warp(block.timestamp + Constants.TAKE_0_TIMEOUT_DEFAULT + 1);
+        vm.warp(block.timestamp + TAKE_0_TIMEOUT_DEFAULT + 1);
         // First call to triggerOperatorTake should set the status to TAKE_1
         pm.triggerOperatorTake(setup.pegoutSignatureHash);
 
@@ -563,7 +565,7 @@ contract TestPegManager is Test, HelperContract {
             abi.encodeWithSelector(
                 IPegManager.OperatorTakeTimeoutNotExpired.selector,
                 block.timestamp,
-                block.timestamp + Constants.TAKE_1_TIMEOUT_DEFAULT
+                block.timestamp + TAKE_1_TIMEOUT_DEFAULT
             )
         );
 
@@ -579,12 +581,12 @@ contract TestPegManager is Test, HelperContract {
         uint256 secondHonestOpIndex = firstHonestOpIndex + 1;
         address secondHonestOpAddress = vm.addr(secondHonestOpIndex + 1);
         // Expire TAKE_0
-        vm.warp(createdAt + Constants.TAKE_0_TIMEOUT_DEFAULT + 1);
+        vm.warp(createdAt + TAKE_0_TIMEOUT_DEFAULT + 1);
         // Add just 2 signatures for the fisrt and second operators
         setup_addMemberSignature_MultipleMembers(setup.pegoutSignatureHash, firstHonestOpIndex, 2);
         pm.triggerOperatorTake(setup.pegoutSignatureHash);
         // Expire TAKE_1
-        vm.warp(block.timestamp + Constants.TAKE_1_TIMEOUT_DEFAULT + 1);
+        vm.warp(block.timestamp + TAKE_1_TIMEOUT_DEFAULT + 1);
 
         // Assert
         vm.expectEmit(address(pm));
@@ -596,7 +598,7 @@ contract TestPegManager is Test, HelperContract {
             setup.userPubKey,
             createdAt,
             block.timestamp,
-            block.timestamp + Constants.TAKE_1_TIMEOUT_DEFAULT
+            block.timestamp + TAKE_1_TIMEOUT_DEFAULT
         );
 
         // Act
@@ -609,15 +611,15 @@ contract TestPegManager is Test, HelperContract {
         uint256 firstHonestOpIndex = registry.minCommitteeMembers() / 2;
         uint256 operatorsCount = registry.minCommitteeMembers() / 2;
         setup_addMemberSignature_MultipleMembers(setup.pegoutSignatureHash, firstHonestOpIndex, operatorsCount);
-        vm.warp(block.timestamp + Constants.TAKE_0_TIMEOUT_DEFAULT + 1);
+        vm.warp(block.timestamp + TAKE_0_TIMEOUT_DEFAULT + 1);
         pm.triggerOperatorTake(setup.pegoutSignatureHash);
 
         for (uint256 i = 0; i < operatorsCount - 1; i++) {
-            vm.warp(block.timestamp + Constants.TAKE_1_TIMEOUT_DEFAULT + 1);
+            vm.warp(block.timestamp + TAKE_1_TIMEOUT_DEFAULT + 1);
             pm.triggerOperatorTake(setup.pegoutSignatureHash);
         }
 
-        vm.warp(block.timestamp + Constants.TAKE_1_TIMEOUT_DEFAULT + 1);
+        vm.warp(block.timestamp + TAKE_1_TIMEOUT_DEFAULT + 1);
         return setup.pegoutSignatureHash;
     }
 
@@ -626,7 +628,7 @@ contract TestPegManager is Test, HelperContract {
         uint256 timeout = pm.userTakeTimeout();
 
         // Assert
-        assertEq(timeout, Constants.TAKE_0_TIMEOUT_DEFAULT);
+        assertEq(timeout, TAKE_0_TIMEOUT_DEFAULT);
     }
 
     function test_operatorTakeTimeout_Success() external view {
@@ -634,12 +636,12 @@ contract TestPegManager is Test, HelperContract {
         uint256 timeout = pm.operatorTakeTimeout();
 
         // Assert
-        assertEq(timeout, Constants.TAKE_1_TIMEOUT_DEFAULT);
+        assertEq(timeout, TAKE_1_TIMEOUT_DEFAULT);
     }
 
     function test_setUserTakeTimeout_Success() external {
         // Arrange
-        uint256 timeout = Constants.TAKE_0_TIMEOUT_DEFAULT + 1 days;
+        uint256 timeout = TAKE_0_TIMEOUT_DEFAULT + 1 days;
 
         // Assert
         vm.expectEmit(address(pm));
@@ -656,7 +658,7 @@ contract TestPegManager is Test, HelperContract {
 
     function test_setOperatorTakeTimeout_Success() external {
         // Arrange
-        uint256 timeout = Constants.TAKE_1_TIMEOUT_DEFAULT + 1 days;
+        uint256 timeout = TAKE_1_TIMEOUT_DEFAULT + 1 days;
 
         // Assert
         vm.expectEmit(address(pm));

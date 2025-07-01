@@ -11,7 +11,8 @@ import {
     PegoutTempInfo,
     StreamPosition,
     PegStatus,
-    IPegManager
+    IPegManager,
+    PegManagerSettings
 } from "./interfaces/IPegManager.sol";
 import {Slot, Stream, Packet, SlotState, IStreamManager} from "./interfaces/IStreamManager.sol";
 import {ProofValidator} from "./ProofValidator.sol";
@@ -66,12 +67,14 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
     /// @param _bridgeAddress The address of the pow-peg bridge contract
     /// @param _committeeRegistry The committee registry contract address
     /// @param _bitcoinManager The Bitcoin manager contract address
+    /// @param _settings The peg manager settings including timeouts
     /// @dev This function can only be called once during contract deployment
     function initialize(
         address _initialOwner,
         address payable _bridgeAddress,
         ICommitteeRegistry _committeeRegistry,
-        IBitcoinManager _bitcoinManager
+        IBitcoinManager _bitcoinManager,
+        PegManagerSettings memory _settings
     ) public virtual initializer {
         // Validate that the bitcoin manager is not zero address
         if (address(_bitcoinManager) == address(0)) {
@@ -87,8 +90,8 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         __BaseProxy_init(_initialOwner);
         __ProofValidator_init(_bridgeAddress);
 
-        userTakeTimeout = Constants.TAKE_0_TIMEOUT_DEFAULT;
-        operatorTakeTimeout = Constants.TAKE_1_TIMEOUT_DEFAULT;
+        userTakeTimeout = _settings.userTakeTimeout;
+        operatorTakeTimeout = _settings.operatorTakeTimeout;
     }
 
     /// @notice Sets the stream manager contract address

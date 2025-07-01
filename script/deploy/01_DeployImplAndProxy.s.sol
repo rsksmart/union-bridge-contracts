@@ -14,7 +14,10 @@ import {BridgeMock} from "test/helpers/BridgeMock.sol";
 import {ChainIds} from "src/libraries/Network.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
-import {IPegManager} from "src/interfaces/IPegManager.sol";
+import {IPegManager, PegManagerSettings} from "src/interfaces/IPegManager.sol";
+import {StreamManagerSettings} from "src/interfaces/IStreamManager.sol";
+import {StreamManagerSettingsConfig} from "script/helpers/StreamManagerSettingsConfig.sol";
+import {PegManagerSettingsConfig} from "script/helpers/PegManagerSettingsConfig.sol";
 
 ///@dev We are using fundry-upgrades see https://github.com/OpenZeppelin/openzeppelin-foundry-upgrades
 contract DeployImplAndProxy is ScriptUtils {
@@ -23,6 +26,8 @@ contract DeployImplAndProxy is ScriptUtils {
     BtcNetwork public btcBtcNetwork;
     uint64[] denominations;
     address payable public bridgeAddress;
+    StreamManagerSettings public streamManagerSettings;
+    PegManagerSettings public pegManagerSettings;
 
     function setUp() internal {
         bridgeAddress = RSK_BRIDGE_ADDRESS;
@@ -34,6 +39,8 @@ contract DeployImplAndProxy is ScriptUtils {
             uint64(1_000_000_000) // 10 BTC
         ];
         upgradableOwner = getDeployerAddress();
+        streamManagerSettings = StreamManagerSettingsConfig.getSettings(block.chainid);
+        pegManagerSettings = PegManagerSettingsConfig.getSettings(block.chainid);
         // RSK Mainnet
         if (block.chainid == ChainIds.RSK_MAINNET) {
             btcBtcNetwork = BtcNetwork.MAINNET;
@@ -78,7 +85,8 @@ contract DeployImplAndProxy is ScriptUtils {
         if (bitcoinManager.owner() != upgradableOwner) {
             revert("BitcoinManager owner is not the upgradable owner");
         }
-        PegManager pegManager = deployPegManager(upgradableOwner, bridgeAddress, committeeRegistry, bitcoinManager);
+        PegManager pegManager =
+            deployPegManager(upgradableOwner, bridgeAddress, committeeRegistry, bitcoinManager, pegManagerSettings);
         // Verify contracts are initialized
         if (pegManager.owner() != upgradableOwner) {
             revert("PegManager owner is not the upgradable owner");
@@ -87,7 +95,8 @@ contract DeployImplAndProxy is ScriptUtils {
             revert("PegManager bridge is not the bridge address");
         }
 
-        StreamManager streamManager = deployStreamManager(upgradableOwner, pegManager, committeeRegistry, denominations);
+        StreamManager streamManager =
+            deployStreamManager(upgradableOwner, pegManager, committeeRegistry, denominations, streamManagerSettings);
         if (streamManager.owner() != upgradableOwner) {
             revert("StreamManager owner is not the upgradable owner");
         }
@@ -161,7 +170,8 @@ contract DeployImplAndProxy is ScriptUtils {
         address _upgradableOwner,
         address payable _bridgeAddress,
         CommitteeRegistry _committeeRegistry,
-        BitcoinManager _bitcoinManager
+        BitcoinManager _bitcoinManager,
+        PegManagerSettings memory _settings
     ) public returns (PegManager) {
         string memory contractName = "PegManager.sol";
         if (vm.isContext(VmSafe.ForgeContext.TestGroup)) {
@@ -171,7 +181,8 @@ contract DeployImplAndProxy is ScriptUtils {
         (, address proxyAdddress) = deployContractAndUUPSProxy(
             contractName,
             abi.encodeCall(
-                PegManager.initialize, (_upgradableOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager)
+                PegManager.initialize,
+                (_upgradableOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager, _settings)
             )
         );
         return PegManager(proxyAdddress);
@@ -181,7 +192,8 @@ contract DeployImplAndProxy is ScriptUtils {
         address _upgradableOwner,
         IPegManager _pegManager,
         ICommitteeRegistry _committeeRegistry,
-        uint64[] memory _denominations
+        uint64[] memory _denominations,
+        StreamManagerSettings memory _settings
     ) public returns (StreamManager) {
         string memory contractName = "StreamManager.sol";
         if (vm.isContext(VmSafe.ForgeContext.TestGroup)) {
@@ -191,7 +203,7 @@ contract DeployImplAndProxy is ScriptUtils {
         (, address proxyAdddress) = deployContractAndUUPSProxy(
             contractName,
             abi.encodeCall(
-                StreamManager.initialize, (_upgradableOwner, _pegManager, _committeeRegistry, _denominations)
+                StreamManager.initialize, (_upgradableOwner, _pegManager, _committeeRegistry, _denominations, _settings)
             )
         );
         return StreamManager(proxyAdddress);
