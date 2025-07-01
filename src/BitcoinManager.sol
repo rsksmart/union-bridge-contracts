@@ -221,7 +221,7 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
 
     function validatePegoutMemberOutput(BtcTxOut calldata _userOutput, bytes32 _memberPubKey) external pure {
         bytes memory expectedScriptPubKey =
-            BtcScriptParser.getP2WPKHScript(abi.encodePacked(uint8(0x02), _memberPubKey));
+            BtcScriptParser.getP2WPKHScript(BtcHelper.pubKeyXonlyToCompact(_memberPubKey));
 
         _compareOutputPubKey(_userOutput.scriptPubKey, expectedScriptPubKey);
     }
@@ -334,7 +334,7 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
     function getSpeedUpScriptPub(bytes32 _pubKey) public pure returns (bytes memory) {
         // TODO change this to use P2WPSH with OP_1 so anyone can send the speed up
         // this should change at the same time as in the protocol builder
-        return BtcScriptParser.getP2WPKHScript(abi.encodePacked(uint8(0x02), _pubKey));
+        return BtcScriptParser.getP2WPKHScript(BtcHelper.pubKeyXonlyToCompact(_pubKey));
     }
 
     // ========================== Peg Out Signature Hash ==========================

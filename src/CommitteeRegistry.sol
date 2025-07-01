@@ -49,7 +49,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     /// @notice Mapping of committeeId to committee data
     mapping(uint256 committeeId => Committee) internal committeesById;
     /// @notice Mapping of streamId to flag indicating if a committee should be created
-    mapping(uint64 streamId => bool createCommittee) internal shouldCreateCommittee;
+    mapping(uint64 streamId => bool createCommittee) public shouldCreateCommittee;
 
     /// @notice Stream manager contract for managing streams and packets
     IStreamManager streamManager;

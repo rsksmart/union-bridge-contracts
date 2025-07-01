@@ -366,10 +366,35 @@ interface IPegManager {
     /// @param actual The actual script bytes
     /// @param expected The expected script bytes
     error IncorrectOutputScript(bytes actual, bytes expected);
+
+    /// @notice Throen when invalid timeout is provided
+    /// @param timeout The invalid timeout value that was provided
     error InvalidTimeout(uint256 timeout);
+
+    /// @notice Thrown when the peg status is not valid for the operation
+    /// @param actual The actual peg status that was encountered
     error InvalidPegStatus(PegStatus actual);
+
+    /// @notice Thrown when the User Take timeout has not expired
+    /// @param createdAt The timestamp when the User Take was created
+    /// @param expireAt The timestamp when the User Take is expected to expire
     error UserTakeTimeoutNotExpired(uint256 createdAt, uint256 expireAt);
+
+    /// @notice Thrown when the trying to trigger Operator Take for a pegout that has already been signed by the all the members
+    /// @param pegoutSignatureHash The pegout signature hash that was already signed
     error UserTakeAlreadySigned(bytes32 pegoutSignatureHash);
+
+    /// @notice Thrown when the Operator Take timeout has not expired
+    /// @param createdAt The timestamp when the Operator Take was created
+    /// @param expireAt The timestamp when the Operator Take is expected to expire
     error OperatorTakeTimeoutNotExpired(uint256 createdAt, uint256 expireAt);
+
+    /// @notice Thrown when the pegout signature hash is not found in the system
+    /// @param pegoutSignatureHash The pegout signature hash that was not found
     error PegoutSignatureHashNotFound(bytes32 pegoutSignatureHash);
+
+    /// @notice Thrown when the operator address does not match the expected operator that should advance the funds
+    /// @param expectedOperator The expected operator address that should take the pegout
+    /// @param actualOperator The actual operator address that was provided
+    error OperatorTakeAddressNotMatch(address expectedOperator, address actualOperator);
 }

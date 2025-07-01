@@ -32,8 +32,6 @@ bytes32 constant MEMBER_1_PUBKEY = 0xefc3606f43ef541fff3328af5ea0a16ad9e4ae67d8d
 address constant MEMBER_1_ADDRESS = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
 bytes32 constant MEMBER_2_PUBKEY = 0x1976ee2a061feb3976914ed2526369c7141b5490f48d5623485e833c2e9c5819;
 address constant MEMBER_2_ADDRESS = 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC;
-uint256 constant TAKE_0_TIMEOUT_DEFAULT = 2 hours;
-uint256 constant TAKE_1_TIMEOUT_DEFAULT = 2 hours;
 
 contract TestPegManager is Test, HelperContract {
     // Arrange
@@ -621,6 +619,152 @@ contract TestPegManager is Test, HelperContract {
 
         vm.warp(block.timestamp + TAKE_1_TIMEOUT_DEFAULT + 1);
         return setup.pegoutSignatureHash;
+    }
+
+    function test_depositOperatorTakeProof_Success() external {
+        // Arrange
+        (address operatorAddress, RegisterPegoutSetup memory setup) = setup_operatorTake();
+        bytes32 operatorPubKey = getMemberTakePubKey(operatorAddress);
+        BtcTransaction memory pegoutTx =
+            createPegoutTx(setup.acceptPeginTxHash, BtcHelper.pubKeyXonlyToCompact(operatorPubKey), VALUE);
+        BtcTxSPVProof memory pegoutTxSPVProof = createBtcTxSPVProof(pegoutTx);
+        bytes32 pegoutTxHash = bitcoinManager.getBtcTxHash(pegoutTx);
+
+        // Expect the PegoutRegistered event
+        vm.expectEmit(address(pm));
+        emit IPegManager.PegoutRegistered(
+            pegoutTxSPVProof.blockHash,
+            pegoutTxHash,
+            setup.acceptPeginTxHash,
+            setup.stream.streamId,
+            setup.packetNumber,
+            setup.slotId
+        );
+
+        // Act
+        vm.prank(operatorAddress);
+        pm.depositOperatorTakeProof(pegoutTxSPVProof);
+    }
+
+    function test_depositOperatorTakeProof_Revert_PeginNotRequested() external {
+        // Arrange
+        (address operatorAddress, RegisterPegoutSetup memory setup) = setup_operatorTake();
+        bytes32 operatorPubKey = getMemberTakePubKey(operatorAddress);
+        bytes32 wrongAcceptPeginTxHash = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
+        BtcTransaction memory pegoutTx =
+            createPegoutTx(wrongAcceptPeginTxHash, BtcHelper.pubKeyXonlyToCompact(operatorPubKey), VALUE);
+        BtcTxSPVProof memory pegoutTxSPVProof = createBtcTxSPVProof(pegoutTx);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IPegManager.PeginNotRequested.selector, wrongAcceptPeginTxHash));
+
+        // Act
+        vm.prank(operatorAddress);
+        pm.depositOperatorTakeProof(pegoutTxSPVProof);
+    }
+
+    function test_depositOperatorTakeProof_Revert_InvalidPegStatus() external {
+        // Arrange
+        (address operatorAddress, RegisterPegoutSetup memory setup) = setup_operatorTake();
+        bytes32 operatorPubKey = getMemberTakePubKey(operatorAddress);
+        BtcTransaction memory pegoutTx =
+            createPegoutTx(setup.acceptPeginTxHash, BtcHelper.pubKeyXonlyToCompact(operatorPubKey), VALUE);
+        BtcTxSPVProof memory pegoutTxSPVProof = createBtcTxSPVProof(pegoutTx);
+        // Register Pegout as Take 0
+        pm.registerPegout(setup.pegoutTxSPVProof);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IPegManager.InvalidPegStatus.selector, PegStatus.PAID));
+
+        // Act
+        vm.prank(operatorAddress);
+        pm.depositOperatorTakeProof(pegoutTxSPVProof);
+    }
+
+    function test_depositOperatorTakeProof_Revert_IncorrectVout() external {
+        // Arrange
+        (address operatorAddress, RegisterPegoutSetup memory setup) = setup_operatorTake();
+        bytes32 operatorPubKey = getMemberTakePubKey(operatorAddress);
+        BtcTransaction memory pegoutTx =
+            createPegoutTx(setup.acceptPeginTxHash, BtcHelper.pubKeyXonlyToCompact(operatorPubKey), VALUE);
+        BtcTxSPVProof memory pegoutTxSPVProof = createBtcTxSPVProof(pegoutTx);
+        pegoutTxSPVProof.btcTx.inputs[0].vout = Constants.VOUT_INDEX_TAPTREE + 1; // Set an incorrect vout
+
+        // Expect the PegoutRegistered event
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IPegManager.IncorrectVout.selector, Constants.VOUT_INDEX_TAPTREE + 1, Constants.VOUT_INDEX_TAPTREE
+            )
+        );
+
+        // Act
+        vm.prank(operatorAddress);
+        pm.depositOperatorTakeProof(pegoutTxSPVProof);
+    }
+
+    function test_depositOperatorTakeProof_Revert_IncorrectOutputScript() external {
+        // Arrange
+        (address operatorAddress, RegisterPegoutSetup memory setup) = setup_operatorTake();
+        bytes32 operatorPubKey = getMemberTakePubKey(operatorAddress);
+        address wrongOperator = vm.addr(1);
+        bytes32 wrongOperatorPubKey = getMemberTakePubKey(wrongOperator);
+
+        BtcTransaction memory pegoutTx =
+            createPegoutTx(setup.acceptPeginTxHash, BtcHelper.pubKeyXonlyToCompact(wrongOperatorPubKey), VALUE);
+        BtcTxSPVProof memory pegoutTxSPVProof = createBtcTxSPVProof(pegoutTx);
+
+        // Expect the PegoutRegistered event
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IPegManager.IncorrectOutputScript.selector,
+                BtcScriptParser.getP2WPKHScript(BtcHelper.pubKeyXonlyToCompact(wrongOperatorPubKey)),
+                BtcScriptParser.getP2WPKHScript(BtcHelper.pubKeyXonlyToCompact(operatorPubKey))
+            )
+        );
+
+        // Act
+        vm.prank(operatorAddress);
+        pm.depositOperatorTakeProof(pegoutTxSPVProof);
+    }
+
+    function test_depositOperatorTakeProof_Revert_OperatorTakeAddressNotMatch() external {
+        // Arrange
+        (address operatorAddress, RegisterPegoutSetup memory setup) = setup_operatorTake();
+        bytes32 operatorPubKey = getMemberTakePubKey(operatorAddress);
+        address wrongOperator = vm.addr(1);
+
+        BtcTransaction memory pegoutTx =
+            createPegoutTx(setup.acceptPeginTxHash, BtcHelper.pubKeyXonlyToCompact(operatorPubKey), VALUE);
+        BtcTxSPVProof memory pegoutTxSPVProof = createBtcTxSPVProof(pegoutTx);
+
+        // Expect the PegoutRegistered event
+        vm.expectRevert(
+            abi.encodeWithSelector(IPegManager.OperatorTakeAddressNotMatch.selector, operatorAddress, wrongOperator)
+        );
+
+        // Act
+        vm.prank(wrongOperator);
+        pm.depositOperatorTakeProof(pegoutTxSPVProof);
+    }
+
+    function test_depositOperatorTakeProof_Revert_InvalidSlotState() external {
+        // Arrange
+        (address operatorAddress, RegisterPegoutSetup memory setup) = setup_operatorTake();
+        bytes32 operatorPubKey = getMemberTakePubKey(operatorAddress);
+        BtcTransaction memory pegoutTx =
+            createPegoutTx(setup.acceptPeginTxHash, BtcHelper.pubKeyXonlyToCompact(operatorPubKey), VALUE);
+        BtcTxSPVProof memory pegoutTxSPVProof = createBtcTxSPVProof(pegoutTx);
+        // Set slot as PAID
+        streamManager.setSlotStateHarness(setup.stream.streamId, setup.packetNumber, setup.slotId, SlotState.PAID);
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IStreamManager.InvalidSlotState.selector, SlotState.PAID, SlotState.LOCKED)
+        );
+
+        // Act
+        vm.prank(operatorAddress);
+        pm.depositOperatorTakeProof(pegoutTxSPVProof);
     }
 
     function test_userTakeTimeout_Success() external view {

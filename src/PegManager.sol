@@ -613,6 +613,11 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             revert IncorrectVout(vout, Constants.VOUT_INDEX_TAPTREE);
         }
 
+        PegoutTempInfo memory pegoutInfo = pegoutTempInfo[acceptPeginTxHash];
+        if (pegoutInfo.takeOperator != msg.sender) {
+            revert OperatorTakeAddressNotMatch(pegoutInfo.takeOperator, msg.sender);
+        }
+
         // Calculate the transaction hash for verification
         bytes32 txHash = bitcoinManager.getBtcTxHash(_pegoutTxSPVProof.btcTx);
 
@@ -629,8 +634,8 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         );
 
         // Validate that the first output is a P2WPKH paying the member
-        bytes32 memberPubKey = committeeRegistry.getMemberTakePubKey(msg.sender);
-        bitcoinManager.validatePegoutMemberOutput(_pegoutTxSPVProof.btcTx.outputs[0], memberPubKey);
+        bytes32 operatorPubKey = committeeRegistry.getMemberTakePubKey(pegoutInfo.takeOperator);
+        bitcoinManager.validatePegoutMemberOutput(_pegoutTxSPVProof.btcTx.outputs[0], operatorPubKey);
 
         // Update slot status
         streamManager.paidSlot(

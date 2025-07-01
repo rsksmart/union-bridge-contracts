@@ -150,4 +150,13 @@ library BtcHelper {
     function satoshiToWei(uint256 _amount) internal pure returns (uint256) {
         return _amount * 10 ** 10;
     }
+
+    /// @notice Converts a bytes32 public key to a bytes format
+    /// @dev The public key is expected to be in the compressed format (x-coordinate only)
+    /// @dev The first byte is set to 0x02 to indicate a compressed public key
+    /// @param _pubKey The public key in bytes32 format
+    /// @return The public key in bytes format
+    function pubKeyXonlyToCompact(bytes32 _pubKey) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(0x02), _pubKey);
+    }
 }

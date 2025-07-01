@@ -6,6 +6,7 @@ import {console} from "forge-std/console.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {DeployScript} from "script/deploy/DeployScript.s.sol";
 import {PegManager, BtcTxSPVProof, PegStatus} from "src/PegManager.sol";
+import {IPegManager} from "src/interfaces/IPegManager.sol";
 import {PegManagerHarness} from "test/helpers/PegManagerHarness.sol";
 import {StreamManagerHarness} from "test/helpers/StreamManagerHarness.sol";
 import {SignatureManager} from "src/SignatureManager.sol";
@@ -17,6 +18,7 @@ import {
     CommitteeRegistry,
     PublicKeyRegistration
 } from "src/CommitteeRegistry.sol";
+import {PublicKeyIndex} from "src/interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination, Slot} from "src/interfaces/IStreamManager.sol";
 import {BtcTxIn, BtcTxOut, BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
@@ -40,6 +42,9 @@ abstract contract HelperContract is Test, TestUtils {
     uint256 constant COMMITTEE_ID_STREAM_1_PACKET_1 =
         92458281274488595289803937127152923398167637295201432141969818930235769911599;
     bytes32 constant COMMITTEE_PUB_KEY = 0xd1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d;
+
+    uint256 constant TAKE_0_TIMEOUT_DEFAULT = 2 hours;
+    uint256 constant TAKE_1_TIMEOUT_DEFAULT = 2 hours;
 
     // Dummy requested roles and streams for the members
     StreamDenomination internal constant DEFAULT_STREAM = StreamDenomination._0_001BTC;
@@ -101,6 +106,12 @@ abstract contract HelperContract is Test, TestUtils {
                 generatePublicKeysRegistration(uint256(uint160(member.memberAddress))); // Generate public keys based on the address
             setup_applyToStream(_denomination, member.memberAddress, pubKeysRegistration, member.role);
         }
+    }
+
+    function getMemberTakePubKey(address _memberAddress) internal returns (bytes32) {
+        PublicKeyRegistration[] memory pubKeysRegistration =
+            generatePublicKeysRegistration(uint256(uint160(_memberAddress))); // Generate public keys based on the address
+        return pubKeysRegistration[uint8(PublicKeyIndex.TAKE)].publicKeyX;
     }
 
     // This function should be used for members that has been already registered. But it won't fail if the member is not registered.
@@ -237,7 +248,7 @@ abstract contract HelperContract is Test, TestUtils {
             amount: Constants.SPEED_UP_AMOUNT,
             // TODO we consider the btc reimbursement public key as even
             // this may not be the case in the future and we should change this
-            scriptPubKey: BtcScriptParser.getP2WPKHScript(abi.encodePacked(uint8(0x02), BTC_REIMBURSEMENT_PUBKEY))
+            scriptPubKey: BtcScriptParser.getP2WPKHScript(BtcHelper.pubKeyXonlyToCompact(BTC_REIMBURSEMENT_PUBKEY))
         });
     }
 
@@ -590,5 +601,34 @@ abstract contract HelperContract is Test, TestUtils {
             bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
             setup_addMemberSignature(vm.addr(i + 1), _hashToSign, signature);
         }
+    }
+
+    function setup_operatorTake() internal returns (address operatorAddress, RegisterPegoutSetup memory setup) {
+        // Arrange
+        setup = setup_pegoutAndMemberNonces();
+        uint256 createdAt = block.timestamp;
+        // Expire TAKE_0
+        vm.warp(createdAt + TAKE_0_TIMEOUT_DEFAULT + 1);
+        // This depende on how they have been registered. First registered group are the watchtowers
+        uint256 firstHonestOpIndex = registry.minCommitteeMembers() / 2 + 1;
+        operatorAddress = vm.addr(firstHonestOpIndex + 1);
+
+        // Add just 2 signatures for the first and second operators
+        setup_addMemberSignature_MultipleMembers(setup.pegoutSignatureHash, firstHonestOpIndex, 2);
+
+        // Assert
+        vm.expectEmit(address(pm));
+        emit IPegManager.OperatorTakeTriggered(
+            setup.pegoutSignatureHash,
+            COMMITTEE_ID_STREAM_1_PACKET_0,
+            setup.acceptPeginTxHash,
+            operatorAddress,
+            setup.userPubKey,
+            createdAt,
+            block.timestamp,
+            block.timestamp + TAKE_1_TIMEOUT_DEFAULT
+        );
+
+        pm.triggerOperatorTake(setup.pegoutSignatureHash);
     }
 }
