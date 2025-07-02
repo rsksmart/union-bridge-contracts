@@ -10,6 +10,7 @@ out/
 # vscode
 .vscode/*
 !.vscode/settings.json
+!.vscode/extensions.json
 # node (installed to supress openzeppelin-foundry-upgrades warnings)
 package-lock.json
 package.json

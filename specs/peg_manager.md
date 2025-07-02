@@ -28,13 +28,14 @@ There must always be an empty packet available in each stream. When a packet in 
 ### Slots
 A slot represents a single peg-in or peg-out operation. It has a unique id to individually identify it. The peg slot contains the information related to the peg-in and peg-out operation: the peg-in utxo used, a reference to the dispute resolution protocol that secures the peg slot, a reference to the `take` (peg-out) transactions and the current slot state.
 
-A slot can be in one of four states:
+A slot can have the following states:
 
-- `Empty`, when the slot has been created.
 - `Prepared`, when all the dispute resolution information is linked to the slot (setup completed). In this state the slot is ready to be assigned to a request peg-in operation.
 - `Filled`, when the Committee members have confirmed and registered a peg-in. In this state the slot is ready for peg-out.
-- `Paid`, when the Committee members have confirmed and registered a peg-out.<br><br>
-      
+- `Locked`, when the slot is assigned to a peg-out operation
+- `Advanced`: when the operator advanced funds.
+- `Completed`: when the peg-out is processed (happy path) or the operator receives the reimbursement after advance..
+
 !["Slots and packets diagram"](./imgs/slots_packets.png)
 
 The peg-in pointer points to the first slot from a packet that is in the `Prepared` state. When a peg-in is registered in the pointed slot, the slot changes to the `Filled` state and the pointer moves forward to the next `Prepared` slot. There must always be a `Prepared` slot available for the peg-in pointer to move. If all the slots in the packet are in the Filled state, the peg-in pointer will move to a new packet.

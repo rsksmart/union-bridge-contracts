@@ -540,6 +540,13 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         return committeeId;
     }
 
+    /// @notice Triggers the operator take process for a peg-out when not all committee members sign within timeout
+    /// @dev This function can be called after a User Take expiration or after an Operator Take expiration
+    /// @dev Each case has its own timeout and before triggering the operator take (after a User Take expiration)
+    /// @dev signatures should be checked to see if the User Take was already signed
+    /// @dev Partial signatures are used to skip those operators that have not signed the User Take
+    /// @dev Emits OperatorTakeTriggered event upon successful triggering
+    /// @param _pegoutSignatureHash The signature hash of the peg-out request
     function triggerOperatorTake(bytes32 _pegoutSignatureHash) external {
         // This method trigger the operator take for a pegout.
         // It could be after a User Take expiration or after an Operator Take expiration.
@@ -592,6 +599,11 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         );
     }
 
+    /// @notice Deposits an operator take proof for a peg-out transaction
+    /// @param _pegoutTxSPVProof The BTC SPV proof of the operator take peg-out transaction
+    /// @dev Validates the SPV proof and marks the slot as paid when operator takes over
+    /// @dev Only callable when the peg status is OPERATOR_TAKE
+    /// @dev Emits PegoutRegistered event upon successful deposit
     function depositOperatorTakeProof(BtcTxSPVProof calldata _pegoutTxSPVProof) external {
         // Get the accept peg-in tx hash from the first input (this is what gets spent)
         bytes32 acceptPeginTxHash = _pegoutTxSPVProof.btcTx.inputs[0].txId;
@@ -655,6 +667,10 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         );
     }
 
+    /// @notice Sets the timeout duration for user take operations
+    /// @param _timeout The new timeout duration in seconds
+    /// @dev Only callable by the contract owner
+    /// @dev Emits UserTakeTimeoutUpdated event upon successful update
     function setUserTakeTimeout(uint256 _timeout) external onlyOwner {
         if (_timeout == 0) {
             revert InvalidTimeout(_timeout);
@@ -663,6 +679,10 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         emit UserTakeTimeoutUpdated(userTakeTimeout);
     }
 
+    /// @notice Sets the timeout duration for operator take operations
+    /// @param _timeout The new timeout duration in seconds
+    /// @dev Only callable by the contract owner
+    /// @dev Emits OperatorTakeTimeoutUpdated event upon successful update
     function setOperatorTakeTimeout(uint256 _timeout) external onlyOwner {
         if (_timeout == 0) {
             revert InvalidTimeout(_timeout);

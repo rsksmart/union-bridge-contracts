@@ -147,15 +147,20 @@ interface IPegManager {
         bytes acceptPeginSignatureMessage
     );
 
-    /// @notice Retrieves the accept peg-in transaction hash for a given request transaction hash
+    /// @notice Gets the accept peg-in transaction hash for a given request transaction hash
     /// @param _btcTxHash The Bitcoin transaction hash of the peg-in request
     /// @return The accept peg-in transaction hash
     function getPeginRequest(bytes32 _btcTxHash) external view returns (bytes32);
 
-    /// @notice Retrieves temporary information stored during peg-in request processing
+    /// @notice Gets temporary information stored during peg-in request processing
     /// @param btcTxHash The Bitcoin transaction hash of the peg-in request
     /// @return The temporary information needed for the accept phase
     function getRequestPeginTempInfo(bytes32 btcTxHash) external view returns (RequestPeginTempInfo memory);
+
+    /// @notice Gets temporary information stored during peg-out processing
+    /// @param acceptPeginTxHash The accept peg-in transaction hash
+    /// @return The temporary information needed for peg-out processing
+    function getPegoutTempInfo(bytes32 acceptPeginTxHash) external view returns (PegoutTempInfo memory);
 
     // ===================== Accept Peg-in Request =====================
 
@@ -200,6 +205,16 @@ interface IPegManager {
     /// @dev Emits PegoutRegistered event upon successful registration
     /// @param _pegoutTxSPVProof The BTC SPV proof of the peg-out transaction
     function registerPegout(BtcTxSPVProof calldata _pegoutTxSPVProof) external;
+
+    /// @notice Gets the peg-out signature hash for a specific stream, packet, and slot
+    /// @param streamId The stream identifier
+    /// @param packetNumber The packet number within the stream
+    /// @param slotId The slot identifier within the packet
+    /// @return The peg-out signature hash
+    function getPegoutSignatureHash(uint64 streamId, uint64 packetNumber, uint64 slotId)
+        external
+        view
+        returns (bytes32);
 
     /// @notice Event emitted when a peg-out is successfully requested
     /// @param userPubKey The user's public key that will receive the Bitcoin funds
@@ -251,30 +266,49 @@ interface IPegManager {
     /// @dev Reverts if the timeout is zero
     function setOperatorTakeTimeout(uint256 _timeout) external;
 
+    /// @notice Gets the current timeout duration for user take operations
+    /// @return The timeout duration in seconds
+    function userTakeTimeout() external view returns (uint256);
+
+    /// @notice Gets the current timeout duration for operator take operations
+    /// @return The timeout duration in seconds
+    function operatorTakeTimeout() external view returns (uint256);
+
     /// @notice Registers the Bitcoin peg-out transaction to the operator account
-    /// @dev Validates the SPV proof and completes the peg-out process
-    /// @dev Emits PegoutRegistered event upon successful registration
-    /// @param _pegoutTxSPVProof The BTC SPV proof of the peg-out transaction
+    /// @dev Validates the SPV proof and marks the slot as paid when operator takes over
+    /// @dev Only callable when the peg status is OPERATOR_TAKE
+    /// @dev Emits PegoutRegistered event upon successful deposit
+    /// @param _pegoutTxSPVProof The BTC SPV proof of the operator take peg-out transaction
     function depositOperatorTakeProof(BtcTxSPVProof calldata _pegoutTxSPVProof) external;
+
+    /// @notice Triggers the operator take process for a peg-out when not all committee members sign within timeout
+    /// @dev This function can be called after a User Take expiration or after an Operator Take expiration
+    /// @dev Each case has its own timeout and before triggering the operator take (after a User Take expiration)
+    /// @dev signatures should be checked to see if the User Take was already signed
+    /// @dev Partial signatures are used to skip those operators that have not signed the User Take
+    /// @dev Emits OperatorTakeTriggered event upon successful triggering
+    /// @param _pegoutSignatureHash The signature hash of the peg-out request
+    function triggerOperatorTake(bytes32 _pegoutSignatureHash) external;
 
     // ===================== Events =====================
 
     /// @notice Event emitted when the user take timeout is updated
-    /// @param newTimeout The new timeout value in seconds
+    /// @param newTimeout The new timeout duration in seconds
     event UserTakeTimeoutUpdated(uint256 newTimeout);
 
     /// @notice Event emitted when the operator take timeout is updated
-    /// @param newTimeout The new timeout value in seconds
+    /// @param newTimeout The new timeout duration in seconds
     event OperatorTakeTimeoutUpdated(uint256 newTimeout);
 
-    /// @notice Event emitted when a user take is triggered
-    /// @param pegoutSignatureHash The signature hash that committee members need to sign
+    /// @notice Event emitted when operator take is triggered for a peg-out
+    /// @param pegoutSignatureHash The signature hash of the peg-out request
     /// @param committeeId The ID of the committee responsible for this peg-out
     /// @param acceptPeginTxHash The hash of the accept peg-in transaction
+    /// @param operator The address of the operator that will take over
     /// @param userPubKey The user's public key that will receive the Bitcoin funds
     /// @param userTakeCreatedAt The timestamp when the user take was created
-    /// @param updatedAt The timestamp when the operator take was last updated
-    /// @param expireAt The timestamp when the operator take expires
+    /// @param updatedAt The timestamp when the operator take was triggered
+    /// @param expireAt The timestamp when the operator take timeout expires
     event OperatorTakeTriggered(
         bytes32 pegoutSignatureHash,
         uint256 committeeId,
@@ -367,30 +401,30 @@ interface IPegManager {
     /// @param expected The expected script bytes
     error IncorrectOutputScript(bytes actual, bytes expected);
 
-    /// @notice Throen when invalid timeout is provided
+    /// @notice Thrown when an invalid timeout value is provided (zero timeout)
     /// @param timeout The invalid timeout value that was provided
     error InvalidTimeout(uint256 timeout);
 
-    /// @notice Thrown when the peg status is not valid for the operation
-    /// @param actual The actual peg status that was encountered
+    /// @notice Thrown when the peg status is not valid for the current operation
+    /// @param actual The actual peg status that was found
     error InvalidPegStatus(PegStatus actual);
 
-    /// @notice Thrown when the User Take timeout has not expired
-    /// @param createdAt The timestamp when the User Take was created
-    /// @param expireAt The timestamp when the User Take is expected to expire
+    /// @notice Thrown when trying to trigger operator take before user take timeout has expired
+    /// @param createdAt The timestamp when the user take was created
+    /// @param expireAt The timestamp when the user take timeout expires
     error UserTakeTimeoutNotExpired(uint256 createdAt, uint256 expireAt);
 
-    /// @notice Thrown when the trying to trigger Operator Take for a pegout that has already been signed by the all the members
-    /// @param pegoutSignatureHash The pegout signature hash that was already signed
+    /// @notice Thrown when trying to trigger operator take but user take was already signed
+    /// @param pegoutSignatureHash The signature hash of the peg-out request
     error UserTakeAlreadySigned(bytes32 pegoutSignatureHash);
 
-    /// @notice Thrown when the Operator Take timeout has not expired
-    /// @param createdAt The timestamp when the Operator Take was created
-    /// @param expireAt The timestamp when the Operator Take is expected to expire
+    /// @notice Thrown when trying to trigger operator take before operator take timeout has expired
+    /// @param createdAt The timestamp when the operator take was updated
+    /// @param expireAt The timestamp when the operator take timeout expires
     error OperatorTakeTimeoutNotExpired(uint256 createdAt, uint256 expireAt);
 
-    /// @notice Thrown when the pegout signature hash is not found in the system
-    /// @param pegoutSignatureHash The pegout signature hash that was not found
+    /// @notice Thrown when a peg-out signature hash is not found in the system
+    /// @param pegoutSignatureHash The signature hash that was not found
     error PegoutSignatureHashNotFound(bytes32 pegoutSignatureHash);
 
     /// @notice Thrown when the operator address does not match the expected operator that should advance the funds
