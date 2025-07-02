@@ -476,7 +476,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, DEFAULT_ROLE, pubKeysRegistration);
     }
 
-    function test_applyToStream_GasUse() external {
+    function test_applyToStream_GasConsumptionCheck() external {
         // Results:
         // Constants.MAX_CANDIDATES_SIZE_PER_ROLE = 256: 406933 gas
         // Constants.MAX_CANDIDATES_SIZE_PER_ROLE = 250: 406933 gas
