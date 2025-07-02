@@ -18,7 +18,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Constants} from "src/libraries/Constants.sol";
 
 contract TestCommitteeRegistry is Test, HelperContract {
-    uint256 constant maxGasPerCommitteeCreation = 4000 * 1000; // Max gas per block in RSK is 6M8
+    uint256 constant maxGasPerCommitteeCreation = 1500 * 1000; // Max gas per block in RSK is 6M8
 
     function setUp() external {
         runTestDeployScript();
@@ -1118,7 +1118,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         registry.applyToStream{value: minimumDeposit}(denomination, role, publicKeysRegistration);
     }
 
-    function test_unsubscribeFromStream_GasUse() external {
+    function test_unsubscribeFromStream_GasConsumptionCheck() external {
         // This test is to measure the gas usage of the unsubscribeFromStream function
         // based on different values of Constants.MAX_CANDIDATES_SIZE_PER_ROLE
         // unsubscribeFromStream iterate over all the candidates in the stream until it finds the member to unsubscribe.
@@ -1148,7 +1148,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         );
     }
 
-    function test_createCommittee_GasUse() external {
+    function test_createCommittee_GasConsumptionCheck() external {
         // This test is to measure the gas usage of the createCommittee function
         // in the worst case scenario when all the candidates are registered
         // and the committee is created with last candidates of the array.
@@ -1200,7 +1200,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         assertTrue(gasUsed < maxGasPerCommitteeCreation, "Gas usage should not exceed maxGasPerCommitteeCreation");
     }
 
-    function test_removeCandidatesAndUpdateBalance_GasUse() external {
+    function test_removeCandidatesAndUpdateBalance_GasConsumptionCheck() external {
         // This test is to measure the gas usage of the removeCandidatesAndUpdateBalanceHarness function
         // in the worst case scenario when all the candidates are registered
         // and the committee is created with last candidates of the array.
