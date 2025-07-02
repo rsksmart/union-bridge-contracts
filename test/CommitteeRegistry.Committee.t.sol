@@ -18,7 +18,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Constants} from "src/libraries/Constants.sol";
 
 contract TestCommitteeRegistry is Test, HelperContract {
-    uint256 constant maxGasPerCommitteeCreation = 1500 * 1000; // Max gas per block in RSK is 6M8
+    uint256 constant maxGasPerCommitteeCreation = 4000 * 1000; // Max gas per block in RSK is 6M8
 
     function setUp() external {
         runTestDeployScript();

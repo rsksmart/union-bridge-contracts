@@ -172,7 +172,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         }
         // Calculate requestPeginTxHash from BtcTransaction
         bytes32 requestPeginTxHash = bitcoinManager.getBtcTxHash(_peginRequestTxSPVProof.btcTx);
-        if (getStreamPosition(requestPeginTxHash).pegStatus != PegStatus.NOT_REGISTERED) {
+        if (_getStreamPosition(requestPeginTxHash).pegStatus != PegStatus.NOT_REGISTERED) {
             revert PeginAlreadyRequested(requestPeginTxHash);
         }
         // Validate transaction has at least 2 outputs
@@ -203,7 +203,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         // Verify the requestPeginTxHash part of the Merkle Root of Tx of a Block
         // and that block is inside Bitcoin Mainchain
         // and has enough confirmations
-        verifyTxConfirmations(
+        _verifyTxConfirmations(
             stream.peginConfirmations,
             requestPeginTxHash,
             _peginRequestTxSPVProof.blockHash,
@@ -285,7 +285,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         bytes32 requestPeginTxHash = _peginAcceptedTxSPVProof.btcTx.inputs[Constants.VOUT_INDEX_TAPTREE].txId;
 
         // Validate the peg in request tx exists and the status
-        StreamPosition memory streamInfo = getStreamPosition(requestPeginTxHash);
+        StreamPosition memory streamInfo = _getStreamPosition(requestPeginTxHash);
         if (streamInfo.pegStatus == PegStatus.NOT_REGISTERED) {
             revert PeginNotRequested(requestPeginTxHash);
         }
@@ -304,7 +304,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         // Verify the acceptPegintxHash part of the Merkle Root of Tx of a Block
         // and that block is inside Bitcoin Mainchain
         // annd has enough confirmations
-        verifyTxConfirmations(
+        _verifyTxConfirmations(
             streamManager.getStreamById(streamInfo.streamId).peginConfirmations,
             acceptPegintxHash,
             _peginAcceptedTxSPVProof.blockHash,
@@ -372,7 +372,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         //requestRbtc(rskDestinationAddress, rbtcAmount);
     }
 
-    function validatePegoutRequest(bytes calldata _userPubKey, uint256 amountInWei) internal pure {
+    function _validatePegoutRequest(bytes calldata _userPubKey, uint256 amountInWei) internal pure {
         if (BtcHelper.weiToSatoshi(amountInWei) > type(uint64).max) {
             revert PegoutRequestAmountExceedsUint64Limit(BtcHelper.weiToSatoshi(amountInWei));
         }
@@ -391,7 +391,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
     /// @dev The user must send the exact amount of RBTC they want to peg-out
     /// @dev Emits the PegoutRequested event
     function tryPegout(bytes calldata _userPubKey) external payable {
-        validatePegoutRequest(_userPubKey, msg.value);
+        _validatePegoutRequest(_userPubKey, msg.value);
 
         uint64 receivedAmount = uint64(BtcHelper.weiToSatoshi(msg.value));
 
@@ -437,7 +437,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
 
     /// @notice Register a peg-out transaction from Bitcoin
     /// @param _pegoutTxSPVProof The BTC SPV proof of the peg-out transaction
-    /// @dev This function validates the peg-out transaction and marks the slot as PAID
+    /// @dev This function validates the peg-out transaction and marks the slot as COMPLETED
     /// @dev The transaction must spend the accept peg-in output and pay to the user's address
     /// @dev Emits the PegoutRegistered event
     function registerPegout(BtcTxSPVProof calldata _pegoutTxSPVProof) external {
@@ -464,7 +464,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         Stream memory stream = streamManager.getStreamById(streamInfo.streamId);
 
         // Verify the requestPegoutTxHash is part of the Merkle Root and has enough confirmations
-        verifyTxConfirmations(
+        _verifyTxConfirmations(
             stream.pegoutConfirmations,
             requestPegoutTxHash,
             _pegoutTxSPVProof.blockHash,
@@ -476,13 +476,13 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         bytes memory userPubKey = pegoutTempInfo[acceptPeginTxHash].userPubKey;
         bitcoinManager.validatePegoutUserOutput(_pegoutTxSPVProof.btcTx.outputs[0], userPubKey);
 
+        // update the peg status to COMPLETED
+        streamPosition[acceptPeginTxHash].pegStatus = PegStatus.COMPLETED;
+
         // Update slot status
-        streamManager.paidSlot(
+        streamManager.completeSlot(
             streamInfo.streamId, streamInfo.packetNumber, streamInfo.slotId, acceptPeginTxHash, requestPegoutTxHash
         );
-
-        // update the peg status to PAID
-        streamPosition[acceptPeginTxHash].pegStatus = PegStatus.PAID;
 
         emit PegoutRegistered(
             _pegoutTxSPVProof.blockHash,
@@ -517,7 +517,11 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
     /// @notice Gets the stream position information for a given Bitcoin Pegin request transaction hash
     /// @param _btcTxHash The Bitcoin transaction hash
     /// @return The stream position information
-    function getStreamPosition(bytes32 _btcTxHash) public view returns (StreamPosition memory) {
+    function getStreamPosition(bytes32 _btcTxHash) external view returns (StreamPosition memory) {
+        return _getStreamPosition(_btcTxHash);
+    }
+
+    function _getStreamPosition(bytes32 _btcTxHash) internal view returns (StreamPosition memory) {
         return streamPosition[peginRequests[_btcTxHash]];
     }
 
@@ -572,6 +576,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             }
 
             streamInfo.pegStatus = PegStatus.OPERATOR_TAKE;
+            streamManager.advanceSlot(streamInfo.streamId, streamInfo.packetNumber, streamInfo.slotId);
         } else if (streamInfo.pegStatus == PegStatus.OPERATOR_TAKE) {
             if (block.timestamp <= pegoutInfo.operatorTakeUpdatedAt + operatorTakeTimeout) {
                 revert OperatorTakeTimeoutNotExpired(
@@ -587,6 +592,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
 
         pegoutInfo.operatorTakeUpdatedAt = block.timestamp;
         pegoutInfo.takeOperator = takeOperator;
+
         emit OperatorTakeTriggered(
             _pegoutSignatureHash,
             pegoutInfo.committeeId,
@@ -637,7 +643,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         Stream memory stream = streamManager.getStreamById(streamInfo.streamId);
 
         // Verify the txHash is part of the Merkle Root and has enough confirmations
-        verifyTxConfirmations(
+        _verifyTxConfirmations(
             stream.pegoutConfirmations,
             txHash,
             _pegoutTxSPVProof.blockHash,
@@ -649,13 +655,13 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         bytes32 operatorPubKey = committeeRegistry.getMemberTakePubKey(pegoutInfo.takeOperator);
         bitcoinManager.validatePegoutMemberOutput(_pegoutTxSPVProof.btcTx.outputs[0], operatorPubKey);
 
+        // update the peg status to COMPLETED
+        streamPosition[acceptPeginTxHash].pegStatus = PegStatus.COMPLETED;
+
         // Update slot status
-        streamManager.paidSlot(
+        streamManager.completeSlot(
             streamInfo.streamId, streamInfo.packetNumber, streamInfo.slotId, acceptPeginTxHash, txHash
         );
-
-        // update the peg status to PAID
-        streamPosition[acceptPeginTxHash].pegStatus = PegStatus.PAID;
 
         emit PegoutRegistered(
             _pegoutTxSPVProof.blockHash,

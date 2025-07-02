@@ -13,6 +13,6 @@ contract ProofValidatorHarness is ProofValidator {
         uint256 _merkleBranchPath,
         bytes32[] memory _merkleBranchHashes
     ) external view {
-        verifyTxConfirmations(_minConfirmations, _txHash, _blockHash, _merkleBranchPath, _merkleBranchHashes);
+        _verifyTxConfirmations(_minConfirmations, _txHash, _blockHash, _merkleBranchPath, _merkleBranchHashes);
     }
 }

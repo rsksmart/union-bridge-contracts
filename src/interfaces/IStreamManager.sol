@@ -23,14 +23,16 @@ enum StreamDenomination {
 /// @notice Represents the current state of a slot in the stream system
 /// @dev Tracks the progression of funds through the slot lifecycle
 enum SlotState {
-    /// @notice Slot is prepared and ready to accept peg-in transactions
+    /// @notice Slot is prepared and ready for peg-in transactions
     PREPARED,
     /// @notice Slot has received a peg-in transaction and is filled with funds
     FILLED,
     /// @notice Slot is locked for peg-out processing
     LOCKED,
+    /// @notice Slot is being advanced by an operator to the user
+    ADVANCED,
     /// @notice Slot has been paid out via peg-out transaction
-    PAID
+    COMPLETED
 }
 
 /// @notice Represents a slot within a packet that can hold funds
@@ -190,19 +192,26 @@ interface IStreamManager is IAccessControl {
     function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes32);
 
     /// @notice Marks a slot as paid and updates its state
-    /// @dev Updates the slot state to PAID and stores the peg-out transaction ID
+    /// @dev Updates the slot state to COMPLETED and stores the peg-out transaction ID
     /// @param _streamId The index of the stream
     /// @param _packetNumber The index of the packet within the stream
     /// @param _slotId The index of the slot within the packet
     /// @param _acceptPeginTxHash The expected accept peg-in transaction hash for validation
     /// @param _userTakeTx The transaction ID of the normal peg-out transaction
-    function paidSlot(
+    function completeSlot(
         uint64 _streamId,
         uint64 _packetNumber,
         uint64 _slotId,
         bytes32 _acceptPeginTxHash,
         bytes32 _userTakeTx
     ) external;
+
+    /// @notice Marks a slot as advanced by the operator to the user
+    /// @dev Updates the slot state to ADVANCED and stores the operator's peg-out transaction
+    /// @param _streamId The index of the stream
+    /// @param _packetNumber The index of the packet within the stream
+    /// @param _slotId The index of the slot within the packet
+    function advanceSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) external;
 
     /// @notice Sets the number of confirmations required for peg-in transactions
     /// @dev Only callable by the contract owner

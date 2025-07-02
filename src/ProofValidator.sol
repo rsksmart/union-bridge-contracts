@@ -88,7 +88,7 @@ abstract contract ProofValidator is Initializable {
     ///      - Block is too old (> 1 month)
     ///      - Merkle proof is invalid
     ///      - Not enough confirmations
-    function verifyTxConfirmations(
+    function _verifyTxConfirmations(
         uint256 _minConfirmations,
         bytes32 _txHash,
         bytes32 _blockHash,

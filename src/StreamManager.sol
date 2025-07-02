@@ -257,13 +257,7 @@ contract StreamManager is IStreamManager, AccessControl {
     /// @param _slotNumber The slot number within the packet
     /// @return The slot data
     function getSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotNumber) external view returns (Slot memory) {
-        if (_packetNumber >= packets[_streamId].length) {
-            revert NonExistentSlot(_streamId, _packetNumber, _slotNumber);
-        }
-        if (_slotNumber >= slots[_streamId][_packetNumber].length) {
-            revert NonExistentSlot(_streamId, _packetNumber, _slotNumber);
-        }
-        return slots[_streamId][_packetNumber][_slotNumber];
+        return _getSlot(_streamId, _packetNumber, _slotNumber);
     }
 
     /// @notice Looks for the first empty slot and assigns the peg-in transaction in prepared state
@@ -312,40 +306,57 @@ contract StreamManager is IStreamManager, AccessControl {
         return getPacket(_streamId, _packetNumber).committeePubKey;
     }
 
-    /// @notice Marks a slot as paid and stores the UserTake transaction hash
+    /// @notice Marks a slot as completed and stores the UserTake transaction hash
     /// @dev Can only be called by the PegManager
     /// @param _streamId The ID of the stream
     /// @param _packetNumber The packet number
     /// @param _slotId The slot ID
     /// @param _acceptPeginTxHash The hash of the accept peg-in transaction
     /// @param _userTakeTx The hash of the UserTake transaction
-    function paidSlot(
+    function completeSlot(
         uint64 _streamId,
         uint64 _packetNumber,
         uint64 _slotId,
         bytes32 _acceptPeginTxHash,
         bytes32 _userTakeTx
     ) external onlyPegManager {
-        // Validate that the packet exists
-        if (_packetNumber >= packets[_streamId].length) {
-            revert NonExistentSlot(_streamId, _packetNumber, _slotId);
-        }
+        Slot storage slot = _getSlot(_streamId, _packetNumber, _slotId);
 
-        // Validate that the slot exists and is in LOCKED state
-        if (slots[_streamId][_packetNumber][_slotId].state != SlotState.LOCKED) {
-            revert InvalidSlotState(slots[_streamId][_packetNumber][_slotId].state, SlotState.LOCKED);
+        // Validate that the slot exists and is LOCKED or ADVANCED
+        if (slot.state != SlotState.LOCKED && slot.state != SlotState.ADVANCED) {
+            revert InvalidSlotState(slot.state, SlotState.LOCKED);
         }
-
-        Slot storage slot = slots[_streamId][_packetNumber][_slotId];
 
         // Validate that the first input references the correct accept peg-in transaction
         if (slot.acceptPeginTx != _acceptPeginTxHash) {
             revert InvalidAcceptPeginTxHash(slot.acceptPeginTx, _acceptPeginTxHash);
         }
 
-        // Update the slot state to PAID and store the user take tx hash
-        slot.state = SlotState.PAID;
+        // Update the slot state to COMPLETED and store the user take tx hash
+        slot.state = SlotState.COMPLETED;
         slot.take0Tx = _userTakeTx;
+    }
+
+    function _getSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) internal view returns (Slot storage) {
+        if (_packetNumber >= packets[_streamId].length) {
+            revert NonExistentSlot(_streamId, _packetNumber, _slotId);
+        }
+        if (_slotId >= slots[_streamId][_packetNumber].length) {
+            revert NonExistentSlot(_streamId, _packetNumber, _slotId);
+        }
+        return slots[_streamId][_packetNumber][_slotId];
+    }
+
+    function advanceSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) external onlyPegManager {
+        Slot storage slot = _getSlot(_streamId, _packetNumber, _slotId);
+
+        // Validate that the slot exists and is in LOCKED state
+        if (slot.state != SlotState.LOCKED) {
+            revert InvalidSlotState(slot.state, SlotState.LOCKED);
+        }
+
+        // Update the slot state to ADVANCED
+        slot.state = SlotState.ADVANCED;
     }
 
     function getMinimumDeposit(StreamDenomination _denomination, Role _role) public view returns (uint256) {

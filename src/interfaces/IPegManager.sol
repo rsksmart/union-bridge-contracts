@@ -41,7 +41,7 @@ enum PegStatus {
     /// @notice Operation has been won by the operator and is awaiting committee acceptance
     OPERATOR_WON,
     /// @notice Operation has been completed and funds have been paid out
-    PAID
+    COMPLETED
 }
 
 /// @notice Represents the position of funds within the stream and packet system

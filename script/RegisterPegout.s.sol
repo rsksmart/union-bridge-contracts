@@ -44,8 +44,8 @@ contract RegisterPegoutScript is ScriptUtils {
         vm.stopBroadcast();
 
         Slot memory slot = pegManager.streamManager().getSlot(stream.streamId, expectedPacketNumber, expectedSlotId);
-        if (slot.state != SlotState.PAID) {
-            revert("Slot should be marked as PAID after peg-out registration");
+        if (slot.state != SlotState.COMPLETED) {
+            revert("Slot should be marked as COMPLETED after peg-out registration");
         }
 
         console.log("=== Pegout registered successfully ===");
