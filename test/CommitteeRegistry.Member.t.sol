@@ -476,6 +476,28 @@ contract TestCommitteeRegistry is Test, HelperContract {
         registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, DEFAULT_ROLE, pubKeysRegistration);
     }
 
+    function test_applyToStream_GasUse() external {
+        // Results:
+        // Constants.MAX_CANDIDATES_SIZE_PER_ROLE = 256: 406933 gas
+        // Constants.MAX_CANDIDATES_SIZE_PER_ROLE = 250: 406933 gas
+
+        // Arrange
+        Role role = Role.OPERATOR;
+        uint256 privKey = uint256(1);
+        address user = vm.addr(privKey);
+        PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(privKey);
+        uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, role);
+        vm.deal(user, minimumDeposit);
+
+        uint256 gasStart = gasleft();
+
+        // Act
+        vm.prank(user);
+        registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, role, pubKeysRegistration);
+        uint256 gasUsed = gasStart - gasleft();
+        emit log_uint(gasUsed); // log to console
+    }
+
     function _test_unsubscribeFromStream_Success(Role _role) internal {
         // This function unsubscribes a user from DEFAULT_STREAM with `_role` and tests that `oppositeRole` candidates do not change.
         // Arrange
@@ -1052,15 +1074,14 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_integration_onPacketClosed_reapplyTrue() external {
         // Arrange
-        StreamDenomination denomination = StreamDenomination._0_01BTC;
-        RegisterPegoutSetup memory setup;
-        (Committee memory committee,) = setup_completeCommittee();
+        (Committee memory committee, uint64 streamId) = setup_completeCommittee();
+        StreamDenomination denomination = StreamDenomination(streamId);
 
         // Perform peg flow for all slots in the packet except the last one
         setup_multiplePegFlows(Constants.SLOTS_PER_PACKET - 1);
 
         // Perform peg flow up until try pegout for the last slot
-        setup = setup_pegout();
+        RegisterPegoutSetup memory setup = setup_pegout();
 
         // get the amount of candidates before the packet is closed
         assertCandidateAmount(denomination, 0);
@@ -1105,17 +1126,80 @@ contract TestCommitteeRegistry is Test, HelperContract {
         }
     }
 
+    function test_integration_onPacketClosed_fullOfCandidates() external {
+        // Arrange
+        (Committee memory committee, uint64 streamId) = setup_completeCommittee();
+        StreamDenomination denomination = StreamDenomination(streamId);
+        uint256 numWatchtowers = Constants.MAX_CANDIDATES_SIZE_PER_ROLE;
+        uint256 numOperators = Constants.MAX_CANDIDATES_SIZE_PER_ROLE;
+        // Register max number of candidates for each role
+        setup_registerNewMembers(numWatchtowers, numOperators, denomination);
+
+        // Perform peg flow for all slots in the packet except the last one
+        setup_multiplePegFlows(Constants.SLOTS_PER_PACKET - 1);
+        RegisterPegoutSetup memory setup = setup_pegout();
+
+        // Assert that the amount of candidates before the packet is closed is equal to the max candidates size
+        assertEq(
+            registry.getCommitteeCandidates(denomination, Role.OPERATOR).length, Constants.MAX_CANDIDATES_SIZE_PER_ROLE
+        );
+        assertEq(
+            registry.getCommitteeCandidates(denomination, Role.WATCHTOWER).length,
+            Constants.MAX_CANDIDATES_SIZE_PER_ROLE
+        );
+
+        // Assert
+        vm.expectEmit(address(pm));
+        emit IPegManager.PacketClosed(uint8(denomination), 0);
+
+        // Act
+        pm.registerPegout(setup.pegoutTxSPVProof);
+
+        // Assert that the amount of candidates after the packet is closed is equal to the max candidates size
+        assertEq(
+            registry.getCommitteeCandidates(denomination, Role.OPERATOR).length, Constants.MAX_CANDIDATES_SIZE_PER_ROLE
+        );
+        assertEq(
+            registry.getCommitteeCandidates(denomination, Role.WATCHTOWER).length,
+            Constants.MAX_CANDIDATES_SIZE_PER_ROLE
+        );
+
+        // Assert that member has not reapplied
+        for (uint256 i = 0; i < committee.members.length; i++) {
+            address user = committee.members[i].memberAddress;
+            uint256 minimumDeposit = streamManager.getMinimumDeposit(denomination, committee.members[i].role);
+
+            // Assert
+            vm.prank(user);
+            assertTrue(registry.getReApplyForStream(denomination), "reApply should be true at this point");
+            assertEq(registry.getMemberPreStakedBalance(user, denomination), 0, "member pre-staked should be 0");
+            assertTrue(
+                registry.getMemberRequestedRole(user, denomination) == Role.NONE,
+                "member requested role should NONE because they are not candidates"
+            );
+            assertEq(
+                registry.getMemberAvailableBalance(user),
+                minimumDeposit,
+                "member available balance should be the minimum deposit"
+            );
+            assertEq(
+                registry.getMemberStakedBalance(user, denomination, 0),
+                0,
+                "member staked balance should be 0 after packet closed"
+            );
+        }
+    }
+
     function test_integration_onPacketClosed_reapplyFalse() external {
         // Arrange
-        StreamDenomination denomination = StreamDenomination._0_01BTC;
-        RegisterPegoutSetup memory setup;
-        (Committee memory committee,) = setup_completeCommittee();
+        (Committee memory committee, uint64 streamId) = setup_completeCommittee();
+        StreamDenomination denomination = StreamDenomination(streamId);
 
         // Perform peg flow for all slots in the packet except the last one
         setup_multiplePegFlows(Constants.SLOTS_PER_PACKET - 1);
 
         // Perform peg flow up until try pegout for the last slot
-        setup = setup_pegout();
+        RegisterPegoutSetup memory setup = setup_pegout();
 
         for (uint256 i = 0; i < committee.members.length; i++) {
             address user = committee.members[i].memberAddress;
@@ -1165,15 +1249,14 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_integration_onPacketClosed_alreadyCandidate() external {
         // Arrange
-        StreamDenomination denomination = StreamDenomination._0_01BTC;
-        RegisterPegoutSetup memory setup;
-        (Committee memory committee,) = setup_completeCommittee();
+        (Committee memory committee, uint64 streamId) = setup_completeCommittee();
+        StreamDenomination denomination = StreamDenomination(streamId);
 
         // Perform peg flow for all slots in the packet except the last one
         setup_multiplePegFlows(Constants.SLOTS_PER_PACKET - 1);
 
         // Perform peg flow up until try pegout for the last slot
-        setup = setup_pegout();
+        RegisterPegoutSetup memory setup = setup_pegout();
 
         setup_applyToStream_MultipleMembers(denomination, committee.members);
 

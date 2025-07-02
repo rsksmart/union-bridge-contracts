@@ -26,6 +26,7 @@ import {
 import {StreamDenomination, IStreamManager} from "./interfaces/IStreamManager.sol";
 import {IPegManager} from "./interfaces/IPegManager.sol";
 import {SignatureData} from "./interfaces/ISignatureManager.sol";
+import {Constants} from "./libraries/Constants.sol";
 
 /// @title CommitteeRegistry
 /// @notice Manages registration, application, and selection of committee members for the union bridge system
@@ -33,9 +34,6 @@ import {SignatureData} from "./interfaces/ISignatureManager.sol";
 contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     /// @notice Mapping of member addresses to their member data
     mapping(address => Member) internal members;
-
-    /// @notice Maximum number of members allowed per committee
-    uint256 public constant MAX_MEMBERS_PER_COMMITTEE = 100;
 
     /// @notice Minimum number of watchtowers required for a committee
     uint256 public minCommitteeWatchtowers;
@@ -148,16 +146,27 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         _createCommitteeAfterApplyToStream(_stream);
     }
 
+    function _committeesCandidatesHasSpace(StreamDenomination _denomination, Role _role) internal view returns (bool) {
+        return committeesCandidates[_denomination][_role].length < Constants.MAX_CANDIDATES_SIZE_PER_ROLE;
+    }
+
     // NOTE: This function intends to keep many different structures in sync, be careful when modifying it
-    function _registerCandidateToStream(address _memberAddress, StreamDenomination _stream, Role _role, uint256 _amount)
-        internal
-    {
+    function _registerCandidateToStream(
+        address _memberAddress,
+        StreamDenomination _denomination,
+        Role _role,
+        uint256 _amount
+    ) internal {
+        if (!_committeesCandidatesHasSpace(_denomination, _role)) {
+            revert TooManyCandidatesForStream(_denomination, _role);
+        }
+
         Member storage member = _getMember(_memberAddress);
 
-        member.balance.applications[uint8(_stream)].preStaked = _amount;
-        member.balance.applications[uint8(_stream)].requestedRole = _role;
+        member.balance.applications[uint8(_denomination)].preStaked = _amount;
+        member.balance.applications[uint8(_denomination)].requestedRole = _role;
 
-        committeesCandidates[_stream][_role].push(_memberAddress);
+        committeesCandidates[_denomination][_role].push(_memberAddress);
     }
 
     /// @notice Unsubscribes from a stream and sets the pre-staked balance as available
@@ -841,7 +850,10 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
             Member storage member = _getMember(committeeMembers[i].memberAddress);
             ApplicationData storage application = member.balance.applications[uint8(_streamId)];
 
-            if (application.reApply && application.requestedRole == Role.NONE) {
+            if (
+                application.reApply && application.requestedRole == Role.NONE
+                    && _committeesCandidatesHasSpace(StreamDenomination(_streamId), committeeMembers[i].role)
+            ) {
                 // If the member has reApply set to true, we should move the staked amount to pre-staked
                 // and set them as candidate again (except the case they are already a candidate which can happen in some edge cases)
                 _reapplyToStream(

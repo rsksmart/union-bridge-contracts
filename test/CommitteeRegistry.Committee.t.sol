@@ -18,6 +18,8 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Constants} from "src/libraries/Constants.sol";
 
 contract TestCommitteeRegistry is Test, HelperContract {
+    uint256 constant maxGasPerCommitteeCreation = 1500 * 1000; // Max gas per block in RSK is 6M8
+
     function setUp() external {
         runTestDeployScript();
     }
@@ -1072,5 +1074,166 @@ contract TestCommitteeRegistry is Test, HelperContract {
         assertNotEq(createdAt, 0, "Created at should not be 0 after apply to stream");
         assertEq(missingData, registry.minCommitteeMembers(), "Missing data should be equal to min committee members");
         assertFalse(registry.shouldCreateCommitteeHarness(streamId), "Flag should be false before createCommittee call");
+    }
+
+    function test_applyToStream_Revert_TooManyCandidatesForStream_Operator() external {
+        // Arrange
+        StreamDenomination denomination = StreamDenomination._0_01BTC;
+        Role role = Role.OPERATOR;
+        setup_registerNewMembers(0, Constants.MAX_CANDIDATES_SIZE_PER_ROLE, denomination);
+        address memberAddress = vm.addr(Constants.MAX_CANDIDATES_SIZE_PER_ROLE + 1);
+        PublicKeyRegistration[] memory publicKeysRegistration =
+            generatePublicKeysRegistration(uint256(uint160(memberAddress)));
+        uint256 minimumDeposit = streamManager.getMinimumDeposit(denomination, role);
+        vm.deal(memberAddress, minimumDeposit);
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(ICommitteeRegistry.TooManyCandidatesForStream.selector, denomination, role)
+        );
+
+        // Act
+        vm.prank(memberAddress);
+        registry.applyToStream{value: minimumDeposit}(denomination, role, publicKeysRegistration);
+    }
+
+    function test_applyToStream_Revert_TooManyCandidatesForStream_Watchtower() external {
+        // Arrange
+        StreamDenomination denomination = StreamDenomination._0_01BTC;
+        Role role = Role.WATCHTOWER;
+        setup_registerNewMembers(Constants.MAX_CANDIDATES_SIZE_PER_ROLE, 0, denomination);
+        address memberAddress = vm.addr(Constants.MAX_CANDIDATES_SIZE_PER_ROLE + 1);
+        PublicKeyRegistration[] memory publicKeysRegistration =
+            generatePublicKeysRegistration(uint256(uint160(memberAddress)));
+        uint256 minimumDeposit = streamManager.getMinimumDeposit(denomination, role);
+        vm.deal(memberAddress, minimumDeposit);
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(ICommitteeRegistry.TooManyCandidatesForStream.selector, denomination, role)
+        );
+
+        // Act
+        vm.prank(memberAddress);
+        registry.applyToStream{value: minimumDeposit}(denomination, role, publicKeysRegistration);
+    }
+
+    function test_unsubscribeFromStream_GasUse() external {
+        // This test is to measure the gas usage of the unsubscribeFromStream function
+        // based on different values of Constants.MAX_CANDIDATES_SIZE_PER_ROLE
+        // unsubscribeFromStream iterate over all the candidates in the stream until it finds the member to unsubscribe.
+        // Results:
+        // Constants.MAX_CANDIDATES_SIZE_PER_ROLE = 100: 69k gas
+        // Constants.MAX_CANDIDATES_SIZE_PER_ROLE = 250: 127k gas
+        // Constants.MAX_CANDIDATES_SIZE_PER_ROLE = 256: 129k gas
+        // Constants.MAX_CANDIDATES_SIZE_PER_ROLE = 500: 224k gas
+        // Constants.MAX_CANDIDATES_SIZE_PER_ROLE = 512: 228k gas
+        // Constants.MAX_CANDIDATES_SIZE_PER_ROLE = 1000: 418k gas
+
+        // Arrange
+        StreamDenomination denomination = StreamDenomination._0_01BTC;
+        setup_registerNewMembers(Constants.MAX_CANDIDATES_SIZE_PER_ROLE, 0, denomination);
+        address lastMemberAddress = vm.addr(Constants.MAX_CANDIDATES_SIZE_PER_ROLE);
+        uint256 gasStart = gasleft();
+
+        // Act
+        vm.prank(lastMemberAddress);
+        registry.unsubscribeFromStream(denomination);
+        uint256 gasUsed = gasStart - gasleft();
+
+        emit log_uint(gasUsed); // log to console
+        assertTrue(
+            gasUsed < maxGasPerCommitteeCreation / registry.minCommitteeMembers(),
+            "Gas usage should not exceed maxGasPerCommitteeCreation divided by minCommitteeMembers"
+        );
+    }
+
+    function test_createCommittee_GasUse() external {
+        // This test is to measure the gas usage of the createCommittee function
+        // in the worst case scenario when all the candidates are registered
+        // and the committee is created with last candidates of the array.
+        // So to remove them it's needed to iterate over all the candidates.
+        // Results:
+        // Constants.MAX_CANDIDATES_SIZE_PER_ROLE = 10: 701k gas
+        // Constants.MAX_CANDIDATES_SIZE_PER_ROLE = 100: 1.051M gas
+        // Constants.MAX_CANDIDATES_SIZE_PER_ROLE = 200: 1.439M gas
+        // Constants.MAX_CANDIDATES_SIZE_PER_ROLE = 250: 1.633M gas
+        // Constants.MAX_CANDIDATES_SIZE_PER_ROLE = 256: 1.656M gas
+        // Constants.MAX_CANDIDATES_SIZE_PER_ROLE = 500: 2.603M gas
+        // Constants.MAX_CANDIDATES_SIZE_PER_ROLE = 512: 2.649M gas
+
+        // Arrange
+        StreamDenomination denomination = StreamDenomination._0_01BTC;
+        uint64 streamId = uint64(denomination);
+        setup_registerNewMembers(
+            Constants.MAX_CANDIDATES_SIZE_PER_ROLE, Constants.MAX_CANDIDATES_SIZE_PER_ROLE, denomination
+        );
+
+        // Create a pending committee
+        uint256 numOperators = registry.minCommitteeMembers() / 2;
+        uint256 numWatchtowers = registry.minCommitteeMembers() / 2;
+        CommitteeMember[] memory members =
+            registry.createCommitteeWithLastCandidatesHarness(streamId, numWatchtowers, numOperators);
+
+        assertEq(
+            members.length,
+            numWatchtowers + numOperators,
+            "Members length should match the sum of operators and watchtowers"
+        );
+
+        for (uint256 i = 0; i < members.length - 1; i++) {
+            setup_depositMemberInfo(streamId, members[i].memberAddress);
+        }
+        address lastMemberAddress = members[members.length - 1].memberAddress;
+
+        vm.expectEmit(address(streamManager));
+        emit IStreamManager.PacketCreated(streamId, 0);
+
+        // Act
+        uint256 gasStart = gasleft();
+        vm.prank(lastMemberAddress);
+        registry.depositMemberInfoForCommittee(streamId, COMMITTEE_PUB_KEY);
+        uint256 gasUsed = gasStart - gasleft();
+        emit log_uint(gasUsed); // log to console
+
+        // Assert
+        assertTrue(gasUsed < maxGasPerCommitteeCreation, "Gas usage should not exceed maxGasPerCommitteeCreation");
+    }
+
+    function test_removeCandidatesAndUpdateBalance_GasUse() external {
+        // This test is to measure the gas usage of the removeCandidatesAndUpdateBalanceHarness function
+        // in the worst case scenario when all the candidates are registered
+        // and the committee is created with last candidates of the array.
+        // So to remove them it's needed to iterate over all the candidates.
+        // Results:
+        // Constants.MAX_CANDIDATES_SIZE_PER_ROLE = 10: 303k gas
+        // Constants.MAX_CANDIDATES_SIZE_PER_ROLE = 100: 655k gas
+        // Constants.MAX_CANDIDATES_SIZE_PER_ROLE = 200: 1.045M gas
+        // Constants.MAX_CANDIDATES_SIZE_PER_ROLE = 250: 1.240M gas
+        // Constants.MAX_CANDIDATES_SIZE_PER_ROLE = 256: 1.263M gas
+        // Constants.MAX_CANDIDATES_SIZE_PER_ROLE = 500: 2.215M gas
+        // Constants.MAX_CANDIDATES_SIZE_PER_ROLE = 512: 2.262M gas
+
+        // Arrange
+        StreamDenomination denomination = StreamDenomination._0_01BTC;
+        uint64 streamId = uint64(denomination);
+        setup_registerNewMembers(
+            Constants.MAX_CANDIDATES_SIZE_PER_ROLE, Constants.MAX_CANDIDATES_SIZE_PER_ROLE, denomination
+        );
+
+        // Create a pending committee
+        uint256 numOperators = registry.minCommitteeMembers() / 2;
+        uint256 numWatchtowers = registry.minCommitteeMembers() / 2;
+        CommitteeMember[] memory members =
+            registry.createCommitteeWithLastCandidatesHarness(streamId, numWatchtowers, numOperators);
+
+        // Act
+        uint256 gasStart = gasleft();
+        registry.removeCandidatesAndUpdateBalanceHarness(members, denomination, 0);
+        uint256 gasUsed = gasStart - gasleft();
+        emit log_uint(gasUsed); // log to console
+
+        // Assert
+        assertTrue(gasUsed < maxGasPerCommitteeCreation, "Gas usage should not exceed maxGasPerCommitteeCreation");
     }
 }

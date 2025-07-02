@@ -591,6 +591,11 @@ interface ICommitteeRegistry {
     /// @param committeeId The ID of the committee where no operator was found
     error TakeOperatorNotFound(uint256 committeeId);
 
+    /// @notice Thrown when there are too many candidates for a stream
+    /// @param denomination The stream denomination
+    /// @param role The role for which there are too many candidates
+    error TooManyCandidatesForStream(StreamDenomination denomination, Role role);
+
     // Internal Errors
     /// @notice Thrown when member index is out of bounds
     /// @param memberIndex The invalid member index
