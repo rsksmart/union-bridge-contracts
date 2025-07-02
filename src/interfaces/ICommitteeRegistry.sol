@@ -109,7 +109,6 @@ struct Committee {
     /// @notice Array of committee members with their roles
     CommitteeMember[] members;
     /// @notice Address of the committee leader
-    /// @dev TODO: add leader logic
     address leaderAddress;
     /// @notice Index of the operator take address
     uint256 operatorTakeIndex;

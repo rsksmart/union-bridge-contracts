@@ -381,8 +381,6 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         if (_userPubKey.length != 33 || (_userPubKey[0] != 0x02 && _userPubKey[0] != 0x03)) {
             revert InvalidCompressedPubKey(_userPubKey);
         }
-
-        // TODO: validate who can request a peg-out
     }
 
     /// @notice Initiates a peg-out operation by locking a slot and preparing the peg-out transaction

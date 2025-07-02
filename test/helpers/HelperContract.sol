@@ -394,7 +394,6 @@ abstract contract HelperContract is Test, TestUtils {
         assertEq(slot.acceptPeginTx, setup.acceptPeginTxHash, "Slot should reference the correct accept peg-in tx");
 
         // Create a peg-out transaction that spends the accept peg-in UTXO
-        // TODO: Fix this function, it's different that BitcoinManager so it then creates a different pegoutSignatureHash
         setup.pegoutTx = createPegoutTx(setup.acceptPeginTxHash, setup.userPubKey, slot.acceptPeginAmount);
 
         // Create SPV proof for the peg-out transaction

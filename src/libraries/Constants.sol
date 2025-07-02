@@ -45,7 +45,6 @@ library Constants {
     uint64 constant DUST_THRESHOLD = 300;
 
     /// @dev Timelock blocks for Bitcoin transactions
-    /// @dev TODO: this should be a parameter not a constant
     uint8 constant TIMELOCK_BLOCKS = 1;
 
     /// @dev Length of signature nonce in bytes
