@@ -260,9 +260,9 @@ contract TestPegManager is Test, HelperContract {
         signatureManager.checkAllSignaturesReady(pegoutSignatureHash);
     }
 
-    function test_registerPegout_success() external {
+    function test_registerUserTake_success() external {
         // Setup
-        RegisterPegoutSetup memory setup = setup_pegout();
+        RegisterUserTakeSetup memory setup = setup_pegout();
 
         // Expect the PegoutRegistered event
         vm.expectEmit(address(pm));
@@ -276,15 +276,15 @@ contract TestPegManager is Test, HelperContract {
         );
 
         // Register the peg-out transaction
-        pm.registerPegout(setup.pegoutTxSPVProof);
+        pm.registerUserTake(setup.pegoutTxSPVProof);
 
         // Verify the slot was marked as COMPLETED
         Slot memory updatedSlot = streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId);
         assertEq(uint256(updatedSlot.state), uint256(SlotState.COMPLETED), "Slot should be marked as COMPLETED");
     }
 
-    function test_registerPegout_Revert_InvalidSlotState() external {
-        RegisterPegoutSetup memory setup = setup_pegout();
+    function test_registerUserTake_Revert_InvalidSlotState() external {
+        RegisterUserTakeSetup memory setup = setup_pegout();
 
         // Override the slot state to FILLED instead of LOCKED
         streamManager.setSlotStateHarness(setup.stream.streamId, setup.packetNumber, setup.slotId, SlotState.FILLED);
@@ -293,10 +293,10 @@ contract TestPegManager is Test, HelperContract {
             abi.encodeWithSelector(IPegManager.InvalidSlotState.selector, SlotState.FILLED, SlotState.LOCKED)
         );
 
-        pm.registerPegout(setup.pegoutTxSPVProof);
+        pm.registerUserTake(setup.pegoutTxSPVProof);
     }
 
-    function test_registerPegout_Revert_InvalidAcceptPeginTxHash() external {
+    function test_registerUserTake_Revert_InvalidAcceptPeginTxHash() external {
         // Create a peg-out transaction that spends the accept peg-in UTXO
         bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
         bytes32 acceptPeginTxHash = 0x30b6a2cae94d89540a99e0dfa39cf88e6de40dca9142810fdce7a95c00faff47;
@@ -334,12 +334,12 @@ contract TestPegManager is Test, HelperContract {
         );
 
         // Register the peg-out transaction
-        pm.registerPegout(pegoutTxSPVProof);
+        pm.registerUserTake(pegoutTxSPVProof);
     }
 
-    function test_registerPegout_Revert_IncorrectVout() external {
+    function test_registerUserTake_Revert_IncorrectVout() external {
         // Setup
-        RegisterPegoutSetup memory setup = setup_pegout();
+        RegisterUserTakeSetup memory setup = setup_pegout();
 
         // Override the vout to be 1 instead of 0
         setup.pegoutTx.inputs[0].vout = 1;
@@ -349,11 +349,11 @@ contract TestPegManager is Test, HelperContract {
             abi.encodeWithSelector(IPegManager.IncorrectVout.selector, uint32(1), Constants.VOUT_INDEX_TAPTREE)
         );
 
-        pm.registerPegout(setup.pegoutTxSPVProof);
+        pm.registerUserTake(setup.pegoutTxSPVProof);
     }
 
-    function test_registerPegout_Revert_NotEnoughConfirmations() external {
-        RegisterPegoutSetup memory setup = setup_pegout();
+    function test_registerUserTake_Revert_NotEnoughConfirmations() external {
+        RegisterUserTakeSetup memory setup = setup_pegout();
 
         // Set mock bridge confirmations to insufficient amount
         int256 actualConfirmations = 0;
@@ -365,11 +365,11 @@ contract TestPegManager is Test, HelperContract {
             )
         );
 
-        pm.registerPegout(setup.pegoutTxSPVProof);
+        pm.registerUserTake(setup.pegoutTxSPVProof);
     }
 
-    function test_registerPegout_Revert_IncorrectOutputScript() external {
-        RegisterPegoutSetup memory setup = setup_pegout();
+    function test_registerUserTake_Revert_IncorrectOutputScript() external {
+        RegisterUserTakeSetup memory setup = setup_pegout();
 
         // Change the first output to have an incorrect script (not P2WPKH for the user's pubkey)
         setup.pegoutTx.outputs[0].scriptPubKey = hex"001499999999999999999999999999999999999999"; // Wrong script
@@ -386,12 +386,12 @@ contract TestPegManager is Test, HelperContract {
         );
 
         // Register the peg-out transaction
-        pm.registerPegout(setup.pegoutTxSPVProof);
+        pm.registerUserTake(setup.pegoutTxSPVProof);
     }
 
-    function test_registerPegout_Revert_AlreadyPaid() external {
+    function test_registerUserTake_Revert_AlreadyPaid() external {
         // Arrange
-        RegisterPegoutSetup memory setup = setup_pegout();
+        RegisterUserTakeSetup memory setup = setup_pegout();
         // Set the slot state to COMPLETED (already processed)
         streamManager.setSlotStateHarness(setup.stream.streamId, setup.packetNumber, setup.slotId, SlotState.COMPLETED);
 
@@ -401,7 +401,7 @@ contract TestPegManager is Test, HelperContract {
         );
 
         // Act
-        pm.registerPegout(setup.pegoutTxSPVProof);
+        pm.registerUserTake(setup.pegoutTxSPVProof);
     }
 
     function test_pegoutUserTake_Success() external {
@@ -448,7 +448,7 @@ contract TestPegManager is Test, HelperContract {
         );
 
         // Register peg-out transaction
-        pm.registerPegout(pegoutTxSPVProof);
+        pm.registerUserTake(pegoutTxSPVProof);
 
         // Validate the full peg-out flow, avoiding stack too deep error
         _validateFullPegoutFlow(
@@ -491,7 +491,7 @@ contract TestPegManager is Test, HelperContract {
 
     function test_triggerOperatorTake_Revert_UserTakeAlreadySigned() external {
         // Arrange
-        RegisterPegoutSetup memory setup = setup_pegoutAndMemberNonces();
+        RegisterUserTakeSetup memory setup = setup_pegoutAndMemberNonces();
         setup_addMemberSignature_MultipleMembers(setup.pegoutSignatureHash, 0, registry.minCommitteeMembers());
 
         // Assert
@@ -514,7 +514,7 @@ contract TestPegManager is Test, HelperContract {
 
     function test_triggerOperatorTake_Revert_UserTakeTimeoutNotExpired() external {
         // Arrange
-        RegisterPegoutSetup memory setup = setup_pegoutAndMemberNonces();
+        RegisterUserTakeSetup memory setup = setup_pegoutAndMemberNonces();
         uint256 createdAt = block.timestamp;
         uint256 expireAt = createdAt + TAKE_0_TIMEOUT_DEFAULT;
         setup_addMemberSignature_MultipleMembers(setup.pegoutSignatureHash, 0, registry.minCommitteeMembers() - 1);
@@ -532,7 +532,7 @@ contract TestPegManager is Test, HelperContract {
 
     function test_triggerOperatorTake_Success() external {
         // Arrange
-        RegisterPegoutSetup memory setup = setup_pegoutAndMemberNonces();
+        RegisterUserTakeSetup memory setup = setup_pegoutAndMemberNonces();
         uint256 createdAt = block.timestamp;
         // Expire TAKE_0
         vm.warp(createdAt + TAKE_0_TIMEOUT_DEFAULT + 1);
@@ -566,7 +566,7 @@ contract TestPegManager is Test, HelperContract {
 
     function test_triggerOperatorTake_Revert_OperatorTakeTimeoutNotExpired() external {
         // Arrange
-        RegisterPegoutSetup memory setup = setup_pegoutAndMemberNonces();
+        RegisterUserTakeSetup memory setup = setup_pegoutAndMemberNonces();
         setup_addMemberSignature_MultipleMembers(setup.pegoutSignatureHash, 0, registry.minCommitteeMembers() - 1);
         vm.warp(block.timestamp + TAKE_0_TIMEOUT_DEFAULT + 1);
         // First call to triggerOperatorTake should set the status to TAKE_1
@@ -591,7 +591,7 @@ contract TestPegManager is Test, HelperContract {
 
     function test_triggerOperatorTake_Retrigger_Success() external {
         // Arrange
-        RegisterPegoutSetup memory setup = setup_pegoutAndMemberNonces();
+        RegisterUserTakeSetup memory setup = setup_pegoutAndMemberNonces();
         uint256 createdAt = block.timestamp;
         uint256 firstHonestOpIndex = registry.minCommitteeMembers() / 2 + 1;
         uint256 secondHonestOpIndex = firstHonestOpIndex + 1;
@@ -627,7 +627,7 @@ contract TestPegManager is Test, HelperContract {
 
     function setup_expireOperatorTakeAndTriggerMultipleTimes() internal returns (bytes32 _pegoutSignatureHash) {
         // Arrange
-        RegisterPegoutSetup memory setup = setup_pegoutAndMemberNonces();
+        RegisterUserTakeSetup memory setup = setup_pegoutAndMemberNonces();
         uint256 firstHonestOpIndex = registry.minCommitteeMembers() / 2;
         uint256 operatorsCount = registry.minCommitteeMembers() * 2; // To be sure that we choose operatores multiples times
         setup_addMemberSignature_MultipleMembers(setup.pegoutSignatureHash, firstHonestOpIndex, operatorsCount);
@@ -645,7 +645,7 @@ contract TestPegManager is Test, HelperContract {
 
     function test_depositOperatorTakeProof_Success() external {
         // Arrange
-        (address operatorAddress, RegisterPegoutSetup memory setup) = setup_operatorTake();
+        (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
         bytes32 operatorPubKey = getMemberTakePubKey(operatorAddress);
         BtcTransaction memory pegoutTx =
             createPegoutTx(setup.acceptPeginTxHash, BtcHelper.pubKeyXonlyToCompact(operatorPubKey), VALUE);
@@ -674,7 +674,7 @@ contract TestPegManager is Test, HelperContract {
 
     function test_depositOperatorTakeProof_Revert_PeginNotRequested() external {
         // Arrange
-        (address operatorAddress, RegisterPegoutSetup memory setup) = setup_operatorTake();
+        (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
         bytes32 operatorPubKey = getMemberTakePubKey(operatorAddress);
         bytes32 wrongAcceptPeginTxHash = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
         BtcTransaction memory pegoutTx =
@@ -695,13 +695,13 @@ contract TestPegManager is Test, HelperContract {
 
     function test_depositOperatorTakeProof_Revert_InvalidPegStatus() external {
         // Arrange
-        (address operatorAddress, RegisterPegoutSetup memory setup) = setup_operatorTake();
+        (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
         bytes32 operatorPubKey = getMemberTakePubKey(operatorAddress);
         BtcTransaction memory pegoutTx =
             createPegoutTx(setup.acceptPeginTxHash, BtcHelper.pubKeyXonlyToCompact(operatorPubKey), VALUE);
         BtcTxSPVProof memory pegoutTxSPVProof = createBtcTxSPVProof(pegoutTx);
         // Register Pegout as Take 0
-        pm.registerPegout(setup.pegoutTxSPVProof);
+        pm.registerUserTake(setup.pegoutTxSPVProof);
 
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IPegManager.InvalidPegStatus.selector, PegStatus.COMPLETED));
@@ -717,7 +717,7 @@ contract TestPegManager is Test, HelperContract {
 
     function test_depositOperatorTakeProof_Revert_IncorrectVout() external {
         // Arrange
-        (address operatorAddress, RegisterPegoutSetup memory setup) = setup_operatorTake();
+        (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
         bytes32 operatorPubKey = getMemberTakePubKey(operatorAddress);
         BtcTransaction memory pegoutTx =
             createPegoutTx(setup.acceptPeginTxHash, BtcHelper.pubKeyXonlyToCompact(operatorPubKey), VALUE);
@@ -742,7 +742,7 @@ contract TestPegManager is Test, HelperContract {
 
     function test_depositOperatorTakeProof_Revert_IncorrectOutputScript() external {
         // Arrange
-        (address operatorAddress, RegisterPegoutSetup memory setup) = setup_operatorTake();
+        (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
         bytes32 operatorPubKey = getMemberTakePubKey(operatorAddress);
         address wrongOperator = vm.addr(1);
         bytes32 wrongOperatorPubKey = getMemberTakePubKey(wrongOperator);
@@ -772,7 +772,7 @@ contract TestPegManager is Test, HelperContract {
 
     function test_depositOperatorTakeProof_Revert_OperatorTakeAddressNotMatch() external {
         // Arrange
-        (address operatorAddress, RegisterPegoutSetup memory setup) = setup_operatorTake();
+        (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
         bytes32 operatorPubKey = getMemberTakePubKey(operatorAddress);
         address wrongOperator = vm.addr(1);
 
@@ -796,7 +796,7 @@ contract TestPegManager is Test, HelperContract {
 
     function test_depositOperatorTakeProof_Revert_InvalidSlotState() external {
         // Arrange
-        (address operatorAddress, RegisterPegoutSetup memory setup) = setup_operatorTake();
+        (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
         bytes32 operatorPubKey = getMemberTakePubKey(operatorAddress);
         BtcTransaction memory pegoutTx =
             createPegoutTx(setup.acceptPeginTxHash, BtcHelper.pubKeyXonlyToCompact(operatorPubKey), VALUE);

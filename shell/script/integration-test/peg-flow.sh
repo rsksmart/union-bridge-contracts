@@ -24,4 +24,4 @@ bash "$SCRIPT_DIR/signatures/add-every-member-nonce-and-signature.sh" -h "$PEGIN
 bash "$SCRIPT_DIR/accept-pegin.sh"
 bash "$SCRIPT_DIR/request-pegout.sh"
 bash "$SCRIPT_DIR/signatures/add-every-member-nonce-and-signature.sh" -h "$PEGOUT_SIGNATURE_HASH"
-bash "$SCRIPT_DIR/register-pegout.sh"
+bash "$SCRIPT_DIR/register-user-take.sh"

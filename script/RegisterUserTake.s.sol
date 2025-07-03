@@ -8,7 +8,7 @@ import {HelperContract} from "test/helpers/HelperContract.sol";
 import {Slot, Stream, Packet, SlotState, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
 
-contract RegisterPegoutScript is ScriptUtils {
+contract RegisterUserTakeScript is ScriptUtils {
     PegManager pegManager;
 
     uint64 amount;
@@ -40,7 +40,7 @@ contract RegisterPegoutScript is ScriptUtils {
 
         // Register peg-out transaction
         vm.startBroadcast(getDeployerKey());
-        pegManager.registerPegout(pegoutTxSPVProof);
+        pegManager.registerUserTake(pegoutTxSPVProof);
         vm.stopBroadcast();
 
         Slot memory slot = pegManager.streamManager().getSlot(stream.streamId, expectedPacketNumber, expectedSlotId);

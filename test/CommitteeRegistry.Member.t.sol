@@ -1081,7 +1081,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         setup_multiplePegFlows(Constants.SLOTS_PER_PACKET - 1);
 
         // Perform peg flow up until try pegout for the last slot
-        RegisterPegoutSetup memory setup = setup_pegout();
+        RegisterUserTakeSetup memory setup = setup_pegout();
 
         // get the amount of candidates before the packet is closed
         assertCandidateAmount(denomination, 0);
@@ -1091,7 +1091,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         emit IPegManager.PacketClosed(uint8(denomination), 0);
 
         // Act
-        pm.registerPegout(setup.pegoutTxSPVProof);
+        pm.registerUserTake(setup.pegoutTxSPVProof);
 
         // Assert that the amount of candidates after the packet is closed is equal to the committee size
         assertCandidateAmount(denomination, committee.members.length);
@@ -1137,7 +1137,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Perform peg flow for all slots in the packet except the last one
         setup_multiplePegFlows(Constants.SLOTS_PER_PACKET - 1);
-        RegisterPegoutSetup memory setup = setup_pegout();
+        RegisterUserTakeSetup memory setup = setup_pegout();
 
         // Assert that the amount of candidates before the packet is closed is equal to the max candidates size
         assertEq(
@@ -1153,7 +1153,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         emit IPegManager.PacketClosed(uint8(denomination), 0);
 
         // Act
-        pm.registerPegout(setup.pegoutTxSPVProof);
+        pm.registerUserTake(setup.pegoutTxSPVProof);
 
         // Assert that the amount of candidates after the packet is closed is equal to the max candidates size
         assertEq(
@@ -1199,7 +1199,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         setup_multiplePegFlows(Constants.SLOTS_PER_PACKET - 1);
 
         // Perform peg flow up until try pegout for the last slot
-        RegisterPegoutSetup memory setup = setup_pegout();
+        RegisterUserTakeSetup memory setup = setup_pegout();
 
         for (uint256 i = 0; i < committee.members.length; i++) {
             address user = committee.members[i].memberAddress;
@@ -1213,7 +1213,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         emit IPegManager.PacketClosed(uint8(denomination), 0);
 
         // Act
-        pm.registerPegout(setup.pegoutTxSPVProof);
+        pm.registerUserTake(setup.pegoutTxSPVProof);
 
         // Assert that the amount of candidates after the packet is closed is equal to 0
         assertCandidateAmount(denomination, 0);
@@ -1256,7 +1256,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         setup_multiplePegFlows(Constants.SLOTS_PER_PACKET - 1);
 
         // Perform peg flow up until try pegout for the last slot
-        RegisterPegoutSetup memory setup = setup_pegout();
+        RegisterUserTakeSetup memory setup = setup_pegout();
 
         setup_applyToStream_MultipleMembers(denomination, committee.members);
 
@@ -1268,7 +1268,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         emit IPegManager.PacketClosed(uint8(denomination), 0);
 
         // Act
-        pm.registerPegout(setup.pegoutTxSPVProof);
+        pm.registerUserTake(setup.pegoutTxSPVProof);
 
         // Assert that the amount of candidates after the packet is closed is equal to the committee size
         assertCandidateAmount(denomination, committee.members.length);

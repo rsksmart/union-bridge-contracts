@@ -303,7 +303,7 @@ sequenceDiagram
 #### Normal Case: UserTake (Take0) - All Members Signed
 
 1. **Execute pegout**: Member executes the Bitcoin transaction sending BTC to the user's Bitcoin address when all signatures are collected
-2. **Submit BTC transaction**: Member calls `registerPegout()` with the Bitcoin transaction and SPV proof
+2. **Submit BTC transaction**: Member calls `registerUserTake()` with the Bitcoin transaction and SPV proof
 3. **Validate transaction**: System validates the BTC transaction and proof
 4. **Validate signatures**: Committee signatures are validated
 
@@ -319,8 +319,8 @@ sequenceDiagram
     M->>M: Bitcoin pegout transaction
     Note right of M: BTC sent to user's Bitcoin address when all signatures collected
 
-    M->>PM: registerPegout(pegoutRequestId, btcTransaction, btcTxSPVProof)
-    Note right of M: Member calls `registerPegout()` with the Bitcoin transaction and SPV proof
+    M->>PM: registerUserTake(pegoutRequestId, btcTransaction, btcTxSPVProof)
+    Note right of M: Member calls `registerUserTake()` with the Bitcoin transaction and SPV proof
     PM->>PM: Validate BTC transaction and SPV proof
     PM->>PM: Validate committee signatures
     PM-->>ENV: PegoutRegistered event

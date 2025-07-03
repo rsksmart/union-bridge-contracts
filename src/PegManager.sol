@@ -440,7 +440,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
     /// @dev This function validates the peg-out transaction and marks the slot as COMPLETED
     /// @dev The transaction must spend the accept peg-in output and pay to the user's address
     /// @dev Emits the PegoutRegistered event
-    function registerPegout(BtcTxSPVProof calldata _pegoutTxSPVProof) external {
+    function registerUserTake(BtcTxSPVProof calldata _pegoutTxSPVProof) external {
         // Get the accept peg-in tx hash from the first input (this is what gets spent)
         bytes32 acceptPeginTxHash = _pegoutTxSPVProof.btcTx.inputs[0].txId;
         uint32 vout = _pegoutTxSPVProof.btcTx.inputs[0].vout;

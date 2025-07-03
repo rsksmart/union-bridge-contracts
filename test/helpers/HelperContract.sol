@@ -355,7 +355,7 @@ abstract contract HelperContract is Test, TestUtils {
     }
 
     // ========================== Register Pegout Setup ==========================
-    struct RegisterPegoutSetup {
+    struct RegisterUserTakeSetup {
         BtcTransaction pegoutTx;
         BtcTxSPVProof pegoutTxSPVProof;
         Stream stream;
@@ -367,7 +367,7 @@ abstract contract HelperContract is Test, TestUtils {
         bytes32 pegoutSignatureHash;
     }
 
-    function setup_pegout() internal returns (RegisterPegoutSetup memory setup) {
+    function setup_pegout() internal returns (RegisterUserTakeSetup memory setup) {
         // =========== Request Peg-In & Accept Peg-In ============
         (, BtcTransaction memory acceptPeginTx) = setup_requestAndAcceptPeginFlow();
 
@@ -407,21 +407,21 @@ abstract contract HelperContract is Test, TestUtils {
         setup.pegoutTxHash = bitcoinManager.getBtcTxHash(setup.pegoutTx);
     }
 
-    function setup_pegFlow() internal returns (RegisterPegoutSetup memory setup) {
+    function setup_pegFlow() internal returns (RegisterUserTakeSetup memory setup) {
         setup = setup_pegout();
-        pm.registerPegout(setup.pegoutTxSPVProof);
+        pm.registerUserTake(setup.pegoutTxSPVProof);
 
         return setup;
     }
 
-    function setup_multiplePegFlows(uint8 amount) internal returns (RegisterPegoutSetup[] memory setups) {
-        setups = new RegisterPegoutSetup[](amount);
+    function setup_multiplePegFlows(uint8 amount) internal returns (RegisterUserTakeSetup[] memory setups) {
+        setups = new RegisterUserTakeSetup[](amount);
         for (uint8 i = 0; i < amount; i++) {
             setups[i] = setup_pegFlow();
         }
     }
 
-    function setup_pegoutAndMemberNonces() internal returns (RegisterPegoutSetup memory setup) {
+    function setup_pegoutAndMemberNonces() internal returns (RegisterUserTakeSetup memory setup) {
         setup = setup_pegout();
         setup_addMemberNonce_MultipleMembers(setup.pegoutSignatureHash, 0, registry.minCommitteeMembers());
     }
@@ -603,7 +603,7 @@ abstract contract HelperContract is Test, TestUtils {
         }
     }
 
-    function setup_operatorTake() internal returns (address operatorAddress, RegisterPegoutSetup memory setup) {
+    function setup_operatorTake() internal returns (address operatorAddress, RegisterUserTakeSetup memory setup) {
         // Arrange
         setup = setup_pegoutAndMemberNonces();
         uint256 createdAt = block.timestamp;

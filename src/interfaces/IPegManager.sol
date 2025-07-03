@@ -204,7 +204,7 @@ interface IPegManager {
     /// @dev Validates the SPV proof and completes the peg-out process
     /// @dev Emits PegoutRegistered event upon successful registration
     /// @param _pegoutTxSPVProof The BTC SPV proof of the peg-out transaction
-    function registerPegout(BtcTxSPVProof calldata _pegoutTxSPVProof) external;
+    function registerUserTake(BtcTxSPVProof calldata _pegoutTxSPVProof) external;
 
     /// @notice Gets the peg-out signature hash for a specific stream, packet, and slot
     /// @param streamId The stream identifier
