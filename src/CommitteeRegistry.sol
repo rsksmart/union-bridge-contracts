@@ -580,12 +580,13 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         // Create unique committee id associated to the streamId and packetNumber.
         uint64 packetNumber = streamManager.getPacketsLength(_streamId);
         uint256 committeeId = uint256(keccak256(abi.encode(_streamId, packetNumber)));
+        bytes32 aggregatedKey = pendingCommittee.committee.aggregatedKey;
         _removeCandidatesAndUpdateBalance(
             pendingCommittee.committee.members, StreamDenomination(_streamId), packetNumber
         );
         _registerCommittee(committeeId, pendingCommittee.committee);
-        streamManager.createNewPacket(_streamId, committeeId, pendingCommittee.committee.aggregatedKey);
         _deletePendingCommittee(_streamId);
+        streamManager.createNewPacket(_streamId, committeeId, aggregatedKey);
     }
 
     /// @notice Returns the pending committee for the stream

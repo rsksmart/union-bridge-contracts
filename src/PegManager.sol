@@ -259,9 +259,6 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
 
         // Initialize the signatures needed for a given aggregated key
         uint256 committeeId = streamManager.getCommitteeId(_streamId, _packetNumber);
-        signatureManager.initSignatures(acceptPeginSignatureHash, committeeId);
-        signatureManager.initOperatorTakeTxHashes(acceptPeginTxHash, committeeId);
-
         emit PeginRequested(
             streamManager.getCommitteeId(_streamId, _packetNumber),
             _registerPeginTxHash,
@@ -273,6 +270,9 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             _prevoutData,
             acceptPeginSignatureMessage
         );
+
+        signatureManager.initSignatures(acceptPeginSignatureHash, committeeId);
+        signatureManager.initOperatorTakeTxHashes(acceptPeginTxHash, committeeId);
     }
 
     /// @notice Accepts a peg-in operation by providing an SPV proof of the accept peg-in transaction
@@ -329,7 +329,6 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         BtcTxOut memory _acceptPeginTxOutput
     ) internal {
         StreamPosition storage stream = streamPosition[_acceptPegintxHash];
-
         // Update the peg in request status to ACCEPTED to avoid processing it again
         stream.pegStatus = PegStatus.ACCEPTED;
 
@@ -339,6 +338,22 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             streamInfo.packetNumber,
             _acceptPeginTxOutput.amount,
             _acceptPegintxHash,
+            _acceptPeginTxOutput.scriptPubKey
+        );
+
+        uint256 rbtcAmount = BtcHelper.satoshiToWei(_acceptPeginTxOutput.amount);
+        RequestPeginTempInfo storage requestTempInfo = peginTempInfo[_requestPeginTxHash];
+
+        // slither-disable-next-line reentrancy-events
+        emit PeginAccepted(
+            _blockHash,
+            _acceptPegintxHash,
+            _requestPeginTxHash,
+            Constants.VOUT_INDEX_TAPTREE,
+            stream,
+            requestTempInfo.btcReimbursementPubKey,
+            requestTempInfo.rskDestinationAddress,
+            rbtcAmount,
             _acceptPeginTxOutput.scriptPubKey
         );
 
@@ -352,21 +367,6 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
                 committeeRegistry.createCommittee(stream.streamId);
             }
         }
-
-        uint256 rbtcAmount = BtcHelper.satoshiToWei(_acceptPeginTxOutput.amount);
-        RequestPeginTempInfo storage requestTempInfo = peginTempInfo[_requestPeginTxHash];
-
-        emit PeginAccepted(
-            _blockHash,
-            _acceptPegintxHash,
-            _requestPeginTxHash,
-            Constants.VOUT_INDEX_TAPTREE,
-            stream,
-            requestTempInfo.btcReimbursementPubKey,
-            requestTempInfo.rskDestinationAddress,
-            rbtcAmount,
-            _acceptPeginTxOutput.scriptPubKey
-        );
 
         // TODO mint the peg in tokens
         //requestRbtc(rskDestinationAddress, rbtcAmount);
@@ -395,6 +395,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
 
         // Get first filled Slot
         Stream memory stream = streamManager.getStream(receivedAmount);
+        // slither-disable-next-line reentrancy-benign
         (Slot memory slot, uint64 packetNumber) = streamManager.lockSlot(stream.streamId);
 
         // Prepare prevout data
@@ -421,6 +422,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
 
         // TODO: return RBTC to the RSK Legacy Bridge following https://github.com/rsksmart/RSKIPs/pull/502
 
+        // slither-disable-next-line reentrancy-events
         emit PegoutRequested(
             _userPubKey,
             committeeId,
@@ -477,11 +479,6 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         // update the peg status to COMPLETED
         streamPosition[acceptPeginTxHash].pegStatus = PegStatus.COMPLETED;
 
-        // Update slot status
-        streamManager.completeSlot(
-            streamInfo.streamId, streamInfo.packetNumber, streamInfo.slotId, acceptPeginTxHash, requestPegoutTxHash
-        );
-
         emit PegoutRegistered(
             _pegoutTxSPVProof.blockHash,
             requestPegoutTxHash,
@@ -493,9 +490,14 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
 
         if (streamInfo.slotId == Constants.SLOTS_PER_PACKET - 1) {
             // if the last slot of the packet was paid, we can release the members of the committee
-            committeeRegistry.releaseCommittee(streamInfo.streamId, streamInfo.packetNumber);
             emit PacketClosed(streamInfo.streamId, streamInfo.packetNumber);
+            committeeRegistry.releaseCommittee(streamInfo.streamId, streamInfo.packetNumber);
         }
+
+        // Update slot status
+        streamManager.completeSlot(
+            streamInfo.streamId, streamInfo.packetNumber, streamInfo.slotId, acceptPeginTxHash, requestPegoutTxHash
+        );
     }
 
     /// @notice Gets the peg-out signature hash for a specific stream, packet, and slot
@@ -563,44 +565,51 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
 
         PegoutTempInfo storage pegoutInfo = pegoutTempInfo[acceptPeginTxHash];
         StreamPosition storage streamInfo = streamPosition[acceptPeginTxHash];
+        bool advanceSlot = false;
+        uint256 operatorTakeUpdatedAt = pegoutInfo.operatorTakeUpdatedAt;
+        pegoutInfo.operatorTakeUpdatedAt = block.timestamp;
+
         if (streamInfo.pegStatus == PegStatus.USER_TAKE) {
+            // slither-disable-next-line unused-return
             (uint8 missingSignatures,,) = signatureManager.getSignaturesStatus(_pegoutSignatureHash);
             if (missingSignatures == 0) {
                 revert UserTakeAlreadySigned(_pegoutSignatureHash);
             }
 
+            // slither-disable-next-line timestamp
             if (block.timestamp <= pegoutInfo.createdAt + userTakeTimeout) {
                 revert UserTakeTimeoutNotExpired(pegoutInfo.createdAt, pegoutInfo.createdAt + userTakeTimeout);
             }
 
             streamInfo.pegStatus = PegStatus.OPERATOR_TAKE;
-            streamManager.advanceSlot(streamInfo.streamId, streamInfo.packetNumber, streamInfo.slotId);
+            advanceSlot = true;
         } else if (streamInfo.pegStatus == PegStatus.OPERATOR_TAKE) {
-            if (block.timestamp <= pegoutInfo.operatorTakeUpdatedAt + operatorTakeTimeout) {
-                revert OperatorTakeTimeoutNotExpired(
-                    pegoutInfo.operatorTakeUpdatedAt, pegoutInfo.operatorTakeUpdatedAt + operatorTakeTimeout
-                );
+            // slither-disable-next-line timestamp
+            if (block.timestamp <= operatorTakeUpdatedAt + operatorTakeTimeout) {
+                revert OperatorTakeTimeoutNotExpired(operatorTakeUpdatedAt, operatorTakeUpdatedAt + operatorTakeTimeout);
             }
         } else {
             revert InvalidPegStatus(streamInfo.pegStatus);
         }
 
         SignatureData[] memory signatureData = signatureManager.getPartialSignatures(_pegoutSignatureHash);
-        address takeOperator = committeeRegistry.getOperatorTakeAddress(pegoutInfo.committeeId, signatureData);
+        pegoutInfo.takeOperator = committeeRegistry.getOperatorTakeAddress(pegoutInfo.committeeId, signatureData);
 
-        pegoutInfo.operatorTakeUpdatedAt = block.timestamp;
-        pegoutInfo.takeOperator = takeOperator;
-
+        // slither-disable-next-line reentrancy-events
         emit OperatorTakeTriggered(
             _pegoutSignatureHash,
             pegoutInfo.committeeId,
             acceptPeginTxHash,
-            takeOperator,
+            pegoutInfo.takeOperator,
             pegoutInfo.userPubKey,
             pegoutInfo.createdAt,
             block.timestamp,
             block.timestamp + operatorTakeTimeout
         );
+
+        if (advanceSlot) {
+            streamManager.advanceSlot(streamInfo.streamId, streamInfo.packetNumber, streamInfo.slotId);
+        }
     }
 
     /// @notice Deposits an operator take proof for a peg-out transaction
@@ -630,6 +639,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         }
 
         PegoutTempInfo memory pegoutInfo = pegoutTempInfo[acceptPeginTxHash];
+        // slither-disable-next-line timestamp
         if (pegoutInfo.takeOperator != msg.sender) {
             revert OperatorTakeAddressNotMatch(pegoutInfo.takeOperator, msg.sender);
         }
@@ -656,11 +666,6 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         // update the peg status to COMPLETED
         streamPosition[acceptPeginTxHash].pegStatus = PegStatus.COMPLETED;
 
-        // Update slot status
-        streamManager.completeSlot(
-            streamInfo.streamId, streamInfo.packetNumber, streamInfo.slotId, acceptPeginTxHash, txHash
-        );
-
         emit PegoutRegistered(
             _pegoutTxSPVProof.blockHash,
             txHash,
@@ -668,6 +673,11 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             streamInfo.streamId,
             streamInfo.packetNumber,
             streamInfo.slotId
+        );
+
+        // Update slot status
+        streamManager.completeSlot(
+            streamInfo.streamId, streamInfo.packetNumber, streamInfo.slotId, acceptPeginTxHash, txHash
         );
     }
 
