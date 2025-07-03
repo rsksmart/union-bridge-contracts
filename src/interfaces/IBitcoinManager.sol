@@ -109,13 +109,13 @@ interface IBitcoinManager {
     /// @notice Validates a P2TR output for request peg-in transactions
     /// @dev Ensures the Taproot output has the correct script structure with committee and user key paths
     /// @param _rskDestinationAddress The RSK address that should receive the RBTC
-    /// @param _value The expected amount in satoshis (must match stream denomination)
+    /// @param _streamDenomination The expected amount in satoshis
     /// @param _btcReimbursementPubKey The user's Bitcoin public key (x-coordinate only)
     /// @param _committeePubKey The committee's public key (x-coordinate only)
     /// @param _p2trOut The Bitcoin transaction output to validate
     function validateRequestPeginP2TROutput(
         address _rskDestinationAddress,
-        uint64 _value,
+        uint64 _streamDenomination,
         bytes32 _btcReimbursementPubKey,
         bytes32 _committeePubKey,
         BtcTxOut calldata _p2trOut

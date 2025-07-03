@@ -69,7 +69,6 @@ contract StreamManager is IStreamManager, AccessControl {
         }
         __AccessControl_init(_initialOwner, address(_pegManager));
 
-        // TODO: Should we move this to a CommitteeRegistryControl?
         if (address(_committeeRegistry) == address(0)) {
             revert InvalidZeroAddress();
         }

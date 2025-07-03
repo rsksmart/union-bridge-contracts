@@ -454,7 +454,6 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
             revert PendingCommitteeNotExpired(_streamId, createdAt, createdAt + pendingCommitteeTimeout);
         }
 
-        _slashCommittee();
         _deletePendingCommittee(_streamId);
         _createCommittee(_streamId);
     }
@@ -472,7 +471,6 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
                 return;
             }
 
-            _slashCommittee();
             _deletePendingCommittee(_streamId);
         }
         _createCommittee(_streamId);
@@ -504,7 +502,6 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
 
         // slither-disable-next-line timestamp
         if (block.timestamp >= createdAt + pendingCommitteeTimeout) {
-            _slashCommittee();
             _deletePendingCommittee(_streamId);
             _createCommittee(_streamId);
         }
@@ -589,10 +586,6 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         _registerCommittee(committeeId, pendingCommittee.committee);
         streamManager.createNewPacket(_streamId, committeeId, pendingCommittee.committee.aggregatedKey);
         _deletePendingCommittee(_streamId);
-    }
-
-    function _slashCommittee() internal {
-        // TODO: slash the members. Sasasaaa.
     }
 
     /// @notice Returns the pending committee for the stream

@@ -164,25 +164,27 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
 
     /// @notice Validates output against a Taproot script with both key spend and script spend paths
     /// @param _rskDestinationAddress Address that will get the RBTC
-    /// @param _value Amount sent in BTC, should be equal to stream denomination
+    /// @param _streamDenomination The expected amount in satoshis
     /// @param _btcReimbursementPubKey The user's public key (x-only, 32 bytes)
     /// @param _committeePubKey The committee's public key (x-only, 32 bytes)
     /// @param _p2trOut The P2TR output of the peg-in request
     function validateRequestPeginP2TROutput(
         address _rskDestinationAddress,
-        uint64 _value,
+        uint64 _streamDenomination,
         bytes32 _btcReimbursementPubKey,
         bytes32 _committeePubKey,
         BtcTxOut calldata _p2trOut
     ) external pure {
         // Validate that the amount is enough for the stream
-        // TODO: Check if this is correct
-        if (_p2trOut.amount < _value) {
-            revert InvalidOutputAmount(_p2trOut.amount, _value);
+        if (_p2trOut.amount < _streamDenomination) {
+            revert InvalidOutputAmount(_p2trOut.amount, _streamDenomination);
         }
-        validateRequestPeginInputs(_btcReimbursementPubKey, _committeePubKey, _rskDestinationAddress, _value);
-        bytes memory p2trScriptPubKey =
-            getPeginRequestP2TRScriptPub(_rskDestinationAddress, _value, _btcReimbursementPubKey, _committeePubKey);
+        validateRequestPeginInputs(
+            _btcReimbursementPubKey, _committeePubKey, _rskDestinationAddress, _streamDenomination
+        );
+        bytes memory p2trScriptPubKey = getPeginRequestP2TRScriptPub(
+            _rskDestinationAddress, _streamDenomination, _btcReimbursementPubKey, _committeePubKey
+        );
         _compareOutputPubKey(_p2trOut.scriptPubKey, p2trScriptPubKey);
     }
 

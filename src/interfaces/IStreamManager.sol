@@ -6,7 +6,6 @@ import {Role} from "./ICommitteeRegistry.sol";
 
 /// @notice Represents different Bitcoin denominations supported by the union bridge
 /// @dev Each denomination corresponds to a specific stream for efficient fund management
-// TODO: integrate this enum into StreamManager logic
 enum StreamDenomination {
     /// @notice 0.001 BTC (100,000 satoshis)
     _0_001BTC,
