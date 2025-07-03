@@ -336,7 +336,7 @@ If not all committee members sign within the timeout period:
 3. **Broadcast Reimbursement Kickoff**: The operator broadcasts a Reimbursement Kickoff Bitcoin transaction
 4. **Challenge period**: If no one challenges within the timeout period, the member proceeds
 5. **Broadcast Operator Take transaction**: The operator broadcasts the Operator Take (Take1) Bitcoin transaction
-6. **Submit BTC transaction**: Operator calls `depositOperatorTakeProof()` with the Bitcoin transaction and SPV proof
+6. **Submit BTC transaction**: Operator calls `registerOperatorTake()` with the Bitcoin transaction and SPV proof
 7. **Validate transaction**: System validates the BTC transaction and proof
 
 ```mermaid
@@ -365,8 +365,8 @@ sequenceDiagram
     M->>M: Bitcoin Operator Take (Take1)
     Note right of M: Operator broadcasts the final Operator Take Bitcoin transaction
 
-    M->>PM: depositOperatorTakeProof(btcTransaction, btcTxSPVProof)
-    Note right of M: Operator calls `depositOperatorTakeProof()` with the Bitcoin transaction and SPV proof
+    M->>PM: registerOperatorTake(btcTransaction, btcTxSPVProof)
+    Note right of M: Operator calls `registerOperatorTake()` with the Bitcoin transaction and SPV proof
     PM->>PM: Validate BTC transaction and SPV proof
     PM-->>ENV: PegoutRegistered event
     Note right of PM: RBTC is now pegged-out to Bitcoin via operator take

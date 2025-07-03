@@ -279,7 +279,7 @@ interface IPegManager {
     /// @dev Only callable when the peg status is OPERATOR_TAKE
     /// @dev Emits PegoutRegistered event upon successful deposit
     /// @param _pegoutTxSPVProof The BTC SPV proof of the operator take peg-out transaction
-    function depositOperatorTakeProof(BtcTxSPVProof calldata _pegoutTxSPVProof) external;
+    function registerOperatorTake(BtcTxSPVProof calldata _pegoutTxSPVProof) external;
 
     /// @notice Triggers the operator take process for a peg-out when not all committee members sign within timeout
     /// @dev This function can be called after a User Take expiration or after an Operator Take expiration

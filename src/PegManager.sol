@@ -610,7 +610,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
     /// @dev Validates the SPV proof and marks the slot as paid when operator takes over
     /// @dev Only callable when the peg status is OPERATOR_TAKE
     /// @dev Emits PegoutRegistered event upon successful deposit
-    function depositOperatorTakeProof(BtcTxSPVProof calldata _pegoutTxSPVProof) external {
+    function registerOperatorTake(BtcTxSPVProof calldata _pegoutTxSPVProof) external {
         // Get the accept peg-in tx hash from the first input (this is what gets spent)
         bytes32 acceptPeginTxHash = _pegoutTxSPVProof.btcTx.inputs[0].txId;
         uint32 vout = _pegoutTxSPVProof.btcTx.inputs[0].vout;

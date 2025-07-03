@@ -643,7 +643,7 @@ contract TestPegManager is Test, HelperContract {
         return setup.pegoutSignatureHash;
     }
 
-    function test_depositOperatorTakeProof_Success() external {
+    function test_registerOperatorTake_Success() external {
         // Arrange
         (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
         bytes32 operatorPubKey = getMemberTakePubKey(operatorAddress);
@@ -665,14 +665,14 @@ contract TestPegManager is Test, HelperContract {
 
         // Act
         vm.prank(operatorAddress);
-        pm.depositOperatorTakeProof(pegoutTxSPVProof);
+        pm.registerOperatorTake(pegoutTxSPVProof);
 
         assertTrue(
             streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId).state == SlotState.COMPLETED
         );
     }
 
-    function test_depositOperatorTakeProof_Revert_PeginNotRequested() external {
+    function test_registerOperatorTake_Revert_PeginNotRequested() external {
         // Arrange
         (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
         bytes32 operatorPubKey = getMemberTakePubKey(operatorAddress);
@@ -686,14 +686,14 @@ contract TestPegManager is Test, HelperContract {
 
         // Act
         vm.prank(operatorAddress);
-        pm.depositOperatorTakeProof(pegoutTxSPVProof);
+        pm.registerOperatorTake(pegoutTxSPVProof);
 
         assertTrue(
             streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId).state == SlotState.ADVANCED
         );
     }
 
-    function test_depositOperatorTakeProof_Revert_InvalidPegStatus() external {
+    function test_registerOperatorTake_Revert_InvalidPegStatus() external {
         // Arrange
         (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
         bytes32 operatorPubKey = getMemberTakePubKey(operatorAddress);
@@ -708,14 +708,14 @@ contract TestPegManager is Test, HelperContract {
 
         // Act
         vm.prank(operatorAddress);
-        pm.depositOperatorTakeProof(pegoutTxSPVProof);
+        pm.registerOperatorTake(pegoutTxSPVProof);
 
         assertTrue(
             streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId).state == SlotState.COMPLETED
         );
     }
 
-    function test_depositOperatorTakeProof_Revert_IncorrectVout() external {
+    function test_registerOperatorTake_Revert_IncorrectVout() external {
         // Arrange
         (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
         bytes32 operatorPubKey = getMemberTakePubKey(operatorAddress);
@@ -733,14 +733,14 @@ contract TestPegManager is Test, HelperContract {
 
         // Act
         vm.prank(operatorAddress);
-        pm.depositOperatorTakeProof(pegoutTxSPVProof);
+        pm.registerOperatorTake(pegoutTxSPVProof);
 
         assertTrue(
             streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId).state == SlotState.ADVANCED
         );
     }
 
-    function test_depositOperatorTakeProof_Revert_IncorrectOutputScript() external {
+    function test_registerOperatorTake_Revert_IncorrectOutputScript() external {
         // Arrange
         (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
         bytes32 operatorPubKey = getMemberTakePubKey(operatorAddress);
@@ -762,7 +762,7 @@ contract TestPegManager is Test, HelperContract {
 
         // Act
         vm.prank(operatorAddress);
-        pm.depositOperatorTakeProof(pegoutTxSPVProof);
+        pm.registerOperatorTake(pegoutTxSPVProof);
 
         // Assert
         assertTrue(
@@ -770,7 +770,7 @@ contract TestPegManager is Test, HelperContract {
         );
     }
 
-    function test_depositOperatorTakeProof_Revert_OperatorTakeAddressNotMatch() external {
+    function test_registerOperatorTake_Revert_OperatorTakeAddressNotMatch() external {
         // Arrange
         (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
         bytes32 operatorPubKey = getMemberTakePubKey(operatorAddress);
@@ -787,14 +787,14 @@ contract TestPegManager is Test, HelperContract {
 
         // Act
         vm.prank(wrongOperator);
-        pm.depositOperatorTakeProof(pegoutTxSPVProof);
+        pm.registerOperatorTake(pegoutTxSPVProof);
 
         assertTrue(
             streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId).state == SlotState.ADVANCED
         );
     }
 
-    function test_depositOperatorTakeProof_Revert_InvalidSlotState() external {
+    function test_registerOperatorTake_Revert_InvalidSlotState() external {
         // Arrange
         (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
         bytes32 operatorPubKey = getMemberTakePubKey(operatorAddress);
@@ -811,7 +811,7 @@ contract TestPegManager is Test, HelperContract {
 
         // Act
         vm.prank(operatorAddress);
-        pm.depositOperatorTakeProof(pegoutTxSPVProof);
+        pm.registerOperatorTake(pegoutTxSPVProof);
 
         assertTrue(
             streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId).state == SlotState.COMPLETED
