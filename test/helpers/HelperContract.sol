@@ -3,7 +3,6 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
-import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {DeployScript} from "script/deploy/DeployScript.s.sol";
 import {PegManager, BtcTxSPVProof, PegStatus} from "src/PegManager.sol";
 import {IPegManager} from "src/interfaces/IPegManager.sol";
@@ -61,6 +60,22 @@ abstract contract HelperContract is Test, TestUtils {
     uint64 internal constant VALUE = 1_000_000; // 0.01 BTC
     uint256 internal constant BLOCK_TIMESTAMP_FOR_DETERMINISTIC_COMMITTEE = 1000; // Arbitrary timestamp for random committee selection. Changing it will change all random committees
     uint256 registeredMembersCounter = 0; // Counter to keep track of registered members
+
+    function runTestDeployScript() internal {
+        // Using the deployment script in tests like in
+        // https://github.com/Cyfrin/foundry-smart-contract-lottery-cu/blob/main/test/unit/RaffleTest.t.sol#L38
+        DeployScript deployScript = new DeployScript();
+        deployScript.run();
+        bitcoinManager = deployScript.bitcoinManager();
+        registry = CommitteeRegistryHarness(address(deployScript.committeeRegistry()));
+        pm = PegManagerHarness(address(deployScript.pegManager()));
+        streamManager = StreamManagerHarness(address(deployScript.streamManager()));
+        // Set up bridge mock at bridge precompiled address
+        bridgeMock = BridgeMock(deployScript.bridgeAddress());
+        signatureManager = SignatureManager(deployScript.signatureManager());
+    }
+
+    // ========================== Apply to stream ==========================
 
     // Keep track of the number of members registered so if we want to register more members it'll use new addresses
     function setup_registerNewMembers(uint256 numWatchtowers, uint256 numOperators, StreamDenomination denomination)
@@ -131,20 +146,6 @@ abstract contract HelperContract is Test, TestUtils {
                 generatePublicKeysRegistration(uint256(uint160(memberAddress))); // Generate public keys based on the address
             setup_applyToStream(_denomination, memberAddress, pubKeysRegistration, role);
         }
-    }
-
-    function runTestDeployScript() internal {
-        // Using the deployment script in tests like in
-        // https://github.com/Cyfrin/foundry-smart-contract-lottery-cu/blob/main/test/unit/RaffleTest.t.sol#L38
-        DeployScript deployScript = new DeployScript();
-        deployScript.run();
-        bitcoinManager = deployScript.bitcoinManager();
-        registry = CommitteeRegistryHarness(address(deployScript.committeeRegistry()));
-        pm = PegManagerHarness(address(deployScript.pegManager()));
-        streamManager = StreamManagerHarness(address(deployScript.streamManager()));
-        // Set up bridge mock at bridge precompiled address
-        bridgeMock = BridgeMock(deployScript.bridgeAddress());
-        signatureManager = SignatureManager(deployScript.signatureManager());
     }
 
     // ========================== Peg In Request ==========================
@@ -259,51 +260,8 @@ abstract contract HelperContract is Test, TestUtils {
         });
     }
 
-    // ========================== Peg out ==========================
-    function createPegoutTx(bytes32 _acceptPeginTxHash, bytes memory _userPubKey, uint64 _amount)
-        internal
-        pure
-        returns (BtcTransaction memory)
-    {
-        // Input: spend the accept peg-in UTXO
-        BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
-        btcInputs[0] = BtcTxIn({
-            txId: _acceptPeginTxHash,
-            vout: 0, // P2TR output is at index 0
-            sequence: 0xfffffffd,
-            scriptSig: hex""
-        });
-
-        // Outputs
-        BtcTxOut[] memory btcOutputs = new BtcTxOut[](2);
-
-        // user output amount
-        uint64 userAmount = _amount - 1000; // Subtract fee
-        bytes memory userScriptPubKey = BtcScriptParser.getP2WPKHScript(_userPubKey);
-
-        // pay to user's P2WPKH
-        btcOutputs[0] = BtcTxOut({amount: userAmount, scriptPubKey: userScriptPubKey});
-
-        // speedup
-        btcOutputs[1] = BtcTxOut({amount: 300, scriptPubKey: userScriptPubKey});
-
-        return BtcTransaction({version: Constants.BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
-    }
-
     function satoshiToWei(uint256 _amount) internal pure returns (uint256) {
         return _amount * 10 ** 10;
-    }
-
-    function createBtcTxSPVProof(BtcTransaction memory _btcTransaction) internal pure returns (BtcTxSPVProof memory) {
-        BtcTxSPVProof memory btcTxSPVProof = BtcTxSPVProof({
-            blockHash: 0x0000000000000000000282fa21665766e58eb6cb94e458c3ef6d4af1121e38d9,
-            btcTx: _btcTransaction,
-            //values obtained from https://github.com/FairgateLabs/rust-bitvmx-transactions/blob/main/src/bin/bridge-pmt.rs
-            merkleBranchPath: 949,
-            merkleBranchHashes: new bytes32[](1)
-        });
-        btcTxSPVProof.merkleBranchHashes[0] = 0x480fd40f2e47eeea8edeef2f7f3e2c680642f748c989ed2e542fe5d28164da51;
-        return btcTxSPVProof;
     }
 
     function setup_multipleRequestAndAcceptPeginFlows(uint256 _numberOfPegins, uint64 _streamId) internal {
