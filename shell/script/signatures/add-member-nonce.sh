@@ -26,7 +26,7 @@ if [ -z "$MNEMONIC_INDEX" ] || [ -z "$SIGNATURE_HASH" ] || [ -z "$NONCE" ]; then
 fi
 
 # Run Forge script
-echo "================ ADD MEMBER NONCE TO $RPC ================"
+#echo "================ ADD MEMBER NONCE TO $RPC ================"
 forge script \
   script/AddMemberNonce.s.sol \
   --sig "run(uint16,bytes32,bytes)" \

@@ -23,10 +23,6 @@ done
 # Go to script dir
 CURRENT_PATH=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
-# Ensure helper scripts are executable
-chmod +x "$CURRENT_PATH/add-every-member-nonce.sh"
-chmod +x "$CURRENT_PATH/add-every-member-signature.sh"
-
 # Run both scripts
 bash "$CURRENT_PATH/add-every-member-nonce.sh" -h "$SIGNATURE_HASH" -n "$NONCE"
 bash "$CURRENT_PATH/add-every-member-signature.sh" -h "$SIGNATURE_HASH" -s "$SIGNATURE"

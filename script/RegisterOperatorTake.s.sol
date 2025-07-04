@@ -1,0 +1,60 @@
+// SPDX-License-Identifier: Unlicense
+pragma solidity ^0.8.20;
+
+import "forge-std/Script.sol";
+import {PegManager, BtcTxSPVProof, StreamPosition} from "src/PegManager.sol";
+import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
+import {HelperContract} from "test/helpers/HelperContract.sol";
+import {Slot, SlotState, IStreamManager} from "src/interfaces/IStreamManager.sol";
+import {BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
+import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
+
+contract RegisterOperatorTakeScript is ScriptUtils {
+    PegManager pegManager;
+
+    uint64 amount;
+    bytes operatorPubKey;
+    bytes32 acceptPeginTxHash;
+
+    IStreamManager streamManager;
+    uint64 expectedStreamId;
+    uint64 expectedPacketNumber;
+    uint64 expectedSlotId;
+
+    function setUp(bytes32 _acceptPeginTxHash) internal {
+        pegManager = PegManager(0x0165878A594ca255338adfa4d48449f69242Eb8F);
+
+        ICommitteeRegistry registry = ICommitteeRegistry(pegManager.committeeRegistry());
+        bytes32 operatorXOnlyPubKey = registry.getMemberTakePubKey(getDeployerAddress());
+        operatorPubKey = abi.encodePacked(bytes1(0x02), operatorXOnlyPubKey);
+        amount = 100_000; // 0.001 BTC
+
+        // Calculate expected slot and packet numbers
+        streamManager = pegManager.streamManager();
+        StreamPosition memory streamPosition = pegManager.getStreamPosition(_acceptPeginTxHash);
+        expectedStreamId = streamPosition.streamId;
+        expectedPacketNumber = streamPosition.packetNumber;
+        expectedSlotId = streamPosition.slotId;
+    }
+
+    function run(bytes32 _acceptPeginTxHash) public {
+        setUp(_acceptPeginTxHash);
+
+        BtcTransaction memory pegoutTx = createPegoutTx(_acceptPeginTxHash, operatorPubKey, amount);
+        BtcTxSPVProof memory pegoutTxSPVProof = createBtcTxSPVProof(pegoutTx);
+
+        // Register operator take
+        vm.startBroadcast(getDeployerKey());
+        pegManager.registerOperatorTake(pegoutTxSPVProof);
+        vm.stopBroadcast();
+
+        Slot memory slot = streamManager.getSlot(expectedStreamId, expectedPacketNumber, expectedSlotId);
+        if (slot.state != SlotState.COMPLETED) {
+            revert("Slot should be marked as COMPLETED after operator take peg-out registration");
+        }
+
+        console.log("=== Operator take Pegout registered successfully ===");
+        console.log("Stream, Slot, Packet");
+        console.log(expectedStreamId, expectedPacketNumber, expectedSlotId);
+    }
+}

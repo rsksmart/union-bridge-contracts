@@ -26,7 +26,7 @@ if [ -z "$MNEMONIC_INDEX" ] || [ -z "$SIGNATURE_HASH" ] || [ -z "$SIGNATURE" ]; 
 fi
 
 # Run Forge script
-echo "================ ADD MEMBER SIGNATURE TO $RPC ================"
+#echo "================ ADD MEMBER SIGNATURE TO $RPC ================"
 forge script \
   script/AddMemberSignature.s.sol \
   --sig "run(uint16,bytes32,bytes32)" \

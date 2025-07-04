@@ -7,7 +7,7 @@ cd "$CURRENT_PATH/../.."
 # set up environment variables
 source .env
 RPC=$LOCAL_RPC
-echo "================ REGISTER PEGIN REQUEST TO $RPC ================"
+echo "================ REGISTER USER TAKE REQUEST TO $RPC ================"
 forge script \
     script/RegisterUserTake.s.sol \
     --rpc-url $RPC \

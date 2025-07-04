@@ -4,9 +4,8 @@ pragma solidity ^0.8.20;
 import "forge-std/Script.sol";
 import {PegManager, StreamPosition, BtcTxSPVProof, PegStatus, RequestPeginTempInfo} from "src/PegManager.sol";
 import {IBitcoinManager, BtcTransaction, BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
-import {Stream, Packet, IStreamManager} from "src/interfaces/IStreamManager.sol";
+import {Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {OpCodes} from "src/libraries/OpCodes.sol";
-import {ChainIds} from "src/libraries/Network.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 
 contract RequestPeginScript is ScriptUtils {
@@ -14,9 +13,8 @@ contract RequestPeginScript is ScriptUtils {
     IStreamManager streamManager;
     IBitcoinManager bitcoinManager;
 
-    function setUp() internal returns (BtcTxSPVProof memory peginRequestTxSPVProof) {
+    function setUp(address _rskDestinationAddress) internal returns (BtcTxSPVProof memory peginRequestTxSPVProof) {
         // ====== Arguments ======
-        address rskDestinationAddress = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
         uint64 value = 100_000;
         bytes32 btcReimbursementPubKey = 0x7d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f;
         pegManager = PegManager(0x0165878A594ca255338adfa4d48449f69242Eb8F);
@@ -42,7 +40,7 @@ contract RequestPeginScript is ScriptUtils {
         btcTransaction.outputs[0] = BtcTxOut({
             amount: value,
             scriptPubKey: bitcoinManager.getPeginRequestP2TRScriptPub(
-                rskDestinationAddress, value, btcReimbursementPubKey, committeePubKey
+                _rskDestinationAddress, value, btcReimbursementPubKey, committeePubKey
             )
         });
         // OP_RETURN output
@@ -53,7 +51,7 @@ contract RequestPeginScript is ScriptUtils {
                 OpCodes.OP_PUSHBYTES_69,
                 "RSK_PEGIN",
                 packetNumber,
-                rskDestinationAddress,
+                _rskDestinationAddress,
                 btcReimbursementPubKey
             )
         });
@@ -68,8 +66,8 @@ contract RequestPeginScript is ScriptUtils {
             0x3fcef4a1ddf759a858190b89ecbd1ff3dffb49704e110b68baf5b5de7021910f;
     }
 
-    function run() public {
-        BtcTxSPVProof memory peginRequestTxSPVProof = setUp();
+    function run(address _rskDestinationAddress) public {
+        BtcTxSPVProof memory peginRequestTxSPVProof = setUp(_rskDestinationAddress);
         // get Tx hash
         bytes32 peginRequestTxHash = bitcoinManager.getBtcTxHash(peginRequestTxSPVProof.btcTx);
         console.log("peginRequestTxHash");

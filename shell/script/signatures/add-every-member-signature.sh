@@ -25,10 +25,8 @@ if [ -z "$SIGNATURE_HASH" ] || [ -z "$SIGNATURE" ]; then
   exit 1
 fi
 
-chmod +x "$CURRENT_PATH/add-member-signature.sh"
-
 # Loop through all mnemonic indices
 for ((i=0; i<=MAX_MNEMONIC_INDEX; i++)); do
-  echo "Adding signature for member $i"
+  #echo "Adding signature for member $i"
   "$CURRENT_PATH/add-member-signature.sh" -m "$i" -h "$SIGNATURE_HASH" -s "$SIGNATURE"
 done
