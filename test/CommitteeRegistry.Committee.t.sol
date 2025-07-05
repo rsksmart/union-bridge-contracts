@@ -1144,7 +1144,6 @@ contract TestCommitteeRegistry is Test, HelperContract {
         registry.unsubscribeFromStream(denomination);
         uint256 gasUsed = gasStart - gasleft();
 
-        emit log_uint(gasUsed); // log to console
         assertTrue(
             gasUsed < maxGasPerCommitteeCreation / registry.minCommitteeMembers(),
             "Gas usage should not exceed maxGasPerCommitteeCreation divided by minCommitteeMembers"
@@ -1197,7 +1196,6 @@ contract TestCommitteeRegistry is Test, HelperContract {
         vm.prank(lastMemberAddress);
         registry.depositAggregatedKey(streamId, COMMITTEE_PUB_KEY);
         uint256 gasUsed = gasStart - gasleft();
-        emit log_uint(gasUsed); // log to console
 
         // Assert
         assertTrue(gasUsed < maxGasPerCommitteeCreation, "Gas usage should not exceed maxGasPerCommitteeCreation");
@@ -1234,7 +1232,6 @@ contract TestCommitteeRegistry is Test, HelperContract {
         uint256 gasStart = gasleft();
         registry.removeCandidatesAndUpdateBalanceHarness(members, denomination, 0);
         uint256 gasUsed = gasStart - gasleft();
-        emit log_uint(gasUsed); // log to console
 
         // Assert
         assertTrue(gasUsed < maxGasPerCommitteeCreation, "Gas usage should not exceed maxGasPerCommitteeCreation");

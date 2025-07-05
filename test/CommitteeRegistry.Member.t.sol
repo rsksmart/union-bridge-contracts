@@ -495,7 +495,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         vm.prank(user);
         registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, role, pubKeysRegistration);
         uint256 gasUsed = gasStart - gasleft();
-        emit log_uint(gasUsed); // log to console
+        assertLe(gasUsed, 500_000, "gas used should be less than 500_000");
     }
 
     function _test_unsubscribeFromStream_Success(Role _role) internal {

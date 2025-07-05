@@ -530,7 +530,7 @@ contract TestPegManager is Test, HelperContract {
         );
     }
 
-    function test_triggerOperatorTake_Success() external {
+    function test_triggerOperatorTake_Success_AllNoncesAdded_NotAllSignatures() external {
         // Arrange
         RegisterUserTakeSetup memory setup = setup_pegoutAndMemberNonces();
         uint256 createdAt = block.timestamp;
@@ -542,6 +542,40 @@ contract TestPegManager is Test, HelperContract {
 
         // Add just 2 signatures for the first and second operators
         setup_addMemberSignature_MultipleMembers(setup.pegoutSignatureHash, firstHonestOpIndex, 2);
+
+        // Assert
+        vm.expectEmit(address(pm));
+        emit IPegManager.OperatorTakeTriggered(
+            setup.pegoutSignatureHash,
+            COMMITTEE_ID_STREAM_1_PACKET_0,
+            setup.acceptPeginTxHash,
+            firstHonestOpAddress,
+            setup.userPubKey,
+            createdAt,
+            block.timestamp,
+            block.timestamp + TAKE_1_TIMEOUT_DEFAULT
+        );
+
+        // Act
+        pm.triggerOperatorTake(setup.pegoutSignatureHash);
+
+        assertTrue(
+            streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId).state == SlotState.ADVANCED
+        );
+    }
+
+    function test_triggerOperatorTake_Success_NotAllNoncesAdded() external {
+        // Arrange
+        RegisterUserTakeSetup memory setup = setup_pegout();
+        uint256 createdAt = block.timestamp;
+        // Expire TAKE_0
+        vm.warp(createdAt + TAKE_0_TIMEOUT_DEFAULT + 1);
+        // This depende on how they have been registered. First registered group are the watchtowers
+        uint256 firstHonestOpIndex = registry.minCommitteeMembers() / 2 + 1;
+        address firstHonestOpAddress = vm.addr(firstHonestOpIndex + 1);
+
+        // Add just 2 nonces for the first and second operators
+        setup_addMemberNonce_MultipleMembers(setup.pegoutSignatureHash, firstHonestOpIndex, 2);
 
         // Assert
         vm.expectEmit(address(pm));
@@ -589,9 +623,47 @@ contract TestPegManager is Test, HelperContract {
         );
     }
 
-    function test_triggerOperatorTake_Retrigger_Success() external {
+    function test_triggerOperatorTake_Retrigger_Success_AllNoncesAdded_NotAllSignatures() external {
         // Arrange
         RegisterUserTakeSetup memory setup = setup_pegoutAndMemberNonces();
+        uint256 createdAt = block.timestamp;
+        uint256 firstHonestOpIndex = registry.minCommitteeMembers() / 2 + 1;
+
+        // Expire TAKE_0
+        vm.warp(createdAt + TAKE_0_TIMEOUT_DEFAULT + 1);
+        // Add just 2 signatures for the fisrt and second operators
+        setup_addMemberSignature_MultipleMembers(setup.pegoutSignatureHash, firstHonestOpIndex, 2);
+        pm.triggerOperatorTake(setup.pegoutSignatureHash);
+        // Expire TAKE_1
+        vm.warp(block.timestamp + TAKE_1_TIMEOUT_DEFAULT + 1);
+        // Get the last operator take index
+        Committee memory commitee = registry.getCommittee(COMMITTEE_ID_STREAM_1_PACKET_0);
+        uint256 lastOpTakeIndex = commitee.operatorTakeIndex;
+
+        // Assert
+        vm.expectEmit(address(pm));
+        emit IPegManager.OperatorTakeTriggered(
+            setup.pegoutSignatureHash,
+            COMMITTEE_ID_STREAM_1_PACKET_0,
+            setup.acceptPeginTxHash,
+            commitee.members[lastOpTakeIndex + 1].memberAddress,
+            setup.userPubKey,
+            createdAt,
+            block.timestamp,
+            block.timestamp + TAKE_1_TIMEOUT_DEFAULT
+        );
+
+        // Act
+        pm.triggerOperatorTake(setup.pegoutSignatureHash);
+
+        assertTrue(
+            streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId).state == SlotState.ADVANCED
+        );
+    }
+
+    function test_triggerOperatorTake_Retrigger_Success_NotAllNoncesAdded() external {
+        // Arrange
+        RegisterUserTakeSetup memory setup = setup_pegout();
         uint256 createdAt = block.timestamp;
         uint256 firstHonestOpIndex = registry.minCommitteeMembers() / 2 + 1;
         uint256 secondHonestOpIndex = firstHonestOpIndex + 1;
@@ -599,7 +671,7 @@ contract TestPegManager is Test, HelperContract {
         // Expire TAKE_0
         vm.warp(createdAt + TAKE_0_TIMEOUT_DEFAULT + 1);
         // Add just 2 signatures for the fisrt and second operators
-        setup_addMemberSignature_MultipleMembers(setup.pegoutSignatureHash, firstHonestOpIndex, 2);
+        setup_addMemberNonce_MultipleMembers(setup.pegoutSignatureHash, firstHonestOpIndex, 2);
         pm.triggerOperatorTake(setup.pegoutSignatureHash);
         // Expire TAKE_1
         vm.warp(block.timestamp + TAKE_1_TIMEOUT_DEFAULT + 1);
