@@ -80,8 +80,10 @@ contract BridgeMock is IBridge {
     }
 
     function getBtcBlockchainBlockHashAtDepth(int256) external pure override returns (bytes memory) {
-        bytes memory b;
-        return b;
+        // Return a mock Bitcoin block hash for testing purposes
+        // This simulates a Bitcoin depth(1) block hash
+        bytes32 mockBlockHash = 0x0000000000000000000049b460f18614380a01b8709d2c3a8ddf451d08d862b8;
+        return abi.encodePacked(mockBlockHash);
     }
 
     function getBtcTxHashProcessedHeight(string calldata) external pure override returns (int64) {
