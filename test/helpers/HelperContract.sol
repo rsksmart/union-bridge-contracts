@@ -18,7 +18,7 @@ import {
     CommitteeRegistry,
     PublicKeyRegistration
 } from "src/CommitteeRegistry.sol";
-import {PublicKeyIndex} from "src/interfaces/ICommitteeRegistry.sol";
+import {PublicKeyIndex, CommunicationData, COMMUNICATION_DATA_CHUNKS} from "src/interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination, Slot} from "src/interfaces/IStreamManager.sol";
 import {BtcTxIn, BtcTxOut, BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
@@ -317,7 +317,7 @@ abstract contract HelperContract is Test, TestUtils {
             ) {
                 uint256 memberIndexStart = registry.minCommitteeMembers();
                 uint256 memberCount = registry.minCommitteeMembers();
-                setup_depositMemberInfo_MultipleMembers(_streamId, memberIndexStart, memberCount);
+                setup_depositAggregatedKey_MultipleMembers(_streamId, memberIndexStart, memberCount);
             }
         }
     }
@@ -425,21 +425,23 @@ abstract contract HelperContract is Test, TestUtils {
         setup_addMemberNonce_MultipleMembers(setup.pegoutSignatureHash, 0, registry.minCommitteeMembers());
     }
 
-    function setup_depositMemberInfo(uint64 _streamId, address _memberAddress) internal {
+    function setup_depositAggregatedKey(uint64 _streamId, address _memberAddress) internal {
         vm.prank(_memberAddress);
-        registry.depositMemberInfoForCommittee(_streamId, COMMITTEE_PUB_KEY);
+        registry.depositAggregatedKey(_streamId, COMMITTEE_PUB_KEY);
     }
 
-    // This function is used to deposit member info for multiple members in a committee
-    // It will deposit member info for members with indexes from _memberIndexInit to _memberIndexInit + _memberCount - 1
-    function setup_depositMemberInfo_MultipleMembers(uint64 _streamId, uint256 _memberIndexInit, uint256 _memberCount)
-        internal
-    {
+    // This function is used to deposit the aggregated key for multiple members in a committee
+    // It will deposit the aggregated key for members with indexes from _memberIndexInit to _memberIndexInit + _memberCount - 1
+    function setup_depositAggregatedKey_MultipleMembers(
+        uint64 _streamId,
+        uint256 _memberIndexInit,
+        uint256 _memberCount
+    ) internal {
         uint256 memberIndexEnd = _memberIndexInit + _memberCount;
 
         for (uint256 i = _memberIndexInit; i < memberIndexEnd; i++) {
             // Member address is vm.address(memberIndex + 1);
-            setup_depositMemberInfo(_streamId, vm.addr(i + 1));
+            setup_depositAggregatedKey(_streamId, vm.addr(i + 1));
         }
     }
 
@@ -461,7 +463,7 @@ abstract contract HelperContract is Test, TestUtils {
     function setup_completeCommittee() internal returns (Committee memory expectedCommittee, uint64 streamId) {
         (expectedCommittee, streamId) = setup_pendingCommittee();
 
-        setup_depositMemberInfo_MultipleMembers(streamId, 0, registry.minCommitteeMembers());
+        setup_depositAggregatedKey_MultipleMembers(streamId, 0, registry.minCommitteeMembers());
         expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY;
 
         return (expectedCommittee, streamId);
@@ -629,5 +631,115 @@ abstract contract HelperContract is Test, TestUtils {
         );
 
         pm.triggerOperatorTake(setup.pegoutSignatureHash);
+    }
+
+    // ====== Communication Data Helper Functions ======
+
+    /// @notice Creates communication data chunks for a member using a unique identifier
+    /// @param identifier Unique string to generate deterministic chunks
+    /// @return chunks Array of 8 bytes32 chunks
+    function createCommunicationDataChunks(string memory identifier)
+        internal
+        pure
+        returns (bytes32[COMMUNICATION_DATA_CHUNKS] memory chunks)
+    {
+        for (uint256 i = 0; i < COMMUNICATION_DATA_CHUNKS; i++) {
+            chunks[i] = keccak256(abi.encodePacked(identifier, "chunk", i));
+        }
+        return chunks;
+    }
+
+    /// @notice Creates valid communication data array for a committee member
+    /// @param committeeSize Number of members in the committee
+    /// @param memberIndex Index of the member depositing data (own slot will be zero)
+    /// @return communicationData Array with zeros for own slot, non-zero for others
+    function createValidCommunicationData(uint256 committeeSize, uint256 memberIndex)
+        internal
+        pure
+        returns (CommunicationData[] memory communicationData)
+    {
+        communicationData = new CommunicationData[](committeeSize);
+
+        for (uint256 i = 0; i < committeeSize; i++) {
+            if (i != memberIndex) {
+                // Other slots - non-zero data
+                string memory identifier = string(abi.encodePacked("member", i, "for", memberIndex));
+                communicationData[i] = CommunicationData({data: createCommunicationDataChunks(identifier)});
+            }
+        }
+
+        return communicationData;
+    }
+
+    /// @notice Creates minimal communication data for testing with just 1 character per chunk
+    /// @param committeeSize Size of the committee
+    /// @param memberIndex Index of the member creating the data
+    /// @return communicationData Array of communication data with minimal content
+    function createMinimalCommunicationData(uint256 committeeSize, uint256 memberIndex)
+        internal
+        pure
+        returns (CommunicationData[] memory communicationData)
+    {
+        communicationData = new CommunicationData[](committeeSize);
+
+        for (uint256 i = 0; i < committeeSize; i++) {
+            if (i != memberIndex) {
+                // Other slots - minimal data (just one bit set in first chunk)
+                bytes32[COMMUNICATION_DATA_CHUNKS] memory chunks;
+                chunks[0] = bytes32(uint256(1)); // Single bit set
+                communicationData[i] = CommunicationData({data: chunks});
+            }
+        }
+
+        return communicationData;
+    }
+
+    /// @notice Asserts that two CommunicationData arrays are equal
+    /// @param expected Expected communication data array
+    /// @param actual Actual communication data array
+    /// @param message Error message if assertion fails
+    function assertCommunicationDataEqual(
+        CommunicationData[] memory expected,
+        CommunicationData[] memory actual,
+        string memory message
+    ) internal pure {
+        assertEq(expected.length, actual.length, string(abi.encodePacked(message, ": array lengths differ")));
+
+        for (uint256 i = 0; i < expected.length; i++) {
+            for (uint256 j = 0; j < COMMUNICATION_DATA_CHUNKS; j++) {
+                assertEq(
+                    expected[i].data[j],
+                    actual[i].data[j],
+                    string(abi.encodePacked(message, ": data differs at index [", i, "][", j, "]"))
+                );
+            }
+        }
+    }
+
+    /// @notice Helper to deposit communication data for a specific member
+    /// @param streamId Stream ID for the pending committee
+    /// @param memberAddress Address of the member depositing data
+    /// @param memberIndex Index of the member in the committee (for generating valid data)
+    function setup_depositCommunicationData(uint64 streamId, address memberAddress, uint256 memberIndex) internal {
+        (Committee memory committee,,) = registry.getPendingCommittee(streamId);
+        CommunicationData[] memory communicationData =
+            createValidCommunicationData(committee.members.length, memberIndex);
+
+        vm.prank(memberAddress);
+        registry.depositCommunicationData(streamId, communicationData);
+    }
+
+    /// @notice Helper to deposit communication data for multiple members
+    /// @param streamId Stream ID for the pending committee
+    /// @param startIndex Starting member index
+    /// @param count Number of members to deposit data for
+    function setup_depositCommunicationData_MultipleMembers(uint64 streamId, uint256 startIndex, uint256 count)
+        internal
+    {
+        for (uint256 i = 0; i < count; i++) {
+            uint256 memberIndex = startIndex + i;
+            address memberAddress = vm.addr(memberIndex + 1);
+            setup_depositCommunicationData(streamId, memberAddress, memberIndex);
+        }
     }
 }

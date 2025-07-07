@@ -21,12 +21,15 @@ import {
     PublicKeyRegistration,
     PUBLIC_KEYS_INDEX_LENGTH,
     ApplicationData,
-    Balance
+    Balance,
+    CommunicationData,
+    COMMUNICATION_DATA_CHUNKS
 } from "./interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination, IStreamManager} from "./interfaces/IStreamManager.sol";
 import {IPegManager} from "./interfaces/IPegManager.sol";
 import {SignatureData} from "./interfaces/ISignatureManager.sol";
 import {Constants} from "./libraries/Constants.sol";
+import {BytesHelper} from "./libraries/BytesHelper.sol";
 
 /// @title CommitteeRegistry
 /// @notice Manages registration, application, and selection of committee members for the union bridge system
@@ -84,8 +87,11 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     }
 
     function _getMemberTakePubKey(address _address) internal view returns (bytes32) {
-        bytes32[] memory pubKeys = _getMember(_address).publicKeys;
-        return pubKeys[uint8(PublicKeyIndex.TAKE)];
+        return _getMember(_address).publicKeys[uint8(PublicKeyIndex.TAKE)];
+    }
+
+    function _getMemberComPubKey(address _address) internal view returns (bytes32) {
+        return _getMember(_address).publicKeys[uint8(PublicKeyIndex.COMMUNICATION)];
     }
 
     function _getOrRegisterMember(address _address, PublicKeyRegistration[] calldata _publicKeys)
@@ -371,16 +377,18 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         return _getMemberTakePubKey(_address);
     }
 
+    /// @notice Gets the COMMUNICATION public key for a specific member
+    /// @param _address The member's address
+    /// @return The COMMUNICATION public key (x-coordinate only)
+    function getMemberComPubKey(address _address) external view returns (bytes32) {
+        return _getMemberComPubKey(_address);
+    }
+
     /// @notice Retrieves all public keys for a specific member
     /// @param _address The member's address
     /// @return publicKeys Array of public keys indexed by PublicKeyIndex
     function getMemberPublicKeys(address _address) external view returns (bytes32[] memory publicKeys) {
-        Member storage member = _getMember(_address);
-        publicKeys = new bytes32[](PUBLIC_KEYS_INDEX_LENGTH);
-        for (uint8 i = 0; i < PUBLIC_KEYS_INDEX_LENGTH; i++) {
-            publicKeys[i] = member.publicKeys[i];
-        }
-        return publicKeys;
+        return _getMember(_address).publicKeys;
     }
 
     function _getMemberApplicationData(address _address, StreamDenomination _denomination)
@@ -443,10 +451,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     }
 
     function restartPendingCommittee(uint64 _streamId) external {
-        uint256 createdAt = pendingCommittees[_streamId].createdAt;
-        if (createdAt == 0) {
-            revert CommitteeIsNotPending(_streamId);
-        }
+        uint256 createdAt = _getPendingCommittee(_streamId).createdAt;
 
         // slither-disable-next-line timestamp
         if (block.timestamp < createdAt + pendingCommitteeTimeout) {
@@ -520,6 +525,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         shouldCreateCommittee[_streamId] = false;
         pendingCommittees[_streamId].createdAt = block.timestamp;
         pendingCommittees[_streamId].missingData = uint16(committeeMembers.length);
+        pendingCommittees[_streamId].missingCommunicationData = uint16(committeeMembers.length);
 
         // Initialize the committee members here.
         // No need to initialize aggregatedKey, since it will be set by the members.
@@ -528,8 +534,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
             pendingCommittees[_streamId].committee.members.push(committeeMembers[i]);
 
             // Initialize committee users pending data
-            pendingCommittees[_streamId].data[committeeMembers[i].memberAddress] =
-                PendingCommitteeData({inCommittee: true, aggregatedKey: bytes32(0)});
+            pendingCommittees[_streamId].data[committeeMembers[i].memberAddress].inCommittee = true;
         }
         emit NewPendingCommittee(_streamId, pendingCommittees[_streamId].committee);
         return PendingCommitteeStatus.SUCCESS;
@@ -539,17 +544,14 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     /// @dev Called by members to provide their aggregated key for a pending committee
     /// @param _streamId The stream ID for the pending committee
     /// @param _aggregatedKey The aggregated public key provided by the member
-    function depositMemberInfoForCommittee(uint64 _streamId, bytes32 _aggregatedKey) external {
-        PendingCommittee storage pendingCommittee = pendingCommittees[_streamId];
-        if (pendingCommittee.createdAt == 0) {
-            revert CommitteeIsNotPending(_streamId);
-        }
+    function depositAggregatedKey(uint64 _streamId, bytes32 _aggregatedKey) external {
+        PendingCommittee storage pendingCommittee = _getPendingCommittee(_streamId);
 
         if (_aggregatedKey == bytes32(0)) {
-            revert InvalidAgregatedKey();
+            revert InvalidAggregatedKey();
         }
 
-        if (!pendingCommittee.data[msg.sender].inCommittee) {
+        if (!_isInPendingCommittee(msg.sender, _streamId)) {
             revert MemberNotInCommittee(_streamId, msg.sender);
         }
 
@@ -560,7 +562,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         pendingCommittee.data[msg.sender].aggregatedKey = _aggregatedKey;
 
         if (pendingCommittee.committee.aggregatedKey == bytes32(0)) {
-            // Save the agregated key for the committee
+            // Save the aggregated key for the committee
             pendingCommittee.committee.aggregatedKey = _aggregatedKey;
         } else {
             if (pendingCommittee.committee.aggregatedKey != _aggregatedKey) {
@@ -589,6 +591,82 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         streamManager.createNewPacket(_streamId, committeeId, aggregatedKey);
     }
 
+    function depositCommunicationData(uint64 _streamId, CommunicationData[] memory _communicationData) external {
+        PendingCommittee storage pendingCommittee = _getPendingCommittee(_streamId);
+        CommunicationData[] storage communicationDataStorage = pendingCommittee.data[msg.sender].communicationData;
+        CommitteeMember[] storage committeeMembers = pendingCommittee.committee.members;
+
+        if (communicationDataStorage.length != 0) {
+            revert MemberAlreadyDepositedCommunicationData(_streamId, msg.sender, communicationDataStorage.length);
+        }
+
+        if (!_isInPendingCommittee(msg.sender, _streamId)) {
+            revert MemberNotInCommittee(_streamId, msg.sender);
+        }
+
+        if (_communicationData.length != committeeMembers.length) {
+            revert InvalidCommunicationDataLength(_communicationData.length, committeeMembers.length);
+        }
+
+        for (uint256 i = 0; i < _communicationData.length; i++) {
+            bool isEmpty = BytesHelper.isArrayEmpty(_communicationData[i].data);
+
+            if (msg.sender == committeeMembers[i].memberAddress) {
+                if (!isEmpty) {
+                    revert InvalidNonZeroCommunicationData(i, _communicationData[i]);
+                }
+            } else {
+                if (isEmpty) {
+                    revert InvalidZeroCommunicationData(i, _communicationData[i]);
+                }
+            }
+
+            communicationDataStorage.push(CommunicationData({data: _communicationData[i].data}));
+        }
+
+        pendingCommittee.missingCommunicationData--;
+        emit MemberCommunicationDataDeposited(_streamId, msg.sender, _communicationData);
+
+        if (pendingCommittee.missingCommunicationData == 0) {
+            emit AllCommunicationDataReady(_streamId);
+        }
+    }
+
+    /// @notice Gets the encrypted communication data for one member in a committee
+    /// @dev This function returns the encrypted communication data (IP and Port) deposited for a particular member
+    /// @param _streamId The stream ID for the committee
+    /// @param _memberAddress The address of the member we are requesting data for
+    /// @return communicationData encrypted communication data (IP and Port) from the committee members
+    /// @dev The order of the data corresponds to the order of members in the committee
+    function getMemberCommunicationData(uint64 _streamId, address _memberAddress)
+        external
+        view
+        returns (CommunicationData[] memory communicationData)
+    {
+        PendingCommittee storage pendingCommittee = _getPendingCommittee(_streamId);
+        if (!_isInPendingCommittee(_memberAddress, _streamId)) {
+            revert MemberNotInCommittee(_streamId, _memberAddress);
+        }
+        CommitteeMember[] storage committeeMembers = pendingCommittee.committee.members;
+
+        uint256 memberIndex = 0;
+        for (uint256 i = 0; i < committeeMembers.length; i++) {
+            if (committeeMembers[i].memberAddress == _memberAddress) {
+                memberIndex = i;
+                break;
+            }
+        }
+
+        communicationData = new CommunicationData[](committeeMembers.length);
+        for (uint256 i = 0; i < committeeMembers.length; i++) {
+            if (pendingCommittee.data[committeeMembers[i].memberAddress].communicationData.length != 0) {
+                communicationData[i].data =
+                    pendingCommittee.data[committeeMembers[i].memberAddress].communicationData[memberIndex].data;
+            }
+            // else: leave as default zeros - member hasn't deposited data yet
+        }
+    }
+
     /// @notice Returns the pending committee for the stream
     /// @dev This function will revert if  there is no pending committee or if it's expired
     /// @param _streamId The stream ID to get the pending committee for
@@ -596,17 +674,33 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     /// @return createdAt The timestamp when the pending committee was created
     /// @return missingData The number of members that have not provided their data yet
     function getPendingCommittee(uint64 _streamId)
-        public
+        external
         view
         returns (Committee memory committee, uint256 createdAt, uint256 missingData)
     {
-        PendingCommittee storage pendingCommittee = pendingCommittees[_streamId];
-        if (pendingCommittee.createdAt == 0) {
-            revert CommitteeIsNotPending(_streamId);
-        }
+        PendingCommittee storage pendingCommittee = _getPendingCommittee(_streamId);
+
         committee = pendingCommittee.committee;
         createdAt = pendingCommittee.createdAt;
         missingData = pendingCommittee.missingData;
+    }
+
+    /// @notice Returns the number of members that have not deposited their communication data yet
+    /// @param _streamId The stream ID to get the missing communication data count for
+    /// @return missingCommunicationData The number of members that have not deposited their communication data yet
+    function getMissingCommunicationDataCount(uint64 _streamId)
+        external
+        view
+        returns (uint16 missingCommunicationData)
+    {
+        return _getPendingCommittee(_streamId).missingCommunicationData;
+    }
+
+    function _getPendingCommittee(uint64 _streamId) internal view returns (PendingCommittee storage pendingCommittee) {
+        pendingCommittee = pendingCommittees[_streamId];
+        if (pendingCommittee.createdAt == 0) {
+            revert CommitteeIsNotPending(_streamId);
+        }
     }
 
     /// @notice Checks if there is a pending committee for the stream and if it's expired
@@ -731,7 +825,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     /// @param _signatureData Array of signature data for committee members
     /// @return The address of the next available operator for take operations
     /// @dev Reverts with TakeOperatorNotFound if no eligible operator is found
-    function getOperatorTakeAddress(uint256 _committeeId, SignatureData[] memory _signatureData)
+    function getOperatorTakeAddress(uint256 _committeeId, SignatureData[] calldata _signatureData)
         external
         onlyPegManager
         returns (address)
@@ -919,9 +1013,13 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     /// @notice Modifier to restrict access to the PegManager contract
     /// @dev Reverts if the caller is not the PegManager
     modifier onlyPegManager() {
-        if (address(pegManager) != msg.sender) {
-            revert UnauthorizedAccount(msg.sender);
-        }
+        _onlyPegManager(msg.sender);
         _;
+    }
+
+    function _onlyPegManager(address _account) internal view {
+        if (address(pegManager) != _account) {
+            revert UnauthorizedAccount(_account);
+        }
     }
 }

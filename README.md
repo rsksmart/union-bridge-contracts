@@ -104,7 +104,7 @@ sequenceDiagram
     Note over M,ENV: Phase 3: Committee Formation
     Note over M,ENV: Selected members deposit aggregated keys for pending committee
 
-    M->>CR: depositMemberInfoForCommittee(streamId, aggregatedKey)
+    M->>CR: depositAggregatedKey(streamId, aggregatedKey)
     Note right of M: Provides aggregated public key
     CR->>CR: Validate member is in pending committee
     CR->>CR: Store aggregated key
