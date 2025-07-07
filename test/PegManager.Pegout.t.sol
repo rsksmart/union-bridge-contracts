@@ -538,10 +538,14 @@ contract TestPegManager is Test, HelperContract {
         vm.warp(createdAt + TAKE_0_TIMEOUT_DEFAULT + 1);
         // This depende on how they have been registered. First registered group are the watchtowers
         uint256 firstHonestOpIndex = registry.minCommitteeMembers() / 2 + 1;
-        address firstHonestOpAddress = vm.addr(firstHonestOpIndex + 1);
 
         // Add just 2 signatures for the first and second operators
         setup_addMemberSignature_MultipleMembers(setup.pegoutSignatureHash, firstHonestOpIndex, 2);
+
+        // Get the last operator take index
+        Committee memory commitee = registry.getCommittee(COMMITTEE_ID_STREAM_1_PACKET_0);
+        uint256 lastOpTakeIndex = commitee.operatorTakeIndex;
+        uint256 expectedOpTakeIndex = (lastOpTakeIndex + 1) % commitee.members.length;
 
         // Assert
         vm.expectEmit(address(pm));
@@ -549,7 +553,7 @@ contract TestPegManager is Test, HelperContract {
             setup.pegoutSignatureHash,
             COMMITTEE_ID_STREAM_1_PACKET_0,
             setup.acceptPeginTxHash,
-            firstHonestOpAddress,
+            commitee.members[expectedOpTakeIndex].memberAddress,
             setup.userPubKey,
             createdAt,
             block.timestamp,
@@ -639,6 +643,7 @@ contract TestPegManager is Test, HelperContract {
         // Get the last operator take index
         Committee memory commitee = registry.getCommittee(COMMITTEE_ID_STREAM_1_PACKET_0);
         uint256 lastOpTakeIndex = commitee.operatorTakeIndex;
+        uint256 expectedOpTakeIndex = (lastOpTakeIndex + 1) % commitee.members.length;
 
         // Assert
         vm.expectEmit(address(pm));
@@ -646,7 +651,7 @@ contract TestPegManager is Test, HelperContract {
             setup.pegoutSignatureHash,
             COMMITTEE_ID_STREAM_1_PACKET_0,
             setup.acceptPeginTxHash,
-            commitee.members[lastOpTakeIndex + 1].memberAddress,
+            commitee.members[expectedOpTakeIndex].memberAddress,
             setup.userPubKey,
             createdAt,
             block.timestamp,
