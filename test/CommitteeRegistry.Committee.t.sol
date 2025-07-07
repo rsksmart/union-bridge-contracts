@@ -10,7 +10,10 @@ import {
     Role,
     CommitteeMember,
     Committee,
-    PendingCommittee
+    PendingCommittee,
+    CommunicationData,
+    COMMUNICATION_DATA_CHUNKS,
+    PublicKeyIndex
 } from "src/interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination, IStreamManager, Stream} from "src/interfaces/IStreamManager.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
@@ -556,7 +559,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         assertEq(missingData, registry.minCommitteeMembers());
     }
 
-    function test_depositMemberInfoForCommittee_Success() external {
+    function test_depositAggregatedKey_Success() external {
         // Arrange
         (Committee memory expectedCommittee, uint64 streamId) = setup_pendingCommittee();
         expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY;
@@ -566,7 +569,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Act
         vm.prank(vm.addr(1));
-        registry.depositMemberInfoForCommittee(streamId, COMMITTEE_PUB_KEY);
+        registry.depositAggregatedKey(streamId, COMMITTEE_PUB_KEY);
 
         // Assert
         (Committee memory committee, uint256 createdAt, uint256 missingData) = registry.getPendingCommittee(streamId);
@@ -575,24 +578,24 @@ contract TestCommitteeRegistry is Test, HelperContract {
         assertEq(missingData, registry.minCommitteeMembers() - 1);
     }
 
-    function test_depositMemberInfoForCommittee_Revert_MemberInfoAlreadyDeposited() external {
+    function test_depositAggregatedKey_Revert_MemberInfoAlreadyDeposited() external {
         // Arrange
         (Committee memory expectedCommittee, uint64 streamId) = setup_pendingCommittee();
         expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY;
         address memberAddress = vm.addr(1);
         // Deposit data for the first time
         vm.prank(memberAddress);
-        registry.depositMemberInfoForCommittee(streamId, COMMITTEE_PUB_KEY);
+        registry.depositAggregatedKey(streamId, COMMITTEE_PUB_KEY);
 
         // Assert
         vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.MemberInfoAlreadyDeposited.selector, memberAddress));
 
         // Act
         vm.prank(memberAddress);
-        registry.depositMemberInfoForCommittee(streamId, COMMITTEE_PUB_KEY);
+        registry.depositAggregatedKey(streamId, COMMITTEE_PUB_KEY);
     }
 
-    function test_depositMemberInfoForCommittee_Revert_MemberNotInCommittee() external {
+    function test_depositAggregatedKey_Revert_MemberNotInCommittee() external {
         // Arrange
         (Committee memory expectedCommittee, uint64 streamId) = setup_pendingCommittee();
         expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY;
@@ -608,22 +611,22 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Act
         vm.prank(notCommitteeMember);
-        registry.depositMemberInfoForCommittee(streamId, COMMITTEE_PUB_KEY);
+        registry.depositAggregatedKey(streamId, COMMITTEE_PUB_KEY);
     }
 
-    function test_depositMemberInfoForCommittee_Revert_InvalidAgregatedKey() external {
+    function test_depositAggregatedKey_Revert_InvalidAggregatedKey() external {
         // Arrange
         (, uint64 streamId) = setup_pendingCommittee();
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.InvalidAgregatedKey.selector));
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.InvalidAggregatedKey.selector));
 
         // Act
         vm.prank(vm.addr(1));
-        registry.depositMemberInfoForCommittee(streamId, bytes32(0));
+        registry.depositAggregatedKey(streamId, bytes32(0));
     }
 
-    function test_depositMemberInfoForCommittee_Revert_CommitteeIsNotPending() external {
+    function test_depositAggregatedKey_Revert_CommitteeIsNotPending() external {
         // Arrange
         uint64 streamId = 1;
 
@@ -632,13 +635,13 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Act
         vm.prank(vm.addr(1));
-        registry.depositMemberInfoForCommittee(streamId, COMMITTEE_PUB_KEY);
+        registry.depositAggregatedKey(streamId, COMMITTEE_PUB_KEY);
     }
 
-    function test_depositMemberInfoForCommittee_WrongCommitteeKey() external {
+    function test_depositAggregatedKey_WrongCommitteeKey() external {
         // Arrange
         (Committee memory expectedCommittee, uint64 streamId) = setup_pendingCommittee();
-        setup_depositMemberInfo(streamId, vm.addr(1));
+        setup_depositAggregatedKey(streamId, vm.addr(1));
         bytes32 wrongPubKey = 0x1908421cb37d204b0c68660d093534d50d01fa791a3313e5fd9c21da137785ec;
 
         // Assert
@@ -648,7 +651,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Act
         // Second member deposit wrong committee aggregated key, so discard current pending committee a create a new one.
         vm.prank(vm.addr(2));
-        registry.depositMemberInfoForCommittee(streamId, wrongPubKey);
+        registry.depositAggregatedKey(streamId, wrongPubKey);
 
         // Assert
         (Committee memory committee, uint256 createdAt, uint256 missingData) = registry.getPendingCommittee(streamId);
@@ -657,13 +660,13 @@ contract TestCommitteeRegistry is Test, HelperContract {
         assertEq(missingData, registry.minCommitteeMembers());
     }
 
-    function test_depositMemberInfoForCommittee_Success_CompleteCommittee() external {
+    function test_depositAggregatedKey_Success_CompleteCommittee() external {
         // Arrange
         (Committee memory expectedCommittee, uint64 streamId) = setup_pendingCommittee();
         expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY;
         uint256 memberIndexStart = 0;
         uint256 memberCount = registry.minCommitteeMembers() - 1;
-        setup_depositMemberInfo_MultipleMembers(streamId, memberIndexStart, memberCount);
+        setup_depositAggregatedKey_MultipleMembers(streamId, memberIndexStart, memberCount);
 
         // Assert
         vm.expectEmit(address(registry));
@@ -672,7 +675,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Act
         // Member address is vm.address(memberIndex + 1);
         vm.prank(vm.addr(registry.minCommitteeMembers()));
-        registry.depositMemberInfoForCommittee(streamId, COMMITTEE_PUB_KEY);
+        registry.depositAggregatedKey(streamId, COMMITTEE_PUB_KEY);
 
         assertEq(
             registry.getCommitteeCandidates(StreamDenomination(streamId), Role.OPERATOR).length,
@@ -691,7 +694,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         (, uint64 streamId) = setup_pendingCommittee();
         uint256 memberIndexStart = 0;
         uint256 memberCount = registry.minCommitteeMembers();
-        setup_depositMemberInfo_MultipleMembers(streamId, memberIndexStart, memberCount);
+        setup_depositAggregatedKey_MultipleMembers(streamId, memberIndexStart, memberCount);
 
         // Assert
         vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.CommitteeIsNotPending.selector, streamId));
@@ -711,7 +714,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Arrange
         (Committee memory expectedCommittee, uint64 streamId) = setup_pendingCommittee();
         expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY;
-        setup_depositMemberInfo(streamId, vm.addr(1));
+        setup_depositAggregatedKey(streamId, vm.addr(1));
 
         // Act
         bool isCommitteePendingExpired = registry.isPendingCommitteeExpired(streamId);
@@ -725,7 +728,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Arrange
         (Committee memory expectedCommittee, uint64 streamId) = setup_pendingCommittee();
         expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY;
-        setup_depositMemberInfo(streamId, vm.addr(1));
+        setup_depositAggregatedKey(streamId, vm.addr(1));
         vm.warp(block.timestamp + 60 seconds); // warp time but amount of time is not enough to expire the committee
 
         // Act
@@ -783,7 +786,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         assertEq(missingData, registry.minCommitteeMembers());
     }
 
-    function test_depositMemberInfoForCommittee_Success_CompleteCommitteeOnExpiredCommittee() external {
+    function test_depositAggregatedKey_Success_CompleteCommitteeOnExpiredCommittee() external {
         // Having an expired committee does not prevent members to still deposit their data
         // Arrange
         (Committee memory expectedCommittee, uint64 streamId) = setup_pendingCommittee();
@@ -792,7 +795,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY;
         uint256 memberIndexStart = 0;
         uint256 memberCount = registry.minCommitteeMembers() - 1;
-        setup_depositMemberInfo_MultipleMembers(streamId, memberIndexStart, memberCount);
+        setup_depositAggregatedKey_MultipleMembers(streamId, memberIndexStart, memberCount);
 
         // Assert
         vm.expectEmit(address(registry));
@@ -801,7 +804,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Act
         // Member address is vm.address(memberIndex + 1);
         vm.prank(vm.addr(registry.minCommitteeMembers()));
-        registry.depositMemberInfoForCommittee(streamId, COMMITTEE_PUB_KEY);
+        registry.depositAggregatedKey(streamId, COMMITTEE_PUB_KEY);
 
         // Assert
         vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.CommitteeIsNotPending.selector, streamId));
@@ -877,7 +880,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
     function test_restartPendingCommittee_Revert_PendingCommitteeNotExpired() external {
         // Arrange
         (, uint64 streamId) = setup_pendingCommittee();
-        setup_depositMemberInfo(streamId, vm.addr(1));
+        setup_depositAggregatedKey(streamId, vm.addr(1));
 
         // Assert
         vm.expectRevert(
@@ -1182,7 +1185,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         );
 
         for (uint256 i = 0; i < members.length - 1; i++) {
-            setup_depositMemberInfo(streamId, members[i].memberAddress);
+            setup_depositAggregatedKey(streamId, members[i].memberAddress);
         }
         address lastMemberAddress = members[members.length - 1].memberAddress;
 
@@ -1192,7 +1195,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Act
         uint256 gasStart = gasleft();
         vm.prank(lastMemberAddress);
-        registry.depositMemberInfoForCommittee(streamId, COMMITTEE_PUB_KEY);
+        registry.depositAggregatedKey(streamId, COMMITTEE_PUB_KEY);
         uint256 gasUsed = gasStart - gasleft();
         emit log_uint(gasUsed); // log to console
 
@@ -1235,5 +1238,334 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Assert
         assertTrue(gasUsed < maxGasPerCommitteeCreation, "Gas usage should not exceed maxGasPerCommitteeCreation");
+    }
+
+    function test_depositCommunicationData_Success() public {
+        // Arrange
+        (Committee memory expectedCommittee, uint64 streamId) = setup_pendingCommittee();
+        uint256 memberIndex = 0;
+        address memberAddress = expectedCommittee.members[memberIndex].memberAddress;
+
+        CommunicationData[] memory communicationData =
+            createValidCommunicationData(expectedCommittee.members.length, memberIndex);
+
+        // Assert
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.MemberCommunicationDataDeposited(streamId, memberAddress, communicationData);
+
+        // Act
+        vm.prank(memberAddress);
+        registry.depositCommunicationData(streamId, communicationData);
+
+        // Assert - verify data was stored correctly using harness
+        CommunicationData[] memory storedData = registry.getStoredCommunicationDataHarness(streamId, memberAddress);
+
+        assertCommunicationDataEqual(communicationData, storedData, "Stored data should match deposited data");
+    }
+
+    function test_depositCommunicationData_Success_MinData() public {
+        // Arrange
+        (Committee memory expectedCommittee, uint64 streamId) = setup_pendingCommittee();
+        uint256 memberIndex = 0;
+        address memberAddress = expectedCommittee.members[memberIndex].memberAddress;
+
+        // Create minimal communication data using helper function
+        CommunicationData[] memory communicationData =
+            createMinimalCommunicationData(expectedCommittee.members.length, memberIndex);
+
+        // Act
+        vm.prank(memberAddress);
+        registry.depositCommunicationData(streamId, communicationData);
+
+        // Assert - verify minimal data was stored correctly
+        CommunicationData[] memory storedData = registry.getStoredCommunicationDataHarness(streamId, memberAddress);
+
+        assertCommunicationDataEqual(communicationData, storedData, "Minimal data should be stored correctly");
+    }
+
+    function test_depositCommunicationData_Revert_MemberNotInCommittee() public {
+        // Arrange
+        (Committee memory expectedCommittee, uint64 streamId) = setup_pendingCommittee();
+        address nonMemberAddress = vm.addr(999); // Address not in committee
+        CommunicationData[] memory communicationData = createValidCommunicationData(expectedCommittee.members.length, 0);
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(ICommitteeRegistry.MemberNotInCommittee.selector, streamId, nonMemberAddress)
+        );
+
+        // Act
+        vm.prank(nonMemberAddress);
+        registry.depositCommunicationData(streamId, communicationData);
+    }
+
+    function test_depositCommunicationData_Revert_MemberNotInCommittee_butRegistered() public {
+        // Arrange
+        (Committee memory expectedCommittee, uint64 streamId) = setup_pendingCommittee();
+        uint256 privKey = 999;
+        address registeredToAnotherStreamMemberAddress = vm.addr(privKey); // Address not in committee
+
+        PublicKeyRegistration[] memory publicKeysRegistration = generatePublicKeysRegistration(privKey);
+
+        setup_applyToStream(
+            StreamDenomination._0_1BTC, registeredToAnotherStreamMemberAddress, publicKeysRegistration, Role.OPERATOR
+        );
+        CommunicationData[] memory communicationData = createValidCommunicationData(expectedCommittee.members.length, 0);
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ICommitteeRegistry.MemberNotInCommittee.selector, streamId, registeredToAnotherStreamMemberAddress
+            )
+        );
+
+        // Act
+        vm.prank(registeredToAnotherStreamMemberAddress);
+        registry.depositCommunicationData(streamId, communicationData);
+    }
+
+    function test_depositCommunicationData_Revert_InvalidCommunicationDataLength() public {
+        // Arrange
+        (Committee memory expectedCommittee, uint64 streamId) = setup_pendingCommittee();
+        address memberAddress = vm.addr(1);
+
+        // Create communication data with wrong length (committee size - 1)
+        uint256 wrongLength = expectedCommittee.members.length - 1;
+        CommunicationData[] memory wrongLengthData = new CommunicationData[](wrongLength);
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ICommitteeRegistry.InvalidCommunicationDataLength.selector,
+                wrongLength,
+                expectedCommittee.members.length
+            )
+        );
+
+        // Act
+        vm.prank(memberAddress);
+        registry.depositCommunicationData(streamId, wrongLengthData);
+    }
+
+    function test_depositCommunicationData_Revert_InvalidNonZeroCommunicationData() public {
+        // Arrange
+        (Committee memory expectedCommittee, uint64 streamId) = setup_pendingCommittee();
+        uint256 memberIndex = 0;
+        address memberAddress = expectedCommittee.members[memberIndex].memberAddress;
+
+        // Create communication data with non-zero data in own slot (should be zero)
+        CommunicationData[] memory communicationData =
+            createValidCommunicationData(expectedCommittee.members.length, memberIndex);
+
+        // Put non-zero data in member's own slot
+        communicationData[memberIndex].data[0] = bytes32(uint256(1));
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ICommitteeRegistry.InvalidNonZeroCommunicationData.selector, memberIndex, communicationData[memberIndex]
+            )
+        );
+
+        // Act
+        vm.prank(memberAddress);
+        registry.depositCommunicationData(streamId, communicationData);
+    }
+
+    function test_depositCommunicationData_Revert_InvalidZeroCommunicationData() public {
+        // Arrange
+        (Committee memory expectedCommittee, uint64 streamId) = setup_pendingCommittee();
+        uint256 memberIndex = 0;
+        address memberAddress = expectedCommittee.members[memberIndex].memberAddress;
+
+        // Create communication data with zero data in another member's slot (should be non-zero)
+        CommunicationData[] memory communicationData =
+            createValidCommunicationData(expectedCommittee.members.length, memberIndex);
+
+        // Clear data for another member's slot (pick the first non-member slot)
+        uint256 otherMemberIndex = memberIndex == 0 ? 1 : 0;
+        for (uint256 i = 0; i < COMMUNICATION_DATA_CHUNKS; i++) {
+            communicationData[otherMemberIndex].data[i] = bytes32(0);
+        }
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ICommitteeRegistry.InvalidZeroCommunicationData.selector,
+                otherMemberIndex,
+                communicationData[otherMemberIndex]
+            )
+        );
+
+        // Act
+        vm.prank(memberAddress);
+        registry.depositCommunicationData(streamId, communicationData);
+    }
+
+    function test_depositCommunicationData_Revert_MemberAlreadyDepositedCommunicationData() public {
+        // Arrange
+        (Committee memory expectedCommittee, uint64 streamId) = setup_pendingCommittee();
+        uint256 memberIndex = 0;
+        address memberAddress = expectedCommittee.members[memberIndex].memberAddress;
+
+        CommunicationData[] memory communicationData =
+            createValidCommunicationData(expectedCommittee.members.length, memberIndex);
+
+        // First deposit should succeed
+        vm.prank(memberAddress);
+        registry.depositCommunicationData(streamId, communicationData);
+
+        // Assert - second deposit should revert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ICommitteeRegistry.MemberAlreadyDepositedCommunicationData.selector,
+                streamId,
+                memberAddress,
+                expectedCommittee.members.length
+            )
+        );
+
+        // Act - try to deposit again
+        vm.prank(memberAddress);
+        registry.depositCommunicationData(streamId, communicationData);
+    }
+
+    function test_depositCommunicationData_Revert_CommitteeIsNotPending() public {
+        // Arrange
+        uint64 noPendingCommitteeStreamId = 0; // Stream without pending committee
+        address memberAddress = vm.addr(1);
+        CommunicationData[] memory communicationData = new CommunicationData[](10); // Dummy data
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(ICommitteeRegistry.CommitteeIsNotPending.selector, noPendingCommitteeStreamId)
+        );
+
+        // Act
+        vm.prank(memberAddress);
+        registry.depositCommunicationData(noPendingCommitteeStreamId, communicationData);
+    }
+
+    function test_depositCommunicationData_Success_AllMembersDeposit_EmitsAllCommunicationDataReady() public {
+        // Arrange
+        (Committee memory expectedCommittee, uint64 streamId) = setup_pendingCommittee();
+        uint256 memberCount = expectedCommittee.members.length;
+
+        // Deposit all communication data except the last one
+        for (uint256 i = 0; i < memberCount - 1; i++) {
+            address memberAddress = expectedCommittee.members[i].memberAddress;
+            CommunicationData[] memory communicationData = createValidCommunicationData(memberCount, i);
+
+            vm.prank(memberAddress);
+            registry.depositCommunicationData(streamId, communicationData);
+        }
+
+        // Verify counter before final deposit
+        uint16 missingCount = registry.getMissingCommunicationDataCount(streamId);
+        assertEq(missingCount, 1, "Should have 1 missing communication data before final deposit");
+
+        // Prepare final member data
+        address lastMemberAddress = expectedCommittee.members[memberCount - 1].memberAddress;
+        CommunicationData[] memory lastCommunicationData = createValidCommunicationData(memberCount, memberCount - 1);
+
+        // Assert that AllCommunicationDataReady event is emitted when the last member deposits
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.AllCommunicationDataReady(streamId);
+
+        // Act - deposit the final communication data
+        vm.prank(lastMemberAddress);
+        registry.depositCommunicationData(streamId, lastCommunicationData);
+
+        // Assert counter is now zero
+        uint16 finalMissingCount = registry.getMissingCommunicationDataCount(streamId);
+        assertEq(finalMissingCount, 0, "Should have 0 missing communication data after all deposits");
+    }
+
+    function test_getMemberCommunicationData_Success() public {
+        // Arrange
+        (Committee memory expectedCommittee, uint64 streamId) = setup_pendingCommittee();
+        uint256 memberIndex = 0;
+        address memberAddress = expectedCommittee.members[memberIndex].memberAddress;
+
+        // Create expected communication data that other members should have deposited for this member
+        CommunicationData[] memory expectedData =
+            createValidCommunicationData(expectedCommittee.members.length, memberIndex);
+
+        // Use harness to simulate that all other members have deposited data for this member
+        registry.setCommunicationDataForMemberHarness(streamId, memberIndex, expectedData);
+
+        // Act
+        vm.prank(memberAddress);
+        CommunicationData[] memory retrievedData = registry.getMemberCommunicationData(streamId, memberAddress);
+
+        // Assert
+        assertCommunicationDataEqual(expectedData, retrievedData, "Retrieved data should match expected data");
+    }
+
+    function test_getMemberCommunicationData_Revert_CommitteeIsNotPending() public {
+        // Arrange
+        uint64 nonExistentStreamId = 0; // Stream without pending committee
+        address memberAddress = vm.addr(1);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.CommitteeIsNotPending.selector, nonExistentStreamId));
+
+        // Act
+        vm.prank(memberAddress);
+        registry.getMemberCommunicationData(nonExistentStreamId, memberAddress);
+    }
+
+    function test_getMemberCommunicationData_Revert_MemberNotInCommittee() public {
+        // Arrange
+        (, uint64 streamId) = setup_pendingCommittee();
+
+        uint256 privKey = 999;
+        address memberAddressForOtherStream = vm.addr(privKey); // Address not in  pending committee
+        PublicKeyRegistration[] memory publicKeysRegistration = generatePublicKeysRegistration(privKey);
+
+        setup_applyToStream(
+            StreamDenomination._0_1BTC, memberAddressForOtherStream, publicKeysRegistration, Role.OPERATOR
+        );
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ICommitteeRegistry.MemberNotInCommittee.selector, streamId, memberAddressForOtherStream
+            )
+        );
+
+        // Act
+        vm.prank(memberAddressForOtherStream);
+        registry.getMemberCommunicationData(streamId, memberAddressForOtherStream);
+    }
+
+    function test_getMemberComPubKey_Success() public {
+        // Arrange
+        uint256 privKey = 1;
+        address memberAddress = vm.addr(privKey);
+        PublicKeyRegistration[] memory publicKeysRegistration = generatePublicKeysRegistration(privKey);
+
+        // Register the member by applying to a stream
+        setup_applyToStream(StreamDenomination._0_01BTC, memberAddress, publicKeysRegistration, Role.OPERATOR);
+
+        // Get expected communication public key from registration
+        bytes32 expectedComPubKey = publicKeysRegistration[uint8(PublicKeyIndex.COMMUNICATION)].publicKeyX;
+
+        // Act
+        bytes32 actualComPubKey = registry.getMemberComPubKey(memberAddress);
+
+        // Assert
+        assertEq(actualComPubKey, expectedComPubKey, "Communication public key should match registration");
+    }
+
+    function test_getMemberComPubKey_Revert_MemberNotRegistered() public {
+        // Arrange
+        address unregisteredAddress = vm.addr(999); // Address never registered
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.MemberNotRegistered.selector, unregisteredAddress));
+
+        // Act
+        registry.getMemberComPubKey(unregisteredAddress);
     }
 }

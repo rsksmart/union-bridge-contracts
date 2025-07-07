@@ -75,5 +75,13 @@ if [ -z "$COMMITTEE_PK" ]; then
 fi
 
 for ((i=0; i<=MAX_MNEMONIC_INDEX; i++)); do
-  bash "$SCRIPT_DIR/deposit-member-info-for-committee.sh" -m "$i" -s "$STREAM" -p "$COMMITTEE_PK"
+  bash "$SCRIPT_DIR/deposit-communication-data.sh" -m "$i" -s "$STREAM"
+done
+
+for ((i=0; i<=MAX_MNEMONIC_INDEX; i++)); do
+  bash "$SCRIPT_DIR/get-communication-data-for-one-member.sh" -m "$i" -s "$STREAM"
+done
+
+for ((i=0; i<=MAX_MNEMONIC_INDEX; i++)); do
+  bash "$SCRIPT_DIR/deposit-aggregated-key.sh" -m "$i" -s "$STREAM" -p "$COMMITTEE_PK"
 done

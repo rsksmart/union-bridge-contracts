@@ -4,7 +4,12 @@ pragma solidity ^0.8.20;
 import {CommitteeRegistry, CommitteeMember, PublicKeyRegistration} from "src/CommitteeRegistry.sol";
 import {Role} from "src/interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
-import {PendingCommitteeStatus, PendingCommitteeData} from "src/interfaces/ICommitteeRegistry.sol";
+import {
+    PendingCommitteeStatus,
+    PendingCommitteeData,
+    CommunicationData,
+    PendingCommittee
+} from "src/interfaces/ICommitteeRegistry.sol";
 
 /// @notice Wrapper for testing CommitteeRegistry
 contract CommitteeRegistryHarness is CommitteeRegistry {
@@ -65,11 +70,59 @@ contract CommitteeRegistryHarness is CommitteeRegistry {
             pendingCommittees[_streamId].committee.members.push(committeeMembers[i]);
 
             // Initialize committee users pending data
-            pendingCommittees[_streamId].data[committeeMembers[i].memberAddress] =
-                PendingCommitteeData({inCommittee: true, aggregatedKey: bytes32(0)});
+            pendingCommittees[_streamId].data[committeeMembers[i].memberAddress].inCommittee = true;
         }
         emit NewPendingCommittee(_streamId, pendingCommittees[_streamId].committee);
         return committeeMembers;
+    }
+
+    /// @notice Harness function to directly access stored communication data for testing
+    /// @param _streamId The stream ID
+    /// @param _memberAddress The address of the member who deposited the data
+    /// @return communicationData The communication data stored by this member
+    function getStoredCommunicationDataHarness(uint64 _streamId, address _memberAddress)
+        external
+        view
+        returns (CommunicationData[] memory communicationData)
+    {
+        PendingCommittee storage pendingCommittee = _getPendingCommittee(_streamId);
+
+        if (!_isInPendingCommittee(_memberAddress, _streamId)) {
+            revert MemberNotInCommittee(_streamId, _memberAddress);
+        }
+
+        return pendingCommittee.data[_memberAddress].communicationData;
+    }
+
+    /// @notice Harness function to directly set communication data for testing getMemberCommunicationData
+    /// @param _streamId The stream ID
+    /// @param _targetMemberIndex The index of the member who should receive this data
+    /// @param _communicationData Array of communication data to set for each committee member
+    function setCommunicationDataForMemberHarness(
+        uint64 _streamId,
+        uint256 _targetMemberIndex,
+        CommunicationData[] memory _communicationData
+    ) external {
+        CommitteeMember[] storage committeeMembers = pendingCommittees[_streamId].committee.members;
+        require(_communicationData.length == committeeMembers.length, "Invalid data length");
+
+        // First: ensure all members have arrays of the right size
+        for (uint256 i = 0; i < committeeMembers.length; i++) {
+            address memberAddress = committeeMembers[i].memberAddress;
+            CommunicationData[] storage memberCommData =
+                pendingCommittees[_streamId].data[memberAddress].communicationData;
+
+            for (uint256 j = 0; j < committeeMembers.length; j++) {
+                memberCommData.push();
+            }
+        }
+
+        // Second: fill with the actual data
+        for (uint256 i = 0; i < committeeMembers.length; i++) {
+            address memberAddress = committeeMembers[i].memberAddress;
+            pendingCommittees[_streamId].data[memberAddress].communicationData[_targetMemberIndex] =
+                _communicationData[i];
+        }
     }
 
     function _selectCommitteeLastMembersHarness(uint64 _streamId, uint256 numWatchtowers, uint256 numOperators)

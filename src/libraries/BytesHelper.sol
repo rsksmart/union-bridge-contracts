@@ -229,4 +229,15 @@ library BytesHelper {
 
         return tempBytes;
     }
+
+    uint8 constant ARRAY_SIZE = 8;
+
+    function isArrayEmpty(bytes32[ARRAY_SIZE] memory _data) internal pure returns (bool) {
+        for (uint256 i = 0; i < ARRAY_SIZE; i++) {
+            if (_data[i] != bytes32(0)) {
+                return false;
+            }
+        }
+        return true;
+    }
 }

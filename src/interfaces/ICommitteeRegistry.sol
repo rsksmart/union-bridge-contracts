@@ -5,6 +5,9 @@ import {StreamDenomination, IStreamManager} from "./IStreamManager.sol";
 import {IPegManager} from "./IPegManager.sol";
 import {SignatureData} from "./ISignatureManager.sol";
 
+/// @dev Amount of bytes32 chunks for communication data
+uint8 constant COMMUNICATION_DATA_CHUNKS = 8;
+
 /// @notice Represents the different roles a committee member can have
 /// @dev Each role has specific responsibilities and requirements in the committee
 enum Role {
@@ -123,6 +126,8 @@ struct PendingCommittee {
     uint256 createdAt;
     /// @notice Number of members that have not provided their data yet
     uint16 missingData;
+    /// @notice Number of members that have not deposited their communication data yet
+    uint16 missingCommunicationData;
     /// @notice Mapping of member addresses to their pending data
     mapping(address memberAddress => PendingCommitteeData) data;
 }
@@ -134,6 +139,14 @@ struct PendingCommitteeData {
     bytes32 aggregatedKey;
     /// @notice Whether the member is included in the committee
     bool inCommittee;
+    /// @notice Array of encrypted Communication Data
+    /// @dev IP and Port encrypted for each member in the same order as they appear in the pending committee
+    CommunicationData[] communicationData;
+}
+
+struct CommunicationData {
+    /// @notice The encrypted communication data (IP and Port) for the member
+    bytes32[COMMUNICATION_DATA_CHUNKS] data;
 }
 
 /// @notice Interface for managing committee registration and formation in the union bridge
@@ -218,11 +231,16 @@ interface ICommitteeRegistry {
     /// @return The TAKE public key (x-coordinate only)
     function getMemberTakePubKey(address _memberAddress) external view returns (bytes32);
 
-    /// @notice Allows a member to deposit information for committee formation
+    /// @notice Gets the COMMUNICATION public key for a specific member
+    /// @param _address The member's address
+    /// @return The COMMUNICATION public key (x-coordinate only)
+    function getMemberComPubKey(address _address) external view returns (bytes32);
+
+    /// @notice Allows a member to deposit information  formation
     /// @dev Called by members to provide their aggregated key for a pending committee
     /// @param _streamId The stream ID for the pending committee
     /// @param _aggregatedKey The aggregated public key provided by the member
-    function depositMemberInfoForCommittee(uint64 _streamId, bytes32 _aggregatedKey) external;
+    function depositAggregatedKey(uint64 _streamId, bytes32 _aggregatedKey) external;
 
     /// @notice Triggers the creation of a new committee for a stream if the timeout has expired
     /// @dev This function is called when the slot usage threshold is reached
@@ -244,6 +262,31 @@ interface ICommitteeRegistry {
         external
         view
         returns (Committee memory committee, uint256 createdAt, uint256 missingData);
+
+    /// @notice Returns the number of members that have not deposited their communication data yet
+    /// @param _streamId The stream ID to get the missing communication data count for
+    /// @return missingCommunicationData The number of members that have not deposited their communication data yet
+    function getMissingCommunicationDataCount(uint64 _streamId)
+        external
+        view
+        returns (uint16 missingCommunicationData);
+
+    /// @notice Deposits encrypted communication data (IP and Port) for a member in a pending committee
+    /// @dev This function is called by members to provide their encrypted communication data
+    /// @param _streamId The stream ID for the pending committee
+    /// @param _communicationData Array of encrypted communication data (IP and Port) for the member
+    function depositCommunicationData(uint64 _streamId, CommunicationData[] memory _communicationData) external;
+
+    /// @notice Gets the encrypted communication data for one member in a committee
+    /// @dev This function returns the encrypted communication data (IP and Port) deposited for a particular member
+    /// @param _streamId The stream ID for the committee
+    /// @param _memberAddress The address of the member we are requesting data for
+    /// @return communicationData encrypted communication data (IP and Port) from the committee members
+    /// @dev The order of the data corresponds to the order of members in the committee
+    function getMemberCommunicationData(uint64 _streamId, address _memberAddress)
+        external
+        view
+        returns (CommunicationData[] memory communicationData);
 
     /// @notice Sets the Peg Manager contract address
     /// @dev Only callable by the contract owner
@@ -279,7 +322,7 @@ interface ICommitteeRegistry {
     /// @param committeeId The ID of the committee
     /// @param signatureData The signature data for the committee members
     /// @return The operator take address
-    function getOperatorTakeAddress(uint256 committeeId, SignatureData[] memory signatureData)
+    function getOperatorTakeAddress(uint256 committeeId, SignatureData[] calldata signatureData)
         external
         returns (address);
 
@@ -403,6 +446,19 @@ interface ICommitteeRegistry {
     /// @param reApply The new reapply flag value
     event MemberReApplyUpdated(address indexed memberAddress, StreamDenomination denomination, bool reApply);
 
+    /// @notice Event emitted when a member has deposited their communication data
+    /// @param streamId The stream ID of the pending committee for which the data is deposited
+    /// @param member The address of the member who deposited the data
+    /// @param communicationData The encrypted communication data deposited by the member
+    /// @dev The communication data are encrypted IP's and Port's for each member in the committee
+    event MemberCommunicationDataDeposited(
+        uint64 indexed streamId, address indexed member, CommunicationData[] communicationData
+    );
+
+    /// @notice Event emitted when all committee members have deposited their communication data
+    /// @param streamId The stream ID of the pending committee for which all data is now complete
+    event AllCommunicationDataReady(uint64 indexed streamId);
+
     // Errors
     /// @notice Thrown when streams and roles arrays have different lengths
     /// @param streamsLength The length of the streams array
@@ -445,7 +501,7 @@ interface ICommitteeRegistry {
     error PendingCommitteeNotExpired(uint64 streamId, uint256 createdAt, uint256 expireAt);
 
     /// @notice Thrown when the aggregated key is invalid
-    error InvalidAgregatedKey();
+    error InvalidAggregatedKey();
 
     /// @notice Thrown when public keys are repeated
     /// @param index The index of the first occurrence
@@ -594,6 +650,29 @@ interface ICommitteeRegistry {
     /// @param denomination The stream denomination
     /// @param role The role for which there are too many candidates
     error TooManyCandidatesForStream(StreamDenomination denomination, Role role);
+
+    /// @notice Thrown when the number of submitted communication data entries does not match the committee size
+    /// @param providedLength The actual length of the submitted communication data array
+    /// @param expectedLength The expected number of entries (i.e., committee size)
+    error InvalidCommunicationDataLength(uint256 providedLength, uint256 expectedLength);
+
+    /// @notice Thrown when a member submits an empty communication data entry for another member
+    /// @param index The index of the communication data entry
+    /// @param communicationData The invalid communication data submitted
+    error InvalidZeroCommunicationData(uint256 index, CommunicationData communicationData);
+
+    /// @notice Thrown when a member submits non-zero communication data for their own slot
+    /// @param index The index in the array corresponding to the submitting member
+    /// @param communicationData The non-zero data submitted in the member's own slot
+    error InvalidNonZeroCommunicationData(uint256 index, CommunicationData communicationData);
+
+    /// @notice Thrown when a member attempts to deposit communication data more than once
+    /// @param streamId The stream ID associated with the committee
+    /// @param memberAddress The address of the member attempting a second deposit
+    /// @param communicationDataLenght The number of communication data entries already stored
+    error MemberAlreadyDepositedCommunicationData(
+        uint64 streamId, address memberAddress, uint256 communicationDataLenght
+    );
 
     // Internal Errors
     /// @notice Thrown when member index is out of bounds
