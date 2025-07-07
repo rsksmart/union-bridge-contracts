@@ -225,6 +225,7 @@ interface IPegManager {
     /// @param packetNumber The packet number within the stream
     /// @param slotId The slot ID within the packet
     /// @param amount The amount being peg-out in satoshis
+    /// @param pegoutId The unique identifier for this peg-out operation
     event PegoutRequested(
         bytes indexed userPubKey,
         uint256 indexed committeeId,
@@ -233,7 +234,8 @@ interface IPegManager {
         uint64 streamId,
         uint64 packetNumber,
         uint64 slotId,
-        uint64 amount
+        uint64 amount,
+        bytes32 pegoutId
     );
 
     /// @notice Event emitted when a peg-out is successfully registered

@@ -75,25 +75,43 @@ contract TestPegManager is Test, HelperContract {
 
         streamManager.setSlotHarness(stream.streamId, packetNumber, scriptPubKey, txId, amount);
 
+        // Calculate expected PegoutId using mock block hash
+        bytes32 mockBlockHash = 0x0000000000000000000049b460f18614380a01b8709d2c3a8ddf451d08d862b8;
+        bytes32 expectedPegoutId =
+            keccak256(abi.encode(stream.streamId, packetNumber, slotId, address(this), mockBlockHash));
+
         // Assert
         vm.expectEmit(address(pm));
         emit IPegManager.PegoutRequested(
-            userPubKey, committeeId, expectedHash, expectedDigest, stream.streamId, packetNumber, slotId, amount
+            userPubKey,
+            committeeId,
+            expectedHash,
+            expectedDigest,
+            stream.streamId,
+            packetNumber,
+            slotId,
+            amount,
+            expectedPegoutId
         );
 
         // Act
         pm.tryPegout{value: amountInWei}(userPubKey);
 
-        // Assert
-        bytes32 pegoutSignatureHash = pm.getPegoutSignatureHash(stream.streamId, packetNumber, slotId);
-        assertEq(pegoutSignatureHash, expectedHash, "expected hash doesn't match the pegout computed one");
+        // Assert pegout signature hash matches expected
+        assertEq(
+            pm.getPegoutSignatureHash(stream.streamId, packetNumber, slotId),
+            expectedHash,
+            "expected hash doesn't match the pegout computed one"
+        );
 
-        // Assert
-        Slot memory slot = streamManager.getSlot(stream.streamId, packetNumber, slotId);
-        assertEq(uint64(slot.state), uint64(SlotState.LOCKED), "Slot was not locked");
+        // Assert slot was locked
+        assertEq(
+            uint64(streamManager.getSlot(stream.streamId, packetNumber, slotId).state),
+            uint64(SlotState.LOCKED),
+            "Slot was not locked"
+        );
 
-        // Assert
-        // Check if the signatures struct was initialized by checking that the function doesn't revert, we expect false since it hasn't been signed yet;
+        // Assert signatures struct was initialized (expect false since not signed yet)
         assertEq(
             signatureManager.checkAllSignaturesReady(expectedHash), false, "Signatures struct hasn't been initialized"
         );
@@ -121,6 +139,11 @@ contract TestPegManager is Test, HelperContract {
         uint64 packetNumber = stream.pegoutPacketPointer;
         uint256 committeeId = uint256(keccak256(abi.encode(stream.streamId, packetNumber)));
 
+        // Calculate expected PegoutId using mock block hash
+        bytes32 mockBlockHash = 0x0000000000000000000049b460f18614380a01b8709d2c3a8ddf451d08d862b8;
+        bytes32 expectedPegoutId =
+            keccak256(abi.encode(stream.streamId, packetNumber, slotId, address(this), mockBlockHash));
+
         // Assert
         vm.expectEmit(address(pm));
         emit IPegManager.PegoutRequested(
@@ -131,22 +154,28 @@ contract TestPegManager is Test, HelperContract {
             stream.streamId,
             packetNumber,
             slotId,
-            amount
+            amount,
+            expectedPegoutId
         );
 
         // Act
         pm.tryPegout{value: amountInWei}(userPubKey);
 
-        // Assert
-        bytes32 result = pm.getPegoutSignatureHash(stream.streamId, packetNumber, slotId);
-        assertEq(result, expectedSignatureHash, "expected hash doesn't match the pegout computed one");
+        // Assert pegout signature hash matches expected
+        assertEq(
+            pm.getPegoutSignatureHash(stream.streamId, packetNumber, slotId),
+            expectedSignatureHash,
+            "expected hash doesn't match the pegout computed one"
+        );
 
-        // Assert
-        Slot memory slot = streamManager.getSlot(stream.streamId, packetNumber, slotId);
-        assertEq(uint64(slot.state), uint64(SlotState.LOCKED), "Slot was not locked");
+        // Assert slot was locked
+        assertEq(
+            uint64(streamManager.getSlot(stream.streamId, packetNumber, slotId).state),
+            uint64(SlotState.LOCKED),
+            "Slot was not locked"
+        );
 
-        // Assert
-        // Check if the signatures struct was initialized by checking that the function doesn't revert, we expect false since it hasn't been signed yet;
+        // Assert signatures struct was initialized (expect false since not signed yet)
         assertEq(
             signatureManager.checkAllSignaturesReady(expectedSignatureHash),
             false,

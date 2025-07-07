@@ -391,19 +391,16 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
     function tryPegout(bytes calldata _userPubKey) external payable {
         _validatePegoutRequest(_userPubKey, msg.value);
 
-        uint64 receivedAmount = uint64(BtcHelper.weiToSatoshi(msg.value));
-
-        // Get first filled Slot
-        Stream memory stream = streamManager.getStream(receivedAmount);
+        Stream memory stream = streamManager.getStream(uint64(BtcHelper.weiToSatoshi(msg.value)));
         // slither-disable-next-line reentrancy-benign
         (Slot memory slot, uint64 packetNumber) = streamManager.lockSlot(stream.streamId);
 
-        // Prepare prevout data
-        PrevoutData memory prevoutData = PrevoutData({value: slot.acceptPeginAmount, scriptPubKey: slot.scriptPubKey});
-
         // Compute the Bitcoin peg-out signature hash
-        (bytes32 pegoutSignatureHash, bytes memory pegoutSignatureMessage) =
-            bitcoinManager.getPegoutSignatureHash(_userPubKey, slot.acceptPeginTx, prevoutData);
+        (bytes32 pegoutSignatureHash, bytes memory pegoutSignatureMessage) = bitcoinManager.getPegoutSignatureHash(
+            _userPubKey,
+            slot.acceptPeginTx,
+            PrevoutData({value: slot.acceptPeginAmount, scriptPubKey: slot.scriptPubKey})
+        );
 
         uint256 committeeId =
             _storePegoutAndInitSignatures(pegoutSignatureHash, stream.streamId, packetNumber, slot.slotId);
@@ -431,7 +428,18 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             stream.streamId,
             packetNumber,
             slot.slotId,
-            stream.denomination
+            stream.denomination,
+            // NOTE: not in a function because of stack too deep
+            // this hash is the pegout id
+            keccak256(
+                abi.encode(
+                    stream.streamId,
+                    packetNumber,
+                    slot.slotId,
+                    msg.sender,
+                    bytes32(bridge.getBtcBlockchainBlockHashAtDepth(1))
+                )
+            )
         );
     }
 
