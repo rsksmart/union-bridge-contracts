@@ -9,7 +9,7 @@ source .env
 RPC=$LOCAL_RPC
 echo "================ REGISTER PEGIN REQUEST TO $RPC ================"
 forge script \
-    script/RegisterPegout.s.sol \
+    script/RegisterUserTake.s.sol \
     --rpc-url $RPC \
     --legacy \
     --broadcast \

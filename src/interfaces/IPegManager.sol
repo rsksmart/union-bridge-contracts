@@ -204,7 +204,7 @@ interface IPegManager {
     /// @dev Validates the SPV proof and completes the peg-out process
     /// @dev Emits PegoutRegistered event upon successful registration
     /// @param _pegoutTxSPVProof The BTC SPV proof of the peg-out transaction
-    function registerPegout(BtcTxSPVProof calldata _pegoutTxSPVProof) external;
+    function registerUserTake(BtcTxSPVProof calldata _pegoutTxSPVProof) external;
 
     /// @notice Gets the peg-out signature hash for a specific stream, packet, and slot
     /// @param streamId The stream identifier
@@ -279,7 +279,7 @@ interface IPegManager {
     /// @dev Only callable when the peg status is OPERATOR_TAKE
     /// @dev Emits PegoutRegistered event upon successful deposit
     /// @param _pegoutTxSPVProof The BTC SPV proof of the operator take peg-out transaction
-    function depositOperatorTakeProof(BtcTxSPVProof calldata _pegoutTxSPVProof) external;
+    function registerOperatorTake(BtcTxSPVProof calldata _pegoutTxSPVProof) external;
 
     /// @notice Triggers the operator take process for a peg-out when not all committee members sign within timeout
     /// @dev This function can be called after a User Take expiration or after an Operator Take expiration

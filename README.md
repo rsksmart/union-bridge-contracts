@@ -303,7 +303,7 @@ sequenceDiagram
 #### Normal Case: UserTake (Take0) - All Members Signed
 
 1. **Execute pegout**: Member executes the Bitcoin transaction sending BTC to the user's Bitcoin address when all signatures are collected
-2. **Submit BTC transaction**: Member calls `registerPegout()` with the Bitcoin transaction and SPV proof
+2. **Submit BTC transaction**: Member calls `registerUserTake()` with the Bitcoin transaction and SPV proof
 3. **Validate transaction**: System validates the BTC transaction and proof
 4. **Validate signatures**: Committee signatures are validated
 
@@ -319,8 +319,8 @@ sequenceDiagram
     M->>M: Bitcoin pegout transaction
     Note right of M: BTC sent to user's Bitcoin address when all signatures collected
 
-    M->>PM: registerPegout(pegoutRequestId, btcTransaction, btcTxSPVProof)
-    Note right of M: Member calls `registerPegout()` with the Bitcoin transaction and SPV proof
+    M->>PM: registerUserTake(pegoutRequestId, btcTransaction, btcTxSPVProof)
+    Note right of M: Member calls `registerUserTake()` with the Bitcoin transaction and SPV proof
     PM->>PM: Validate BTC transaction and SPV proof
     PM->>PM: Validate committee signatures
     PM-->>ENV: PegoutRegistered event
@@ -336,7 +336,7 @@ If not all committee members sign within the timeout period:
 3. **Broadcast Reimbursement Kickoff**: The operator broadcasts a Reimbursement Kickoff Bitcoin transaction
 4. **Challenge period**: If no one challenges within the timeout period, the member proceeds
 5. **Broadcast Operator Take transaction**: The operator broadcasts the Operator Take (Take1) Bitcoin transaction
-6. **Submit BTC transaction**: Operator calls `depositOperatorTakeProof()` with the Bitcoin transaction and SPV proof
+6. **Submit BTC transaction**: Operator calls `registerOperatorTake()` with the Bitcoin transaction and SPV proof
 7. **Validate transaction**: System validates the BTC transaction and proof
 
 ```mermaid
@@ -365,8 +365,8 @@ sequenceDiagram
     M->>M: Bitcoin Operator Take (Take1)
     Note right of M: Operator broadcasts the final Operator Take Bitcoin transaction
 
-    M->>PM: depositOperatorTakeProof(btcTransaction, btcTxSPVProof)
-    Note right of M: Operator calls `depositOperatorTakeProof()` with the Bitcoin transaction and SPV proof
+    M->>PM: registerOperatorTake(btcTransaction, btcTxSPVProof)
+    Note right of M: Operator calls `registerOperatorTake()` with the Bitcoin transaction and SPV proof
     PM->>PM: Validate BTC transaction and SPV proof
     PM-->>ENV: PegoutRegistered event
     Note right of PM: RBTC is now pegged-out to Bitcoin via operator take
