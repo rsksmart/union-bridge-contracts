@@ -1,8 +1,8 @@
-#!/bin/sh
+#!/bin/bash
 
 # we go to the root of the project to avoid relative path issues
 CURRENT_PATH=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-cd "$CURRENT_PATH/../.."
+cd "$CURRENT_PATH/../../.."
 
 # Defaults
 PEGOUT_SIGNATURE_HASH="0x7e00ec037f2ac760a440f781ac4f344bea7c7b3e4869a7793c4c6050c83d9e22"

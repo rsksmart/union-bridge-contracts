@@ -72,10 +72,10 @@ contract ApplyToStreamScript is ScriptUtils {
         }
 
         console.log("=== User applied to stream successfully ===");
-        console.log("Mnemonic Index:", mnemonicIndex);
-        console.log("User:", user);
-        console.log("Stream:", streamId);
-        console.log("Role:", role);
-        console.log("Deposit:", minimumDeposit);
+        // console.log("Mnemonic Index:", mnemonicIndex);
+        // console.log("User:", user);
+        // console.log("Stream:", streamId);
+        // console.log("Role:", role);
+        // console.log("Deposit:", minimumDeposit);
     }
 }

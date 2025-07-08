@@ -29,11 +29,7 @@ if [ -z "$MNEMONIC_INDEX" ] || [ -z "$STREAM_INDEX" ] || [ -z "$ROLE_INDEX" ]; t
 fi
 
 # Print info
-echo "=== APPLY TO STREAM ==="
-echo "RPC: $RPC"
-echo "MNEMONIC_INDEX: $MNEMONIC_INDEX"
-echo "STREAM_INDEX: $STREAM_INDEX"
-echo "ROLE_INDEX: $ROLE_INDEX"
+echo "=== APPLY TO STREAM RPC: $RPC MNEMONIC_INDEX: $MNEMONIC_INDEX STREAM_INDEX: $STREAM_INDEX ROLE_INDEX: $ROLE_INDEX ==="
 
 # Run Forge script with --sig and inline args
 forge script \
