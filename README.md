@@ -91,9 +91,10 @@ sequenceDiagram
 
 #### Phase 3: Committee Formation
 
-1. **Aggregated key deposit**: Each selected member in the pending committee deposits their aggregated public key
-2. **Key validation**: All members must provide the same aggregated key
-3. **Committee completion**: When all selected members have deposited their keys (missingData reaches 0), the committee is ready
+1. **Deposit communication data**: Each selected member in the pending committee deposits their communication data
+2. **Deposit aggregated key**: Each selected member in the pending committee deposits their aggregated key
+3. **Key validation**: All members must provide the same aggregated key
+4. **Committee completion**: When all selected members have deposited their keys (missingData reaches 0), the committee is ready
 
 ```mermaid
 sequenceDiagram
@@ -102,7 +103,13 @@ sequenceDiagram
     participant ENV as Environment
 
     Note over M,ENV: Phase 3: Committee Formation
-    Note over M,ENV: Selected members deposit aggregated keys for pending committee
+    Note over M,ENV: Selected members deposit communication data and then aggregated keys for pending committee
+
+    M->>CR: depositCommunicationData(streamId, communicationData)
+    Note right of M: Provides communication data
+    CR->>CR: Validate member is in pending committee
+    CR->>CR: Store communication data
+    CR-->>M: CommunicationDataDeposited event
 
     M->>CR: depositAggregatedKey(streamId, aggregatedKey)
     Note right of M: Provides aggregated public key
@@ -111,7 +118,7 @@ sequenceDiagram
     CR->>CR: Decrement missingData counter
     CR-->>M: MemberInfoDeposited event
 
-    Note over M,ENV: All selected committee members deposit their keys...
+    Note over M,ENV: All selected committee members deposit their communication data and keys...
     Note over M,ENV: When missingData reaches 0, committee is complete!
 ```
 
@@ -184,17 +191,27 @@ sequenceDiagram
 
 ### Phase 2: Committee Signatures for Peg-In
 
-1. **Committee members sign**: Each committee member signs the accept peg-in transaction using `addMemberNonce()` and `addMemberSignature()` from SignatureManager
-2. **Signature collection**: Signatures are collected and validated by the SignatureManager
-3. **Ready for broadcast**: Once all committee members have signed, the signed transaction is ready to be broadcast to the Bitcoin network
+1. **Operators register take tx hash**: Committee members with the operator role call `addOperatorTakeTxHash()` to register the operator take transaction hash before signatures are collected.
+2. **Committee members sign**: Each committee member signs the accept peg-in transaction using `addMemberNonce()` and `addMemberSignature()` from SignatureManager
+3. **Signature collection**: Signatures are collected and validated by the SignatureManager
+4. **Ready for broadcast**: Once all committee members have signed, the signed transaction is ready to be broadcast to the Bitcoin network
 
 ```mermaid
 sequenceDiagram
+    participant O as Operator
     participant M as Member
     participant SM as SignatureManager
     participant ENV as Environment
 
-    Note over M,ENV: Phase 2: Committee Signatures for Peg-In
+    Note over O,ENV: Phase 2: Committee Signatures for Peg-In
+    Note over O,ENV: Operators register the operator take transaction hash before signatures
+
+    loop For each operator
+        O->>SM: addOperatorTakeTxHash(operatorAddress, txHash)
+        Note right of O: Operator registers the operator take transaction hash
+        SM-->>ENV: OperatorTakeTxHashAdded event
+    end
+
     Note over M,ENV: Committee members sign the accept peg-in transaction
 
     loop For each committee member
