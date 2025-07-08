@@ -1,10 +1,10 @@
 [profile.default]
-solc_version = "0.8.28"
+solc_version = "0.8.30"
 # Use emv version previous to Paris in RSK to avoid prevrandao error 
 # https://book.getfoundry.sh/cheatcodes/prevrandao
 evm_version = "london"
 optimizer = true
-optimizer_runs = 2000
+optimizer_runs = 200
 # TODO Create2 is not compatible with OpenZeppelin upgrades
 # Create2, In order to reliably deploy to deterministic addresses we will need to make sure our bytecode stays the same
 # bytecode_hash = "none"
@@ -35,5 +35,6 @@ verbosity = 3
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/crates/config
 
+# Uncomment once foundry nightly is released
 [lint]
-exclude_lints = ["mixed-case-variable", "mixed-case-function"]
+exclude_lints = ["mixed-case-variable", "mixed-case-function", "asm-keccak256"]

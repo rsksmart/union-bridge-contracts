@@ -523,14 +523,14 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
     }
 
     /// @notice Gets the stream position information for a given Bitcoin Pegin request transaction hash
-    /// @param _btcTxHash The Bitcoin transaction hash
+    /// @param _acceptPeginTxHash The accept peg-in Bitcoin transaction hash
     /// @return The stream position information
-    function getStreamPosition(bytes32 _btcTxHash) external view returns (StreamPosition memory) {
-        return _getStreamPosition(_btcTxHash);
+    function getStreamPosition(bytes32 _acceptPeginTxHash) external view returns (StreamPosition memory) {
+        return _getStreamPosition(_acceptPeginTxHash);
     }
 
-    function _getStreamPosition(bytes32 _btcTxHash) internal view returns (StreamPosition memory) {
-        return streamPosition[peginRequests[_btcTxHash]];
+    function _getStreamPosition(bytes32 _acceptPeginTxHash) internal view returns (StreamPosition memory) {
+        return streamPosition[peginRequests[_acceptPeginTxHash]];
     }
 
     function _storePegoutAndInitSignatures(

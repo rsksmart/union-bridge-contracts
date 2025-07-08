@@ -3,8 +3,6 @@ pragma solidity ^0.8.20;
 
 import "forge-std/console.sol";
 
-import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {BaseProxy} from "./BaseProxy.sol";
@@ -820,7 +818,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
 
     /// @notice Gets the next available operator address for take operations
     /// @dev Rotates through committee operators to distribute take responsibilities
-    /// @dev Only operators who have deposited their signatures are eligible for take operations
+    /// @dev Only operators who have deposited their signatures nonces are eligible for take operations
     /// @param _committeeId The committee ID to get the operator from
     /// @param _signatureData Array of signature data for committee members
     /// @return The address of the next available operator for take operations
@@ -832,19 +830,17 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     {
         Committee storage committee = _getCommittee(_committeeId);
         uint256 membersLength = committee.members.length;
-        // This is the last operator that did the advancement of funds. Start from the next one.
-        uint256 operatorTakeIndex = (committee.operatorTakeIndex + 1) % membersLength;
 
         for (uint256 i = 0; i < membersLength; i++) {
+            // committee.operatorTakeIndex is the last operator that did the advancement of funds. Start from the next one.
+            uint256 operatorTakeIndex = (committee.operatorTakeIndex + 1 + i) % membersLength;
             if (
                 committee.members[operatorTakeIndex].role == Role.OPERATOR
-                    && _signatureData[operatorTakeIndex].signature != bytes32(0)
+                    && _signatureData[operatorTakeIndex].nonce.length > 0
             ) {
                 committee.operatorTakeIndex = operatorTakeIndex;
                 return committee.members[operatorTakeIndex].memberAddress;
             }
-
-            operatorTakeIndex = (operatorTakeIndex + 1) % membersLength;
         }
 
         revert TakeOperatorNotFound(_committeeId);
