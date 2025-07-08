@@ -1,4 +1,5 @@
-#!/bin/sh
+#!/bin/bash
+set -e
 #https://book.getfoundry.sh/guides/scripting-with-solidity#deploying-our-contract
 
 # we go to the root of the project to avoid relative path issues

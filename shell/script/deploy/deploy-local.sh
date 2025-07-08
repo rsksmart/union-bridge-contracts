@@ -1,4 +1,5 @@
-#!/bin/sh
+#!/bin/bash
+set -e
 # Anvil deploy https://book.getfoundry.sh/reference/anvil/
 # we go to the root of the project to avoid relative path issues
 CURRENT_PATH=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
