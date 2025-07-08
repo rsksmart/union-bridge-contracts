@@ -49,8 +49,6 @@ contract DepositAggregatedKeyScript is ScriptUtils {
         if (prevMissingData != 1) {
             // If it's not it should check if the pending committee missing data
             (,, uint256 missingData) = committeeRegistry.getPendingCommittee(_streamIndex);
-            console.log("missingData", missingData);
-            console.log("prevMissingData", prevMissingData);
             if (prevMissingData == missingData - 1) {
                 revert("committee did not deposit aggregated key");
             }

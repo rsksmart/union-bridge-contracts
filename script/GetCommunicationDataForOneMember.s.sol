@@ -49,15 +49,15 @@ contract GetCommunicationDataForOneMemberScript is ScriptUtils {
         vm.stopBroadcast();
 
         console.log("=== Got communication data for one member successfully ===");
-        console.log("Mnemonic Index:", mnemonicIndex);
-        console.log("User:", user);
-        console.log("Stream:", stream);
-        console.log("Data:");
-        for (uint256 i = 0; i < memberComData.length; i++) {
-            console.log("Member ", i, ":");
-            for (uint256 j = 0; j < COMMUNICATION_DATA_CHUNKS; j++) {
-                console.logBytes32(memberComData[i].data[j]);
-            }
-        }
+        // console.log("Mnemonic Index:", mnemonicIndex);
+        // console.log("User:", user);
+        // console.log("Stream:", stream);
+        // console.log("Data:");
+        // for (uint256 i = 0; i < memberComData.length; i++) {
+        //     console.log("Member ", i, ":");
+        //     for (uint256 j = 0; j < COMMUNICATION_DATA_CHUNKS; j++) {
+        //         console.logBytes32(memberComData[i].data[j]);
+        //     }
+        // }
     }
 }

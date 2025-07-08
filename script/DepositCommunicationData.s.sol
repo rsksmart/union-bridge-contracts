@@ -55,7 +55,7 @@ contract DepositCommunicationDataScript is ScriptUtils {
         committeeRegistry.depositCommunicationData(stream, newMemberComunicationData);
         vm.stopBroadcast();
 
-        console.log("=== Member deposited communication data successfully ===");
+        // console.log("=== Member deposited communication data successfully ===");
         // console.log("Mnemonic Index:", mnemonicIndex);
         // console.log("User:", user);
         // console.log("Stream:", stream);

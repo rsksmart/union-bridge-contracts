@@ -98,8 +98,8 @@ interface ISignatureManager is IAccessControl {
     /// @notice Adds a OperatorTake transaction hash for a committee member
     /// @dev Called by committee operators to provide their OperatorTake transaction hash
     /// @param _acceptPeginTxHash The accept peg-in transaction hash
-    /// @param _txHash The OperatorTake transaction hash provided by the member
-    function addOperatorTakeTxHash(bytes32 _acceptPeginTxHash, bytes32 _txHash) external;
+    /// @param _takeTxhash The OperatorTake transaction hash provided by the member
+    function addOperatorTakeTxHash(bytes32 _acceptPeginTxHash, bytes32 _takeTxhash) external;
 
     /// @notice Checks if all OperatorTake transaction hashes are ready
     /// @param _acceptPeginTxHash The accept peg-in transaction hash

@@ -245,16 +245,16 @@ contract SignatureManager is ISignatureManager, AccessControl {
     /// @notice Adds a OperatorTake transaction hash for an operator
     /// @dev Only operators can add OperatorTake transaction hashes
     /// @param _acceptPeginTxHash The accept peg-in transaction hash
-    /// @param _hash The OperatorTake transaction hash to add
-    function addOperatorTakeTxHash(bytes32 _acceptPeginTxHash, bytes32 _hash) external {
+    /// @param _takeTxhash The OperatorTake transaction hash to add
+    function addOperatorTakeTxHash(bytes32 _acceptPeginTxHash, bytes32 _takeTxhash) external {
         OperatorTakeTxHashes storage operatorTakeTxHashes = _getOperatorTakeTxHashes(_acceptPeginTxHash);
 
         if (operatorTakeTxHashes.missingHashes == 0) {
             revert AllOperatorTakeTxHashesAlreadyPresent(_acceptPeginTxHash);
         }
         // Check if hash is valid
-        if (_hash == bytes32(0)) {
-            revert InvalidHash(_hash);
+        if (_takeTxhash == bytes32(0)) {
+            revert InvalidHash(_takeTxhash);
         }
 
         Role role = _getMemberRole(operatorTakeTxHashes.committeeId, msg.sender);
@@ -270,11 +270,11 @@ contract SignatureManager is ISignatureManager, AccessControl {
         }
 
         if (operatorTakeTxHashes.txHashes[msg.sender] != bytes32(0)) {
-            revert MemberAlreadyAddedOperatorTakeTxHash(_acceptPeginTxHash, msg.sender, _hash);
+            revert MemberAlreadyAddedOperatorTakeTxHash(_acceptPeginTxHash, msg.sender, _takeTxhash);
         }
 
-        operatorTakeTxHashes.txHashes[msg.sender] = _hash;
-        emit OperatorTakeTxHashAdded(_acceptPeginTxHash, msg.sender, _hash);
+        operatorTakeTxHashes.txHashes[msg.sender] = _takeTxhash;
+        emit OperatorTakeTxHashAdded(_acceptPeginTxHash, msg.sender, _takeTxhash);
 
         operatorTakeTxHashes.missingHashes -= 1;
         if (operatorTakeTxHashes.missingHashes == 0) {

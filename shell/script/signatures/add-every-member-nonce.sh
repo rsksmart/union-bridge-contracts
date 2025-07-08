@@ -5,7 +5,6 @@ source .env
 
 # Get the directory where this script is located
 CURRENT_PATH=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-cd "$CURRENT_PATH/../../.."  # Go to project root
 
 # Parse arguments
 while getopts "h:n:" opt; do

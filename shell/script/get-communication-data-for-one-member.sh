@@ -28,10 +28,7 @@ if [ -z "$MNEMONIC_INDEX" ] || [ -z "$STREAM_INDEX" ]; then
 fi
 
 # Print info
-echo "=== GET COMMUNICATION DATA FOR ONE MEMBER ==="
-echo "RPC: $RPC"
-echo "MNEMONIC_INDEX: $MNEMONIC_INDEX"
-echo "STREAM_INDEX: $STREAM_INDEX"
+echo "=== GET COMMUNICATION DATA FOR ONE MEMBER RPC: $RPC MNEMONIC_INDEX: $MNEMONIC_INDEX STREAM_INDEX: $STREAM_INDEX ==="
 
 # Run Forge script with --sig and inline args
 forge script \
