@@ -37,4 +37,9 @@ verbosity = 3
 
 # Uncomment once foundry nightly is released
 [lint]
-exclude_lints = ["mixed-case-variable", "mixed-case-function", "asm-keccak256"]
+exclude_lints = [
+    "mixed-case-variable",
+    "mixed-case-function",
+    "asm-keccak256",
+    "pascal-case-struct",
+]
