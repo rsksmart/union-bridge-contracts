@@ -49,23 +49,23 @@ contract DepositCommunicationDataScript is ScriptUtils {
         bytes32[] memory committeeComPubkeys = getPendingCommitteeComPubKeys(stream);
         vm.stopBroadcast();
 
-        CommunicationData[] memory memberComunicationData = encryptComunicationData(committeeComPubkeys, "ip:port");
+        CommunicationData[] memory newMemberComunicationData = encryptComunicationData(committeeComPubkeys, "ip:port");
 
         vm.startBroadcast(privKey);
-        committeeRegistry.depositCommunicationData(stream, memberComunicationData);
+        committeeRegistry.depositCommunicationData(stream, newMemberComunicationData);
         vm.stopBroadcast();
 
         console.log("=== Member deposited communication data successfully ===");
-        console.log("Mnemonic Index:", mnemonicIndex);
-        console.log("User:", user);
-        console.log("Stream:", stream);
-        console.log("Data:");
-        for (uint256 i = 0; i < memberComunicationData.length; i++) {
-            console.log("Member ", i, ":");
-            for (uint256 j = 0; j < COMMUNICATION_DATA_CHUNKS; j++) {
-                console.logBytes32(memberComunicationData[i].data[j]);
-            }
-        }
+        // console.log("Mnemonic Index:", mnemonicIndex);
+        // console.log("User:", user);
+        // console.log("Stream:", stream);
+        // console.log("Data:");
+        // for (uint256 i = 0; i < memberComunicationData.length; i++) {
+        //     console.log("Member ", i, ":");
+        //     for (uint256 j = 0; j < COMMUNICATION_DATA_CHUNKS; j++) {
+        //         console.logBytes32(memberComunicationData[i].data[j]);
+        //     }
+        // }
     }
 
     function encryptComunicationData(bytes32[] memory committeeComPubkeys, string memory data)
