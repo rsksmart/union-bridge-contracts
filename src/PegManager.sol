@@ -560,12 +560,6 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
     /// @dev Emits OperatorTakeTriggered event upon successful triggering
     /// @param _pegoutSignatureHash The signature hash of the peg-out request
     function triggerOperatorTake(bytes32 _pegoutSignatureHash) external {
-        // This method trigger the operator take for a pegout.
-        // It could be after a User Take expiration or after an Operator Take expiration.
-        // Each case has its own timeout and before triggering the operator take (after a User Take expiration)
-        // signatures should be checked to see if the User Take was already signed.
-        // Partial signatures are used to skip those operators that has not signed the User Take.
-
         bytes32 acceptPeginTxHash = pegoutToPeginTxHash[_pegoutSignatureHash];
         if (acceptPeginTxHash == bytes32(0)) {
             revert PegoutSignatureHashNotFound(_pegoutSignatureHash);

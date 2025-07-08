@@ -45,10 +45,10 @@ contract RegisterUserTakeScript is ScriptUtils {
 
         Slot memory slot = pegManager.streamManager().getSlot(stream.streamId, expectedPacketNumber, expectedSlotId);
         if (slot.state != SlotState.COMPLETED) {
-            revert("Slot should be marked as COMPLETED after peg-out registration");
+            revert("Slot should be marked as COMPLETED after user take peg-out registration");
         }
 
-        console.log("=== Pegout registered successfully ===");
+        console.log("=== User take Pegout registered successfully ===");
         console.log("Stream, Slot, Packet");
         console.log(stream.streamId, expectedPacketNumber, expectedSlotId);
     }

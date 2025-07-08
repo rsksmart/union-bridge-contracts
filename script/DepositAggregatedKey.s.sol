@@ -3,51 +3,64 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
-import {ICommitteeRegistry, Role} from "src/interfaces/ICommitteeRegistry.sol";
-// import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
+import {ICommitteeRegistry, Role, Committee} from "src/interfaces/ICommitteeRegistry.sol";
+import {IStreamManager} from "src/interfaces/IStreamManager.sol";
+import {PegManager} from "src/PegManager.sol";
 
 contract DepositAggregatedKeyScript is ScriptUtils {
     ICommitteeRegistry committeeRegistry;
+    IStreamManager streamManager;
+    PegManager pegManager;
 
-    bytes32 committeePubKey;
-    uint16 mnemonicIndex;
-    uint64 stream;
     uint256 privKey;
     address user;
 
     function setUp(uint16 _mnemonicIndex, uint64 _streamIndex, bytes32 _committeePubKey) internal {
-        committeeRegistry = ICommitteeRegistry(0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0);
+        pegManager = PegManager(0x0165878A594ca255338adfa4d48449f69242Eb8F);
+        committeeRegistry = pegManager.committeeRegistry();
+        streamManager = IStreamManager(pegManager.streamManager());
 
         // Read args from command line / env
-        mnemonicIndex = _mnemonicIndex;
-        if (mnemonicIndex > 9) {
+        if (_mnemonicIndex > 9) {
             revert("mnemonic index must be between 0 and 9");
         }
-        stream = _streamIndex;
-        if (stream > 4) {
+        if (_streamIndex > 4) {
             revert("stream index must be between 0 and 4");
         }
-        committeePubKey = _committeePubKey;
-        if (committeePubKey == bytes32(0)) {
+        if (_committeePubKey == bytes32(0)) {
             revert("committee pub key must be provided");
         }
 
-        privKey = getMemberKey(uint32(mnemonicIndex));
+        privKey = getMemberKey(uint32(_mnemonicIndex));
         user = vm.addr(privKey);
     }
 
     function run(uint16 _mnemonicIndex, uint64 _streamIndex, bytes32 _committeePubKey) public {
         setUp(_mnemonicIndex, _streamIndex, _committeePubKey);
 
+        // revert if no pending committee found
+        (,, uint256 prevMissingData) = committeeRegistry.getPendingCommittee(_streamIndex);
+
         vm.startBroadcast(privKey);
-        committeeRegistry.depositAggregatedKey(stream, committeePubKey);
+        committeeRegistry.depositAggregatedKey(_streamIndex, _committeePubKey);
         vm.stopBroadcast();
 
+        // Check if it's not last member to deposit the aggregated key,
+        if (prevMissingData != 1) {
+            // If it's not it should check if the pending committee missing data
+            (,, uint256 missingData) = committeeRegistry.getPendingCommittee(_streamIndex);
+            console.log("missingData", missingData);
+            console.log("prevMissingData", prevMissingData);
+            if (prevMissingData == missingData - 1) {
+                revert("committee did not deposit aggregated key");
+            }
+        } else {
+            // if it is it shoud create the committee
+            uint256 committeeId = streamManager.getAvailablePeginCommitteeId(_streamIndex);
+            // If it does not revert, it means the committee has been created
+            committeeRegistry.getCommittee(committeeId);
+        }
+
         console.log("=== Member deposited aggregated key successfully ===");
-        console.log("Mnemonic Index:", mnemonicIndex);
-        console.log("User:", user);
-        console.log("Stream:", stream);
-        console.log("Aggregated key :");
-        console.logBytes32(committeePubKey);
     }
 }

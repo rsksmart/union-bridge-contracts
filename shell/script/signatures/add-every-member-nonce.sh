@@ -25,10 +25,8 @@ if [ -z "$SIGNATURE_HASH" ] || [ -z "$NONCE" ]; then
   exit 1
 fi
 
-chmod +x "$CURRENT_PATH/add-member-nonce.sh"
-
 # Loop through all mnemonic indices
 for ((i=0; i<=MAX_MNEMONIC_INDEX; i++)); do
-  echo "Adding nonce for member $i"
+  #echo "Adding nonce for member $i"
   "$CURRENT_PATH/add-member-nonce.sh" -m "$i" -h "$SIGNATURE_HASH" -n "$NONCE"
 done

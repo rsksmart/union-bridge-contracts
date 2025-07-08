@@ -4,15 +4,16 @@
 CURRENT_PATH=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 cd "$CURRENT_PATH/../.."
 
+
 # Defaults
-RSK_DESTINATION_ADDRESS="0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+ACCEPT_PEGIN_TX_HASH="0x3f3b22c9d1c2a322e91111b901568e441959bc4137945490e643ee6691968754"
 
 # Parse args
 while getopts ":a:" opt; do
   case "$opt" in
-    a) RSK_DESTINATION_ADDRESS="$OPTARG" ;;
+    a) ACCEPT_PEGIN_TX_HASH="$OPTARG" ;;
     *)
-      echo "Usage: $0 -a <rsk_destination_address>"
+      echo "Usage: $0 -r <accept_pegin_tx_hash>"
       exit 1
       ;;
   esac
@@ -21,11 +22,11 @@ done
 # set up environment variables
 source .env
 RPC=$LOCAL_RPC
-echo "================ REGISTER PEGIN REQUEST TO $RPC ================"
+echo "================ REGISTER OPERATOR TAKE REQUEST TO $RPC ================"
 forge script \
-    script/RequestPegin.s.sol \
-    --sig "run(address)" \
-    "$RSK_DESTINATION_ADDRESS" \
+    script/RegisterOperatorTake.s.sol \
+     --sig "run(bytes32)" \
+    "$ACCEPT_PEGIN_TX_HASH" \
     --rpc-url $RPC \
     --legacy \
     --broadcast \

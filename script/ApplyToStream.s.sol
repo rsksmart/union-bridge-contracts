@@ -26,8 +26,8 @@ contract ApplyToStreamScript is ScriptUtils {
     PublicKeyRegistration[] pubKeysRegistration;
 
     function setUp(uint16 _mnemonicIndex, uint16 _streamIndex, uint16 _roleIndex) internal {
-        committeeRegistry = ICommitteeRegistry(0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0);
         pegManager = PegManager(0x0165878A594ca255338adfa4d48449f69242Eb8F);
+        committeeRegistry = pegManager.committeeRegistry();
         streamManager = IStreamManager(pegManager.streamManager());
         // Read args from command line / env
         mnemonicIndex = _mnemonicIndex;
