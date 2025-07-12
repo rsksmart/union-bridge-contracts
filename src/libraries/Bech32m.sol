@@ -18,7 +18,7 @@ library Bech32m {
 
     /// @notice Error thrown when a value exceeds the maximum allowed for the given bit size
     /// @param value The value that exceeded the maximum allowed range
-    error InvalidValue(uint256 value);
+    error InvalidBitsSize(uint256 value);
 
     // Bech32m Constants
     /// @dev Character set for Bech32m encoding (32 characters)
@@ -106,7 +106,7 @@ library Bech32m {
         for (uint256 i = 0; i < data.length; i++) {
             uint256 value = uint8(data[i]);
             if (value >> fromBits != 0) {
-                revert InvalidValue(value);
+                revert InvalidBitsSize(value);
             }
             acc = ((acc << fromBits) | value) & maxacc;
             bits += fromBits;

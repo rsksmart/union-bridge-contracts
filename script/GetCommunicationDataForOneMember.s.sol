@@ -49,6 +49,8 @@ contract GetCommunicationDataForOneMemberScript is ScriptUtils {
         vm.stopBroadcast();
 
         console.log("=== Got communication data for one member successfully ===");
+        console.log("Member Communication Data length:", memberComData.length);
+
         // console.log("Mnemonic Index:", mnemonicIndex);
         // console.log("User:", user);
         // console.log("Stream:", stream);
