@@ -8,7 +8,6 @@ Represents the current state of a slot in the stream system
 
 ```solidity
 enum SlotState {
-    PREPARED,
     FILLED,
     LOCKED,
     ADVANCED,

@@ -22,8 +22,6 @@ enum StreamDenomination {
 /// @notice Represents the current state of a slot in the stream system
 /// @dev Tracks the progression of funds through the slot lifecycle
 enum SlotState {
-    /// @notice Slot is prepared and ready for peg-in transactions
-    PREPARED,
     /// @notice Slot has received a peg-in transaction and is filled with funds
     FILLED,
     /// @notice Slot is locked for peg-out processing

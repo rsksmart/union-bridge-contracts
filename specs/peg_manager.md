@@ -6,15 +6,15 @@
 - The Solidity compiler version currently supported by Rootstock is 0.8.19
 - For contract development we will use the [Foundry toolkit](https://github.com/foundry-rs/foundry) and the [OpenZeppelin contract library](https://github.com/OpenZeppelin/openzeppelin-contracts).
 
-## 1. Purpose  
+## 1. Purpose
 This contract is responsible of keeping track of peg-in and peg-out requests, enabling members of a committee to register and process peg-in requests from Bitcoin to Rootstock along with the corresponding peg-out request from Rootstock to Bitcoin. The `PegManager` holds the security bonds required from the committee to secure the peg operations. The contract allows users create temporary peg-in addresses to issue peg-in requests on the Bitcoin network.
 
-Internally, the `PegManager` uses peg slots. A peg slot is a data structure that acts as a container for the peg data (e.g. the peg-in UTXO), the dispute resolution information, and the different take (peg-out) transactions. Slots are grouped into packets and packets are grouped into streams. 
+Internally, the `PegManager` uses peg slots. A peg slot is a data structure that acts as a container for the peg data (e.g. the peg-in UTXO), the dispute resolution information, and the different take (peg-out) transactions. Slots are grouped into packets and packets are grouped into streams.
 
 ### Streams
-Initially there will be 5 predefined streams, each of them can handle peg-ins of a fixed amount of Bitcoin. We call this fixed amount `denomination`, and the proposed denominations are 0.001, 0.01, 0.1, 1, and 10 BTCs. Pegs (in and out) in a stream are grouped into packets with each packet having an independent group of participants (committee) assigned to it to monitor and handle the pegs in the packet. 
+Initially there will be 5 predefined streams, each of them can handle peg-ins of a fixed amount of Bitcoin. We call this fixed amount `denomination`, and the proposed denominations are 0.001, 0.01, 0.1, 1, and 10 BTCs. Pegs (in and out) in a stream are grouped into packets with each packet having an independent group of participants (committee) assigned to it to monitor and handle the pegs in the packet.
 
-Each stream has a peg-in and a peg-out pointer. The peg-in pointer points to the next available slot that will be used to register a peg-in request. Initially the peg-in pointer starts pointing to the firts slot of the first packet and moves to the next available (empty) slot when a peg-in operation is fully confirmed and registered in the contract. 
+Each stream has a peg-in and a peg-out pointer. The peg-in pointer points to the next available slot that will be used to register a peg-in request. Initially the peg-in pointer starts pointing to the firts slot of the first packet and moves to the next available (empty) slot when a peg-in operation is fully confirmed and registered in the contract.
 
 The peg-out pointer points to the first slot that has been used for a confirmed peg-in, this means that said slot is ready to be paid through a peg-out operation. This pointer starts pointing to a null position (-1 since Solidity doesn't support undefined or null values). When a peg-out is fully processed and registered in the contract, the peg-out pointer moves to the next available confirmed peg-in slot. If no slot is available, the peg-out pointer returns to the null (-1) position.<br><br>
 
@@ -30,31 +30,30 @@ A slot represents a single peg-in or peg-out operation. It has a unique id to in
 
 A slot can have the following states:
 
-- `Prepared`, when all the dispute resolution information is linked to the slot (setup completed). In this state the slot is ready to be assigned to a request peg-in operation.
 - `Filled`, when the Committee members have confirmed and registered a peg-in. In this state the slot is ready for peg-out.
 - `Locked`, when the slot is assigned to a peg-out operation
 - `Advanced`: when the operator advanced funds.
-- `Completed`: when the peg-out is processed (happy path) or the operator receives the reimbursement after advance..
+- `Completed`: when the peg-out is processed (happy path) or the operator receives the reimbursement after advance.
 
 !["Slots and packets diagram"](./imgs/slots_packets.png)
 
-The peg-in pointer points to the first slot from a packet that is in the `Prepared` state. When a peg-in is registered in the pointed slot, the slot changes to the `Filled` state and the pointer moves forward to the next `Prepared` slot. There must always be a `Prepared` slot available for the peg-in pointer to move. If all the slots in the packet are in the Filled state, the peg-in pointer will move to a new packet.
+The peg-in pointer points to the first available slot in a packet. When a peg-in is registered in the pointed slot, the slot changes to the `Filled` state and the pointer moves forward to the next available slot. If all the slots in the packet are filled, the peg-in pointer will move to a new packet.
 
-The peg-out pointer points to the first slot from a packet that is in the `Filled` state. When a peg-out is registered in the pointed slot, the slot changes to the `Paid` state and the pointer moves forward to the next slot in the `Filled` state. If there are no more slots in the packet in the `Filled`, the pointer moves to the null position (-1).
+The peg-out pointer points to the first slot from a packet that is in the `Filled` state. When a peg-out is registered in the pointed slot, the slot changes to the `Completed` state and the pointer moves forward to the next slot in the `Filled` state. If there are no more slots in the packet in the `Filled` state, the pointer moves to the null position (-1).
 
 ---
 
 # 2. Requirements
-**Functional Requirements** (features or functions the contract must have):  
+**Functional Requirements** (features or functions the contract must have):
   - Committee members must be able to register confirmed peg operations (in and out).
   - The same peg operation cannot be registered twice.
   - At all times there must be at least one free packet available per stream.
   - The contract must emit an event notifying when a new packet needs to be created.
 
-**Non-Functional Requirements** (constraints the contract must satisfy, e.g. gas efficiency, performance, or scalability):  
+**Non-Functional Requirements** (constraints the contract must satisfy, e.g. gas efficiency, performance, or scalability):
   - We need to evaluate the option of prunning old packages, to avoid constantly growing the state of the `PegManager`. We don't need this functionality now, but it will be good to have it planned.
 
-**Interface Requirements** (features that allow the contract interact with external systems):  
+**Interface Requirements** (features that allow the contract interact with external systems):
   - Expose `getTemporaryPegInAddress(bytes rootstockDepositAddress, bytes bitcoinReimbursementAddress, uint64 value)` as a view function to allow users generate a temporary Bitcoin address to perform a peg-in without executing an on-chain transaction.
 ---
 
@@ -65,7 +64,7 @@ To store `Slot`, `Packet` and `Stream` information we will use the following str
 ```solidity
 pragma solidity ^0.8.19;
 
-enum SlotState{ EMPTY, PREPARED, FILLED, PAID }
+enum SlotState{ FILLED, LOCKED, ADVANCED, COMPLETED }
 
 struct Slot {
     uint256 slotId;                 // Unique ID
@@ -114,7 +113,7 @@ struct Stream {
 # 4. Functions
 *(List each function with a description of its purpose, inputs, outputs, and restrictions.)*
 
-- **Function Name**:  
+- **Function Name**:
   - `getTemporaryPegInAddress(bytes rootstockDepositAddress, bytes bitcoinReimbursementAddress, uint64 value)`
   - `acceptPegInRequest(bytes pegInRequestTxSPVProof, uint8 numberOfConfirmations)`
   - `registerPegTransactions(bytes take0Tx, bytes take1Tx, bytes acceptPegInTx, bytes take0AggregatedSignatures, bytes take1AggregatedSignatures, bytes acceptPegInAggregatedSignatures)`
@@ -122,9 +121,9 @@ struct Stream {
 
 ---
 
-# 5. Access Control  
-- *Only the members of the committee assigned to a packet can register peg operations for that packet.*  
-- *Only the members of stream committees can create new packets in response to a new packet request event from the `PegManager`.*  
+# 5. Access Control
+- *Only the members of the committee assigned to a packet can register peg operations for that packet.*
+- *Only the members of stream committees can create new packets in response to a new packet request event from the `PegManager`.*
 - *Any user can request a temporary peg-in address for a peg-in request.*
 
 ---
@@ -132,28 +131,28 @@ struct Stream {
 # 6. Error Handling
 For error handling we will use a mix of require, revert, assert and custom errors. From solidity 0.8.0 and up, all these operators will revert the transaction and refund the remaining gas to the user, meaning, the user pays for the gas consumed up to the point where required or revert are executed. Require allows to specify a condition and an error message if the condition is not met. Revert doesn't need a condition, only an error message and assert only needs a condition.
 
-- Usually require is used to validate user input, responses from external contract, or checking conditions before updating the contract state. 
+- Usually require is used to validate user input, responses from external contract, or checking conditions before updating the contract state.
 - Revert is used when handling more complex conditions such as access control, state validation, enforcement of rules specific to the protocol, prevention of invalid and when a custom error is needed.
 - Assert is used to check for conditions that should never occur. It should be use for internal checks and for invariants that should always be true. If an assert statement fails, it indicates a bug in the code.
 
-- **Require Statements:**:  
+- **Require Statements:**:
   ```solidity
   require(deposit <= requiredBond, "Deposit amount does not cover the security bond");
   ```
 
-- **Revert Statements:**:  
+- **Revert Statements:**:
   if (deposit <= 0) {
       revert("Deposit amount must be greater than zero");
   }
 
-- **Assert Statements:**:  
+- **Assert Statements:**:
   ```solidity
   assert(deposit >= 0);
   ```
 
 Solidity 0.8.4 introduced custom errors, allowing developers to define their own error types with specific error codes and parameters. Custom errors consume less gas than traditional string-based revert or require error messages because the error data is encoded as an event instead of being stored as a string. Custom errors should be used in frequently called or gas-sensitive functions, such as protocols with high on-chain activity.
 
-- **Custom Errors**:  
+- **Custom Errors**:
   ```solidity
   error InvalidDeposit(uint256 available, uint256 required);
 
@@ -166,18 +165,18 @@ Solidity 0.8.4 introduced custom errors, allowing developers to define their own
 
 # 7. Security Considerations
 - **Reentrancy attacks**
-  - **Mitigation**: *Use [`checks-effects-interactions`](https://fravoll.github.io/solidity-patterns/checks_effects_interactions.html) pattern.*  
+  - **Mitigation**: *Use [`checks-effects-interactions`](https://fravoll.github.io/solidity-patterns/checks_effects_interactions.html) pattern.*
 
-- **Integer overflow.**  
+- **Integer overflow.**
   - **Mitigation**: *Use Solidity 0.8+ built-in overflow checks.*
 
 ---
 
 # 8. Testing and Verification
-- **Test Cases**:   
+- **Test Cases**:
 TBD
 
-- **Tools for Analysis**:  
+- **Tools for Analysis**:
 For automated security analysis of the smart contracts to detect vulnerabilities like reentrancy and overflow errors we will use the following tools:
 
   - Slither: A static analysis tool for Solidity smart contracts, designed to identify vulnerabilities and coding issues. It provides detailed reports and supports custom checks, allowing developers to improve contract security early in the development cycle.
@@ -210,8 +209,8 @@ For documentation and comments inside contracts we will use Solidity [`NatSpec f
    ```
 
 # 11. Deployment Plan
-- **Initialization Parameters (values and configurations needed for deployment)**:  
+- **Initialization Parameters (values and configurations needed for deployment)**:
   TBD
 
-- **Steps for Deployment**:  
+- **Steps for Deployment**:
   TBD

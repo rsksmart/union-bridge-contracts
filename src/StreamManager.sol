@@ -259,7 +259,7 @@ contract StreamManager is IStreamManager, AccessControl {
         return _getSlot(_streamId, _packetNumber, _slotNumber);
     }
 
-    /// @notice Looks for the first empty slot and assigns the peg-in transaction in prepared state
+    /// @notice Looks for the first empty slot and assigns the peg-in transaction in filled state
     /// @dev Can only be called by the PegManager
     /// @param _streamId The ID of the stream
     /// @param _packetNumber The packet number
