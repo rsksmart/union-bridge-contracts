@@ -20,7 +20,7 @@ contract TestStreamManager is Test, HelperContract {
 
     function test_lockSlot_Success() external {
         // Arrange
-        streamManager.setSlotHarness(setupStreamId, 0, hex"00", 0, 0);
+        streamManager.setSlotHarness(setupStreamId, 0, hex"00", 0, 0, SlotState.FILLED);
 
         // Act
         vm.prank(address(pm));
@@ -32,24 +32,7 @@ contract TestStreamManager is Test, HelperContract {
 
     function test_lockSlot_NonExistentSlot() external {
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IStreamManager.NonExistentSlot.selector, setupStreamId, 0, 0));
-
-        // Act
-        vm.prank(address(pm));
-        streamManager.lockSlot(setupStreamId);
-    }
-
-    function test_lockSlot_InconsistentPegoutPointer() external {
-        // Arrange
-        streamManager.pushSlotsHarness(setupStreamId, 0, Constants.SLOTS_PER_PACKET + 1, SlotState.FILLED);
-        streamManager.setPegoutPointersHarness(setupStreamId, 0, Constants.SLOTS_PER_PACKET);
-        uint256 slotsLength = streamManager.getSlotsLengthHarness(setupStreamId, 0);
-        assertEq(slotsLength, Constants.SLOTS_PER_PACKET + 1, "Incorrect slots length");
-
-        // Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(IStreamManager._InconsistentPegoutPointer.selector, setupStreamId, 0, 101)
-        );
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.NoFilledSlot.selector, setupStreamId));
 
         // Act
         vm.prank(address(pm));
@@ -63,7 +46,7 @@ contract TestStreamManager is Test, HelperContract {
         assertEq(slotsLength, 1, "Incorrect slots length");
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IStreamManager.NoFilledSlot.selector, setupStreamId, 0, 0));
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.NoFilledSlot.selector, setupStreamId));
 
         // Act
         vm.prank(address(pm));
@@ -78,11 +61,12 @@ contract TestStreamManager is Test, HelperContract {
 
         // Assert
         vm.expectRevert(
-            abi.encodeWithSelector(IStreamManager.InconsistentSlotsPerPacket.selector, setupStreamId, 0, 101)
+            abi.encodeWithSelector(IStreamManager._InconsistentSlotsPerPacket.selector, setupStreamId, 0, 101)
         );
 
         // Act
-        streamManager.setSlotHarness(setupStreamId, 0, hex"00", 0, 0);
+        vm.prank(address(pm));
+        streamManager.reserveSlot(setupStreamId, 0);
     }
 
     function test_createNewPacket_Success() external {

@@ -130,8 +130,7 @@ interface IPegManager {
     /// @param requestPeginTxHash The hash of the peg-in request transaction
     /// @param acceptPeginTxHash The hash of the accept peg-in transaction
     /// @param vout The output index of the transaction
-    /// @param streamId The stream ID where the funds will be placed
-    /// @param packetNumber The packet number within the stream
+    /// @param streamPosition The struct with the position information (stream, packet, slot, status)
     /// @param requestPeginInfo Temporary information needed for the accept phase
     /// @param prevoutData Data about the previous output being spent
     /// @param acceptPeginSignatureMessage The signature message for committee signing
@@ -140,8 +139,7 @@ interface IPegManager {
         bytes32 indexed requestPeginTxHash,
         bytes32 indexed acceptPeginTxHash,
         uint64 vout,
-        uint64 streamId,
-        uint64 packetNumber,
+        StreamPosition streamPosition,
         RequestPeginTempInfo requestPeginInfo,
         PrevoutData prevoutData,
         bytes acceptPeginSignatureMessage

@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import {IAccessControl} from "./IAccessControl.sol";
 import {Role} from "./ICommitteeRegistry.sol";
+import {StreamPosition} from "./IPegManager.sol";
 
 /// @notice Represents different Bitcoin denominations supported by the union bridge
 /// @dev Each denomination corresponds to a specific stream for efficient fund management
@@ -22,6 +23,8 @@ enum StreamDenomination {
 /// @notice Represents the current state of a slot in the stream system
 /// @dev Tracks the progression of funds through the slot lifecycle
 enum SlotState {
+    /// @notice Slot is reserved for a peg-in request awaiting committee acceptance
+    RESERVED,
     /// @notice Slot has received a peg-in transaction and is filled with funds
     FILLED,
     /// @notice Slot is locked for peg-out processing
@@ -29,7 +32,9 @@ enum SlotState {
     /// @notice Slot is being advanced by an operator to the user
     ADVANCED,
     /// @notice Slot has been paid out via peg-out transaction
-    COMPLETED
+    COMPLETED,
+    /// @notice Slot is blocked due to timeout or refund proof
+    BLOCKED
 }
 
 /// @notice Represents a slot within a packet that can hold funds
@@ -160,21 +165,32 @@ interface IStreamManager is IAccessControl {
     /// @return Slot The complete slot information
     function getSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotNumber) external view returns (Slot memory);
 
-    /// @notice Fills a slot with accept peg-in transaction information
-    /// @dev Updates the slot state to FILLED and stores transaction details
+    /// @notice Reserves a slot for a peg-in request
+    /// @dev Creates a new slot with RESERVED state during request peg-in
     /// @param _streamId The index of the stream
     /// @param _packetNumber The index of the packet within the stream
+    /// @return uint64 The slot ID of the reserved slot
+    function reserveSlot(uint64 _streamId, uint64 _packetNumber) external returns (uint64);
+
+    /// @notice Fills a slot with accept peg-in transaction information
+    /// @dev Updates the slot state from RESERVED to FILLED and stores transaction details
+    /// @param _stream The struct containing the stream, packet, and slot information
     /// @param _acceptPeginAmount The amount of the accept peg-in transaction in satoshis
     /// @param _acceptPeginTx The transaction ID of the accept peg-in transaction
     /// @param _scriptPubKey The scriptPubKey of the accept peg-in transaction
-    /// @return uint64 The slot ID of the filled slot
-    function fillAcceptPeginTx(
-        uint64 _streamId,
-        uint64 _packetNumber,
+    function fillSlot(
+        StreamPosition memory _stream,
         uint64 _acceptPeginAmount,
         bytes32 _acceptPeginTx,
         bytes memory _scriptPubKey
-    ) external returns (uint64);
+    ) external;
+
+    /// @notice Blocks a reserved slot due to timeout or refund proof
+    /// @dev Updates the slot state from RESERVED to BLOCKED
+    /// @param _streamId The index of the stream
+    /// @param _packetNumber The index of the packet within the stream
+    /// @param _slotId The ID of the slot to block
+    function blockSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) external;
 
     /// @notice Retrieves the committee ID for a specific packet
     /// @param _streamId The index of the stream
@@ -268,7 +284,17 @@ interface IStreamManager is IAccessControl {
     /// @param streamId The ID of the stream containing the slot
     /// @param packetNumber The number of the packet containing the slot
     /// @param slotId The ID of the newly created slot
-    event SlotCreated(uint64 streamId, uint64 packetNumber, uint64 slotId);
+    event SlotReserved(uint64 streamId, uint64 packetNumber, uint64 slotId);
+
+    /// @notice Event emitted when a slot is filled with accept peg-in transaction details
+    /// @param streamId The ID of the stream containing the slot
+    /// @param packetNumber The number of the packet containing the slot
+    /// @param slotId The ID of the slot that was filled
+    /// @param acceptPeginTx The hash of the accept peg-in transaction
+    /// @param acceptPeginAmount The amount of the accept peg-in transaction
+    event SlotFilled(
+        uint64 streamId, uint64 packetNumber, uint64 slotId, bytes32 acceptPeginTx, uint64 acceptPeginAmount
+    );
 
     /// @notice Event emitted when Security Bond Percentage is updated
     /// @param role The role for which the security bond percentage was updated
@@ -307,22 +333,27 @@ interface IStreamManager is IAccessControl {
     /// @param maxDenominationsSize The maximum number of denominations allowed
     error tooManyDenominations(uint256 maxDenominationsSize);
 
-    /// @notice Thrown when there are no filled slots available
+    /// @notice Thrown when there are no filled slots available for a given stream
+    /// @param streamId The stream ID
+    error NoFilledSlot(uint256 streamId);
+
+    /// @notice Thrown when a slot is in an unexpected state during lockSlot
     /// @param streamId The stream ID
     /// @param packetNumber The packet number
     /// @param slotId The slot ID
-    error NoFilledSlot(uint256 streamId, uint256 packetNumber, uint256 slotId);
+    /// @param currentState The unexpected state
+    error _InconsistentSlotState(uint256 streamId, uint256 packetNumber, uint256 slotId, SlotState currentState);
 
-    /// @notice Thrown when a packet is not found
+    /// @notice Thrown when no packets are available for a given stream
     /// @param streamId The stream ID
-    /// @param packetNumber The packet number
-    error PacketNotFound(uint256 streamId, uint256 packetNumber);
+    error NoPacketAvailable(uint256 streamId);
 
+    // TODO: should this error be internal?
     /// @notice Thrown when there are inconsistent slots per packet
     /// @param streamId The stream ID
     /// @param packetNumber The packet number
     /// @param slotsPerPacket The number of slots per packet
-    error InconsistentSlotsPerPacket(uint256 streamId, uint256 packetNumber, uint256 slotsPerPacket);
+    error _InconsistentSlotsPerPacket(uint256 streamId, uint256 packetNumber, uint256 slotsPerPacket);
 
     /// @notice Thrown when the peg-in packet number is invalid
     /// @param streamId The stream ID
@@ -372,9 +403,16 @@ interface IStreamManager is IAccessControl {
     /// @notice Thrown when a value is zero when it shouldn't be
     error InvalidZeroValue();
 
-    /// @notice Thrown when there is an inconsistent peg-out pointer
+    /// @notice Thrown when trying to fill a slot that's not reserved
     /// @param streamId The stream ID
     /// @param packetNumber The packet number
-    /// @param slotPointer The slot pointer
-    error _InconsistentPegoutPointer(uint256 streamId, uint256 packetNumber, uint256 slotPointer);
+    /// @param slotId The slot ID
+    error SlotNotReserved(uint256 streamId, uint256 packetNumber, uint256 slotId);
+
+    /// @notice Thrown when trying to block a slot that's not reserved
+    /// @param streamId The stream ID
+    /// @param packetNumber The packet number
+    /// @param slotId The slot ID
+    /// @param currentState The current state of the slot
+    error SlotNotBlockable(uint256 streamId, uint256 packetNumber, uint256 slotId, SlotState currentState);
 }

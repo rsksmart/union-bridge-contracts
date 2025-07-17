@@ -73,7 +73,7 @@ contract TestPegManager is Test, HelperContract {
         uint64 slotId = 0;
         uint256 committeeId = uint256(keccak256(abi.encode(stream.streamId, packetNumber)));
 
-        streamManager.setSlotHarness(stream.streamId, packetNumber, scriptPubKey, txId, amount);
+        streamManager.setSlotHarness(stream.streamId, packetNumber, scriptPubKey, txId, amount, SlotState.FILLED);
 
         // Calculate expected PegoutId using mock block hash
         bytes32 mockBlockHash = 0x0000000000000000000049b460f18614380a01b8709d2c3a8ddf451d08d862b8;
@@ -259,19 +259,16 @@ contract TestPegManager is Test, HelperContract {
         pm.tryPegout{value: amountInWei}(userPubKey);
     }
 
-    function test_tryPegout_Revert_NonExistentSlot() external {
+    function test_tryPegout_Revert_NoFilledSlot() external {
         // Arrange
         bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
         uint64 amount = 1000000; // 0.01 BTC
         uint256 amountInWei = BtcHelper.satoshiToWei(amount);
 
         Stream memory stream = streamManager.getStream(uint64(amount));
-        uint64 packetNumber = stream.pegoutPacketPointer;
 
         // Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(IStreamManager.NonExistentSlot.selector, stream.streamId, packetNumber, 0)
-        );
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.NoFilledSlot.selector, stream.streamId));
 
         // Act
         pm.tryPegout{value: amountInWei}(userPubKey);
@@ -341,7 +338,8 @@ contract TestPegManager is Test, HelperContract {
             packetNumber,
             hex"00143fd2e14f4b448a071e074e1e1879318447f2a266",
             differentTxHash, // Different from what the peg-out transaction references
-            VALUE
+            VALUE,
+            SlotState.FILLED
         );
 
         // Set the slot state to LOCKED

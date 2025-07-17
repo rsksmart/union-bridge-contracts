@@ -18,27 +18,28 @@ contract StreamManagerHarness is StreamManager {
         StreamManager.initialize(_initialOwner, _pegManager, _committeeRegistry, _denominations, _settings);
     }
 
-    function setSlotHarness(uint64 _streamId, uint64 _packet, bytes memory _scriptPubKey, bytes32 _txId, uint64 _amount)
-        external
-        returns (uint64)
-    {
-        if (_packet >= packets[_streamId].length) {
-            revert NoPacketsHarness(_streamId, _packet);
-        }
-
-        return fillSlot(
-            _streamId,
-            _packet,
+    function setSlotHarness(
+        uint64 _streamId,
+        uint64 _packet,
+        bytes memory _scriptPubKey,
+        bytes32 _txId,
+        uint64 _amount,
+        SlotState _state
+    ) external returns (uint64) {
+        uint64 slotId = uint64(slots[_streamId][_packet].length);
+        slots[_streamId][_packet].push(
             Slot({
-                slotId: 0,
-                state: SlotState.FILLED,
-                scriptPubKey: _scriptPubKey,
+                slotId: slotId,
+                state: _state,
                 acceptPeginTx: _txId,
                 acceptPeginAmount: _amount,
+                scriptPubKey: _scriptPubKey,
                 take0Tx: "",
                 take1Tx: ""
             })
         );
+
+        return slotId;
     }
 
     function setPegoutPointersHarness(uint64 _streamId, uint64 _packet, uint16 _slot) external {

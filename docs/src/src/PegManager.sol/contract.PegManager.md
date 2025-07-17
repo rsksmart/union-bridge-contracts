@@ -293,7 +293,7 @@ function requestPegin(BtcTxSPVProof calldata _peginRequestTxSPVProof) external;
 function _initAcceptPegin(
     bytes32 _committeePubKey,
     bytes32 _userXOnlyPubKey,
-    bytes32 _registerPeginTxHash,
+    bytes32 _requestPeginTxHash,
     address _rskDestinationAddress,
     PrevoutData memory _prevoutData,
     uint64 _streamId,

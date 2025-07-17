@@ -30,14 +30,16 @@ A slot represents a single peg-in or peg-out operation. It has a unique id to in
 
 A slot can have the following states:
 
+- `Reserved`, when a peg-in request has been validated and a slot is reserved awaiting committee acceptance.
 - `Filled`, when the Committee members have confirmed and registered a peg-in. In this state the slot is ready for peg-out.
 - `Locked`, when the slot is assigned to a peg-out operation
 - `Advanced`: when the operator advanced funds.
 - `Completed`: when the peg-out is processed (happy path) or the operator receives the reimbursement after advance.
+- `Blocked`: when a reserved slot is blocked due to timeout or refund proof.
 
 !["Slots and packets diagram"](./imgs/slots_packets.png)
 
-The peg-in pointer points to the first available slot in a packet. When a peg-in is registered in the pointed slot, the slot changes to the `Filled` state and the pointer moves forward to the next available slot. If all the slots in the packet are filled, the peg-in pointer will move to a new packet.
+The peg-in pointer points to the next available slot position in a packet. When a peg-in is requested, a slot is reserved in the pointed position and changes to the `Reserved` state, and the pointer immediately moves forward to the next available slot position. When the committee accepts the peg-in, the reserved slot changes to the `Filled` state. If all the slots in the packet are allocated, the peg-in pointer will move to a new packet.
 
 The peg-out pointer points to the first slot from a packet that is in the `Filled` state. When a peg-out is registered in the pointed slot, the slot changes to the `Completed` state and the pointer moves forward to the next slot in the `Filled` state. If there are no more slots in the packet in the `Filled` state, the pointer moves to the null position (-1).
 
@@ -64,7 +66,7 @@ To store `Slot`, `Packet` and `Stream` information we will use the following str
 ```solidity
 pragma solidity ^0.8.19;
 
-enum SlotState{ FILLED, LOCKED, ADVANCED, COMPLETED }
+enum SlotState{ RESERVED, FILLED, LOCKED, ADVANCED, COMPLETED, BLOCKED }
 
 struct Slot {
     uint256 slotId;                 // Unique ID
