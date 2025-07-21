@@ -556,7 +556,8 @@ contract TestPegManager is Test, HelperContract {
                 IStreamManager.SlotNotReserved.selector,
                 streamPosition.streamId,
                 streamPosition.packetNumber,
-                streamPosition.slotId
+                streamPosition.slotId,
+                SlotState.BLOCKED
             )
         );
         pm.acceptPegin(acceptPeginTxSPVProof);

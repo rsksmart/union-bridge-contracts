@@ -600,7 +600,11 @@ contract TestStreamManager is Test, HelperContract {
         });
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IStreamManager.SlotNotReserved.selector, streamId, packetNumber, slotId));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IStreamManager.SlotNotReserved.selector, streamId, packetNumber, slotId, SlotState.FILLED
+            )
+        );
 
         // Act - try to fill slot that's not in RESERVED state
         vm.prank(address(pm));
@@ -633,7 +637,11 @@ contract TestStreamManager is Test, HelperContract {
         });
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IStreamManager.SlotNotReserved.selector, streamId, packetNumber, slotId));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IStreamManager.SlotNotReserved.selector, streamId, packetNumber, slotId, SlotState.BLOCKED
+            )
+        );
 
         // Act - try to fill blocked slot
         vm.prank(address(pm));

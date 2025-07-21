@@ -407,7 +407,8 @@ interface IStreamManager is IAccessControl {
     /// @param streamId The stream ID
     /// @param packetNumber The packet number
     /// @param slotId The slot ID
-    error SlotNotReserved(uint256 streamId, uint256 packetNumber, uint256 slotId);
+    /// @param currentState The current state of the slot
+    error SlotNotReserved(uint256 streamId, uint256 packetNumber, uint256 slotId, SlotState currentState);
 
     /// @notice Thrown when trying to block a slot that's not reserved
     /// @param streamId The stream ID

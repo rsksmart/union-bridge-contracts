@@ -308,7 +308,7 @@ contract StreamManager is IStreamManager, AccessControl {
         Slot storage slot = _getSlot(_stream.streamId, _stream.packetNumber, _stream.slotId);
 
         if (slot.state != SlotState.RESERVED) {
-            revert SlotNotReserved(_stream.streamId, _stream.packetNumber, _stream.slotId);
+            revert SlotNotReserved(_stream.streamId, _stream.packetNumber, _stream.slotId, slot.state);
         }
 
         slot.state = SlotState.FILLED;
