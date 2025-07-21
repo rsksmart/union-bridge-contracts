@@ -1011,4 +1011,81 @@ contract TestPegManager is Test, HelperContract {
         // Act
         pm.setOperatorTakeTimeout(1 days);
     }
+
+    // ==================== ENHANCED PEGOUT FLOW WITH BLOCKED SLOTS ====================
+
+    function test_tryPegout_SkipBlockedSlot() external {
+        bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+        uint64 amount = VALUE;
+        uint256 amountInWei = BtcHelper.satoshiToWei(amount);
+
+        Stream memory stream = streamManager.getStream(amount);
+        bytes32 txId = 0xb24858ade3e5be49ae63facb93524ddf460d0771f093525dae328b6c435516a2;
+        bytes memory scriptPubKey = hex"02f519f51e435c20d38af683ea86862f4591ce8cda248077c2d9a72a76b62f32";
+
+        // 1. Setup pattern: BLOCKED, FILLED
+        uint64 blockedSlotId =
+            streamManager.setSlotHarness(stream.streamId, 0, scriptPubKey, txId, amount, SlotState.RESERVED);
+        streamManager.setSlotStateHarness(stream.streamId, 0, blockedSlotId, SlotState.BLOCKED);
+        streamManager.setSlotHarness(stream.streamId, 0, scriptPubKey, txId, amount, SlotState.FILLED);
+
+        // 2. Call tryPegout should skip blocked slot and lock filled slot
+        pm.tryPegout{value: amountInWei}(userPubKey);
+
+        // 3. Verify FILLED slot is locked and BLOCKED slot remains unchanged
+        Slot memory blockedSlot = streamManager.getSlot(stream.streamId, 0, blockedSlotId);
+        assertEq(uint256(blockedSlot.state), uint256(SlotState.BLOCKED), "Blocked slot should remain BLOCKED");
+
+        Slot memory filledSlot = streamManager.getSlot(stream.streamId, 0, 1);
+        assertEq(uint256(filledSlot.state), uint256(SlotState.LOCKED), "FILLED slot should be LOCKED");
+    }
+
+    function test_tryPegout_AllSlotsBlocked() external {
+        bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+        uint64 amount = VALUE;
+        uint256 amountInWei = BtcHelper.satoshiToWei(amount);
+
+        Stream memory stream = streamManager.getStream(amount);
+        bytes32 txId = 0xb24858ade3e5be49ae63facb93524ddf460d0771f093525dae328b6c435516a2;
+        bytes memory scriptPubKey = hex"02f519f51e435c20d38af683ea86862f4591ce8cda248077c2d9a72a76b62f32";
+
+        // 1. Fill first packet with all BLOCKED slots
+        streamManager.pushSlotsHarness(stream.streamId, 0, Constants.SLOTS_PER_PACKET, SlotState.BLOCKED);
+
+        // 2. Try to call tryPegout
+        // 3. Expect NoFilledSlot revert
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.NoFilledSlot.selector, stream.streamId));
+        pm.tryPegout{value: amountInWei}(userPubKey);
+    }
+
+    function test_tryPegout_CrossPacketBlocking() external {
+        bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+        uint64 amount = VALUE;
+        uint256 amountInWei = BtcHelper.satoshiToWei(amount);
+
+        Stream memory stream = streamManager.getStream(amount);
+        bytes32 txId = 0xb24858ade3e5be49ae63facb93524ddf460d0771f093525dae328b6c435516a2;
+        bytes memory scriptPubKey = hex"02f519f51e435c20d38af683ea86862f4591ce8cda248077c2d9a72a76b62f32";
+
+        // 1. Fill first packet with all BLOCKED slots
+        streamManager.pushSlotsHarness(stream.streamId, 0, Constants.SLOTS_PER_PACKET, SlotState.BLOCKED);
+
+        // 2. Create second packet with the existing committee setup
+        bytes32 committeePubKey = setupExpectedCommittee.aggregatedKey;
+        vm.prank(address(registry));
+        streamManager.createNewPacket(stream.streamId, COMMITTEE_ID_STREAM_1_PACKET_0, committeePubKey);
+        streamManager.setSlotHarness(stream.streamId, 1, scriptPubKey, txId, amount, SlotState.FILLED);
+
+        // 3. Call tryPegout
+        pm.tryPegout{value: amountInWei}(userPubKey);
+
+        // 4. Verify it skips entire first packet and locks slot in second packet
+        Slot memory lockedSlot = streamManager.getSlot(stream.streamId, 1, 0);
+        assertEq(uint256(lockedSlot.state), uint256(SlotState.LOCKED), "First slot in second packet should be LOCKED");
+
+        // 5. Verify pegoutPacketPointer and pegoutSlotPointer advance correctly
+        Stream memory updatedStream = streamManager.getStreamById(stream.streamId);
+        assertEq(updatedStream.pegoutPacketPointer, 1, "Should advance to second packet");
+        assertEq(updatedStream.pegoutSlotPointer, 1, "Should advance slot pointer after locking");
+    }
 }
