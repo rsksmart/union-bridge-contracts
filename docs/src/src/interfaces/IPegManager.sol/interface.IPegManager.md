@@ -382,8 +382,7 @@ event PeginRequested(
     bytes32 indexed requestPeginTxHash,
     bytes32 indexed acceptPeginTxHash,
     uint64 vout,
-    uint64 streamId,
-    uint64 packetNumber,
+    StreamPosition streamPosition,
     RequestPeginTempInfo requestPeginInfo,
     PrevoutData prevoutData,
     bytes acceptPeginSignatureMessage

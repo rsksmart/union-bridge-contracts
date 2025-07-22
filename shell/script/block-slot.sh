@@ -1,0 +1,49 @@
+#!/bin/bash
+
+# Script to block a reserved slot
+# Usage: ./block-slot.sh -s <stream_id> -p <packet_number> -l <slot_id>
+
+# we go to the root of the project to avoid relative path issues
+CURRENT_PATH=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+cd "$CURRENT_PATH/../.."
+
+# Defaults
+STREAM_ID=""
+PACKET_NUMBER=""
+SLOT_ID=""
+
+# Parse args
+while getopts ":s:p:l:" opt; do
+  case "$opt" in
+    s) STREAM_ID="$OPTARG" ;;
+    p) PACKET_NUMBER="$OPTARG" ;;
+    l) SLOT_ID="$OPTARG" ;;
+    *)
+      echo "Usage: $0 -s <stream_id> -p <packet_number> -l <slot_id>"
+      echo "Example: $0 -s 1 -p 0 -l 0"
+      exit 1
+      ;;
+  esac
+done
+
+# Validate required arguments
+if [ -z "$STREAM_ID" ] || [ -z "$PACKET_NUMBER" ] || [ -z "$SLOT_ID" ]; then
+    echo "Error: All parameters are required"
+    echo "Usage: $0 -s <stream_id> -p <packet_number> -l <slot_id>"
+    exit 1
+fi
+
+# set up environment variables
+source .env
+RPC=$LOCAL_RPC
+
+echo "================ BLOCK SLOT ON $RPC ================"
+echo "Stream ID: $STREAM_ID, Packet: $PACKET_NUMBER, Slot: $SLOT_ID"
+
+forge script \
+    script/BlockSlot.s.sol \
+    --sig "run(uint64,uint64,uint64)" \
+    "$STREAM_ID" "$PACKET_NUMBER" "$SLOT_ID" \
+    --rpc-url $RPC \
+    --legacy \
+    --broadcast

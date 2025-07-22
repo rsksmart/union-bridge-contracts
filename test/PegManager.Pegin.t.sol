@@ -49,7 +49,7 @@ contract TestPegManager is Test, HelperContract {
         assertEq(result, tempAddress, "Incorrect temporary peg in address at PegManager");
     }
 
-    // ========================== REGISTER PEG IN REQUEST ==========================
+    // ========================== REQUEST PEGIN ==========================
     function test_requestPegin_Success() external {
         // Arrange
         BtcTransaction memory btcTransaction = getBtcPeginRequestTx();
@@ -80,8 +80,12 @@ contract TestPegManager is Test, HelperContract {
             expectedRequestPeginTxHash,
             expectedAcceptPeginTxHash,
             0,
-            setupStreamId,
-            PACKET_NUMBER,
+            StreamPosition({
+                streamId: setupStreamId,
+                packetNumber: PACKET_NUMBER,
+                slotId: 0, // First slot in packet
+                pegStatus: PegStatus.REGISTERED
+            }),
             expectedRequestPeginInfo,
             expectedPrevoutData,
             expectedAcceptPeginSignatureMessage
@@ -96,7 +100,18 @@ contract TestPegManager is Test, HelperContract {
         StreamPosition memory streamPosition = pm.getStreamPosition(txHash);
         assertEq(streamPosition.streamId, 1, "Incorrect streamId registered");
         assertEq(streamPosition.packetNumber, 0, "Incorrect packetNumber registered");
+        assertEq(streamPosition.slotId, 0, "Should reserve first slot in packet");
         assertEq(uint256(streamPosition.pegStatus), uint256(PegStatus.REGISTERED), "Pegin Request was not registered");
+
+        // Verify slot is properly reserved
+        Slot memory reservedSlot =
+            streamManager.getSlot(streamPosition.streamId, streamPosition.packetNumber, streamPosition.slotId);
+        assertEq(uint256(reservedSlot.state), uint256(SlotState.RESERVED), "Slot should be RESERVED");
+        assertEq(reservedSlot.slotId, streamPosition.slotId, "Slot ID should match StreamPosition");
+
+        // Verify stream pointers haven't advanced (since packet not full)
+        Stream memory stream = streamManager.getStreamById(streamPosition.streamId);
+        assertEq(stream.peginPacketPointer, 0, "Packet pointer should not advance for single request");
 
         BtcTransaction memory expectedAcceptPeginTx = getBtcAcceptPeginTx(btcTransaction);
         // Registered Pegin Request
@@ -320,8 +335,6 @@ contract TestPegManager is Test, HelperContract {
     }
 
     function test_acceptPegin_Success() external {
-        setup_requestPeginFlow();
-
         // ===  Before test setup  is run for this  test ===
         BtcTransaction memory peginTx = setup_requestPeginFlow();
         // Arrange
@@ -364,11 +377,12 @@ contract TestPegManager is Test, HelperContract {
         StreamPosition memory streamPosition = pm.getStreamPosition(peginRequestTxHash);
         assertEq(streamPosition.streamId, streamId, "Incorrect streamId registered");
         assertEq(streamPosition.packetNumber, PACKET_NUMBER, "Incorrect packetNumber registered");
-        assertEq(streamPosition.slotId, 0, "Incorrect slotId registered");
+        assertEq(streamPosition.slotId, slotId, "Incorrect slotId registered");
         assertEq(uint256(streamPosition.pegStatus), uint256(PegStatus.ACCEPTED), "Pegin Request was not accepted");
         // Registered Peg In Slot
         Slot memory slot = streamManager.getSlot(streamId, PACKET_NUMBER, slotId);
         assertEq(uint256(slot.state), uint256(SlotState.FILLED), "Slot should be filled");
+        assertEq(slot.slotId, streamPosition.slotId, "Slot ID should match StreamPosition");
         assertEq(slot.acceptPeginTx, acceptPeginTxHash, "Incorrect acceptPeginTx");
         assertEq(slot.acceptPeginAmount, btcTransaction.outputs[0].amount, "Incorrect acceptPeginAmount");
         assertEq(slot.scriptPubKey, btcTransaction.outputs[0].scriptPubKey, "Incorrect scriptPubKey");
@@ -446,48 +460,106 @@ contract TestPegManager is Test, HelperContract {
         pm.acceptPegin(peginAcceptedTxSPVProof);
     }
 
-    function test_peginFlow_RequestMultiplePegin_Revert_IncorrectPacketNumber() external {
-        // Arrange
-        // Left just one empty slot in packet
-        setup_multipleRequestAndAcceptPeginFlows(Constants.SLOTS_PER_PACKET - 1, setupStreamId);
+    function test_requestPegin_MultipleSlots_SamePacket() external {
+        // Make Constants.SLOTS_PER_PACKET - 1 requests
+        for (uint64 i = 0; i < Constants.SLOTS_PER_PACKET - 1; i++) {
+            BtcTransaction memory btcTransaction = getBtcPeginRequestTx();
+            // Modify tx to make each unique
+            btcTransaction.inputs[0].scriptSig = abi.encodePacked(bytes32(uint256(i + 1)));
+            BtcTxSPVProof memory peginRequestTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
-        // Send 2 more pegins to fill the packet
-        BtcTransaction memory peginTxN = setup_requestPeginFlow();
-        BtcTransaction memory peginTxN_1 = setup_requestPeginFlow();
+            pm.requestPegin(peginRequestTxSPVProof);
 
-        assertNotEq(peginTxN.inputs[0].txId, peginTxN_1.inputs[0].txId, "Pegin txId should be different for each pegin");
+            // Verify each request gets correct slotId
+            bytes32 requestPeginTxHash = getBtcTxHash(btcTransaction);
+            StreamPosition memory streamPosition = pm.getStreamPosition(requestPeginTxHash);
+            assertEq(streamPosition.slotId, i, "SlotId should increment for each request");
+            assertEq(streamPosition.packetNumber, 0, "Should stay in same packet");
 
-        BtcTransaction memory btcTransaction = getBtcAcceptPeginTx(peginTxN);
-        bytes32 peginRequestTxHash = HelperContract.getBtcTxHash(peginTxN);
-        bytes32 acceptPeginTxHash = HelperContract.getBtcTxHash(btcTransaction);
-        BtcTxSPVProof memory peginAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
+            // Verify slot is RESERVED
+            Slot memory reservedSlot =
+                streamManager.getSlot(streamPosition.streamId, streamPosition.packetNumber, streamPosition.slotId);
+            assertEq(uint256(reservedSlot.state), uint256(SlotState.RESERVED), "Each slot should be RESERVED");
+        }
 
-        vm.expectEmit(address(pm));
-        emit IPegManager.PeginAccepted(
-            peginAcceptedTxSPVProof.blockHash,
-            acceptPeginTxHash,
-            peginRequestTxHash,
-            0, //vout
-            StreamPosition({
-                streamId: setupStreamId,
-                packetNumber: 0,
-                slotId: Constants.SLOTS_PER_PACKET - 1,
-                pegStatus: PegStatus.ACCEPTED
-            }),
-            BTC_REIMBURSEMENT_PUBKEY,
-            RSK_DESTINATION_ADDRESS,
-            satoshiToWei(btcTransaction.outputs[0].amount), // Rbtc amount
-            btcTransaction.outputs[0].scriptPubKey
+        // Verify packet pointer hasn't advanced
+        Stream memory stream = streamManager.getStreamById(setupStreamId);
+        assertEq(stream.peginPacketPointer, 0, "Packet pointer should not advance until packet full");
+    }
+
+    function test_requestPegin_PacketAdvancement() external {
+        // Fill up the packet
+        for (uint64 i = 0; i < Constants.SLOTS_PER_PACKET; i++) {
+            BtcTransaction memory btcTransaction = getBtcPeginRequestTx();
+            btcTransaction.inputs[0].scriptSig = abi.encodePacked(bytes32(uint256(i + 1)));
+            BtcTxSPVProof memory peginRequestTxSPVProof = createBtcTxSPVProof(btcTransaction);
+
+            pm.requestPegin(peginRequestTxSPVProof);
+        }
+
+        // Verify packet pointer has advanced
+        Stream memory stream = streamManager.getStreamById(setupStreamId);
+        assertEq(stream.peginPacketPointer, 1, "Packet pointer should advance after packet is full");
+    }
+
+    function test_acceptPegin_UsesSpecificSlotId() external {
+        // 1. Make multiple pegin requests
+        BtcTransaction memory peginTx1 = getBtcPeginRequestTx();
+        peginTx1.inputs[0].scriptSig = abi.encodePacked(bytes32(uint256(1)));
+        BtcTxSPVProof memory peginRequestTxSPVProof1 = createBtcTxSPVProof(peginTx1);
+        pm.requestPegin(peginRequestTxSPVProof1);
+        bytes32 requestPeginTxHash1 = getBtcTxHash(peginTx1);
+
+        BtcTransaction memory peginTx2 = getBtcPeginRequestTx();
+        peginTx2.inputs[0].scriptSig = abi.encodePacked(bytes32(uint256(2)));
+        BtcTxSPVProof memory peginRequestTxSPVProof2 = createBtcTxSPVProof(peginTx2);
+        pm.requestPegin(peginRequestTxSPVProof2);
+        bytes32 requestPeginTxHash2 = getBtcTxHash(peginTx2);
+
+        // 2. Accept only the second pegin transaction
+        BtcTransaction memory acceptTx2 = getBtcAcceptPeginTx(peginTx2);
+        BtcTxSPVProof memory acceptPeginTxSPVProof2 = createBtcTxSPVProof(acceptTx2);
+        pm.acceptPegin(acceptPeginTxSPVProof2);
+
+        // 3. Verify correct slot is filled (slot 1, not slot 0)
+        StreamPosition memory streamPosition2 = pm.getStreamPosition(requestPeginTxHash2);
+        Slot memory filledSlot =
+            streamManager.getSlot(streamPosition2.streamId, streamPosition2.packetNumber, streamPosition2.slotId);
+        assertEq(uint256(filledSlot.state), uint256(SlotState.FILLED), "Slot 1 should be FILLED");
+        assertEq(streamPosition2.slotId, 1, "Should be slot 1");
+
+        // 4. Verify first slot remains in RESERVED state
+        StreamPosition memory streamPosition1 = pm.getStreamPosition(requestPeginTxHash1);
+        Slot memory reservedSlot =
+            streamManager.getSlot(streamPosition1.streamId, streamPosition1.packetNumber, streamPosition1.slotId);
+        assertEq(uint256(reservedSlot.state), uint256(SlotState.RESERVED), "Slot 0 should remain RESERVED");
+        assertEq(streamPosition1.slotId, 0, "Should be slot 0");
+    }
+
+    function test_acceptPegin_Revert_SlotBlocked() external {
+        // 1. Request pegin to reserve slot
+        BtcTransaction memory peginTx = setup_requestPeginFlow();
+        bytes32 requestPeginTxHash = getBtcTxHash(peginTx);
+        StreamPosition memory streamPosition = pm.getStreamPosition(requestPeginTxHash);
+
+        // 2. Block the slot externally
+        vm.prank(streamManager.owner());
+        streamManager.blockSlot(streamPosition.streamId, streamPosition.packetNumber, streamPosition.slotId);
+
+        // 3. Try to accept pegin
+        BtcTransaction memory acceptTx = getBtcAcceptPeginTx(peginTx);
+        BtcTxSPVProof memory acceptPeginTxSPVProof = createBtcTxSPVProof(acceptTx);
+
+        // 4. Expect SlotNotReserved revert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IStreamManager.SlotNotReserved.selector,
+                streamPosition.streamId,
+                streamPosition.packetNumber,
+                streamPosition.slotId,
+                SlotState.BLOCKED
+            )
         );
-        pm.acceptPegin(peginAcceptedTxSPVProof);
-
-        btcTransaction = getBtcAcceptPeginTx(peginTxN_1);
-        peginRequestTxHash = HelperContract.getBtcTxHash(peginTxN_1);
-        acceptPeginTxHash = HelperContract.getBtcTxHash(btcTransaction);
-        peginAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
-
-        // This should revert because this pegin was linked to packet 0 and now we are in packet 1
-        vm.expectRevert(abi.encodeWithSelector(IStreamManager.InvalidPeginPacketNumber.selector, setupStreamId, 0));
-        pm.acceptPegin(peginAcceptedTxSPVProof);
+        pm.acceptPegin(acceptPeginTxSPVProof);
     }
 }

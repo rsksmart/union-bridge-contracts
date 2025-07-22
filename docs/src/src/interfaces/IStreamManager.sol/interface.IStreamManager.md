@@ -182,7 +182,7 @@ function getSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotNumber) ext
 |`<none>`|`Slot`|Slot The complete slot information|
 
 
-### fillAcceptPeginTx
+### fillSlot
 
 Fills a slot with accept peg-in transaction information
 
@@ -190,9 +190,8 @@ Fills a slot with accept peg-in transaction information
 
 
 ```solidity
-function fillAcceptPeginTx(
-    uint64 _streamId,
-    uint64 _packetNumber,
+function fillSlot(
+    StreamPosition memory _stream,
     uint64 _acceptPeginAmount,
     bytes32 _acceptPeginTx,
     bytes memory _scriptPubKey
@@ -475,12 +474,12 @@ event PacketCreated(uint64 streamId, uint64 packetNumber);
 |`streamId`|`uint64`|The ID of the stream containing the packet|
 |`packetNumber`|`uint64`|The number of the newly created packet|
 
-### SlotCreated
+### SlotReserved
 Event emitted when a new slot is created
 
 
 ```solidity
-event SlotCreated(uint64 streamId, uint64 packetNumber, uint64 slotId);
+event SlotReserved(uint64 streamId, uint64 packetNumber, uint64 slotId);
 ```
 
 **Parameters**
@@ -640,12 +639,12 @@ error PacketNotFound(uint256 streamId, uint256 packetNumber);
 |`streamId`|`uint256`|The stream ID|
 |`packetNumber`|`uint256`|The packet number|
 
-### InconsistentSlotsPerPacket
+### _InconsistentSlotsPerPacket
 Thrown when there are inconsistent slots per packet
 
 
 ```solidity
-error InconsistentSlotsPerPacket(uint256 streamId, uint256 packetNumber, uint256 slotsPerPacket);
+error _InconsistentSlotsPerPacket(uint256 streamId, uint256 packetNumber, uint256 slotsPerPacket);
 ```
 
 **Parameters**

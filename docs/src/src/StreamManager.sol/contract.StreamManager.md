@@ -307,7 +307,7 @@ function getSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotNumber) ext
 |`<none>`|`Slot`|The slot data|
 
 
-### fillAcceptPeginTx
+### fillSlot
 
 Looks for the first empty slot and assigns the peg-in transaction in prepared state
 
@@ -315,10 +315,8 @@ Looks for the first empty slot and assigns the peg-in transaction in prepared st
 
 
 ```solidity
-function fillAcceptPeginTx(
-    uint64 _streamId,
-    uint64 _packetNumber,
-    uint64 _acceptPeginAmount,
+function fillSlot(
+    StreamPosition memory _stream,
     bytes32 _acceptPeginTx,
     bytes memory _scriptPubKey
 ) external onlyPegManager returns (uint64);
