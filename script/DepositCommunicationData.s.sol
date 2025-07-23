@@ -8,9 +8,9 @@ import {
     Role,
     Committee,
     Member,
-    PublicKeyIndex,
     CommunicationData,
-    COMMUNICATION_DATA_CHUNKS
+    COMMUNICATION_DATA_CHUNKS,
+    RSAPublicKey
 } from "src/interfaces/ICommitteeRegistry.sol";
 
 contract DepositCommunicationDataScript is ScriptUtils {
@@ -21,7 +21,7 @@ contract DepositCommunicationDataScript is ScriptUtils {
     uint64 stream;
     uint256 privKey;
     address user;
-    bytes32 comPubKey;
+    RSAPublicKey comPubKey;
 
     function setUp(uint16 _mnemonicIndex, uint64 _streamIndex) internal {
         committeeRegistry = ICommitteeRegistry(0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0);
@@ -39,14 +39,14 @@ contract DepositCommunicationDataScript is ScriptUtils {
         privKey = getMemberKey(uint32(mnemonicIndex));
         user = vm.addr(privKey);
 
-        comPubKey = generatePublicKeysRegistration(privKey)[uint8(PublicKeyIndex.COMMUNICATION)].publicKeyX;
+        comPubKey = generateRegistrationPublicKeys(privKey).communicationKey;
     }
 
     function run(uint16 _mnemonicIndex, uint64 _streamIndex) public {
         setUp(_mnemonicIndex, _streamIndex);
 
         vm.startBroadcast(privKey);
-        bytes32[] memory committeeComPubkeys = getPendingCommitteeComPubKeys(stream);
+        RSAPublicKey[] memory committeeComPubkeys = getPendingCommitteeComPubKeys(stream);
         vm.stopBroadcast();
 
         CommunicationData[] memory newMemberComunicationData = encryptComunicationData(committeeComPubkeys, "ip:port");
@@ -68,14 +68,14 @@ contract DepositCommunicationDataScript is ScriptUtils {
         // }
     }
 
-    function encryptComunicationData(bytes32[] memory committeeComPubkeys, string memory data)
+    function encryptComunicationData(RSAPublicKey[] memory committeeComPubkeys, string memory data)
         internal
         view
         returns (CommunicationData[] memory)
     {
         CommunicationData[] memory encryptedData = new CommunicationData[](committeeComPubkeys.length);
         for (uint256 i = 0; i < committeeComPubkeys.length; i++) {
-            if (committeeComPubkeys[i] == comPubKey) {
+            if (keccak256(abi.encode(committeeComPubkeys[i])) == keccak256(abi.encode(comPubKey))) {
                 continue;
             }
             encryptedData[i] = encryptData(committeeComPubkeys[i], data);
@@ -83,14 +83,14 @@ contract DepositCommunicationDataScript is ScriptUtils {
         return encryptedData;
     }
 
-    function encryptData(bytes32 communicationPublicKey, string memory data)
+    function encryptData(RSAPublicKey memory communicationPublicKey, string memory data)
         internal
         pure
         returns (CommunicationData memory)
     {
         // Placeholder for actual encryption logic
         // Here we just simulate "encryption" by concatenating the public key and data
-        bytes memory flat = abi.encodePacked(communicationPublicKey, ":", data);
+        bytes memory flat = abi.encodePacked(keccak256(abi.encode(communicationPublicKey)), ":", data);
 
         require(flat.length <= 256, "Communication data too large");
 
@@ -118,10 +118,10 @@ contract DepositCommunicationDataScript is ScriptUtils {
         }
     }
 
-    function getPendingCommitteeComPubKeys(uint64 _streamId) internal view returns (bytes32[] memory) {
+    function getPendingCommitteeComPubKeys(uint64 _streamId) internal view returns (RSAPublicKey[] memory) {
         (Committee memory committee,,) = committeeRegistry.getPendingCommittee(_streamId);
 
-        bytes32[] memory committeeMembersPubKeys = new bytes32[](committee.members.length);
+        RSAPublicKey[] memory committeeMembersPubKeys = new RSAPublicKey[](committee.members.length);
         for (uint256 i = 0; i < committee.members.length; i++) {
             address memberAddress = committee.members[i].memberAddress;
             committeeMembersPubKeys[i] = committeeRegistry.getMemberComPubKey(memberAddress);
