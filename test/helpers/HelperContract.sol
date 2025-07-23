@@ -126,8 +126,6 @@ abstract contract HelperContract is Test, TestUtils {
     }
 
     function getMemberTakePubKey(address _memberAddress) internal returns (bytes32) {
-        MemberRegistrationKeys memory memberRegistrationKeys =
-            generateRegistrationPublicKeys(uint256(uint160(_memberAddress))); // Generate public keys based on the address
         return generateRegistrationPublicKeys(uint256(uint160(_memberAddress))).takeKey.publicKeyX;
     }
 
