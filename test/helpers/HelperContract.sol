@@ -15,9 +15,10 @@ import {
     CommitteeMember,
     Committee,
     CommitteeRegistry,
-    PublicKeyRegistration
+    MemberRegistrationKeys,
+    PublicKeyType
 } from "src/CommitteeRegistry.sol";
-import {PublicKeyIndex, CommunicationData, COMMUNICATION_DATA_CHUNKS} from "src/interfaces/ICommitteeRegistry.sol";
+import {CommunicationData, COMMUNICATION_DATA_CHUNKS} from "src/interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination, Slot} from "src/interfaces/IStreamManager.sol";
 import {BtcTxIn, BtcTxOut, BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
@@ -86,11 +87,12 @@ abstract contract HelperContract is Test, TestUtils {
 
         for (uint256 memberIndex = 0; memberIndex < totalMembers; memberIndex++) {
             address user = vm.addr(registeredMembersCounter + memberIndex + 1); // Use a different address for each member
-            PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(uint256(uint160(user))); // Generate public keys based on the address
+            MemberRegistrationKeys memory memberRegistrationKeys =
+                generateRegistrationPublicKeys(uint256(uint160(user))); // Generate public keys based on the address
             // First numWatchtowers members are watchtowers, the rest are operators
             Role role = memberIndex < numWatchtowers ? Role.WATCHTOWER : Role.OPERATOR;
 
-            setup_applyToStream(denomination, user, pubKeysRegistration, role);
+            setup_applyToStream(denomination, user, memberRegistrationKeys, role);
         }
 
         registeredMembersCounter += totalMembers;
@@ -99,7 +101,7 @@ abstract contract HelperContract is Test, TestUtils {
     function setup_applyToStream(
         StreamDenomination _denomination,
         address _address,
-        PublicKeyRegistration[] memory _publicKeysRegistration,
+        MemberRegistrationKeys memory _publicKeysRegistration,
         Role _role
     ) internal {
         uint256 minimumDeposit = streamManager.getMinimumDeposit(_denomination, _role);
@@ -117,16 +119,14 @@ abstract contract HelperContract is Test, TestUtils {
 
         for (uint256 i = 0; i < totalMembers; i++) {
             CommitteeMember memory member = _committeeMembers[i];
-            PublicKeyRegistration[] memory pubKeysRegistration =
-                generatePublicKeysRegistration(uint256(uint160(member.memberAddress))); // Generate public keys based on the address
-            setup_applyToStream(_denomination, member.memberAddress, pubKeysRegistration, member.role);
+            MemberRegistrationKeys memory memberRegistrationKeys =
+                generateRegistrationPublicKeys(uint256(uint160(member.memberAddress))); // Generate public keys based on the address
+            setup_applyToStream(_denomination, member.memberAddress, memberRegistrationKeys, member.role);
         }
     }
 
     function getMemberTakePubKey(address _memberAddress) internal returns (bytes32) {
-        PublicKeyRegistration[] memory pubKeysRegistration =
-            generatePublicKeysRegistration(uint256(uint160(_memberAddress))); // Generate public keys based on the address
-        return pubKeysRegistration[uint8(PublicKeyIndex.TAKE)].publicKeyX;
+        return generateRegistrationPublicKeys(uint256(uint160(_memberAddress))).takeKey.publicKeyX;
     }
 
     // This function should be used for members that has been already registered. But it won't fail if the member is not registered.
@@ -142,9 +142,9 @@ abstract contract HelperContract is Test, TestUtils {
         for (uint256 i = 0; i < totalMembers; i++) {
             Role role = i < _numWatchtowers ? Role.WATCHTOWER : Role.OPERATOR;
             address memberAddress = vm.addr(_memberIndexInit + i + 1);
-            PublicKeyRegistration[] memory pubKeysRegistration =
-                generatePublicKeysRegistration(uint256(uint160(memberAddress))); // Generate public keys based on the address
-            setup_applyToStream(_denomination, memberAddress, pubKeysRegistration, role);
+            MemberRegistrationKeys memory memberRegistrationKeys =
+                generateRegistrationPublicKeys(uint256(uint160(memberAddress))); // Generate public keys based on the address
+            setup_applyToStream(_denomination, memberAddress, memberRegistrationKeys, role);
         }
     }
 
@@ -493,10 +493,10 @@ abstract contract HelperContract is Test, TestUtils {
     }
 
     function setup_registerMember(uint256 privKey) internal {
-        PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(privKey);
+        MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
         address user = vm.addr(privKey);
 
-        registry.registerMemberHarness(user, pubKeysRegistration);
+        registry.registerMemberHarness(user, memberRegistrationKeys);
     }
 
     function setup_getExpectedCommitteeAfterExpire() internal returns (Committee memory) {

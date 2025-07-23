@@ -998,7 +998,7 @@ contract TestStreamManager is Test, HelperContract {
 
         // 3. Lock slot
         vm.prank(address(pm));
-        (Slot memory lockedSlot,) = streamManager.lockSlot(streamId);
+        streamManager.lockSlot(streamId);
 
         // 4. Advance slot
         vm.prank(address(pm));

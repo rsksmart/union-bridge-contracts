@@ -8,6 +8,9 @@ import {SignatureData} from "./ISignatureManager.sol";
 /// @dev Amount of bytes32 chunks for communication data
 uint8 constant COMMUNICATION_DATA_CHUNKS = 8;
 
+/// @dev Amount of bytes32 chunks for DER-encoded RSA public key
+uint8 constant RSA_PUBLIC_KEY_CHUNKS = 10;
+
 /// @notice Represents the different roles a committee member can have
 /// @dev Each role has specific responsibilities and requirements in the committee
 enum Role {
@@ -56,7 +59,7 @@ struct ApplicationData {
 
 /// @notice Represents the different types of public keys a member can register
 /// @dev Each key type serves a specific purpose in the committee operations
-enum PublicKeyIndex {
+enum PublicKeyType {
     /// @notice Public key used for take operations (normal peg-out)
     TAKE,
     /// @notice Public key used for covenant operations (dispute resolution)
@@ -65,12 +68,9 @@ enum PublicKeyIndex {
     COMMUNICATION
 }
 
-/// @dev Constant representing the total number of public key types
-uint8 constant PUBLIC_KEYS_INDEX_LENGTH = 3; // uint8(PublicKeyIndex.COMMUNICATION) + 1
-
-/// @notice Represents the data needed for a public key registration
+/// @notice Represents the data needed for ECDSA public key registration
 /// @dev Includes the public key coordinates and ECDSA signature for verification
-struct PublicKeyRegistration {
+struct ECDSAPublicKey {
     /// @notice X-coordinate of the public key
     bytes32 publicKeyX;
     /// @notice Y-coordinate of the public key
@@ -83,12 +83,42 @@ struct PublicKeyRegistration {
     bytes32 s;
 }
 
+/// @notice Represents RSA public key for communication
+/// @dev Contains DER-encoded RSA public key
+/// @dev We use a fixed bytes32 array for gas efficiency
+struct RSAPublicKey {
+    /// @notice DER-encoded RSA public key stored as bytes32 chunks
+    bytes32[RSA_PUBLIC_KEY_CHUNKS] rsaPublicKey;
+}
+
+/// @notice Member public key registration structure
+/// @dev Contains mixed key types for registration
+struct MemberRegistrationKeys {
+    /// @notice TAKE public key (ECDSA) - fully validated
+    ECDSAPublicKey takeKey;
+    /// @notice COVENANT public key (ECDSA) - no validation
+    ECDSAPublicKey covenantKey;
+    /// @notice COMMUNICATION public key (RSA) - RSA validation
+    RSAPublicKey communicationKey;
+}
+
+/// @notice Member public keys structure for members
+/// @dev Contains different key types for different purposes
+struct MemberKeys {
+    /// @notice TAKE public key (ECDSA)
+    bytes32 takePubKey;
+    /// @notice COVENANT public key (ECDSA)
+    bytes32 covenantPubKey;
+    /// @notice COMMUNICATION public key (RSA)
+    RSAPublicKey communicationPubKey;
+}
+
 /// @notice Represents a committee member with their keys, roles, and balance
 /// @dev Contains all information needed to manage a member's participation
 struct Member {
-    /// @notice Array of public keys indexed by PublicKeyIndex
-    /// @dev Contains TAKE, COVENANT, and COMMUNICATION keys
-    bytes32[] publicKeys;
+    /// @notice Member public keys for different purposes
+    /// @dev Contains TAKE (ECDSA), COVENANT (ECDSA), and COMMUNICATION (RSA) keys
+    MemberKeys publicKeys;
     /// @notice Balance and staking information for the member
     Balance balance;
     /// @notice Additional data stored as key-value pairs
@@ -157,11 +187,11 @@ interface ICommitteeRegistry {
     /// @dev Registers public keys and deposits required bond for the requested role
     /// @param _requestedStream The stream denomination to apply for
     /// @param _requestedRole The role requested in the committee
-    /// @param _publicKeys Array of public key registrations for TAKE, COVENANT, and COMMUNICATION
+    /// @param _publicKeys Member public key registration with ECDSA and RSA keys
     function applyToStream(
         StreamDenomination _requestedStream,
         Role _requestedRole,
-        PublicKeyRegistration[] calldata _publicKeys
+        MemberRegistrationKeys calldata _publicKeys
     ) external payable;
 
     /// @notice Unsubscribes from a stream and set as available balance the pre-staked balance
@@ -174,8 +204,8 @@ interface ICommitteeRegistry {
 
     /// @notice Retrieves all public keys for a specific member
     /// @param _address The member's address
-    /// @return publicKeys Array of public keys indexed by PublicKeyIndex
-    function getMemberPublicKeys(address _address) external view returns (bytes32[] memory publicKeys);
+    /// @return publicKeys Member public keys structure
+    function getMemberPublicKeys(address _address) external view returns (MemberKeys memory publicKeys);
 
     /// @notice Gets the requested role for a member in a specific stream
     /// @param _address The member's address
@@ -233,8 +263,8 @@ interface ICommitteeRegistry {
 
     /// @notice Gets the COMMUNICATION public key for a specific member
     /// @param _address The member's address
-    /// @return The COMMUNICATION public key (x-coordinate only)
-    function getMemberComPubKey(address _address) external view returns (bytes32);
+    /// @return RSAPublicKey The RSA COMMUNICATION public key
+    function getMemberComPubKey(address _address) external view returns (RSAPublicKey memory);
 
     /// @notice Allows a member to deposit information  formation
     /// @dev Called by members to provide their aggregated key for a pending committee
@@ -351,8 +381,9 @@ interface ICommitteeRegistry {
     event NewPendingCommittee(uint256 indexed streamId, Committee _committee);
 
     /// @notice Event emitted when a new member is registered
+    /// @param member The member address
     /// @param publicKeys The public keys of the new member
-    event NewMember(bytes32[] indexed publicKeys);
+    event NewMember(address indexed member, MemberKeys publicKeys);
 
     /// @notice Event emitted when a member unsubscribes from a stream
     /// @param member The member's address
@@ -510,35 +541,34 @@ interface ICommitteeRegistry {
     /// @param repeatedPublicKeyX The X-coordinate of the repeated public key
     error RepeatedPublicKeys(uint256 index, bytes32 publicKeyX, uint256 repeatedIndex, bytes32 repeatedPublicKeyX);
 
-    /// @notice Thrown when a public key is zero
-    /// @param index The index of the invalid public key
+    /// @notice Thrown when a EDCSA public key is zero
+    /// @param keyType The type of the public key (TAKE, COVENANT, or COMMUNICATION)
     /// @param publicKeyX The X-coordinate of the public key
     /// @param publicKeyY The Y-coordinate of the public key
-    error InvalidZeroPublicKey(uint256 index, bytes32 publicKeyX, bytes32 publicKeyY);
+    error InvalidZeroEDCSAPublicKey(PublicKeyType keyType, bytes32 publicKeyX, bytes32 publicKeyY);
 
-    /// @notice Thrown when the public keys array length is invalid
-    /// @param publicKeysLength The actual length
-    /// @param expectedLength The expected length
-    error InvalidPublicKeysLength(uint256 publicKeysLength, uint256 expectedLength);
+    /// @notice Thrown when a RSA public key is zero
+    /// @param keyType The type of the public key (TAKE, COVENANT, or COMMUNICATION)
+    error InvalidZeroRSAPublicKey(PublicKeyType keyType);
 
     /// @notice Thrown when a public key doesn't match the expected value
-    /// @param index The index of the public key
+    /// @param keyType The type of the public key (TAKE, COVENANT, or COMMUNICATION)
     /// @param currentPubKey The current public key
     /// @param newPubKey The new public key
-    error PublicKeyMismatch(uint256 index, bytes32 currentPubKey, bytes32 newPubKey);
+    error PublicKeyMismatch(PublicKeyType keyType, bytes32 currentPubKey, bytes32 newPubKey);
 
     /// @notice Thrown when a signature is zero
-    /// @param index The index of the invalid signature
+    /// @param keyType The type of the public key (TAKE, COVENANT, or COMMUNICATION)
     /// @param publicKey The public key registration with invalid signature
-    error InvalidZeroSignature(uint256 index, PublicKeyRegistration publicKey);
+    error InvalidZeroEDCSASignature(PublicKeyType keyType, ECDSAPublicKey publicKey);
 
     /// @notice Thrown when a signature is invalid
-    /// @param index The index of the invalid signature
+    /// @param keyType The type of the public key (TAKE, COVENANT, or COMMUNICATION)
     /// @param publicKey The public key registration with invalid signature
     /// @param recoveredSignerAddress The address recovered from the signature
     /// @param signerAddress The expected signer address
-    error InvalidSignature(
-        uint256 index, PublicKeyRegistration publicKey, address recoveredSignerAddress, address signerAddress
+    error InvalidEDCSASignature(
+        PublicKeyType keyType, ECDSAPublicKey publicKey, address recoveredSignerAddress, address signerAddress
     );
 
     /// @notice Thrown when there are no committee members

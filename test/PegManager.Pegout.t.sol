@@ -1046,8 +1046,6 @@ contract TestPegManager is Test, HelperContract {
         uint256 amountInWei = BtcHelper.satoshiToWei(amount);
 
         Stream memory stream = streamManager.getStream(amount);
-        bytes32 txId = 0xb24858ade3e5be49ae63facb93524ddf460d0771f093525dae328b6c435516a2;
-        bytes memory scriptPubKey = hex"02f519f51e435c20d38af683ea86862f4591ce8cda248077c2d9a72a76b62f32";
 
         // 1. Fill first packet with all BLOCKED slots
         streamManager.pushSlotsHarness(stream.streamId, 0, Constants.SLOTS_PER_PACKET, SlotState.BLOCKED);

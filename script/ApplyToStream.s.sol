@@ -3,13 +3,7 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
-import {
-    ICommitteeRegistry,
-    Role,
-    PublicKeyRegistration,
-    PUBLIC_KEYS_INDEX_LENGTH,
-    Role
-} from "src/interfaces/ICommitteeRegistry.sol";
+import {ICommitteeRegistry, MemberRegistrationKeys, MemberKeys, Role} from "src/interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {PegManager} from "src/PegManager.sol";
 
@@ -23,7 +17,7 @@ contract ApplyToStreamScript is ScriptUtils {
     uint256 role;
     uint256 privKey;
     address user;
-    PublicKeyRegistration[] pubKeysRegistration;
+    MemberRegistrationKeys memberRegistrationKeys;
 
     function setUp(uint16 _mnemonicIndex, uint16 _streamIndex, uint16 _roleIndex) internal {
         pegManager = PegManager(0x0165878A594ca255338adfa4d48449f69242Eb8F);
@@ -46,10 +40,10 @@ contract ApplyToStreamScript is ScriptUtils {
         minimumDeposit = streamManager.getMinimumDeposit(StreamDenomination(streamId), Role(role));
         privKey = getMemberKey(uint32(mnemonicIndex));
         user = vm.addr(privKey);
-        PublicKeyRegistration[] memory pubKeysRegistrationMemory = generatePublicKeysRegistration(privKey);
-        for (uint8 i = 0; i < PUBLIC_KEYS_INDEX_LENGTH; i++) {
-            pubKeysRegistration.push(pubKeysRegistrationMemory[i]);
-        }
+        MemberRegistrationKeys memory memberRegistrationKeysMemory = generateRegistrationPublicKeys(privKey);
+        memberRegistrationKeys.takeKey = memberRegistrationKeysMemory.takeKey;
+        memberRegistrationKeys.covenantKey = memberRegistrationKeysMemory.covenantKey;
+        memberRegistrationKeys.communicationKey = memberRegistrationKeysMemory.communicationKey;
 
         if (user.balance < minimumDeposit) {
             revert("Insufficient balance to apply to stream");
@@ -61,14 +55,21 @@ contract ApplyToStreamScript is ScriptUtils {
 
         vm.startBroadcast(privKey);
         committeeRegistry.applyToStream{value: minimumDeposit}(
-            StreamDenomination(streamId), Role(role), pubKeysRegistration
+            StreamDenomination(streamId), Role(role), memberRegistrationKeys
         );
         vm.stopBroadcast();
-        bytes32[] memory memberPubKeys = committeeRegistry.getMemberPublicKeys(user);
-        for (uint8 i = 0; i < PUBLIC_KEYS_INDEX_LENGTH; i++) {
-            if (memberPubKeys[i] != pubKeysRegistration[i].publicKeyX) {
-                revert("applyToStream failed: public key mismatch");
-            }
+        MemberKeys memory memberPubKeys = committeeRegistry.getMemberPublicKeys(user);
+        if (memberPubKeys.takePubKey != memberRegistrationKeys.takeKey.publicKeyX) {
+            revert("applyToStream failed: take public key mismatch");
+        }
+        if (memberPubKeys.covenantPubKey != memberRegistrationKeys.covenantKey.publicKeyX) {
+            revert("applyToStream failed: covenant public key mismatch");
+        }
+        if (
+            keccak256(abi.encode(memberPubKeys.communicationPubKey))
+                != keccak256(abi.encode(memberRegistrationKeys.communicationKey))
+        ) {
+            revert("applyToStream failed: communication public key mismatch");
         }
 
         console.log("=== User applied to stream successfully ===");

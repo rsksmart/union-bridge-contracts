@@ -8,7 +8,6 @@ import {
     Role,
     Committee,
     Member,
-    PublicKeyIndex,
     CommunicationData,
     CommitteeMember,
     COMMUNICATION_DATA_CHUNKS

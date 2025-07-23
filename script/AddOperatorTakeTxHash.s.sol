@@ -3,13 +3,7 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
-import {
-    ICommitteeRegistry,
-    Role,
-    PublicKeyRegistration,
-    PUBLIC_KEYS_INDEX_LENGTH,
-    Role
-} from "src/interfaces/ICommitteeRegistry.sol";
+import {ICommitteeRegistry, Role} from "src/interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
 import {PegManager} from "src/PegManager.sol";
 import {ISignatureManager, OperatorTakeData} from "src/interfaces/ISignatureManager.sol";
