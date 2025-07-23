@@ -15,9 +15,12 @@ import {
     PendingCommittee,
     PendingCommitteeData,
     PendingCommitteeStatus,
-    PublicKeyIndex,
-    PublicKeyRegistration,
-    PUBLIC_KEYS_INDEX_LENGTH,
+    ECDSAPublicKey,
+    RSAPublicKey,
+    MemberRegistrationKeys,
+    MemberKeys,
+    RSA_PUBLIC_KEY_CHUNKS,
+    PublicKeyType,
     ApplicationData,
     Balance,
     CommunicationData,
@@ -85,28 +88,24 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     }
 
     function _getMemberTakePubKey(address _address) internal view returns (bytes32) {
-        return _getMember(_address).publicKeys[uint8(PublicKeyIndex.TAKE)];
+        return _getMember(_address).publicKeys.takePubKey;
     }
 
-    function _getMemberComPubKey(address _address) internal view returns (bytes32) {
-        return _getMember(_address).publicKeys[uint8(PublicKeyIndex.COMMUNICATION)];
+    function _getMemberComPubKey(address _address) internal view returns (RSAPublicKey memory) {
+        return _getMember(_address).publicKeys.communicationPubKey;
     }
 
-    function _getOrRegisterMember(address _address, PublicKeyRegistration[] calldata _publicKeys)
+    function _getOrRegisterMember(address _address, MemberRegistrationKeys calldata _publicKeys)
         internal
         returns (Member storage)
     {
         Member storage member = members[_address];
         // Check if the member is already registered
-        if (member.publicKeys.length == 0) {
+        if (member.publicKeys.takePubKey == bytes32(0)) {
             member = _registerMember(_address, _publicKeys);
         } else {
             // Check if the public keys are the same as the stored member's public keys
-            for (uint8 i = 0; i < PUBLIC_KEYS_INDEX_LENGTH; i++) {
-                if (member.publicKeys[i] != _publicKeys[i].publicKeyX) {
-                    revert PublicKeyMismatch(i, member.publicKeys[i], _publicKeys[i].publicKeyX);
-                }
-            }
+            _validateMemberKeyMatch(member, _publicKeys);
         }
         return member;
     }
@@ -115,18 +114,13 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     /// @dev Registers public keys and deposits required bond for the requested role
     /// @param _stream The stream denomination to apply for
     /// @param _role The role requested in the committee
-    /// @param _publicKeys Array of public key registrations for TAKE, COVENANT, and COMMUNICATION
-    function applyToStream(StreamDenomination _stream, Role _role, PublicKeyRegistration[] calldata _publicKeys)
+    /// @param _publicKeys Member registration public keys
+    function applyToStream(StreamDenomination _stream, Role _role, MemberRegistrationKeys calldata _publicKeys)
         external
         payable
     {
         if (_role == Role.NONE) {
             revert RequestedNoneRoleForStream(_stream);
-        }
-        // If the public keys length is not the same as the enum length revert
-        uint256 publicKeysLength = _publicKeys.length;
-        if (publicKeysLength != PUBLIC_KEYS_INDEX_LENGTH) {
-            revert InvalidPublicKeysLength(publicKeysLength, PUBLIC_KEYS_INDEX_LENGTH);
         }
 
         Member storage member = _getOrRegisterMember(msg.sender, _publicKeys);
@@ -272,52 +266,91 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         }
     }
 
+    function _isRSAKeyEmpty(bytes32[RSA_PUBLIC_KEY_CHUNKS] memory _rsaPublicKey) internal pure returns (bool) {
+        for (uint256 i = 0; i < RSA_PUBLIC_KEY_CHUNKS; i++) {
+            if (_rsaPublicKey[i] != bytes32(0)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function _getRSAKeyHash(bytes32[RSA_PUBLIC_KEY_CHUNKS] memory _rsaPublicKey) internal pure returns (bytes32) {
+        return keccak256(abi.encode(_rsaPublicKey));
+    }
+
     function _getAddressFromPublicKey(bytes memory _uncompressedPublicKey) internal pure returns (address) {
         return address(uint160(uint256(keccak256(_uncompressedPublicKey))));
     }
 
-    function _validatePublicKeys(PublicKeyRegistration[] calldata _publicKeys) internal pure {
-        // Iterate over the public keys to check if they are valid
-        for (uint8 i = 0; i < PUBLIC_KEYS_INDEX_LENGTH; i++) {
-            // Check if the public key X is not repeated
-            for (uint8 j = i + 1; j < PUBLIC_KEYS_INDEX_LENGTH; j++) {
-                if (_publicKeys[i].publicKeyX == _publicKeys[j].publicKeyX) {
-                    revert RepeatedPublicKeys(i, _publicKeys[i].publicKeyX, j, _publicKeys[j].publicKeyX);
-                }
-            }
+    function _validatePublicKeys(MemberRegistrationKeys calldata _publicKeys) internal pure {
+        _validateECDSAKey(_publicKeys.takeKey, PublicKeyType.TAKE);
 
-            // Check if the public keys is not 0
-            if (_publicKeys[i].publicKeyX == bytes32(0) || _publicKeys[i].publicKeyY == bytes32(0)) {
-                revert InvalidZeroPublicKey(i, _publicKeys[i].publicKeyX, _publicKeys[i].publicKeyY);
-            }
+        // Placeholder for COVENANT key validation
 
-            // Validate signature is not zero
-            if (_publicKeys[i].v == 0 || _publicKeys[i].r == bytes32(0) || _publicKeys[i].s == bytes32(0)) {
-                revert InvalidZeroSignature(i, _publicKeys[i]);
-            }
+        _validateRSAKey(_publicKeys.communicationKey, PublicKeyType.COMMUNICATION);
+    }
 
-            // Use the uncompressed public key as the message
-            bytes memory uncompressedPublicKey = abi.encode(_publicKeys[i].publicKeyX, _publicKeys[i].publicKeyY);
-            bytes32 messageHash = keccak256(uncompressedPublicKey);
+    function _validateECDSAKey(ECDSAPublicKey calldata _key, PublicKeyType _type) internal pure {
+        // Check if the public keys is not 0
+        if (_key.publicKeyX == bytes32(0) || _key.publicKeyY == bytes32(0)) {
+            revert InvalidZeroEDCSAPublicKey(_type, _key.publicKeyX, _key.publicKeyY);
+        }
 
-            // Validate the signature for the message is valid
-            // * The `ecrecover` EVM precompile allows for malleable (non-unique) signatures:
-            // * this function rejects them by requiring the `s` value to be in the lower
-            // * half order, and the `v` value to be either 27 or 28.
-            address recoveredSignerAddress =
-                ECDSA.recover(messageHash, _publicKeys[i].v, _publicKeys[i].r, _publicKeys[i].s);
+        // Validate signature is not zero
+        if (_key.v == 0 || _key.r == bytes32(0) || _key.s == bytes32(0)) {
+            revert InvalidZeroEDCSASignature(_type, _key);
+        }
 
-            // Get the expectedsigner address from the uncompressed public key
-            address expectedSignerAddress = _getAddressFromPublicKey(uncompressedPublicKey);
+        // Use the uncompressed public key as the message
+        bytes memory uncompressedPublicKey = abi.encode(_key.publicKeyX, _key.publicKeyY);
+        bytes32 messageHash = keccak256(uncompressedPublicKey);
 
-            // Validate the recovered signer address is the same as the expected signer address
-            if (recoveredSignerAddress != expectedSignerAddress) {
-                revert InvalidSignature(i, _publicKeys[i], recoveredSignerAddress, expectedSignerAddress);
-            }
+        // Validate the signature for the message is valid
+        // * The `ecrecover` EVM precompile allows for malleable (non-unique) signatures:
+        // * this function rejects them by requiring the `s` value to be in the lower
+        // * half order, and the `v` value to be either 27 or 28.
+        address recoveredSignerAddress = ECDSA.recover(messageHash, _key.v, _key.r, _key.s);
+
+        // Get the expectedsigner address from the uncompressed public key
+        address expectedSignerAddress = _getAddressFromPublicKey(uncompressedPublicKey);
+
+        // Validate the recovered signer address is the same as the expected signer address
+        if (recoveredSignerAddress != expectedSignerAddress) {
+            revert InvalidEDCSASignature(_type, _key, recoveredSignerAddress, expectedSignerAddress);
         }
     }
 
-    function _registerMember(address _memberAddress, PublicKeyRegistration[] calldata _publicKeys)
+    function _validateRSAKey(RSAPublicKey calldata _key, PublicKeyType _type) internal pure {
+        // Check if RSA key is empty
+        if (_isRSAKeyEmpty(_key.rsaPublicKey)) {
+            revert InvalidZeroRSAPublicKey(_type);
+        }
+    }
+
+    function _validateMemberKeyMatch(Member storage _member, MemberRegistrationKeys calldata _publicKeys)
+        internal
+        view
+    {
+        // TAKE key
+        if (_member.publicKeys.takePubKey != _publicKeys.takeKey.publicKeyX) {
+            revert PublicKeyMismatch(PublicKeyType.TAKE, _member.publicKeys.takePubKey, _publicKeys.takeKey.publicKeyX);
+        }
+        // COVENANT key
+        if (_member.publicKeys.covenantPubKey != _publicKeys.covenantKey.publicKeyX) {
+            revert PublicKeyMismatch(
+                PublicKeyType.COVENANT, _member.publicKeys.covenantPubKey, _publicKeys.covenantKey.publicKeyX
+            );
+        }
+        // COMMUNICATION key - compare RSA hashes
+        bytes32 storedComKeyHash = _getRSAKeyHash(_member.publicKeys.communicationPubKey.rsaPublicKey);
+        bytes32 newComKeyHash = _getRSAKeyHash(_publicKeys.communicationKey.rsaPublicKey);
+        if (storedComKeyHash != newComKeyHash) {
+            revert PublicKeyMismatch(PublicKeyType.COMMUNICATION, storedComKeyHash, newComKeyHash);
+        }
+    }
+
+    function _registerMember(address _memberAddress, MemberRegistrationKeys calldata _publicKeys)
         internal
         returns (Member storage)
     {
@@ -326,14 +359,15 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
 
         Member storage member = members[_memberAddress]; // Get reference
 
-        // Initialize Member public keys
-        for (uint8 i = 0; i < PUBLIC_KEYS_INDEX_LENGTH; i++) {
-            member.publicKeys.push(_publicKeys[i].publicKeyX);
-        }
+        // Initialize Member public keys from the struct
+        member.publicKeys.takePubKey = _publicKeys.takeKey.publicKeyX;
+        member.publicKeys.covenantPubKey = _publicKeys.covenantKey.publicKeyX;
+        member.publicKeys.communicationPubKey = _publicKeys.communicationKey;
 
         _initMemberBalance(member);
 
-        emit NewMember(member.publicKeys);
+        // Emit event with the stored public keys
+        emit NewMember(_memberAddress, member.publicKeys);
         return member;
     }
 
@@ -377,15 +411,15 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
 
     /// @notice Gets the COMMUNICATION public key for a specific member
     /// @param _address The member's address
-    /// @return The COMMUNICATION public key (x-coordinate only)
-    function getMemberComPubKey(address _address) external view returns (bytes32) {
+    /// @return The RSA COMMUNICATION public key
+    function getMemberComPubKey(address _address) external view returns (RSAPublicKey memory) {
         return _getMemberComPubKey(_address);
     }
 
     /// @notice Retrieves all public keys for a specific member
     /// @param _address The member's address
-    /// @return publicKeys Array of public keys indexed by PublicKeyIndex
-    function getMemberPublicKeys(address _address) external view returns (bytes32[] memory publicKeys) {
+    /// @return publicKeys Member public keys structure
+    function getMemberPublicKeys(address _address) external view returns (MemberKeys memory publicKeys) {
         return _getMember(_address).publicKeys;
     }
 
@@ -443,7 +477,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
 
     function _getMember(address _address) internal view returns (Member storage member) {
         member = members[_address];
-        if (member.publicKeys.length == 0) {
+        if (member.publicKeys.takePubKey == bytes32(0)) {
             revert MemberNotRegistered(_address);
         }
     }

@@ -3,11 +3,7 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 import {
-    CommitteeMember,
-    Committee,
-    PublicKeyRegistration,
-    PublicKeyIndex,
-    PUBLIC_KEYS_INDEX_LENGTH
+    CommitteeMember, Committee, MemberRegistrationKeys, MemberKeys, PublicKeyType
 } from "src/CommitteeRegistry.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
@@ -76,19 +72,18 @@ abstract contract TestUtils is Test, ScriptUtils {
     }
 
     function generatePubKey(uint256 _privateKey) internal returns (bytes32) {
-        Vm.Wallet memory wallet = createWallet(_privateKey, PublicKeyIndex.TAKE);
+        Vm.Wallet memory wallet = createWallet(_privateKey, PublicKeyType.TAKE);
         return bytes32(wallet.publicKeyX);
     }
 
-    function getXPublicKeysFromRegistration(PublicKeyRegistration[] memory _publicKeysRegistration)
+    //TODO: consider changing name
+    function getXPublicKeysFromRegistration(MemberRegistrationKeys memory _registrationKeys)
         internal
         pure
-        returns (bytes32[] memory)
+        returns (MemberKeys memory publicKeys)
     {
-        bytes32[] memory publicKeys = new bytes32[](_publicKeysRegistration.length);
-        for (uint8 i = 0; i < _publicKeysRegistration.length; i++) {
-            publicKeys[i] = _publicKeysRegistration[i].publicKeyX;
-        }
-        return publicKeys;
+        publicKeys.takePubKey = _registrationKeys.takeKey.publicKeyX;
+        publicKeys.covenantPubKey = _registrationKeys.covenantKey.publicKeyX;
+        publicKeys.communicationPubKey = _registrationKeys.communicationKey;
     }
 }

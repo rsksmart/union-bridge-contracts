@@ -5,9 +5,11 @@ import "forge-std/Script.sol";
 import {Vm} from "forge-std/Vm.sol";
 import {
     ICommitteeRegistry,
-    PublicKeyRegistration,
-    PublicKeyIndex,
-    PUBLIC_KEYS_INDEX_LENGTH
+    PublicKeyType,
+    ECDSAPublicKey,
+    RSAPublicKey,
+    MemberRegistrationKeys,
+    RSA_PUBLIC_KEY_CHUNKS
 } from "src/interfaces/ICommitteeRegistry.sol";
 import {BtcTxSPVProof} from "src/PegManager.sol";
 import {BtcTransaction, BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
@@ -28,37 +30,51 @@ abstract contract ScriptUtils is Script {
         return vm.deriveKey(vm.envString("MNEMONIC"), index);
     }
 
-    function createWallet(uint256 _privateKey, PublicKeyIndex _pubKeyIndex) public returns (Vm.Wallet memory) {
-        return vm.createWallet(uint256(keccak256(abi.encode(_privateKey, _pubKeyIndex))));
+    function createWallet(uint256 _privateKey, PublicKeyType _keyType) public returns (Vm.Wallet memory) {
+        return vm.createWallet(uint256(keccak256(abi.encode(_privateKey, _keyType))));
     }
 
-    function generatePublicKeyRegistration(uint256 _privateKey, PublicKeyIndex _pubKeyIndex)
+    function generateECDSAPublicKey(uint256 _privateKey, PublicKeyType _keyType)
         public
-        returns (PublicKeyRegistration memory)
+        returns (ECDSAPublicKey memory ecdsaPublicKey)
     {
         // Generate a deterministic 'public key' from the private key
-        Vm.Wallet memory wallet = createWallet(_privateKey, _pubKeyIndex);
+        Vm.Wallet memory wallet = createWallet(_privateKey, _keyType);
         // Hash the uncompressed public key
         bytes32 hash = keccak256(abi.encode(wallet.publicKeyX, wallet.publicKeyY));
         // Sign the public key
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(wallet, hash);
-        PublicKeyRegistration memory publicKeyRegistration = PublicKeyRegistration({
+        ecdsaPublicKey = ECDSAPublicKey({
             publicKeyX: bytes32(wallet.publicKeyX),
             publicKeyY: bytes32(wallet.publicKeyY),
             v: v,
             r: r,
             s: s
         });
-        return publicKeyRegistration;
+        return ecdsaPublicKey;
     }
 
-    function generatePublicKeysRegistration(uint256 _privateKey) public returns (PublicKeyRegistration[] memory) {
-        // Generate a deterministic 'public key' from the private key
-        PublicKeyRegistration[] memory publicKeysRegistration = new PublicKeyRegistration[](PUBLIC_KEYS_INDEX_LENGTH);
-        for (uint8 i = 0; i < PUBLIC_KEYS_INDEX_LENGTH; i++) {
-            publicKeysRegistration[i] = generatePublicKeyRegistration(_privateKey, PublicKeyIndex(i));
+    function generateRSAPublicKey(uint256 _privateKey, PublicKeyType _keyType)
+        public
+        pure
+        returns (RSAPublicKey memory rsaPublicKey)
+    {
+        bytes32[RSA_PUBLIC_KEY_CHUNKS] memory rsaPublicKeyArray;
+        for (uint256 i = 0; i < RSA_PUBLIC_KEY_CHUNKS; i++) {
+            rsaPublicKeyArray[i] = keccak256(abi.encode(_privateKey, "rsa_der", uint8(_keyType), i));
         }
-        return publicKeysRegistration;
+        rsaPublicKey = RSAPublicKey({rsaPublicKey: rsaPublicKeyArray});
+        return rsaPublicKey;
+    }
+
+    function generateRegistrationPublicKeys(uint256 _privateKey)
+        public
+        returns (MemberRegistrationKeys memory registrationKeys)
+    {
+        // Generate a deterministic 'public keys' from a private key
+        registrationKeys.takeKey = generateECDSAPublicKey(_privateKey, PublicKeyType.TAKE);
+        registrationKeys.covenantKey = generateECDSAPublicKey(_privateKey, PublicKeyType.COVENANT);
+        registrationKeys.communicationKey = generateRSAPublicKey(_privateKey, PublicKeyType.COMMUNICATION);
     }
 
     // ========================== Peg out ==========================
