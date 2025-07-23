@@ -6,14 +6,15 @@ import {CommitteeRegistry} from "src/CommitteeRegistry.sol";
 import {
     ICommitteeRegistry,
     PendingCommitteeStatus,
-    PublicKeyRegistration,
     Role,
     CommitteeMember,
     Committee,
     PendingCommittee,
     CommunicationData,
     COMMUNICATION_DATA_CHUNKS,
-    PublicKeyIndex
+    MemberRegistrationKeys,
+    PublicKeyType,
+    RSAPublicKey
 } from "src/interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination, IStreamManager, Stream} from "src/interfaces/IStreamManager.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
@@ -600,8 +601,8 @@ contract TestCommitteeRegistry is Test, HelperContract {
         (Committee memory expectedCommittee, uint64 streamId) = setup_pendingCommittee();
         expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY;
         address notCommitteeMember = vm.addr(registry.minCommitteeMembers() + 1);
-        PublicKeyRegistration[] memory publicKeysRegistration =
-            generatePublicKeysRegistration(uint256(uint160(notCommitteeMember)));
+        MemberRegistrationKeys memory publicKeysRegistration =
+            generateRegistrationPublicKeys(uint256(uint160(notCommitteeMember)));
         setup_applyToStream(StreamDenomination(streamId), notCommitteeMember, publicKeysRegistration, Role.OPERATOR);
 
         // Assert
@@ -1031,8 +1032,8 @@ contract TestCommitteeRegistry is Test, HelperContract {
         uint256 userIndex = registry.minCommitteeMembers() * 2 - 1;
         Role userRole = Role.OPERATOR;
         address userAddress = vm.addr(userIndex + 1);
-        PublicKeyRegistration[] memory pubKeysRegistration =
-            generatePublicKeysRegistration(uint256(uint160(userAddress)));
+        MemberRegistrationKeys memory memberRegistrationKeys =
+            generateRegistrationPublicKeys(uint256(uint160(userAddress)));
 
         // Unsubscribe one of the members
         vm.prank(userAddress);
@@ -1068,7 +1069,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Act
         vm.prank(userAddress);
-        registry.applyToStream{value: minimumDeposit}(denomination, userRole, pubKeysRegistration);
+        registry.applyToStream{value: minimumDeposit}(denomination, userRole, memberRegistrationKeys);
 
         // Assert
         (Committee memory pendingCommittee, uint256 createdAt, uint256 missingData) =
@@ -1085,8 +1086,8 @@ contract TestCommitteeRegistry is Test, HelperContract {
         Role role = Role.OPERATOR;
         setup_registerNewMembers(0, Constants.MAX_CANDIDATES_SIZE_PER_ROLE, denomination);
         address memberAddress = vm.addr(Constants.MAX_CANDIDATES_SIZE_PER_ROLE + 1);
-        PublicKeyRegistration[] memory publicKeysRegistration =
-            generatePublicKeysRegistration(uint256(uint160(memberAddress)));
+        MemberRegistrationKeys memory publicKeysRegistration =
+            generateRegistrationPublicKeys(uint256(uint160(memberAddress)));
         uint256 minimumDeposit = streamManager.getMinimumDeposit(denomination, role);
         vm.deal(memberAddress, minimumDeposit);
 
@@ -1106,8 +1107,8 @@ contract TestCommitteeRegistry is Test, HelperContract {
         Role role = Role.WATCHTOWER;
         setup_registerNewMembers(Constants.MAX_CANDIDATES_SIZE_PER_ROLE, 0, denomination);
         address memberAddress = vm.addr(Constants.MAX_CANDIDATES_SIZE_PER_ROLE + 1);
-        PublicKeyRegistration[] memory publicKeysRegistration =
-            generatePublicKeysRegistration(uint256(uint160(memberAddress)));
+        MemberRegistrationKeys memory publicKeysRegistration =
+            generateRegistrationPublicKeys(uint256(uint160(memberAddress)));
         uint256 minimumDeposit = streamManager.getMinimumDeposit(denomination, role);
         vm.deal(memberAddress, minimumDeposit);
 
@@ -1302,7 +1303,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         uint256 privKey = 999;
         address registeredToAnotherStreamMemberAddress = vm.addr(privKey); // Address not in committee
 
-        PublicKeyRegistration[] memory publicKeysRegistration = generatePublicKeysRegistration(privKey);
+        MemberRegistrationKeys memory publicKeysRegistration = generateRegistrationPublicKeys(privKey);
 
         setup_applyToStream(
             StreamDenomination._0_1BTC, registeredToAnotherStreamMemberAddress, publicKeysRegistration, Role.OPERATOR
@@ -1518,7 +1519,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         uint256 privKey = 999;
         address memberAddressForOtherStream = vm.addr(privKey); // Address not in  pending committee
-        PublicKeyRegistration[] memory publicKeysRegistration = generatePublicKeysRegistration(privKey);
+        MemberRegistrationKeys memory publicKeysRegistration = generateRegistrationPublicKeys(privKey);
 
         setup_applyToStream(
             StreamDenomination._0_1BTC, memberAddressForOtherStream, publicKeysRegistration, Role.OPERATOR
@@ -1540,19 +1541,23 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Arrange
         uint256 privKey = 1;
         address memberAddress = vm.addr(privKey);
-        PublicKeyRegistration[] memory publicKeysRegistration = generatePublicKeysRegistration(privKey);
+        MemberRegistrationKeys memory publicKeysRegistration = generateRegistrationPublicKeys(privKey);
 
         // Register the member by applying to a stream
         setup_applyToStream(StreamDenomination._0_01BTC, memberAddress, publicKeysRegistration, Role.OPERATOR);
 
         // Get expected communication public key from registration
-        bytes32 expectedComPubKey = publicKeysRegistration[uint8(PublicKeyIndex.COMMUNICATION)].publicKeyX;
+        RSAPublicKey memory expectedComPubKey = publicKeysRegistration.communicationKey;
 
         // Act
-        bytes32 actualComPubKey = registry.getMemberComPubKey(memberAddress);
+        RSAPublicKey memory actualComPubKey = registry.getMemberComPubKey(memberAddress);
 
         // Assert
-        assertEq(actualComPubKey, expectedComPubKey, "Communication public key should match registration");
+        assertEq(
+            keccak256(abi.encode(actualComPubKey)),
+            keccak256(abi.encode(expectedComPubKey)),
+            "Communication public key should match registration"
+        );
     }
 
     function test_getMemberComPubKey_Revert_MemberNotRegistered() public {

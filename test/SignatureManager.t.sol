@@ -9,7 +9,7 @@ import {
     StreamDenomination,
     Role,
     CommitteeMember,
-    PublicKeyRegistration
+    MemberRegistrationKeys
 } from "src/interfaces/ICommitteeRegistry.sol";
 import {IAccessControl} from "src/interfaces/IAccessControl.sol";
 import {
@@ -274,8 +274,8 @@ contract TestSignatureManager is Test, HelperContract {
         // Arrange
         bytes32 hashToSign = setup_initSignatures();
         address nonCommitteeMember = vm.addr(registry.minCommitteeMembers() + 1);
-        PublicKeyRegistration[] memory nonCommitteeMemberPubKeysRegistration =
-            generatePublicKeysRegistration(uint256(uint160(nonCommitteeMember)));
+        MemberRegistrationKeys memory nonCommitteeMemberPubKeysRegistration =
+            generateRegistrationPublicKeys(uint256(uint160(nonCommitteeMember)));
         setup_applyToStream(
             StreamDenomination._0_01BTC, nonCommitteeMember, nonCommitteeMemberPubKeysRegistration, Role.OPERATOR
         );
@@ -302,8 +302,8 @@ contract TestSignatureManager is Test, HelperContract {
         setup_addAllNonces(hashToSign);
 
         address nonCommitteeMember = vm.addr(registry.minCommitteeMembers() + 1);
-        PublicKeyRegistration[] memory nonCommitteeMemberPubKeysRegistration =
-            generatePublicKeysRegistration(uint256(uint160(nonCommitteeMember)));
+        MemberRegistrationKeys memory nonCommitteeMemberPubKeysRegistration =
+            generateRegistrationPublicKeys(uint256(uint160(nonCommitteeMember)));
         setup_applyToStream(
             StreamDenomination._0_01BTC, nonCommitteeMember, nonCommitteeMemberPubKeysRegistration, Role.OPERATOR
         );
@@ -564,8 +564,8 @@ contract TestSignatureManager is Test, HelperContract {
         // Register a new member that it's not in the committee
         uint256 notMemberIndex = registry.minCommitteeMembers();
         address notMemberAddress = vm.addr(notMemberIndex + 1);
-        PublicKeyRegistration[] memory pubKeysRegistration = generatePublicKeysRegistration(notMemberIndex + 1);
-        setup_applyToStream(StreamDenomination(setupStreamId), notMemberAddress, pubKeysRegistration, Role.OPERATOR);
+        MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(notMemberIndex + 1);
+        setup_applyToStream(StreamDenomination(setupStreamId), notMemberAddress, memberRegistrationKeys, Role.OPERATOR);
 
         // Assert
         vm.expectRevert(
