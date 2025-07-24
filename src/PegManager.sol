@@ -164,32 +164,139 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
     /// @dev The transaction must have at least 2 outputs: one P2TR output and one OP_RETURN output
     /// @dev Emits the PeginRequested event
     function requestPegin(BtcTxSPVProof calldata _peginRequestTxSPVProof) external {
+        bytes32 requestPeginTxHash = _validatePeginRequestProof(_peginRequestTxSPVProof);
+
+        (
+            uint64 packetNumber,
+            address rskDestinationAddress,
+            bytes32 btcReimbursementPubKey,
+            Stream memory stream,
+            bytes32 committeePubKey
+        ) = _extractPeginData(_peginRequestTxSPVProof);
+
+        _validatePeginTransaction(
+            _peginRequestTxSPVProof,
+            rskDestinationAddress,
+            btcReimbursementPubKey,
+            committeePubKey,
+            stream,
+            requestPeginTxHash
+        );
+
+        // Pre-compute signature data before external calls to follow checks-effects-interactions
+        PrevoutData memory prevoutData = PrevoutData({
+            value: _peginRequestTxSPVProof.btcTx.outputs[Constants.VOUT_INDEX_TAPTREE].amount,
+            scriptPubKey: _peginRequestTxSPVProof.btcTx.outputs[Constants.VOUT_INDEX_TAPTREE].scriptPubKey
+        });
+
+        (bytes32 acceptPeginTxHash, bytes32 acceptPeginSignatureHash, bytes memory acceptPeginSignatureMessage) =
+        bitcoinManager.getAcceptPeginSignatureHash(
+            committeePubKey, btcReimbursementPubKey, requestPeginTxHash, prevoutData
+        );
+
+        // Store temp info before external calls
+        RequestPeginTempInfo memory requestPeginInfo = RequestPeginTempInfo({
+            rskDestinationAddress: rskDestinationAddress,
+            btcReimbursementPubKey: btcReimbursementPubKey,
+            acceptPeginSignatureHash: acceptPeginSignatureHash
+        });
+        peginTempInfo[requestPeginTxHash] = requestPeginInfo;
+
+        // Pre-compute committee ID before external calls
+        uint256 committeeId = streamManager.getCommitteeId(stream.streamId, packetNumber);
+
+        // Store request mapping before external calls
+        peginRequests[requestPeginTxHash] = acceptPeginTxHash;
+
+        // Reserve slot during request peg-in - external call
+        // slither-disable-next-line reentrancy-no-eth reentrancy-benign
+        uint64 slotId = streamManager.reserveSlot(stream.streamId, packetNumber);
+
+        // Complete state updates after external call
+        StreamPosition memory streamPos = StreamPosition({
+            streamId: stream.streamId,
+            packetNumber: packetNumber,
+            slotId: slotId,
+            pegStatus: PegStatus.REGISTERED
+        });
+
+        streamPosition[acceptPeginTxHash] = streamPos;
+
+        // slither-disable-next-line reentrancy-events
+        emit PeginRequested(
+            committeeId,
+            requestPeginTxHash,
+            acceptPeginTxHash,
+            Constants.VOUT_INDEX_TAPTREE,
+            streamPos,
+            requestPeginInfo,
+            prevoutData,
+            acceptPeginSignatureMessage
+        );
+
+        // Final external calls - moved to end to minimize reentrancy attack surface
+        // slither-disable-next-line reentrancy-no-eth reentrancy-benign
+        signatureManager.initSignatures(acceptPeginSignatureHash, committeeId);
+        // slither-disable-next-line reentrancy-no-eth reentrancy-benign
+        signatureManager.initOperatorTakeTxHashes(acceptPeginTxHash, committeeId);
+    }
+
+    function _validatePeginRequestProof(BtcTxSPVProof calldata _peginRequestTxSPVProof)
+        internal
+        view
+        returns (bytes32 requestPeginTxHash)
+    {
         if (_peginRequestTxSPVProof.btcTx.version != Constants.BTC_TX_VERSION) {
             revert InvalidBtcTxVersion(_peginRequestTxSPVProof.btcTx.version, Constants.BTC_TX_VERSION);
         }
+
         if (_peginRequestTxSPVProof.btcTx.locktime != Constants.LOCKTIME) {
             revert InvalidLocktime(_peginRequestTxSPVProof.btcTx.locktime, Constants.LOCKTIME);
         }
+
         // Calculate requestPeginTxHash from BtcTransaction
-        bytes32 requestPeginTxHash = bitcoinManager.getBtcTxHash(_peginRequestTxSPVProof.btcTx);
+        requestPeginTxHash = bitcoinManager.getBtcTxHash(_peginRequestTxSPVProof.btcTx);
         if (_getStreamPosition(requestPeginTxHash).pegStatus != PegStatus.NOT_REGISTERED) {
             revert PeginAlreadyRequested(requestPeginTxHash);
         }
+
         // Validate transaction has at least 2 outputs
         if (_peginRequestTxSPVProof.btcTx.outputs.length < 2) {
             revert IncorrectOutputsNumber(uint64(_peginRequestTxSPVProof.btcTx.outputs.length), 2);
         }
+    }
+
+    function _extractPeginData(BtcTxSPVProof calldata _peginRequestTxSPVProof)
+        internal
+        view
+        returns (
+            uint64 packetNumber,
+            address rskDestinationAddress,
+            bytes32 btcReimbursementPubKey,
+            Stream memory stream,
+            bytes32 committeePubKey
+        )
+    {
         // Second transaction should be OP_RETURN with data
-        (uint64 packetNumber, address rskDestinationAddress, bytes32 btcReimbursementPubKey) =
+        (packetNumber, rskDestinationAddress, btcReimbursementPubKey) =
             bitcoinManager.getPeginOpReturnData(_peginRequestTxSPVProof.btcTx.outputs[Constants.VOUT_INDEX_SPEED_UP]);
+
         // First transaction is the Pegin P2TR _peginRequestTxSPVProof.btcTx.outputs[0]
         // Get corresponding stream for the amount if non found reverts
-        Stream memory stream =
-            streamManager.getStream(_peginRequestTxSPVProof.btcTx.outputs[Constants.VOUT_INDEX_TAPTREE].amount);
+        stream = streamManager.getStream(_peginRequestTxSPVProof.btcTx.outputs[Constants.VOUT_INDEX_TAPTREE].amount);
 
         // getCommitteePubKey reverts if packet does not exist
-        bytes32 committeePubKey = streamManager.getCommitteePubKey(stream.streamId, packetNumber);
+        committeePubKey = streamManager.getCommitteePubKey(stream.streamId, packetNumber);
+    }
 
+    function _validatePeginTransaction(
+        BtcTxSPVProof calldata _peginRequestTxSPVProof,
+        address rskDestinationAddress,
+        bytes32 btcReimbursementPubKey,
+        bytes32 committeePubKey,
+        Stream memory stream,
+        bytes32 requestPeginTxHash
+    ) internal view {
         // Validates that the Taproot Script has a Key Path for the committeePubKey
         // and has a timelock for btcReimbursementPubKey
         bitcoinManager.validateRequestPeginP2TROutput(
@@ -200,7 +307,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             _peginRequestTxSPVProof.btcTx.outputs[Constants.VOUT_INDEX_TAPTREE]
         );
 
-        // Verify the requestPeginTxHash part of the Merkle Root of Tx of a Block
+        // Verifies the requestPeginTxHash part of the Merkle Root of Tx of a Block
         // and that block is inside Bitcoin Mainchain
         // and has enough confirmations
         _verifyTxConfirmations(
@@ -210,68 +317,6 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             _peginRequestTxSPVProof.merkleBranchPath,
             _peginRequestTxSPVProof.merkleBranchHashes
         );
-
-        // Reserve slot during request peg-in
-        uint64 slotId = streamManager.reserveSlot(stream.streamId, packetNumber);
-
-        _initAcceptPegin(
-            committeePubKey,
-            btcReimbursementPubKey,
-            requestPeginTxHash,
-            rskDestinationAddress,
-            PrevoutData({
-                value: _peginRequestTxSPVProof.btcTx.outputs[Constants.VOUT_INDEX_TAPTREE].amount,
-                scriptPubKey: _peginRequestTxSPVProof.btcTx.outputs[Constants.VOUT_INDEX_TAPTREE].scriptPubKey
-            }),
-            StreamPosition({
-                streamId: stream.streamId,
-                packetNumber: packetNumber,
-                slotId: slotId,
-                pegStatus: PegStatus.REGISTERED
-            })
-        );
-    }
-
-    function _initAcceptPegin(
-        bytes32 _committeePubKey,
-        bytes32 _userXOnlyPubKey,
-        bytes32 _requestPeginTxHash,
-        address _rskDestinationAddress,
-        PrevoutData memory _prevoutData,
-        StreamPosition memory _streamPos
-    ) internal {
-        // Compute the Bitcoin accept peg-in transaction signature hash
-        (bytes32 acceptPeginTxHash, bytes32 acceptPeginSignatureHash, bytes memory acceptPeginSignatureMessage) =
-        bitcoinManager.getAcceptPeginSignatureHash(
-            _committeePubKey, _userXOnlyPubKey, _requestPeginTxHash, _prevoutData
-        );
-
-        // Store peginRequest requestPeginTxHash to avoid processing it again
-        peginRequests[_requestPeginTxHash] = acceptPeginTxHash;
-        streamPosition[acceptPeginTxHash] = _streamPos;
-
-        // Store pegin info needed for acceptPegin and emit event
-        RequestPeginTempInfo memory requestPeginInfo = RequestPeginTempInfo({
-            rskDestinationAddress: _rskDestinationAddress,
-            btcReimbursementPubKey: _userXOnlyPubKey,
-            acceptPeginSignatureHash: acceptPeginSignatureHash
-        });
-        peginTempInfo[_requestPeginTxHash] = requestPeginInfo;
-
-        uint256 committeeId = streamManager.getCommitteeId(_streamPos.streamId, _streamPos.packetNumber);
-        emit PeginRequested(
-            committeeId,
-            _requestPeginTxHash,
-            acceptPeginTxHash,
-            Constants.VOUT_INDEX_TAPTREE, // vout is the first output, is the P2TR
-            _streamPos,
-            requestPeginInfo,
-            _prevoutData,
-            acceptPeginSignatureMessage
-        );
-
-        signatureManager.initSignatures(acceptPeginSignatureHash, committeeId);
-        signatureManager.initOperatorTakeTxHashes(acceptPeginTxHash, committeeId);
     }
 
     /// @notice Accepts a peg-in operation by providing an SPV proof of the accept peg-in transaction
