@@ -6,6 +6,10 @@ import {ProofValidator} from "src/ProofValidator.sol";
 /// @title SPVHarness
 /// @notice Wrapper for testing ProofValidator
 contract ProofValidatorHarness is ProofValidator {
+    function initialize(address payable _bridgeAddress) external {
+        __ProofValidator_init(_bridgeAddress);
+    }
+
     function verifyTxConfirmationsHarness(
         uint256 _minConfirmations,
         bytes32 _txHash,

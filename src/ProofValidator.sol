@@ -67,7 +67,7 @@ abstract contract ProofValidator is Initializable {
     /// @dev Sets up the RSK Bridge address for Bitcoin transaction verification
     /// @dev Can only be called once during contract deployment
     /// @param _bridgeAddress The address of the RSK Bridge contract
-    function __ProofValidator_init(address payable _bridgeAddress) public initializer {
+    function __ProofValidator_init(address payable _bridgeAddress) internal initializer {
         if (_bridgeAddress == address(0)) {
             revert BridgeAddressZero();
         }
