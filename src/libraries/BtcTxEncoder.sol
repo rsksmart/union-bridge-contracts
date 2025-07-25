@@ -61,7 +61,7 @@ library BtcTxEncoder {
     /// @return The encoded transaction inputs
     function encodeTxInputs(BtcTxIn[] memory _inputs) internal pure returns (bytes memory) {
         bytes memory hexInputs = BtcHelper.toCompactSize(_inputs.length);
-        for (uint64 i = 0; i < _inputs.length; i++) {
+        for (uint256 i = 0; i < _inputs.length; i++) {
             hexInputs = abi.encodePacked(
                 hexInputs, encodeTxIn(_inputs[i].txId, _inputs[i].vout, _inputs[i].sequence, _inputs[i].scriptSig)
             );
@@ -94,7 +94,7 @@ library BtcTxEncoder {
     /// @return The encoded transaction outputs
     function encodeTxOutputs(BtcTxOut[] memory _outputs) internal pure returns (bytes memory) {
         bytes memory hexOutputs = BtcHelper.toCompactSize(_outputs.length);
-        for (uint64 i = 0; i < _outputs.length; i++) {
+        for (uint256 i = 0; i < _outputs.length; i++) {
             hexOutputs = abi.encodePacked(hexOutputs, encodeTxOut(_outputs[i].amount, _outputs[i].scriptPubKey));
         }
         return hexOutputs;
