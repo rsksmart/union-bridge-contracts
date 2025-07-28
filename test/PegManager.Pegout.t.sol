@@ -519,7 +519,7 @@ contract TestPegManager is Test, HelperContract {
     function test_triggerOperatorTake_Revert_UserTakeAlreadySigned() external {
         // Arrange
         RegisterUserTakeSetup memory setup = setup_pegoutAndMemberNonces();
-        setup_addMemberSignature_MultipleMembers(setup.pegoutSignatureHash, 0, registry.minCommitteeMembers());
+        setup_addMemberSignature_MultipleMembers(setup.pegoutSignatureHash, 0, registry.committeeMemberCount());
 
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IPegManager.UserTakeAlreadySigned.selector, setup.pegoutSignatureHash));
@@ -544,7 +544,7 @@ contract TestPegManager is Test, HelperContract {
         RegisterUserTakeSetup memory setup = setup_pegoutAndMemberNonces();
         uint256 createdAt = block.timestamp;
         uint256 expireAt = createdAt + TAKE_0_TIMEOUT_DEFAULT;
-        setup_addMemberSignature_MultipleMembers(setup.pegoutSignatureHash, 0, registry.minCommitteeMembers() - 1);
+        setup_addMemberSignature_MultipleMembers(setup.pegoutSignatureHash, 0, registry.committeeMemberCount() - 1);
 
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IPegManager.UserTakeTimeoutNotExpired.selector, createdAt, expireAt));
@@ -564,7 +564,7 @@ contract TestPegManager is Test, HelperContract {
         // Expire TAKE_0
         vm.warp(createdAt + TAKE_0_TIMEOUT_DEFAULT + 1);
         // This depende on how they have been registered. First registered group are the watchtowers
-        uint256 firstHonestOpIndex = registry.minCommitteeMembers() / 2 + 1;
+        uint256 firstHonestOpIndex = registry.committeeMemberCount() / 2 + 1;
 
         // Add just 2 signatures for the first and second operators
         setup_addMemberSignature_MultipleMembers(setup.pegoutSignatureHash, firstHonestOpIndex, 2);
@@ -602,7 +602,7 @@ contract TestPegManager is Test, HelperContract {
         // Expire TAKE_0
         vm.warp(createdAt + TAKE_0_TIMEOUT_DEFAULT + 1);
         // This depende on how they have been registered. First registered group are the watchtowers
-        uint256 firstHonestOpIndex = registry.minCommitteeMembers() / 2 + 1;
+        uint256 firstHonestOpIndex = registry.committeeMemberCount() / 2 + 1;
         address firstHonestOpAddress = vm.addr(firstHonestOpIndex + 1);
 
         // Add just 2 nonces for the first and second operators
@@ -632,7 +632,7 @@ contract TestPegManager is Test, HelperContract {
     function test_triggerOperatorTake_Revert_OperatorTakeTimeoutNotExpired() external {
         // Arrange
         RegisterUserTakeSetup memory setup = setup_pegoutAndMemberNonces();
-        setup_addMemberSignature_MultipleMembers(setup.pegoutSignatureHash, 0, registry.minCommitteeMembers() - 1);
+        setup_addMemberSignature_MultipleMembers(setup.pegoutSignatureHash, 0, registry.committeeMemberCount() - 1);
         vm.warp(block.timestamp + TAKE_0_TIMEOUT_DEFAULT + 1);
         // First call to triggerOperatorTake should set the status to TAKE_1
         pm.triggerOperatorTake(setup.pegoutSignatureHash);
@@ -658,7 +658,7 @@ contract TestPegManager is Test, HelperContract {
         // Arrange
         RegisterUserTakeSetup memory setup = setup_pegoutAndMemberNonces();
         uint256 createdAt = block.timestamp;
-        uint256 firstHonestOpIndex = registry.minCommitteeMembers() / 2 + 1;
+        uint256 firstHonestOpIndex = registry.committeeMemberCount() / 2 + 1;
 
         // Expire TAKE_0
         vm.warp(createdAt + TAKE_0_TIMEOUT_DEFAULT + 1);
@@ -697,7 +697,7 @@ contract TestPegManager is Test, HelperContract {
         // Arrange
         RegisterUserTakeSetup memory setup = setup_pegout();
         uint256 createdAt = block.timestamp;
-        uint256 firstHonestOpIndex = registry.minCommitteeMembers() / 2 + 1;
+        uint256 firstHonestOpIndex = registry.committeeMemberCount() / 2 + 1;
         uint256 secondHonestOpIndex = firstHonestOpIndex + 1;
         address secondHonestOpAddress = vm.addr(secondHonestOpIndex + 1);
         // Expire TAKE_0
@@ -732,8 +732,8 @@ contract TestPegManager is Test, HelperContract {
     function setup_expireOperatorTakeAndTriggerMultipleTimes() internal returns (bytes32 _pegoutSignatureHash) {
         // Arrange
         RegisterUserTakeSetup memory setup = setup_pegoutAndMemberNonces();
-        uint256 firstHonestOpIndex = registry.minCommitteeMembers() / 2;
-        uint256 operatorsCount = registry.minCommitteeMembers() * 2; // To be sure that we choose operatores multiples times
+        uint256 firstHonestOpIndex = registry.committeeMemberCount() / 2;
+        uint256 operatorsCount = registry.committeeMemberCount() * 2; // To be sure that we choose operatores multiples times
         setup_addMemberSignature_MultipleMembers(setup.pegoutSignatureHash, firstHonestOpIndex, operatorsCount);
         vm.warp(block.timestamp + TAKE_0_TIMEOUT_DEFAULT + 1);
         pm.triggerOperatorTake(setup.pegoutSignatureHash);

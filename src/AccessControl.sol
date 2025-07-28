@@ -13,6 +13,11 @@ contract AccessControl is IAccessControl, BaseProxy {
     /// @dev This address is authorized to call protected functions in contracts that inherit from AccessControl
     address public pegManager;
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
     /// @notice Initializes the AccessControl contract
     /// @dev Sets up the initial owner and PegManager address
     /// @dev Can only be called once during contract deployment

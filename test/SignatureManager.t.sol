@@ -69,9 +69,9 @@ contract TestSignatureManager is Test, HelperContract {
         // The nonce values are dummy values
         bytes memory nonce =
             hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
-        setup_addMemberNonce_MultipleMembers(hashToSign, 0, registry.minCommitteeMembers() - 1);
+        setup_addMemberNonce_MultipleMembers(hashToSign, 0, registry.committeeMemberCount() - 1);
         (hashToSign);
-        uint256 lastMemberIndex = registry.minCommitteeMembers() - 1;
+        uint256 lastMemberIndex = registry.committeeMemberCount() - 1;
         address lastMemberAddress = vm.addr(lastMemberIndex + 1);
 
         // Assert
@@ -114,7 +114,7 @@ contract TestSignatureManager is Test, HelperContract {
         assertEq(allSignaturesReady, false, "Not all signatures should be ready at this point");
         (uint8 missingSignatures, uint8 missingNonces, uint256 committeeId) =
             signatureManager.getSignaturesStatus(hashToSign);
-        assertEq(missingSignatures, registry.minCommitteeMembers() - 1, "missingSignatures should be equal to 1");
+        assertEq(missingSignatures, registry.committeeMemberCount() - 1, "missingSignatures should be equal to 1");
         assertEq(missingNonces, 0, "missingNonces should be equal to 1");
         assertEq(
             committeeId,
@@ -125,8 +125,8 @@ contract TestSignatureManager is Test, HelperContract {
         SignatureData[] memory signatures = signatureManager.getPartialSignatures(hashToSign);
         assertEq(
             signatures.length,
-            registry.minCommitteeMembers(),
-            "signatures length should be equal to registry.minCommitteeMembers()"
+            registry.committeeMemberCount(),
+            "signatures length should be equal to registry.committeeMemberCount()"
         );
 
         CommitteeMember[] memory members = registry.getCommitteeMembers(committeeId);
@@ -154,10 +154,10 @@ contract TestSignatureManager is Test, HelperContract {
         setup_addAllNonces(hashToSign);
         // The signature an nonce values are dummy values
         bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
-        uint256 memberCount = registry.minCommitteeMembers();
+        uint256 memberCount = registry.committeeMemberCount();
         setup_addMemberSignature_MultipleMembers(hashToSign, 0, memberCount - 1);
         // Pub key and address are generated based on the member index + 1
-        uint256 lastMemberIndex = registry.minCommitteeMembers() - 1;
+        uint256 lastMemberIndex = registry.committeeMemberCount() - 1;
         address lastMemberAddress = vm.addr(lastMemberIndex + 1);
 
         // Assert
@@ -183,8 +183,8 @@ contract TestSignatureManager is Test, HelperContract {
         SignatureData[] memory signatures = signatureManager.getPartialSignatures(hashToSign);
         assertEq(
             signatures.length,
-            registry.minCommitteeMembers(),
-            "signatures length should be equal to registry.minCommitteeMembers()"
+            registry.committeeMemberCount(),
+            "signatures length should be equal to registry.committeeMemberCount()"
         );
 
         CommitteeMember[] memory members = registry.getCommitteeMembers(committeeId);
@@ -212,7 +212,7 @@ contract TestSignatureManager is Test, HelperContract {
     function test_addMemberSignature_Revert_HashToSignNotFound() external {
         // Arrange
         bytes32 hashToSign = 0x0000000000000000000000000000000000000000000000000000000000000001;
-        address memberAddress = vm.addr(registry.minCommitteeMembers() + 1);
+        address memberAddress = vm.addr(registry.committeeMemberCount() + 1);
         // The signature an nonce values are dummy values
         bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
 
@@ -273,7 +273,7 @@ contract TestSignatureManager is Test, HelperContract {
     function test_addMemberNonce_Revert_MemberNotFoundInCommittee() external {
         // Arrange
         bytes32 hashToSign = setup_initSignatures();
-        address nonCommitteeMember = vm.addr(registry.minCommitteeMembers() + 1);
+        address nonCommitteeMember = vm.addr(registry.committeeMemberCount() + 1);
         MemberRegistrationKeys memory nonCommitteeMemberPubKeysRegistration =
             generateRegistrationPublicKeys(uint256(uint160(nonCommitteeMember)));
         setup_applyToStream(
@@ -301,7 +301,7 @@ contract TestSignatureManager is Test, HelperContract {
         bytes32 hashToSign = setup_initSignatures();
         setup_addAllNonces(hashToSign);
 
-        address nonCommitteeMember = vm.addr(registry.minCommitteeMembers() + 1);
+        address nonCommitteeMember = vm.addr(registry.committeeMemberCount() + 1);
         MemberRegistrationKeys memory nonCommitteeMemberPubKeysRegistration =
             generateRegistrationPublicKeys(uint256(uint160(nonCommitteeMember)));
         setup_applyToStream(
@@ -345,7 +345,7 @@ contract TestSignatureManager is Test, HelperContract {
 
     function test_initSignatures_Success() external {
         // Arrange
-        uint8 committeeMemberCount = uint8(registry.minCommitteeMembers());
+        uint8 committeeMemberCount = uint8(registry.committeeMemberCount());
         bytes32 hashToSign = 0x1000000000000000000000000000000000000000000000000000000000000001;
 
         // Act
@@ -435,7 +435,7 @@ contract TestSignatureManager is Test, HelperContract {
     }
 
     function setup_addAllNonces(bytes32 hashToSign) internal {
-        setup_addMemberNonce_MultipleMembers(hashToSign, 0, registry.minCommitteeMembers());
+        setup_addMemberNonce_MultipleMembers(hashToSign, 0, registry.committeeMemberCount());
     }
 
     function setup_initOperatorTakeTxHashes() internal returns (bytes32) {
@@ -487,7 +487,7 @@ contract TestSignatureManager is Test, HelperContract {
 
     function test_initOperatorTakeTxHashes_Success() external {
         // Arrange
-        uint256 operatorsCount = registry.minCommitteeMembers() / 2;
+        uint256 operatorsCount = registry.committeeMemberCount() / 2;
         bytes32 acceptPeginTxHash = ACCEPT_PEGIN_TX_HASH;
 
         // Act
@@ -506,7 +506,7 @@ contract TestSignatureManager is Test, HelperContract {
     function test_addOperatorTakeTxHash_Success() external {
         // Arrange
         bytes32 acceptPeginTxHash = setup_initOperatorTakeTxHashes();
-        uint256 operatorIndex = registry.minCommitteeMembers() / 2;
+        uint256 operatorIndex = registry.committeeMemberCount() / 2;
         address memberAddress = vm.addr(operatorIndex + 1);
         bytes32 operatorTakeTxHash = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
 
@@ -521,11 +521,11 @@ contract TestSignatureManager is Test, HelperContract {
     function test_addOperatorTakeTxHash_Success_AllOperatorTakeTxHashesAdded() external {
         // Arrange
         bytes32 acceptPeginTxHash = setup_initOperatorTakeTxHashes();
-        uint256 operatorCount = registry.minCommitteeMembers() / 2;
-        uint256 operatorIndexStart = registry.minCommitteeMembers() / 2;
+        uint256 operatorCount = registry.committeeMemberCount() / 2;
+        uint256 operatorIndexStart = registry.committeeMemberCount() / 2;
         setup_addOperatorTake_MultipleMembers(acceptPeginTxHash, operatorIndexStart, operatorCount - 1);
 
-        uint256 lastOperatorIndex = registry.minCommitteeMembers() - 1;
+        uint256 lastOperatorIndex = registry.committeeMemberCount() - 1;
         address lastMemberAddress = vm.addr(lastOperatorIndex + 1);
         bytes32 lastMemberTxHash = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
 
@@ -543,7 +543,7 @@ contract TestSignatureManager is Test, HelperContract {
 
     function test_addOperatorTakeTxHash_Revert_AcceptPeginTxHashNotFound() external {
         // Arrange
-        uint256 operatorIndex = registry.minCommitteeMembers() / 2;
+        uint256 operatorIndex = registry.committeeMemberCount() / 2;
         address memberAddress = vm.addr(operatorIndex + 1);
         bytes32 operatorTakeTxHash = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
         // It wont exists because there was no pegin request yet
@@ -562,7 +562,7 @@ contract TestSignatureManager is Test, HelperContract {
         bytes32 operatorTakeTxHash = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
 
         // Register a new member that it's not in the committee
-        uint256 notMemberIndex = registry.minCommitteeMembers();
+        uint256 notMemberIndex = registry.committeeMemberCount();
         address notMemberAddress = vm.addr(notMemberIndex + 1);
         MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(notMemberIndex + 1);
         setup_applyToStream(StreamDenomination(setupStreamId), notMemberAddress, memberRegistrationKeys, Role.OPERATOR);
@@ -601,7 +601,7 @@ contract TestSignatureManager is Test, HelperContract {
     function test_addOperatorTakeTxHash_Revert_MemberHasAlreadyAddedoperatorTakeTxHash() external {
         // Arrange
         bytes32 acceptPeginTxHash = setup_initOperatorTakeTxHashes();
-        uint256 operatorIndex = registry.minCommitteeMembers() / 2;
+        uint256 operatorIndex = registry.committeeMemberCount() / 2;
         address memberAddress = vm.addr(operatorIndex + 1);
         bytes32 operatorTakeTxHash = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
         vm.prank(memberAddress);
@@ -625,9 +625,9 @@ contract TestSignatureManager is Test, HelperContract {
     function test_addOperatorTakeTxHash_Revert_AllHashesAlreadyPresent() external {
         // Arrange
         bytes32 acceptPeginTxHash = setup_initOperatorTakeTxHashes();
-        uint256 operatorCount = registry.minCommitteeMembers() / 2;
-        uint256 operatorIndexStart = registry.minCommitteeMembers() / 2;
-        uint256 lastOperatorIndex = registry.minCommitteeMembers() - 1;
+        uint256 operatorCount = registry.committeeMemberCount() / 2;
+        uint256 operatorIndexStart = registry.committeeMemberCount() / 2;
+        uint256 lastOperatorIndex = registry.committeeMemberCount() - 1;
         address lastMemberAddress = vm.addr(lastOperatorIndex + 1);
         bytes32 lastMemberTxHash = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
 
@@ -667,8 +667,8 @@ contract TestSignatureManager is Test, HelperContract {
     function test_checkAllOperatorTakesHashesReady_True() external {
         // Arrange
         bytes32 acceptPeginTxHash = setup_initOperatorTakeTxHashes();
-        uint256 operatorCount = registry.minCommitteeMembers() / 2;
-        uint256 operatorIndexStart = registry.minCommitteeMembers() / 2;
+        uint256 operatorCount = registry.committeeMemberCount() / 2;
+        uint256 operatorIndexStart = registry.committeeMemberCount() / 2;
         uint256 lastOperator = operatorIndexStart + operatorCount;
         bool allOperatorTakeHashesReady;
 
