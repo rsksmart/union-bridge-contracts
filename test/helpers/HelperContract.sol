@@ -273,8 +273,8 @@ abstract contract HelperContract is Test, TestUtils {
                 _numberOfPegins > Constants.SLOTS_PER_PACKET
                     && (i % Constants.SLOTS_PER_PACKET) == Constants.SLOT_USAGE_THRESHOLD
             ) {
-                uint256 memberIndexStart = registry.minCommitteeMembers();
-                uint256 memberCount = registry.minCommitteeMembers();
+                uint256 memberIndexStart = registry.committeeMemberCount();
+                uint256 memberCount = registry.committeeMemberCount();
                 setup_depositAggregatedKey_MultipleMembers(_streamId, memberIndexStart, memberCount);
             }
         }
@@ -380,7 +380,7 @@ abstract contract HelperContract is Test, TestUtils {
 
     function setup_pegoutAndMemberNonces() internal returns (RegisterUserTakeSetup memory setup) {
         setup = setup_pegout();
-        setup_addMemberNonce_MultipleMembers(setup.pegoutSignatureHash, 0, registry.minCommitteeMembers());
+        setup_addMemberNonce_MultipleMembers(setup.pegoutSignatureHash, 0, registry.committeeMemberCount());
     }
 
     function setup_depositAggregatedKey(uint64 _streamId, address _memberAddress) internal {
@@ -407,8 +407,8 @@ abstract contract HelperContract is Test, TestUtils {
         StreamDenomination denomination = StreamDenomination._0_01BTC;
         streamId = 1;
         vm.warp(BLOCK_TIMESTAMP_FOR_DETERMINISTIC_COMMITTEE);
-        uint256 numOperators = registry.minCommitteeMembers() / 2;
-        uint256 numWatchtowers = registry.minCommitteeMembers() - numOperators;
+        uint256 numOperators = registry.committeeMemberCount() / 2;
+        uint256 numWatchtowers = registry.committeeMemberCount() - numOperators;
         setup_registerNewMembers(numWatchtowers, numOperators, denomination);
         return (setup_getExpectedCommitteeBeforeExpire(), streamId);
     }
@@ -421,7 +421,7 @@ abstract contract HelperContract is Test, TestUtils {
     function setup_completeCommittee() internal returns (Committee memory expectedCommittee, uint64 streamId) {
         (expectedCommittee, streamId) = setup_pendingCommittee();
 
-        setup_depositAggregatedKey_MultipleMembers(streamId, 0, registry.minCommitteeMembers());
+        setup_depositAggregatedKey_MultipleMembers(streamId, 0, registry.committeeMemberCount());
         expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY;
 
         return (expectedCommittee, streamId);
@@ -434,8 +434,8 @@ abstract contract HelperContract is Test, TestUtils {
         (firstCommittee, streamId) = setup_completeCommittee();
 
         // Register new members
-        uint256 numOperators = registry.minCommitteeMembers() / 2;
-        uint256 numWatchtowers = registry.minCommitteeMembers() - numOperators;
+        uint256 numOperators = registry.committeeMemberCount() / 2;
+        uint256 numWatchtowers = registry.committeeMemberCount() - numOperators;
         setup_registerNewMembers(numWatchtowers, numOperators, StreamDenomination(streamId));
 
         secondCommittee = setup_getExpectedSecondCommittee();
@@ -449,7 +449,7 @@ abstract contract HelperContract is Test, TestUtils {
 
         Committee memory committee = Committee({
             aggregatedKey: bytes32(0),
-            members: new CommitteeMember[](registry.minCommitteeMembers()),
+            members: new CommitteeMember[](registry.committeeMemberCount()),
             leaderAddress: address(0),
             operatorTakeIndex: 0
         });
@@ -473,7 +473,7 @@ abstract contract HelperContract is Test, TestUtils {
         vm.warp(BLOCK_TIMESTAMP_FOR_DETERMINISTIC_COMMITTEE);
         Committee memory committee = Committee({
             aggregatedKey: bytes32(0),
-            members: new CommitteeMember[](registry.minCommitteeMembers()),
+            members: new CommitteeMember[](registry.committeeMemberCount()),
             leaderAddress: address(0),
             operatorTakeIndex: 0
         });
@@ -508,7 +508,7 @@ abstract contract HelperContract is Test, TestUtils {
         // NOTE: member order is tied to the timeout used in setup_pendingCommitteeAndExpire()
         Committee memory committee = Committee({
             aggregatedKey: bytes32(0),
-            members: new CommitteeMember[](registry.minCommitteeMembers()),
+            members: new CommitteeMember[](registry.committeeMemberCount()),
             leaderAddress: address(0),
             operatorTakeIndex: 0
         });
@@ -569,7 +569,7 @@ abstract contract HelperContract is Test, TestUtils {
         // Expire TAKE_0
         vm.warp(createdAt + TAKE_0_TIMEOUT_DEFAULT + 1);
         // This depende on how they have been registered. First registered group are the watchtowers
-        uint256 firstHonestOpIndex = registry.minCommitteeMembers() / 2 + 1;
+        uint256 firstHonestOpIndex = registry.committeeMemberCount() / 2 + 1;
         operatorAddress = vm.addr(firstHonestOpIndex + 1);
 
         // Add just 2 signatures for the first and second operators

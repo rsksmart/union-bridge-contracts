@@ -22,7 +22,7 @@ contract AddEveryMemberSignatureScript is ScriptUtils {
         // ====== Arguments ======
         pegManager = PegManager(0x0165878A594ca255338adfa4d48449f69242Eb8F);
         committeeRegistry = CommitteeRegistry(0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0);
-        minCommitteMembers = committeeRegistry.minCommitteeMembers();
+        minCommitteMembers = committeeRegistry.committeeMemberCount();
         signatureManager = pegManager.signatureManager();
         signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
         nonce =

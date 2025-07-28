@@ -275,9 +275,9 @@ contract TestPegManager is Test, HelperContract {
         // Act
         pm.acceptPegin(peginAcceptedTxSPVProof);
 
-        // Now we should provide members info to create the committee/packet. This works with second group of members, their indexes start at registry.minCommitteeMembers()
-        uint256 memberIndexStart = registry.minCommitteeMembers();
-        uint256 memberCount = registry.minCommitteeMembers() - 1;
+        // Now we should provide members info to create the committee/packet. This works with second group of members, their indexes start at registry.committeeMemberCount()
+        uint256 memberIndexStart = registry.committeeMemberCount();
+        uint256 memberCount = registry.committeeMemberCount() - 1;
         setup_depositAggregatedKey_MultipleMembers(setupStreamId, memberIndexStart, memberCount);
 
         // Update expected committee with aggregated key
@@ -288,7 +288,7 @@ contract TestPegManager is Test, HelperContract {
         vm.expectEmit(address(streamManager));
         emit IStreamManager.PacketCreated(setupStreamId, 1);
 
-        vm.prank(vm.addr(registry.minCommitteeMembers() * 2));
+        vm.prank(vm.addr(registry.committeeMemberCount() * 2));
         registry.depositAggregatedKey(setupStreamId, COMMITTEE_PUB_KEY);
     }
 
@@ -297,8 +297,8 @@ contract TestPegManager is Test, HelperContract {
         // Create pegins until the new packet treshold is reached
         setup_multipleRequestAndAcceptPeginFlows(Constants.SLOTS_PER_PACKET, setupStreamId);
         // Members must deposite their info to create new packet
-        uint256 memberIndexStart = registry.minCommitteeMembers();
-        uint256 memberCount = registry.minCommitteeMembers();
+        uint256 memberIndexStart = registry.committeeMemberCount();
+        uint256 memberCount = registry.committeeMemberCount();
         setup_depositAggregatedKey_MultipleMembers(setupStreamId, memberIndexStart, memberCount);
 
         // Arrange

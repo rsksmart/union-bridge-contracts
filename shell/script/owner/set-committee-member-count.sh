@@ -7,9 +7,9 @@ cd "$CURRENT_PATH/../../.."
 # set up environment variables
 source .env
 RPC=$LOCAL_RPC
-echo "================ SET COMMITTEE MIN MEMBERS TO $RPC ================"
+echo "================ SET COMMITTEE MEMBER COUNT TO $RPC ================"
 forge script \
-    script/owner/SetCommitteeMinMembers.s.sol \
+    script/owner/SetCommitteeMemberCount.s.sol \
     --rpc-url $RPC \
     --legacy \
     --broadcast 

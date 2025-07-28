@@ -44,7 +44,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     /// @notice Minimum number of operators required for a committee
     uint256 public minCommitteeOperators;
     /// @notice Minimum number of members required for a committee
-    uint256 public minCommitteeMembers;
+    uint256 public committeeMemberCount;
 
     /// @notice Mapping of streamId to pending committee data
     mapping(uint64 streamId => PendingCommittee) internal pendingCommittees;
@@ -75,7 +75,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         }
         minCommitteeWatchtowers = 3;
         minCommitteeOperators = 3;
-        minCommitteeMembers = 10;
+        committeeMemberCount = 10;
     }
 
     function _initMemberBalance(Member storage _member) internal {
@@ -776,7 +776,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
      * - reverts with notEnoughOperators if there are fewer than minCommitteeOperators operator candidates
      *
      * @param _streamId The ID of the stream to select committee members for (0-4)
-     * @return An array of minCommitteeMembers CommitteeMembers containing the selected members.
+     * @return An array of committeeMemberCount CommitteeMembers containing the selected members.
      *
      */
     function _selectCommittee(uint64 _streamId) internal returns (CommitteeMember[] memory, PendingCommitteeStatus) {
@@ -802,21 +802,21 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
 
         // Check if we have enough total members for the committee
         uint256 totalAvailableMembers = operatorsLength + watchtowersLength;
-        if (totalAvailableMembers < minCommitteeMembers) {
-            emit MissingMembers(denomination, minCommitteeMembers, minCommitteeMembers - totalAvailableMembers);
+        if (totalAvailableMembers < committeeMemberCount) {
+            emit MissingMembers(denomination, committeeMemberCount, committeeMemberCount - totalAvailableMembers);
             return (new CommitteeMember[](0), PendingCommitteeStatus.NOT_ENOUGH_MEMBERS);
         }
 
         // Amount of each members per role in the committee
-        // NOTE: Here assumme that minCommitteeMembers > minCommitteeWatchtowers + minCommitteeOperators
-        uint256 operatorsCommitteeAmount = (minCommitteeMembers - minCommitteeWatchtowers > operatorsLength)
+        // NOTE: Here assumme that committeeMemberCount > minCommitteeWatchtowers + minCommitteeOperators
+        uint256 operatorsCommitteeAmount = (committeeMemberCount - minCommitteeWatchtowers > operatorsLength)
             ? operatorsLength
-            : minCommitteeMembers - minCommitteeWatchtowers;
-        uint256 watchtowerCommitteeAmount = minCommitteeMembers - operatorsCommitteeAmount;
+            : committeeMemberCount - minCommitteeWatchtowers;
+        uint256 watchtowerCommitteeAmount = committeeMemberCount - operatorsCommitteeAmount;
         uint256 committeeMembersCounter = 0;
 
-        // Create the final committee with minCommitteeMembers members
-        CommitteeMember[] memory selectedMembers = new CommitteeMember[](minCommitteeMembers);
+        // Create the final committee with committeeMemberCount members
+        CommitteeMember[] memory selectedMembers = new CommitteeMember[](committeeMemberCount);
 
         // True randomness is not required here. We only need enough unpredictability to ensure
         // different committee members get selected across multiple runs.
@@ -920,8 +920,8 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         if (_minWatchtowers == 0) {
             revert InvalidZeroValue();
         }
-        if (minCommitteeMembers < _minWatchtowers + minCommitteeOperators) {
-            revert InvalidMinWatchtowers(minCommitteeMembers, _minWatchtowers, minCommitteeOperators);
+        if (committeeMemberCount < _minWatchtowers + minCommitteeOperators) {
+            revert InvalidMinWatchtowers(committeeMemberCount, _minWatchtowers, minCommitteeOperators);
         }
         minCommitteeWatchtowers = _minWatchtowers;
         emit CommitteeMinWatchtowersUpdated(_minWatchtowers);
@@ -934,25 +934,25 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         if (_minOperators == 0) {
             revert InvalidZeroValue();
         }
-        if (minCommitteeMembers < minCommitteeWatchtowers + _minOperators) {
-            revert InvalidMinOperators(minCommitteeMembers, minCommitteeWatchtowers, _minOperators);
+        if (committeeMemberCount < minCommitteeWatchtowers + _minOperators) {
+            revert InvalidMinOperators(committeeMemberCount, minCommitteeWatchtowers, _minOperators);
         }
         minCommitteeOperators = _minOperators;
         emit CommitteeMinOperatorsUpdated(_minOperators);
     }
 
-    /// @notice Sets the minimum members required for a committee
+    /// @notice Sets the exact number of members required for a committee
     /// @dev Only callable by the contract owner
-    /// @param _minMembers The minimum number of members required for a committee
-    function setCommitteeMinMembers(uint256 _minMembers) external onlyOwner {
-        if (_minMembers == 0) {
+    /// @param _committeeMemberCount The exact number of members required for a committee
+    function setCommitteeMemberCount(uint256 _committeeMemberCount) external onlyOwner {
+        if (_committeeMemberCount == 0) {
             revert InvalidZeroValue();
         }
-        if (_minMembers < minCommitteeWatchtowers + minCommitteeOperators) {
-            revert InvalidMinMembers(_minMembers, minCommitteeWatchtowers, minCommitteeOperators);
+        if (_committeeMemberCount < minCommitteeWatchtowers + minCommitteeOperators) {
+            revert InvalidMinMembers(_committeeMemberCount, minCommitteeWatchtowers, minCommitteeOperators);
         }
-        minCommitteeMembers = _minMembers;
-        emit CommitteeMinMembersUpdated(_minMembers);
+        committeeMemberCount = _committeeMemberCount;
+        emit CommitteeMemberCountUpdated(_committeeMemberCount);
     }
 
     /// @notice Releases committee members from a packet and handles their staked balance

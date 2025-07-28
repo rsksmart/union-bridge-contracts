@@ -343,10 +343,10 @@ interface ICommitteeRegistry {
     /// @param _minOperators The minimum operators required for a committee
     function setCommitteeMinOperators(uint256 _minOperators) external;
 
-    /// @notice Sets the minimum members required for a committee
+    /// @notice Sets the exact number of members required for a committee
     /// @dev Only callable by the contract owner
-    /// @param _minMembers The minimum number of members required for a committee
-    function setCommitteeMinMembers(uint256 _minMembers) external;
+    /// @param _committeeMemberCount The exact number of members required for a committee
+    function setCommitteeMemberCount(uint256 _committeeMemberCount) external;
 
     /// @notice Gets the operator take address for a specific committee
     /// @param committeeId The ID of the committee
@@ -450,7 +450,7 @@ interface ICommitteeRegistry {
 
     /// @notice Event emitted when minimum members requirement is updated
     /// @param minMembers The new minimum members requirement
-    event CommitteeMinMembersUpdated(uint256 minMembers);
+    event CommitteeMemberCountUpdated(uint256 minMembers);
 
     /// @notice Event emitted when member info is deposited for committee formation
     /// @param streamId The stream ID
