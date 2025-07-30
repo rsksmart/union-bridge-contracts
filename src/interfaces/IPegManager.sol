@@ -73,10 +73,16 @@ struct RequestPeginTempInfo {
 struct PegoutTempInfo {
     /// @notice The user's public key that will receive the Bitcoin funds
     bytes userPubKey;
+    /// @notice Timestamp when the peg-out was initially created
     uint256 createdAt;
+    /// @notice Timestamp when the operator take was last updated/triggered
     uint256 operatorTakeUpdatedAt;
-    address takeOperator; // The operator that will do the advancement of funds
+    /// @notice The committee ID responsible for signing this peg-out
     uint256 committeeId;
+    /// @notice The operator address that will advance the funds to the user
+    address takeOperatorAddress;
+    /// @notice The public key of the selected operator for Bitcoin transactions (x-coordinate only)
+    bytes32 takeOperatorPubKey;
 }
 
 struct PegManagerSettings {
@@ -302,20 +308,14 @@ interface IPegManager {
 
     /// @notice Event emitted when operator take is triggered for a peg-out
     /// @param pegoutSignatureHash The signature hash of the peg-out request
-    /// @param committeeId The ID of the committee responsible for this peg-out
-    /// @param acceptPeginTxHash The hash of the accept peg-in transaction
-    /// @param operator The address of the operator that will take over
-    /// @param userPubKey The user's public key that will receive the Bitcoin funds
-    /// @param userTakeCreatedAt The timestamp when the user take was created
+    /// @param pegoutInfo Complete pegout temporary information including operator details
+    /// @param streamPosition Stream position information including slot ID
     /// @param updatedAt The timestamp when the operator take was triggered
     /// @param expireAt The timestamp when the operator take timeout expires
     event OperatorTakeTriggered(
         bytes32 pegoutSignatureHash,
-        uint256 committeeId,
-        bytes32 acceptPeginTxHash,
-        address operator,
-        bytes userPubKey,
-        uint256 userTakeCreatedAt,
+        PegoutTempInfo pegoutInfo,
+        StreamPosition streamPosition,
         uint256 updatedAt,
         uint256 expireAt
     );

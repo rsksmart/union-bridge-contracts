@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
 import {DeployScript} from "script/deploy/DeployScript.s.sol";
 import {PegManager, BtcTxSPVProof, PegStatus} from "src/PegManager.sol";
-import {IPegManager} from "src/interfaces/IPegManager.sol";
+import {IPegManager, PegoutTempInfo, StreamPosition} from "src/interfaces/IPegManager.sol";
 import {PegManagerHarness} from "test/helpers/PegManagerHarness.sol";
 import {StreamManagerHarness} from "test/helpers/StreamManagerHarness.sol";
 import {SignatureManager} from "src/SignatureManager.sol";
@@ -576,19 +576,41 @@ abstract contract HelperContract is Test, TestUtils {
         setup_addMemberSignature_MultipleMembers(setup.pegoutSignatureHash, firstHonestOpIndex, 2);
 
         // Assert
+        assertEventOperatorTakeTriggered(setup.pegoutSignatureHash, setup, operatorAddress, createdAt);
+
+        pm.triggerOperatorTake(setup.pegoutSignatureHash);
+    }
+
+    function assertEventOperatorTakeTriggered(
+        bytes32 pegoutSignatureHash,
+        RegisterUserTakeSetup memory setup,
+        address operatorAddress,
+        uint256 createdAt
+    ) internal {
+        PegoutTempInfo memory expectedPegoutInfo = PegoutTempInfo({
+            userPubKey: setup.userPubKey,
+            createdAt: createdAt,
+            operatorTakeUpdatedAt: block.timestamp, // Updated when triggerOperatorTake is called
+            committeeId: COMMITTEE_ID_STREAM_1_PACKET_0,
+            takeOperatorAddress: operatorAddress,
+            takeOperatorPubKey: registry.getMemberTakePubKey(operatorAddress)
+        });
+
+        StreamPosition memory expectedStreamPosition = StreamPosition({
+            streamId: setup.stream.streamId,
+            packetNumber: setup.packetNumber,
+            slotId: setup.slotId,
+            pegStatus: PegStatus.OPERATOR_TAKE
+        });
+
         vm.expectEmit(address(pm));
         emit IPegManager.OperatorTakeTriggered(
-            setup.pegoutSignatureHash,
-            COMMITTEE_ID_STREAM_1_PACKET_0,
-            setup.acceptPeginTxHash,
-            operatorAddress,
-            setup.userPubKey,
-            createdAt,
+            pegoutSignatureHash,
+            expectedPegoutInfo,
+            expectedStreamPosition,
             block.timestamp,
             block.timestamp + TAKE_1_TIMEOUT_DEFAULT
         );
-
-        pm.triggerOperatorTake(setup.pegoutSignatureHash);
     }
 
     // ====== Communication Data Helper Functions ======

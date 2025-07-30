@@ -575,17 +575,8 @@ contract TestPegManager is Test, HelperContract {
         uint256 expectedOpTakeIndex = (lastOpTakeIndex + 1) % commitee.members.length;
 
         // Assert
-        vm.expectEmit(address(pm));
-        emit IPegManager.OperatorTakeTriggered(
-            setup.pegoutSignatureHash,
-            COMMITTEE_ID_STREAM_1_PACKET_0,
-            setup.acceptPeginTxHash,
-            commitee.members[expectedOpTakeIndex].memberAddress,
-            setup.userPubKey,
-            createdAt,
-            block.timestamp,
-            block.timestamp + TAKE_1_TIMEOUT_DEFAULT
-        );
+        address expectedOperator = commitee.members[expectedOpTakeIndex].memberAddress;
+        assertEventOperatorTakeTriggered(setup.pegoutSignatureHash, setup, expectedOperator, createdAt);
 
         // Act
         pm.triggerOperatorTake(setup.pegoutSignatureHash);
@@ -609,17 +600,7 @@ contract TestPegManager is Test, HelperContract {
         setup_addMemberNonce_MultipleMembers(setup.pegoutSignatureHash, firstHonestOpIndex, 2);
 
         // Assert
-        vm.expectEmit(address(pm));
-        emit IPegManager.OperatorTakeTriggered(
-            setup.pegoutSignatureHash,
-            COMMITTEE_ID_STREAM_1_PACKET_0,
-            setup.acceptPeginTxHash,
-            firstHonestOpAddress,
-            setup.userPubKey,
-            createdAt,
-            block.timestamp,
-            block.timestamp + TAKE_1_TIMEOUT_DEFAULT
-        );
+        assertEventOperatorTakeTriggered(setup.pegoutSignatureHash, setup, firstHonestOpAddress, createdAt);
 
         // Act
         pm.triggerOperatorTake(setup.pegoutSignatureHash);
@@ -673,17 +654,8 @@ contract TestPegManager is Test, HelperContract {
         uint256 expectedOpTakeIndex = (lastOpTakeIndex + 1) % commitee.members.length;
 
         // Assert
-        vm.expectEmit(address(pm));
-        emit IPegManager.OperatorTakeTriggered(
-            setup.pegoutSignatureHash,
-            COMMITTEE_ID_STREAM_1_PACKET_0,
-            setup.acceptPeginTxHash,
-            commitee.members[expectedOpTakeIndex].memberAddress,
-            setup.userPubKey,
-            createdAt,
-            block.timestamp,
-            block.timestamp + TAKE_1_TIMEOUT_DEFAULT
-        );
+        address expectedOperator = commitee.members[expectedOpTakeIndex].memberAddress;
+        assertEventOperatorTakeTriggered(setup.pegoutSignatureHash, setup, expectedOperator, createdAt);
 
         // Act
         pm.triggerOperatorTake(setup.pegoutSignatureHash);
@@ -709,17 +681,7 @@ contract TestPegManager is Test, HelperContract {
         vm.warp(block.timestamp + TAKE_1_TIMEOUT_DEFAULT + 1);
 
         // Assert
-        vm.expectEmit(address(pm));
-        emit IPegManager.OperatorTakeTriggered(
-            setup.pegoutSignatureHash,
-            COMMITTEE_ID_STREAM_1_PACKET_0,
-            setup.acceptPeginTxHash,
-            secondHonestOpAddress,
-            setup.userPubKey,
-            createdAt,
-            block.timestamp,
-            block.timestamp + TAKE_1_TIMEOUT_DEFAULT
-        );
+        assertEventOperatorTakeTriggered(setup.pegoutSignatureHash, setup, secondHonestOpAddress, createdAt);
 
         // Act
         pm.triggerOperatorTake(setup.pegoutSignatureHash);
