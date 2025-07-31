@@ -23,8 +23,9 @@ contract PegManagerHarness is PegManager {
             userPubKey: _userPubKey,
             createdAt: block.timestamp,
             operatorTakeUpdatedAt: 0,
-            takeOperator: address(0),
-            committeeId: 0
+            committeeId: 0,
+            takeOperatorAddress: address(0),
+            takeOperatorPubKey: bytes32(0)
         });
     }
 

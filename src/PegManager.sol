@@ -447,8 +447,9 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             userPubKey: _userPubKey,
             createdAt: block.timestamp,
             operatorTakeUpdatedAt: 0,
-            takeOperator: address(0),
-            committeeId: committeeId
+            committeeId: committeeId,
+            takeOperatorAddress: address(0),
+            takeOperatorPubKey: bytes32(0)
         });
         streamPosition[slot.acceptPeginTx].pegStatus = PegStatus.USER_TAKE;
 
@@ -633,18 +634,18 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         }
 
         SignatureData[] memory signatureData = signatureManager.getPartialSignatures(_pegoutSignatureHash);
-        pegoutInfo.takeOperator = committeeRegistry.getOperatorTakeAddress(pegoutInfo.committeeId, signatureData);
+
+        // slither-disable-next-line reentrancy-no-eth reentrancy-benign
+        address takeOperatorAddress = committeeRegistry.getOperatorTakeAddress(pegoutInfo.committeeId, signatureData);
+        bytes32 takeOperatorPubKey = committeeRegistry.getMemberTakePubKey(takeOperatorAddress);
+
+        // Update state variables after external calls
+        pegoutInfo.takeOperatorAddress = takeOperatorAddress;
+        pegoutInfo.takeOperatorPubKey = takeOperatorPubKey;
 
         // slither-disable-next-line reentrancy-events
         emit OperatorTakeTriggered(
-            _pegoutSignatureHash,
-            pegoutInfo.committeeId,
-            acceptPeginTxHash,
-            pegoutInfo.takeOperator,
-            pegoutInfo.userPubKey,
-            pegoutInfo.createdAt,
-            block.timestamp,
-            block.timestamp + operatorTakeTimeout
+            _pegoutSignatureHash, pegoutInfo, streamInfo, block.timestamp, block.timestamp + operatorTakeTimeout
         );
 
         if (advanceSlot) {
@@ -680,8 +681,8 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
 
         PegoutTempInfo memory pegoutInfo = pegoutTempInfo[acceptPeginTxHash];
         // slither-disable-next-line timestamp
-        if (pegoutInfo.takeOperator != msg.sender) {
-            revert OperatorTakeAddressNotMatch(pegoutInfo.takeOperator, msg.sender);
+        if (pegoutInfo.takeOperatorAddress != msg.sender) {
+            revert OperatorTakeAddressNotMatch(pegoutInfo.takeOperatorAddress, msg.sender);
         }
 
         // Calculate the transaction hash for verification
@@ -700,8 +701,8 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         );
 
         // Validate that the first output is a P2WPKH paying the member
-        bytes32 operatorPubKey = committeeRegistry.getMemberTakePubKey(pegoutInfo.takeOperator);
-        bitcoinManager.validatePegoutMemberOutput(_pegoutTxSPVProof.btcTx.outputs[0], operatorPubKey);
+        bytes32 takeOperatorPubKey = committeeRegistry.getMemberTakePubKey(pegoutInfo.takeOperatorAddress);
+        bitcoinManager.validatePegoutMemberOutput(_pegoutTxSPVProof.btcTx.outputs[0], takeOperatorPubKey);
 
         // update the peg status to COMPLETED
         streamPosition[acceptPeginTxHash].pegStatus = PegStatus.COMPLETED;
