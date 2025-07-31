@@ -14,7 +14,8 @@ import {
     COMMUNICATION_DATA_CHUNKS,
     MemberRegistrationKeys,
     PublicKeyType,
-    RSAPublicKey
+    RSAPublicKey,
+    UTXO
 } from "src/interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination, IStreamManager, Stream} from "src/interfaces/IStreamManager.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
@@ -1069,7 +1070,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Act
         vm.prank(userAddress);
-        registry.applyToStream{value: minimumDeposit}(denomination, userRole, memberRegistrationKeys);
+        registry.applyToStream{value: minimumDeposit}(
+            denomination, userRole, memberRegistrationKeys, generateDefaultUTXO()
+        );
 
         // Assert
         (Committee memory pendingCommittee, uint256 createdAt, uint256 missingData) =
@@ -1098,7 +1101,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Act
         vm.prank(memberAddress);
-        registry.applyToStream{value: minimumDeposit}(denomination, role, publicKeysRegistration);
+        registry.applyToStream{value: minimumDeposit}(denomination, role, publicKeysRegistration, generateDefaultUTXO());
     }
 
     function test_applyToStream_Revert_TooManyCandidatesForStream_Watchtower() external {
@@ -1119,7 +1122,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Act
         vm.prank(memberAddress);
-        registry.applyToStream{value: minimumDeposit}(denomination, role, publicKeysRegistration);
+        registry.applyToStream{value: minimumDeposit}(denomination, role, publicKeysRegistration, generateDefaultUTXO());
     }
 
     function test_unsubscribeFromStream_GasConsumptionCheck() external {
@@ -1199,7 +1202,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         uint256 gasUsed = gasStart - gasleft();
 
         // Assert
-        assertTrue(gasUsed < maxGasPerCommitteeCreation, "Gas usage should not exceed maxGasPerCommitteeCreation");
+        assertLt(gasUsed, maxGasPerCommitteeCreation, "Gas usage should not exceed maxGasPerCommitteeCreation");
     }
 
     function test_removeCandidatesAndUpdateBalance_GasConsumptionCheck() external {

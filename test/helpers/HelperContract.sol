@@ -16,7 +16,8 @@ import {
     Committee,
     CommitteeRegistry,
     MemberRegistrationKeys,
-    PublicKeyType
+    PublicKeyType,
+    UTXO
 } from "src/CommitteeRegistry.sol";
 import {CommunicationData, COMMUNICATION_DATA_CHUNKS} from "src/interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination, Slot} from "src/interfaces/IStreamManager.sol";
@@ -76,6 +77,16 @@ abstract contract HelperContract is Test, TestUtils {
         signatureManager = SignatureManager(deployScript.signatureManager());
     }
 
+    // ========================== UTXO Helper ==========================
+
+    function generateDefaultUTXO() internal pure returns (UTXO memory) {
+        return UTXO({
+            txid: 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef,
+            outputIndex: 0,
+            amount: 50000
+        });
+    }
+
     // ========================== Apply to stream ==========================
 
     // Keep track of the number of members registered so if we want to register more members it'll use new addresses
@@ -108,7 +119,9 @@ abstract contract HelperContract is Test, TestUtils {
         vm.deal(_address, minimumDeposit);
 
         vm.prank(_address); // Use a different address for each member
-        registry.applyToStream{value: minimumDeposit}(_denomination, _role, _publicKeysRegistration);
+        registry.applyToStream{value: minimumDeposit}(
+            _denomination, _role, _publicKeysRegistration, generateDefaultUTXO()
+        );
     }
 
     function setup_applyToStream_MultipleMembers(

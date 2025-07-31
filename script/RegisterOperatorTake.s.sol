@@ -4,7 +4,6 @@ pragma solidity ^0.8.20;
 import "forge-std/Script.sol";
 import {PegManager, BtcTxSPVProof, StreamPosition} from "src/PegManager.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
-import {HelperContract} from "test/helpers/HelperContract.sol";
 import {Slot, SlotState, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
 import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";

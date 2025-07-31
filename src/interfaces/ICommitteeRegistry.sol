@@ -11,6 +11,16 @@ uint8 constant COMMUNICATION_DATA_CHUNKS = 8;
 /// @dev Amount of bytes32 chunks for DER-encoded RSA public key
 uint8 constant RSA_PUBLIC_KEY_CHUNKS = 10;
 
+/// @notice Represents a Bitcoin UTXO used for committee member funding
+struct UTXO {
+    /// @notice The Bitcoin transaction ID containing the UTXO
+    bytes32 txid;
+    /// @notice The output index within the transaction (as uint32)
+    uint32 outputIndex;
+    /// @notice The amount of the UTXO in satoshis (as uint64)
+    uint64 amount;
+}
+
 /// @notice Represents the different roles a committee member can have
 /// @dev Each role has specific responsibilities and requirements in the committee
 enum Role {
@@ -48,13 +58,16 @@ struct Balance {
 }
 
 /// @notice Represents application data for a member's role request
-/// @dev Contains the requested role and pre-staked amount
+/// @dev Contains the requested role, pre-staked amount, and funding UTXO
 struct ApplicationData {
     /// @notice The role requested by the member
     Role requestedRole;
     /// @notice Amount pre-staked for this application
     uint256 preStaked;
+    /// @notice Whether the member wants to reapply for the committee once a packet is over
     bool reApply;
+    /// @notice The Bitcoin UTXO used for funding this application
+    UTXO fundingUTXO;
 }
 
 /// @notice Represents the different types of public keys a member can register
@@ -184,14 +197,16 @@ struct CommunicationData {
 /// @dev and balance management for the committee system
 interface ICommitteeRegistry {
     /// @notice Applies to participate in a stream with a specific role
-    /// @dev Registers public keys and deposits required bond for the requested role
+    /// @dev Registers public keys, deposits required bond, and provides funding UTXO for the requested role
     /// @param _requestedStream The stream denomination to apply for
     /// @param _requestedRole The role requested in the committee
     /// @param _publicKeys Member public key registration with ECDSA and RSA keys
+    /// @param _fundingUTXO The Bitcoin UTXO that will be used for committee funding
     function applyToStream(
         StreamDenomination _requestedStream,
         Role _requestedRole,
-        MemberRegistrationKeys calldata _publicKeys
+        MemberRegistrationKeys calldata _publicKeys,
+        UTXO calldata _fundingUTXO
     ) external payable;
 
     /// @notice Unsubscribes from a stream and set as available balance the pre-staked balance
@@ -236,6 +251,12 @@ interface ICommitteeRegistry {
         external
         view
         returns (uint256 amount);
+
+    /// @notice Gets the funding UTXO for a member in a specific stream
+    /// @param _streamId The stream ID
+    /// @param _memberAddress The member's address
+    /// @return The funding UTXO for the member's application to the stream
+    function getMemberFundingUTXO(uint64 _streamId, address _memberAddress) external view returns (UTXO memory);
 
     /// @notice Gets all candidates for a specific role in a stream
     /// @param _denomination The stream denomination
@@ -648,6 +669,14 @@ interface ICommitteeRegistry {
 
     /// @notice Thrown when a value is zero
     error InvalidZeroValue();
+
+    /// @notice Thrown when the funding UTXO transaction ID is zero
+    /// @param utxo The complete UTXO with zero transaction ID
+    error ZeroUTXOTxid(UTXO utxo);
+
+    /// @notice Thrown when the funding UTXO amount is zero
+    /// @param utxo The complete UTXO with zero amount
+    error ZeroUTXOAmount(UTXO utxo);
 
     /// @notice Thrown when minimum members requirement is invalid
     /// @param minMembers The minimum members requirement
