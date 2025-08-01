@@ -286,7 +286,6 @@ sequenceDiagram
     PM-->>ENV: PegoutRequested event
     Note right of PM: Event includes signature hash for committee members
     Note right of PM: Burn RBTC: User's RBTC is burned in preparation for peg-out
-
 ```
 
 ### Phase 2: Committee Signatures for Peg-Out
@@ -422,7 +421,7 @@ We are following [Foundry introduction](https://getfoundry.sh/introduction/overv
 
 We use solidity[NatSpec format](https://docs.soliditylang.org/en/latest/natspec-format.html) in all interfaces, libraries, structs, events, errors, and both external and public, functions and variables.
 
-### Precompiled Bridge contract (aka PowPeg or Legacy Bridge)
+### Precompiled Bridge contract (aka PowPeg or Legacy Bridge)git
 
 We use a soldity interface called [IBridge.sol](./src/interfaces/IBridge.sol) to interact with the pre compiled contract, this information was obtained from the [FastBtc bridge contracts](https://github.com/rsksmart/liquidity-bridge-contract/tree/master).
 Since the pow peg bridge is not available locally, we use [BridgeMock.sol](./test/helpers/BridgeMock.sol)
