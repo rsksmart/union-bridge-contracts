@@ -8,7 +8,7 @@ The Union Bridge system uses a trust minimized committee approach to manage Bitc
 
 ### Key Concepts
 
-- **Stream**: A stream in the Union Bridge is a logical channel that defines parameters such as denomination and operational rules for peg-in and peg-out flows. Streams allow the bridge to support multiple independent flows of assets, each with its own configuration. Committees,  composed of  operators, and watchtowers, are assigned to each packet within a stream.
+- **Stream**: A stream in the Union Bridge is a logical channel that defines parameters such as denomination and operational rules for peg-in and peg-out flows. Streams allow the bridge to support multiple independent flows of assets, each with its own configuration. Committees, composed of operators, and watchtowers, are assigned to each packet within a stream.
 
 - **Packet**: A packet represents a discrete operational period or batch within a stream, during which a specific committee is responsible for processing peg-in and peg-out requests. Each packet contains up to 100 slots. The creation of a new packet is triggered either when the current packet nears capacity or when no packets are available (e.g. at system start). However, the packet is only finalized once a new committee is formed to manage it. Packets track the lifecycle of their peg slots and handle the registration and processing of peg-in and peg-out operations. Committee members secure the packet by depositing security bonds.
 
@@ -62,7 +62,8 @@ sequenceDiagram
 
 1. **Automatic creation**: When the committee creation trigger is met (i.e. `shouldCreateCommittee` for the stream is true, and there is no pending committee or the pending committee has expired), the system automatically trys to create a committee.
 
-    > `shouldCreateCommittee` is set to true when the stream is first created or when the current packet slot usage hits 80%.
+   > `shouldCreateCommittee` is set to true when the stream is first created or when the current packet slot usage hits 80%.
+
 2. **Member selection**: Uses Fisher-Yates shuffle to randomly select operators and watchtowers from candidates
 3. **Committee composition**: Ensures at least 10 members have applied, including at least 3 operators and at least 3 watchtowers
 4. **Pending committee creation**: Creates a pending committee with selected members and sets missingData counter
@@ -91,8 +92,8 @@ sequenceDiagram
 
 #### Phase 3: Committee Formation
 
-1. **Deposit communication data**: Each selected member in the pending committee deposits their communication data
-2. **Deposit aggregated key**: Each selected member in the pending committee deposits their aggregated key
+1. **Deposit communication data**: Each selected member in the pending committee deposits their communication data with call depositCommunicationData().
+2. **Deposit aggregated key**: Each selected member in the pending committee deposits their aggregated key with call depositAggregatedKey().
 3. **Key validation**: All members must provide the same aggregated key
 4. **Committee completion**: When all selected members have deposited their keys (missingData reaches 0), the committee is ready
 
@@ -284,6 +285,8 @@ sequenceDiagram
     PM->>PM: Generate user take transaction
     PM-->>ENV: PegoutRequested event
     Note right of PM: Event includes signature hash for committee members
+    Note right of PM: Burn RBTC: User's RBTC is burned in preparation for peg-out
+
 ```
 
 ### Phase 2: Committee Signatures for Peg-Out
@@ -311,6 +314,7 @@ sequenceDiagram
         SM-->>ENV: MemberSignatureAdded event
     end
 
+    SM->>SM: Signature validation - The system controls that all signatures are collected.
     SM-->>ENV: AllSignaturesCollected event
     Note right of SM: Event emitted when all members have signed
 ```
@@ -323,6 +327,7 @@ sequenceDiagram
 2. **Submit BTC transaction**: Member calls `registerUserTake()` with the Bitcoin transaction and SPV proof
 3. **Validate transaction**: System validates the BTC transaction and proof
 4. **Validate signatures**: Committee signatures are validated
+5. **Peg-out Registered**: System emits an event PegoutRegistered informing that RBTC is now linked to Bitcoin
 
 ```mermaid
 sequenceDiagram
@@ -355,6 +360,7 @@ If not all committee members sign within the timeout period:
 5. **Broadcast Operator Take transaction**: The operator broadcasts the Operator Take (Take1) Bitcoin transaction
 6. **Submit BTC transaction**: Operator calls `registerOperatorTake()` with the Bitcoin transaction and SPV proof
 7. **Validate transaction**: System validates the BTC transaction and proof
+8. **Peg-out Registered**: System emits an event PegoutRegistered informing that RBTC is now linked to Bitcoin via operator take
 
 ```mermaid
 sequenceDiagram
@@ -404,7 +410,13 @@ sequenceDiagram
 
 ### Best Practices
 
-We are following [https://book.getfoundry.sh/tutorials/best-practices](https://book.getfoundry.sh/tutorials/best-practices)
+We are following [Foundry introduction](https://getfoundry.sh/introduction/overview) and here are the sections of:  
+[best practices - writing contracts](https://getfoundry.sh/guides/best-practices/writing-contracts)  
+[best practices - writing tests](https://getfoundry.sh/guides/best-practices/writing-tests)  
+[best practices - writing scripts](https://getfoundry.sh/guides/best-practices/writing-scripts)  
+[best practices - security](https://getfoundry.sh/guides/best-practices/security)  
+[best practices - key management](https://getfoundry.sh/guides/best-practices/key-management)  
+[best practices - commenting](https://getfoundry.sh/guides/best-practices/commenting)
 
 ### NatSpec
 
@@ -412,7 +424,7 @@ We use solidity[NatSpec format](https://docs.soliditylang.org/en/latest/natspec-
 
 ### Precompiled Bridge contract (aka PowPeg or Legacy Bridge)
 
-We use a soldity interface called [Bridge.sol](./src//interfaces/Bridge.sol) to interact with the pre compiled contract, this information was obtained from the [FastBtc bridge contracts](https://github.com/rsksmart/liquidity-bridge-contract/tree/master).
+We use a soldity interface called [IBridge.sol](./src/interfaces/IBridge.sol) to interact with the pre compiled contract, this information was obtained from the [FastBtc bridge contracts](https://github.com/rsksmart/liquidity-bridge-contract/tree/master).
 Since the pow peg bridge is not available locally, we use [BridgeMock.sol](./test/helpers/BridgeMock.sol)
 
 ## Tests and reporting
@@ -534,7 +546,7 @@ If you see something like
 ValidateCommandError: Build info file out/build-info/001d9012b78cf83be88732141551bdb6.json is not from a full compilation.
 ```
 
-Then recompile all contracts withthe following commands and try again:
+Then recompile all contracts with the following commands and try again:
 
 ```sh
 forge clean && forge build
