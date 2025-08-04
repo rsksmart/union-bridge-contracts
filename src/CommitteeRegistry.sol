@@ -24,7 +24,8 @@ import {
     ApplicationData,
     Balance,
     CommunicationData,
-    COMMUNICATION_DATA_CHUNKS
+    COMMUNICATION_DATA_CHUNKS,
+    UTXO
 } from "./interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination, IStreamManager} from "./interfaces/IStreamManager.sol";
 import {IPegManager} from "./interfaces/IPegManager.sol";
@@ -83,7 +84,14 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         _member.balance.available = 0;
         for (uint256 i = 0; i < streamsLength; i++) {
             _member.balance.staked.push();
-            _member.balance.applications.push(ApplicationData({requestedRole: Role.NONE, preStaked: 0, reApply: true}));
+            _member.balance.applications.push(
+                ApplicationData({
+                    requestedRole: Role.NONE,
+                    preStaked: 0,
+                    reApply: true,
+                    fundingUTXO: UTXO({txid: bytes32(0), outputIndex: 0, amount: 0})
+                })
+            );
         }
     }
 
@@ -93,6 +101,18 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
 
     function _getMemberComPubKey(address _address) internal view returns (RSAPublicKey memory) {
         return _getMember(_address).publicKeys.communicationPubKey;
+    }
+
+    function _validateFundingUTXO(UTXO calldata _utxo) internal pure {
+        if (_utxo.txid == bytes32(0)) {
+            revert ZeroUTXOTxid(_utxo);
+        }
+
+        if (_utxo.amount == 0) {
+            revert ZeroUTXOAmount(_utxo);
+        }
+        // Additional validation could be added here, such as:
+        // - Checking outputIndex is reasonable (not max uint32)
     }
 
     function _getOrRegisterMember(address _address, MemberRegistrationKeys calldata _publicKeys)
@@ -111,22 +131,24 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     }
 
     /// @notice Applies to participate in a stream with a specific role
-    /// @dev Registers public keys and deposits required bond for the requested role
+    /// @dev Registers public keys, deposits required bond, and provides funding UTXO for the requested role
     /// @param _stream The stream denomination to apply for
     /// @param _role The role requested in the committee
     /// @param _publicKeys Member registration public keys
-    function applyToStream(StreamDenomination _stream, Role _role, MemberRegistrationKeys calldata _publicKeys)
-        external
-        payable
-    {
-        if (_role == Role.NONE) {
-            revert RequestedNoneRoleForStream(_stream);
-        }
-
+    /// @param _fundingUTXO The Bitcoin UTXO that will be used for the member funding
+    function applyToStream(
+        StreamDenomination _stream,
+        Role _role,
+        MemberRegistrationKeys calldata _publicKeys,
+        UTXO calldata _fundingUTXO
+    ) external payable {
         Member storage member = _getOrRegisterMember(msg.sender, _publicKeys);
 
         if (_role == Role.NONE) {
             revert RequestedNoneRoleForStream(_stream);
+        }
+        if (_role == Role.OPERATOR) {
+            _validateFundingUTXO(_fundingUTXO);
         }
         if (member.balance.applications[uint8(_stream)].requestedRole != Role.NONE) {
             revert MemberAlreadyRegisteredForStream(
@@ -138,7 +160,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
             revert DespositBondTooLow(msg.value, minDeposit);
         }
 
-        _registerCandidateToStream(msg.sender, _stream, _role, msg.value);
+        _registerCandidateToStream(msg.sender, _stream, _role, msg.value, _fundingUTXO);
         emit NewSecurityBondDeposit(msg.sender, _stream, _role, msg.value);
 
         _createCommitteeAfterApplyToStream(_stream);
@@ -153,7 +175,8 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         address _memberAddress,
         StreamDenomination _denomination,
         Role _role,
-        uint256 _amount
+        uint256 _amount,
+        UTXO calldata _fundingUTXO
     ) internal {
         if (!_committeesCandidatesHasSpace(_denomination, _role)) {
             revert TooManyCandidatesForStream(_denomination, _role);
@@ -163,6 +186,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
 
         member.balance.applications[uint8(_denomination)].preStaked = _amount;
         member.balance.applications[uint8(_denomination)].requestedRole = _role;
+        member.balance.applications[uint8(_denomination)].fundingUTXO = _fundingUTXO;
 
         committeesCandidates[_denomination][_role].push(_memberAddress);
     }
@@ -202,8 +226,12 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         internal
     {
         ApplicationData memory originalData = _member.balance.applications[uint8(_denomination)];
-        _member.balance.applications[uint8(_denomination)] =
-            ApplicationData({requestedRole: Role.NONE, preStaked: 0, reApply: true});
+        _member.balance.applications[uint8(_denomination)] = ApplicationData({
+            requestedRole: Role.NONE,
+            preStaked: 0,
+            reApply: true,
+            fundingUTXO: UTXO({txid: bytes32(0), outputIndex: 0, amount: 0})
+        });
 
         _member.balance.available += originalData.preStaked;
         emit NewAvailableBalance(_memberAddress, _member.balance.available, originalData.preStaked);
@@ -216,8 +244,12 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         Member storage member = _getMember(_memberAddress);
 
         ApplicationData memory originalData = member.balance.applications[uint8(_denomination)];
-        member.balance.applications[uint8(_denomination)] =
-            ApplicationData({requestedRole: Role.NONE, preStaked: 0, reApply: originalData.reApply});
+        member.balance.applications[uint8(_denomination)] = ApplicationData({
+            requestedRole: Role.NONE,
+            preStaked: 0,
+            reApply: originalData.reApply,
+            fundingUTXO: UTXO({txid: bytes32(0), outputIndex: 0, amount: 0})
+        });
 
         // Save the pre-staked amount to the staked balance
         member.balance.staked[uint8(_denomination)][_packetNumber] = originalData.preStaked;
@@ -473,6 +505,14 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         returns (uint256 amount)
     {
         return _getMember(_address).balance.staked[uint8(_denomination)][_packetNumber];
+    }
+
+    /// @notice Gets the funding UTXO for a member in a specific stream
+    /// @param _streamId The stream ID
+    /// @param _memberAddress The member's address
+    /// @return The funding UTXO for the member's application to the stream
+    function getMemberFundingUTXO(uint64 _streamId, address _memberAddress) external view returns (UTXO memory) {
+        return _getMemberApplicationData(_memberAddress, StreamDenomination(_streamId)).fundingUTXO;
     }
 
     function _getMember(address _address) internal view returns (Member storage member) {

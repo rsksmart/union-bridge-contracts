@@ -3,7 +3,9 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
-import {ICommitteeRegistry, MemberRegistrationKeys, MemberKeys, Role} from "src/interfaces/ICommitteeRegistry.sol";
+import {
+    ICommitteeRegistry, MemberRegistrationKeys, MemberKeys, Role, UTXO
+} from "src/interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {PegManager} from "src/PegManager.sol";
 
@@ -18,8 +20,16 @@ contract ApplyToStreamScript is ScriptUtils {
     uint256 privKey;
     address user;
     MemberRegistrationKeys memberRegistrationKeys;
+    UTXO fundingUTXO;
 
-    function setUp(uint16 _mnemonicIndex, uint16 _streamIndex, uint16 _roleIndex) internal {
+    function setUp(
+        uint16 _mnemonicIndex,
+        uint16 _streamIndex,
+        uint16 _roleIndex,
+        bytes32 _txid,
+        uint32 _outputIndex,
+        uint64 _amount
+    ) internal {
         pegManager = PegManager(0x0165878A594ca255338adfa4d48449f69242Eb8F);
         committeeRegistry = pegManager.committeeRegistry();
         streamManager = IStreamManager(pegManager.streamManager());
@@ -48,14 +58,30 @@ contract ApplyToStreamScript is ScriptUtils {
         if (user.balance < minimumDeposit) {
             revert("Insufficient balance to apply to stream");
         }
+
+        if (_txid == bytes32(0)) {
+            revert("Invalid UTXO: txid cannot be zero");
+        }
+        if (_amount == 0) {
+            revert("Invalid UTXO: amount cannot be zero");
+        }
+
+        fundingUTXO = UTXO({txid: _txid, outputIndex: _outputIndex, amount: _amount});
     }
 
-    function run(uint16 _mnemonicIndex, uint16 _streamIndex, uint16 _roleIndex) public {
-        setUp(_mnemonicIndex, _streamIndex, _roleIndex);
+    function run(
+        uint16 _mnemonicIndex,
+        uint16 _streamIndex,
+        uint16 _roleIndex,
+        bytes32 _txid,
+        uint32 _outputIndex,
+        uint64 _amount
+    ) public {
+        setUp(_mnemonicIndex, _streamIndex, _roleIndex, _txid, _outputIndex, _amount);
 
         vm.startBroadcast(privKey);
         committeeRegistry.applyToStream{value: minimumDeposit}(
-            StreamDenomination(streamId), Role(role), memberRegistrationKeys
+            StreamDenomination(streamId), Role(role), memberRegistrationKeys, fundingUTXO
         );
         vm.stopBroadcast();
         MemberKeys memory memberPubKeys = committeeRegistry.getMemberPublicKeys(user);

@@ -12,7 +12,8 @@ import {
     PublicKeyType,
     MemberKeys,
     ECDSAPublicKey,
-    RSAPublicKey
+    RSAPublicKey,
+    UTXO
 } from "src/interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination, IStreamManager, Stream} from "src/interfaces/IStreamManager.sol";
 import {IPegManager} from "src/interfaces/IPegManager.sol";
@@ -66,7 +67,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Act
         vm.prank(user);
-        registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, _role, memberRegistrationKeys);
+        registry.applyToStream{value: minimumDeposit}(
+            DEFAULT_STREAM, _role, memberRegistrationKeys, generateDefaultUTXO()
+        );
 
         // Assert
         MemberKeys memory actualKeys = registry.getMemberPublicKeys(user);
@@ -87,6 +90,28 @@ contract TestCommitteeRegistry is Test, HelperContract {
             minimumDeposit,
             "member pre-staked should match the minimum deposit"
         );
+
+        // Assert funding UTXO storage for all streams
+        {
+            UTXO memory defaultUTXO = generateDefaultUTXO();
+            UTXO memory emptyUTXO = UTXO({txid: bytes32(0), outputIndex: 0, amount: 0});
+
+            // Check all stream denominations
+            for (uint8 i = 0; i <= uint8(StreamDenomination._10BTC); i++) {
+                StreamDenomination currentStream = StreamDenomination(i);
+                UTXO memory expectedUTXO = (currentStream == DEFAULT_STREAM) ? defaultUTXO : emptyUTXO;
+                UTXO memory storedUTXO = registry.getMemberFundingUTXO(uint64(currentStream), user);
+
+                assertEq(storedUTXO.txid, expectedUTXO.txid, "funding UTXO txid should match expectation");
+                assertEq(
+                    storedUTXO.outputIndex,
+                    expectedUTXO.outputIndex,
+                    "funding UTXO outputIndex should match expectation"
+                );
+                assertEq(storedUTXO.amount, expectedUTXO.amount, "funding UTXO amount should match expectation");
+            }
+        }
+
         vm.prank(user);
         assertTrue(registry.getReApplyForStream(DEFAULT_STREAM), "reApply should be true by default");
 
@@ -145,7 +170,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
         vm.deal(user, minimumDeposit);
 
         vm.prank(user);
-        registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, role, memberRegistrationKeys);
+        registry.applyToStream{value: minimumDeposit}(
+            DEFAULT_STREAM, role, memberRegistrationKeys, generateDefaultUTXO()
+        );
 
         vm.deal(user, minimumDeposit);
 
@@ -161,7 +188,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Act
         vm.prank(user);
-        registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, Role.WATCHTOWER, differentPubKey);
+        registry.applyToStream{value: minimumDeposit}(
+            DEFAULT_STREAM, Role.WATCHTOWER, differentPubKey, generateDefaultUTXO()
+        );
     }
 
     function test_applyToStream_Revert_PublicKeyMismatch_COVENANT() external {
@@ -181,7 +210,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
         vm.deal(user, minimumDeposit);
 
         vm.prank(user);
-        registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, role, memberRegistrationKeys);
+        registry.applyToStream{value: minimumDeposit}(
+            DEFAULT_STREAM, role, memberRegistrationKeys, generateDefaultUTXO()
+        );
 
         vm.deal(user, minimumDeposit);
 
@@ -197,7 +228,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Act - use different stream to avoid "already registered" error
         vm.prank(user);
-        registry.applyToStream{value: minimumDeposit}(StreamDenomination._0_01BTC, Role.WATCHTOWER, differentPubKey);
+        registry.applyToStream{value: minimumDeposit}(
+            StreamDenomination._0_01BTC, Role.WATCHTOWER, differentPubKey, generateDefaultUTXO()
+        );
     }
 
     function test_applyToStream_Revert_PublicKeyMismatch_COMMUNICATION() external {
@@ -217,7 +250,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
         vm.deal(user, minimumDeposit);
 
         vm.prank(user);
-        registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, role, memberRegistrationKeys);
+        registry.applyToStream{value: minimumDeposit}(
+            DEFAULT_STREAM, role, memberRegistrationKeys, generateDefaultUTXO()
+        );
 
         vm.deal(user, minimumDeposit);
 
@@ -237,7 +272,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Act - use different stream to avoid "already registered" error
         vm.prank(user);
-        registry.applyToStream{value: minimumDeposit}(StreamDenomination._0_01BTC, Role.WATCHTOWER, differentPubKey);
+        registry.applyToStream{value: minimumDeposit}(
+            StreamDenomination._0_01BTC, Role.WATCHTOWER, differentPubKey, generateDefaultUTXO()
+        );
     }
 
     function test_applyToStream_Revert_memberAlreadyRegisteredForStream() external {
@@ -250,7 +287,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
         vm.deal(user, minimumDeposit);
 
         vm.prank(user);
-        registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, role, memberRegistrationKeys);
+        registry.applyToStream{value: minimumDeposit}(
+            DEFAULT_STREAM, role, memberRegistrationKeys, generateDefaultUTXO()
+        );
 
         vm.deal(user, minimumDeposit);
 
@@ -267,7 +306,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Act
         vm.prank(user);
-        registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, Role.WATCHTOWER, memberRegistrationKeys);
+        registry.applyToStream{value: minimumDeposit}(
+            DEFAULT_STREAM, Role.WATCHTOWER, memberRegistrationKeys, generateDefaultUTXO()
+        );
     }
 
     function test_applyToStream_Revert_requestedNoneRoleForStream() external {
@@ -283,7 +324,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Act
         vm.prank(user);
-        registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, Role.NONE, memberRegistrationKeys);
+        registry.applyToStream{value: minimumDeposit}(
+            DEFAULT_STREAM, Role.NONE, memberRegistrationKeys, generateDefaultUTXO()
+        );
     }
 
     function test_applyToStream_Revert_despositBondTooLow() external {
@@ -301,7 +344,48 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Act
         vm.prank(user);
-        registry.applyToStream{value: minimumDeposit - 1}(DEFAULT_STREAM, DEFAULT_ROLE, memberRegistrationKeys);
+        registry.applyToStream{value: minimumDeposit - 1}(
+            DEFAULT_STREAM, DEFAULT_ROLE, memberRegistrationKeys, generateDefaultUTXO()
+        );
+    }
+
+    function test_applyToStream_Revert_ZeroUTXOTxid() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
+        address user = vm.addr(privKey);
+        uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, DEFAULT_ROLE);
+        vm.deal(user, minimumDeposit);
+
+        // Create UTXO with zero txid
+        UTXO memory invalidUTXO = UTXO({txid: bytes32(0), outputIndex: 0, amount: 50000});
+
+        // Assert zero UTXO txid error
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.ZeroUTXOTxid.selector, invalidUTXO));
+
+        // Act
+        vm.prank(user);
+        registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, DEFAULT_ROLE, memberRegistrationKeys, invalidUTXO);
+    }
+
+    function test_applyToStream_Revert_ZeroUTXOAmount() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
+        address user = vm.addr(privKey);
+        uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, DEFAULT_ROLE);
+        vm.deal(user, minimumDeposit);
+
+        // Create UTXO with zero amount
+        UTXO memory invalidUTXO =
+            UTXO({txid: 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef, outputIndex: 0, amount: 0});
+
+        // Assert zero UTXO amount error
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.ZeroUTXOAmount.selector, invalidUTXO));
+
+        // Act
+        vm.prank(user);
+        registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, DEFAULT_ROLE, memberRegistrationKeys, invalidUTXO);
     }
 
     function test_unsubscribeFromStream_Success_Operator() external {
@@ -334,7 +418,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
         );
         // Act
         vm.prank(user);
-        registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, DEFAULT_ROLE, memberRegistrationKeys);
+        registry.applyToStream{value: minimumDeposit}(
+            DEFAULT_STREAM, DEFAULT_ROLE, memberRegistrationKeys, generateDefaultUTXO()
+        );
     }
 
     function test_applyToStream_Revert_InvalidZeroEDCSAPublicKey_Y_TAKE() external {
@@ -359,7 +445,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
         );
         // Act
         vm.prank(user);
-        registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, DEFAULT_ROLE, memberRegistrationKeys);
+        registry.applyToStream{value: minimumDeposit}(
+            DEFAULT_STREAM, DEFAULT_ROLE, memberRegistrationKeys, generateDefaultUTXO()
+        );
     }
 
     function test_applyToStream_Revert_InvalidZeroEDCSASignature_V_TAKE() external {
@@ -383,7 +471,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
         );
         // Act
         vm.prank(user);
-        registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, DEFAULT_ROLE, memberRegistrationKeys);
+        registry.applyToStream{value: minimumDeposit}(
+            DEFAULT_STREAM, DEFAULT_ROLE, memberRegistrationKeys, generateDefaultUTXO()
+        );
     }
 
     function test_applyToStream_Revert_InvalidZeroEDCSASignature_R_TAKE() external {
@@ -407,7 +497,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
         );
         // Act
         vm.prank(user);
-        registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, DEFAULT_ROLE, memberRegistrationKeys);
+        registry.applyToStream{value: minimumDeposit}(
+            DEFAULT_STREAM, DEFAULT_ROLE, memberRegistrationKeys, generateDefaultUTXO()
+        );
     }
 
     function test_applyToStream_Revert_InvalidZeroEDCSASignature_S_TAKE() external {
@@ -431,7 +523,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
         );
         // Act
         vm.prank(user);
-        registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, DEFAULT_ROLE, memberRegistrationKeys);
+        registry.applyToStream{value: minimumDeposit}(
+            DEFAULT_STREAM, DEFAULT_ROLE, memberRegistrationKeys, generateDefaultUTXO()
+        );
     }
 
     function test_applyToStream_Revert_InvalidZeroRSAPublicKey_COMMUNICATION() external {
@@ -452,7 +546,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
         );
         // Act
         vm.prank(user);
-        registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, DEFAULT_ROLE, memberRegistrationKeys);
+        registry.applyToStream{value: minimumDeposit}(
+            DEFAULT_STREAM, DEFAULT_ROLE, memberRegistrationKeys, generateDefaultUTXO()
+        );
     }
 
     function test_applyToStream_Revert_ECDSAInvalidSignature_V_TAKE() external {
@@ -470,7 +566,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(ECDSA.ECDSAInvalidSignature.selector));
         // Act
         vm.prank(user);
-        registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, DEFAULT_ROLE, incorrectPubKeysRegistration);
+        registry.applyToStream{value: minimumDeposit}(
+            DEFAULT_STREAM, DEFAULT_ROLE, incorrectPubKeysRegistration, generateDefaultUTXO()
+        );
     }
 
     function test_applyToStream_Revert_ECDSAInvalidSignature_S_TAKE() external {
@@ -489,7 +587,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
         );
         // Act
         vm.prank(user);
-        registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, DEFAULT_ROLE, incorrectPubKeysRegistration);
+        registry.applyToStream{value: minimumDeposit}(
+            DEFAULT_STREAM, DEFAULT_ROLE, incorrectPubKeysRegistration, generateDefaultUTXO()
+        );
     }
 
     // TODO: Fix this test after RSA key migration - the array indexing approach no longer works
@@ -516,7 +616,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
         );
         // Act
         vm.prank(user);
-        registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, DEFAULT_ROLE, memberRegistrationKeys);
+        registry.applyToStream{value: minimumDeposit}(
+            DEFAULT_STREAM, DEFAULT_ROLE, memberRegistrationKeys, generateDefaultUTXO()
+        );
     }
 
     function test_applyToStream_GasConsumptionCheck() external {
@@ -536,9 +638,11 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Act
         vm.prank(user);
-        registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, role, memberRegistrationKeys);
+        registry.applyToStream{value: minimumDeposit}(
+            DEFAULT_STREAM, role, memberRegistrationKeys, generateDefaultUTXO()
+        );
         uint256 gasUsed = gasStart - gasleft();
-        assertLe(gasUsed, 600_000, "gas used should be less than 500_000");
+        assertLe(gasUsed, 700_000, "gas used should be less than 700_000");
     }
 
     function _test_unsubscribeFromStream_Success(Role _role) internal {
@@ -555,7 +659,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
         uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, _role);
         vm.deal(user, minimumDeposit);
         vm.prank(user);
-        registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, _role, memberRegistrationKeys);
+        registry.applyToStream{value: minimumDeposit}(
+            DEFAULT_STREAM, _role, memberRegistrationKeys, generateDefaultUTXO()
+        );
 
         address[] memory roleCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, _role);
         address[] memory oppositeRoleCandidates = registry.getCommitteeCandidates(DEFAULT_STREAM, oppositeRole);
@@ -607,7 +713,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
         uint256 minimumDeposit = streamManager.getMinimumDeposit(StreamDenomination._0_001BTC, role);
         vm.deal(user, minimumDeposit);
         vm.prank(user);
-        registry.applyToStream{value: minimumDeposit}(StreamDenomination._0_001BTC, role, memberRegistrationKeys);
+        registry.applyToStream{value: minimumDeposit}(
+            StreamDenomination._0_001BTC, role, memberRegistrationKeys, generateDefaultUTXO()
+        );
 
         // Assert
         vm.expectRevert(
@@ -660,7 +768,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
         vm.deal(user, minimumDeposit);
 
         vm.startBroadcast(user);
-        registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, DEFAULT_ROLE, memberRegistrationKeys);
+        registry.applyToStream{value: minimumDeposit}(
+            DEFAULT_STREAM, DEFAULT_ROLE, memberRegistrationKeys, generateDefaultUTXO()
+        );
         registry.unsubscribeFromStream(DEFAULT_STREAM);
         vm.stopBroadcast();
 
@@ -700,7 +810,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
         vm.deal(user, minimumDeposit);
 
         vm.startBroadcast(user);
-        registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, DEFAULT_ROLE, memberRegistrationKeys);
+        registry.applyToStream{value: minimumDeposit}(
+            DEFAULT_STREAM, DEFAULT_ROLE, memberRegistrationKeys, generateDefaultUTXO()
+        );
         registry.unsubscribeFromStream(DEFAULT_STREAM);
         registry.withdrawAvailableBalance();
         vm.stopBroadcast();
@@ -729,7 +841,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Act
         vm.prank(user);
-        registry.applyToStream{value: minimumDeposit}(stream, requestedRole, memberRegistrationKeys);
+        registry.applyToStream{value: minimumDeposit}(
+            stream, requestedRole, memberRegistrationKeys, generateDefaultUTXO()
+        );
 
         // Assert that preStaked[streamIndex] equals the deposited amount
         assertEq(
@@ -975,7 +1089,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Act
         vm.prank(user);
-        registry.registerCandidateToStreamHarness(user, DEFAULT_STREAM, role, minimumDeposit);
+        registry.registerCandidateToStreamHarness(user, DEFAULT_STREAM, role, minimumDeposit, generateDefaultUTXO());
 
         // Assert
         assertEq(registry.getMemberAvailableBalance(user), 0, "member available balance should be 0 after registration");
@@ -1022,7 +1136,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Act
         vm.prank(user);
-        registry.registerCandidateToStreamHarness(user, DEFAULT_STREAM, DEFAULT_ROLE, minimumDeposit);
+        registry.registerCandidateToStreamHarness(
+            user, DEFAULT_STREAM, DEFAULT_ROLE, minimumDeposit, generateDefaultUTXO()
+        );
     }
 
     function test_setReApplyForStream_Success() external {

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {CommitteeRegistry, CommitteeMember} from "src/CommitteeRegistry.sol";
-import {Role} from "src/interfaces/ICommitteeRegistry.sol";
+import {Role, UTXO} from "src/interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
 import {
     PendingCommitteeStatus,
@@ -26,9 +26,10 @@ contract CommitteeRegistryHarness is CommitteeRegistry {
         address _memberAddress,
         StreamDenomination _stream,
         Role _role,
-        uint256 _amount
+        uint256 _amount,
+        UTXO calldata _fundingUTXO
     ) public {
-        _registerCandidateToStream(_memberAddress, _stream, _role, _amount);
+        _registerCandidateToStream(_memberAddress, _stream, _role, _amount, _fundingUTXO);
     }
 
     function registerMemberHarness(address _memberAddress, MemberRegistrationKeys calldata _publicKeysRegistration)
@@ -147,8 +148,8 @@ contract CommitteeRegistryHarness is CommitteeRegistry {
         uint256 committeeMembersCounter = 0;
         CommitteeMember[] memory selectedMembers = new CommitteeMember[](committeeMembersTotal);
 
-        // Select last operators
         for (uint256 i = 0; i < numOperators; i++) {
+            // Select last operators
             selectedMembers[committeeMembersCounter++] =
                 CommitteeMember({memberAddress: operators[operators.length - 1 - i], role: Role.OPERATOR});
         }
