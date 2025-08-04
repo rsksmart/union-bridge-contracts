@@ -9,7 +9,7 @@ import {
     OperatorTakeTxHashes,
     OperatorTakeData
 } from "./interfaces/ISignatureManager.sol";
-import {Committee, CommitteeMember, ICommitteeRegistry, Role} from "./interfaces/ICommitteeRegistry.sol";
+import {CommitteeMember, ICommitteeRegistry, Role} from "./interfaces/ICommitteeRegistry.sol";
 import {AccessControl} from "./AccessControl.sol";
 
 /// @title Signature Manager

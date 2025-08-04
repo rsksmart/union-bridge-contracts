@@ -1,21 +1,18 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import "forge-std/Test.sol";
-import {CommitteeRegistry} from "src/CommitteeRegistry.sol";
+import {Test} from "forge-std/Test.sol";
+import {Vm} from "forge-std/Vm.sol";
 import {
     ICommitteeRegistry,
     PendingCommitteeStatus,
     Role,
     CommitteeMember,
     Committee,
-    PendingCommittee,
     CommunicationData,
     COMMUNICATION_DATA_CHUNKS,
     MemberRegistrationKeys,
-    PublicKeyType,
-    RSAPublicKey,
-    UTXO
+    RSAPublicKey
 } from "src/interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination, IStreamManager, Stream} from "src/interfaces/IStreamManager.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
@@ -23,7 +20,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Constants} from "src/libraries/Constants.sol";
 
 contract TestCommitteeRegistry is Test, HelperContract {
-    uint256 constant maxGasPerCommitteeCreation = 1500 * 1000; // Max gas per block in RSK is 6M8
+    uint256 constant MAX_GAS_PER_COMMITTEE_CREATION = 1500 * 1000; // Max gas per block in RSK is 6M8
 
     function setUp() external {
         runTestDeployScript();
@@ -1149,8 +1146,8 @@ contract TestCommitteeRegistry is Test, HelperContract {
         uint256 gasUsed = gasStart - gasleft();
 
         assertTrue(
-            gasUsed < maxGasPerCommitteeCreation / registry.committeeMemberCount(),
-            "Gas usage should not exceed maxGasPerCommitteeCreation divided by committeeMemberCount"
+            gasUsed < MAX_GAS_PER_COMMITTEE_CREATION / registry.committeeMemberCount(),
+            "Gas usage should not exceed MAX_GAS_PER_COMMITTEE_CREATION divided by committeeMemberCount"
         );
     }
 
@@ -1202,7 +1199,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         uint256 gasUsed = gasStart - gasleft();
 
         // Assert
-        assertLt(gasUsed, maxGasPerCommitteeCreation, "Gas usage should not exceed maxGasPerCommitteeCreation");
+        assertLt(gasUsed, MAX_GAS_PER_COMMITTEE_CREATION, "Gas usage should not exceed MAX_GAS_PER_COMMITTEE_CREATION");
     }
 
     function test_removeCandidatesAndUpdateBalance_GasConsumptionCheck() external {
@@ -1238,7 +1235,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
         uint256 gasUsed = gasStart - gasleft();
 
         // Assert
-        assertTrue(gasUsed < maxGasPerCommitteeCreation, "Gas usage should not exceed maxGasPerCommitteeCreation");
+        assertTrue(
+            gasUsed < MAX_GAS_PER_COMMITTEE_CREATION, "Gas usage should not exceed MAX_GAS_PER_COMMITTEE_CREATION"
+        );
     }
 
     function test_depositCommunicationData_Success() public {

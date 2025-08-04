@@ -1,24 +1,14 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import "forge-std/Test.sol";
-import {console} from "forge-std/console.sol";
+import {Test} from "forge-std/Test.sol";
 import {DeployScript} from "script/deploy/DeployScript.s.sol";
-import {PegManager, BtcTxSPVProof, PegStatus} from "src/PegManager.sol";
+import {BtcTxSPVProof, PegStatus} from "src/PegManager.sol";
 import {IPegManager, PegoutTempInfo, StreamPosition} from "src/interfaces/IPegManager.sol";
 import {PegManagerHarness} from "test/helpers/PegManagerHarness.sol";
 import {StreamManagerHarness} from "test/helpers/StreamManagerHarness.sol";
 import {SignatureManager} from "src/SignatureManager.sol";
-import {
-    Role,
-    Member,
-    CommitteeMember,
-    Committee,
-    CommitteeRegistry,
-    MemberRegistrationKeys,
-    PublicKeyType,
-    UTXO
-} from "src/CommitteeRegistry.sol";
+import {Role, CommitteeMember, Committee, MemberRegistrationKeys, UTXO} from "src/CommitteeRegistry.sol";
 import {CommunicationData, COMMUNICATION_DATA_CHUNKS} from "src/interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination, Slot} from "src/interfaces/IStreamManager.sol";
 import {BtcTxIn, BtcTxOut, BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
@@ -26,7 +16,6 @@ import {BitcoinManager} from "src/BitcoinManager.sol";
 import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {BtcTxEncoder} from "src/libraries/BtcTxEncoder.sol";
-import {RSK_BRIDGE_ADDRESS, IBridge} from "src/interfaces/IBridge.sol";
 import {BridgeMock} from "./BridgeMock.sol";
 import {TestUtils} from "./TestUtils.sol";
 import {Constants} from "src/libraries/Constants.sol";

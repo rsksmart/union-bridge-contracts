@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import "forge-std/Script.sol";
+import {console} from "forge-std/console.sol";
 import {CommitteeRegistry} from "src/CommitteeRegistry.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 

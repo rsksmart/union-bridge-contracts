@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import "forge-std/Test.sol";
-import "forge-std/console.sol";
+import {Test} from "forge-std/Test.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
 import {SlotState, Slot, Packet, Stream, IStreamManager, StreamDenomination} from "src/interfaces/IStreamManager.sol";
 import {IAccessControl} from "src/interfaces/IAccessControl.sol";
 import {StreamPosition, PegStatus} from "src/interfaces/IPegManager.sol";
 import {Constants} from "src/libraries/Constants.sol";
-import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Role} from "src/interfaces/ICommitteeRegistry.sol";
 
