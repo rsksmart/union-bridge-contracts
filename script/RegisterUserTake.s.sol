@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import {console} from "forge-std/Console.sol";
+import {console} from "forge-std/console.sol";
 import {PegManager, BtcTxSPVProof} from "src/PegManager.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {Slot, Stream, SlotState} from "src/interfaces/IStreamManager.sol";

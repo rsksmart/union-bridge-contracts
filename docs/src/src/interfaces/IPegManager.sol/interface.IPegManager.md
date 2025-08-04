@@ -1,5 +1,5 @@
 # IPegManager
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/88ae00b3e8fb636de955be6f15b3c84ce2cc3729/src/interfaces/IPegManager.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b41d024ed73655cc3c392a6c92b6259ef625d19d/src/interfaces/IPegManager.sol)
 
 Interface for managing peg-in and peg-out operations in the union bridge
 
@@ -397,8 +397,7 @@ event PeginRequested(
 |`requestPeginTxHash`|`bytes32`|The hash of the peg-in request transaction|
 |`acceptPeginTxHash`|`bytes32`|The hash of the accept peg-in transaction|
 |`vout`|`uint64`|The output index of the transaction|
-|`streamId`|`uint64`|The stream ID where the funds will be placed|
-|`packetNumber`|`uint64`|The packet number within the stream|
+|`streamPosition`|`StreamPosition`|The struct with the position information (stream, packet, slot, status)|
 |`requestPeginInfo`|`RequestPeginTempInfo`|Temporary information needed for the accept phase|
 |`prevoutData`|`PrevoutData`|Data about the previous output being spent|
 |`acceptPeginSignatureMessage`|`bytes`|The signature message for committee signing|
@@ -528,11 +527,8 @@ Event emitted when operator take is triggered for a peg-out
 ```solidity
 event OperatorTakeTriggered(
     bytes32 pegoutSignatureHash,
-    uint256 committeeId,
-    bytes32 acceptPeginTxHash,
-    address operator,
-    bytes userPubKey,
-    uint256 userTakeCreatedAt,
+    PegoutTempInfo pegoutInfo,
+    StreamPosition streamPosition,
     uint256 updatedAt,
     uint256 expireAt
 );
@@ -543,11 +539,8 @@ event OperatorTakeTriggered(
 |Name|Type|Description|
 |----|----|-----------|
 |`pegoutSignatureHash`|`bytes32`|The signature hash of the peg-out request|
-|`committeeId`|`uint256`|The ID of the committee responsible for this peg-out|
-|`acceptPeginTxHash`|`bytes32`|The hash of the accept peg-in transaction|
-|`operator`|`address`|The address of the operator that will take over|
-|`userPubKey`|`bytes`|The user's public key that will receive the Bitcoin funds|
-|`userTakeCreatedAt`|`uint256`|The timestamp when the user take was created|
+|`pegoutInfo`|`PegoutTempInfo`|Complete pegout temporary information including operator details|
+|`streamPosition`|`StreamPosition`|Stream position information including slot ID|
 |`updatedAt`|`uint256`|The timestamp when the operator take was triggered|
 |`expireAt`|`uint256`|The timestamp when the operator take timeout expires|
 

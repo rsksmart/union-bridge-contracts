@@ -1,5 +1,5 @@
 # StreamManager
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/88ae00b3e8fb636de955be6f15b3c84ce2cc3729/src/StreamManager.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b41d024ed73655cc3c392a6c92b6259ef625d19d/src/StreamManager.sol)
 
 **Inherits:**
 [IStreamManager](/src/interfaces/IStreamManager.sol/interface.IStreamManager.md), [AccessControl](/src/AccessControl.sol/contract.AccessControl.md)
@@ -253,11 +253,11 @@ function getAvailablePeginCommitteeId(uint64 _streamId) external view returns (u
 |`<none>`|`uint256`|The committee ID, or 0 if no current packet|
 
 
-### fillSlot
+### _findNextFilledSlot
 
 
 ```solidity
-function fillSlot(uint64 _streamId, uint64 _packetNumber, Slot memory slot) internal returns (uint64 slotId);
+function _findNextFilledSlot(uint64 _streamId) internal returns (Slot storage);
 ```
 
 ### lockSlot
@@ -268,7 +268,7 @@ Returns the first filled slot, locks it, and updates the peg-out pointers
 
 
 ```solidity
-function lockSlot(uint64 _streamId) external onlyPegManager returns (Slot memory, uint64 packetNumber);
+function lockSlot(uint64 _streamId) external onlyPegManager returns (Slot memory, uint64);
 ```
 **Parameters**
 
@@ -281,7 +281,7 @@ function lockSlot(uint64 _streamId) external onlyPegManager returns (Slot memory
 |Name|Type|Description|
 |----|----|-----------|
 |`<none>`|`Slot`|slot The locked slot data|
-|`packetNumber`|`uint64`|The packet number containing the slot|
+|`<none>`|`uint64`|packetNumber The packet number containing the slot|
 
 
 ### getSlot
@@ -307,19 +307,15 @@ function getSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotNumber) ext
 |`<none>`|`Slot`|The slot data|
 
 
-### fillSlot
+### reserveSlot
 
-Looks for the first empty slot and assigns the peg-in transaction in prepared state
+Reserves a slot for a peg-in request
 
-*Can only be called by the PegManager*
+*Creates a new slot with RESERVED state during request peg-in*
 
 
 ```solidity
-function fillSlot(
-    StreamPosition memory _stream,
-    bytes32 _acceptPeginTx,
-    bytes memory _scriptPubKey
-) external onlyPegManager returns (uint64);
+function reserveSlot(uint64 _streamId, uint64 _packetNumber) external onlyPegManager returns (uint64);
 ```
 **Parameters**
 
@@ -327,15 +323,56 @@ function fillSlot(
 |----|----|-----------|
 |`_streamId`|`uint64`|The ID of the stream|
 |`_packetNumber`|`uint64`|The packet number|
-|`_acceptPeginAmount`|`uint64`|The amount of the accept peg-in transaction|
-|`_acceptPeginTx`|`bytes32`|The hash of the accept peg-in transaction|
-|`_scriptPubKey`|`bytes`|The script pub key for the transaction|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`uint64`|The slot ID that was filled|
+|`<none>`|`uint64`|The slot ID that was reserved|
+
+
+### fillSlot
+
+Fills a slot with accept peg-in transaction information
+
+*Updates the slot state from RESERVED to FILLED and stores transaction details*
+
+
+```solidity
+function fillSlot(
+    StreamPosition memory _stream,
+    uint64 _acceptPeginAmount,
+    bytes32 _acceptPeginTx,
+    bytes memory _scriptPubKey
+) external onlyPegManager;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_stream`|`StreamPosition`|The struct containing the stream, packet, and slot information|
+|`_acceptPeginAmount`|`uint64`|The amount of the accept peg-in transaction|
+|`_acceptPeginTx`|`bytes32`|The hash of the accept peg-in transaction|
+|`_scriptPubKey`|`bytes`|The script pub key for the transaction|
+
+
+### blockSlot
+
+Blocks a reserved slot due to timeout or refund proof
+
+*Updates the slot state from RESERVED to BLOCKED*
+
+
+```solidity
+function blockSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) external onlyOwner;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_streamId`|`uint64`|The ID of the stream|
+|`_packetNumber`|`uint64`|The packet number|
+|`_slotId`|`uint64`|The ID of the slot to block|
 
 
 ### getCommitteeId

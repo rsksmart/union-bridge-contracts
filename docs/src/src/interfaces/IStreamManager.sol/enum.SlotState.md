@@ -1,5 +1,5 @@
 # SlotState
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/88ae00b3e8fb636de955be6f15b3c84ce2cc3729/src/interfaces/IStreamManager.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b41d024ed73655cc3c392a6c92b6259ef625d19d/src/interfaces/IStreamManager.sol)
 
 Represents the current state of a slot in the stream system
 
@@ -8,10 +8,12 @@ Represents the current state of a slot in the stream system
 
 ```solidity
 enum SlotState {
+    RESERVED,
     FILLED,
     LOCKED,
     ADVANCED,
-    COMPLETED
+    COMPLETED,
+    BLOCKED
 }
 ```
 

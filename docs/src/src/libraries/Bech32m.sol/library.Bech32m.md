@@ -1,5 +1,5 @@
 # Bech32m
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/88ae00b3e8fb636de955be6f15b3c84ce2cc3729/src/libraries/Bech32m.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b41d024ed73655cc3c392a6c92b6259ef625d19d/src/libraries/Bech32m.sol)
 
 Library for Bech32m encoding and decoding used in Bitcoin Taproot addresses
 
@@ -225,12 +225,12 @@ Error thrown when invalid padding is detected during bit conversion
 error InvalidPadding();
 ```
 
-### InvalidValue
+### InvalidBitsSize
 Error thrown when a value exceeds the maximum allowed for the given bit size
 
 
 ```solidity
-error InvalidValue(uint256 value);
+error InvalidBitsSize(uint256 value);
 ```
 
 **Parameters**

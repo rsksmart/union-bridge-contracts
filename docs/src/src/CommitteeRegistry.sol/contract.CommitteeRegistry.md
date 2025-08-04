@@ -1,5 +1,5 @@
 # CommitteeRegistry
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/88ae00b3e8fb636de955be6f15b3c84ce2cc3729/src/CommitteeRegistry.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b41d024ed73655cc3c392a6c92b6259ef625d19d/src/CommitteeRegistry.sol)
 
 **Inherits:**
 [ICommitteeRegistry](/src/interfaces/ICommitteeRegistry.sol/interface.ICommitteeRegistry.md), [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md)
@@ -37,12 +37,12 @@ uint256 public minCommitteeOperators;
 ```
 
 
-### minCommitteeMembers
+### committeeMemberCount
 Minimum number of members required for a committee
 
 
 ```solidity
-uint256 public minCommitteeMembers;
+uint256 public committeeMemberCount;
 ```
 
 
@@ -143,14 +143,21 @@ function _getMemberTakePubKey(address _address) internal view returns (bytes32);
 
 
 ```solidity
-function _getMemberComPubKey(address _address) internal view returns (bytes32);
+function _getMemberComPubKey(address _address) internal view returns (RSAPublicKey memory);
+```
+
+### _validateFundingUTXO
+
+
+```solidity
+function _validateFundingUTXO(UTXO calldata _utxo) internal pure;
 ```
 
 ### _getOrRegisterMember
 
 
 ```solidity
-function _getOrRegisterMember(address _address, PublicKeyRegistration[] calldata _publicKeys)
+function _getOrRegisterMember(address _address, MemberRegistrationKeys calldata _publicKeys)
     internal
     returns (Member storage);
 ```
@@ -159,13 +166,16 @@ function _getOrRegisterMember(address _address, PublicKeyRegistration[] calldata
 
 Applies to participate in a stream with a specific role
 
-*Registers public keys and deposits required bond for the requested role*
+*Registers public keys, deposits required bond, and provides funding UTXO for the requested role*
 
 
 ```solidity
-function applyToStream(StreamDenomination _stream, Role _role, PublicKeyRegistration[] calldata _publicKeys)
-    external
-    payable;
+function applyToStream(
+    StreamDenomination _stream,
+    Role _role,
+    MemberRegistrationKeys calldata _publicKeys,
+    UTXO calldata _fundingUTXO
+) external payable;
 ```
 **Parameters**
 
@@ -173,7 +183,8 @@ function applyToStream(StreamDenomination _stream, Role _role, PublicKeyRegistra
 |----|----|-----------|
 |`_stream`|`StreamDenomination`|The stream denomination to apply for|
 |`_role`|`Role`|The role requested in the committee|
-|`_publicKeys`|`PublicKeyRegistration[]`|Array of public key registrations for TAKE, COVENANT, and COMMUNICATION|
+|`_publicKeys`|`MemberRegistrationKeys`|Member registration public keys|
+|`_fundingUTXO`|`UTXO`|The Bitcoin UTXO that will be used for the member funding|
 
 
 ### _committeesCandidatesHasSpace
@@ -191,7 +202,8 @@ function _registerCandidateToStream(
     address _memberAddress,
     StreamDenomination _denomination,
     Role _role,
-    uint256 _amount
+    uint256 _amount,
+    UTXO calldata _fundingUTXO
 ) internal;
 ```
 
@@ -270,6 +282,20 @@ Withdraws available balance to the caller's address
 function withdrawAvailableBalance() external;
 ```
 
+### _isRSAKeyEmpty
+
+
+```solidity
+function _isRSAKeyEmpty(bytes32[RSA_PUBLIC_KEY_CHUNKS] memory _rsaPublicKey) internal pure returns (bool);
+```
+
+### _getRSAKeyHash
+
+
+```solidity
+function _getRSAKeyHash(bytes32[RSA_PUBLIC_KEY_CHUNKS] memory _rsaPublicKey) internal pure returns (bytes32);
+```
+
 ### _getAddressFromPublicKey
 
 
@@ -281,14 +307,35 @@ function _getAddressFromPublicKey(bytes memory _uncompressedPublicKey) internal 
 
 
 ```solidity
-function _validatePublicKeys(PublicKeyRegistration[] calldata _publicKeys) internal pure;
+function _validatePublicKeys(MemberRegistrationKeys calldata _publicKeys) internal pure;
+```
+
+### _validateECDSAKey
+
+
+```solidity
+function _validateECDSAKey(ECDSAPublicKey calldata _key, PublicKeyType _type) internal pure;
+```
+
+### _validateRSAKey
+
+
+```solidity
+function _validateRSAKey(RSAPublicKey calldata _key, PublicKeyType _type) internal pure;
+```
+
+### _validateMemberKeyMatch
+
+
+```solidity
+function _validateMemberKeyMatch(Member storage _member, MemberRegistrationKeys calldata _publicKeys) internal view;
 ```
 
 ### _registerMember
 
 
 ```solidity
-function _registerMember(address _memberAddress, PublicKeyRegistration[] calldata _publicKeys)
+function _registerMember(address _memberAddress, MemberRegistrationKeys calldata _publicKeys)
     internal
     returns (Member storage);
 ```
@@ -383,7 +430,7 @@ Gets the COMMUNICATION public key for a specific member
 
 
 ```solidity
-function getMemberComPubKey(address _address) external view returns (bytes32);
+function getMemberComPubKey(address _address) external view returns (RSAPublicKey memory);
 ```
 **Parameters**
 
@@ -395,7 +442,7 @@ function getMemberComPubKey(address _address) external view returns (bytes32);
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`bytes32`|The COMMUNICATION public key (x-coordinate only)|
+|`<none>`|`RSAPublicKey`|The RSA COMMUNICATION public key|
 
 
 ### getMemberPublicKeys
@@ -404,7 +451,7 @@ Retrieves all public keys for a specific member
 
 
 ```solidity
-function getMemberPublicKeys(address _address) external view returns (bytes32[] memory publicKeys);
+function getMemberPublicKeys(address _address) external view returns (MemberKeys memory publicKeys);
 ```
 **Parameters**
 
@@ -416,7 +463,7 @@ function getMemberPublicKeys(address _address) external view returns (bytes32[] 
 
 |Name|Type|Description|
 |----|----|-----------|
-|`publicKeys`|`bytes32[]`|Array of public keys indexed by PublicKeyIndex|
+|`publicKeys`|`MemberKeys`|Member public keys structure|
 
 
 ### _getMemberApplicationData
@@ -524,6 +571,28 @@ function getMemberStakedBalance(address _address, StreamDenomination _denominati
 |Name|Type|Description|
 |----|----|-----------|
 |`amount`|`uint256`|The staked amount in the packet|
+
+
+### getMemberFundingUTXO
+
+Gets the funding UTXO for a member in a specific stream
+
+
+```solidity
+function getMemberFundingUTXO(uint64 _streamId, address _memberAddress) external view returns (UTXO memory);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_streamId`|`uint64`|The stream ID|
+|`_memberAddress`|`address`|The member's address|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`UTXO`|The funding UTXO for the member's application to the stream|
 
 
 ### _getMember
@@ -763,7 +832,7 @@ function _selectCommittee(uint64 _streamId) internal returns (CommitteeMember[] 
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`CommitteeMember[]`|An array of minCommitteeMembers CommitteeMembers containing the selected members.|
+|`<none>`|`CommitteeMember[]`|An array of committeeMemberCount CommitteeMembers containing the selected members.|
 |`<none>`|`PendingCommitteeStatus`||
 
 
@@ -883,21 +952,21 @@ function setCommitteeMinOperators(uint256 _minOperators) external onlyOwner;
 |`_minOperators`|`uint256`|The minimum operators required for a committee|
 
 
-### setCommitteeMinMembers
+### setCommitteeMemberCount
 
-Sets the minimum members required for a committee
+Sets the exact number of members required for a committee
 
 *Only callable by the contract owner*
 
 
 ```solidity
-function setCommitteeMinMembers(uint256 _minMembers) external onlyOwner;
+function setCommitteeMemberCount(uint256 _committeeMemberCount) external onlyOwner;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_minMembers`|`uint256`|The minimum number of members required for a committee|
+|`_committeeMemberCount`|`uint256`|The exact number of members required for a committee|
 
 
 ### releaseCommittee

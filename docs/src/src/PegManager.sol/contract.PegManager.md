@@ -1,5 +1,5 @@
 # PegManager
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/88ae00b3e8fb636de955be6f15b3c84ce2cc3729/src/PegManager.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b41d024ed73655cc3c392a6c92b6259ef625d19d/src/PegManager.sol)
 
 **Inherits:**
 [IPegManager](/src/interfaces/IPegManager.sol/interface.IPegManager.md), [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md), [ProofValidator](/src/ProofValidator.sol/abstract.ProofValidator.md)
@@ -286,19 +286,44 @@ function requestPegin(BtcTxSPVProof calldata _peginRequestTxSPVProof) external;
 |`_peginRequestTxSPVProof`|`BtcTxSPVProof`|The SPV proof containing the Bitcoin transaction and merkle proof|
 
 
-### _initAcceptPegin
+### _validatePeginRequestProof
 
 
 ```solidity
-function _initAcceptPegin(
-    bytes32 _committeePubKey,
-    bytes32 _userXOnlyPubKey,
-    bytes32 _requestPeginTxHash,
-    address _rskDestinationAddress,
-    PrevoutData memory _prevoutData,
-    uint64 _streamId,
-    uint64 _packetNumber
-) internal;
+function _validatePeginRequestProof(BtcTxSPVProof calldata _peginRequestTxSPVProof)
+    internal
+    view
+    returns (bytes32 requestPeginTxHash);
+```
+
+### _extractPeginData
+
+
+```solidity
+function _extractPeginData(BtcTxSPVProof calldata _peginRequestTxSPVProof)
+    internal
+    view
+    returns (
+        uint64 packetNumber,
+        address rskDestinationAddress,
+        bytes32 btcReimbursementPubKey,
+        Stream memory stream,
+        bytes32 committeePubKey
+    );
+```
+
+### _validatePeginTransaction
+
+
+```solidity
+function _validatePeginTransaction(
+    BtcTxSPVProof calldata _peginRequestTxSPVProof,
+    address rskDestinationAddress,
+    bytes32 btcReimbursementPubKey,
+    bytes32 committeePubKey,
+    Stream memory stream,
+    bytes32 requestPeginTxHash
+) internal view;
 ```
 
 ### acceptPegin
@@ -328,7 +353,6 @@ function acceptPegin(BtcTxSPVProof calldata _peginAcceptedTxSPVProof) external;
 ```solidity
 function _storePegin(
     bytes32 _requestPeginTxHash,
-    StreamPosition memory streamInfo,
     bytes32 _blockHash,
     bytes32 _acceptPegintxHash,
     BtcTxOut memory _acceptPeginTxOutput
