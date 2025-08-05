@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import "forge-std/Script.sol";
+import {console} from "forge-std/console.sol";
+import {Script} from "forge-std/Script.sol";
 import {PegManager} from "src/PegManager.sol";
-import {Stream, Packet} from "src/interfaces/IStreamManager.sol";
-import {ChainIds} from "src/libraries/Network.sol";
 
 contract GetTemporaryAddressScript is Script {
     PegManager pegManager;

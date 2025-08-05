@@ -1,5 +1,5 @@
 # IStreamManager
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/88ae00b3e8fb636de955be6f15b3c84ce2cc3729/src/interfaces/IStreamManager.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b41d024ed73655cc3c392a6c92b6259ef625d19d/src/interfaces/IStreamManager.sol)
 
 **Inherits:**
 [IAccessControl](/src/interfaces/IAccessControl.sol/interface.IAccessControl.md)
@@ -182,11 +182,35 @@ function getSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotNumber) ext
 |`<none>`|`Slot`|Slot The complete slot information|
 
 
+### reserveSlot
+
+Reserves a slot for a peg-in request
+
+*Creates a new slot with RESERVED state during request peg-in*
+
+
+```solidity
+function reserveSlot(uint64 _streamId, uint64 _packetNumber) external returns (uint64);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_streamId`|`uint64`|The index of the stream|
+|`_packetNumber`|`uint64`|The index of the packet within the stream|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`uint64`|uint64 The slot ID of the reserved slot|
+
+
 ### fillSlot
 
 Fills a slot with accept peg-in transaction information
 
-*Updates the slot state to FILLED and stores transaction details*
+*Updates the slot state from RESERVED to FILLED and stores transaction details*
 
 
 ```solidity
@@ -195,7 +219,27 @@ function fillSlot(
     uint64 _acceptPeginAmount,
     bytes32 _acceptPeginTx,
     bytes memory _scriptPubKey
-) external returns (uint64);
+) external;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_stream`|`StreamPosition`|The struct containing the stream, packet, and slot information|
+|`_acceptPeginAmount`|`uint64`|The amount of the accept peg-in transaction in satoshis|
+|`_acceptPeginTx`|`bytes32`|The transaction ID of the accept peg-in transaction|
+|`_scriptPubKey`|`bytes`|The scriptPubKey of the accept peg-in transaction|
+
+
+### blockSlot
+
+Blocks a reserved slot due to timeout or refund proof
+
+*Updates the slot state from RESERVED to BLOCKED*
+
+
+```solidity
+function blockSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) external;
 ```
 **Parameters**
 
@@ -203,15 +247,7 @@ function fillSlot(
 |----|----|-----------|
 |`_streamId`|`uint64`|The index of the stream|
 |`_packetNumber`|`uint64`|The index of the packet within the stream|
-|`_acceptPeginAmount`|`uint64`|The amount of the accept peg-in transaction in satoshis|
-|`_acceptPeginTx`|`bytes32`|The transaction ID of the accept peg-in transaction|
-|`_scriptPubKey`|`bytes`|The scriptPubKey of the accept peg-in transaction|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`<none>`|`uint64`|uint64 The slot ID of the filled slot|
+|`_slotId`|`uint64`|The ID of the slot to block|
 
 
 ### getCommitteeId
@@ -490,6 +526,24 @@ event SlotReserved(uint64 streamId, uint64 packetNumber, uint64 slotId);
 |`packetNumber`|`uint64`|The number of the packet containing the slot|
 |`slotId`|`uint64`|The ID of the newly created slot|
 
+### SlotFilled
+Event emitted when a slot is filled with accept peg-in transaction details
+
+
+```solidity
+event SlotFilled(uint64 streamId, uint64 packetNumber, uint64 slotId, bytes32 acceptPeginTx, uint64 acceptPeginAmount);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`streamId`|`uint64`|The ID of the stream containing the slot|
+|`packetNumber`|`uint64`|The number of the packet containing the slot|
+|`slotId`|`uint64`|The ID of the slot that was filled|
+|`acceptPeginTx`|`bytes32`|The hash of the accept peg-in transaction|
+|`acceptPeginAmount`|`uint64`|The amount of the accept peg-in transaction|
+
 ### SecurityBondPercentageUpdated
 Event emitted when Security Bond Percentage is updated
 
@@ -609,11 +663,25 @@ error tooManyDenominations(uint256 maxDenominationsSize);
 |`maxDenominationsSize`|`uint256`|The maximum number of denominations allowed|
 
 ### NoFilledSlot
-Thrown when there are no filled slots available
+Thrown when there are no filled slots available for a given stream
 
 
 ```solidity
-error NoFilledSlot(uint256 streamId, uint256 packetNumber, uint256 slotId);
+error NoFilledSlot(uint256 streamId);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`streamId`|`uint256`|The stream ID|
+
+### _InconsistentSlotState
+Thrown when a slot is in an unexpected state during lockSlot
+
+
+```solidity
+error _InconsistentSlotState(uint256 streamId, uint256 packetNumber, uint256 slotId, SlotState currentState);
 ```
 
 **Parameters**
@@ -623,13 +691,14 @@ error NoFilledSlot(uint256 streamId, uint256 packetNumber, uint256 slotId);
 |`streamId`|`uint256`|The stream ID|
 |`packetNumber`|`uint256`|The packet number|
 |`slotId`|`uint256`|The slot ID|
+|`currentState`|`SlotState`|The unexpected state|
 
-### PacketNotFound
-Thrown when a packet is not found
+### NoPacketAvailable
+Thrown when no packets are available for a given stream
 
 
 ```solidity
-error PacketNotFound(uint256 streamId, uint256 packetNumber);
+error NoPacketAvailable(uint256 streamId);
 ```
 
 **Parameters**
@@ -637,7 +706,6 @@ error PacketNotFound(uint256 streamId, uint256 packetNumber);
 |Name|Type|Description|
 |----|----|-----------|
 |`streamId`|`uint256`|The stream ID|
-|`packetNumber`|`uint256`|The packet number|
 
 ### _InconsistentSlotsPerPacket
 Thrown when there are inconsistent slots per packet
@@ -804,12 +872,12 @@ Thrown when a value is zero when it shouldn't be
 error InvalidZeroValue();
 ```
 
-### _InconsistentPegoutPointer
-Thrown when there is an inconsistent peg-out pointer
+### SlotNotReserved
+Thrown when trying to fill a slot that's not reserved
 
 
 ```solidity
-error _InconsistentPegoutPointer(uint256 streamId, uint256 packetNumber, uint256 slotPointer);
+error SlotNotReserved(uint256 streamId, uint256 packetNumber, uint256 slotId, SlotState currentState);
 ```
 
 **Parameters**
@@ -818,5 +886,23 @@ error _InconsistentPegoutPointer(uint256 streamId, uint256 packetNumber, uint256
 |----|----|-----------|
 |`streamId`|`uint256`|The stream ID|
 |`packetNumber`|`uint256`|The packet number|
-|`slotPointer`|`uint256`|The slot pointer|
+|`slotId`|`uint256`|The slot ID|
+|`currentState`|`SlotState`|The current state of the slot|
+
+### SlotNotBlockable
+Thrown when trying to block a slot that's not reserved
+
+
+```solidity
+error SlotNotBlockable(uint256 streamId, uint256 packetNumber, uint256 slotId, SlotState currentState);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`streamId`|`uint256`|The stream ID|
+|`packetNumber`|`uint256`|The packet number|
+|`slotId`|`uint256`|The slot ID|
+|`currentState`|`SlotState`|The current state of the slot|
 

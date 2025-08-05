@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "./Constants.sol";
+import {Constants} from "./Constants.sol";
 /**
  * @title Btc Helper
  * @notice Usefull functions for Bitcoin parsin/encoding/decoding

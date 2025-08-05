@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import "forge-std/Test.sol";
-import "forge-std/console.sol";
+import {Test} from "forge-std/Test.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
 import {
     BtcTransaction,
@@ -12,11 +11,10 @@ import {
     PegStatus,
     IPegManager
 } from "src/interfaces/IPegManager.sol";
-import {BtcTxIn, BtcTxOut, IBitcoinManager, PrevoutData} from "src/interfaces/IBitcoinManager.sol";
-import {Slot, SlotState, Packet, Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
+import {PrevoutData} from "src/interfaces/IBitcoinManager.sol";
+import {Slot, SlotState, Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE} from "src/interfaces/IBridge.sol";
 import {ProofValidator} from "src/ProofValidator.sol";
-import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {ICommitteeRegistry, Committee} from "src/interfaces/ICommitteeRegistry.sol";
 

@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import "forge-std/Test.sol";
-import "forge-std/console.sol";
+import {Test} from "forge-std/Test.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
 import {
     ICommitteeRegistry,
@@ -12,13 +11,7 @@ import {
     MemberRegistrationKeys
 } from "src/interfaces/ICommitteeRegistry.sol";
 import {IAccessControl} from "src/interfaces/IAccessControl.sol";
-import {
-    Signatures,
-    SignatureData,
-    ISignatureManager,
-    OperatorTakeTxHashes,
-    OperatorTakeData
-} from "src/interfaces/ISignatureManager.sol";
+import {SignatureData, ISignatureManager, OperatorTakeData} from "src/interfaces/ISignatureManager.sol";
 import {Constants} from "src/libraries/Constants.sol";
 
 contract TestSignatureManager is Test, HelperContract {

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import "forge-std/Script.sol";
+import {Script} from "forge-std/Script.sol";
 import {CommitteeRegistry} from "src/CommitteeRegistry.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
 import {PegManager} from "src/PegManager.sol";

@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import "forge-std/Test.sol";
-import "forge-std/console.sol";
+import {Test} from "forge-std/Test.sol";
 import {Bech32m} from "src/libraries/Bech32m.sol";
 import {BtcNetwork} from "src/libraries/Network.sol";
 

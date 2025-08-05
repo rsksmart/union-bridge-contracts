@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import "forge-std/Script.sol";
+import {console} from "forge-std/console.sol";
 import {PegManager} from "src/PegManager.sol";
 import {ISignatureManager} from "src/interfaces/ISignatureManager.sol";
-import {ChainIds} from "src/libraries/Network.sol";
-import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 
 contract AddMemberNonce is ScriptUtils {

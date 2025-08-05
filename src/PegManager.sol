@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import {BaseProxy} from "./BaseProxy.sol";
 import {ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
 import {ISignatureManager, SignatureData} from "./interfaces/ISignatureManager.sol";
-import {PrevoutData, BtcTransaction, BtcTxOut, IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
+import {PrevoutData, BtcTxOut, IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
 import {
     BtcTxSPVProof,
     RequestPeginTempInfo,
@@ -14,12 +14,10 @@ import {
     IPegManager,
     PegManagerSettings
 } from "./interfaces/IPegManager.sol";
-import {Slot, Stream, Packet, SlotState, IStreamManager} from "./interfaces/IStreamManager.sol";
+import {Slot, Stream, Packet, IStreamManager} from "./interfaces/IStreamManager.sol";
 import {ProofValidator} from "./ProofValidator.sol";
 import {BtcHelper} from "./libraries/BtcHelper.sol";
-import {BytesHelper} from "./libraries/BytesHelper.sol";
 import {Constants} from "./libraries/Constants.sol";
-import {BtcScriptParser} from "./libraries/BtcScriptParser.sol";
 
 /// @title PegManager
 /// @notice Manages peg-in and peg-out operations between Bitcoin and Rootstock

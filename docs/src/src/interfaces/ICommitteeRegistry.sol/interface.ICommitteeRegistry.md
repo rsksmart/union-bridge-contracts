@@ -1,5 +1,5 @@
 # ICommitteeRegistry
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/88ae00b3e8fb636de955be6f15b3c84ce2cc3729/src/interfaces/ICommitteeRegistry.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b41d024ed73655cc3c392a6c92b6259ef625d19d/src/interfaces/ICommitteeRegistry.sol)
 
 Interface for managing committee registration and formation in the union bridge
 
@@ -13,14 +13,15 @@ Interface for managing committee registration and formation in the union bridge
 
 Applies to participate in a stream with a specific role
 
-*Registers public keys and deposits required bond for the requested role*
+*Registers public keys, deposits required bond, and provides funding UTXO for the requested role*
 
 
 ```solidity
 function applyToStream(
     StreamDenomination _requestedStream,
     Role _requestedRole,
-    PublicKeyRegistration[] calldata _publicKeys
+    MemberRegistrationKeys calldata _publicKeys,
+    UTXO calldata _fundingUTXO
 ) external payable;
 ```
 **Parameters**
@@ -29,7 +30,8 @@ function applyToStream(
 |----|----|-----------|
 |`_requestedStream`|`StreamDenomination`|The stream denomination to apply for|
 |`_requestedRole`|`Role`|The role requested in the committee|
-|`_publicKeys`|`PublicKeyRegistration[]`|Array of public key registrations for TAKE, COVENANT, and COMMUNICATION|
+|`_publicKeys`|`MemberRegistrationKeys`|Member public key registration with ECDSA and RSA keys|
+|`_fundingUTXO`|`UTXO`|The Bitcoin UTXO that will be used for committee funding|
 
 
 ### unsubscribeFromStream
@@ -64,7 +66,7 @@ Retrieves all public keys for a specific member
 
 
 ```solidity
-function getMemberPublicKeys(address _address) external view returns (bytes32[] memory publicKeys);
+function getMemberPublicKeys(address _address) external view returns (MemberKeys memory publicKeys);
 ```
 **Parameters**
 
@@ -76,7 +78,7 @@ function getMemberPublicKeys(address _address) external view returns (bytes32[] 
 
 |Name|Type|Description|
 |----|----|-----------|
-|`publicKeys`|`bytes32[]`|Array of public keys indexed by PublicKeyIndex|
+|`publicKeys`|`MemberKeys`|Member public keys structure|
 
 
 ### getMemberRequestedRole
@@ -173,6 +175,28 @@ function getMemberStakedBalance(address _address, StreamDenomination _denominati
 |`amount`|`uint256`|The staked amount in the packet|
 
 
+### getMemberFundingUTXO
+
+Gets the funding UTXO for a member in a specific stream
+
+
+```solidity
+function getMemberFundingUTXO(uint64 _streamId, address _memberAddress) external view returns (UTXO memory);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_streamId`|`uint64`|The stream ID|
+|`_memberAddress`|`address`|The member's address|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`UTXO`|The funding UTXO for the member's application to the stream|
+
+
 ### getCommitteeCandidates
 
 Gets all candidates for a specific role in a stream
@@ -267,7 +291,7 @@ Gets the COMMUNICATION public key for a specific member
 
 
 ```solidity
-function getMemberComPubKey(address _address) external view returns (bytes32);
+function getMemberComPubKey(address _address) external view returns (RSAPublicKey memory);
 ```
 **Parameters**
 
@@ -279,7 +303,7 @@ function getMemberComPubKey(address _address) external view returns (bytes32);
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`bytes32`|The COMMUNICATION public key (x-coordinate only)|
+|`<none>`|`RSAPublicKey`|RSAPublicKey The RSA COMMUNICATION public key|
 
 
 ### depositAggregatedKey
@@ -519,21 +543,21 @@ function setCommitteeMinOperators(uint256 _minOperators) external;
 |`_minOperators`|`uint256`|The minimum operators required for a committee|
 
 
-### setCommitteeMinMembers
+### setCommitteeMemberCount
 
-Sets the minimum members required for a committee
+Sets the exact number of members required for a committee
 
 *Only callable by the contract owner*
 
 
 ```solidity
-function setCommitteeMinMembers(uint256 _minMembers) external;
+function setCommitteeMemberCount(uint256 _committeeMemberCount) external;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_minMembers`|`uint256`|The minimum number of members required for a committee|
+|`_committeeMemberCount`|`uint256`|The exact number of members required for a committee|
 
 
 ### getOperatorTakeAddress
@@ -642,14 +666,15 @@ Event emitted when a new member is registered
 
 
 ```solidity
-event NewMember(bytes32[] indexed publicKeys);
+event NewMember(address indexed member, MemberKeys publicKeys);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`publicKeys`|`bytes32[]`|The public keys of the new member|
+|`member`|`address`|The member address|
+|`publicKeys`|`MemberKeys`|The public keys of the new member|
 
 ### MemberUnsubscribedFromStream
 Event emitted when a member unsubscribes from a stream
@@ -834,12 +859,12 @@ event CommitteeMinOperatorsUpdated(uint256 minOperators);
 |----|----|-----------|
 |`minOperators`|`uint256`|The new minimum operators requirement|
 
-### CommitteeMinMembersUpdated
+### CommitteeMemberCountUpdated
 Event emitted when minimum members requirement is updated
 
 
 ```solidity
-event CommitteeMinMembersUpdated(uint256 minMembers);
+event CommitteeMemberCountUpdated(uint256 minMembers);
 ```
 
 **Parameters**
@@ -1098,75 +1123,74 @@ error RepeatedPublicKeys(uint256 index, bytes32 publicKeyX, uint256 repeatedInde
 |`repeatedIndex`|`uint256`|The index of the repeated occurrence|
 |`repeatedPublicKeyX`|`bytes32`|The X-coordinate of the repeated public key|
 
-### InvalidZeroPublicKey
-Thrown when a public key is zero
+### InvalidZeroEDCSAPublicKey
+Thrown when a EDCSA public key is zero
 
 
 ```solidity
-error InvalidZeroPublicKey(uint256 index, bytes32 publicKeyX, bytes32 publicKeyY);
+error InvalidZeroEDCSAPublicKey(PublicKeyType keyType, bytes32 publicKeyX, bytes32 publicKeyY);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`index`|`uint256`|The index of the invalid public key|
+|`keyType`|`PublicKeyType`|The type of the public key (TAKE, COVENANT, or COMMUNICATION)|
 |`publicKeyX`|`bytes32`|The X-coordinate of the public key|
 |`publicKeyY`|`bytes32`|The Y-coordinate of the public key|
 
-### InvalidPublicKeysLength
-Thrown when the public keys array length is invalid
+### InvalidZeroRSAPublicKey
+Thrown when a RSA public key is zero
 
 
 ```solidity
-error InvalidPublicKeysLength(uint256 publicKeysLength, uint256 expectedLength);
+error InvalidZeroRSAPublicKey(PublicKeyType keyType);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`publicKeysLength`|`uint256`|The actual length|
-|`expectedLength`|`uint256`|The expected length|
+|`keyType`|`PublicKeyType`|The type of the public key (TAKE, COVENANT, or COMMUNICATION)|
 
 ### PublicKeyMismatch
 Thrown when a public key doesn't match the expected value
 
 
 ```solidity
-error PublicKeyMismatch(uint256 index, bytes32 currentPubKey, bytes32 newPubKey);
+error PublicKeyMismatch(PublicKeyType keyType, bytes32 currentPubKey, bytes32 newPubKey);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`index`|`uint256`|The index of the public key|
+|`keyType`|`PublicKeyType`|The type of the public key (TAKE, COVENANT, or COMMUNICATION)|
 |`currentPubKey`|`bytes32`|The current public key|
 |`newPubKey`|`bytes32`|The new public key|
 
-### InvalidZeroSignature
+### InvalidZeroEDCSASignature
 Thrown when a signature is zero
 
 
 ```solidity
-error InvalidZeroSignature(uint256 index, PublicKeyRegistration publicKey);
+error InvalidZeroEDCSASignature(PublicKeyType keyType, ECDSAPublicKey publicKey);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`index`|`uint256`|The index of the invalid signature|
-|`publicKey`|`PublicKeyRegistration`|The public key registration with invalid signature|
+|`keyType`|`PublicKeyType`|The type of the public key (TAKE, COVENANT, or COMMUNICATION)|
+|`publicKey`|`ECDSAPublicKey`|The public key registration with invalid signature|
 
-### InvalidSignature
+### InvalidEDCSASignature
 Thrown when a signature is invalid
 
 
 ```solidity
-error InvalidSignature(
-    uint256 index, PublicKeyRegistration publicKey, address recoveredSignerAddress, address signerAddress
+error InvalidEDCSASignature(
+    PublicKeyType keyType, ECDSAPublicKey publicKey, address recoveredSignerAddress, address signerAddress
 );
 ```
 
@@ -1174,8 +1198,8 @@ error InvalidSignature(
 
 |Name|Type|Description|
 |----|----|-----------|
-|`index`|`uint256`|The index of the invalid signature|
-|`publicKey`|`PublicKeyRegistration`|The public key registration with invalid signature|
+|`keyType`|`PublicKeyType`|The type of the public key (TAKE, COVENANT, or COMMUNICATION)|
+|`publicKey`|`ECDSAPublicKey`|The public key registration with invalid signature|
 |`recoveredSignerAddress`|`address`|The address recovered from the signature|
 |`signerAddress`|`address`|The expected signer address|
 
@@ -1421,6 +1445,34 @@ Thrown when a value is zero
 ```solidity
 error InvalidZeroValue();
 ```
+
+### ZeroUTXOTxid
+Thrown when the funding UTXO transaction ID is zero
+
+
+```solidity
+error ZeroUTXOTxid(UTXO utxo);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`utxo`|`UTXO`|The complete UTXO with zero transaction ID|
+
+### ZeroUTXOAmount
+Thrown when the funding UTXO amount is zero
+
+
+```solidity
+error ZeroUTXOAmount(UTXO utxo);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`utxo`|`UTXO`|The complete UTXO with zero amount|
 
 ### InvalidMinMembers
 Thrown when minimum members requirement is invalid

@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import "forge-std/console.sol";
-
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {BaseProxy} from "./BaseProxy.sol";
 import {
@@ -13,7 +10,6 @@ import {
     Committee,
     ICommitteeRegistry,
     PendingCommittee,
-    PendingCommitteeData,
     PendingCommitteeStatus,
     ECDSAPublicKey,
     RSAPublicKey,
@@ -24,7 +20,6 @@ import {
     ApplicationData,
     Balance,
     CommunicationData,
-    COMMUNICATION_DATA_CHUNKS,
     UTXO
 } from "./interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination, IStreamManager} from "./interfaces/IStreamManager.sol";

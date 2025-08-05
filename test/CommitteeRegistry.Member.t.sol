@@ -1,24 +1,20 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import "forge-std/Test.sol";
-import {CommitteeRegistry} from "src/CommitteeRegistry.sol";
+import {Test} from "forge-std/Test.sol";
 import {
     ICommitteeRegistry,
     Role,
-    Member,
     Committee,
     MemberRegistrationKeys,
     PublicKeyType,
     MemberKeys,
-    ECDSAPublicKey,
     RSAPublicKey,
     UTXO
 } from "src/interfaces/ICommitteeRegistry.sol";
-import {StreamDenomination, IStreamManager, Stream} from "src/interfaces/IStreamManager.sol";
+import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
 import {IPegManager} from "src/interfaces/IPegManager.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
-import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 

@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {
     CommitteeMember, Committee, MemberRegistrationKeys, MemberKeys, PublicKeyType
 } from "src/CommitteeRegistry.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
+import {Vm} from "forge-std/Vm.sol";
 
 abstract contract TestUtils is Test, ScriptUtils {
     function assertEqCommittee(

@@ -1,17 +1,9 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import "forge-std/Script.sol";
+import {console} from "forge-std/console.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
-import {
-    ICommitteeRegistry,
-    Role,
-    Committee,
-    Member,
-    CommunicationData,
-    CommitteeMember,
-    COMMUNICATION_DATA_CHUNKS
-} from "src/interfaces/ICommitteeRegistry.sol";
+import {ICommitteeRegistry, CommunicationData} from "src/interfaces/ICommitteeRegistry.sol";
 
 contract GetCommunicationDataForOneMemberScript is ScriptUtils {
     ICommitteeRegistry committeeRegistry;

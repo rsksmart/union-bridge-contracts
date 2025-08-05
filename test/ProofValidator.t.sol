@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {ProofValidatorHarness} from "./helpers/ProofValidatorHarness.sol";
 import {HelperContract} from "./helpers/HelperContract.sol";
 import {ProofValidator} from "src/ProofValidator.sol";

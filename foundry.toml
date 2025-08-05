@@ -35,11 +35,11 @@ verbosity = 3
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/crates/config
 
-# Uncomment once foundry nightly is released
 [lint]
 exclude_lints = [
     "mixed-case-variable",
     "mixed-case-function",
     "asm-keccak256",
     "pascal-case-struct",
+    "incorrect-shift",
 ]
