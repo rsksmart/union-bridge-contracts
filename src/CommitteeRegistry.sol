@@ -776,7 +776,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     /// @param _streamId The stream ID to check for a pending committee
     /// @return True if the pending committee exists and is expired
     function isPendingCommitteeExpired(uint64 _streamId) external view returns (bool) {
-        uint256 createdAt = _getPendingCommittee(_streamId).createdAt;
+        uint256 createdAt = committeesById[pendingCommittees[_streamId]].createdAt;
         // If no pending committee in proccess we return false
         if (createdAt == 0) {
             return false;
