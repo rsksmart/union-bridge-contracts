@@ -27,10 +27,8 @@ abstract contract HelperContract is Test, TestUtils {
     bytes32 internal constant BTC_REIMBURSEMENT_PUBKEY =
         0x7d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f;
 
-    uint256 constant COMMITTEE_ID_STREAM_1_PACKET_0 =
-        78541660797044910968829902406342334108369226379826116161446442989268089806461;
-    uint256 constant COMMITTEE_ID_STREAM_1_PACKET_1 =
-        92458281274488595289803937127152923398167637295201432141969818930235769911599;
+    uint128 constant COMMITTEE_ID_STREAM_1_PACKET_0 = 206898896734299866373660992622464848465;
+    uint128 constant COMMITTEE_ID_STREAM_1_PACKET_1 = 1001;
     bytes32 constant COMMITTEE_PUB_KEY = 0xd1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d;
 
     uint256 constant TAKE_0_TIMEOUT_DEFAULT = 2 hours;
@@ -453,7 +451,10 @@ abstract contract HelperContract is Test, TestUtils {
             aggregatedKey: bytes32(0),
             members: new CommitteeMember[](registry.committeeMemberCount()),
             leaderAddress: address(0),
-            operatorTakeIndex: 0
+            operatorTakeIndex: 0,
+            createdAt: block.timestamp,
+            missingData: 10,
+            missingCommunicationData: 10
         });
 
         committee.members[0] = CommitteeMember({memberAddress: vm.addr(17 + 1), role: Role.OPERATOR});
@@ -477,7 +478,10 @@ abstract contract HelperContract is Test, TestUtils {
             aggregatedKey: bytes32(0),
             members: new CommitteeMember[](registry.committeeMemberCount()),
             leaderAddress: address(0),
-            operatorTakeIndex: 0
+            operatorTakeIndex: 0,
+            createdAt: block.timestamp,
+            missingData: 10,
+            missingCommunicationData: 10
         });
 
         committee.members[0] = CommitteeMember({memberAddress: vm.addr(7 + 1), role: Role.OPERATOR});
@@ -512,7 +516,10 @@ abstract contract HelperContract is Test, TestUtils {
             aggregatedKey: bytes32(0),
             members: new CommitteeMember[](registry.committeeMemberCount()),
             leaderAddress: address(0),
-            operatorTakeIndex: 0
+            operatorTakeIndex: 0,
+            createdAt: block.timestamp,
+            missingData: 10,
+            missingCommunicationData: 10
         });
 
         committee.members[0] = CommitteeMember({memberAddress: vm.addr(7 + 1), role: Role.OPERATOR});

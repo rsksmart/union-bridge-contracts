@@ -22,7 +22,7 @@ struct Signatures {
     /// @notice Number of missing nonces
     uint8 missingNonces;
     /// @notice ID of the committee responsible for these signatures
-    uint256 committeeId;
+    uint128 committeeId;
 }
 
 /// @notice Represents OperatorTake transaction data for a committee member
@@ -42,7 +42,7 @@ struct OperatorTakeTxHashes {
     /// @notice Number of missing OperatorTake transaction hashes
     uint8 missingHashes;
     /// @notice ID of the committee responsible for these hashes
-    uint256 committeeId;
+    uint128 committeeId;
 }
 
 /// @notice Interface for managing multi-signature operations in the union bridge
@@ -53,7 +53,7 @@ interface ISignatureManager is IAccessControl {
     /// @dev Sets up the signature tracking structure for committee members
     /// @param _hashToSign The hash that committee members need to sign
     /// @param _committeeId The ID of the committee responsible for signing
-    function initSignatures(bytes32 _hashToSign, uint256 _committeeId) external;
+    function initSignatures(bytes32 _hashToSign, uint128 _committeeId) external;
 
     /// @notice Adds a nonce for a committee member
     /// @dev Called by committee members to provide their nonce for signature generation
@@ -87,13 +87,13 @@ interface ISignatureManager is IAccessControl {
     function getSignaturesStatus(bytes32 _hashToSign)
         external
         view
-        returns (uint8 missingSignatures, uint8 missingNonces, uint256 committeeId);
+        returns (uint8 missingSignatures, uint8 missingNonces, uint128 committeeId);
 
     /// @notice Initializes OperatorTake transaction hash collection for a specific accept peg-in
     /// @dev Sets up the OperatorTake hash tracking structure for committee members
     /// @param _acceptPeginTxHash The accept peg-in transaction hash
     /// @param _committeeId The ID of the committee responsible for OperatorTake operations
-    function initOperatorTakeTxHashes(bytes32 _acceptPeginTxHash, uint256 _committeeId) external;
+    function initOperatorTakeTxHashes(bytes32 _acceptPeginTxHash, uint128 _committeeId) external;
 
     /// @notice Adds a OperatorTake transaction hash for a committee member
     /// @dev Called by committee operators to provide their OperatorTake transaction hash
@@ -114,7 +114,7 @@ interface ISignatureManager is IAccessControl {
     /// @notice Gets the committee ID for a specific accept peg-in transaction hash
     /// @param _acceptPeginTxHash The accept peg-in transaction hash
     /// @return The committee ID responsible for this accept peg-in
-    function getCommitteeIdByAcceptPeginTxHash(bytes32 _acceptPeginTxHash) external view returns (uint256);
+    function getCommitteeIdByAcceptPeginTxHash(bytes32 _acceptPeginTxHash) external view returns (uint128);
 
     // Events
     /// @notice Event emitted when a nonce is added by a committee member
@@ -184,7 +184,7 @@ interface ISignatureManager is IAccessControl {
     /// @notice Thrown when a member is not found in a committee
     /// @param committeeId The committee ID
     /// @param memberAddress The member's address
-    error MemberNotFoundInCommittee(uint256 committeeId, address memberAddress);
+    error MemberNotFoundInCommittee(uint128 committeeId, address memberAddress);
 
     /// @notice Thrown when the hash to sign is invalid
     /// @param hashToSign The invalid hash
@@ -217,7 +217,7 @@ interface ISignatureManager is IAccessControl {
     /// @notice Thrown when a member is not an operator
     /// @param committeeId The committee ID
     /// @param memberAddress The member's address
-    error MemberIsNotOperator(uint256 committeeId, address memberAddress);
+    error MemberIsNotOperator(uint128 committeeId, address memberAddress);
 
     /// @notice Thrown when a member has already added a OperatorTake transaction hash
     /// @param acceptPeginTxHash The accept peg-in transaction hash

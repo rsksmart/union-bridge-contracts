@@ -105,7 +105,7 @@ contract TestSignatureManager is Test, HelperContract {
 
         // Assert
         assertEq(allSignaturesReady, false, "Not all signatures should be ready at this point");
-        (uint8 missingSignatures, uint8 missingNonces, uint256 committeeId) =
+        (uint8 missingSignatures, uint8 missingNonces, uint128 committeeId) =
             signatureManager.getSignaturesStatus(hashToSign);
         assertEq(missingSignatures, registry.committeeMemberCount() - 1, "missingSignatures should be equal to 1");
         assertEq(missingNonces, 0, "missingNonces should be equal to 1");
@@ -168,7 +168,7 @@ contract TestSignatureManager is Test, HelperContract {
 
         // Assert
         assertEq(allSignaturesReady, true, "Not all signatures should be ready at this point");
-        (uint8 missingSignatures, uint8 missingNonces, uint256 committeeId) =
+        (uint8 missingSignatures, uint8 missingNonces, uint128 committeeId) =
             signatureManager.getSignaturesStatus(hashToSign);
         assertEq(missingSignatures, 0, "missingSignatures should be equal to 0");
         assertEq(missingNonces, 0, "missingNonces should be equal to 0");
@@ -378,7 +378,7 @@ contract TestSignatureManager is Test, HelperContract {
 
     function test_initSignatures_Revert_SignaturesAlreadyInitialized() external {
         // Arrange
-        uint256 committeeId = COMMITTEE_ID_STREAM_1_PACKET_0;
+        uint128 committeeId = COMMITTEE_ID_STREAM_1_PACKET_0;
         bytes32 hashToSign = 0x1000000000000000000000000000000000000000000000000000000000000001;
 
         // First time initializing the signatures
@@ -395,7 +395,7 @@ contract TestSignatureManager is Test, HelperContract {
 
     function test_initSignatures_Revert_CommitteeNotFound() external {
         // Arrange
-        uint256 committeeId = 1;
+        uint128 committeeId = 1;
         bytes32 hashToSign = 0x1000000000000000000000000000000000000000000000000000000000000001;
 
         // Assert
@@ -492,7 +492,7 @@ contract TestSignatureManager is Test, HelperContract {
         uint256 missingHashes = countEmptyOperatorTakeTxHashes(operatorTakeData);
         assertEq(missingHashes, operatorsCount, "missingHashes should be equal to operatorsCount");
 
-        uint256 committeeId = signatureManager.getCommitteeIdByAcceptPeginTxHash(acceptPeginTxHash);
+        uint128 committeeId = signatureManager.getCommitteeIdByAcceptPeginTxHash(acceptPeginTxHash);
         assertEq(committeeId, COMMITTEE_ID_STREAM_1_PACKET_0, "committeeId should match");
     }
 

@@ -67,7 +67,7 @@ struct Packet {
     uint64 packetNumber;
     /// @notice The committee ID responsible for this packet
     /// @dev Each packet is managed by a specific committee of validators
-    uint256 committeeId;
+    uint128 committeeId;
     /// @notice The internal key of the committee for this packet
     /// @dev This is the public key used for committee operations
     bytes32 committeePubKey;
@@ -122,7 +122,7 @@ interface IStreamManager is IAccessControl {
     /// @param _streamId The index of the stream to add the packet to
     /// @param _committeeId The ID of the committee responsible for this packet
     /// @param _committeePubKey The public key of the selected committee for the packet
-    function createNewPacket(uint64 _streamId, uint256 _committeeId, bytes32 _committeePubKey) external;
+    function createNewPacket(uint64 _streamId, uint128 _committeeId, bytes32 _committeePubKey) external;
 
     /// @notice Retrieves stream information for a given denomination
     /// @dev Looks up the stream that handles the specified Bitcoin amount
@@ -196,7 +196,7 @@ interface IStreamManager is IAccessControl {
     /// @param _streamId The index of the stream
     /// @param _packetNumber The index of the packet within the stream
     /// @return uint256 The committee ID responsible for this packet
-    function getCommitteeId(uint64 _streamId, uint64 _packetNumber) external view returns (uint256);
+    function getCommitteeId(uint64 _streamId, uint64 _packetNumber) external view returns (uint128);
 
     /// @notice Retrieves the committee public key for a specific packet
     /// @param _streamId The index of the stream
@@ -241,7 +241,7 @@ interface IStreamManager is IAccessControl {
     /// @notice Gets the committee ID for the current packet in a stream
     /// @param _streamId The index of the stream
     /// @return uint256 The committee ID for the current packet (returns 0 if no current packet)
-    function getAvailablePeginCommitteeId(uint64 _streamId) external view returns (uint256);
+    function getAvailablePeginCommitteeId(uint64 _streamId) external view returns (uint128);
 
     /// @notice Gets the minimum deposit required for a specific denomination and role
     /// @param _denomination The denomination of the stream

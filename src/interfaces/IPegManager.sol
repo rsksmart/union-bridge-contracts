@@ -78,7 +78,7 @@ struct PegoutTempInfo {
     /// @notice Timestamp when the operator take was last updated/triggered
     uint256 operatorTakeUpdatedAt;
     /// @notice The committee ID responsible for signing this peg-out
-    uint256 committeeId;
+    uint128 committeeId;
     /// @notice The operator address that will advance the funds to the user
     address takeOperatorAddress;
     /// @notice The public key of the selected operator for Bitcoin transactions (x-coordinate only)

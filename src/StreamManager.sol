@@ -92,14 +92,14 @@ contract StreamManager is IStreamManager, AccessControl {
     /// @param _streamId The ID of the stream to create a packet for
     /// @param _committeeId The ID of the committee that will process this packet
     /// @param _committeePubKey The public key of the committee for Bitcoin operations
-    function createNewPacket(uint64 _streamId, uint256 _committeeId, bytes32 _committeePubKey)
+    function createNewPacket(uint64 _streamId, uint128 _committeeId, bytes32 _committeePubKey)
         external
         onlyCommitteeRegistry
     {
         _createNewPacket(_streamId, _committeeId, _committeePubKey);
     }
 
-    function _createNewPacket(uint64 _streamId, uint256 _committeeId, bytes32 _committeePubKey) internal {
+    function _createNewPacket(uint64 _streamId, uint128 _committeeId, bytes32 _committeePubKey) internal {
         uint64 packetNumber = uint64(packets[_streamId].length);
         packets[_streamId].push(
             Packet({packetNumber: packetNumber, committeeId: _committeeId, committeePubKey: _committeePubKey})
@@ -165,7 +165,7 @@ contract StreamManager is IStreamManager, AccessControl {
     /// @notice Gets the committee ID for the available pegin packet in a stream
     /// @param _streamId The ID of the stream
     /// @return The committee ID, or 0 if no current packet
-    function getAvailablePeginCommitteeId(uint64 _streamId) external view returns (uint256) {
+    function getAvailablePeginCommitteeId(uint64 _streamId) external view returns (uint128) {
         Stream storage stream = streams[_streamId];
         if (stream.peginPacketPointer >= packets[_streamId].length) {
             return 0;
@@ -340,7 +340,7 @@ contract StreamManager is IStreamManager, AccessControl {
     /// @param _streamId The ID of the stream
     /// @param _packetNumber The packet number
     /// @return The committee ID for the packet
-    function getCommitteeId(uint64 _streamId, uint64 _packetNumber) external view returns (uint256) {
+    function getCommitteeId(uint64 _streamId, uint64 _packetNumber) external view returns (uint128) {
         return getPacket(_streamId, _packetNumber).committeeId;
     }
 

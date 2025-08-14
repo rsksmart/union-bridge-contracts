@@ -24,6 +24,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function setUp() external {
         runTestDeployScript();
+        vm.roll(1000);
     }
 
     function test_shouldCreateCommittee_AfterInit() external view {

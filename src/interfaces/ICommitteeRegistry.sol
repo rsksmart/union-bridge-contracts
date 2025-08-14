@@ -158,21 +158,12 @@ struct Committee {
     address leaderAddress;
     /// @notice Index of the operator take address
     uint256 operatorTakeIndex;
-}
-
-/// @notice Represents a committee that is in the process of being formed
-/// @dev Used to track committee formation progress and member data collection
-struct PendingCommittee {
-    /// @notice The committee being formed
-    Committee committee;
     /// @notice Timestamp when the pending committee was created
     uint256 createdAt;
     /// @notice Number of members that have not provided their data yet
     uint16 missingData;
     /// @notice Number of members that have not deposited their communication data yet
     uint16 missingCommunicationData;
-    /// @notice Mapping of member addresses to their pending data
-    mapping(address memberAddress => PendingCommitteeData) data;
 }
 
 /// @notice Represents pending data for a member in committee formation
@@ -270,12 +261,12 @@ interface ICommitteeRegistry {
     /// @notice Gets a committee by its ID
     /// @param _committeeId The committee ID
     /// @return Committee The complete committee information
-    function getCommittee(uint256 _committeeId) external view returns (Committee calldata);
+    function getCommittee(uint128 _committeeId) external view returns (Committee calldata);
 
     /// @notice Gets all members of a specific committee
     /// @param _committeeId The committee ID
     /// @return Array of committee members with their roles
-    function getCommitteeMembers(uint256 _committeeId) external view returns (CommitteeMember[] memory);
+    function getCommitteeMembers(uint128 _committeeId) external view returns (CommitteeMember[] memory);
 
     /// @notice Gets the TAKE public key for a specific member
     /// @param _memberAddress The member's address
@@ -330,11 +321,11 @@ interface ICommitteeRegistry {
 
     /// @notice Gets the encrypted communication data for one member in a committee
     /// @dev This function returns the encrypted communication data (IP and Port) deposited for a particular member
-    /// @param _streamId The stream ID for the committee
+    /// @param _committeeId The committee ID for the committee
     /// @param _memberAddress The address of the member we are requesting data for
     /// @return communicationData encrypted communication data (IP and Port) from the committee members
     /// @dev The order of the data corresponds to the order of members in the committee
-    function getMemberCommunicationData(uint64 _streamId, address _memberAddress)
+    function getMemberCommunicationData(uint128 _committeeId, address _memberAddress)
         external
         view
         returns (CommunicationData[] memory communicationData);
@@ -373,7 +364,7 @@ interface ICommitteeRegistry {
     /// @param committeeId The ID of the committee
     /// @param signatureData The signature data for the committee members
     /// @return The operator take address
-    function getOperatorTakeAddress(uint256 committeeId, SignatureData[] calldata signatureData)
+    function getOperatorTakeAddress(uint128 committeeId, SignatureData[] calldata signatureData)
         external
         returns (address);
 
@@ -394,12 +385,12 @@ interface ICommitteeRegistry {
     /// @notice Event emitted when a new committee is created
     /// @param committeeId The ID of the newly created committee
     /// @param _committee The committee information
-    event NewCommittee(uint256 indexed committeeId, Committee _committee);
+    event NewCommittee(uint128 indexed committeeId, Committee _committee);
 
     /// @notice Event emitted when a new pending committee is created
-    /// @param streamId The stream ID for the pending committee
+    /// @param committeeId The stream ID for the pending committee
     /// @param _committee The pending committee information
-    event NewPendingCommittee(uint256 indexed streamId, Committee _committee);
+    event NewPendingCommittee(uint128 indexed committeeId, Committee _committee);
 
     /// @notice Event emitted when a new member is registered
     /// @param member The member address
@@ -481,7 +472,7 @@ interface ICommitteeRegistry {
 
     /// @notice Event emitted when no honest operators remain in a committee
     /// @param committeeId The ID of the committee with no honest operators
-    event NoRemainingHonestOperators(uint256 committeeId);
+    event NoRemainingHonestOperators(uint128 committeeId);
 
     /// @notice Event emitted when a member reapplies to a stream
     /// @param memberAddress The member's address
@@ -536,7 +527,7 @@ interface ICommitteeRegistry {
 
     /// @notice Thrown when a committee is already registered
     /// @param committeeId The ID of the already registered committee
-    error AlreadyRegisteredCommittee(uint256 committeeId);
+    error AlreadyRegisteredCommittee(uint128 committeeId);
 
     /// @notice Thrown when a member is not found
     /// @param memberAddress The address of the member not found
@@ -596,9 +587,9 @@ interface ICommitteeRegistry {
     error NoCommitteeMembers();
 
     /// @notice Thrown when a member is not in the committee
-    /// @param streamId The stream ID
+    /// @param committeeId The committee ID
     /// @param memberAddress The member's address
-    error MemberNotInCommittee(uint64 streamId, address memberAddress);
+    error MemberNotInCommittee(uint128 committeeId, address memberAddress);
 
     /// @notice Thrown when member info is already deposited
     /// @param memberAddress The member's address
@@ -606,7 +597,7 @@ interface ICommitteeRegistry {
 
     /// @notice Thrown when a committee is not found
     /// @param committeeId The committee ID
-    error CommitteeNotFound(uint256 committeeId);
+    error CommitteeNotFound(uint128 committeeId);
 
     /// @notice Thrown when an account is not authorized
     /// @param account The unauthorized account
@@ -703,7 +694,7 @@ interface ICommitteeRegistry {
 
     /// @notice Thrown when no eligible operator is found for take operations
     /// @param committeeId The ID of the committee where no operator was found
-    error TakeOperatorNotFound(uint256 committeeId);
+    error TakeOperatorNotFound(uint128 committeeId);
 
     /// @notice Thrown when there are too many candidates for a stream
     /// @param denomination The stream denomination
@@ -749,7 +740,7 @@ interface ICommitteeRegistry {
     /// @param memberPubKey The member's registered take public key
     /// @param signaturePubKeyX The public key X-coordinate from the signature
     error _InvalidOperatorTakePubKey(
-        uint256 committeeId, address memberAddress, bytes32 memberPubKey, bytes32 signaturePubKeyX
+        uint128 committeeId, address memberAddress, bytes32 memberPubKey, bytes32 signaturePubKeyX
     );
 
     /// @notice Thrown when a member's pre-staked balance doesn't match their requested role requirements

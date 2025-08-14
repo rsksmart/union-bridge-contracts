@@ -42,11 +42,11 @@ contract SignatureManager is ISignatureManager, AccessControl {
         __AccessControl_init(_initialOwner, _pegManager);
     }
 
-    function _isMemberInCommittee(uint256 _committeeId, address _memberAddress) internal view returns (bool) {
+    function _isMemberInCommittee(uint128 _committeeId, address _memberAddress) internal view returns (bool) {
         return _getMemberRole(_committeeId, _memberAddress) != Role.NONE;
     }
 
-    function _getMemberRole(uint256 _committeeId, address _memberAddress) internal view returns (Role) {
+    function _getMemberRole(uint128 _committeeId, address _memberAddress) internal view returns (Role) {
         CommitteeMember[] memory members = committeeRegistry.getCommitteeMembers(_committeeId);
         Role role = Role.NONE;
         for (uint256 i = 0; i < members.length; i++) {
@@ -161,7 +161,7 @@ contract SignatureManager is ISignatureManager, AccessControl {
     /// @return missingSignatures Number of missing signatures
     /// @return missingNonces Number of missing nonces
     /// @return committeeId The committee ID for this signature collection
-    function getSignaturesStatus(bytes32 _hashToSign) external view returns (uint8, uint8, uint256) {
+    function getSignaturesStatus(bytes32 _hashToSign) external view returns (uint8, uint8, uint128) {
         Signatures storage signatures = _getSignatures(_hashToSign);
         return (signatures.missingSignatures, signatures.missingNonces, signatures.committeeId);
     }
@@ -179,7 +179,7 @@ contract SignatureManager is ISignatureManager, AccessControl {
     /// @dev Can only be called by the PegManager
     /// @param _hashToSign The hash that needs to be signed
     /// @param _committeeId The committee ID that will sign the hash
-    function initSignatures(bytes32 _hashToSign, uint256 _committeeId) external onlyPegManager {
+    function initSignatures(bytes32 _hashToSign, uint128 _committeeId) external onlyPegManager {
         // Check if the signature hash is not empty
         if (_hashToSign == "") {
             revert InvalidHashToSign(_hashToSign);
@@ -204,7 +204,7 @@ contract SignatureManager is ISignatureManager, AccessControl {
     /// @dev Can only be called by the PegManager
     /// @param _acceptPeginTxHash The accept peg-in transaction hash
     /// @param _committeeId The committee ID that will provide OperatorTake transaction hashes
-    function initOperatorTakeTxHashes(bytes32 _acceptPeginTxHash, uint256 _committeeId) external onlyPegManager {
+    function initOperatorTakeTxHashes(bytes32 _acceptPeginTxHash, uint128 _committeeId) external onlyPegManager {
         // Check if the accept pegin tx hash is not empty
         if (_acceptPeginTxHash == bytes32(0)) {
             revert InvalidAcceptPeginTxHash(_acceptPeginTxHash);
@@ -318,8 +318,7 @@ contract SignatureManager is ISignatureManager, AccessControl {
     /// @notice Gets the committee ID for a given accept peg-in transaction hash
     /// @param _acceptPeginTxHash The accept peg-in transaction hash
     /// @return The committee ID associated with this transaction hash
-    function getCommitteeIdByAcceptPeginTxHash(bytes32 _acceptPeginTxHash) external view returns (uint256) {
-        OperatorTakeTxHashes storage operatorTakeTxHashes = _getOperatorTakeTxHashes(_acceptPeginTxHash);
-        return operatorTakeTxHashes.committeeId;
+    function getCommitteeIdByAcceptPeginTxHash(bytes32 _acceptPeginTxHash) external view returns (uint128) {
+        return _getOperatorTakeTxHashes(_acceptPeginTxHash).committeeId;
     }
 }

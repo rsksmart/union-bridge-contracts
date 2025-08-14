@@ -54,7 +54,7 @@ contract DepositAggregatedKeyScript is ScriptUtils {
             }
         } else {
             // if it is it shoud create the committee
-            uint256 committeeId = streamManager.getAvailablePeginCommitteeId(_streamIndex);
+            uint128 committeeId = streamManager.getAvailablePeginCommitteeId(_streamIndex);
             // If it does not revert, it means the committee has been created
             committeeRegistry.getCommittee(committeeId);
         }

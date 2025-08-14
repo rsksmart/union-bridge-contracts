@@ -201,7 +201,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         peginTempInfo[requestPeginTxHash] = requestPeginInfo;
 
         // Pre-compute committee ID before external calls
-        uint256 committeeId = streamManager.getCommitteeId(stream.streamId, packetNumber);
+        uint128 committeeId = streamManager.getCommitteeId(stream.streamId, packetNumber);
 
         // Store request mapping before external calls
         peginRequests[requestPeginTxHash] = acceptPeginTxHash;
@@ -438,7 +438,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             PrevoutData({value: slot.acceptPeginAmount, scriptPubKey: slot.scriptPubKey})
         );
 
-        uint256 committeeId =
+        uint128 committeeId =
             _storePegoutAndInitSignatures(pegoutSignatureHash, stream.streamId, packetNumber, slot.slotId);
 
         pegoutTempInfo[slot.acceptPeginTx] = PegoutTempInfo({
@@ -575,13 +575,13 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         uint64 _streamId,
         uint64 _packetNumber,
         uint64 _slotId
-    ) internal returns (uint256) {
+    ) internal returns (uint128) {
         // Store the peg-out transaction hash on-chain and initialize the signatures
         bytes32 key = keccak256(abi.encodePacked(_streamId, _packetNumber, _slotId));
         pegoutSighashes[key] = _pegoutSignatureHash;
 
         // Get the committee key
-        uint256 committeeId = streamManager.getCommitteeId(_streamId, _packetNumber);
+        uint128 committeeId = streamManager.getCommitteeId(_streamId, _packetNumber);
 
         // Initialize the signatures for each member
         signatureManager.initSignatures(_pegoutSignatureHash, committeeId);
