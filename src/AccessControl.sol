@@ -23,7 +23,9 @@ contract AccessControl is IAccessControl, BaseProxy {
     /// @dev Can only be called once during contract deployment
     /// @param _initialOwner The address that will be set as the initial owner
     /// @param _pegManager The address of the PegManager contract
-    function __AccessControl_init(address _initialOwner, address _pegManager) public initializer {
+    function __AccessControl_init(address _initialOwner, address _pegManager) internal initializer {
+        //replaced by Review_public_methods
+        //function __AccessControl_init(address _initialOwner, address _pegManager) public initializer {
         if (_pegManager == address(0)) {
             revert PegManagerAddressZero();
         }

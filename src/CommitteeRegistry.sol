@@ -63,7 +63,9 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
 
     /// @notice Initializes the CommitteeRegistry contract
     /// @param _initialOwner The initial owner of the contract
-    function initialize(address _initialOwner) public virtual initializer {
+    function initialize(address _initialOwner) internal virtual initializer {
+        //replaced by Review_public_methods
+        //function initialize(address _initialOwner) public virtual initializer {
         __BaseProxy_init(_initialOwner);
         pendingCommitteeTimeout = 1 days; // Default timeout for pending committees
         for (uint64 i = 0; i <= uint64(StreamDenomination._10BTC); i++) {
@@ -72,6 +74,12 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         minCommitteeWatchtowers = 3;
         minCommitteeOperators = 3;
         committeeMemberCount = 10;
+    }
+
+    //added for replaced by Review_public_methods
+    //External function that calls the Internal function is added.
+    function _initialize(address _initialOwner) external virtual initializer {
+        initialize(_initialOwner);
     }
 
     function _initMemberBalance(Member storage _member) internal {
@@ -789,6 +797,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
             delete pendingCommittees[_streamId].data[committeeMembers[i].memberAddress];
         }
         //slither-disable-next-line mapping-deletion
+
         delete pendingCommittees[_streamId];
     }
 
