@@ -1057,7 +1057,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // ===== Arrange start =====
         // Create a complete committee for initial packet
-        (,,) = setup_completeCommitteeAndNewMembers();
+        setup_completeCommitteeAndNewMembers();
         uint64 streamId = SETUP_PENDING_COMMITTEE_STREAM_ID;
         StreamDenomination denomination = StreamDenomination(streamId);
         // Need to use last member in the committee to unsubscribe and subscribe to keep same random committee member order
