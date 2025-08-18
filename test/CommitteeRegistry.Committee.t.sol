@@ -1049,73 +1049,70 @@ contract TestCommitteeRegistry is Test, HelperContract {
         );
     }
 
-    // FIXME: Stack too deep error
-    // function test_createCommitteeAfterApplyToStream_Success_NoCommitteeForCurrentPacket() external {
-    //     // In this case we want to test the case where we run out of slots from current packet without being ables to create a new pending committee.
-    //     // This is a edge case where we had the minimum of members to create first packet but one of the members decided to unsubscribe from the stream for next packet
-    //     // So pending committee wont be created in each of the last pegins of current packet. Resulting in no pending committee for next packet.
-    //     // applyToStream call internally to `createCommitteeAfterApplyToStream`
+    function test_createCommitteeAfterApplyToStream_Success_NoCommitteeForCurrentPacket() external {
+        // In this case we want to test the case where we run out of slots from current packet without being ables to create a new pending committee.
+        // This is a edge case where we had the minimum of members to create first packet but one of the members decided to unsubscribe from the stream for next packet
+        // So pending committee wont be created in each of the last pegins of current packet. Resulting in no pending committee for next packet.
+        // applyToStream call internally to `createCommitteeAfterApplyToStream`
 
-    //     // ===== Arrange start =====
-    //     // Create a complete committee for initial packet
-    //     (Committee memory firstCommittee,, uint128 committeeId) = setup_completeCommitteeAndNewMembers();
-    //     StreamDenomination denomination = StreamDenomination(firstCommittee.streamId);
-    //     // Need to use last member in the committee to unsubscribe and subscribe to keep same random committee member order
-    //     uint256 userIndex = registry.committeeMemberCount() * 2 - 1;
-    //     Role userRole = Role.OPERATOR;
-    //     address userAddress = vm.addr(userIndex + 1);
-    //     MemberRegistrationKeys memory memberRegistrationKeys =
-    //         generateRegistrationPublicKeys(uint256(uint160(userAddress)));
+        // ===== Arrange start =====
+        // Create a complete committee for initial packet
+        (,, uint128 committeeId) = setup_completeCommitteeAndNewMembers();
+        uint64 streamId = SETUP_PENDING_COMMITTEE_STREAM_ID;
+        StreamDenomination denomination = StreamDenomination(streamId);
+        // Need to use last member in the committee to unsubscribe and subscribe to keep same random committee member order
+        uint256 userIndex = registry.committeeMemberCount() * 2 - 1;
+        Role userRole = Role.OPERATOR;
+        address userAddress = vm.addr(userIndex + 1);
+        MemberRegistrationKeys memory memberRegistrationKeys =
+            generateRegistrationPublicKeys(uint256(uint160(userAddress)));
 
-    //     // Unsubscribe one of the members
-    //     vm.prank(userAddress);
-    //     registry.unsubscribeFromStream(denomination);
+        // Unsubscribe one of the members
+        vm.prank(userAddress);
+        registry.unsubscribeFromStream(denomination);
 
-    //     // Use all the slots in the packet
-    //     setup_multipleRequestAndAcceptPeginFlows(Constants.SLOTS_PER_PACKET);
+        // Use all the slots in the packet
+        setup_multipleRequestAndAcceptPeginFlows(Constants.SLOTS_PER_PACKET);
 
-    //     Stream memory stream = streamManager.getStreamById(firstCommittee.streamId);
-    //     assertEq(stream.peginPacketPointer, 1, "Stream pegin packet pointer should be 1 after filling all slots");
+        Stream memory stream = streamManager.getStreamById(streamId);
+        assertEq(stream.peginPacketPointer, 1, "Stream pegin packet pointer should be 1 after filling all slots");
 
-    //     // Check that current packet does not have a committee
-    //     uint256 currentPacketCommitteeId = streamManager.getAvailablePeginCommitteeId(firstCommittee.streamId);
-    //     assertEq(currentPacketCommitteeId, 0, "Current packet committee ID should be 0 when no committee exists");
+        // Check that current packet does not have a committee
+        uint256 currentPacketCommitteeId = streamManager.getAvailablePeginCommitteeId(streamId);
+        assertEq(currentPacketCommitteeId, 0, "Current packet committee ID should be 0 when no committee exists");
 
-    //     // Check there is no pending committee
-    //     vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.CommitteeIsNotPending.selector, 0));
-    //     registry.getPendingCommittee(firstCommittee.streamId);
+        // Check there is no pending committee
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.CommitteeIsNotPending.selector, 0));
+        registry.getPendingCommittee(streamId);
 
-    //     uint256 minimumDeposit = streamManager.getMinimumDeposit(denomination, userRole);
-    //     vm.deal(userAddress, minimumDeposit);
-    //     Committee memory expectedCommittee = setup_getExpectedSecondCommittee();
-    //     vm.warp(BLOCK_COMMITTEE_2);
-    //     assertTrue(
-    //         registry.shouldCreateCommitteeHarness(firstCommittee.streamId),
-    //         "Flag should be true because there is no pending committee and need one to new packet"
-    //     );
-    //     // ===== Arrange end =====
+        uint256 minimumDeposit = streamManager.getMinimumDeposit(denomination, userRole);
+        vm.deal(userAddress, minimumDeposit);
+        Committee memory expectedCommittee = setup_getExpectedSecondCommittee();
+        vm.warp(BLOCK_COMMITTEE_2);
+        assertTrue(
+            registry.shouldCreateCommitteeHarness(streamId),
+            "Flag should be true because there is no pending committee and need one to new packet"
+        );
+        // ===== Arrange end =====
 
-    //     // Assert
-    //     vm.expectEmit(address(registry));
-    //     emit ICommitteeRegistry.NewPendingCommittee(COMMITTEE_ID_STREAM_1_COMMITTEE_2, expectedCommittee);
+        // Assert
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.NewPendingCommittee(COMMITTEE_ID_STREAM_1_COMMITTEE_2, expectedCommittee);
 
-    //     // Act
-    //     vm.prank(userAddress);
-    //     registry.applyToStream{value: minimumDeposit}(
-    //         denomination, userRole, memberRegistrationKeys, generateDefaultUTXO()
-    //     );
+        // Act
+        vm.prank(userAddress);
+        registry.applyToStream{value: minimumDeposit}(
+            denomination, userRole, memberRegistrationKeys, generateDefaultUTXO()
+        );
 
-    //     // Assert
-    //     (Committee memory pendingCommittee, uint256 createdAt, uint256 missingData) =
-    //         registry.getPendingCommittee(firstCommittee.streamId);
-    //     assertEqCommittee(pendingCommittee, expectedCommittee, "get pending committee after apply to stream");
-    //     assertNotEq(createdAt, 0, "Created at should not be 0 after apply to stream");
-    //     assertEq(missingData, registry.committeeMemberCount(), "Missing data should be equal to min committee members");
-    //     assertFalse(
-    //         registry.shouldCreateCommitteeHarness(firstCommittee.streamId),
-    //         "Flag should be false before createCommittee call"
-    //     );
-    // }
+        // Assert
+        (Committee memory pendingCommittee, uint256 createdAt, uint256 missingData) =
+            registry.getPendingCommittee(streamId);
+        assertEqCommittee(pendingCommittee, expectedCommittee, "get pending committee after apply to stream");
+        assertNotEq(createdAt, 0, "Created at should not be 0 after apply to stream");
+        assertEq(missingData, registry.committeeMemberCount(), "Missing data should be equal to min committee members");
+        assertFalse(registry.shouldCreateCommitteeHarness(streamId), "Flag should be false before createCommittee call");
+    }
 
     function test_applyToStream_Revert_TooManyCandidatesForStream_Operator() external {
         // Arrange
