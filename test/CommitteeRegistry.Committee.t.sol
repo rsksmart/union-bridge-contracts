@@ -476,7 +476,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
     function test_createCommittee_Success_SameMembersAfterReApply() external {
         // After first committee is ready all the members apply again to the stream and create a new committee.
         // Arrange
-        (Committee memory committee, uint128 committeeId) = setup_completeCommittee();
+        (Committee memory committee,) = setup_completeCommittee();
         StreamDenomination denomination = StreamDenomination(committee.streamId);
 
         assertEq(0, registry.getCommitteeCandidates(denomination, Role.OPERATOR).length);
@@ -518,7 +518,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_createCommittee_Success_AlreadyPendingButNotExpired() external {
         // Arrange
-        (Committee memory expectedCommittee, uint128 committeeId) = setup_pendingCommittee();
+        (Committee memory expectedCommittee,) = setup_pendingCommittee();
         (Committee memory pendingCommittee, uint256 createdAt, uint256 missingData) =
             registry.getPendingCommittee(expectedCommittee.streamId);
         vm.recordLogs();
@@ -558,7 +558,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_getPendingCommittee_Success() external {
         // Arrange
-        (Committee memory expectedCommittee, uint128 committeeId) = setup_pendingCommittee();
+        (Committee memory expectedCommittee,) = setup_pendingCommittee();
 
         // Act
         (Committee memory committee, uint256 createdAt, uint256 missingData) =
@@ -630,7 +630,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_depositAggregatedKey_Revert_InvalidAggregatedKey() external {
         // Arrange
-        (Committee memory expectedCommittee, uint128 committeeId) = setup_pendingCommittee();
+        (, uint128 committeeId) = setup_pendingCommittee();
 
         // Assert
         vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.InvalidAggregatedKey.selector));
@@ -761,7 +761,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_isPendingCommitteeExpired_True_ChangingTimeout() external {
         // Arrange
-        (Committee memory expectedCommittee, uint128 committeeId) = setup_pendingCommittee();
+        (Committee memory expectedCommittee,) = setup_pendingCommittee();
         vm.warp(block.timestamp + 60 seconds); // warp time to make committee expired
 
         // Act
@@ -775,7 +775,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_isPendingCommitteeExpired_True_AfterTimeout() external {
         // Arrange
-        (Committee memory expectedCommittee, uint128 committeeId) = setup_pendingCommittee();
+        (Committee memory expectedCommittee,) = setup_pendingCommittee();
         uint256 timeout = registry.pendingCommitteeTimeout();
         vm.warp(block.timestamp + timeout + 1 seconds); // warp time to make committee expired
 
@@ -789,7 +789,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_createCommittee_Success_AfterExpiredCommittee() external {
         // Arrange
-        (Committee memory expectedCommittee, uint128 committeeId) = setup_pendingCommitteeAndExpire();
+        (Committee memory expectedCommittee,) = setup_pendingCommitteeAndExpire();
 
         // Assert
         vm.expectEmit(address(registry));
@@ -921,7 +921,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_restartPendingCommittee_Success() external {
         // Arrange
-        (Committee memory expectedCommittee, uint128 committeeId) = setup_pendingCommitteeAndExpire();
+        (Committee memory expectedCommittee,) = setup_pendingCommitteeAndExpire();
 
         // Assert
         vm.expectEmit(address(registry));
@@ -947,7 +947,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Arrange
         // This function sets up a pending committee and then expires it
-        (Committee memory expectedCommittee, uint128 committeeId) = setup_pendingCommitteeAndExpire();
+        (Committee memory expectedCommittee,) = setup_pendingCommitteeAndExpire();
         // We ask for current pending committee
         (Committee memory currentPendingCommittee, uint256 createdAt,) =
             registry.getPendingCommittee(expectedCommittee.streamId);
@@ -995,7 +995,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_createCommitteeAfterApplyToStream_Success_NotExpiredPendingCommittee() external {
         // Arrange
-        (Committee memory expectedCommittee, uint128 committeeId) = setup_pendingCommittee();
+        (Committee memory expectedCommittee,) = setup_pendingCommittee();
         StreamDenomination denomination = StreamDenomination(expectedCommittee.streamId);
         (, uint256 createdAt, uint256 missingData) = registry.getPendingCommittee(expectedCommittee.streamId);
         vm.recordLogs();
@@ -1023,7 +1023,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_createCommitteeAfterApplyToStream_Success_ExpiredPendingCommittee() external {
         // Arrange
-        (Committee memory expectedCommittee, uint128 committeeId) = setup_pendingCommitteeAndExpire();
+        (Committee memory expectedCommittee,) = setup_pendingCommitteeAndExpire();
         StreamDenomination denomination = StreamDenomination(expectedCommittee.streamId);
         (, uint256 createdAt,) = registry.getPendingCommittee(expectedCommittee.streamId);
 
@@ -1057,7 +1057,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // ===== Arrange start =====
         // Create a complete committee for initial packet
-        (,, uint128 committeeId) = setup_completeCommitteeAndNewMembers();
+        (,,) = setup_completeCommitteeAndNewMembers();
         uint64 streamId = SETUP_PENDING_COMMITTEE_STREAM_ID;
         StreamDenomination denomination = StreamDenomination(streamId);
         // Need to use last member in the committee to unsubscribe and subscribe to keep same random committee member order
@@ -1519,7 +1519,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_getMemberCommunicationData_Success() public {
         // Arrange
-        (Committee memory expectedCommittee, uint128 committeeId) = setup_pendingCommittee();
+        (Committee memory expectedCommittee,) = setup_pendingCommittee();
         uint256 memberIndex = 0;
         address memberAddress = expectedCommittee.members[memberIndex].memberAddress;
 

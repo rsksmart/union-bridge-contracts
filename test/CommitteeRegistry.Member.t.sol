@@ -740,7 +740,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_unsubscribeFromStream_Revert_MemberIsInPendingCommittee() external {
         // Arrange
-        (Committee memory expectedCommittee, uint128 committeeId) = setup_pendingCommittee();
+        (Committee memory expectedCommittee,) = setup_pendingCommittee();
         address user = vm.addr(1);
 
         // Assert
@@ -1234,7 +1234,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_integration_onPacketClosed_reapplyTrue() external {
         // Arrange
-        (Committee memory committee, uint128 committeeId) = setup_completeCommittee();
+        (Committee memory committee,) = setup_completeCommittee();
         StreamDenomination denomination = StreamDenomination(committee.streamId);
 
         // Perform peg flow for all slots in the packet except the last one
@@ -1288,7 +1288,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_integration_onPacketClosed_fullOfCandidates() external {
         // Arrange
-        (Committee memory committee, uint128 committeeId) = setup_completeCommittee();
+        (Committee memory committee,) = setup_completeCommittee();
         StreamDenomination denomination = StreamDenomination(committee.streamId);
         uint256 numWatchtowers = Constants.MAX_CANDIDATES_SIZE_PER_ROLE;
         uint256 numOperators = Constants.MAX_CANDIDATES_SIZE_PER_ROLE;
@@ -1352,7 +1352,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_integration_onPacketClosed_reapplyFalse() external {
         // Arrange
-        (Committee memory committee, uint128 committeeId) = setup_completeCommittee();
+        (Committee memory committee,) = setup_completeCommittee();
         StreamDenomination denomination = StreamDenomination(committee.streamId);
 
         // Perform peg flow for all slots in the packet except the last one
@@ -1409,7 +1409,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_integration_onPacketClosed_alreadyCandidate() external {
         // Arrange
-        (Committee memory committee, uint128 committeeId) = setup_completeCommittee();
+        (Committee memory committee,) = setup_completeCommittee();
         StreamDenomination denomination = StreamDenomination(committee.streamId);
 
         // Perform peg flow for all slots in the packet except the last one
