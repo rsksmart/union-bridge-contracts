@@ -590,12 +590,13 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         }
 
         shouldCreateCommittee[_streamId] = false;
-        uint128 committeeId = uint128(uint256(keccak256(abi.encode(_streamId, block.timestamp))));
+        uint128 committeeId = uint128(uint256(keccak256(abi.encode(_streamId, block.number))));
         pendingCommittees[_streamId] = committeeId;
 
         committeesById[committeeId].createdAt = block.timestamp;
         committeesById[committeeId].missingData = uint16(committeeMembers.length);
         committeesById[committeeId].missingCommunicationData = uint16(committeeMembers.length);
+        committeesById[committeeId].aggregatedKey = bytes32(0);
 
         // Initialize the committee members here.
         // No need to initialize aggregatedKey, since it will be set by the members.
@@ -606,7 +607,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
             // Initialize committee users pending data
             committeesData[committeeId][committeeMembers[i].memberAddress].inCommittee = true;
         }
-        emit NewPendingCommittee(_streamId, committeesById[committeeId]);
+        emit NewPendingCommittee(committeeId, committeesById[committeeId]);
         return PendingCommitteeStatus.SUCCESS;
     }
 
@@ -786,6 +787,12 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     }
 
     function _deletePendingCommittee(uint64 _streamId) internal {
+        // for (uint256 i = 0; i < committeesById[pendingCommittees[_streamId]].members.length; i++) {
+        //     address memberAddress = committeesById[pendingCommittees[_streamId]].members[i].memberAddress;
+        //     delete committeesData[pendingCommittees[_streamId]][memberAddress];
+        // }
+
+        // delete committeesById[pendingCommittees[_streamId]];
         pendingCommittees[_streamId] = 0; // Reset the pending committee ID
     }
 

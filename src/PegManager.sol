@@ -528,6 +528,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             _pegoutTxSPVProof.blockHash,
             requestPegoutTxHash,
             acceptPeginTxHash,
+            pegoutTempInfo[acceptPeginTxHash].committeeId,
             streamInfo.streamId,
             streamInfo.packetNumber,
             streamInfo.slotId
@@ -709,6 +710,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             _pegoutTxSPVProof.blockHash,
             txHash,
             acceptPeginTxHash,
+            pegoutInfo.committeeId,
             streamInfo.streamId,
             streamInfo.packetNumber,
             streamInfo.slotId

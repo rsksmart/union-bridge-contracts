@@ -111,7 +111,7 @@ contract TestSignatureManager is Test, HelperContract {
         assertEq(missingNonces, 0, "missingNonces should be equal to 1");
         assertEq(
             committeeId,
-            COMMITTEE_ID_STREAM_1_PACKET_0,
+            COMMITTEE_ID_STREAM_1_COMMITTEE_1,
             "committeeId should be equal to the committee id that was created initially"
         );
 
@@ -172,7 +172,7 @@ contract TestSignatureManager is Test, HelperContract {
             signatureManager.getSignaturesStatus(hashToSign);
         assertEq(missingSignatures, 0, "missingSignatures should be equal to 0");
         assertEq(missingNonces, 0, "missingNonces should be equal to 0");
-        assertEq(committeeId, COMMITTEE_ID_STREAM_1_PACKET_0, "aggregatedKey should be equal to the committee key");
+        assertEq(committeeId, COMMITTEE_ID_STREAM_1_COMMITTEE_1, "aggregatedKey should be equal to the committee key");
         SignatureData[] memory signatures = signatureManager.getPartialSignatures(hashToSign);
         assertEq(
             signatures.length,
@@ -279,7 +279,9 @@ contract TestSignatureManager is Test, HelperContract {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(
-                ISignatureManager.MemberNotFoundInCommittee.selector, COMMITTEE_ID_STREAM_1_PACKET_0, nonCommitteeMember
+                ISignatureManager.MemberNotFoundInCommittee.selector,
+                COMMITTEE_ID_STREAM_1_COMMITTEE_1,
+                nonCommitteeMember
             )
         );
 
@@ -305,7 +307,9 @@ contract TestSignatureManager is Test, HelperContract {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(
-                ISignatureManager.MemberNotFoundInCommittee.selector, COMMITTEE_ID_STREAM_1_PACKET_0, nonCommitteeMember
+                ISignatureManager.MemberNotFoundInCommittee.selector,
+                COMMITTEE_ID_STREAM_1_COMMITTEE_1,
+                nonCommitteeMember
             )
         );
 
@@ -343,7 +347,7 @@ contract TestSignatureManager is Test, HelperContract {
 
         // Act
         vm.prank(address(pm));
-        signatureManager.initSignatures(hashToSign, COMMITTEE_ID_STREAM_1_PACKET_0);
+        signatureManager.initSignatures(hashToSign, COMMITTEE_ID_STREAM_1_COMMITTEE_1);
 
         // Assert
         (uint8 missingSignatures, uint8 missingNonces,) = signatureManager.getSignaturesStatus(hashToSign);
@@ -373,12 +377,12 @@ contract TestSignatureManager is Test, HelperContract {
 
         // Act
         vm.prank(address(pm));
-        signatureManager.initSignatures(hashToSign, COMMITTEE_ID_STREAM_1_PACKET_0);
+        signatureManager.initSignatures(hashToSign, COMMITTEE_ID_STREAM_1_COMMITTEE_1);
     }
 
     function test_initSignatures_Revert_SignaturesAlreadyInitialized() external {
         // Arrange
-        uint128 committeeId = COMMITTEE_ID_STREAM_1_PACKET_0;
+        uint128 committeeId = COMMITTEE_ID_STREAM_1_COMMITTEE_1;
         bytes32 hashToSign = 0x1000000000000000000000000000000000000000000000000000000000000001;
 
         // First time initializing the signatures
@@ -414,7 +418,7 @@ contract TestSignatureManager is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(IAccessControl.UnauthorizedAccount.selector, address(this)));
 
         // Act
-        signatureManager.initSignatures(hashToSign, COMMITTEE_ID_STREAM_1_PACKET_0);
+        signatureManager.initSignatures(hashToSign, COMMITTEE_ID_STREAM_1_COMMITTEE_1);
     }
 
     function setup_initSignatures() internal returns (bytes32) {
@@ -422,7 +426,7 @@ contract TestSignatureManager is Test, HelperContract {
 
         // Act
         vm.prank(address(pm));
-        signatureManager.initSignatures(hashToSign, COMMITTEE_ID_STREAM_1_PACKET_0);
+        signatureManager.initSignatures(hashToSign, COMMITTEE_ID_STREAM_1_COMMITTEE_1);
 
         return hashToSign;
     }
@@ -485,7 +489,7 @@ contract TestSignatureManager is Test, HelperContract {
 
         // Act
         vm.prank(address(pm));
-        signatureManager.initOperatorTakeTxHashes(acceptPeginTxHash, COMMITTEE_ID_STREAM_1_PACKET_0);
+        signatureManager.initOperatorTakeTxHashes(acceptPeginTxHash, COMMITTEE_ID_STREAM_1_COMMITTEE_1);
 
         // Assert
         OperatorTakeData[] memory operatorTakeData = signatureManager.getOperatorTakeData(acceptPeginTxHash);
@@ -493,7 +497,7 @@ contract TestSignatureManager is Test, HelperContract {
         assertEq(missingHashes, operatorsCount, "missingHashes should be equal to operatorsCount");
 
         uint128 committeeId = signatureManager.getCommitteeIdByAcceptPeginTxHash(acceptPeginTxHash);
-        assertEq(committeeId, COMMITTEE_ID_STREAM_1_PACKET_0, "committeeId should match");
+        assertEq(committeeId, COMMITTEE_ID_STREAM_1_COMMITTEE_1, "committeeId should match");
     }
 
     function test_addOperatorTakeTxHash_Success() external {
@@ -563,7 +567,9 @@ contract TestSignatureManager is Test, HelperContract {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(
-                ISignatureManager.MemberNotFoundInCommittee.selector, COMMITTEE_ID_STREAM_1_PACKET_0, notMemberAddress
+                ISignatureManager.MemberNotFoundInCommittee.selector,
+                COMMITTEE_ID_STREAM_1_COMMITTEE_1,
+                notMemberAddress
             )
         );
 
@@ -582,7 +588,7 @@ contract TestSignatureManager is Test, HelperContract {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(
-                ISignatureManager.MemberIsNotOperator.selector, COMMITTEE_ID_STREAM_1_PACKET_0, notOperatorAddress
+                ISignatureManager.MemberIsNotOperator.selector, COMMITTEE_ID_STREAM_1_COMMITTEE_1, notOperatorAddress
             )
         );
 

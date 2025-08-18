@@ -266,9 +266,11 @@ contract TestPegManager is Test, HelperContract {
         BtcTransaction memory btcTransaction = getBtcAcceptPeginTx(peginTx);
         // Create Pegin accepted tx struct information
         BtcTxSPVProof memory peginAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
+        vm.roll(BLOCK_COMMITTEE_2);
+        vm.warp(BLOCK_COMMITTEE_2);
 
         vm.expectEmit(address(registry));
-        emit ICommitteeRegistry.NewPendingCommittee(setupStreamId, expectedCommittee);
+        emit ICommitteeRegistry.NewPendingCommittee(COMMITTEE_ID_STREAM_1_COMMITTEE_2, expectedCommittee);
 
         // Act
         pm.acceptPegin(peginAcceptedTxSPVProof);
@@ -280,8 +282,9 @@ contract TestPegManager is Test, HelperContract {
 
         // Update expected committee with aggregated key
         expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY;
+        expectedCommittee.missingData = 0;
         vm.expectEmit(address(registry));
-        emit ICommitteeRegistry.NewCommittee(COMMITTEE_ID_STREAM_1_PACKET_1, expectedCommittee);
+        emit ICommitteeRegistry.NewCommittee(COMMITTEE_ID_STREAM_1_COMMITTEE_2, expectedCommittee);
 
         vm.expectEmit(address(streamManager));
         emit IStreamManager.PacketCreated(setupStreamId, 1);

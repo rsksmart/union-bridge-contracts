@@ -13,6 +13,9 @@ import {
 
 /// @notice Wrapper for testing CommitteeRegistry
 contract CommitteeRegistryHarness is CommitteeRegistry {
+    // This should be the same as in the HelperCOntract.sol
+    uint128 constant COMMITTEE_ID_STREAM_1_COMMITTEE_1 = 206898896734299866373660992622464848465;
+
     function initialize(address _initialOwner) public override initializer {
         CommitteeRegistry.initialize(_initialOwner);
     }
@@ -61,7 +64,7 @@ contract CommitteeRegistryHarness is CommitteeRegistry {
             _selectCommitteeLastMembersHarness(_streamId, numWatchtowers, numOperators);
 
         shouldCreateCommittee[_streamId] = false;
-        uint128 committeeId = uint128(uint256(keccak256(abi.encode(_streamId, block.timestamp))));
+        uint128 committeeId = COMMITTEE_ID_STREAM_1_COMMITTEE_1; // For testing, we use a fixed committee ID.
         pendingCommittees[_streamId] = committeeId;
         committeesById[committeeId].createdAt = block.timestamp;
         committeesById[committeeId].missingData = uint16(committeeMembers.length);
@@ -75,7 +78,7 @@ contract CommitteeRegistryHarness is CommitteeRegistry {
             // Initialize committee users pending data
             committeesData[committeeId][committeeMembers[i].memberAddress].inCommittee = true;
         }
-        emit NewPendingCommittee(_streamId, committeesById[committeeId]);
+        emit NewPendingCommittee(committeeId, committeesById[committeeId]);
         return committeeMembers;
     }
 

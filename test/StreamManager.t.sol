@@ -81,7 +81,7 @@ contract TestStreamManager is Test, HelperContract {
 
         // Act
         vm.prank(address(registry));
-        streamManager.createNewPacket(setupStreamId, COMMITTEE_ID_STREAM_1_PACKET_1, committeePubKey);
+        streamManager.createNewPacket(setupStreamId, COMMITTEE_ID_STREAM_1_COMMITTEE_2, committeePubKey);
 
         // Assert
         Packet memory packet = streamManager.getPacket(setupStreamId, expectedPacketNumber);
@@ -154,7 +154,9 @@ contract TestStreamManager is Test, HelperContract {
         uint256 currentPacketCommitteeId = streamManager.getAvailablePeginCommitteeId(setupStreamId);
 
         // Assert
-        assertEq(currentPacketCommitteeId, COMMITTEE_ID_STREAM_1_PACKET_0, "Current packet committee ID should match");
+        assertEq(
+            currentPacketCommitteeId, COMMITTEE_ID_STREAM_1_COMMITTEE_1, "Current packet committee ID should match"
+        );
     }
 
     function test_getAvailablePeginCommitteeId_Success_NoCommitteeForCurrentPacket() external {

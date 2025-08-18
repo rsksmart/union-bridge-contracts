@@ -27,9 +27,13 @@ abstract contract HelperContract is Test, TestUtils {
     bytes32 internal constant BTC_REIMBURSEMENT_PUBKEY =
         0x7d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f;
 
-    uint128 constant COMMITTEE_ID_STREAM_1_PACKET_0 = 206898896734299866373660992622464848465;
-    uint128 constant COMMITTEE_ID_STREAM_1_PACKET_1 = 1001;
+    uint128 constant COMMITTEE_ID_STREAM_1_COMMITTEE_1 = 118226726889222519722182588745663749063;
+    uint128 constant COMMITTEE_ID_STREAM_1_COMMITTEE_2 = 9059004642890852444280677687625412743;
+    uint128 constant COMMITTEE_ID_STREAM_1_COMMITTEE_3 = 252028015853910751738154200832734646518;
     bytes32 constant COMMITTEE_PUB_KEY = 0xd1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d;
+    uint256 constant BLOCK_COMMITTEE_1 = 10;
+    uint256 constant BLOCK_COMMITTEE_2 = 100000;
+    uint256 constant BLOCK_COMMITTEE_3 = 200000;
 
     uint256 constant TAKE_0_TIMEOUT_DEFAULT = 2 hours;
     uint256 constant TAKE_1_TIMEOUT_DEFAULT = 2 hours;
@@ -47,7 +51,6 @@ abstract contract HelperContract is Test, TestUtils {
 
     // Arrange
     uint64 internal constant VALUE = 1_000_000; // 0.01 BTC
-    uint256 internal constant BLOCK_TIMESTAMP_FOR_DETERMINISTIC_COMMITTEE = 1000; // Arbitrary timestamp for random committee selection. Changing it will change all random committees
     uint256 registeredMembersCounter = 0; // Counter to keep track of registered members
 
     function runTestDeployScript() internal {
@@ -406,7 +409,8 @@ abstract contract HelperContract is Test, TestUtils {
     function setup_pendingCommittee() internal returns (Committee memory expectedCommittee, uint64 streamId) {
         StreamDenomination denomination = StreamDenomination._0_01BTC;
         streamId = 1;
-        vm.warp(BLOCK_TIMESTAMP_FOR_DETERMINISTIC_COMMITTEE);
+        vm.warp(BLOCK_COMMITTEE_1);
+        vm.roll(BLOCK_COMMITTEE_1);
         uint256 numOperators = registry.committeeMemberCount() / 2;
         uint256 numWatchtowers = registry.committeeMemberCount() - numOperators;
         setup_registerNewMembers(numWatchtowers, numOperators, denomination);
@@ -415,6 +419,8 @@ abstract contract HelperContract is Test, TestUtils {
 
     function setup_pendingCommitteeAndExpire() internal returns (Committee memory expectedCommittee, uint64 streamId) {
         (, streamId) = setup_pendingCommittee();
+        vm.warp(BLOCK_COMMITTEE_3);
+        vm.roll(BLOCK_COMMITTEE_3);
         expectedCommittee = setup_getExpectedCommitteeAfterExpire();
     }
 
@@ -434,6 +440,8 @@ abstract contract HelperContract is Test, TestUtils {
         (firstCommittee, streamId) = setup_completeCommittee();
 
         // Register new members
+        vm.warp(BLOCK_COMMITTEE_2);
+        vm.roll(BLOCK_COMMITTEE_2);
         uint256 numOperators = registry.committeeMemberCount() / 2;
         uint256 numWatchtowers = registry.committeeMemberCount() - numOperators;
         setup_registerNewMembers(numWatchtowers, numOperators, StreamDenomination(streamId));
@@ -444,56 +452,53 @@ abstract contract HelperContract is Test, TestUtils {
         return (firstCommittee, secondCommittee, streamId);
     }
 
-    function setup_getExpectedSecondCommittee() internal returns (Committee memory) {
-        vm.warp(BLOCK_TIMESTAMP_FOR_DETERMINISTIC_COMMITTEE);
-
+    function setup_getExpectedSecondCommittee() internal view returns (Committee memory) {
         Committee memory committee = Committee({
             aggregatedKey: bytes32(0),
             members: new CommitteeMember[](registry.committeeMemberCount()),
             leaderAddress: address(0),
             operatorTakeIndex: 0,
-            createdAt: block.timestamp,
+            createdAt: BLOCK_COMMITTEE_2,
             missingData: 10,
             missingCommunicationData: 10
         });
 
-        committee.members[0] = CommitteeMember({memberAddress: vm.addr(17 + 1), role: Role.OPERATOR});
+        committee.members[0] = CommitteeMember({memberAddress: vm.addr(19 + 1), role: Role.OPERATOR});
         committee.members[1] = CommitteeMember({memberAddress: vm.addr(16 + 1), role: Role.OPERATOR});
         committee.members[2] = CommitteeMember({memberAddress: vm.addr(18 + 1), role: Role.OPERATOR});
-        committee.members[3] = CommitteeMember({memberAddress: vm.addr(19 + 1), role: Role.OPERATOR});
+        committee.members[3] = CommitteeMember({memberAddress: vm.addr(17 + 1), role: Role.OPERATOR});
         committee.members[4] = CommitteeMember({memberAddress: vm.addr(15 + 1), role: Role.OPERATOR});
-        committee.members[5] = CommitteeMember({memberAddress: vm.addr(12 + 1), role: Role.WATCHTOWER});
+        committee.members[5] = CommitteeMember({memberAddress: vm.addr(14 + 1), role: Role.WATCHTOWER});
         committee.members[6] = CommitteeMember({memberAddress: vm.addr(11 + 1), role: Role.WATCHTOWER});
         committee.members[7] = CommitteeMember({memberAddress: vm.addr(13 + 1), role: Role.WATCHTOWER});
-        committee.members[8] = CommitteeMember({memberAddress: vm.addr(14 + 1), role: Role.WATCHTOWER});
+        committee.members[8] = CommitteeMember({memberAddress: vm.addr(12 + 1), role: Role.WATCHTOWER});
         committee.members[9] = CommitteeMember({memberAddress: vm.addr(10 + 1), role: Role.WATCHTOWER});
 
         return committee;
     }
 
-    function setup_getExpectedCommitteeBeforeExpire() internal returns (Committee memory) {
+    function setup_getExpectedCommitteeBeforeExpire() internal view returns (Committee memory) {
         // NOTE: This function is tied to the initial setup of members that it's 0 members
-        vm.warp(BLOCK_TIMESTAMP_FOR_DETERMINISTIC_COMMITTEE);
         Committee memory committee = Committee({
             aggregatedKey: bytes32(0),
             members: new CommitteeMember[](registry.committeeMemberCount()),
             leaderAddress: address(0),
             operatorTakeIndex: 0,
-            createdAt: block.timestamp,
+            createdAt: BLOCK_COMMITTEE_1,
             missingData: 10,
             missingCommunicationData: 10
         });
 
-        committee.members[0] = CommitteeMember({memberAddress: vm.addr(7 + 1), role: Role.OPERATOR});
-        committee.members[1] = CommitteeMember({memberAddress: vm.addr(6 + 1), role: Role.OPERATOR});
-        committee.members[2] = CommitteeMember({memberAddress: vm.addr(8 + 1), role: Role.OPERATOR});
-        committee.members[3] = CommitteeMember({memberAddress: vm.addr(9 + 1), role: Role.OPERATOR});
-        committee.members[4] = CommitteeMember({memberAddress: vm.addr(5 + 1), role: Role.OPERATOR});
-        committee.members[5] = CommitteeMember({memberAddress: vm.addr(2 + 1), role: Role.WATCHTOWER});
-        committee.members[6] = CommitteeMember({memberAddress: vm.addr(1 + 1), role: Role.WATCHTOWER});
-        committee.members[7] = CommitteeMember({memberAddress: vm.addr(3 + 1), role: Role.WATCHTOWER});
-        committee.members[8] = CommitteeMember({memberAddress: vm.addr(4 + 1), role: Role.WATCHTOWER});
-        committee.members[9] = CommitteeMember({memberAddress: vm.addr(0 + 1), role: Role.WATCHTOWER});
+        committee.members[0] = CommitteeMember({memberAddress: vm.addr(6 + 1), role: Role.OPERATOR});
+        committee.members[1] = CommitteeMember({memberAddress: vm.addr(8 + 1), role: Role.OPERATOR});
+        committee.members[2] = CommitteeMember({memberAddress: vm.addr(7 + 1), role: Role.OPERATOR});
+        committee.members[3] = CommitteeMember({memberAddress: vm.addr(5 + 1), role: Role.OPERATOR});
+        committee.members[4] = CommitteeMember({memberAddress: vm.addr(9 + 1), role: Role.OPERATOR});
+        committee.members[5] = CommitteeMember({memberAddress: vm.addr(1 + 1), role: Role.WATCHTOWER});
+        committee.members[6] = CommitteeMember({memberAddress: vm.addr(3 + 1), role: Role.WATCHTOWER});
+        committee.members[7] = CommitteeMember({memberAddress: vm.addr(2 + 1), role: Role.WATCHTOWER});
+        committee.members[8] = CommitteeMember({memberAddress: vm.addr(0 + 1), role: Role.WATCHTOWER});
+        committee.members[9] = CommitteeMember({memberAddress: vm.addr(4 + 1), role: Role.WATCHTOWER});
 
         return committee;
     }
@@ -505,33 +510,28 @@ abstract contract HelperContract is Test, TestUtils {
         registry.registerMemberHarness(user, memberRegistrationKeys);
     }
 
-    function setup_getExpectedCommitteeAfterExpire() internal returns (Committee memory) {
-        vm.warp(BLOCK_TIMESTAMP_FOR_DETERMINISTIC_COMMITTEE);
-        // Modifying this timeout will change committee member order
-        uint256 timeout = 7 days;
-        vm.warp(block.timestamp + timeout); // warp time to make committee expired
-
+    function setup_getExpectedCommitteeAfterExpire() internal view returns (Committee memory) {
         // NOTE: member order is tied to the timeout used in setup_pendingCommitteeAndExpire()
         Committee memory committee = Committee({
             aggregatedKey: bytes32(0),
             members: new CommitteeMember[](registry.committeeMemberCount()),
             leaderAddress: address(0),
             operatorTakeIndex: 0,
-            createdAt: block.timestamp,
+            createdAt: BLOCK_COMMITTEE_3,
             missingData: 10,
             missingCommunicationData: 10
         });
 
         committee.members[0] = CommitteeMember({memberAddress: vm.addr(7 + 1), role: Role.OPERATOR});
         committee.members[1] = CommitteeMember({memberAddress: vm.addr(8 + 1), role: Role.OPERATOR});
-        committee.members[2] = CommitteeMember({memberAddress: vm.addr(9 + 1), role: Role.OPERATOR});
-        committee.members[3] = CommitteeMember({memberAddress: vm.addr(5 + 1), role: Role.OPERATOR});
-        committee.members[4] = CommitteeMember({memberAddress: vm.addr(6 + 1), role: Role.OPERATOR});
+        committee.members[2] = CommitteeMember({memberAddress: vm.addr(6 + 1), role: Role.OPERATOR});
+        committee.members[3] = CommitteeMember({memberAddress: vm.addr(9 + 1), role: Role.OPERATOR});
+        committee.members[4] = CommitteeMember({memberAddress: vm.addr(5 + 1), role: Role.OPERATOR});
         committee.members[5] = CommitteeMember({memberAddress: vm.addr(2 + 1), role: Role.WATCHTOWER});
         committee.members[6] = CommitteeMember({memberAddress: vm.addr(3 + 1), role: Role.WATCHTOWER});
-        committee.members[7] = CommitteeMember({memberAddress: vm.addr(4 + 1), role: Role.WATCHTOWER});
-        committee.members[8] = CommitteeMember({memberAddress: vm.addr(0 + 1), role: Role.WATCHTOWER});
-        committee.members[9] = CommitteeMember({memberAddress: vm.addr(1 + 1), role: Role.WATCHTOWER});
+        committee.members[7] = CommitteeMember({memberAddress: vm.addr(1 + 1), role: Role.WATCHTOWER});
+        committee.members[8] = CommitteeMember({memberAddress: vm.addr(4 + 1), role: Role.WATCHTOWER});
+        committee.members[9] = CommitteeMember({memberAddress: vm.addr(0 + 1), role: Role.WATCHTOWER});
 
         return committee;
     }
@@ -579,7 +579,7 @@ abstract contract HelperContract is Test, TestUtils {
         vm.warp(createdAt + TAKE_0_TIMEOUT_DEFAULT + 1);
         // This depende on how they have been registered. First registered group are the watchtowers
         uint256 firstHonestOpIndex = registry.committeeMemberCount() / 2 + 1;
-        operatorAddress = vm.addr(firstHonestOpIndex + 1);
+        operatorAddress = vm.addr(firstHonestOpIndex + 3);
 
         // Add just 2 signatures for the first and second operators
         setup_addMemberSignature_MultipleMembers(setup.pegoutSignatureHash, firstHonestOpIndex, 2);
@@ -600,7 +600,7 @@ abstract contract HelperContract is Test, TestUtils {
             userPubKey: setup.userPubKey,
             createdAt: createdAt,
             operatorTakeUpdatedAt: block.timestamp, // Updated when triggerOperatorTake is called
-            committeeId: COMMITTEE_ID_STREAM_1_PACKET_0,
+            committeeId: COMMITTEE_ID_STREAM_1_COMMITTEE_1,
             takeOperatorAddress: operatorAddress,
             takeOperatorPubKey: registry.getMemberTakePubKey(operatorAddress)
         });
