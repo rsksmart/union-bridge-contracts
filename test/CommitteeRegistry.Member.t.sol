@@ -740,19 +740,21 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_unsubscribeFromStream_Revert_MemberIsInPendingCommittee() external {
         // Arrange
-        (, uint64 streamId) = setup_pendingCommittee();
+        (Committee memory expectedCommittee, uint128 committeeId) = setup_pendingCommittee();
         address user = vm.addr(1);
 
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(
-                ICommitteeRegistry.MemberIsInPendingCommittee.selector, user, StreamDenomination(streamId)
+                ICommitteeRegistry.MemberIsInPendingCommittee.selector,
+                user,
+                StreamDenomination(expectedCommittee.streamId)
             )
         );
 
         // Act
         vm.prank(user);
-        registry.unsubscribeFromStream(StreamDenomination(streamId));
+        registry.unsubscribeFromStream(StreamDenomination(expectedCommittee.streamId));
     }
 
     function test_withdrawAvailableBalance_Success() external {
@@ -1232,8 +1234,8 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_integration_onPacketClosed_reapplyTrue() external {
         // Arrange
-        (Committee memory committee, uint64 streamId) = setup_completeCommittee();
-        StreamDenomination denomination = StreamDenomination(streamId);
+        (Committee memory committee, uint128 committeeId) = setup_completeCommittee();
+        StreamDenomination denomination = StreamDenomination(committee.streamId);
 
         // Perform peg flow for all slots in the packet except the last one
         setup_multiplePegFlows(Constants.SLOTS_PER_PACKET - 1);
@@ -1286,8 +1288,8 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_integration_onPacketClosed_fullOfCandidates() external {
         // Arrange
-        (Committee memory committee, uint64 streamId) = setup_completeCommittee();
-        StreamDenomination denomination = StreamDenomination(streamId);
+        (Committee memory committee, uint128 committeeId) = setup_completeCommittee();
+        StreamDenomination denomination = StreamDenomination(committee.streamId);
         uint256 numWatchtowers = Constants.MAX_CANDIDATES_SIZE_PER_ROLE;
         uint256 numOperators = Constants.MAX_CANDIDATES_SIZE_PER_ROLE;
         // Register max number of candidates for each role
@@ -1350,8 +1352,8 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_integration_onPacketClosed_reapplyFalse() external {
         // Arrange
-        (Committee memory committee, uint64 streamId) = setup_completeCommittee();
-        StreamDenomination denomination = StreamDenomination(streamId);
+        (Committee memory committee, uint128 committeeId) = setup_completeCommittee();
+        StreamDenomination denomination = StreamDenomination(committee.streamId);
 
         // Perform peg flow for all slots in the packet except the last one
         setup_multiplePegFlows(Constants.SLOTS_PER_PACKET - 1);
@@ -1407,8 +1409,8 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_integration_onPacketClosed_alreadyCandidate() external {
         // Arrange
-        (Committee memory committee, uint64 streamId) = setup_completeCommittee();
-        StreamDenomination denomination = StreamDenomination(streamId);
+        (Committee memory committee, uint128 committeeId) = setup_completeCommittee();
+        StreamDenomination denomination = StreamDenomination(committee.streamId);
 
         // Perform peg flow for all slots in the packet except the last one
         setup_multiplePegFlows(Constants.SLOTS_PER_PACKET - 1);

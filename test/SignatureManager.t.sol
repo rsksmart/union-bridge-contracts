@@ -13,14 +13,25 @@ import {
 import {IAccessControl} from "src/interfaces/IAccessControl.sol";
 import {SignatureData, ISignatureManager, OperatorTakeData} from "src/interfaces/ISignatureManager.sol";
 import {Constants} from "src/libraries/Constants.sol";
+import {Committee} from "src/interfaces/ICommitteeRegistry.sol";
 
 contract TestSignatureManager is Test, HelperContract {
-    uint64 internal setupStreamId;
+    uint128 internal setupCommitteeId;
+    Committee internal setupExpectedCommittee;
     bytes32 constant ACCEPT_PEGIN_TX_HASH = hex"325bd7c332003b6f86b54cc1fa15429cc47124e5ec9c9900043ecbc61de38095";
 
     function setUp() external {
         runTestDeployScript();
-        (, setupStreamId) = setup_completeCommittee();
+        (Committee memory expectedCommittee, uint128 committeeId) = setup_completeCommittee();
+
+        setupExpectedCommittee.aggregatedKey = expectedCommittee.aggregatedKey;
+        setupExpectedCommittee.leaderAddress = expectedCommittee.leaderAddress;
+        setupExpectedCommittee.streamId = expectedCommittee.streamId;
+        for (uint64 i = 0; i < expectedCommittee.members.length; i++) {
+            setupExpectedCommittee.members.push(expectedCommittee.members[i]);
+        }
+
+        setupCommitteeId = committeeId;
     }
 
     // we only check the revert case since the success cases are being checked in the _addMemberSignaturePegout tests
@@ -437,7 +448,7 @@ contract TestSignatureManager is Test, HelperContract {
 
     function setup_initOperatorTakeTxHashes() internal returns (bytes32) {
         // initOperatorTakeTxHashes is executed when a new pegin request is created
-        setup_multipleRequestAndAcceptPeginFlows(1, setupStreamId);
+        setup_multipleRequestAndAcceptPeginFlows(1);
         // Real acceptPeginTxHash value for first request
         bytes32 acceptPeginTxHash = ACCEPT_PEGIN_TX_HASH;
         return acceptPeginTxHash;
@@ -562,7 +573,9 @@ contract TestSignatureManager is Test, HelperContract {
         uint256 notMemberIndex = registry.committeeMemberCount();
         address notMemberAddress = vm.addr(notMemberIndex + 1);
         MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(notMemberIndex + 1);
-        setup_applyToStream(StreamDenomination(setupStreamId), notMemberAddress, memberRegistrationKeys, Role.OPERATOR);
+        setup_applyToStream(
+            StreamDenomination(setupExpectedCommittee.streamId), notMemberAddress, memberRegistrationKeys, Role.OPERATOR
+        );
 
         // Assert
         vm.expectRevert(

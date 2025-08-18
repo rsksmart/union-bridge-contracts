@@ -54,20 +54,21 @@ contract CommitteeRegistryHarness is CommitteeRegistry {
 
     function createCommitteeWithLastCandidatesHarness(uint64 _streamId, uint256 numWatchtowers, uint256 numOperators)
         public
-        returns (CommitteeMember[] memory)
+        returns (CommitteeMember[] memory committeeMembers, uint128 committeeId)
     {
         // Delete any pending committee for the stream before creating a new one.
         _deletePendingCommittee(_streamId);
 
         // NOTE: This method is called from the pegManager, so we should not revert.
-        (CommitteeMember[] memory committeeMembers,) =
-            _selectCommitteeLastMembersHarness(_streamId, numWatchtowers, numOperators);
+        (committeeMembers,) = _selectCommitteeLastMembersHarness(_streamId, numWatchtowers, numOperators);
 
         shouldCreateCommittee[_streamId] = false;
-        uint128 committeeId = COMMITTEE_ID_STREAM_1_COMMITTEE_1; // For testing, we use a fixed committee ID.
+        committeeId = COMMITTEE_ID_STREAM_1_COMMITTEE_1; // For testing, we use a fixed committee ID.
         pendingCommittees[_streamId] = committeeId;
         committeesById[committeeId].createdAt = block.timestamp;
         committeesById[committeeId].missingData = uint16(committeeMembers.length);
+        committeesById[committeeId].isPending = true;
+        committeesById[committeeId].streamId = _streamId;
 
         // Initialize the committee members here.
         // No need to initialize aggregatedKey, since it will be set by the members.
@@ -79,7 +80,6 @@ contract CommitteeRegistryHarness is CommitteeRegistry {
             committeesData[committeeId][committeeMembers[i].memberAddress].inCommittee = true;
         }
         emit NewPendingCommittee(committeeId, committeesById[committeeId]);
-        return committeeMembers;
     }
 
     /// @notice Harness function to directly access stored communication data for testing

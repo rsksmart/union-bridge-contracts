@@ -9,13 +9,16 @@ import {StreamPosition, PegStatus} from "src/interfaces/IPegManager.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Role} from "src/interfaces/ICommitteeRegistry.sol";
+import {Committee} from "src/interfaces/ICommitteeRegistry.sol";
 
 contract TestStreamManager is Test, HelperContract {
     uint64 internal setupStreamId;
 
     function setUp() external {
         runTestDeployScript();
-        (, setupStreamId) = setup_completeCommittee();
+        (Committee memory expectedCommittee,) = setup_completeCommittee();
+
+        setupStreamId = expectedCommittee.streamId;
     }
 
     function test_lockSlot_Success() external {
@@ -148,7 +151,7 @@ contract TestStreamManager is Test, HelperContract {
 
     function test_getAvailablePeginCommitteeId_Success() external {
         // Arrange
-        setup_multipleRequestAndAcceptPeginFlows(Constants.SLOTS_PER_PACKET - 1, setupStreamId);
+        setup_multipleRequestAndAcceptPeginFlows(Constants.SLOTS_PER_PACKET - 1);
 
         // Act
         uint256 currentPacketCommitteeId = streamManager.getAvailablePeginCommitteeId(setupStreamId);
@@ -161,7 +164,7 @@ contract TestStreamManager is Test, HelperContract {
 
     function test_getAvailablePeginCommitteeId_Success_NoCommitteeForCurrentPacket() external {
         // Arrange
-        setup_multipleRequestAndAcceptPeginFlows(Constants.SLOTS_PER_PACKET, setupStreamId);
+        setup_multipleRequestAndAcceptPeginFlows(Constants.SLOTS_PER_PACKET);
 
         // Act
         uint256 currentPacketCommitteeId = streamManager.getAvailablePeginCommitteeId(setupStreamId);

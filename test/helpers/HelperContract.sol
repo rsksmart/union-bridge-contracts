@@ -34,6 +34,8 @@ abstract contract HelperContract is Test, TestUtils {
     uint256 constant BLOCK_COMMITTEE_1 = 10;
     uint256 constant BLOCK_COMMITTEE_2 = 100000;
     uint256 constant BLOCK_COMMITTEE_3 = 200000;
+    StreamDenomination constant SETUP_PENDING_COMMITTEE_DENOMINATION = StreamDenomination._0_01BTC;
+    uint64 constant SETUP_PENDING_COMMITTEE_STREAM_ID = 1;
 
     uint256 constant TAKE_0_TIMEOUT_DEFAULT = 2 hours;
     uint256 constant TAKE_1_TIMEOUT_DEFAULT = 2 hours;
@@ -267,7 +269,12 @@ abstract contract HelperContract is Test, TestUtils {
         return _amount * 10 ** 10;
     }
 
-    function setup_multipleRequestAndAcceptPeginFlows(uint256 _numberOfPegins, uint64 _streamId) internal {
+    function setup_multipleRequestAndAcceptPeginFlows(uint256 _numberOfPegins) internal {
+        if (_numberOfPegins > Constants.SLOTS_PER_PACKET) {
+            vm.roll(BLOCK_COMMITTEE_2);
+            vm.warp(BLOCK_COMMITTEE_2);
+        }
+
         for (uint256 i = 0; i < _numberOfPegins; i++) {
             BtcTransaction memory btcTx = setup_requestPeginFlow();
             setup_acceptPeginFlow(btcTx);
@@ -278,7 +285,9 @@ abstract contract HelperContract is Test, TestUtils {
             ) {
                 uint256 memberIndexStart = registry.committeeMemberCount();
                 uint256 memberCount = registry.committeeMemberCount();
-                setup_depositAggregatedKey_MultipleMembers(_streamId, memberIndexStart, memberCount);
+                setup_depositAggregatedKey_MultipleMembers(
+                    COMMITTEE_ID_STREAM_1_COMMITTEE_2, memberIndexStart, memberCount
+                );
             }
         }
     }
@@ -386,15 +395,15 @@ abstract contract HelperContract is Test, TestUtils {
         setup_addMemberNonce_MultipleMembers(setup.pegoutSignatureHash, 0, registry.committeeMemberCount());
     }
 
-    function setup_depositAggregatedKey(uint64 _streamId, address _memberAddress) internal {
+    function setup_depositAggregatedKey(uint128 _committeeId, address _memberAddress) internal {
         vm.prank(_memberAddress);
-        registry.depositAggregatedKey(_streamId, COMMITTEE_PUB_KEY);
+        registry.depositAggregatedKey(_committeeId, COMMITTEE_PUB_KEY);
     }
 
     // This function is used to deposit the aggregated key for multiple members in a committee
     // It will deposit the aggregated key for members with indexes from _memberIndexInit to _memberIndexInit + _memberCount - 1
     function setup_depositAggregatedKey_MultipleMembers(
-        uint64 _streamId,
+        uint128 _committeeId,
         uint256 _memberIndexInit,
         uint256 _memberCount
     ) internal {
@@ -402,54 +411,58 @@ abstract contract HelperContract is Test, TestUtils {
 
         for (uint256 i = _memberIndexInit; i < memberIndexEnd; i++) {
             // Member address is vm.address(memberIndex + 1);
-            setup_depositAggregatedKey(_streamId, vm.addr(i + 1));
+            setup_depositAggregatedKey(_committeeId, vm.addr(i + 1));
         }
     }
 
-    function setup_pendingCommittee() internal returns (Committee memory expectedCommittee, uint64 streamId) {
-        StreamDenomination denomination = StreamDenomination._0_01BTC;
-        streamId = 1;
+    function setup_pendingCommittee() internal returns (Committee memory expectedCommittee, uint128 committeeId) {
+        StreamDenomination denomination = SETUP_PENDING_COMMITTEE_DENOMINATION;
         vm.warp(BLOCK_COMMITTEE_1);
         vm.roll(BLOCK_COMMITTEE_1);
         uint256 numOperators = registry.committeeMemberCount() / 2;
         uint256 numWatchtowers = registry.committeeMemberCount() - numOperators;
         setup_registerNewMembers(numWatchtowers, numOperators, denomination);
-        return (setup_getExpectedCommitteeBeforeExpire(), streamId);
+        return (setup_getExpectedCommitteeBeforeExpire(), COMMITTEE_ID_STREAM_1_COMMITTEE_1);
     }
 
-    function setup_pendingCommitteeAndExpire() internal returns (Committee memory expectedCommittee, uint64 streamId) {
-        (, streamId) = setup_pendingCommittee();
+    function setup_pendingCommitteeAndExpire()
+        internal
+        returns (Committee memory expectedCommittee, uint128 committeeId)
+    {
+        (, committeeId) = setup_pendingCommittee();
         vm.warp(BLOCK_COMMITTEE_3);
         vm.roll(BLOCK_COMMITTEE_3);
         expectedCommittee = setup_getExpectedCommitteeAfterExpire();
     }
 
-    function setup_completeCommittee() internal returns (Committee memory expectedCommittee, uint64 streamId) {
-        (expectedCommittee, streamId) = setup_pendingCommittee();
+    function setup_completeCommittee() internal returns (Committee memory expectedCommittee, uint128 committeeId) {
+        (expectedCommittee, committeeId) = setup_pendingCommittee();
 
-        setup_depositAggregatedKey_MultipleMembers(streamId, 0, registry.committeeMemberCount());
+        setup_depositAggregatedKey_MultipleMembers(committeeId, 0, registry.committeeMemberCount());
         expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY;
+        expectedCommittee.isPending = false;
+        expectedCommittee.missingData = 0;
 
-        return (expectedCommittee, streamId);
+        return (expectedCommittee, committeeId);
     }
 
     function setup_completeCommitteeAndNewMembers()
         internal
-        returns (Committee memory firstCommittee, Committee memory secondCommittee, uint64 streamId)
+        returns (Committee memory firstCommittee, Committee memory secondCommittee, uint128 committeeId)
     {
-        (firstCommittee, streamId) = setup_completeCommittee();
+        (firstCommittee, committeeId) = setup_completeCommittee();
 
         // Register new members
         vm.warp(BLOCK_COMMITTEE_2);
         vm.roll(BLOCK_COMMITTEE_2);
         uint256 numOperators = registry.committeeMemberCount() / 2;
         uint256 numWatchtowers = registry.committeeMemberCount() - numOperators;
-        setup_registerNewMembers(numWatchtowers, numOperators, StreamDenomination(streamId));
+        setup_registerNewMembers(numWatchtowers, numOperators, StreamDenomination(firstCommittee.streamId));
 
         secondCommittee = setup_getExpectedSecondCommittee();
         secondCommittee.aggregatedKey = COMMITTEE_PUB_KEY;
 
-        return (firstCommittee, secondCommittee, streamId);
+        return (firstCommittee, secondCommittee, COMMITTEE_ID_STREAM_1_COMMITTEE_2);
     }
 
     function setup_getExpectedSecondCommittee() internal view returns (Committee memory) {
@@ -460,7 +473,9 @@ abstract contract HelperContract is Test, TestUtils {
             operatorTakeIndex: 0,
             createdAt: BLOCK_COMMITTEE_2,
             missingData: 10,
-            missingCommunicationData: 10
+            missingCommunicationData: 10,
+            isPending: true,
+            streamId: SETUP_PENDING_COMMITTEE_STREAM_ID
         });
 
         committee.members[0] = CommitteeMember({memberAddress: vm.addr(19 + 1), role: Role.OPERATOR});
@@ -486,7 +501,9 @@ abstract contract HelperContract is Test, TestUtils {
             operatorTakeIndex: 0,
             createdAt: BLOCK_COMMITTEE_1,
             missingData: 10,
-            missingCommunicationData: 10
+            missingCommunicationData: 10,
+            isPending: true,
+            streamId: SETUP_PENDING_COMMITTEE_STREAM_ID
         });
 
         committee.members[0] = CommitteeMember({memberAddress: vm.addr(6 + 1), role: Role.OPERATOR});
@@ -519,7 +536,9 @@ abstract contract HelperContract is Test, TestUtils {
             operatorTakeIndex: 0,
             createdAt: BLOCK_COMMITTEE_3,
             missingData: 10,
-            missingCommunicationData: 10
+            missingCommunicationData: 10,
+            isPending: true,
+            streamId: SETUP_PENDING_COMMITTEE_STREAM_ID
         });
 
         committee.members[0] = CommitteeMember({memberAddress: vm.addr(7 + 1), role: Role.OPERATOR});

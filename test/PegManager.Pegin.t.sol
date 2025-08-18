@@ -24,18 +24,20 @@ contract TestPegManager is Test, HelperContract {
     uint64 internal constant PACKET_NUMBER = 0;
     address internal constant RSK_DESTINATION_ADDRESS = 0x7Ac5496aee77c1bA1F0854206A26DdA82A81d6d8;
     uint64 internal setupStreamId;
+    uint128 internal setupCommitteeId;
     Committee internal setupExpectedCommittee;
 
     function setUp() external {
         runTestDeployScript();
-        (, Committee memory expectedCommittee, uint64 streamId) = setup_completeCommitteeAndNewMembers();
+        (, Committee memory expectedCommittee, uint128 committeeId) = setup_completeCommitteeAndNewMembers();
 
         setupExpectedCommittee.aggregatedKey = expectedCommittee.aggregatedKey;
         setupExpectedCommittee.leaderAddress = expectedCommittee.leaderAddress;
         for (uint64 i = 0; i < expectedCommittee.members.length; i++) {
             setupExpectedCommittee.members.push(expectedCommittee.members[i]);
         }
-        setupStreamId = streamId;
+        setupStreamId = expectedCommittee.streamId;
+        setupCommitteeId = committeeId;
     }
 
     function test_getTemporaryPeginAddress_Success() external view {
@@ -258,7 +260,7 @@ contract TestPegManager is Test, HelperContract {
     function test_acceptPegin_newPacketCreated() external {
         // Arrange
         // Create pegins until the new packet threshold is reached
-        setup_multipleRequestAndAcceptPeginFlows(Constants.SLOT_USAGE_THRESHOLD - 1, setupStreamId);
+        setup_multipleRequestAndAcceptPeginFlows(Constants.SLOT_USAGE_THRESHOLD - 1);
         Committee memory expectedCommittee = setup_getExpectedSecondCommittee();
 
         // Arrange
@@ -266,11 +268,12 @@ contract TestPegManager is Test, HelperContract {
         BtcTransaction memory btcTransaction = getBtcAcceptPeginTx(peginTx);
         // Create Pegin accepted tx struct information
         BtcTxSPVProof memory peginAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
+        uint128 committeeId = COMMITTEE_ID_STREAM_1_COMMITTEE_2;
         vm.roll(BLOCK_COMMITTEE_2);
         vm.warp(BLOCK_COMMITTEE_2);
 
         vm.expectEmit(address(registry));
-        emit ICommitteeRegistry.NewPendingCommittee(COMMITTEE_ID_STREAM_1_COMMITTEE_2, expectedCommittee);
+        emit ICommitteeRegistry.NewPendingCommittee(committeeId, expectedCommittee);
 
         // Act
         pm.acceptPegin(peginAcceptedTxSPVProof);
@@ -278,29 +281,30 @@ contract TestPegManager is Test, HelperContract {
         // Now we should provide members info to create the committee/packet. This works with second group of members, their indexes start at registry.committeeMemberCount()
         uint256 memberIndexStart = registry.committeeMemberCount();
         uint256 memberCount = registry.committeeMemberCount() - 1;
-        setup_depositAggregatedKey_MultipleMembers(setupStreamId, memberIndexStart, memberCount);
+        setup_depositAggregatedKey_MultipleMembers(committeeId, memberIndexStart, memberCount);
 
         // Update expected committee with aggregated key
         expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY;
         expectedCommittee.missingData = 0;
+        expectedCommittee.isPending = false;
         vm.expectEmit(address(registry));
-        emit ICommitteeRegistry.NewCommittee(COMMITTEE_ID_STREAM_1_COMMITTEE_2, expectedCommittee);
+        emit ICommitteeRegistry.NewCommittee(committeeId, expectedCommittee);
 
         vm.expectEmit(address(streamManager));
         emit IStreamManager.PacketCreated(setupStreamId, 1);
 
         vm.prank(vm.addr(registry.committeeMemberCount() * 2));
-        registry.depositAggregatedKey(setupStreamId, COMMITTEE_PUB_KEY);
+        registry.depositAggregatedKey(committeeId, COMMITTEE_PUB_KEY);
     }
 
     function test_acceptPegin_newPacketUsed() external {
         // Arrange
         // Create pegins until the new packet treshold is reached
-        setup_multipleRequestAndAcceptPeginFlows(Constants.SLOTS_PER_PACKET, setupStreamId);
+        setup_multipleRequestAndAcceptPeginFlows(Constants.SLOTS_PER_PACKET);
         // Members must deposite their info to create new packet
         uint256 memberIndexStart = registry.committeeMemberCount();
         uint256 memberCount = registry.committeeMemberCount();
-        setup_depositAggregatedKey_MultipleMembers(setupStreamId, memberIndexStart, memberCount);
+        setup_depositAggregatedKey_MultipleMembers(COMMITTEE_ID_STREAM_1_COMMITTEE_2, memberIndexStart, memberCount);
 
         // Arrange
         BtcTransaction memory peginTx = setup_requestPeginFlow();

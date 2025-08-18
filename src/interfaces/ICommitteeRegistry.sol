@@ -164,6 +164,10 @@ struct Committee {
     uint16 missingData;
     /// @notice Number of members that have not deposited their communication data yet
     uint16 missingCommunicationData;
+    /// @notice Whether the committee is pending formation
+    bool isPending;
+    /// @notice The stream ID this committee is associated with
+    uint64 streamId;
 }
 
 /// @notice Represents pending data for a member in committee formation
@@ -280,9 +284,9 @@ interface ICommitteeRegistry {
 
     /// @notice Allows a member to deposit information  formation
     /// @dev Called by members to provide their aggregated key for a pending committee
-    /// @param _streamId The stream ID for the pending committee
+    /// @param _committeeId The ID of the pending committee
     /// @param _aggregatedKey The aggregated public key provided by the member
-    function depositAggregatedKey(uint64 _streamId, bytes32 _aggregatedKey) external;
+    function depositAggregatedKey(uint128 _committeeId, bytes32 _aggregatedKey) external;
 
     /// @notice Triggers the creation of a new committee for a stream if the timeout has expired
     /// @dev This function is called when the slot usage threshold is reached
@@ -306,18 +310,18 @@ interface ICommitteeRegistry {
         returns (Committee memory committee, uint256 createdAt, uint256 missingData);
 
     /// @notice Returns the number of members that have not deposited their communication data yet
-    /// @param _streamId The stream ID to get the missing communication data count for
+    /// @param _committeeId The committee ID to check for missing communication data
     /// @return missingCommunicationData The number of members that have not deposited their communication data yet
-    function getMissingCommunicationDataCount(uint64 _streamId)
+    function getMissingCommunicationDataCount(uint128 _committeeId)
         external
         view
         returns (uint16 missingCommunicationData);
 
     /// @notice Deposits encrypted communication data (IP and Port) for a member in a pending committee
     /// @dev This function is called by members to provide their encrypted communication data
-    /// @param _streamId The stream ID for the pending committee
+    /// @param _committeeId The ID of the pending committee
     /// @param _communicationData Array of encrypted communication data (IP and Port) for the member
-    function depositCommunicationData(uint64 _streamId, CommunicationData[] memory _communicationData) external;
+    function depositCommunicationData(uint128 _committeeId, CommunicationData[] memory _communicationData) external;
 
     /// @notice Gets the encrypted communication data for one member in a committee
     /// @dev This function returns the encrypted communication data (IP and Port) deposited for a particular member
@@ -465,10 +469,10 @@ interface ICommitteeRegistry {
     event CommitteeMemberCountUpdated(uint256 minMembers);
 
     /// @notice Event emitted when member info is deposited for committee formation
-    /// @param streamId The stream ID
+    /// @param committeeId The ID of the pending committee
     /// @param member The member's address
     /// @param aggregatedKey The aggregated key provided by the member
-    event MemberInfoDeposited(uint64 indexed streamId, address indexed member, bytes32 aggregatedKey);
+    event MemberInfoDeposited(uint128 indexed committeeId, address indexed member, bytes32 aggregatedKey);
 
     /// @notice Event emitted when no honest operators remain in a committee
     /// @param committeeId The ID of the committee with no honest operators
@@ -490,17 +494,17 @@ interface ICommitteeRegistry {
     event MemberReApplyUpdated(address indexed memberAddress, StreamDenomination denomination, bool reApply);
 
     /// @notice Event emitted when a member has deposited their communication data
-    /// @param streamId The stream ID of the pending committee for which the data is deposited
+    /// @param _committeeId The ID of the committee for which the member deposited data
     /// @param member The address of the member who deposited the data
     /// @param communicationData The encrypted communication data deposited by the member
     /// @dev The communication data are encrypted IP's and Port's for each member in the committee
     event MemberCommunicationDataDeposited(
-        uint64 indexed streamId, address indexed member, CommunicationData[] communicationData
+        uint128 indexed _committeeId, address indexed member, CommunicationData[] communicationData
     );
 
     /// @notice Event emitted when all committee members have deposited their communication data
-    /// @param streamId The stream ID of the pending committee for which all data is now complete
-    event AllCommunicationDataReady(uint64 indexed streamId);
+    /// @param _committeeId The ID of the committee for which all communication data is ready
+    event AllCommunicationDataReady(uint128 indexed _committeeId);
 
     // Errors
     /// @notice Thrown when streams and roles arrays have different lengths
@@ -534,8 +538,8 @@ interface ICommitteeRegistry {
     error MemberNotFound(address memberAddress);
 
     /// @notice Thrown when a committee is not in pending state
-    /// @param streamId The stream ID
-    error CommitteeIsNotPending(uint64 streamId);
+    /// @param committeeId The ID of the committee that is not pending
+    error CommitteeIsNotPending(uint128 committeeId);
 
     /// @notice Thrown when a pending committee is not expired
     /// @param streamId The stream ID
@@ -717,11 +721,11 @@ interface ICommitteeRegistry {
     error InvalidNonZeroCommunicationData(uint256 index, CommunicationData communicationData);
 
     /// @notice Thrown when a member attempts to deposit communication data more than once
-    /// @param streamId The stream ID associated with the committee
+    /// @param committeeId The ID of the committee
     /// @param memberAddress The address of the member attempting a second deposit
     /// @param communicationDataLenght The number of communication data entries already stored
     error MemberAlreadyDepositedCommunicationData(
-        uint64 streamId, address memberAddress, uint256 communicationDataLenght
+        uint128 committeeId, address memberAddress, uint256 communicationDataLenght
     );
 
     // Internal Errors

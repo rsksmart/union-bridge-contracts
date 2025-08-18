@@ -28,18 +28,20 @@ contract TestPegManager is Test, HelperContract {
     uint64 internal constant PACKET_NUMBER = 0;
     address internal constant RSK_DESTINATION_ADDRESS = 0x7Ac5496aee77c1bA1F0854206A26DdA82A81d6d8;
     uint64 internal setupStreamId;
+    uint128 internal setupCommitteeId;
     Committee internal setupExpectedCommittee;
 
     function setUp() external {
         runTestDeployScript();
-        (, Committee memory expectedCommittee, uint64 streamId) = setup_completeCommitteeAndNewMembers();
+        (, Committee memory expectedCommittee, uint128 committeeId) = setup_completeCommitteeAndNewMembers();
 
         setupExpectedCommittee.aggregatedKey = expectedCommittee.aggregatedKey;
         setupExpectedCommittee.leaderAddress = expectedCommittee.leaderAddress;
         for (uint64 i = 0; i < expectedCommittee.members.length; i++) {
             setupExpectedCommittee.members.push(expectedCommittee.members[i]);
         }
-        setupStreamId = streamId;
+        setupStreamId = expectedCommittee.streamId;
+        setupCommitteeId = committeeId;
     }
 
     // ================= Request Pegout =================
@@ -173,7 +175,7 @@ contract TestPegManager is Test, HelperContract {
     function test_tryPegout_FromNextPacket_Success() external {
         // Setup
         uint256 pegoutAmount = Constants.SLOTS_PER_PACKET + 10;
-        setup_multipleRequestAndAcceptPeginFlows(pegoutAmount, setupStreamId);
+        setup_multipleRequestAndAcceptPeginFlows(pegoutAmount);
 
         bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
         uint64 amount = VALUE;
