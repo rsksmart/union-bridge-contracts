@@ -153,7 +153,7 @@ contract DeployImplAndProxy is ScriptUtils {
             contractName = "CommitteeRegistryHarness.sol";
         }
         (, address proxyAdddress) =
-            deployContractAndUUPSProxy(contractName, abi.encodeCall(CommitteeRegistry.initialize, (_upgradableOwner)));
+            deployContractAndUUPSProxy(contractName, abi.encodeCall(CommitteeRegistry._initialize, (_upgradableOwner)));
         return CommitteeRegistry(proxyAdddress);
     }
 
@@ -182,7 +182,7 @@ contract DeployImplAndProxy is ScriptUtils {
         (, address proxyAdddress) = deployContractAndUUPSProxy(
             contractName,
             abi.encodeCall(
-                PegManager.initialize,
+                PegManager._initialize,
                 (_upgradableOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager, _settings)
             )
         );
@@ -204,7 +204,8 @@ contract DeployImplAndProxy is ScriptUtils {
         (, address proxyAdddress) = deployContractAndUUPSProxy(
             contractName,
             abi.encodeCall(
-                StreamManager.initialize, (_upgradableOwner, _pegManager, _committeeRegistry, _denominations, _settings)
+                StreamManager._initialize,
+                (_upgradableOwner, _pegManager, _committeeRegistry, _denominations, _settings)
             )
         );
         return StreamManager(proxyAdddress);
@@ -216,7 +217,7 @@ contract DeployImplAndProxy is ScriptUtils {
     {
         (, address proxyAdddress) = deployContractAndUUPSProxy(
             "SignatureManager.sol",
-            abi.encodeCall(SignatureManager.initialize, (_upgradableOwner, _pegManager, _committeeRegistry))
+            abi.encodeCall(SignatureManager._initialize, (_upgradableOwner, _pegManager, _committeeRegistry))
         );
         return SignatureManager(proxyAdddress);
     }

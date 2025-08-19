@@ -13,7 +13,9 @@ import {
 
 /// @notice Wrapper for testing CommitteeRegistry
 contract CommitteeRegistryHarness is CommitteeRegistry {
-    function initialize(address _initialOwner) public override initializer {
+    function initialize(address _initialOwner) internal override initializer {
+        //replaced by Review_public_methods
+        // public override initializer {
         CommitteeRegistry.initialize(_initialOwner);
     }
 

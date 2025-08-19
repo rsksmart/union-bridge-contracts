@@ -19,7 +19,10 @@ abstract contract BaseProxy is UUPSUpgradeable, OwnableUpgradeable {
     /// @dev Sets up the initial owner for the contract
     /// @dev Can only be called once during contract deployment
     /// @param _initialOwner The address that will be set as the initial owner
-    function __BaseProxy_init(address _initialOwner) public initializer {
+    function __BaseProxy_init(address _initialOwner) internal initializer {
+        //replaced by Review_public_methods
+        //function __BaseProxy_init(address _initialOwner) public initializer {
+
         // Validaton that the initial owner is not zero address is done in OwnableUpgradeable
         __Ownable_init_unchained(_initialOwner);
     }
