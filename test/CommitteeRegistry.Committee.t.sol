@@ -18,7 +18,6 @@ import {StreamDenomination, IStreamManager, Stream} from "src/interfaces/IStream
 import {HelperContract} from "test/helpers/HelperContract.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Constants} from "src/libraries/Constants.sol";
-import "forge-std/console.sol";
 
 contract TestCommitteeRegistry is Test, HelperContract {
     uint256 constant MAX_GAS_PER_COMMITTEE_CREATION = 1500 * 1000; // Max gas per block in RSK is 6M8
@@ -600,7 +599,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
         registry.depositAggregatedKey(committeeId, COMMITTEE_PUB_KEY);
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.MemberInfoAlreadyDeposited.selector, memberAddress));
+        vm.expectRevert(
+            abi.encodeWithSelector(ICommitteeRegistry.MemberInfoAlreadyDeposited.selector, committeeId, memberAddress)
+        );
 
         // Act
         vm.prank(memberAddress);

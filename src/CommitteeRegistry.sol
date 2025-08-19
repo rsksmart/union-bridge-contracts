@@ -203,6 +203,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
 
     function _isInPendingCommittee(address _memberAddress, uint64 _streamId) internal view returns (bool) {
         uint128 committeeId = pendingCommittees[_streamId];
+        // NOTE: Slither flags this as dangerous-strict-equalities, but this is a false positive.
         if (committeeId == 0) {
             return false; // No pending committee
         }
@@ -614,7 +615,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     }
 
     function _isInCommitteeOrRevert(uint128 _committeeId, address _memberAddress) internal view {
-        if (committeesData[_committeeId][_memberAddress].inCommittee == false) {
+        if (!committeesData[_committeeId][_memberAddress].inCommittee) {
             revert MemberNotInCommittee(_committeeId, _memberAddress);
         }
     }
@@ -633,7 +634,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         _isInCommitteeOrRevert(_committeeId, msg.sender);
 
         if (committeesData[_committeeId][msg.sender].aggregatedKey != bytes32(0)) {
-            revert MemberInfoAlreadyDeposited(msg.sender);
+            revert MemberInfoAlreadyDeposited(_committeeId, msg.sender);
         }
 
         committeesData[_committeeId][msg.sender].aggregatedKey = _aggregatedKey;
@@ -759,6 +760,22 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         missingData = committee.missingData;
     }
 
+    /// @notice Returns the committee ID for a pending committee in the given stream
+    /// @param _streamId The stream ID to get the pending committee ID for
+    /// @return committeeId The committee ID of the pending committee
+    function getPendingCommitteeId(uint64 _streamId) external view returns (uint128 committeeId) {
+        return _getPendingCommitteeId(_streamId);
+    }
+
+    function _getPendingCommitteeId(uint64 _streamId) internal view returns (uint128 committeeId) {
+        committeeId = pendingCommittees[_streamId];
+        // NOTE: Slither flags this as dangerous-strict-equalities, but this is a false positive.
+        if (committeeId == 0) {
+            revert CommitteeIsNotPending(0);
+        }
+        return committeeId;
+    }
+
     /// @notice Returns the number of members that have not deposited their communication data yet
     /// @param _committeeId The committee ID to check for missing communication data
     /// @return missingCommunicationData The number of members that have not deposited their communication data yet
@@ -771,11 +788,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     }
 
     function _getPendingCommittee(uint64 _streamId) internal view returns (Committee storage) {
-        uint128 committeeId = pendingCommittees[_streamId];
-        if (committeeId == 0) {
-            revert CommitteeIsNotPending(0);
-        }
-        return committeesById[committeeId];
+        return committeesById[_getPendingCommitteeId(_streamId)];
     }
 
     function _getPendingCommitteeById(uint128 _committeeId) internal view returns (Committee storage) {

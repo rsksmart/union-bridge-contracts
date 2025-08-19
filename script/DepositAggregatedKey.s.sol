@@ -41,8 +41,9 @@ contract DepositAggregatedKeyScript is ScriptUtils {
         // revert if no pending committee found
         (,, uint256 prevMissingData) = committeeRegistry.getPendingCommittee(_streamIndex);
 
+        uint128 committeeId = committeeRegistry.getPendingCommitteeId(_streamIndex);
         vm.startBroadcast(privKey);
-        committeeRegistry.depositAggregatedKey(_streamIndex, _committeePubKey);
+        committeeRegistry.depositAggregatedKey(committeeId, _committeePubKey);
         vm.stopBroadcast();
 
         // Check if it's not last member to deposit the aggregated key,
@@ -53,8 +54,6 @@ contract DepositAggregatedKeyScript is ScriptUtils {
                 revert("committee did not deposit aggregated key");
             }
         } else {
-            // if it is it shoud create the committee
-            uint128 committeeId = streamManager.getAvailablePeginCommitteeId(_streamIndex);
             // If it does not revert, it means the committee has been created
             committeeRegistry.getCommittee(committeeId);
         }

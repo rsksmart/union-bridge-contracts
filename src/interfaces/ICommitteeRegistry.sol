@@ -309,6 +309,11 @@ interface ICommitteeRegistry {
         view
         returns (Committee memory committee, uint256 createdAt, uint256 missingData);
 
+    /// @notice Returns the committee ID for a pending committee in the given stream
+    /// @param _streamId The stream ID to get the pending committee ID for
+    /// @return committeeId The committee ID of the pending committee
+    function getPendingCommitteeId(uint64 _streamId) external view returns (uint128 committeeId);
+
     /// @notice Returns the number of members that have not deposited their communication data yet
     /// @param _committeeId The committee ID to check for missing communication data
     /// @return missingCommunicationData The number of members that have not deposited their communication data yet
@@ -596,8 +601,9 @@ interface ICommitteeRegistry {
     error MemberNotInCommittee(uint128 committeeId, address memberAddress);
 
     /// @notice Thrown when member info is already deposited
+    /// @param committeeId The committee ID
     /// @param memberAddress The member's address
-    error MemberInfoAlreadyDeposited(address memberAddress);
+    error MemberInfoAlreadyDeposited(uint128 committeeId, address memberAddress);
 
     /// @notice Thrown when a committee is not found
     /// @param committeeId The committee ID

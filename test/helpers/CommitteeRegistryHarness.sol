@@ -5,10 +5,7 @@ import {CommitteeRegistry, CommitteeMember} from "src/CommitteeRegistry.sol";
 import {Role, UTXO} from "src/interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
 import {
-    PendingCommitteeStatus,
-    MemberRegistrationKeys,
-    CommunicationData,
-    Committee
+    PendingCommitteeStatus, MemberRegistrationKeys, CommunicationData
 } from "src/interfaces/ICommitteeRegistry.sol";
 
 /// @notice Wrapper for testing CommitteeRegistry

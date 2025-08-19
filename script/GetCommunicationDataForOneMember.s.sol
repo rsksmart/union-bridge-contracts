@@ -36,7 +36,9 @@ contract GetCommunicationDataForOneMemberScript is ScriptUtils {
         setUp(_mnemonicIndex, _streamIndex);
 
         vm.startBroadcast(privKey);
-        CommunicationData[] memory memberComData = committeeRegistry.getMemberCommunicationData(stream, user);
+        uint128 committeeId = committeeRegistry.getPendingCommitteeId(stream);
+
+        CommunicationData[] memory memberComData = committeeRegistry.getMemberCommunicationData(committeeId, user);
         vm.stopBroadcast();
 
         console.log("=== Got communication data for one member successfully ===");
