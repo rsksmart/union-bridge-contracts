@@ -594,23 +594,24 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         uint128 committeeId = uint128(uint256(keccak256(abi.encode(_streamId, block.number))));
         pendingCommittees[_streamId] = committeeId;
 
-        committeesById[committeeId].createdAt = block.timestamp;
-        committeesById[committeeId].missingData = uint16(committeeMembers.length);
-        committeesById[committeeId].missingCommunicationData = uint16(committeeMembers.length);
-        committeesById[committeeId].aggregatedKey = bytes32(0);
-        committeesById[committeeId].streamId = _streamId;
-        committeesById[committeeId].isPending = true;
+        Committee storage committee = committeesById[committeeId];
+        committee.createdAt = block.timestamp;
+        committee.missingData = uint16(committeeMembers.length);
+        committee.missingCommunicationData = uint16(committeeMembers.length);
+        committee.aggregatedKey = bytes32(0);
+        committee.streamId = _streamId;
+        committee.isPending = true;
 
         // Initialize the committee members here.
         // No need to initialize aggregatedKey, since it will be set by the members.
         for (uint256 i = 0; i < committeeMembers.length; i++) {
             // Copy committee members from memory to storage
-            committeesById[committeeId].members.push(committeeMembers[i]);
+            committee.members.push(committeeMembers[i]);
 
             // Initialize committee users pending data
             committeesData[committeeId][committeeMembers[i].memberAddress].inCommittee = true;
         }
-        emit NewPendingCommittee(committeeId, committeesById[committeeId]);
+        emit NewPendingCommittee(committeeId, committee);
         return PendingCommitteeStatus.SUCCESS;
     }
 
