@@ -22,7 +22,6 @@
 - [Member](ICommitteeRegistry.sol/struct.Member.md)
 - [CommitteeMember](ICommitteeRegistry.sol/struct.CommitteeMember.md)
 - [Committee](ICommitteeRegistry.sol/struct.Committee.md)
-- [PendingCommittee](ICommitteeRegistry.sol/struct.PendingCommittee.md)
 - [PendingCommitteeData](ICommitteeRegistry.sol/struct.PendingCommitteeData.md)
 - [CommunicationData](ICommitteeRegistry.sol/struct.CommunicationData.md)
 - [ICommitteeRegistry](ICommitteeRegistry.sol/interface.ICommitteeRegistry.md)

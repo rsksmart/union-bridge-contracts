@@ -1,5 +1,5 @@
 # PegManager
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b41d024ed73655cc3c392a6c92b6259ef625d19d/src/PegManager.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b750ea532307d08987643fe249271c69c1bee159/src/PegManager.sol)
 
 **Inherits:**
 [IPegManager](/src/interfaces/IPegManager.sol/interface.IPegManager.md), [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md), [ProofValidator](/src/ProofValidator.sol/abstract.ProofValidator.md)
@@ -468,7 +468,7 @@ function _storePegoutAndInitSignatures(
     uint64 _streamId,
     uint64 _packetNumber,
     uint64 _slotId
-) internal returns (uint256);
+) internal returns (uint128);
 ```
 
 ### triggerOperatorTake

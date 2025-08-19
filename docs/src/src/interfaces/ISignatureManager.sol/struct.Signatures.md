@@ -1,5 +1,5 @@
 # Signatures
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b41d024ed73655cc3c392a6c92b6259ef625d19d/src/interfaces/ISignatureManager.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b750ea532307d08987643fe249271c69c1bee159/src/interfaces/ISignatureManager.sol)
 
 Represents the state of signatures for a specific hash
 
@@ -11,7 +11,7 @@ struct Signatures {
     mapping(address memberAddress => SignatureData) partialSignaturesData;
     uint8 missingSignatures;
     uint8 missingNonces;
-    uint256 committeeId;
+    uint128 committeeId;
 }
 ```
 

@@ -1,5 +1,5 @@
 # IStreamManager
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b41d024ed73655cc3c392a6c92b6259ef625d19d/src/interfaces/IStreamManager.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b750ea532307d08987643fe249271c69c1bee159/src/interfaces/IStreamManager.sol)
 
 **Inherits:**
 [IAccessControl](/src/interfaces/IAccessControl.sol/interface.IAccessControl.md)
@@ -20,14 +20,14 @@ Creates a new packet in a specific stream with committee assignment
 
 
 ```solidity
-function createNewPacket(uint64 _streamId, uint256 _committeeId, bytes32 _committeePubKey) external;
+function createNewPacket(uint64 _streamId, uint128 _committeeId, bytes32 _committeePubKey) external;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
 |`_streamId`|`uint64`|The index of the stream to add the packet to|
-|`_committeeId`|`uint256`|The ID of the committee responsible for this packet|
+|`_committeeId`|`uint128`|The ID of the committee responsible for this packet|
 |`_committeePubKey`|`bytes32`|The public key of the selected committee for the packet|
 
 
@@ -256,7 +256,7 @@ Retrieves the committee ID for a specific packet
 
 
 ```solidity
-function getCommitteeId(uint64 _streamId, uint64 _packetNumber) external view returns (uint256);
+function getCommitteeId(uint64 _streamId, uint64 _packetNumber) external view returns (uint128);
 ```
 **Parameters**
 
@@ -269,7 +269,7 @@ function getCommitteeId(uint64 _streamId, uint64 _packetNumber) external view re
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`uint256`|uint256 The committee ID responsible for this packet|
+|`<none>`|`uint128`|uint256 The committee ID responsible for this packet|
 
 
 ### getCommitteePubKey
@@ -382,7 +382,7 @@ Gets the committee ID for the current packet in a stream
 
 
 ```solidity
-function getAvailablePeginCommitteeId(uint64 _streamId) external view returns (uint256);
+function getAvailablePeginCommitteeId(uint64 _streamId) external view returns (uint128);
 ```
 **Parameters**
 
@@ -394,7 +394,7 @@ function getAvailablePeginCommitteeId(uint64 _streamId) external view returns (u
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`uint256`|uint256 The committee ID for the current packet (returns 0 if no current packet)|
+|`<none>`|`uint128`|uint256 The committee ID for the current packet (returns 0 if no current packet)|
 
 
 ### getMinimumDeposit

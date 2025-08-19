@@ -1,5 +1,5 @@
 # StreamManager
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b41d024ed73655cc3c392a6c92b6259ef625d19d/src/StreamManager.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b750ea532307d08987643fe249271c69c1bee159/src/StreamManager.sol)
 
 **Inherits:**
 [IStreamManager](/src/interfaces/IStreamManager.sol/interface.IStreamManager.md), [AccessControl](/src/AccessControl.sol/contract.AccessControl.md)
@@ -105,7 +105,7 @@ Creates a new packet for a stream
 
 
 ```solidity
-function createNewPacket(uint64 _streamId, uint256 _committeeId, bytes32 _committeePubKey)
+function createNewPacket(uint64 _streamId, uint128 _committeeId, bytes32 _committeePubKey)
     external
     onlyCommitteeRegistry;
 ```
@@ -114,7 +114,7 @@ function createNewPacket(uint64 _streamId, uint256 _committeeId, bytes32 _commit
 |Name|Type|Description|
 |----|----|-----------|
 |`_streamId`|`uint64`|The ID of the stream to create a packet for|
-|`_committeeId`|`uint256`|The ID of the committee that will process this packet|
+|`_committeeId`|`uint128`|The ID of the committee that will process this packet|
 |`_committeePubKey`|`bytes32`|The public key of the committee for Bitcoin operations|
 
 
@@ -122,7 +122,7 @@ function createNewPacket(uint64 _streamId, uint256 _committeeId, bytes32 _commit
 
 
 ```solidity
-function _createNewPacket(uint64 _streamId, uint256 _committeeId, bytes32 _committeePubKey) internal;
+function _createNewPacket(uint64 _streamId, uint128 _committeeId, bytes32 _committeePubKey) internal;
 ```
 
 ### getStream
@@ -238,7 +238,7 @@ Gets the committee ID for the available pegin packet in a stream
 
 
 ```solidity
-function getAvailablePeginCommitteeId(uint64 _streamId) external view returns (uint256);
+function getAvailablePeginCommitteeId(uint64 _streamId) external view returns (uint128);
 ```
 **Parameters**
 
@@ -250,7 +250,7 @@ function getAvailablePeginCommitteeId(uint64 _streamId) external view returns (u
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`uint256`|The committee ID, or 0 if no current packet|
+|`<none>`|`uint128`|The committee ID, or 0 if no current packet|
 
 
 ### _findNextFilledSlot
@@ -381,7 +381,7 @@ Gets the committee ID for a specific packet
 
 
 ```solidity
-function getCommitteeId(uint64 _streamId, uint64 _packetNumber) external view returns (uint256);
+function getCommitteeId(uint64 _streamId, uint64 _packetNumber) external view returns (uint128);
 ```
 **Parameters**
 
@@ -394,7 +394,7 @@ function getCommitteeId(uint64 _streamId, uint64 _packetNumber) external view re
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`uint256`|The committee ID for the packet|
+|`<none>`|`uint128`|The committee ID for the packet|
 
 
 ### getCommitteePubKey

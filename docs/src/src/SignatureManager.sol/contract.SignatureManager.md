@@ -1,5 +1,5 @@
 # SignatureManager
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b41d024ed73655cc3c392a6c92b6259ef625d19d/src/SignatureManager.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b750ea532307d08987643fe249271c69c1bee159/src/SignatureManager.sol)
 
 **Inherits:**
 [ISignatureManager](/src/interfaces/ISignatureManager.sol/interface.ISignatureManager.md), [AccessControl](/src/AccessControl.sol/contract.AccessControl.md)
@@ -65,14 +65,14 @@ function initialize(address _initialOwner, address _pegManager, ICommitteeRegist
 
 
 ```solidity
-function _isMemberInCommittee(uint256 _committeeId, address _memberAddress) internal view returns (bool);
+function _isMemberInCommittee(uint128 _committeeId, address _memberAddress) internal view returns (bool);
 ```
 
 ### _getMemberRole
 
 
 ```solidity
-function _getMemberRole(uint256 _committeeId, address _memberAddress) internal view returns (Role);
+function _getMemberRole(uint128 _committeeId, address _memberAddress) internal view returns (Role);
 ```
 
 ### addMemberNonce
@@ -173,7 +173,7 @@ Gets the status of the signatures for a given hash
 
 
 ```solidity
-function getSignaturesStatus(bytes32 _hashToSign) external view returns (uint8, uint8, uint256);
+function getSignaturesStatus(bytes32 _hashToSign) external view returns (uint8, uint8, uint128);
 ```
 **Parameters**
 
@@ -187,7 +187,7 @@ function getSignaturesStatus(bytes32 _hashToSign) external view returns (uint8, 
 |----|----|-----------|
 |`<none>`|`uint8`|missingSignatures Number of missing signatures|
 |`<none>`|`uint8`|missingNonces Number of missing nonces|
-|`<none>`|`uint256`|committeeId The committee ID for this signature collection|
+|`<none>`|`uint128`|committeeId The committee ID for this signature collection|
 
 
 ### _getSignatures
@@ -205,14 +205,14 @@ Initializes signature collection for a given hash
 
 
 ```solidity
-function initSignatures(bytes32 _hashToSign, uint256 _committeeId) external onlyPegManager;
+function initSignatures(bytes32 _hashToSign, uint128 _committeeId) external onlyPegManager;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
 |`_hashToSign`|`bytes32`|The hash that needs to be signed|
-|`_committeeId`|`uint256`|The committee ID that will sign the hash|
+|`_committeeId`|`uint128`|The committee ID that will sign the hash|
 
 
 ### initOperatorTakeTxHashes
@@ -223,14 +223,14 @@ Initializes OperatorTake transaction hash collection for a given accept peg-in t
 
 
 ```solidity
-function initOperatorTakeTxHashes(bytes32 _acceptPeginTxHash, uint256 _committeeId) external onlyPegManager;
+function initOperatorTakeTxHashes(bytes32 _acceptPeginTxHash, uint128 _committeeId) external onlyPegManager;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
 |`_acceptPeginTxHash`|`bytes32`|The accept peg-in transaction hash|
-|`_committeeId`|`uint256`|The committee ID that will provide OperatorTake transaction hashes|
+|`_committeeId`|`uint128`|The committee ID that will provide OperatorTake transaction hashes|
 
 
 ### _getOperatorTakeTxHashes
@@ -306,7 +306,7 @@ Gets the committee ID for a given accept peg-in transaction hash
 
 
 ```solidity
-function getCommitteeIdByAcceptPeginTxHash(bytes32 _acceptPeginTxHash) external view returns (uint256);
+function getCommitteeIdByAcceptPeginTxHash(bytes32 _acceptPeginTxHash) external view returns (uint128);
 ```
 **Parameters**
 
@@ -318,6 +318,6 @@ function getCommitteeIdByAcceptPeginTxHash(bytes32 _acceptPeginTxHash) external 
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`uint256`|The committee ID associated with this transaction hash|
+|`<none>`|`uint128`|The committee ID associated with this transaction hash|
 
 

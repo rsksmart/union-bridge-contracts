@@ -399,7 +399,7 @@ sequenceDiagram
 ### Pre requisites
 
 - You'll need the [Rust](https://www.rust-lang.org/) compiler and Cargo, Rust's package manager. The easiest way to install both is by using [rustup.rs.](https://rustup.rs/)
-- [Foundry v1.2.3](https://book.getfoundry.sh/getting-started/installation) running `foundryup -v v1.2.3`
+- [Foundry v1.3.0](https://book.getfoundry.sh/getting-started/installation) running `foundryup -v v1.3.0`
 - [Node.js LTS (22)](https://nodejs.org/en/download)
 
 ### Install dependencies
