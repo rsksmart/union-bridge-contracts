@@ -32,10 +32,7 @@ contract SignatureManager is ISignatureManager, AccessControl {
     /// @param _pegManager The address of the PegManager contract
     /// @param _committeeRegistry The address of the CommitteeRegistry contract
     function initialize(address _initialOwner, address _pegManager, ICommitteeRegistry _committeeRegistry)
-        //replaced by Review_public_methods
-        //    public
-        //    initializer
-        internal
+        public
         initializer
     {
         if (address(_committeeRegistry) == address(0)) {
@@ -43,15 +40,6 @@ contract SignatureManager is ISignatureManager, AccessControl {
         }
         committeeRegistry = _committeeRegistry;
         __AccessControl_init(_initialOwner, _pegManager);
-    }
-
-    //added for replaced by Review_public_methods
-    //External function that calls the Internal function is added.
-    function _initialize(address _initialOwner, address _pegManager, ICommitteeRegistry _committeeRegistry)
-        external
-        initializer
-    {
-        initialize(_initialOwner, _pegManager, _committeeRegistry);
     }
 
     function _isMemberInCommittee(uint256 _committeeId, address _memberAddress) internal view returns (bool) {

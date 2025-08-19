@@ -14,9 +14,7 @@ contract StreamManagerHarness is StreamManager {
         ICommitteeRegistry _committeeRegistry,
         uint64[] memory _denominations,
         StreamManagerSettings memory _settings
-    ) internal virtual override initializer {
-        //replaced by Review_public_methods
-        // public override initializer {
+    ) public override initializer {
         StreamManager.initialize(_initialOwner, _pegManager, _committeeRegistry, _denominations, _settings);
     }
 
