@@ -23,7 +23,6 @@
     - [Member](src/interfaces/ICommitteeRegistry.sol/struct.Member.md)
     - [CommitteeMember](src/interfaces/ICommitteeRegistry.sol/struct.CommitteeMember.md)
     - [Committee](src/interfaces/ICommitteeRegistry.sol/struct.Committee.md)
-    - [PendingCommittee](src/interfaces/ICommitteeRegistry.sol/struct.PendingCommittee.md)
     - [PendingCommitteeData](src/interfaces/ICommitteeRegistry.sol/struct.PendingCommitteeData.md)
     - [CommunicationData](src/interfaces/ICommitteeRegistry.sol/struct.CommunicationData.md)
     - [ICommitteeRegistry](src/interfaces/ICommitteeRegistry.sol/interface.ICommitteeRegistry.md)

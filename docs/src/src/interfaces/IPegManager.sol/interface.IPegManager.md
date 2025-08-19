@@ -1,5 +1,5 @@
 # IPegManager
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b41d024ed73655cc3c392a6c92b6259ef625d19d/src/interfaces/IPegManager.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b750ea532307d08987643fe249271c69c1bee159/src/interfaces/IPegManager.sol)
 
 Interface for managing peg-in and peg-out operations in the union bridge
 
@@ -475,6 +475,7 @@ event PegoutRegistered(
     bytes32 indexed blockHash,
     bytes32 indexed txHash,
     bytes32 indexed acceptPeginTxHash,
+    uint128 committeeId,
     uint64 streamId,
     uint64 packetNumber,
     uint64 slotId
@@ -488,6 +489,7 @@ event PegoutRegistered(
 |`blockHash`|`bytes32`|The Bitcoin block hash containing the peg-out transaction|
 |`txHash`|`bytes32`|The hash of the peg-out transaction|
 |`acceptPeginTxHash`|`bytes32`|The hash of the original accept peg-in transaction|
+|`committeeId`|`uint128`|The ID of the committee responsible for this peg-out|
 |`streamId`|`uint64`|The stream ID where the funds originated|
 |`packetNumber`|`uint64`|The packet number within the stream|
 |`slotId`|`uint64`|The slot ID within the packet|

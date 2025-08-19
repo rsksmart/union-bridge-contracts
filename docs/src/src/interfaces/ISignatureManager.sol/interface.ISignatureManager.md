@@ -1,5 +1,5 @@
 # ISignatureManager
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b41d024ed73655cc3c392a6c92b6259ef625d19d/src/interfaces/ISignatureManager.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b750ea532307d08987643fe249271c69c1bee159/src/interfaces/ISignatureManager.sol)
 
 **Inherits:**
 [IAccessControl](/src/interfaces/IAccessControl.sol/interface.IAccessControl.md)
@@ -20,14 +20,14 @@ Initializes signature collection for a specific hash
 
 
 ```solidity
-function initSignatures(bytes32 _hashToSign, uint256 _committeeId) external;
+function initSignatures(bytes32 _hashToSign, uint128 _committeeId) external;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
 |`_hashToSign`|`bytes32`|The hash that committee members need to sign|
-|`_committeeId`|`uint256`|The ID of the committee responsible for signing|
+|`_committeeId`|`uint128`|The ID of the committee responsible for signing|
 
 
 ### addMemberNonce
@@ -129,7 +129,7 @@ Gets the status of signatures for a specific hash
 function getSignaturesStatus(bytes32 _hashToSign)
     external
     view
-    returns (uint8 missingSignatures, uint8 missingNonces, uint256 committeeId);
+    returns (uint8 missingSignatures, uint8 missingNonces, uint128 committeeId);
 ```
 **Parameters**
 
@@ -143,7 +143,7 @@ function getSignaturesStatus(bytes32 _hashToSign)
 |----|----|-----------|
 |`missingSignatures`|`uint8`|Number of missing signatures|
 |`missingNonces`|`uint8`|Number of missing nonces|
-|`committeeId`|`uint256`|The committee ID responsible for these signatures|
+|`committeeId`|`uint128`|The committee ID responsible for these signatures|
 
 
 ### initOperatorTakeTxHashes
@@ -154,14 +154,14 @@ Initializes OperatorTake transaction hash collection for a specific accept peg-i
 
 
 ```solidity
-function initOperatorTakeTxHashes(bytes32 _acceptPeginTxHash, uint256 _committeeId) external;
+function initOperatorTakeTxHashes(bytes32 _acceptPeginTxHash, uint128 _committeeId) external;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
 |`_acceptPeginTxHash`|`bytes32`|The accept peg-in transaction hash|
-|`_committeeId`|`uint256`|The ID of the committee responsible for OperatorTake operations|
+|`_committeeId`|`uint128`|The ID of the committee responsible for OperatorTake operations|
 
 
 ### addOperatorTakeTxHash
@@ -230,7 +230,7 @@ Gets the committee ID for a specific accept peg-in transaction hash
 
 
 ```solidity
-function getCommitteeIdByAcceptPeginTxHash(bytes32 _acceptPeginTxHash) external view returns (uint256);
+function getCommitteeIdByAcceptPeginTxHash(bytes32 _acceptPeginTxHash) external view returns (uint128);
 ```
 **Parameters**
 
@@ -242,7 +242,7 @@ function getCommitteeIdByAcceptPeginTxHash(bytes32 _acceptPeginTxHash) external 
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`uint256`|The committee ID responsible for this accept peg-in|
+|`<none>`|`uint128`|The committee ID responsible for this accept peg-in|
 
 
 ## Events
@@ -445,14 +445,14 @@ Thrown when a member is not found in a committee
 
 
 ```solidity
-error MemberNotFoundInCommittee(uint256 committeeId, address memberAddress);
+error MemberNotFoundInCommittee(uint128 committeeId, address memberAddress);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`committeeId`|`uint256`|The committee ID|
+|`committeeId`|`uint128`|The committee ID|
 |`memberAddress`|`address`|The member's address|
 
 ### InvalidHashToSign
@@ -558,14 +558,14 @@ Thrown when a member is not an operator
 
 
 ```solidity
-error MemberIsNotOperator(uint256 committeeId, address memberAddress);
+error MemberIsNotOperator(uint128 committeeId, address memberAddress);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`committeeId`|`uint256`|The committee ID|
+|`committeeId`|`uint128`|The committee ID|
 |`memberAddress`|`address`|The member's address|
 
 ### MemberAlreadyAddedOperatorTakeTxHash

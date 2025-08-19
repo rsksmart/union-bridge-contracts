@@ -1,5 +1,5 @@
 # CommitteeRegistry
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b41d024ed73655cc3c392a6c92b6259ef625d19d/src/CommitteeRegistry.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b750ea532307d08987643fe249271c69c1bee159/src/CommitteeRegistry.sol)
 
 **Inherits:**
 [ICommitteeRegistry](/src/interfaces/ICommitteeRegistry.sol/interface.ICommitteeRegistry.md), [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md)
@@ -47,11 +47,11 @@ uint256 public committeeMemberCount;
 
 
 ### pendingCommittees
-Mapping of streamId to pending committee data
+Mapping of streamId to the committee id
 
 
 ```solidity
-mapping(uint64 streamId => PendingCommittee) internal pendingCommittees;
+mapping(uint64 streamId => uint128) internal pendingCommittees;
 ```
 
 
@@ -60,7 +60,16 @@ Mapping of committeeId to committee data
 
 
 ```solidity
-mapping(uint256 committeeId => Committee) internal committeesById;
+mapping(uint128 committeeId => Committee) internal committeesById;
+```
+
+
+### committeesData
+Mapping of member addresses to their pending data
+
+
+```solidity
+mapping(uint128 committeeId => mapping(address memberAddress => PendingCommitteeData)) committeesData;
 ```
 
 
@@ -340,26 +349,19 @@ function _registerMember(address _memberAddress, MemberRegistrationKeys calldata
     returns (Member storage);
 ```
 
-### _registerCommittee
-
-
-```solidity
-function _registerCommittee(uint256 _committeeId, Committee storage _committee) internal;
-```
-
 ### getCommittee
 
 Gets a committee by its ID
 
 
 ```solidity
-function getCommittee(uint256 _committeeId) external view returns (Committee memory);
+function getCommittee(uint128 _committeeId) external view returns (Committee memory);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_committeeId`|`uint256`|The committee ID|
+|`_committeeId`|`uint128`|The committee ID|
 
 **Returns**
 
@@ -372,7 +374,7 @@ function getCommittee(uint256 _committeeId) external view returns (Committee mem
 
 
 ```solidity
-function _getCommittee(uint256 _committeeId) internal view returns (Committee storage);
+function _getCommittee(uint128 _committeeId) internal view returns (Committee storage);
 ```
 
 ### getCommitteeMembers
@@ -381,13 +383,13 @@ Gets all members of a specific committee
 
 
 ```solidity
-function getCommitteeMembers(uint256 _committeeId) external view returns (CommitteeMember[] memory);
+function getCommitteeMembers(uint128 _committeeId) external view returns (CommitteeMember[] memory);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_committeeId`|`uint256`|The committee ID|
+|`_committeeId`|`uint128`|The committee ID|
 
 **Returns**
 
@@ -400,7 +402,7 @@ function getCommitteeMembers(uint256 _committeeId) external view returns (Commit
 
 
 ```solidity
-function _getCommitteeMembers(uint256 _committeeId) internal view returns (CommitteeMember[] memory);
+function _getCommitteeMembers(uint128 _committeeId) internal view returns (CommitteeMember[] memory);
 ```
 
 ### getMemberTakePubKey
@@ -647,6 +649,13 @@ function _createCommitteeIfPending(uint64 _streamId) internal returns (bool);
 function _createCommittee(uint64 _streamId) internal returns (PendingCommitteeStatus);
 ```
 
+### _isInCommitteeOrRevert
+
+
+```solidity
+function _isInCommitteeOrRevert(uint128 _committeeId, address _memberAddress) internal view;
+```
+
 ### depositAggregatedKey
 
 Allows a member to deposit information for committee formation
@@ -655,13 +664,13 @@ Allows a member to deposit information for committee formation
 
 
 ```solidity
-function depositAggregatedKey(uint64 _streamId, bytes32 _aggregatedKey) external;
+function depositAggregatedKey(uint128 _committeeId, bytes32 _aggregatedKey) external;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_streamId`|`uint64`|The stream ID for the pending committee|
+|`_committeeId`|`uint128`|The ID of the pending committee|
 |`_aggregatedKey`|`bytes32`|The aggregated public key provided by the member|
 
 
@@ -669,7 +678,7 @@ function depositAggregatedKey(uint64 _streamId, bytes32 _aggregatedKey) external
 
 
 ```solidity
-function depositCommunicationData(uint64 _streamId, CommunicationData[] memory _communicationData) external;
+function depositCommunicationData(uint128 _committeeId, CommunicationData[] memory _communicationData) external;
 ```
 
 ### getMemberCommunicationData
@@ -682,7 +691,7 @@ Gets the encrypted communication data for one member in a committee
 
 
 ```solidity
-function getMemberCommunicationData(uint64 _streamId, address _memberAddress)
+function getMemberCommunicationData(uint128 _committeeId, address _memberAddress)
     external
     view
     returns (CommunicationData[] memory communicationData);
@@ -691,7 +700,7 @@ function getMemberCommunicationData(uint64 _streamId, address _memberAddress)
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_streamId`|`uint64`|The stream ID for the committee|
+|`_committeeId`|`uint128`|The committee ID for the committee|
 |`_memberAddress`|`address`|The address of the member we are requesting data for|
 
 **Returns**
@@ -729,19 +738,50 @@ function getPendingCommittee(uint64 _streamId)
 |`missingData`|`uint256`|The number of members that have not provided their data yet|
 
 
+### getPendingCommitteeId
+
+Returns the committee ID for a pending committee in the given stream
+
+
+```solidity
+function getPendingCommitteeId(uint64 _streamId) external view returns (uint128 committeeId);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_streamId`|`uint64`|The stream ID to get the pending committee ID for|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`committeeId`|`uint128`|The committee ID of the pending committee|
+
+
+### _getPendingCommitteeId
+
+
+```solidity
+function _getPendingCommitteeId(uint64 _streamId) internal view returns (uint128 committeeId);
+```
+
 ### getMissingCommunicationDataCount
 
 Returns the number of members that have not deposited their communication data yet
 
 
 ```solidity
-function getMissingCommunicationDataCount(uint64 _streamId) external view returns (uint16 missingCommunicationData);
+function getMissingCommunicationDataCount(uint128 _committeeId)
+    external
+    view
+    returns (uint16 missingCommunicationData);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_streamId`|`uint64`|The stream ID to get the missing communication data count for|
+|`_committeeId`|`uint128`|The committee ID to check for missing communication data|
 
 **Returns**
 
@@ -754,7 +794,14 @@ function getMissingCommunicationDataCount(uint64 _streamId) external view return
 
 
 ```solidity
-function _getPendingCommittee(uint64 _streamId) internal view returns (PendingCommittee storage pendingCommittee);
+function _getPendingCommittee(uint64 _streamId) internal view returns (Committee storage);
+```
+
+### _getPendingCommitteeById
+
+
+```solidity
+function _getPendingCommitteeById(uint128 _committeeId) internal view returns (Committee storage);
 ```
 
 ### isPendingCommitteeExpired
@@ -848,7 +895,7 @@ Gets the next available operator address for take operations
 
 
 ```solidity
-function getOperatorTakeAddress(uint256 _committeeId, SignatureData[] calldata _signatureData)
+function getOperatorTakeAddress(uint128 _committeeId, SignatureData[] calldata _signatureData)
     external
     onlyPegManager
     returns (address);
@@ -857,7 +904,7 @@ function getOperatorTakeAddress(uint256 _committeeId, SignatureData[] calldata _
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_committeeId`|`uint256`|The committee ID to get the operator from|
+|`_committeeId`|`uint128`|The committee ID to get the operator from|
 |`_signatureData`|`SignatureData[]`|Array of signature data for committee members|
 
 **Returns**

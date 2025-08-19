@@ -1,5 +1,5 @@
 # ICommitteeRegistry
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b41d024ed73655cc3c392a6c92b6259ef625d19d/src/interfaces/ICommitteeRegistry.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b750ea532307d08987643fe249271c69c1bee159/src/interfaces/ICommitteeRegistry.sol)
 
 Interface for managing committee registration and formation in the union bridge
 
@@ -228,13 +228,13 @@ Gets a committee by its ID
 
 
 ```solidity
-function getCommittee(uint256 _committeeId) external view returns (Committee calldata);
+function getCommittee(uint128 _committeeId) external view returns (Committee calldata);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_committeeId`|`uint256`|The committee ID|
+|`_committeeId`|`uint128`|The committee ID|
 
 **Returns**
 
@@ -249,13 +249,13 @@ Gets all members of a specific committee
 
 
 ```solidity
-function getCommitteeMembers(uint256 _committeeId) external view returns (CommitteeMember[] memory);
+function getCommitteeMembers(uint128 _committeeId) external view returns (CommitteeMember[] memory);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_committeeId`|`uint256`|The committee ID|
+|`_committeeId`|`uint128`|The committee ID|
 
 **Returns**
 
@@ -314,13 +314,13 @@ Allows a member to deposit information  formation
 
 
 ```solidity
-function depositAggregatedKey(uint64 _streamId, bytes32 _aggregatedKey) external;
+function depositAggregatedKey(uint128 _committeeId, bytes32 _aggregatedKey) external;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_streamId`|`uint64`|The stream ID for the pending committee|
+|`_committeeId`|`uint128`|The ID of the pending committee|
 |`_aggregatedKey`|`bytes32`|The aggregated public key provided by the member|
 
 
@@ -390,19 +390,43 @@ function getPendingCommittee(uint64 _streamId)
 |`missingData`|`uint256`|The number of members that have not provided their data yet|
 
 
+### getPendingCommitteeId
+
+Returns the committee ID for a pending committee in the given stream
+
+
+```solidity
+function getPendingCommitteeId(uint64 _streamId) external view returns (uint128 committeeId);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_streamId`|`uint64`|The stream ID to get the pending committee ID for|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`committeeId`|`uint128`|The committee ID of the pending committee|
+
+
 ### getMissingCommunicationDataCount
 
 Returns the number of members that have not deposited their communication data yet
 
 
 ```solidity
-function getMissingCommunicationDataCount(uint64 _streamId) external view returns (uint16 missingCommunicationData);
+function getMissingCommunicationDataCount(uint128 _committeeId)
+    external
+    view
+    returns (uint16 missingCommunicationData);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_streamId`|`uint64`|The stream ID to get the missing communication data count for|
+|`_committeeId`|`uint128`|The committee ID to check for missing communication data|
 
 **Returns**
 
@@ -419,13 +443,13 @@ Deposits encrypted communication data (IP and Port) for a member in a pending co
 
 
 ```solidity
-function depositCommunicationData(uint64 _streamId, CommunicationData[] memory _communicationData) external;
+function depositCommunicationData(uint128 _committeeId, CommunicationData[] memory _communicationData) external;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_streamId`|`uint64`|The stream ID for the pending committee|
+|`_committeeId`|`uint128`|The ID of the pending committee|
 |`_communicationData`|`CommunicationData[]`|Array of encrypted communication data (IP and Port) for the member|
 
 
@@ -439,7 +463,7 @@ Gets the encrypted communication data for one member in a committee
 
 
 ```solidity
-function getMemberCommunicationData(uint64 _streamId, address _memberAddress)
+function getMemberCommunicationData(uint128 _committeeId, address _memberAddress)
     external
     view
     returns (CommunicationData[] memory communicationData);
@@ -448,7 +472,7 @@ function getMemberCommunicationData(uint64 _streamId, address _memberAddress)
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_streamId`|`uint64`|The stream ID for the committee|
+|`_committeeId`|`uint128`|The committee ID for the committee|
 |`_memberAddress`|`address`|The address of the member we are requesting data for|
 
 **Returns**
@@ -566,7 +590,7 @@ Gets the operator take address for a specific committee
 
 
 ```solidity
-function getOperatorTakeAddress(uint256 committeeId, SignatureData[] calldata signatureData)
+function getOperatorTakeAddress(uint128 committeeId, SignatureData[] calldata signatureData)
     external
     returns (address);
 ```
@@ -574,7 +598,7 @@ function getOperatorTakeAddress(uint256 committeeId, SignatureData[] calldata si
 
 |Name|Type|Description|
 |----|----|-----------|
-|`committeeId`|`uint256`|The ID of the committee|
+|`committeeId`|`uint128`|The ID of the committee|
 |`signatureData`|`SignatureData[]`|The signature data for the committee members|
 
 **Returns**
@@ -636,14 +660,14 @@ Event emitted when a new committee is created
 
 
 ```solidity
-event NewCommittee(uint256 indexed committeeId, Committee _committee);
+event NewCommittee(uint128 indexed committeeId, Committee _committee);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`committeeId`|`uint256`|The ID of the newly created committee|
+|`committeeId`|`uint128`|The ID of the newly created committee|
 |`_committee`|`Committee`|The committee information|
 
 ### NewPendingCommittee
@@ -651,14 +675,14 @@ Event emitted when a new pending committee is created
 
 
 ```solidity
-event NewPendingCommittee(uint256 indexed streamId, Committee _committee);
+event NewPendingCommittee(uint128 indexed committeeId, Committee _committee);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`streamId`|`uint256`|The stream ID for the pending committee|
+|`committeeId`|`uint128`|The stream ID for the pending committee|
 |`_committee`|`Committee`|The pending committee information|
 
 ### NewMember
@@ -878,14 +902,14 @@ Event emitted when member info is deposited for committee formation
 
 
 ```solidity
-event MemberInfoDeposited(uint64 indexed streamId, address indexed member, bytes32 aggregatedKey);
+event MemberInfoDeposited(uint128 indexed committeeId, address indexed member, bytes32 aggregatedKey);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`streamId`|`uint64`|The stream ID|
+|`committeeId`|`uint128`|The ID of the pending committee|
 |`member`|`address`|The member's address|
 |`aggregatedKey`|`bytes32`|The aggregated key provided by the member|
 
@@ -894,14 +918,14 @@ Event emitted when no honest operators remain in a committee
 
 
 ```solidity
-event NoRemainingHonestOperators(uint256 committeeId);
+event NoRemainingHonestOperators(uint128 committeeId);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`committeeId`|`uint256`|The ID of the committee with no honest operators|
+|`committeeId`|`uint128`|The ID of the committee with no honest operators|
 
 ### MemberReApplied
 Event emitted when a member reapplies to a stream
@@ -946,7 +970,7 @@ Event emitted when a member has deposited their communication data
 
 ```solidity
 event MemberCommunicationDataDeposited(
-    uint64 indexed streamId, address indexed member, CommunicationData[] communicationData
+    uint128 indexed _committeeId, address indexed member, CommunicationData[] communicationData
 );
 ```
 
@@ -954,7 +978,7 @@ event MemberCommunicationDataDeposited(
 
 |Name|Type|Description|
 |----|----|-----------|
-|`streamId`|`uint64`|The stream ID of the pending committee for which the data is deposited|
+|`_committeeId`|`uint128`|The ID of the committee for which the member deposited data|
 |`member`|`address`|The address of the member who deposited the data|
 |`communicationData`|`CommunicationData[]`|The encrypted communication data deposited by the member|
 
@@ -963,14 +987,14 @@ Event emitted when all committee members have deposited their communication data
 
 
 ```solidity
-event AllCommunicationDataReady(uint64 indexed streamId);
+event AllCommunicationDataReady(uint128 indexed _committeeId);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`streamId`|`uint64`|The stream ID of the pending committee for which all data is now complete|
+|`_committeeId`|`uint128`|The ID of the committee for which all communication data is ready|
 
 ## Errors
 ### RequestedDifferentStreamsAndRolesLength
@@ -1045,14 +1069,14 @@ Thrown when a committee is already registered
 
 
 ```solidity
-error AlreadyRegisteredCommittee(uint256 committeeId);
+error AlreadyRegisteredCommittee(uint128 committeeId);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`committeeId`|`uint256`|The ID of the already registered committee|
+|`committeeId`|`uint128`|The ID of the already registered committee|
 
 ### MemberNotFound
 Thrown when a member is not found
@@ -1073,14 +1097,14 @@ Thrown when a committee is not in pending state
 
 
 ```solidity
-error CommitteeIsNotPending(uint64 streamId);
+error CommitteeIsNotPending(uint128 committeeId);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`streamId`|`uint64`|The stream ID|
+|`committeeId`|`uint128`|The ID of the committee that is not pending|
 
 ### PendingCommitteeNotExpired
 Thrown when a pending committee is not expired
@@ -1216,14 +1240,14 @@ Thrown when a member is not in the committee
 
 
 ```solidity
-error MemberNotInCommittee(uint64 streamId, address memberAddress);
+error MemberNotInCommittee(uint128 committeeId, address memberAddress);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`streamId`|`uint64`|The stream ID|
+|`committeeId`|`uint128`|The committee ID|
 |`memberAddress`|`address`|The member's address|
 
 ### MemberInfoAlreadyDeposited
@@ -1231,13 +1255,14 @@ Thrown when member info is already deposited
 
 
 ```solidity
-error MemberInfoAlreadyDeposited(address memberAddress);
+error MemberInfoAlreadyDeposited(uint128 committeeId, address memberAddress);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
+|`committeeId`|`uint128`|The committee ID|
 |`memberAddress`|`address`|The member's address|
 
 ### CommitteeNotFound
@@ -1245,14 +1270,14 @@ Thrown when a committee is not found
 
 
 ```solidity
-error CommitteeNotFound(uint256 committeeId);
+error CommitteeNotFound(uint128 committeeId);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`committeeId`|`uint256`|The committee ID|
+|`committeeId`|`uint128`|The committee ID|
 
 ### UnauthorizedAccount
 Thrown when an account is not authorized
@@ -1542,14 +1567,14 @@ Thrown when no eligible operator is found for take operations
 
 
 ```solidity
-error TakeOperatorNotFound(uint256 committeeId);
+error TakeOperatorNotFound(uint128 committeeId);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`committeeId`|`uint256`|The ID of the committee where no operator was found|
+|`committeeId`|`uint128`|The ID of the committee where no operator was found|
 
 ### TooManyCandidatesForStream
 Thrown when there are too many candidates for a stream
@@ -1616,14 +1641,16 @@ Thrown when a member attempts to deposit communication data more than once
 
 
 ```solidity
-error MemberAlreadyDepositedCommunicationData(uint64 streamId, address memberAddress, uint256 communicationDataLenght);
+error MemberAlreadyDepositedCommunicationData(
+    uint128 committeeId, address memberAddress, uint256 communicationDataLenght
+);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`streamId`|`uint64`|The stream ID associated with the committee|
+|`committeeId`|`uint128`|The ID of the committee|
 |`memberAddress`|`address`|The address of the member attempting a second deposit|
 |`communicationDataLenght`|`uint256`|The number of communication data entries already stored|
 
@@ -1662,7 +1689,7 @@ Thrown when a member's take public key doesn't match the signature public key
 
 ```solidity
 error _InvalidOperatorTakePubKey(
-    uint256 committeeId, address memberAddress, bytes32 memberPubKey, bytes32 signaturePubKeyX
+    uint128 committeeId, address memberAddress, bytes32 memberPubKey, bytes32 signaturePubKeyX
 );
 ```
 
@@ -1670,7 +1697,7 @@ error _InvalidOperatorTakePubKey(
 
 |Name|Type|Description|
 |----|----|-----------|
-|`committeeId`|`uint256`|The ID of the committee|
+|`committeeId`|`uint128`|The ID of the committee|
 |`memberAddress`|`address`|The member's address|
 |`memberPubKey`|`bytes32`|The member's registered take public key|
 |`signaturePubKeyX`|`bytes32`|The public key X-coordinate from the signature|
