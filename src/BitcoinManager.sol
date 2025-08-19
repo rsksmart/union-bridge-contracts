@@ -28,17 +28,9 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
     /// @dev Can only be called once during contract deployment
     /// @param _initialOwner The address that will be set as the initial owner
     /// @param _network The Bitcoin network to operate on
-    function _initialize(address _initialOwner, BtcNetwork _network) internal initializer {
-        //replaced by Review_public_methods
-        //function initialize(address _initialOwner, BtcNetwork _network) public initializer {
+    function initialize(address _initialOwner, BtcNetwork _network) public initializer {
         network = _network;
         __BaseProxy_init(_initialOwner);
-    }
-
-    //added for replaced by Review_public_methods
-    //External function that calls the Internal function is added.
-    function initialize(address _initialOwner, BtcNetwork _network) external initializer {
-        _initialize(_initialOwner, _network);
     }
 
     /// @notice Converts a Bitcoin transaction to raw hex format and calculates its hash
@@ -190,7 +182,7 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         validateRequestPeginInputs(
             _btcReimbursementPubKey, _committeePubKey, _rskDestinationAddress, _streamDenomination
         );
-        bytes memory p2trScriptPubKey = _getPeginRequestP2TRScriptPub(
+        bytes memory p2trScriptPubKey = getPeginRequestP2TRScriptPub(
             _rskDestinationAddress, _streamDenomination, _btcReimbursementPubKey, _committeePubKey
         );
         _compareOutputPubKey(_p2trOut.scriptPubKey, p2trScriptPubKey);
@@ -202,28 +194,15 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
     /// @param _btcReimbursementPubKey The user's Bitcoin public key for reimbursement (x-only)
     /// @param _committeePubKey The committee's public key for the Taproot address (x-only)
     /// @return The P2TR script pub key bytes
-    //added by Review_public_methods
-    function _getPeginRequestP2TRScriptPub(
-        address _rskDestinationAddress,
-        uint64 _value,
-        bytes32 _btcReimbursementPubKey,
-        bytes32 _committeePubKey
-    ) internal pure returns (bytes memory) 
-    //replaced by Review_public_methods
-    //) public pure returns (bytes memory) {
-    {
-        bytes32 tweakedPublicKey =
-            getRequestPeginTweakedPublicKey(_rskDestinationAddress, _value, _btcReimbursementPubKey, _committeePubKey);
-        return BtcTaproot.getP2TRScriptPubKey(tweakedPublicKey);
-    }
-
     function getPeginRequestP2TRScriptPub(
         address _rskDestinationAddress,
         uint64 _value,
         bytes32 _btcReimbursementPubKey,
         bytes32 _committeePubKey
-    ) external pure override returns (bytes memory) {
-        return _getPeginRequestP2TRScriptPub(_rskDestinationAddress, _value, _btcReimbursementPubKey, _committeePubKey);
+    ) public pure returns (bytes memory) {
+        bytes32 tweakedPublicKey =
+            getRequestPeginTweakedPublicKey(_rskDestinationAddress, _value, _btcReimbursementPubKey, _committeePubKey);
+        return BtcTaproot.getP2TRScriptPubKey(tweakedPublicKey);
     }
 
     function _compareOutputPubKey(bytes memory outputPubKey, bytes memory expectedPubKey) internal pure {
@@ -283,11 +262,11 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         (uint64 fee, uint64 speedUpAmount) = BtcHelper.calculateFeeAndSpeedUp();
 
         // Committee accept pegin
-        bytes memory scriptPubKey = _getAcceptPeginP2TRScriptPub(_committeePubKey);
+        bytes memory scriptPubKey = getAcceptPeginP2TRScriptPub(_committeePubKey);
         btcOutputs[0] = BtcTxOut({amount: _prevoutData.value - fee - speedUpAmount, scriptPubKey: scriptPubKey});
 
         // Speed up
-        bytes memory speedUpScriptPubKey = _getSpeedUpScriptPub(_userXOnlyPubKey);
+        bytes memory speedUpScriptPubKey = getSpeedUpScriptPub(_userXOnlyPubKey);
         btcOutputs[1] = BtcTxOut({amount: speedUpAmount, scriptPubKey: speedUpScriptPubKey});
 
         // Prepare Btc Transaction
@@ -327,24 +306,16 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         if (_p2trOut.amount < inputMinusFees) {
             revert InvalidOutputAmount(_p2trOut.amount, inputMinusFees);
         }
-        bytes memory p2trScriptPubKey = _getAcceptPeginP2TRScriptPub(_committeePubKey);
+        bytes memory p2trScriptPubKey = getAcceptPeginP2TRScriptPub(_committeePubKey);
         _compareOutputPubKey(_p2trOut.scriptPubKey, p2trScriptPubKey);
     }
 
     /// @notice Generates the Accept Pegin Taproot output script pub key with both key spend and script spend paths
     /// @param _committeePubKey The committee's public key (x-only)
     /// @return The P2TR script pub key bytes
-    function _getAcceptPeginP2TRScriptPub(bytes32 _committeePubKey) internal pure returns (bytes memory) {
-        //replaced by Review_public_methods
-        //function getAcceptPeginP2TRScriptPub(bytes32 _committeePubKey) public pure returns (bytes memory) {
+    function getAcceptPeginP2TRScriptPub(bytes32 _committeePubKey) public pure returns (bytes memory) {
         bytes32 tweakedPublicKey = getAcceptPeginTweakedPublicKey(_committeePubKey);
         return BtcTaproot.getP2TRScriptPubKey(tweakedPublicKey);
-    }
-
-    //added for replaced by Review_public_methods
-    //External function that calls the Internal function is added.
-    function getAcceptPeginP2TRScriptPub(bytes32 _committeePubKey) external pure returns (bytes memory) {
-        return _getAcceptPeginP2TRScriptPub(_committeePubKey);
     }
 
     // ========================== Peg In Speed Up ==========================
@@ -355,27 +326,17 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         if (_speedUpOut.amount < Constants.SPEED_UP_AMOUNT) {
             revert InvalidValue(_speedUpOut.amount, Constants.SPEED_UP_AMOUNT);
         }
-        bytes memory p2wpkhScriptPubKey = _getSpeedUpScriptPub(_pubKey);
+        bytes memory p2wpkhScriptPubKey = getSpeedUpScriptPub(_pubKey);
         _compareOutputPubKey(_speedUpOut.scriptPubKey, p2wpkhScriptPubKey);
     }
 
     /// @notice Generates the speed-up script pub key
     /// @param _pubKey The public key for the speed-up output (x-only)
     /// @return The P2WPKH script pub key bytes
-
-    function _getSpeedUpScriptPub(bytes32 _pubKey) internal pure returns (bytes memory) {
-        //replaced by Review_public_methods
-        //function getSpeedUpScriptPub(bytes32 _pubKey) public pure returns (bytes memory) {
-
+    function getSpeedUpScriptPub(bytes32 _pubKey) public pure returns (bytes memory) {
         // TODO change this to use P2WPSH with OP_1 so anyone can send the speed up
         // this should change at the same time as in the protocol builder
         return BtcScriptParser.getP2WPKHScript(BtcHelper.pubKeyXonlyToCompact(_pubKey));
-    }
-
-    function getSpeedUpScriptPub(bytes32 _pubKey) external pure returns (bytes memory) {
-        //added for replaced by Review_public_methods
-        //External function that calls the Internal function is added.
-        return _getSpeedUpScriptPub(_pubKey);
     }
 
     // ========================== Peg Out Signature Hash ==========================
@@ -384,7 +345,6 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
     /// @param _acceptPeginTx The hash of the accept peg-in transaction
     /// @param _prevoutData The previous output data for the input
     /// @return The signature hash and signature message
-
     function getPegoutSignatureHash(bytes memory _userPubKey, bytes32 _acceptPeginTx, PrevoutData memory _prevoutData)
         external
         pure

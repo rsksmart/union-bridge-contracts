@@ -48,10 +48,7 @@ contract StreamManager is IStreamManager, AccessControl {
         ICommitteeRegistry _committeeRegistry,
         uint64[] memory _denominations,
         StreamManagerSettings memory _settings
-    ) internal virtual initializer {
-        //replaced by Review_public_methods
-        //) public virtual initializer {
-
+    ) public virtual initializer {
         uint256 length = _denominations.length;
         if (length > Constants.MAX_DENOMINATIONS_SIZE) {
             revert tooManyDenominations(Constants.MAX_DENOMINATIONS_SIZE);
@@ -88,18 +85,6 @@ contract StreamManager is IStreamManager, AccessControl {
         securityBondPercentage[Role.OPERATOR] = _settings.securityBondPercentageOperator;
         minimumSecurityDeposit = _settings.minimumSecurityDeposit;
         disablementPaymentsPerChallenge = _settings.disablementPaymentsPerChallenge;
-    }
-
-    //added for replaced by Review_public_methods
-    //External function that calls the Internal function is added.
-    function _initialize(
-        address _initialOwner,
-        IPegManager _pegManager,
-        ICommitteeRegistry _committeeRegistry,
-        uint64[] memory _denominations,
-        StreamManagerSettings memory _settings
-    ) external initializer {
-        initialize(_initialOwner, _pegManager, _committeeRegistry, _denominations, _settings);
     }
 
     /// @notice Creates a new packet for a stream
@@ -166,9 +151,7 @@ contract StreamManager is IStreamManager, AccessControl {
     /// @param _streamId The ID of the stream
     /// @param _packetNumber The packet number to retrieve
     /// @return The packet data
-    function _getPacket(uint64 _streamId, uint64 _packetNumber) internal view returns (Packet memory) {
-        //replaced by Review_public_methods
-        //function getPacket(uint64 _streamId, uint64 _packetNumber) public view returns (Packet memory) {
+    function getPacket(uint64 _streamId, uint64 _packetNumber) public view returns (Packet memory) {
         if (_streamId >= streams.length) {
             revert StreamNotFoundById(_streamId);
         }
@@ -177,12 +160,6 @@ contract StreamManager is IStreamManager, AccessControl {
             revert PacketOutOfBound(_packetNumber);
         }
         return packets[_streamId][_packetNumber];
-    }
-
-    //added for replaced by Review_public_methods
-    //External function that calls the Internal function is added.
-    function getPacket(uint64 _streamId, uint64 _packetNumber) external view returns (Packet memory) {
-        return _getPacket(_streamId, _packetNumber);
     }
 
     /// @notice Gets the committee ID for the available pegin packet in a stream
@@ -364,8 +341,7 @@ contract StreamManager is IStreamManager, AccessControl {
     /// @param _packetNumber The packet number
     /// @return The committee ID for the packet
     function getCommitteeId(uint64 _streamId, uint64 _packetNumber) external view returns (uint256) {
-        //return getPacket(_streamId, _packetNumber).committeeId;
-        return _getPacket(_streamId, _packetNumber).committeeId;
+        return getPacket(_streamId, _packetNumber).committeeId;
     }
 
     /// @notice Gets the committee public key for a specific packet
@@ -373,8 +349,7 @@ contract StreamManager is IStreamManager, AccessControl {
     /// @param _packetNumber The packet number
     /// @return The committee public key for the packet
     function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes32) {
-        //return getPacket(_streamId, _packetNumber).committeePubKey;
-        return _getPacket(_streamId, _packetNumber).committeePubKey;
+        return getPacket(_streamId, _packetNumber).committeePubKey;
     }
 
     /// @notice Marks a slot as completed and stores the UserTake transaction hash
@@ -430,12 +405,11 @@ contract StreamManager is IStreamManager, AccessControl {
         slot.state = SlotState.ADVANCED;
     }
 
-    function getMinimumDeposit(StreamDenomination _denomination, Role _role) external view returns (uint256) {
-        //replaced by Review_public_methods
-        //function getMinimumDeposit(StreamDenomination _denomination, Role _role) public view returns (uint256) {
+    function getMinimumDeposit(StreamDenomination _denomination, Role _role) public view returns (uint256) {
         if (_role == Role.NONE) {
             revert InvalidRole(_role);
         }
+
         uint256 denominationValue = BtcHelper.satoshiToWei(uint256(streams[uint8(_denomination)].denomination));
         uint256 slotPercentage = denominationValue * securityBondPercentage[_role] / 10_000;
         uint256 challengeCost = minimumSecurityDeposit + disablementPaymentsPerChallenge;

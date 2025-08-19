@@ -14,9 +14,7 @@ contract PegManagerHarness is PegManager {
         ICommitteeRegistry _committeeRegistry,
         IBitcoinManager _bitcoinManager,
         PegManagerSettings memory _settings
-    ) internal virtual override initializer {
-        //replaced by Review_public_methods
-        //public override initializer {
+    ) public override initializer {
         PegManager.initialize(_initialOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager, _settings);
     }
 

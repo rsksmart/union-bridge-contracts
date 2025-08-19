@@ -73,10 +73,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         ICommitteeRegistry _committeeRegistry,
         IBitcoinManager _bitcoinManager,
         PegManagerSettings memory _settings
-    ) internal virtual initializer {
-        //replaced by Review_public_methods
-        //) public virtual initializer {
-
+    ) public virtual initializer {
         // Validate that the bitcoin manager is not zero address
         if (address(_bitcoinManager) == address(0)) {
             revert BitcoinManagerAddressZero();
@@ -93,18 +90,6 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
 
         userTakeTimeout = _settings.userTakeTimeout;
         operatorTakeTimeout = _settings.operatorTakeTimeout;
-    }
-
-    //added for replaced by Review_public_methods
-    //External function that calls the Internal function is added.
-    function _initialize(
-        address _initialOwner,
-        address payable _bridgeAddress,
-        ICommitteeRegistry _committeeRegistry,
-        IBitcoinManager _bitcoinManager,
-        PegManagerSettings memory _settings
-    ) external virtual initializer {
-        initialize(_initialOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager, _settings);
     }
 
     /// @notice Sets the stream manager contract address
