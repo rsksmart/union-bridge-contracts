@@ -78,7 +78,7 @@ struct PegoutTempInfo {
     /// @notice Timestamp when the operator take was last updated/triggered
     uint256 operatorTakeUpdatedAt;
     /// @notice The committee ID responsible for signing this peg-out
-    uint256 committeeId;
+    uint128 committeeId;
     /// @notice The operator address that will advance the funds to the user
     address takeOperatorAddress;
     /// @notice The public key of the selected operator for Bitcoin transactions (x-coordinate only)
@@ -246,6 +246,7 @@ interface IPegManager {
     /// @param blockHash The Bitcoin block hash containing the peg-out transaction
     /// @param txHash The hash of the peg-out transaction
     /// @param acceptPeginTxHash The hash of the original accept peg-in transaction
+    /// @param committeeId The ID of the committee responsible for this peg-out
     /// @param streamId The stream ID where the funds originated
     /// @param packetNumber The packet number within the stream
     /// @param slotId The slot ID within the packet
@@ -253,6 +254,7 @@ interface IPegManager {
         bytes32 indexed blockHash,
         bytes32 indexed txHash,
         bytes32 indexed acceptPeginTxHash,
+        uint128 committeeId,
         uint64 streamId,
         uint64 packetNumber,
         uint64 slotId

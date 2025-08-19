@@ -28,18 +28,20 @@ contract TestPegManager is Test, HelperContract {
     uint64 internal constant PACKET_NUMBER = 0;
     address internal constant RSK_DESTINATION_ADDRESS = 0x7Ac5496aee77c1bA1F0854206A26DdA82A81d6d8;
     uint64 internal setupStreamId;
+    uint128 internal setupCommitteeId;
     Committee internal setupExpectedCommittee;
 
     function setUp() external {
         runTestDeployScript();
-        (, Committee memory expectedCommittee, uint64 streamId) = setup_completeCommitteeAndNewMembers();
+        (, Committee memory expectedCommittee, uint128 committeeId) = setup_completeCommitteeAndNewMembers();
 
         setupExpectedCommittee.aggregatedKey = expectedCommittee.aggregatedKey;
         setupExpectedCommittee.leaderAddress = expectedCommittee.leaderAddress;
         for (uint64 i = 0; i < expectedCommittee.members.length; i++) {
             setupExpectedCommittee.members.push(expectedCommittee.members[i]);
         }
-        setupStreamId = streamId;
+        setupStreamId = expectedCommittee.streamId;
+        setupCommitteeId = committeeId;
     }
 
     // ================= Request Pegout =================
@@ -60,7 +62,6 @@ contract TestPegManager is Test, HelperContract {
         Stream memory stream = streamManager.getStream(uint64(amount));
         uint64 packetNumber = 0;
         uint64 slotId = 0;
-        uint256 committeeId = uint256(keccak256(abi.encode(stream.streamId, packetNumber)));
 
         streamManager.setSlotHarness(stream.streamId, packetNumber, scriptPubKey, txId, amount, SlotState.FILLED);
 
@@ -73,7 +74,7 @@ contract TestPegManager is Test, HelperContract {
         vm.expectEmit(address(pm));
         emit IPegManager.PegoutRequested(
             userPubKey,
-            committeeId,
+            COMMITTEE_ID_STREAM_1_COMMITTEE_1,
             expectedHash,
             expectedDigest,
             stream.streamId,
@@ -126,7 +127,6 @@ contract TestPegManager is Test, HelperContract {
         Stream memory stream = streamManager.getStream(amount);
         uint64 slotId = stream.pegoutSlotPointer;
         uint64 packetNumber = stream.pegoutPacketPointer;
-        uint256 committeeId = uint256(keccak256(abi.encode(stream.streamId, packetNumber)));
 
         // Calculate expected PegoutId using mock block hash
         bytes32 mockBlockHash = 0x0000000000000000000049b460f18614380a01b8709d2c3a8ddf451d08d862b8;
@@ -137,7 +137,7 @@ contract TestPegManager is Test, HelperContract {
         vm.expectEmit(address(pm));
         emit IPegManager.PegoutRequested(
             userPubKey,
-            committeeId,
+            COMMITTEE_ID_STREAM_1_COMMITTEE_1,
             expectedSignatureHash,
             expectedSignatureDigest,
             stream.streamId,
@@ -175,7 +175,7 @@ contract TestPegManager is Test, HelperContract {
     function test_tryPegout_FromNextPacket_Success() external {
         // Setup
         uint256 pegoutAmount = Constants.SLOTS_PER_PACKET + 10;
-        setup_multipleRequestAndAcceptPeginFlows(pegoutAmount, setupStreamId);
+        setup_multipleRequestAndAcceptPeginFlows(pegoutAmount);
 
         bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
         uint64 amount = VALUE;
@@ -285,6 +285,7 @@ contract TestPegManager is Test, HelperContract {
             setup.pegoutTxSPVProof.blockHash,
             setup.pegoutTxHash,
             setup.acceptPeginTxHash,
+            COMMITTEE_ID_STREAM_1_COMMITTEE_1,
             setup.stream.streamId,
             setup.packetNumber,
             setup.slotId
@@ -458,6 +459,7 @@ contract TestPegManager is Test, HelperContract {
             pegoutTxSPVProof.blockHash,
             expectedPegoutTxHash,
             acceptPeginTxHash,
+            COMMITTEE_ID_STREAM_1_COMMITTEE_1,
             stream.streamId,
             expectedPacketNumber,
             expectedSlotId
@@ -559,12 +561,12 @@ contract TestPegManager is Test, HelperContract {
         setup_addMemberSignature_MultipleMembers(setup.pegoutSignatureHash, firstHonestOpIndex, 2);
 
         // Get the last operator take index
-        Committee memory commitee = registry.getCommittee(COMMITTEE_ID_STREAM_1_PACKET_0);
-        uint256 lastOpTakeIndex = commitee.operatorTakeIndex;
-        uint256 expectedOpTakeIndex = (lastOpTakeIndex + 1) % commitee.members.length;
+        Committee memory committee = registry.getCommittee(COMMITTEE_ID_STREAM_1_COMMITTEE_1);
+        uint256 lastOpTakeIndex = committee.operatorTakeIndex;
+        uint256 expectedOpTakeIndex = (lastOpTakeIndex + 1) % committee.members.length;
 
         // Assert
-        address expectedOperator = commitee.members[expectedOpTakeIndex].memberAddress;
+        address expectedOperator = committee.members[expectedOpTakeIndex].memberAddress;
         assertEventOperatorTakeTriggered(setup.pegoutSignatureHash, setup, expectedOperator, createdAt);
 
         // Act
@@ -578,18 +580,21 @@ contract TestPegManager is Test, HelperContract {
     function test_triggerOperatorTake_Success_NotAllNoncesAdded() external {
         // Arrange
         RegisterUserTakeSetup memory setup = setup_pegout();
+        bytes memory nonce =
+            hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
         uint256 createdAt = block.timestamp;
         // Expire TAKE_0
         vm.warp(createdAt + TAKE_0_TIMEOUT_DEFAULT + 1);
-        // This depende on how they have been registered. First registered group are the watchtowers
-        uint256 firstHonestOpIndex = registry.committeeMemberCount() / 2 + 1;
-        address firstHonestOpAddress = vm.addr(firstHonestOpIndex + 1);
 
-        // Add just 2 nonces for the first and second operators
-        setup_addMemberNonce_MultipleMembers(setup.pegoutSignatureHash, firstHonestOpIndex, 2);
+        Committee memory committee = registry.getCommittee(COMMITTEE_ID_STREAM_1_COMMITTEE_1);
+        address firstOpAddress = committee.members[0].memberAddress;
+        address secondOpAddress = committee.members[1].memberAddress;
+        setup_addMemberNonce(firstOpAddress, setup.pegoutSignatureHash, nonce);
+        setup_addMemberNonce(secondOpAddress, setup.pegoutSignatureHash, nonce);
 
         // Assert
-        assertEventOperatorTakeTriggered(setup.pegoutSignatureHash, setup, firstHonestOpAddress, createdAt);
+        // By implementation, first operator is skipped.
+        assertEventOperatorTakeTriggered(setup.pegoutSignatureHash, setup, secondOpAddress, createdAt);
 
         // Act
         pm.triggerOperatorTake(setup.pegoutSignatureHash);
@@ -638,12 +643,12 @@ contract TestPegManager is Test, HelperContract {
         // Expire TAKE_1
         vm.warp(block.timestamp + TAKE_1_TIMEOUT_DEFAULT + 1);
         // Get the last operator take index
-        Committee memory commitee = registry.getCommittee(COMMITTEE_ID_STREAM_1_PACKET_0);
-        uint256 lastOpTakeIndex = commitee.operatorTakeIndex;
-        uint256 expectedOpTakeIndex = (lastOpTakeIndex + 1) % commitee.members.length;
+        Committee memory committee = registry.getCommittee(COMMITTEE_ID_STREAM_1_COMMITTEE_1);
+        uint256 lastOpTakeIndex = committee.operatorTakeIndex;
+        uint256 expectedOpTakeIndex = (lastOpTakeIndex + 1) % committee.members.length;
 
         // Assert
-        address expectedOperator = commitee.members[expectedOpTakeIndex].memberAddress;
+        address expectedOperator = committee.members[expectedOpTakeIndex].memberAddress;
         assertEventOperatorTakeTriggered(setup.pegoutSignatureHash, setup, expectedOperator, createdAt);
 
         // Act
@@ -658,19 +663,27 @@ contract TestPegManager is Test, HelperContract {
         // Arrange
         RegisterUserTakeSetup memory setup = setup_pegout();
         uint256 createdAt = block.timestamp;
-        uint256 firstHonestOpIndex = registry.committeeMemberCount() / 2 + 1;
-        uint256 secondHonestOpIndex = firstHonestOpIndex + 1;
-        address secondHonestOpAddress = vm.addr(secondHonestOpIndex + 1);
+        bytes memory nonce =
+            hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
         // Expire TAKE_0
         vm.warp(createdAt + TAKE_0_TIMEOUT_DEFAULT + 1);
-        // Add just 2 signatures for the fisrt and second operators
-        setup_addMemberNonce_MultipleMembers(setup.pegoutSignatureHash, firstHonestOpIndex, 2);
+        // Add just 3 nonces
+        Committee memory committee = registry.getCommittee(COMMITTEE_ID_STREAM_1_COMMITTEE_1);
+        address firstOpAddress = committee.members[0].memberAddress;
+        address secondOpAddress = committee.members[1].memberAddress;
+        address thirdOpAddress = committee.members[2].memberAddress;
+        setup_addMemberNonce(firstOpAddress, setup.pegoutSignatureHash, nonce);
+        setup_addMemberNonce(secondOpAddress, setup.pegoutSignatureHash, nonce);
+        setup_addMemberNonce(thirdOpAddress, setup.pegoutSignatureHash, nonce);
+
+        // First operator is skipped. This call will select the second operator as in test_triggerOperatorTake_Success_NotAllNoncesAdded
         pm.triggerOperatorTake(setup.pegoutSignatureHash);
         // Expire TAKE_1
         vm.warp(block.timestamp + TAKE_1_TIMEOUT_DEFAULT + 1);
 
         // Assert
-        assertEventOperatorTakeTriggered(setup.pegoutSignatureHash, setup, secondHonestOpAddress, createdAt);
+        // This call will select the third operator
+        assertEventOperatorTakeTriggered(setup.pegoutSignatureHash, setup, thirdOpAddress, createdAt);
 
         // Act
         pm.triggerOperatorTake(setup.pegoutSignatureHash);
@@ -713,6 +726,7 @@ contract TestPegManager is Test, HelperContract {
             pegoutTxSPVProof.blockHash,
             pegoutTxHash,
             setup.acceptPeginTxHash,
+            COMMITTEE_ID_STREAM_1_COMMITTEE_1,
             setup.stream.streamId,
             setup.packetNumber,
             setup.slotId
@@ -1022,7 +1036,7 @@ contract TestPegManager is Test, HelperContract {
         // 2. Create second packet with the existing committee setup
         bytes32 committeePubKey = setupExpectedCommittee.aggregatedKey;
         vm.prank(address(registry));
-        streamManager.createNewPacket(stream.streamId, COMMITTEE_ID_STREAM_1_PACKET_0, committeePubKey);
+        streamManager.createNewPacket(stream.streamId, COMMITTEE_ID_STREAM_1_COMMITTEE_1, committeePubKey);
         streamManager.setSlotHarness(stream.streamId, 1, scriptPubKey, txId, amount, SlotState.FILLED);
 
         // 3. Call tryPegout

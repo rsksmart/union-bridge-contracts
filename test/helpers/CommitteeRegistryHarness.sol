@@ -5,14 +5,14 @@ import {CommitteeRegistry, CommitteeMember} from "src/CommitteeRegistry.sol";
 import {Role, UTXO} from "src/interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
 import {
-    PendingCommitteeStatus,
-    PendingCommittee,
-    MemberRegistrationKeys,
-    CommunicationData
+    PendingCommitteeStatus, MemberRegistrationKeys, CommunicationData
 } from "src/interfaces/ICommitteeRegistry.sol";
 
 /// @notice Wrapper for testing CommitteeRegistry
 contract CommitteeRegistryHarness is CommitteeRegistry {
+    // This should be the same as in the HelperCOntract.sol
+    uint128 constant COMMITTEE_ID_STREAM_1_COMMITTEE_1 = 206898896734299866373660992622464848465;
+
     function initialize(address _initialOwner) public override initializer {
         CommitteeRegistry.initialize(_initialOwner);
     }
@@ -51,30 +51,32 @@ contract CommitteeRegistryHarness is CommitteeRegistry {
 
     function createCommitteeWithLastCandidatesHarness(uint64 _streamId, uint256 numWatchtowers, uint256 numOperators)
         public
-        returns (CommitteeMember[] memory)
+        returns (CommitteeMember[] memory committeeMembers, uint128 committeeId)
     {
         // Delete any pending committee for the stream before creating a new one.
         _deletePendingCommittee(_streamId);
 
         // NOTE: This method is called from the pegManager, so we should not revert.
-        (CommitteeMember[] memory committeeMembers,) =
-            _selectCommitteeLastMembersHarness(_streamId, numWatchtowers, numOperators);
+        (committeeMembers,) = _selectCommitteeLastMembersHarness(_streamId, numWatchtowers, numOperators);
 
         shouldCreateCommittee[_streamId] = false;
-        pendingCommittees[_streamId].createdAt = block.timestamp;
-        pendingCommittees[_streamId].missingData = uint16(committeeMembers.length);
+        committeeId = COMMITTEE_ID_STREAM_1_COMMITTEE_1; // For testing, we use a fixed committee ID.
+        pendingCommittees[_streamId] = committeeId;
+        committeesById[committeeId].createdAt = block.timestamp;
+        committeesById[committeeId].missingData = uint16(committeeMembers.length);
+        committeesById[committeeId].isPending = true;
+        committeesById[committeeId].streamId = _streamId;
 
         // Initialize the committee members here.
         // No need to initialize aggregatedKey, since it will be set by the members.
         for (uint256 i = 0; i < committeeMembers.length; i++) {
             // Copy committee members from memory to storage
-            pendingCommittees[_streamId].committee.members.push(committeeMembers[i]);
+            committeesById[committeeId].members.push(committeeMembers[i]);
 
             // Initialize committee users pending data
-            pendingCommittees[_streamId].data[committeeMembers[i].memberAddress].inCommittee = true;
+            committeesData[committeeId][committeeMembers[i].memberAddress].inCommittee = true;
         }
-        emit NewPendingCommittee(_streamId, pendingCommittees[_streamId].committee);
-        return committeeMembers;
+        emit NewPendingCommittee(committeeId, committeesById[committeeId]);
     }
 
     /// @notice Harness function to directly access stored communication data for testing
@@ -86,13 +88,11 @@ contract CommitteeRegistryHarness is CommitteeRegistry {
         view
         returns (CommunicationData[] memory communicationData)
     {
-        PendingCommittee storage pendingCommittee = _getPendingCommittee(_streamId);
-
         if (!_isInPendingCommittee(_memberAddress, _streamId)) {
             revert MemberNotInCommittee(_streamId, _memberAddress);
         }
 
-        return pendingCommittee.data[_memberAddress].communicationData;
+        return committeesData[pendingCommittees[_streamId]][_memberAddress].communicationData;
     }
 
     /// @notice Harness function to directly set communication data for testing getMemberCommunicationData
@@ -104,14 +104,14 @@ contract CommitteeRegistryHarness is CommitteeRegistry {
         uint256 _targetMemberIndex,
         CommunicationData[] memory _communicationData
     ) external {
-        CommitteeMember[] storage committeeMembers = pendingCommittees[_streamId].committee.members;
+        uint128 committeeId = pendingCommittees[_streamId];
+        CommitteeMember[] storage committeeMembers = committeesById[committeeId].members;
         require(_communicationData.length == committeeMembers.length, "Invalid data length");
 
         // First: ensure all members have arrays of the right size
         for (uint256 i = 0; i < committeeMembers.length; i++) {
             address memberAddress = committeeMembers[i].memberAddress;
-            CommunicationData[] storage memberCommData =
-                pendingCommittees[_streamId].data[memberAddress].communicationData;
+            CommunicationData[] storage memberCommData = committeesData[committeeId][memberAddress].communicationData;
 
             for (uint256 j = 0; j < committeeMembers.length; j++) {
                 memberCommData.push();
@@ -121,8 +121,7 @@ contract CommitteeRegistryHarness is CommitteeRegistry {
         // Second: fill with the actual data
         for (uint256 i = 0; i < committeeMembers.length; i++) {
             address memberAddress = committeeMembers[i].memberAddress;
-            pendingCommittees[_streamId].data[memberAddress].communicationData[_targetMemberIndex] =
-                _communicationData[i];
+            committeesData[committeeId][memberAddress].communicationData[_targetMemberIndex] = _communicationData[i];
         }
     }
 

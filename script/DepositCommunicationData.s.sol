@@ -46,10 +46,11 @@ contract DepositCommunicationDataScript is ScriptUtils {
         RSAPublicKey[] memory committeeComPubkeys = getPendingCommitteeComPubKeys(stream);
         vm.stopBroadcast();
 
+        uint128 committeeId = committeeRegistry.getPendingCommitteeId(stream);
         CommunicationData[] memory newMemberComunicationData = encryptComunicationData(committeeComPubkeys, "ip:port");
 
         vm.startBroadcast(privKey);
-        committeeRegistry.depositCommunicationData(stream, newMemberComunicationData);
+        committeeRegistry.depositCommunicationData(committeeId, newMemberComunicationData);
         vm.stopBroadcast();
 
         // console.log("=== Member deposited communication data successfully ===");

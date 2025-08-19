@@ -9,8 +9,8 @@ import {
     CommitteeMember,
     Committee,
     ICommitteeRegistry,
-    PendingCommittee,
     PendingCommitteeStatus,
+    PendingCommitteeData,
     ECDSAPublicKey,
     RSAPublicKey,
     MemberRegistrationKeys,
@@ -42,10 +42,14 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     /// @notice Minimum number of members required for a committee
     uint256 public committeeMemberCount;
 
-    /// @notice Mapping of streamId to pending committee data
-    mapping(uint64 streamId => PendingCommittee) internal pendingCommittees;
+    /// @notice Mapping of streamId to the committee id
+    mapping(uint64 streamId => uint128) internal pendingCommittees;
     /// @notice Mapping of committeeId to committee data
-    mapping(uint256 committeeId => Committee) internal committeesById;
+    mapping(uint128 committeeId => Committee) internal committeesById;
+
+    /// @notice Mapping of member addresses to their pending data
+    mapping(uint128 committeeId => mapping(address memberAddress => PendingCommitteeData)) committeesData;
+
     /// @notice Mapping of streamId to flag indicating if a committee should be created
     mapping(uint64 streamId => bool createCommittee) public shouldCreateCommittee;
 
@@ -198,11 +202,12 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     }
 
     function _isInPendingCommittee(address _memberAddress, uint64 _streamId) internal view returns (bool) {
-        PendingCommittee storage pendingCommittee = pendingCommittees[_streamId];
-        if (pendingCommittee.createdAt == 0) {
+        uint128 committeeId = pendingCommittees[_streamId];
+        // NOTE: Slither flags this as dangerous-strict-equalities, but this is a false positive.
+        if (committeeId == 0) {
             return false; // No pending committee
         }
-        return pendingCommittee.data[_memberAddress].inCommittee;
+        return committeesData[committeeId][_memberAddress].inCommittee;
     }
 
     function _unsubscribeFromStream(address _memberAddress, StreamDenomination _denomination) internal {
@@ -398,19 +403,14 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         return member;
     }
 
-    function _registerCommittee(uint256 _committeeId, Committee storage _committee) internal {
-        committeesById[_committeeId] = _committee;
-        emit NewCommittee(_committeeId, _committee);
-    }
-
     /// @notice Gets a committee by its ID
     /// @param _committeeId The committee ID
     /// @return Committee The complete committee information
-    function getCommittee(uint256 _committeeId) external view returns (Committee memory) {
+    function getCommittee(uint128 _committeeId) external view returns (Committee memory) {
         return _getCommittee(_committeeId);
     }
 
-    function _getCommittee(uint256 _committeeId) internal view returns (Committee storage) {
+    function _getCommittee(uint128 _committeeId) internal view returns (Committee storage) {
         Committee storage committee = committeesById[_committeeId];
         if (committee.members.length == 0) {
             revert CommitteeNotFound(_committeeId);
@@ -421,11 +421,11 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     /// @notice Gets all members of a specific committee
     /// @param _committeeId The committee ID
     /// @return Array of committee members with their roles
-    function getCommitteeMembers(uint256 _committeeId) external view returns (CommitteeMember[] memory) {
+    function getCommitteeMembers(uint128 _committeeId) external view returns (CommitteeMember[] memory) {
         return _getCommitteeMembers(_committeeId);
     }
 
-    function _getCommitteeMembers(uint256 _committeeId) internal view returns (CommitteeMember[] memory) {
+    function _getCommitteeMembers(uint128 _committeeId) internal view returns (CommitteeMember[] memory) {
         return _getCommittee(_committeeId).members;
     }
 
@@ -536,7 +536,8 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     function createCommittee(uint64 _streamId) external onlyPegManager {
         // NOTE: This method is called from the pegManager, so we should not revert.
 
-        uint256 createdAt = pendingCommittees[_streamId].createdAt;
+        uint256 createdAt = committeesById[pendingCommittees[_streamId]].createdAt;
+
         if (createdAt != 0) {
             // slither-disable-next-line timestamp
             if (block.timestamp < createdAt + pendingCommitteeTimeout) {
@@ -567,7 +568,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     function _createCommitteeIfPending(uint64 _streamId) internal returns (bool) {
         // This function return true if there is a pending committee
         // If there is a pending committee, we should not create a new one at least it's expired
-        uint256 createdAt = pendingCommittees[_streamId].createdAt;
+        uint256 createdAt = committeesById[pendingCommittees[_streamId]].createdAt;
         if (createdAt == 0) {
             return false;
         }
@@ -590,85 +591,96 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         }
 
         shouldCreateCommittee[_streamId] = false;
-        pendingCommittees[_streamId].createdAt = block.timestamp;
-        pendingCommittees[_streamId].missingData = uint16(committeeMembers.length);
-        pendingCommittees[_streamId].missingCommunicationData = uint16(committeeMembers.length);
+        uint128 committeeId = uint128(uint256(keccak256(abi.encode(_streamId, block.number))));
+        pendingCommittees[_streamId] = committeeId;
+
+        Committee storage committee = committeesById[committeeId];
+        committee.createdAt = block.timestamp;
+        committee.missingData = uint16(committeeMembers.length);
+        committee.missingCommunicationData = uint16(committeeMembers.length);
+        committee.aggregatedKey = bytes32(0);
+        committee.streamId = _streamId;
+        committee.isPending = true;
 
         // Initialize the committee members here.
         // No need to initialize aggregatedKey, since it will be set by the members.
         for (uint256 i = 0; i < committeeMembers.length; i++) {
             // Copy committee members from memory to storage
-            pendingCommittees[_streamId].committee.members.push(committeeMembers[i]);
+            committee.members.push(committeeMembers[i]);
 
             // Initialize committee users pending data
-            pendingCommittees[_streamId].data[committeeMembers[i].memberAddress].inCommittee = true;
+            committeesData[committeeId][committeeMembers[i].memberAddress].inCommittee = true;
         }
-        emit NewPendingCommittee(_streamId, pendingCommittees[_streamId].committee);
+        emit NewPendingCommittee(committeeId, committee);
         return PendingCommitteeStatus.SUCCESS;
+    }
+
+    function _isInCommitteeOrRevert(uint128 _committeeId, address _memberAddress) internal view {
+        if (!committeesData[_committeeId][_memberAddress].inCommittee) {
+            revert MemberNotInCommittee(_committeeId, _memberAddress);
+        }
     }
 
     /// @notice Allows a member to deposit information for committee formation
     /// @dev Called by members to provide their aggregated key for a pending committee
-    /// @param _streamId The stream ID for the pending committee
+    /// @param _committeeId The ID of the pending committee
     /// @param _aggregatedKey The aggregated public key provided by the member
-    function depositAggregatedKey(uint64 _streamId, bytes32 _aggregatedKey) external {
-        PendingCommittee storage pendingCommittee = _getPendingCommittee(_streamId);
+    function depositAggregatedKey(uint128 _committeeId, bytes32 _aggregatedKey) external {
+        Committee storage pendingCommittee = _getPendingCommitteeById(_committeeId);
 
         if (_aggregatedKey == bytes32(0)) {
             revert InvalidAggregatedKey();
         }
 
-        if (!_isInPendingCommittee(msg.sender, _streamId)) {
-            revert MemberNotInCommittee(_streamId, msg.sender);
+        _isInCommitteeOrRevert(_committeeId, msg.sender);
+
+        if (committeesData[_committeeId][msg.sender].aggregatedKey != bytes32(0)) {
+            revert MemberInfoAlreadyDeposited(_committeeId, msg.sender);
         }
 
-        if (pendingCommittee.data[msg.sender].aggregatedKey != bytes32(0)) {
-            revert MemberInfoAlreadyDeposited(msg.sender);
-        }
+        committeesData[_committeeId][msg.sender].aggregatedKey = _aggregatedKey;
 
-        pendingCommittee.data[msg.sender].aggregatedKey = _aggregatedKey;
-
-        if (pendingCommittee.committee.aggregatedKey == bytes32(0)) {
+        if (pendingCommittee.aggregatedKey == bytes32(0)) {
             // Save the aggregated key for the committee
-            pendingCommittee.committee.aggregatedKey = _aggregatedKey;
+            pendingCommittee.aggregatedKey = _aggregatedKey;
         } else {
-            if (pendingCommittee.committee.aggregatedKey != _aggregatedKey) {
-                _deletePendingCommittee(_streamId);
-                _createCommittee(_streamId); // Ignoring checks
+            if (pendingCommittee.aggregatedKey != _aggregatedKey) {
+                _deletePendingCommittee(pendingCommittee.streamId);
+                _createCommittee(pendingCommittee.streamId); // Ignoring checks
                 return;
             }
         }
 
         pendingCommittee.missingData--;
-        emit MemberInfoDeposited(_streamId, msg.sender, _aggregatedKey);
+        emit MemberInfoDeposited(_committeeId, msg.sender, _aggregatedKey);
         if (pendingCommittee.missingData != 0) {
             // Committee is not completed yet
             return;
         }
 
         // Create unique committee id associated to the streamId and packetNumber.
-        uint64 packetNumber = streamManager.getPacketsLength(_streamId);
-        uint256 committeeId = uint256(keccak256(abi.encode(_streamId, packetNumber)));
-        bytes32 aggregatedKey = pendingCommittee.committee.aggregatedKey;
+        uint64 packetNumber = streamManager.getPacketsLength(pendingCommittee.streamId);
+        bytes32 aggregatedKey = pendingCommittee.aggregatedKey;
         _removeCandidatesAndUpdateBalance(
-            pendingCommittee.committee.members, StreamDenomination(_streamId), packetNumber
+            pendingCommittee.members, StreamDenomination(pendingCommittee.streamId), packetNumber
         );
-        _registerCommittee(committeeId, pendingCommittee.committee);
-        _deletePendingCommittee(_streamId);
-        streamManager.createNewPacket(_streamId, committeeId, aggregatedKey);
+
+        _deletePendingCommittee(pendingCommittee.streamId);
+        emit NewCommittee(_committeeId, pendingCommittee);
+        streamManager.createNewPacket(pendingCommittee.streamId, _committeeId, aggregatedKey);
     }
 
-    function depositCommunicationData(uint64 _streamId, CommunicationData[] memory _communicationData) external {
-        PendingCommittee storage pendingCommittee = _getPendingCommittee(_streamId);
-        CommunicationData[] storage communicationDataStorage = pendingCommittee.data[msg.sender].communicationData;
-        CommitteeMember[] storage committeeMembers = pendingCommittee.committee.members;
+    function depositCommunicationData(uint128 _committeeId, CommunicationData[] memory _communicationData) external {
+        Committee storage pendingCommittee = _getPendingCommitteeById(_committeeId);
+
+        CommunicationData[] storage communicationDataStorage =
+            committeesData[_committeeId][msg.sender].communicationData;
+        CommitteeMember[] storage committeeMembers = pendingCommittee.members;
+
+        _isInCommitteeOrRevert(_committeeId, msg.sender);
 
         if (communicationDataStorage.length != 0) {
-            revert MemberAlreadyDepositedCommunicationData(_streamId, msg.sender, communicationDataStorage.length);
-        }
-
-        if (!_isInPendingCommittee(msg.sender, _streamId)) {
-            revert MemberNotInCommittee(_streamId, msg.sender);
+            revert MemberAlreadyDepositedCommunicationData(_committeeId, msg.sender, communicationDataStorage.length);
         }
 
         if (_communicationData.length != committeeMembers.length) {
@@ -692,29 +704,27 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         }
 
         pendingCommittee.missingCommunicationData--;
-        emit MemberCommunicationDataDeposited(_streamId, msg.sender, _communicationData);
+        emit MemberCommunicationDataDeposited(_committeeId, msg.sender, _communicationData);
 
         if (pendingCommittee.missingCommunicationData == 0) {
-            emit AllCommunicationDataReady(_streamId);
+            emit AllCommunicationDataReady(_committeeId);
         }
     }
 
     /// @notice Gets the encrypted communication data for one member in a committee
     /// @dev This function returns the encrypted communication data (IP and Port) deposited for a particular member
-    /// @param _streamId The stream ID for the committee
+    /// @param _committeeId The committee ID for the committee
     /// @param _memberAddress The address of the member we are requesting data for
     /// @return communicationData encrypted communication data (IP and Port) from the committee members
     /// @dev The order of the data corresponds to the order of members in the committee
-    function getMemberCommunicationData(uint64 _streamId, address _memberAddress)
+    function getMemberCommunicationData(uint128 _committeeId, address _memberAddress)
         external
         view
         returns (CommunicationData[] memory communicationData)
     {
-        PendingCommittee storage pendingCommittee = _getPendingCommittee(_streamId);
-        if (!_isInPendingCommittee(_memberAddress, _streamId)) {
-            revert MemberNotInCommittee(_streamId, _memberAddress);
-        }
-        CommitteeMember[] storage committeeMembers = pendingCommittee.committee.members;
+        _isInCommitteeOrRevert(_committeeId, msg.sender);
+
+        CommitteeMember[] storage committeeMembers = committeesById[_committeeId].members;
 
         uint256 memberIndex = 0;
         for (uint256 i = 0; i < committeeMembers.length; i++) {
@@ -726,9 +736,9 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
 
         communicationData = new CommunicationData[](committeeMembers.length);
         for (uint256 i = 0; i < committeeMembers.length; i++) {
-            if (pendingCommittee.data[committeeMembers[i].memberAddress].communicationData.length != 0) {
+            if (committeesData[_committeeId][committeeMembers[i].memberAddress].communicationData.length != 0) {
                 communicationData[i].data =
-                    pendingCommittee.data[committeeMembers[i].memberAddress].communicationData[memberIndex].data;
+                    committeesData[_committeeId][committeeMembers[i].memberAddress].communicationData[memberIndex].data;
             }
             // else: leave as default zeros - member hasn't deposited data yet
         }
@@ -745,36 +755,55 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         view
         returns (Committee memory committee, uint256 createdAt, uint256 missingData)
     {
-        PendingCommittee storage pendingCommittee = _getPendingCommittee(_streamId);
+        // FIXME: Improve this function. It's returning redundant data.
+        committee = _getPendingCommittee(_streamId);
+        createdAt = committee.createdAt;
+        missingData = committee.missingData;
+    }
 
-        committee = pendingCommittee.committee;
-        createdAt = pendingCommittee.createdAt;
-        missingData = pendingCommittee.missingData;
+    /// @notice Returns the committee ID for a pending committee in the given stream
+    /// @param _streamId The stream ID to get the pending committee ID for
+    /// @return committeeId The committee ID of the pending committee
+    function getPendingCommitteeId(uint64 _streamId) external view returns (uint128 committeeId) {
+        return _getPendingCommitteeId(_streamId);
+    }
+
+    function _getPendingCommitteeId(uint64 _streamId) internal view returns (uint128 committeeId) {
+        committeeId = pendingCommittees[_streamId];
+        // NOTE: Slither flags this as dangerous-strict-equalities, but this is a false positive.
+        if (committeeId == 0) {
+            revert CommitteeIsNotPending(0);
+        }
+        return committeeId;
     }
 
     /// @notice Returns the number of members that have not deposited their communication data yet
-    /// @param _streamId The stream ID to get the missing communication data count for
+    /// @param _committeeId The committee ID to check for missing communication data
     /// @return missingCommunicationData The number of members that have not deposited their communication data yet
-    function getMissingCommunicationDataCount(uint64 _streamId)
+    function getMissingCommunicationDataCount(uint128 _committeeId)
         external
         view
         returns (uint16 missingCommunicationData)
     {
-        return _getPendingCommittee(_streamId).missingCommunicationData;
+        return committeesById[_committeeId].missingCommunicationData;
     }
 
-    function _getPendingCommittee(uint64 _streamId) internal view returns (PendingCommittee storage pendingCommittee) {
-        pendingCommittee = pendingCommittees[_streamId];
-        if (pendingCommittee.createdAt == 0) {
-            revert CommitteeIsNotPending(_streamId);
+    function _getPendingCommittee(uint64 _streamId) internal view returns (Committee storage) {
+        return committeesById[_getPendingCommitteeId(_streamId)];
+    }
+
+    function _getPendingCommitteeById(uint128 _committeeId) internal view returns (Committee storage) {
+        if (!committeesById[_committeeId].isPending) {
+            revert CommitteeIsNotPending(_committeeId);
         }
+        return committeesById[_committeeId];
     }
 
     /// @notice Checks if there is a pending committee for the stream and if it's expired
     /// @param _streamId The stream ID to check for a pending committee
     /// @return True if the pending committee exists and is expired
     function isPendingCommitteeExpired(uint64 _streamId) external view returns (bool) {
-        uint256 createdAt = pendingCommittees[_streamId].createdAt;
+        uint256 createdAt = committeesById[pendingCommittees[_streamId]].createdAt;
         // If no pending committee in proccess we return false
         if (createdAt == 0) {
             return false;
@@ -784,12 +813,8 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     }
 
     function _deletePendingCommittee(uint64 _streamId) internal {
-        CommitteeMember[] storage committeeMembers = pendingCommittees[_streamId].committee.members;
-        for (uint256 i = 0; i < committeeMembers.length; i++) {
-            delete pendingCommittees[_streamId].data[committeeMembers[i].memberAddress];
-        }
-        //slither-disable-next-line mapping-deletion
-        delete pendingCommittees[_streamId];
+        committeesById[pendingCommittees[_streamId]].isPending = false; // Mark the committee as not pending
+        pendingCommittees[_streamId] = 0; // Reset the pending committee ID
     }
 
     /// @notice Gets all candidates for a specific role in a stream
@@ -892,7 +917,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     /// @param _signatureData Array of signature data for committee members
     /// @return The address of the next available operator for take operations
     /// @dev Reverts with TakeOperatorNotFound if no eligible operator is found
-    function getOperatorTakeAddress(uint256 _committeeId, SignatureData[] calldata _signatureData)
+    function getOperatorTakeAddress(uint128 _committeeId, SignatureData[] calldata _signatureData)
         external
         onlyPegManager
         returns (address)
@@ -996,7 +1021,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     /// @param _streamId The stream ID for the committee
     /// @param _packetNumber The packet number where the committee was active
     function releaseCommittee(uint64 _streamId, uint64 _packetNumber) external onlyPegManager {
-        uint256 committeeId = streamManager.getCommitteeId(_streamId, _packetNumber);
+        uint128 committeeId = streamManager.getCommitteeId(_streamId, _packetNumber);
         CommitteeMember[] memory committeeMembers = _getCommitteeMembers(committeeId);
 
         for (uint256 i = 0; i < committeeMembers.length; i++) {
