@@ -1,5 +1,5 @@
 # BtcTxIn
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b750ea532307d08987643fe249271c69c1bee159/src/interfaces/IBitcoinManager.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/8e06478fcc29439a812dd6c68981ff5bb04b9543/src/interfaces/IBitcoinManager.sol)
 
 Represents a Bitcoin transaction input that references a previous UTXO
 
