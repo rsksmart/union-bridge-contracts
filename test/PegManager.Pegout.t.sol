@@ -47,9 +47,9 @@ contract TestPegManager is Test, HelperContract {
     // ================= Request Pegout =================
     function test_tryPegout_Success() external {
         // Arrange
-        bytes32 expectedHash = 0xdfdfbe00b8a563bd5ceb2279c14b33763ed5305301ad1240378ad376384375c3;
+        bytes32 expectedHash = 0xfb6d69787860ef13b81041a168cb1f530eb5d87973d34430fc9eb8cef62eb7ad;
         bytes memory expectedDigest =
-            hex"00010200000000000000234337e863e00e6ff45f167a14f3963bea912bc0d739c2b402d04f376e814ae24f973621fe8403b6facae9abab80d863a847d3fb007ba2f9830f8e16e6e9b4d4a0c6dbc3091625a23fd870bf8d09182484c12fa63a5c29045a431cf445f153e523e9829bfb4e23fbd3c4848baa035af15d73bcb83e510f7f097f90a21a4280d2f21ec17ae04c101c88a29ad8d6312f5ff2e7a66e2274cc47cc1e9fb2327f857e0000000000";
+            hex"00010200000000000000234337e863e00e6ff45f167a14f3963bea912bc0d739c2b402d04f376e814ae24f973621fe8403b6facae9abab80d863a847d3fb007ba2f9830f8e16e6e9b4d4a0c6dbc3091625a23fd870bf8d09182484c12fa63a5c29045a431cf445f153e523e9829bfb4e23fbd3c4848baa035af15d73bcb83e510f7f097f90a21a4280d2bfd84e32f90f61452c95235739095ef9347def223e2b2a49d799abe42099e5850000000000";
 
         bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
 
@@ -112,12 +112,12 @@ contract TestPegManager is Test, HelperContract {
         setup_requestAndAcceptPeginFlow();
 
         // Arrange
-        bytes32 expectedSignatureHash = 0x772f88b4a710480e59273515298d2830db5239e54152de486a9a3e6a5adc5c6a;
+        bytes32 expectedSignatureHash = 0xc151063d7a30a584ccd02ec37a51dadca1545fdf232f4d0a1435bb025d5b15dc;
 
         // These values are attached to txIdCounter value in HelperContract.getPeginRequestTxIn().
         // Counter should start in 0, otherwise the test will fail or expectedDigestc and userPubKey should be updated.
         bytes memory expectedSignatureDigest =
-            hex"00010200000000000000ace1d82cab320dbc4dcf12779c7cf044655e5a0392244bc8be5266332fe4b75888ded5110527d28e1ec7e99eb5e0292efb561a926b954918acc0492495244dcbbe45ad9e08ae96e42d7fd1f70a454432049ebd6a625fa377ffa22033fd8692d623e9829bfb4e23fbd3c4848baa035af15d73bcb83e510f7f097f90a21a4280d259b22a5698c2f1292b6f5a6ce99656354fd1191aeb5ed63f498d35005230c0f40000000000";
+            hex"00010200000000000000c369745d8920f99556e50cac4392807dd9050a35f34ec9b94861cc49b5aabdcdc35d473d9e25f1af7cffe3004bcca82430a4dbea0076331b74ddf0a584963b81be45ad9e08ae96e42d7fd1f70a454432049ebd6a625fa377ffa22033fd8692d623e9829bfb4e23fbd3c4848baa035af15d73bcb83e510f7f097f90a21a4280d2f81b4776c4bc98417c41f791185dfa89d0789939526bc6907fcdcb6f7490398b0000000000";
 
         bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
 

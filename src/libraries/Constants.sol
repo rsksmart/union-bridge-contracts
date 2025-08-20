@@ -38,7 +38,7 @@ library Constants {
 
     /// @dev Speed-up amount in satoshis for CPFP Bitcoin transactions
     /// @dev Amount sent to speed-up output to accelerate parent transaction
-    uint64 constant SPEED_UP_AMOUNT = 300;
+    uint64 constant SPEED_UP_AMOUNT = 540;
 
     /// @dev Dust threshold in satoshis for Bitcoin transactions
     /// @dev Minimum amount required for a Bitcoin output to be considered valid
