@@ -1,5 +1,5 @@
 # Constants
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b750ea532307d08987643fe249271c69c1bee159/src/libraries/Constants.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/8e06478fcc29439a812dd6c68981ff5bb04b9543/src/libraries/Constants.sol)
 
 Library containing all constants used throughout the union bridge contracts
 
@@ -93,7 +93,7 @@ uint64 constant P2TR_FEE = 335;
 
 
 ```solidity
-uint64 constant SPEED_UP_AMOUNT = 300;
+uint64 constant SPEED_UP_AMOUNT = 540;
 ```
 
 

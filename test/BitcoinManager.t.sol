@@ -309,8 +309,8 @@ contract TestBtcHelper is Test, HelperContract {
         //         "scriptPubKey": P2TR script from (hex"0x9687ca13c4fb3fa3ba05c2f9119dda026bfe66f0098dcf9b896a98ecb2e96702")
         //     }
         // ]
-        // - amount = 9365 - (300 + 335);
-        bytes32 expectedHash = 0x78e1d97d2bae82ee61d183c20d612130e854f1254ef4f12455f29e3d8cc34872;
+        // - amount = 9365 - (540 + 335);
+        bytes32 expectedHash = 0x827d50165346809719d5da8e3ef29b3e91b586648aee5846fc32e7714a117d0a;
 
         // Assert
         assertEq(result, expectedHash, "Encoded data does not match expectedHash value");

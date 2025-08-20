@@ -371,7 +371,7 @@ abstract contract HelperContract is Test, TestUtils {
 
         // Calculate the expected transaction hash
         // Hardcoded for packet 0, slot 0. This should be fixed when update createPegoutTx
-        setup.pegoutSignatureHash = hex"772f88b4a710480e59273515298d2830db5239e54152de486a9a3e6a5adc5c6a";
+        setup.pegoutSignatureHash = hex"c151063d7a30a584ccd02ec37a51dadca1545fdf232f4d0a1435bb025d5b15dc";
 
         setup.pegoutTxHash = bitcoinManager.getBtcTxHash(setup.pegoutTx);
     }

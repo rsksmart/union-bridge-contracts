@@ -5,7 +5,7 @@ CURRENT_PATH=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 cd "$CURRENT_PATH/../../.."
 
 # Defaults
-PEGOUT_SIGNATURE_HASH="0x7e00ec037f2ac760a440f781ac4f344bea7c7b3e4869a7793c4c6050c83d9e22"
+PEGOUT_SIGNATURE_HASH="0xadb3b6b14418136ab8202e57cd93615d051a38aa08bb0576420db6a1b72249ff"
 
 # Parse args
 while getopts ":p:" opt; do
