@@ -475,8 +475,13 @@ abstract contract HelperContract is Test, TestUtils {
             missingData: 10,
             missingCommunicationData: 10,
             isPending: true,
-            streamId: SETUP_PENDING_COMMITTEE_STREAM_ID
+            streamId: SETUP_PENDING_COMMITTEE_STREAM_ID,
+            fundingUTXOs: new UTXO[](registry.committeeMemberCount())
         });
+
+        for (uint256 i = 0; i < committee.members.length; i++) {
+            committee.fundingUTXOs[i] = generateDefaultUTXO();
+        }
 
         committee.members[0] = CommitteeMember({memberAddress: vm.addr(19 + 1), role: Role.OPERATOR});
         committee.members[1] = CommitteeMember({memberAddress: vm.addr(16 + 1), role: Role.OPERATOR});
@@ -503,8 +508,13 @@ abstract contract HelperContract is Test, TestUtils {
             missingData: 10,
             missingCommunicationData: 10,
             isPending: true,
-            streamId: SETUP_PENDING_COMMITTEE_STREAM_ID
+            streamId: SETUP_PENDING_COMMITTEE_STREAM_ID,
+            fundingUTXOs: new UTXO[](registry.committeeMemberCount())
         });
+
+        for (uint256 i = 0; i < committee.members.length; i++) {
+            committee.fundingUTXOs[i] = generateDefaultUTXO();
+        }
 
         committee.members[0] = CommitteeMember({memberAddress: vm.addr(6 + 1), role: Role.OPERATOR});
         committee.members[1] = CommitteeMember({memberAddress: vm.addr(8 + 1), role: Role.OPERATOR});
@@ -538,8 +548,13 @@ abstract contract HelperContract is Test, TestUtils {
             missingData: 10,
             missingCommunicationData: 10,
             isPending: true,
-            streamId: SETUP_PENDING_COMMITTEE_STREAM_ID
+            streamId: SETUP_PENDING_COMMITTEE_STREAM_ID,
+            fundingUTXOs: new UTXO[](registry.committeeMemberCount())
         });
+
+        for (uint256 i = 0; i < committee.members.length; i++) {
+            committee.fundingUTXOs[i] = generateDefaultUTXO();
+        }
 
         committee.members[0] = CommitteeMember({memberAddress: vm.addr(7 + 1), role: Role.OPERATOR});
         committee.members[1] = CommitteeMember({memberAddress: vm.addr(8 + 1), role: Role.OPERATOR});

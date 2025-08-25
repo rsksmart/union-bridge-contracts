@@ -168,6 +168,8 @@ struct Committee {
     bool isPending;
     /// @notice The stream ID this committee is associated with
     uint64 streamId;
+    /// @notice the funding UTXOs provided by the members
+    UTXO[] fundingUTXOs;
 }
 
 /// @notice Represents pending data for a member in committee formation

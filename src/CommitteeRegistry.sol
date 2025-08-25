@@ -608,6 +608,10 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
             // Copy committee members from memory to storage
             committee.members.push(committeeMembers[i]);
 
+            committee.fundingUTXOs.push(
+                _getMemberApplicationData(committeeMembers[i].memberAddress, StreamDenomination(_streamId)).fundingUTXO
+            );
+
             // Initialize committee users pending data
             committeesData[committeeId][committeeMembers[i].memberAddress].inCommittee = true;
         }
