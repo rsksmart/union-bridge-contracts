@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {IAccessControl} from "./IAccessControl.sol";
-import {Role} from "./ICommitteeRegistry.sol";
+import {ICommitteeRegistry, Role} from "./ICommitteeRegistry.sol";
 import {StreamPosition} from "./IPegManager.sol";
 
 /// @notice Represents different Bitcoin denominations supported by the union bridge
@@ -316,6 +316,20 @@ interface IStreamManager is IAccessControl {
     /// @notice Event emitted when disablement payments per challenge are updated
     /// @param newCost The new disablement payments per challenge in wei
     event DisablementPaymentsPerChallengeUpdated(uint256 newCost);
+
+    /// @notice Event emitted when the committee registry contract address  is updated
+    /// @param _committeeRegistry The new committee registry contract address
+    event CommitteeRegistryUpdated(ICommitteeRegistry _committeeRegistry);
+
+    /// @notice Event emitted when the number of confirmations required for peg-in transactions is updated
+    /// @param _streamId The ID of the stream
+    /// @param _confirmations The number of confirmations required
+    event PeginConfirmationsUpdated(uint64 _streamId, uint8 _confirmations);
+
+    /// @notice Event emitted when the number of confirmations required for peg-out transactions is updated
+    /// @param _streamId The ID of the stream
+    /// @param _confirmations The number of confirmations required
+    event PegoutConfirmationsUpdated(uint64 _streamId, uint8 _confirmations);
 
     // Errors
     /// @notice Thrown when a stream is not found for the given denomination

@@ -385,6 +385,15 @@ interface ICommitteeRegistry {
     /// @param _committeeId The ID of the committee for which all communication data is ready
     event AllCommunicationDataReady(uint128 indexed _committeeId);
 
+    /// @notice Event emitted when the member registry address is updated
+    /// @param memberRegistry The new member registry address
+    event MemberRegistryUpdated(address memberRegistry);
+
+    /// @notice Event emitted when members from a packet's committee are released
+    /// @param streamId The stream ID for the committee
+    /// @param packetNumber The packet number where the committee was active
+    event CommitteeMembersReleased(uint64 streamId, uint64 packetNumber);
+
     /// @notice Thrown when a committee is not in pending state
     /// @param committeeId The ID of the committee that is not pending
     error CommitteeIsNotPending(uint128 committeeId);
