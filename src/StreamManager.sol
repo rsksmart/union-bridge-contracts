@@ -428,6 +428,7 @@ contract StreamManager is IStreamManager, AccessControl {
         }
 
         streams[_streamId].peginConfirmations = _confirmations;
+        emit PeginConfirmationsUpdated(_streamId, _confirmations);
     }
 
     /// @notice Sets the number of confirmations required for peg-out transactions
@@ -444,6 +445,7 @@ contract StreamManager is IStreamManager, AccessControl {
         }
 
         streams[_streamId].pegoutConfirmations = _confirmations;
+        emit PegoutConfirmationsUpdated(_streamId, _confirmations);
     }
 
     /// @notice Sets the committee registry contract address
@@ -454,6 +456,7 @@ contract StreamManager is IStreamManager, AccessControl {
             revert InvalidZeroAddress();
         }
         committeeRegistry = _committeeRegistry;
+        emit CommitteeRegistryUpdated(_committeeRegistry);
     }
 
     /// @dev Sets the security bond percentage for a given role

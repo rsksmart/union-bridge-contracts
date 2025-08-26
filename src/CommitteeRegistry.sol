@@ -492,12 +492,14 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     }
 
     /// @notice Sets the Member Registry contract address
+    /// @dev Only callable by the contract owner
     /// @param _memberRegistry The address of the Member Registry contract
     function setMemberRegistry(IMemberRegistry _memberRegistry) external onlyOwner {
         if (address(_memberRegistry) == address(0)) {
             revert InvalidZeroAddress();
         }
         memberRegistry = _memberRegistry;
+        emit MemberRegistryUpdated(address(_memberRegistry));
     }
 
     /// @notice Sets the pending committee timeout
@@ -556,6 +558,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
 
         // Delegate member release operations to MemberRegistry
         memberRegistry.releaseCommitteeMembers(committeeMembers, _streamId, _packetNumber);
+        emit CommitteeMembersReleased(_streamId, _packetNumber);
     }
 
     // ===================== Modifiers =====================

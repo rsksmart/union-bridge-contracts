@@ -332,6 +332,14 @@ interface IPegManager {
     /// @dev This event is used to track the lifecycle of packets in the stream
     event PacketClosed(uint64 indexed streamId, uint64 indexed packetNumber);
 
+    /// @notice Event emitted when the stream manager contract address is updated
+    /// @param _streamManager The stream manager contract address
+    event StreamManagerUpdated(IStreamManager _streamManager);
+
+    /// @notice Event emitted when the signature manager contract address is updated
+    /// @param _signatureManager The signature manager contract address
+    event SignatureManagerUpdated(ISignatureManager _signatureManager);
+
     // ===================== Errors =====================
 
     /// @notice Thrown when the Bitcoin manager address is set to zero
