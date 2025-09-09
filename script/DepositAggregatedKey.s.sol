@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import {console} from "forge-std/console.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
-import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
+import {ICommitteeRegistry, Committee} from "src/interfaces/ICommitteeRegistry.sol";
 import {IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {PegManager} from "src/PegManager.sol";
 
@@ -39,7 +39,8 @@ contract DepositAggregatedKeyScript is ScriptUtils {
         setUp(_mnemonicIndex, _streamIndex, _committeePubKey);
 
         // revert if no pending committee found
-        (,, uint256 prevMissingData) = committeeRegistry.getPendingCommittee(_streamIndex);
+        Committee memory prevCommittee = committeeRegistry.getPendingCommittee(_streamIndex);
+        uint256 prevMissingData = prevCommittee.missingData;
 
         uint128 committeeId = committeeRegistry.getPendingCommitteeId(_streamIndex);
         vm.startBroadcast(privKey);
@@ -49,7 +50,8 @@ contract DepositAggregatedKeyScript is ScriptUtils {
         // Check if it's not last member to deposit the aggregated key,
         if (prevMissingData != 1) {
             // If it's not it should check if the pending committee missing data
-            (,, uint256 missingData) = committeeRegistry.getPendingCommittee(_streamIndex);
+            Committee memory currentCommittee = committeeRegistry.getPendingCommittee(_streamIndex);
+            uint256 missingData = currentCommittee.missingData;
             if (prevMissingData == missingData - 1) {
                 revert("committee did not deposit aggregated key");
             }

@@ -5,6 +5,7 @@ import {console} from "forge-std/console.sol";
 import {PegManager} from "src/PegManager.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {CommitteeRegistry} from "src/CommitteeRegistry.sol";
+import {Committee} from "src/interfaces/ICommitteeRegistry.sol";
 import {Vm} from "forge-std/Vm.sol";
 
 contract RestartPendingCommitteeScript is ScriptUtils {
@@ -22,7 +23,8 @@ contract RestartPendingCommitteeScript is ScriptUtils {
     function run() public {
         setUp();
 
-        (, uint256 createdAt,) = committeeRegistry.getPendingCommittee(streamId);
+        Committee memory committeeBeforeRestart = committeeRegistry.getPendingCommittee(streamId);
+        uint256 createdAt = committeeBeforeRestart.createdAt;
 
         console.log("=== Restart Pending Committee ===");
         vm.recordLogs();
@@ -32,7 +34,8 @@ contract RestartPendingCommitteeScript is ScriptUtils {
         committeeRegistry.restartPendingCommittee(streamId);
         vm.stopBroadcast();
 
-        (, uint256 createdAtNewCommittee,) = committeeRegistry.getPendingCommittee(streamId);
+        Committee memory newCommittee = committeeRegistry.getPendingCommittee(streamId);
+        uint256 createdAtNewCommittee = newCommittee.createdAt;
         if (createdAtNewCommittee > createdAt) {
             console.log("Pending committee restarted successfully.");
         } else {

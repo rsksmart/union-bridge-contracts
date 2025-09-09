@@ -117,7 +117,7 @@ contract DepositCommunicationDataScript is ScriptUtils {
     }
 
     function getPendingCommitteeComPubKeys(uint64 _streamId) internal view returns (RSAPublicKey[] memory) {
-        (Committee memory committee,,) = committeeRegistry.getPendingCommittee(_streamId);
+        Committee memory committee = committeeRegistry.getPendingCommittee(_streamId);
 
         RSAPublicKey[] memory committeeMembersPubKeys = new RSAPublicKey[](committee.members.length);
         for (uint256 i = 0; i < committee.members.length; i++) {

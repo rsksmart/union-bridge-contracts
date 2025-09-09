@@ -94,12 +94,10 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         }
     }
 
-    function _getMemberTakePubKey(address _address) internal view returns (bytes32) {
-        return _getMember(_address).publicKeys.takePubKey;
-    }
-
-    function _getMemberComPubKey(address _address) internal view returns (RSAPublicKey memory) {
-        return _getMember(_address).publicKeys.communicationPubKey;
+    function _revertIfZero(uint256 _value) internal pure {
+        if (_value == 0) {
+            revert InvalidZeroValue();
+        }
     }
 
     function _validateFundingUTXO(UTXO calldata _utxo) internal pure {
@@ -344,7 +342,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         // * half order, and the `v` value to be either 27 or 28.
         address recoveredSignerAddress = ECDSA.recover(messageHash, _key.v, _key.r, _key.s);
 
-        // Get the expectedsigner address from the uncompressed public key
+        // Get the expected signer address from the uncompressed public key
         address expectedSignerAddress = _getAddressFromPublicKey(uncompressedPublicKey);
 
         // Validate the recovered signer address is the same as the expected signer address
@@ -433,14 +431,14 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     /// @param _address The member's address
     /// @return The TAKE public key (x-coordinate only)
     function getMemberTakePubKey(address _address) external view returns (bytes32) {
-        return _getMemberTakePubKey(_address);
+        return _getMember(_address).publicKeys.takePubKey;
     }
 
     /// @notice Gets the COMMUNICATION public key for a specific member
     /// @param _address The member's address
     /// @return The RSA COMMUNICATION public key
     function getMemberComPubKey(address _address) external view returns (RSAPublicKey memory) {
-        return _getMemberComPubKey(_address);
+        return _getMember(_address).publicKeys.communicationPubKey;
     }
 
     /// @notice Retrieves all public keys for a specific member
@@ -755,18 +753,9 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     /// @notice Returns the pending committee for the stream
     /// @dev This function will revert if  there is no pending committee or if it's expired
     /// @param _streamId The stream ID to get the pending committee for
-    /// @return committee The pending committee
-    /// @return createdAt The timestamp when the pending committee was created
-    /// @return missingData The number of members that have not provided their data yet
-    function getPendingCommittee(uint64 _streamId)
-        external
-        view
-        returns (Committee memory committee, uint256 createdAt, uint256 missingData)
-    {
-        // FIXME: Improve this function. It's returning redundant data.
+    /// @return committee The pending committee (contains createdAt and missingData fields)
+    function getPendingCommittee(uint64 _streamId) external view returns (Committee memory committee) {
         committee = _getPendingCommittee(_streamId);
-        createdAt = committee.createdAt;
-        missingData = committee.missingData;
     }
 
     /// @notice Returns the committee ID for a pending committee in the given stream
@@ -974,9 +963,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     /// @dev Only callable by the contract owner
     /// @param _timeout The timeout in seconds for the pending committee
     function setPendingCommitteeTimeout(uint256 _timeout) external onlyOwner {
-        if (_timeout == 0) {
-            revert InvalidZeroValue();
-        }
+        _revertIfZero(_timeout);
         pendingCommitteeTimeout = _timeout;
         emit PendingCommitteeTimeoutUpdated(_timeout);
     }
@@ -985,9 +972,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     /// @dev Only callable by the contract owner
     /// @param _minWatchtowers The minimum watchtowers required for a committee
     function setCommitteeMinWatchtowers(uint256 _minWatchtowers) external onlyOwner {
-        if (_minWatchtowers == 0) {
-            revert InvalidZeroValue();
-        }
+        _revertIfZero(_minWatchtowers);
         if (committeeMemberCount < _minWatchtowers + minCommitteeOperators) {
             revert InvalidMinWatchtowers(committeeMemberCount, _minWatchtowers, minCommitteeOperators);
         }
@@ -999,9 +984,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     /// @dev Only callable by the contract owner
     /// @param _minOperators The minimum operators required for a committee
     function setCommitteeMinOperators(uint256 _minOperators) external onlyOwner {
-        if (_minOperators == 0) {
-            revert InvalidZeroValue();
-        }
+        _revertIfZero(_minOperators);
         if (committeeMemberCount < minCommitteeWatchtowers + _minOperators) {
             revert InvalidMinOperators(committeeMemberCount, minCommitteeWatchtowers, _minOperators);
         }
@@ -1013,9 +996,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     /// @dev Only callable by the contract owner
     /// @param _committeeMemberCount The exact number of members required for a committee
     function setCommitteeMemberCount(uint256 _committeeMemberCount) external onlyOwner {
-        if (_committeeMemberCount == 0) {
-            revert InvalidZeroValue();
-        }
+        _revertIfZero(_committeeMemberCount);
         if (_committeeMemberCount < minCommitteeWatchtowers + minCommitteeOperators) {
             revert InvalidMinMembers(_committeeMemberCount, minCommitteeWatchtowers, minCommitteeOperators);
         }

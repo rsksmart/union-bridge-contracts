@@ -460,12 +460,15 @@ contract TestCommitteeRegistry is Test, HelperContract {
         vm.prank(address(pm));
         registry.createCommittee(expectedCommittee.streamId);
 
-        (Committee memory committee, uint256 createdAt, uint256 missingData) =
-            registry.getPendingCommittee(expectedCommittee.streamId);
+        Committee memory committee = registry.getPendingCommittee(expectedCommittee.streamId);
         // Assert
         assertEqCommittee(expectedCommittee, committee, "Committee should be equeals");
-        assertNotEq(createdAt, 0, "Created at should not be 0");
-        assertEq(missingData, registry.committeeMemberCount(), "Missing data should be equal to committeeMemberCount");
+        assertNotEq(committee.createdAt, 0, "Created at should not be 0");
+        assertEq(
+            committee.missingData,
+            registry.committeeMemberCount(),
+            "Missing data should be equal to committeeMemberCount"
+        );
         assertFalse(
             registry.shouldCreateCommitteeHarness(expectedCommittee.streamId),
             "Should not create committee after committee created"
@@ -503,12 +506,15 @@ contract TestCommitteeRegistry is Test, HelperContract {
         vm.prank(address(pm));
         registry.createCommittee(committee.streamId);
 
-        (Committee memory pendingCommittee, uint256 createdAt, uint256 missingData) =
-            registry.getPendingCommittee(committee.streamId);
+        Committee memory pendingCommittee = registry.getPendingCommittee(committee.streamId);
         // Assert
         assertEqCommittee(expectedCommittee, pendingCommittee, "Committee should be equeals");
-        assertNotEq(createdAt, 0, "Created at should not be 0");
-        assertEq(missingData, registry.committeeMemberCount(), "Missing data should be equal to committeeMemberCount");
+        assertNotEq(committee.createdAt, 0, "Created at should not be 0");
+        assertEq(
+            pendingCommittee.missingData,
+            registry.committeeMemberCount(),
+            "Missing data should be equal to committeeMemberCount"
+        );
         assertFalse(
             registry.shouldCreateCommitteeHarness(committee.streamId),
             "Should not create committee after committee created"
@@ -518,8 +524,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
     function test_createCommittee_Success_AlreadyPendingButNotExpired() external {
         // Arrange
         (Committee memory expectedCommittee,) = setup_pendingCommittee();
-        (Committee memory pendingCommittee, uint256 createdAt, uint256 missingData) =
-            registry.getPendingCommittee(expectedCommittee.streamId);
+        Committee memory pendingCommittee = registry.getPendingCommittee(expectedCommittee.streamId);
         vm.recordLogs();
 
         // Assert
@@ -536,11 +541,12 @@ contract TestCommitteeRegistry is Test, HelperContract {
         Vm.Log[] memory logs = vm.getRecordedLogs();
         assertEq(logs.length, 0, "Expected no events to be emitted");
 
-        (Committee memory pendingCommitteeAfterCall, uint256 createdAtAfterCall, uint256 missingDataAfterCall) =
-            registry.getPendingCommittee(expectedCommittee.streamId);
+        Committee memory pendingCommitteeAfterCall = registry.getPendingCommittee(expectedCommittee.streamId);
 
-        assertEq(createdAt, createdAtAfterCall, "Pending committee should not change");
-        assertEq(missingData, missingDataAfterCall, "Pending committee should not change");
+        assertEq(pendingCommittee.createdAt, pendingCommitteeAfterCall.createdAt, "Pending committee should not change");
+        assertEq(
+            pendingCommittee.missingData, pendingCommitteeAfterCall.missingData, "Pending committee should not change"
+        );
         assertEq(
             pendingCommittee.aggregatedKey,
             pendingCommitteeAfterCall.aggregatedKey,
@@ -560,13 +566,12 @@ contract TestCommitteeRegistry is Test, HelperContract {
         (Committee memory expectedCommittee,) = setup_pendingCommittee();
 
         // Act
-        (Committee memory committee, uint256 createdAt, uint256 missingData) =
-            registry.getPendingCommittee(expectedCommittee.streamId);
+        Committee memory committee = registry.getPendingCommittee(expectedCommittee.streamId);
 
         // Assert
         assertEqCommittee(committee, expectedCommittee, "get pending committee");
-        assertNotEq(createdAt, 0);
-        assertEq(missingData, registry.committeeMemberCount());
+        assertNotEq(committee.createdAt, 0);
+        assertEq(committee.missingData, registry.committeeMemberCount());
     }
 
     function test_depositAggregatedKey_Success() external {
@@ -582,11 +587,10 @@ contract TestCommitteeRegistry is Test, HelperContract {
         registry.depositAggregatedKey(committeeId, COMMITTEE_PUB_KEY());
 
         // Assert
-        (Committee memory committee, uint256 createdAt, uint256 missingData) =
-            registry.getPendingCommittee(expectedCommittee.streamId);
+        Committee memory committee = registry.getPendingCommittee(expectedCommittee.streamId);
         assertEqCommittee(committee, expectedCommittee, "get pending committee");
-        assertNotEq(createdAt, 0);
-        assertEq(missingData, registry.committeeMemberCount() - 1);
+        assertNotEq(committee.createdAt, 0);
+        assertEq(committee.missingData, registry.committeeMemberCount() - 1);
     }
 
     function test_depositAggregatedKey_Revert_MemberInfoAlreadyDeposited() external {
@@ -686,11 +690,10 @@ contract TestCommitteeRegistry is Test, HelperContract {
         registry.depositAggregatedKey(committeeId, wrongPubKey);
 
         // Assert
-        (Committee memory committee, uint256 createdAt, uint256 missingData) =
-            registry.getPendingCommittee(expectedCommittee.streamId);
+        Committee memory committee = registry.getPendingCommittee(expectedCommittee.streamId);
         assertEqCommittee(committee, expectedCommittee, "get pending committee");
-        assertNotEq(createdAt, 0);
-        assertEq(missingData, registry.committeeMemberCount());
+        assertNotEq(committee.createdAt, 0);
+        assertEq(committee.missingData, registry.committeeMemberCount());
     }
 
     function test_depositAggregatedKey_Success_CompleteCommittee() external {
@@ -815,11 +818,10 @@ contract TestCommitteeRegistry is Test, HelperContract {
         registry.createCommittee(expectedCommittee.streamId);
 
         // Assert
-        (Committee memory committee, uint256 createdAt, uint256 missingData) =
-            registry.getPendingCommittee(expectedCommittee.streamId);
+        Committee memory committee = registry.getPendingCommittee(expectedCommittee.streamId);
         assertEqCommittee(committee, expectedCommittee, "get pending committee");
-        assertNotEq(createdAt, 0);
-        assertEq(missingData, registry.committeeMemberCount());
+        assertNotEq(committee.createdAt, 0);
+        assertEq(committee.missingData, registry.committeeMemberCount());
     }
 
     function test_depositAggregatedKey_Success_CompleteCommitteeOnExpiredCommittee() external {
@@ -946,11 +948,14 @@ contract TestCommitteeRegistry is Test, HelperContract {
         registry.restartPendingCommittee(expectedCommittee.streamId);
 
         // Assert
-        (Committee memory committee, uint256 createdAt, uint256 missingData) =
-            registry.getPendingCommittee(expectedCommittee.streamId);
+        Committee memory committee = registry.getPendingCommittee(expectedCommittee.streamId);
         assertEqCommittee(committee, expectedCommittee, "get pending committee after restart");
-        assertNotEq(createdAt, 0);
-        assertEq(missingData, registry.committeeMemberCount(), "missing data should be equal to min committee members");
+        assertNotEq(committee.createdAt, 0);
+        assertEq(
+            committee.missingData,
+            registry.committeeMemberCount(),
+            "missing data should be equal to min committee members"
+        );
         assertFalse(
             registry.shouldCreateCommitteeHarness(expectedCommittee.streamId),
             "Should not create committee after committee created"
@@ -964,8 +969,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // This function sets up a pending committee and then expires it
         (Committee memory expectedCommittee,) = setup_pendingCommitteeAndExpire();
         // We ask for current pending committee
-        (Committee memory currentPendingCommittee, uint256 createdAt,) =
-            registry.getPendingCommittee(expectedCommittee.streamId);
+        Committee memory currentPendingCommittee = registry.getPendingCommittee(expectedCommittee.streamId);
 
         assertEq(
             expectedCommittee.members.length,
@@ -988,10 +992,11 @@ contract TestCommitteeRegistry is Test, HelperContract {
         vm.prank(address(pm));
         registry.createCommitteeHarness(expectedCommittee.streamId);
 
-        (Committee memory pendingCommitteeAfterCall, uint256 createdAtAfterCall, uint256 missingDataAfterCall) =
-            registry.getPendingCommittee(expectedCommittee.streamId);
-        assertNotEq(createdAt, createdAtAfterCall, "Pending committee should change");
-        assertEq(0, missingDataAfterCall, "Missing data should be 0 after committee creation");
+        Committee memory pendingCommitteeAfterCall = registry.getPendingCommittee(expectedCommittee.streamId);
+        assertNotEq(
+            currentPendingCommittee.createdAt, pendingCommitteeAfterCall.createdAt, "Pending committee should change"
+        );
+        assertEq(pendingCommitteeAfterCall.missingData, 0, "Missing data should be 0 after committee creation");
         assertEq(
             new bytes(0),
             pendingCommitteeAfterCall.aggregatedKey,
@@ -1012,7 +1017,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Arrange
         (Committee memory expectedCommittee,) = setup_pendingCommittee();
         StreamDenomination denomination = StreamDenomination(expectedCommittee.streamId);
-        (, uint256 createdAt, uint256 missingData) = registry.getPendingCommittee(expectedCommittee.streamId);
+        Committee memory pendingCommitteeBeforeCall = registry.getPendingCommittee(expectedCommittee.streamId);
         vm.recordLogs();
 
         // createCommitteeAfterApplyToStream called should do nothing if pending committee is not expired
@@ -1022,10 +1027,17 @@ contract TestCommitteeRegistry is Test, HelperContract {
         Vm.Log[] memory logs = vm.getRecordedLogs();
         assertEq(logs.length, 0, "Expected no events to be emitted");
 
-        (Committee memory pendingCommitteeAfterCall, uint256 createdAtAfterCall, uint256 missingDataAfterCall) =
-            registry.getPendingCommittee(expectedCommittee.streamId);
-        assertEq(createdAtAfterCall, createdAt, "Pending committee should not change");
-        assertEq(missingDataAfterCall, missingData, "Pending committee should not change");
+        Committee memory pendingCommitteeAfterCall = registry.getPendingCommittee(expectedCommittee.streamId);
+        assertEq(
+            pendingCommitteeAfterCall.createdAt,
+            pendingCommitteeBeforeCall.createdAt,
+            "Pending committee should not change"
+        );
+        assertEq(
+            pendingCommitteeAfterCall.missingData,
+            pendingCommitteeBeforeCall.missingData,
+            "Pending committee should not change"
+        );
         assertEq(
             pendingCommitteeAfterCall.aggregatedKey,
             expectedCommittee.aggregatedKey,
@@ -1040,7 +1052,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Arrange
         (Committee memory expectedCommittee,) = setup_pendingCommitteeAndExpire();
         StreamDenomination denomination = StreamDenomination(expectedCommittee.streamId);
-        (, uint256 createdAt,) = registry.getPendingCommittee(expectedCommittee.streamId);
+        Committee memory pendingCommitteeBeforeCall2 = registry.getPendingCommittee(expectedCommittee.streamId);
 
         // Assert
         vm.expectEmit(address(registry));
@@ -1050,10 +1062,17 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Act
         registry.createCommitteeAfterApplyToStreamHarness(denomination);
 
-        (Committee memory pendingCommitteeAfterCall, uint256 createdAtAfterCall, uint256 missingDataAfterCall) =
-            registry.getPendingCommittee(expectedCommittee.streamId);
-        assertEq(missingDataAfterCall, expectedCommittee.members.length, "Pending committee should not change");
-        assertNotEq(createdAt, createdAtAfterCall, "Pending committee should change");
+        Committee memory pendingCommitteeAfterCall = registry.getPendingCommittee(expectedCommittee.streamId);
+        assertEq(
+            pendingCommitteeAfterCall.missingData,
+            expectedCommittee.members.length,
+            "Pending committee should not change"
+        );
+        assertNotEq(
+            pendingCommitteeBeforeCall2.createdAt,
+            pendingCommitteeAfterCall.createdAt,
+            "Pending committee should change"
+        );
         assertEq(
             pendingCommitteeAfterCall.aggregatedKey,
             expectedCommittee.aggregatedKey,
@@ -1121,11 +1140,14 @@ contract TestCommitteeRegistry is Test, HelperContract {
         );
 
         // Assert
-        (Committee memory pendingCommittee, uint256 createdAt, uint256 missingData) =
-            registry.getPendingCommittee(streamId);
+        Committee memory pendingCommittee = registry.getPendingCommittee(streamId);
         assertEqCommittee(pendingCommittee, expectedCommittee, "get pending committee after apply to stream");
-        assertNotEq(createdAt, 0, "Created at should not be 0 after apply to stream");
-        assertEq(missingData, registry.committeeMemberCount(), "Missing data should be equal to min committee members");
+        assertNotEq(pendingCommittee.createdAt, 0, "Created at should not be 0 after apply to stream");
+        assertEq(
+            pendingCommittee.missingData,
+            registry.committeeMemberCount(),
+            "Missing data should be equal to min committee members"
+        );
         assertFalse(registry.shouldCreateCommitteeHarness(streamId), "Flag should be false before createCommittee call");
     }
 

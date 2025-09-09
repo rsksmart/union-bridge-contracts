@@ -750,7 +750,7 @@ abstract contract HelperContract is Test, TestUtils {
     /// @param memberAddress Address of the member depositing data
     /// @param memberIndex Index of the member in the committee (for generating valid data)
     function setup_depositCommunicationData(uint64 streamId, address memberAddress, uint256 memberIndex) internal {
-        (Committee memory committee,,) = registry.getPendingCommittee(streamId);
+        Committee memory committee = registry.getPendingCommittee(streamId);
         CommunicationData[] memory communicationData =
             createValidCommunicationData(committee.members.length, memberIndex);
 
