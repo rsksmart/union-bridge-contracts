@@ -1034,9 +1034,10 @@ contract TestPegManager is Test, HelperContract {
         streamManager.pushSlotsHarness(stream.streamId, 0, Constants.SLOTS_PER_PACKET, SlotState.BLOCKED);
 
         // 2. Create second packet with the existing committee setup
-        bytes32 committeePubKey = setupExpectedCommittee.aggregatedKey;
         vm.prank(address(registry));
-        streamManager.createNewPacket(stream.streamId, COMMITTEE_ID_STREAM_1_COMMITTEE_1, committeePubKey);
+        streamManager.createNewPacket(
+            stream.streamId, COMMITTEE_ID_STREAM_1_COMMITTEE_1, setupExpectedCommittee.aggregatedKey
+        );
         streamManager.setSlotHarness(stream.streamId, 1, scriptPubKey, txId, amount, SlotState.FILLED);
 
         // 3. Call tryPegout

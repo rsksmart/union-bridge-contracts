@@ -13,7 +13,7 @@ import {
 contract DepositCommunicationDataScript is ScriptUtils {
     ICommitteeRegistry committeeRegistry;
 
-    bytes32 committeePubKey;
+    bytes committeePubKey;
     uint16 mnemonicIndex;
     uint64 stream;
     uint256 privKey;

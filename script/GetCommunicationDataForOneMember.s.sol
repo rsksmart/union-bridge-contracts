@@ -8,7 +8,7 @@ import {ICommitteeRegistry, CommunicationData} from "src/interfaces/ICommitteeRe
 contract GetCommunicationDataForOneMemberScript is ScriptUtils {
     ICommitteeRegistry committeeRegistry;
 
-    bytes32 committeePubKey;
+    bytes committeePubKey;
     uint16 mnemonicIndex;
     uint64 stream;
     uint256 privKey;

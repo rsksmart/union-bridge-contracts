@@ -283,7 +283,7 @@ contract TestPegManager is Test, HelperContract {
         setup_depositAggregatedKey_MultipleMembers(committeeId, memberIndexStart, memberCount);
 
         // Update expected committee with aggregated key
-        expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY;
+        expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY();
         expectedCommittee.missingData = 0;
         expectedCommittee.isPending = false;
         vm.expectEmit(address(registry));
@@ -293,7 +293,7 @@ contract TestPegManager is Test, HelperContract {
         emit IStreamManager.PacketCreated(setupStreamId, 1);
 
         vm.prank(vm.addr(registry.committeeMemberCount() * 2));
-        registry.depositAggregatedKey(committeeId, COMMITTEE_PUB_KEY);
+        registry.depositAggregatedKey(committeeId, COMMITTEE_PUB_KEY());
     }
 
     function test_acceptPegin_newPacketUsed() external {

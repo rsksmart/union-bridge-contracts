@@ -598,7 +598,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         committee.createdAt = block.timestamp;
         committee.missingData = uint16(committeeMembers.length);
         committee.missingCommunicationData = uint16(committeeMembers.length);
-        committee.aggregatedKey = bytes32(0);
+        committee.aggregatedKey = new bytes(0);
         committee.streamId = _streamId;
         committee.isPending = true;
 
@@ -629,26 +629,30 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     /// @dev Called by members to provide their aggregated key for a pending committee
     /// @param _committeeId The ID of the pending committee
     /// @param _aggregatedKey The aggregated public key provided by the member
-    function depositAggregatedKey(uint128 _committeeId, bytes32 _aggregatedKey) external {
+    function depositAggregatedKey(uint128 _committeeId, bytes memory _aggregatedKey) external {
         Committee storage pendingCommittee = _getPendingCommitteeById(_committeeId);
 
-        if (_aggregatedKey == bytes32(0)) {
-            revert InvalidAggregatedKey();
+        if (_aggregatedKey.length != 33) {
+            revert InvalidAggregatedKeyLength(_aggregatedKey.length, 33);
+        }
+
+        if (keccak256(_aggregatedKey) == keccak256(new bytes(33))) {
+            revert InvalidAggregatedKeyZero();
         }
 
         _isInCommitteeOrRevert(_committeeId, msg.sender);
 
-        if (committeesData[_committeeId][msg.sender].aggregatedKey != bytes32(0)) {
+        if (committeesData[_committeeId][msg.sender].aggregatedKey.length != 0) {
             revert MemberInfoAlreadyDeposited(_committeeId, msg.sender);
         }
 
         committeesData[_committeeId][msg.sender].aggregatedKey = _aggregatedKey;
 
-        if (pendingCommittee.aggregatedKey == bytes32(0)) {
+        if (pendingCommittee.aggregatedKey.length == 0) {
             // Save the aggregated key for the committee
             pendingCommittee.aggregatedKey = _aggregatedKey;
         } else {
-            if (pendingCommittee.aggregatedKey != _aggregatedKey) {
+            if (keccak256(pendingCommittee.aggregatedKey) != keccak256(_aggregatedKey)) {
                 _deletePendingCommittee(pendingCommittee.streamId);
                 _createCommittee(pendingCommittee.streamId); // Ignoring checks
                 return;
@@ -663,15 +667,15 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         }
 
         // Create unique committee id associated to the streamId and packetNumber.
-        uint64 packetNumber = streamManager.getPacketsLength(pendingCommittee.streamId);
-        bytes32 aggregatedKey = pendingCommittee.aggregatedKey;
         _removeCandidatesAndUpdateBalance(
-            pendingCommittee.members, StreamDenomination(pendingCommittee.streamId), packetNumber
+            pendingCommittee.members,
+            StreamDenomination(pendingCommittee.streamId),
+            streamManager.getPacketsLength(pendingCommittee.streamId)
         );
 
         _deletePendingCommittee(pendingCommittee.streamId);
         emit NewCommittee(_committeeId, pendingCommittee);
-        streamManager.createNewPacket(pendingCommittee.streamId, _committeeId, aggregatedKey);
+        streamManager.createNewPacket(pendingCommittee.streamId, _committeeId, pendingCommittee.aggregatedKey);
     }
 
     function depositCommunicationData(uint128 _committeeId, CommunicationData[] memory _communicationData) external {

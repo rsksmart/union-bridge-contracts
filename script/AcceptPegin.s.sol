@@ -33,7 +33,8 @@ contract AcceptPeginScript is ScriptUtils {
         RequestPeginTempInfo memory requestPeginTempInfo = pegManager.getRequestPeginTempInfo(_requestPeginTxHash);
 
         // Get the committee public key
-        bytes32 committeePubKey = streamManager.getCommitteePubKey(streamPosition.streamId, streamPosition.packetNumber);
+        bytes memory committeePubKey =
+            streamManager.getCommitteePubKey(streamPosition.streamId, streamPosition.packetNumber);
 
         // BtcTransaction to verify
         BtcTransaction memory btcTransaction =

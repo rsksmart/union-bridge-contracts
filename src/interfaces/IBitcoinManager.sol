@@ -88,13 +88,13 @@ interface IBitcoinManager {
     /// @param _rskDestinationAddress The RSK address that will receive the RBTC
     /// @param _value The amount in satoshis to peg in (must match stream denomination)
     /// @param _btcReimbursementPubKey The user's Bitcoin public key (x-coordinate only, 32 bytes)
-    /// @param _committeePubKey The committee's public key (x-coordinate only, 32 bytes)
+    /// @param _committeePubKey The committee's public key
     /// @return temporaryPeginAddress The generated temporary Bitcoin address for deposit
     function getTemporaryPeginAddress(
         address _rskDestinationAddress,
         uint64 _value,
         bytes32 _btcReimbursementPubKey,
-        bytes32 _committeePubKey
+        bytes memory _committeePubKey
     ) external view returns (string memory temporaryPeginAddress);
 
     /// @notice Extracts data from a request peg-in Bitcoin transaction's OP_RETURN output
@@ -111,13 +111,13 @@ interface IBitcoinManager {
     /// @param _rskDestinationAddress The RSK address that should receive the RBTC
     /// @param _streamDenomination The expected amount in satoshis
     /// @param _btcReimbursementPubKey The user's Bitcoin public key (x-coordinate only)
-    /// @param _committeePubKey The committee's public key (x-coordinate only)
+    /// @param _committeePubKey The committee's public key
     /// @param _p2trOut The Bitcoin transaction output to validate
     function validateRequestPeginP2TROutput(
         address _rskDestinationAddress,
         uint64 _streamDenomination,
         bytes32 _btcReimbursementPubKey,
-        bytes32 _committeePubKey,
+        bytes memory _committeePubKey,
         BtcTxOut calldata _p2trOut
     ) external pure;
 
@@ -139,7 +139,7 @@ interface IBitcoinManager {
         address _rskDestinationAddress,
         uint64 _value,
         bytes32 _btcReimbursementPubKey,
-        bytes32 _committeePubKey
+        bytes memory _committeePubKey
     ) external pure returns (bytes memory);
 
     /// @notice Calculates the signature hash for Bitcoin accept peg-in transactions
@@ -152,7 +152,7 @@ interface IBitcoinManager {
     /// @return acceptPeginSignatureHash The hash that needs to be signed by committee members
     /// @return acceptPeginSignatureMessage The encoded data before hashing
     function getAcceptPeginSignatureHash(
-        bytes32 _committeePubKey,
+        bytes memory _committeePubKey,
         bytes32 _userXOnlyPubKey,
         bytes32 _registerPeginTx,
         PrevoutData memory _prevoutData
@@ -161,17 +161,19 @@ interface IBitcoinManager {
     /// @notice Generates a Taproot script pub key for accept peg-in transactions
     /// @dev Creates a P2TR script with committee key path for accepting peg-ins
     /// @param _committeePubKey The committee's public key (x-coordinate only, 32 bytes)
-    /// @return The Taproot script pub key for the accept peg-in output
-    function getAcceptPeginP2TRScriptPub(bytes32 _committeePubKey) external pure returns (bytes memory);
+    /// @return bytes The Taproot script pub key for the accept peg-in output
+    function getAcceptPeginP2TRScriptPub(bytes memory _committeePubKey) external pure returns (bytes memory);
 
     /// @notice Validates a P2TR output for accept peg-in transactions
     /// @dev Ensures the Taproot output has the correct committee key structure
     /// @param _committeePubKey The committee's public key (x-coordinate only, 32 bytes)
     /// @param _inputAmount The amount of the input being spent
     /// @param _p2trOut The Bitcoin transaction output containing the P2TR output
-    function validateAcceptPeginP2TROutput(bytes32 _committeePubKey, uint64 _inputAmount, BtcTxOut calldata _p2trOut)
-        external
-        pure;
+    function validateAcceptPeginP2TROutput(
+        bytes memory _committeePubKey,
+        uint64 _inputAmount,
+        BtcTxOut calldata _p2trOut
+    ) external pure;
 
     /// @notice Generates a P2WPKH script pub key for speed-up outputs
     /// @dev Creates a P2WPKH script for Child Pays for Parent (CPFP) transactions to speed up the original transaction
@@ -227,6 +229,18 @@ interface IBitcoinManager {
     /// @notice Thrown when a public key is invalid or malformed
     /// @param publicKey The invalid public key that was provided
     error InvalidPublicKey(bytes32 publicKey);
+
+    /// @notice Thrown when a public key has invalid length
+    /// @param length The invalid length that was provided
+    error InvalidPublicKeyLength(uint256 length);
+
+    /// @notice Error thrown when the committee public key has an invalid length
+    /// @param length The actual length provided
+    /// @param expected The expected length (33 bytes)
+    error InvalidCommitteePublicKeyLength(uint256 length, uint256 expected);
+
+    /// @notice Error thrown when the committee public key is all zeros
+    error InvalidCommitteePublicKeyZero();
 
     /// @notice Thrown when an address is invalid or zero address
     /// @param _address The invalid address that was provided

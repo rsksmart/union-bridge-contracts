@@ -30,7 +30,13 @@ abstract contract HelperContract is Test, TestUtils {
     uint128 constant COMMITTEE_ID_STREAM_1_COMMITTEE_1 = 118226726889222519722182588745663749063;
     uint128 constant COMMITTEE_ID_STREAM_1_COMMITTEE_2 = 9059004642890852444280677687625412743;
     uint128 constant COMMITTEE_ID_STREAM_1_COMMITTEE_3 = 252028015853910751738154200832734646518;
-    bytes32 constant COMMITTEE_PUB_KEY = 0xd1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d;
+    // 33-byte compressed public key (0x02 prefix + 32 bytes)
+
+    function COMMITTEE_PUB_KEY() internal pure returns (bytes memory) {
+        return
+            abi.encodePacked(bytes1(0x02), bytes32(0xd1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d));
+    }
+
     uint256 constant BLOCK_COMMITTEE_1 = 10;
     uint256 constant BLOCK_COMMITTEE_2 = 100000;
     uint256 constant BLOCK_COMMITTEE_3 = 200000;
@@ -397,7 +403,7 @@ abstract contract HelperContract is Test, TestUtils {
 
     function setup_depositAggregatedKey(uint128 _committeeId, address _memberAddress) internal {
         vm.prank(_memberAddress);
-        registry.depositAggregatedKey(_committeeId, COMMITTEE_PUB_KEY);
+        registry.depositAggregatedKey(_committeeId, COMMITTEE_PUB_KEY());
     }
 
     // This function is used to deposit the aggregated key for multiple members in a committee
@@ -439,7 +445,7 @@ abstract contract HelperContract is Test, TestUtils {
         (expectedCommittee, committeeId) = setup_pendingCommittee();
 
         setup_depositAggregatedKey_MultipleMembers(committeeId, 0, registry.committeeMemberCount());
-        expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY;
+        expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY();
         expectedCommittee.isPending = false;
         expectedCommittee.missingData = 0;
 
@@ -460,14 +466,14 @@ abstract contract HelperContract is Test, TestUtils {
         setup_registerNewMembers(numWatchtowers, numOperators, StreamDenomination(firstCommittee.streamId));
 
         secondCommittee = setup_getExpectedSecondCommittee();
-        secondCommittee.aggregatedKey = COMMITTEE_PUB_KEY;
+        secondCommittee.aggregatedKey = COMMITTEE_PUB_KEY();
 
         return (firstCommittee, secondCommittee, COMMITTEE_ID_STREAM_1_COMMITTEE_2);
     }
 
     function setup_getExpectedSecondCommittee() internal view returns (Committee memory) {
         Committee memory committee = Committee({
-            aggregatedKey: bytes32(0),
+            aggregatedKey: new bytes(0),
             members: new CommitteeMember[](registry.committeeMemberCount()),
             leaderAddress: address(0),
             operatorTakeIndex: 0,
@@ -500,7 +506,7 @@ abstract contract HelperContract is Test, TestUtils {
     function setup_getExpectedCommitteeBeforeExpire() internal view returns (Committee memory) {
         // NOTE: This function is tied to the initial setup of members that it's 0 members
         Committee memory committee = Committee({
-            aggregatedKey: bytes32(0),
+            aggregatedKey: new bytes(0),
             members: new CommitteeMember[](registry.committeeMemberCount()),
             leaderAddress: address(0),
             operatorTakeIndex: 0,
@@ -540,7 +546,7 @@ abstract contract HelperContract is Test, TestUtils {
     function setup_getExpectedCommitteeAfterExpire() internal view returns (Committee memory) {
         // NOTE: member order is tied to the timeout used in setup_pendingCommitteeAndExpire()
         Committee memory committee = Committee({
-            aggregatedKey: bytes32(0),
+            aggregatedKey: new bytes(0),
             members: new CommitteeMember[](registry.committeeMemberCount()),
             leaderAddress: address(0),
             operatorTakeIndex: 0,

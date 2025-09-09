@@ -149,7 +149,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
 
         // Get the current packet's committee key
         Packet memory currentPacket = streamManager.getPacket(stream.streamId, stream.peginPacketPointer);
-        bytes32 committeeKey = currentPacket.committeePubKey;
+        bytes memory committeeKey = currentPacket.committeePubKey;
 
         return bitcoinManager.getTemporaryPeginAddress(
             _rootstockDepositAddress, _value, _btcReimbursementPubKey, committeeKey
@@ -169,7 +169,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             address rskDestinationAddress,
             bytes32 btcReimbursementPubKey,
             Stream memory stream,
-            bytes32 committeePubKey
+            bytes memory committeePubKey
         ) = _extractPeginData(_peginRequestTxSPVProof);
 
         _validatePeginTransaction(
@@ -272,7 +272,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             address rskDestinationAddress,
             bytes32 btcReimbursementPubKey,
             Stream memory stream,
-            bytes32 committeePubKey
+            bytes memory committeePubKey
         )
     {
         // Second transaction should be OP_RETURN with data
@@ -291,7 +291,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         BtcTxSPVProof calldata _peginRequestTxSPVProof,
         address rskDestinationAddress,
         bytes32 btcReimbursementPubKey,
-        bytes32 committeePubKey,
+        bytes memory committeePubKey,
         Stream memory stream,
         bytes32 requestPeginTxHash
     ) internal view {

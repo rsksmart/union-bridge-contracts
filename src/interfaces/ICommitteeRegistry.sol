@@ -151,7 +151,7 @@ struct CommitteeMember {
 /// @dev Contains all information needed for committee operations
 struct Committee {
     /// @notice Bitcoin public key of the committee (aggregated from member keys)
-    bytes32 aggregatedKey;
+    bytes aggregatedKey;
     /// @notice Array of committee members with their roles
     CommitteeMember[] members;
     /// @notice Address of the committee leader
@@ -176,7 +176,7 @@ struct Committee {
 /// @dev Contains the aggregated key provided by the member and committee status
 struct PendingCommitteeData {
     /// @notice Aggregated key provided by the member
-    bytes32 aggregatedKey;
+    bytes aggregatedKey;
     /// @notice Whether the member is included in the committee
     bool inCommittee;
     /// @notice Array of encrypted Communication Data
@@ -287,8 +287,8 @@ interface ICommitteeRegistry {
     /// @notice Allows a member to deposit information  formation
     /// @dev Called by members to provide their aggregated key for a pending committee
     /// @param _committeeId The ID of the pending committee
-    /// @param _aggregatedKey The aggregated public key provided by the member
-    function depositAggregatedKey(uint128 _committeeId, bytes32 _aggregatedKey) external;
+    /// @param _aggregatedKey The aggregated public key provided by the member (must be exactly 33 bytes)
+    function depositAggregatedKey(uint128 _committeeId, bytes memory _aggregatedKey) external;
 
     /// @notice Triggers the creation of a new committee for a stream if the timeout has expired
     /// @dev This function is called when the slot usage threshold is reached
@@ -479,7 +479,7 @@ interface ICommitteeRegistry {
     /// @param committeeId The ID of the pending committee
     /// @param member The member's address
     /// @param aggregatedKey The aggregated key provided by the member
-    event MemberInfoDeposited(uint128 indexed committeeId, address indexed member, bytes32 aggregatedKey);
+    event MemberInfoDeposited(uint128 indexed committeeId, address indexed member, bytes aggregatedKey);
 
     /// @notice Event emitted when no honest operators remain in a committee
     /// @param committeeId The ID of the committee with no honest operators
@@ -554,8 +554,13 @@ interface ICommitteeRegistry {
     /// @param expireAt The expiration timestamp
     error PendingCommitteeNotExpired(uint64 streamId, uint256 createdAt, uint256 expireAt);
 
-    /// @notice Thrown when the aggregated key is invalid
-    error InvalidAggregatedKey();
+    /// @notice Error thrown when the aggregated key has an invalid length
+    /// @param length The actual length provided
+    /// @param expected The expected length (33 bytes)
+    error InvalidAggregatedKeyLength(uint256 length, uint256 expected);
+
+    /// @notice Error thrown when the aggregated key is all zeros
+    error InvalidAggregatedKeyZero();
 
     /// @notice Thrown when public keys are repeated
     /// @param index The index of the first occurrence

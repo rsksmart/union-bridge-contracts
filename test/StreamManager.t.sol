@@ -76,7 +76,7 @@ contract TestStreamManager is Test, HelperContract {
         // Arrange
         // we expect the packet number to be 1 since the first packet is being created in the test setup function
         uint64 expectedPacketNumber = 1;
-        bytes32 committeePubKey = bytes32(uint256(1));
+        bytes memory committeePubKey = COMMITTEE_PUB_KEY();
 
         // Assert
         vm.expectEmit(address(streamManager));
@@ -922,7 +922,7 @@ contract TestStreamManager is Test, HelperContract {
         streamManager.pushSlotsHarness(streamId, firstPacketNumber, Constants.SLOTS_PER_PACKET, SlotState.BLOCKED);
 
         // Create second packet and add filled slot
-        bytes32 committeePubKey = bytes32(uint256(123));
+        bytes memory committeePubKey = COMMITTEE_PUB_KEY();
         vm.prank(address(registry));
         streamManager.createNewPacket(streamId, 999, committeePubKey);
 

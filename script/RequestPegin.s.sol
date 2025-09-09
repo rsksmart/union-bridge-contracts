@@ -25,7 +25,7 @@ contract RequestPeginScript is ScriptUtils {
         // Committee public key
         Stream memory stream = streamManager.getStream(value);
         uint64 packetNumber = stream.peginPacketPointer;
-        bytes32 committeePubKey = streamManager.getCommitteePubKey(stream.streamId, packetNumber);
+        bytes memory committeePubKey = streamManager.getCommitteePubKey(stream.streamId, packetNumber);
         // BtcTransaction to verify
         BtcTransaction memory btcTransaction =
             BtcTransaction({version: 2, inputs: new BtcTxIn[](1), outputs: new BtcTxOut[](2), locktime: 0});

@@ -15,7 +15,7 @@ contract DepositAggregatedKeyScript is ScriptUtils {
     uint256 privKey;
     address user;
 
-    function setUp(uint16 _mnemonicIndex, uint64 _streamIndex, bytes32 _committeePubKey) internal {
+    function setUp(uint16 _mnemonicIndex, uint64 _streamIndex, bytes memory _committeePubKey) internal {
         pegManager = PegManager(0x0165878A594ca255338adfa4d48449f69242Eb8F);
         committeeRegistry = pegManager.committeeRegistry();
         streamManager = IStreamManager(pegManager.streamManager());
@@ -27,15 +27,15 @@ contract DepositAggregatedKeyScript is ScriptUtils {
         if (_streamIndex > 4) {
             revert("stream index must be between 0 and 4");
         }
-        if (_committeePubKey == bytes32(0)) {
-            revert("committee pub key must be provided");
+        if (_committeePubKey.length != 33) {
+            revert("committee pub key must be exactly 33 bytes");
         }
 
         privKey = getMemberKey(uint32(_mnemonicIndex));
         user = vm.addr(privKey);
     }
 
-    function run(uint16 _mnemonicIndex, uint64 _streamIndex, bytes32 _committeePubKey) public {
+    function run(uint16 _mnemonicIndex, uint64 _streamIndex, bytes memory _committeePubKey) public {
         setUp(_mnemonicIndex, _streamIndex, _committeePubKey);
 
         // revert if no pending committee found
