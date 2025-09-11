@@ -19,7 +19,7 @@ import {HelperContract} from "test/helpers/HelperContract.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-contract TestCommitteeRegistry is Test, HelperContract {
+contract TestMemberRegistry is Test, HelperContract {
     function setUp() external {
         runTestDeployScript();
     }
