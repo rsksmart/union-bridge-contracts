@@ -11,9 +11,9 @@ import {
     Committee,
     CommunicationData,
     COMMUNICATION_DATA_CHUNKS,
-    MemberRegistrationKeys,
-    RSAPublicKey
+    MemberRegistrationKeys
 } from "src/interfaces/ICommitteeRegistry.sol";
+import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
 import {StreamDenomination, IStreamManager, Stream} from "src/interfaces/IStreamManager.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -351,7 +351,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         assertTrue(isDifferent, "Selections should be different with different timestamps");
     }
 
-    function test_selectCommittee_Revert_NotEnoughWatchtowers() external {
+    function test_selectCommittee_Emit_MissingWatchtowers() external {
         // Arrange
         StreamDenomination denomination = StreamDenomination._0_01BTC;
         uint64 streamId = 1;
@@ -359,9 +359,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
         uint256 numOperators = registry.committeeMemberCount() - numWatchtowers + 1;
         setup_registerNewMembers(numWatchtowers, numOperators, denomination);
 
-        // Assert that selectCommittee reverts with MissingWatchtowers event
-        vm.expectEmit(address(registry));
-        emit ICommitteeRegistry.MissingWatchtowers(denomination, registry.minCommitteeWatchtowers(), 1);
+        // Assert that selectCommittee emits MissingWatchtowers event
+        vm.expectEmit(address(memberRegistry));
+        emit IMemberRegistry.MissingWatchtowers(denomination, registry.minCommitteeWatchtowers(), 1);
 
         // Act
         (CommitteeMember[] memory members, PendingCommitteeStatus status) = registry.selectCommittee(streamId);
@@ -377,7 +377,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         );
     }
 
-    function test_selectCommittee_Revert_NotEnoughOperators() external {
+    function test_selectCommittee_Emit_MissingOperators() external {
         // Arrange
         StreamDenomination denomination = StreamDenomination._0_01BTC;
         uint64 streamId = 1;
@@ -385,9 +385,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
         uint256 numWatchtowers = registry.committeeMemberCount() - numOperators + 1;
         setup_registerNewMembers(numWatchtowers, numOperators, denomination);
 
-        // Assert that selectCommittee reverts with MissingOperators event
-        vm.expectEmit(address(registry));
-        emit ICommitteeRegistry.MissingOperators(denomination, registry.minCommitteeOperators(), 1);
+        // Assert that selectCommittee emits MissingOperators event
+        vm.expectEmit(address(memberRegistry));
+        emit IMemberRegistry.MissingOperators(denomination, registry.minCommitteeOperators(), 1);
 
         // Act
         (CommitteeMember[] memory members, PendingCommitteeStatus status) = registry.selectCommittee(streamId);
@@ -403,7 +403,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         );
     }
 
-    function test_selectCommittee_Revert_NotEnoughMembers() external {
+    function test_selectCommittee_Emit_MissingMembers() external {
         // Arrange
         StreamDenomination denomination = StreamDenomination._0_01BTC;
         uint64 streamId = 1;
@@ -412,8 +412,8 @@ contract TestCommitteeRegistry is Test, HelperContract {
         setup_registerNewMembers(numWatchtowers, numOperators, denomination);
 
         // Assert
-        vm.expectEmit(address(registry));
-        emit ICommitteeRegistry.MissingMembers(
+        vm.expectEmit(address(memberRegistry));
+        emit IMemberRegistry.MissingMembers(
             denomination,
             registry.committeeMemberCount(),
             registry.committeeMemberCount() - registry.minCommitteeOperators() - registry.minCommitteeWatchtowers()
@@ -481,8 +481,8 @@ contract TestCommitteeRegistry is Test, HelperContract {
         (Committee memory committee,) = setup_completeCommittee();
         StreamDenomination denomination = StreamDenomination(committee.streamId);
 
-        assertEq(0, registry.getCommitteeCandidates(denomination, Role.OPERATOR).length);
-        assertEq(0, registry.getCommitteeCandidates(denomination, Role.WATCHTOWER).length);
+        assertEq(0, memberRegistry.getCommitteeCandidates(denomination, Role.OPERATOR).length);
+        assertEq(0, memberRegistry.getCommitteeCandidates(denomination, Role.WATCHTOWER).length);
 
         uint256 numOperators = registry.committeeMemberCount() / 2;
         uint256 numWatchtowers = registry.committeeMemberCount() / 2;
@@ -716,12 +716,13 @@ contract TestCommitteeRegistry is Test, HelperContract {
         registry.depositAggregatedKey(committeeId, COMMITTEE_PUB_KEY());
 
         assertEq(
-            registry.getCommitteeCandidates(StreamDenomination(expectedCommittee.streamId), Role.OPERATOR).length,
+            memberRegistry.getCommitteeCandidates(StreamDenomination(expectedCommittee.streamId), Role.OPERATOR).length,
             0,
             "Should not have candidates after committee created"
         );
         assertEq(
-            registry.getCommitteeCandidates(StreamDenomination(expectedCommittee.streamId), Role.WATCHTOWER).length,
+            memberRegistry.getCommitteeCandidates(StreamDenomination(expectedCommittee.streamId), Role.WATCHTOWER)
+                .length,
             0,
             "Should not have candidates after committee created"
         );
@@ -852,12 +853,13 @@ contract TestCommitteeRegistry is Test, HelperContract {
         registry.getPendingCommittee(expectedCommittee.streamId);
 
         assertEq(
-            registry.getCommitteeCandidates(StreamDenomination(expectedCommittee.streamId), Role.OPERATOR).length,
+            memberRegistry.getCommitteeCandidates(StreamDenomination(expectedCommittee.streamId), Role.OPERATOR).length,
             0,
             "Should not have candidates after committee created"
         );
         assertEq(
-            registry.getCommitteeCandidates(StreamDenomination(expectedCommittee.streamId), Role.WATCHTOWER).length,
+            memberRegistry.getCommitteeCandidates(StreamDenomination(expectedCommittee.streamId), Role.WATCHTOWER)
+                .length,
             0,
             "Should not have candidates after committee created"
         );
@@ -1163,9 +1165,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         vm.deal(memberAddress, minimumDeposit);
 
         // Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(ICommitteeRegistry.TooManyCandidatesForStream.selector, denomination, role)
-        );
+        vm.expectRevert(abi.encodeWithSelector(IMemberRegistry.TooManyCandidatesForStream.selector, denomination, role));
 
         // Act
         vm.prank(memberAddress);
@@ -1184,9 +1184,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         vm.deal(memberAddress, minimumDeposit);
 
         // Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(ICommitteeRegistry.TooManyCandidatesForStream.selector, denomination, role)
-        );
+        vm.expectRevert(abi.encodeWithSelector(IMemberRegistry.TooManyCandidatesForStream.selector, denomination, role));
 
         // Act
         vm.prank(memberAddress);
@@ -1556,7 +1554,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_getMemberCommunicationData_Success() public {
         // Arrange
-        (Committee memory expectedCommittee,) = setup_pendingCommittee();
+        (Committee memory expectedCommittee, uint128 committeeId) = setup_pendingCommittee();
         uint256 memberIndex = 0;
         address memberAddress = expectedCommittee.members[memberIndex].memberAddress;
 
@@ -1569,8 +1567,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Act
         vm.prank(memberAddress);
-        CommunicationData[] memory retrievedData =
-            registry.getMemberCommunicationData(COMMITTEE_ID_STREAM_1_COMMITTEE_1, memberAddress);
+        CommunicationData[] memory retrievedData = registry.getMemberCommunicationData(committeeId, memberAddress);
 
         // Assert
         assertCommunicationDataEqual(expectedData, retrievedData, "Retrieved data should match expected data");
@@ -1598,39 +1595,5 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Act
         vm.prank(memberAddressForOtherStream);
         registry.getMemberCommunicationData(committeeId, memberAddressForOtherStream);
-    }
-
-    function test_getMemberComPubKey_Success() public {
-        // Arrange
-        uint256 privKey = 1;
-        address memberAddress = vm.addr(privKey);
-        MemberRegistrationKeys memory publicKeysRegistration = generateRegistrationPublicKeys(privKey);
-
-        // Register the member by applying to a stream
-        setup_applyToStream(StreamDenomination._0_01BTC, memberAddress, publicKeysRegistration, Role.OPERATOR);
-
-        // Get expected communication public key from registration
-        RSAPublicKey memory expectedComPubKey = publicKeysRegistration.communicationKey;
-
-        // Act
-        RSAPublicKey memory actualComPubKey = registry.getMemberComPubKey(memberAddress);
-
-        // Assert
-        assertEq(
-            keccak256(abi.encode(actualComPubKey)),
-            keccak256(abi.encode(expectedComPubKey)),
-            "Communication public key should match registration"
-        );
-    }
-
-    function test_getMemberComPubKey_Revert_MemberNotRegistered() public {
-        // Arrange
-        address unregisteredAddress = vm.addr(999); // Address never registered
-
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.MemberNotRegistered.selector, unregisteredAddress));
-
-        // Act
-        registry.getMemberComPubKey(unregisteredAddress);
     }
 }

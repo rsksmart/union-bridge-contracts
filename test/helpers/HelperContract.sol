@@ -7,6 +7,7 @@ import {BtcTxSPVProof, PegStatus} from "src/PegManager.sol";
 import {IPegManager, PegoutTempInfo, StreamPosition} from "src/interfaces/IPegManager.sol";
 import {PegManagerHarness} from "test/helpers/PegManagerHarness.sol";
 import {StreamManagerHarness} from "test/helpers/StreamManagerHarness.sol";
+import {MemberRegistryHarness} from "test/helpers/MemberRegistryHarness.sol";
 import {SignatureManager} from "src/SignatureManager.sol";
 import {Role, CommitteeMember, Committee, MemberRegistrationKeys, UTXO} from "src/CommitteeRegistry.sol";
 import {CommunicationData, COMMUNICATION_DATA_CHUNKS} from "src/interfaces/ICommitteeRegistry.sol";
@@ -22,6 +23,8 @@ import {Constants} from "src/libraries/Constants.sol";
 import {OpCodes} from "src/libraries/OpCodes.sol";
 import {Stream, SlotState} from "src/interfaces/IStreamManager.sol";
 import {CommitteeRegistryHarness} from "./CommitteeRegistryHarness.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+// import {console} from "forge-std/console.sol";
 
 abstract contract HelperContract is Test, TestUtils {
     bytes32 internal constant BTC_REIMBURSEMENT_PUBKEY =
@@ -53,6 +56,7 @@ abstract contract HelperContract is Test, TestUtils {
     BitcoinManager internal bitcoinManager;
     BridgeMock internal bridgeMock;
     CommitteeRegistryHarness internal registry;
+    MemberRegistryHarness internal memberRegistry;
     PegManagerHarness internal pm;
     SignatureManager internal signatureManager;
     StreamManagerHarness internal streamManager;
@@ -68,11 +72,15 @@ abstract contract HelperContract is Test, TestUtils {
         deployScript.run();
         bitcoinManager = deployScript.bitcoinManager();
         registry = CommitteeRegistryHarness(address(deployScript.committeeRegistry()));
+        memberRegistry = MemberRegistryHarness(address(deployScript.memberRegistry()));
         pm = PegManagerHarness(address(deployScript.pegManager()));
         streamManager = StreamManagerHarness(address(deployScript.streamManager()));
         // Set up bridge mock at bridge precompiled address
         bridgeMock = BridgeMock(deployScript.bridgeAddress());
         signatureManager = SignatureManager(deployScript.signatureManager());
+
+        // Set up the MemberRegistryHarness in the CommitteeRegistryHarness
+        registry.setMemberRegistryHarness(memberRegistry);
     }
 
     // ========================== UTXO Helper ==========================
@@ -540,7 +548,7 @@ abstract contract HelperContract is Test, TestUtils {
         MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
         address user = vm.addr(privKey);
 
-        registry.registerMemberHarness(user, memberRegistrationKeys);
+        memberRegistry.registerMemberHarness(user, memberRegistrationKeys);
     }
 
     function setup_getExpectedCommitteeAfterExpire() internal view returns (Committee memory) {
@@ -642,7 +650,7 @@ abstract contract HelperContract is Test, TestUtils {
             operatorTakeUpdatedAt: block.timestamp, // Updated when triggerOperatorTake is called
             committeeId: COMMITTEE_ID_STREAM_1_COMMITTEE_1,
             takeOperatorAddress: operatorAddress,
-            takeOperatorPubKey: registry.getMemberTakePubKey(operatorAddress)
+            takeOperatorPubKey: memberRegistry.getMemberTakePubKey(operatorAddress)
         });
 
         StreamPosition memory expectedStreamPosition = StreamPosition({
@@ -739,7 +747,11 @@ abstract contract HelperContract is Test, TestUtils {
                 assertEq(
                     expected[i].data[j],
                     actual[i].data[j],
-                    string(abi.encodePacked(message, ": data differs at index [", i, "][", j, "]"))
+                    string(
+                        abi.encodePacked(
+                            message, ": data differs at index [", Strings.toString(i), "][", Strings.toString(j), "]"
+                        )
+                    )
                 );
             }
         }

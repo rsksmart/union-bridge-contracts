@@ -1,40 +1,27 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {CommitteeRegistry, CommitteeMember} from "src/CommitteeRegistry.sol";
-import {Role, UTXO} from "src/interfaces/ICommitteeRegistry.sol";
+import {CommitteeRegistry} from "src/CommitteeRegistry.sol";
+import {Role, CommitteeMember} from "src/interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
-import {
-    PendingCommitteeStatus, MemberRegistrationKeys, CommunicationData
-} from "src/interfaces/ICommitteeRegistry.sol";
+import {PendingCommitteeStatus, CommunicationData} from "src/interfaces/ICommitteeRegistry.sol";
+import {MemberRegistryHarness} from "./MemberRegistryHarness.sol";
 
 /// @notice Wrapper for testing CommitteeRegistry
 contract CommitteeRegistryHarness is CommitteeRegistry {
-    // This should be the same as in the HelperCOntract.sol
+    // This should be the same as in the HelperContract.sol
     uint128 constant COMMITTEE_ID_STREAM_1_COMMITTEE_1 = 206898896734299866373660992622464848465;
+
+    MemberRegistryHarness public memberRegistryHarness;
 
     function initialize(address _initialOwner) public override initializer {
         CommitteeRegistry.initialize(_initialOwner);
     }
 
     function selectCommittee(uint64 _denomination) public returns (CommitteeMember[] memory, PendingCommitteeStatus) {
-        return _selectCommittee(_denomination);
-    }
-
-    function registerCandidateToStreamHarness(
-        address _memberAddress,
-        StreamDenomination _stream,
-        Role _role,
-        uint256 _amount,
-        UTXO calldata _fundingUTXO
-    ) public {
-        _registerCandidateToStream(_memberAddress, _stream, _role, _amount, _fundingUTXO);
-    }
-
-    function registerMemberHarness(address _memberAddress, MemberRegistrationKeys calldata _publicKeysRegistration)
-        public
-    {
-        _registerMember(_memberAddress, _publicKeysRegistration);
+        return memberRegistry.selectCommittee(
+            _denomination, minCommitteeWatchtowers, minCommitteeOperators, committeeMemberCount
+        );
     }
 
     function createCommitteeAfterApplyToStreamHarness(StreamDenomination _denomination) public {
@@ -47,6 +34,11 @@ contract CommitteeRegistryHarness is CommitteeRegistry {
 
     function shouldCreateCommitteeHarness(uint64 _streamId) public view returns (bool) {
         return shouldCreateCommittee[_streamId];
+    }
+
+    function setMemberRegistryHarness(MemberRegistryHarness _memberRegistryHarness) public {
+        memberRegistryHarness = _memberRegistryHarness;
+        memberRegistry = _memberRegistryHarness; // Also set the interface reference
     }
 
     function createCommitteeWithLastCandidatesHarness(uint64 _streamId, uint256 numWatchtowers, uint256 numOperators)
@@ -131,8 +123,8 @@ contract CommitteeRegistryHarness is CommitteeRegistry {
         returns (CommitteeMember[] memory, PendingCommitteeStatus)
     {
         StreamDenomination denomination = StreamDenomination(_streamId);
-        address[] memory watchtowers = committeesCandidates[denomination][Role.WATCHTOWER];
-        address[] memory operators = committeesCandidates[denomination][Role.OPERATOR];
+        address[] memory watchtowers = memberRegistry.getCommitteeCandidates(denomination, Role.WATCHTOWER);
+        address[] memory operators = memberRegistry.getCommitteeCandidates(denomination, Role.OPERATOR);
 
         if (watchtowers.length < numWatchtowers) {
             revert("Not enough watchtower candidates");
@@ -166,6 +158,6 @@ contract CommitteeRegistryHarness is CommitteeRegistry {
         StreamDenomination _denomination,
         uint64 _packetNumber
     ) public {
-        _removeCandidatesAndUpdateBalance(_members, _denomination, _packetNumber);
+        memberRegistry.removeCandidatesAndUpdateBalance(_members, _denomination, _packetNumber);
     }
 }

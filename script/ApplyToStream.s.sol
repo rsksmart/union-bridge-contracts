@@ -6,11 +6,13 @@ import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {
     ICommitteeRegistry, MemberRegistrationKeys, MemberKeys, Role, UTXO
 } from "src/interfaces/ICommitteeRegistry.sol";
+import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
 import {StreamDenomination, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {PegManager} from "src/PegManager.sol";
 
 contract ApplyToStreamScript is ScriptUtils {
     ICommitteeRegistry committeeRegistry;
+    IMemberRegistry memberRegistry;
     PegManager pegManager;
     IStreamManager streamManager;
     uint256 minimumDeposit;
@@ -32,6 +34,7 @@ contract ApplyToStreamScript is ScriptUtils {
     ) internal {
         pegManager = PegManager(0x0165878A594ca255338adfa4d48449f69242Eb8F);
         committeeRegistry = pegManager.committeeRegistry();
+        memberRegistry = committeeRegistry.memberRegistry();
         streamManager = IStreamManager(pegManager.streamManager());
         // Read args from command line / env
         mnemonicIndex = _mnemonicIndex;
@@ -84,7 +87,7 @@ contract ApplyToStreamScript is ScriptUtils {
             StreamDenomination(streamId), Role(role), memberRegistrationKeys, fundingUTXO
         );
         vm.stopBroadcast();
-        MemberKeys memory memberPubKeys = committeeRegistry.getMemberPublicKeys(user);
+        MemberKeys memory memberPubKeys = memberRegistry.getMemberPublicKeys(user);
         if (memberPubKeys.takePubKey != memberRegistrationKeys.takeKey.publicKeyX) {
             revert("applyToStream failed: take public key mismatch");
         }

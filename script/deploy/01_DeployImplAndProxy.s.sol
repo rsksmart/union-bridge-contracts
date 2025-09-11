@@ -5,6 +5,7 @@ import {console} from "forge-std/console.sol";
 import {VmSafe} from "forge-std/Vm.sol";
 import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 import {CommitteeRegistry} from "src/CommitteeRegistry.sol";
+import {MemberRegistry} from "src/MemberRegistry.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
 import {PegManager} from "src/PegManager.sol";
 import {StreamManager} from "src/StreamManager.sol";
@@ -19,6 +20,18 @@ import {IPegManager, PegManagerSettings} from "src/interfaces/IPegManager.sol";
 import {StreamManagerSettings} from "src/interfaces/IStreamManager.sol";
 import {StreamManagerSettingsConfig} from "script/helpers/StreamManagerSettingsConfig.sol";
 import {PegManagerSettingsConfig} from "script/helpers/PegManagerSettingsConfig.sol";
+
+/// @notice Struct to return deployed contracts and avoid stack too deep error
+struct DeployedContracts {
+    CommitteeRegistry committeeRegistry;
+    MemberRegistry memberRegistry;
+    BitcoinManager bitcoinManager;
+    PegManager pegManager;
+    StreamManager streamManager;
+    SignatureManager signatureManager;
+    address upgradableOwner;
+    address payable bridgeAddress;
+}
 
 ///@dev We are using fundry-upgrades see https://github.com/OpenZeppelin/openzeppelin-foundry-upgrades
 contract DeployImplAndProxy is ScriptUtils {
@@ -61,23 +74,16 @@ contract DeployImplAndProxy is ScriptUtils {
         }
     }
 
-    function run()
-        public
-        returns (
-            CommitteeRegistry,
-            BitcoinManager,
-            PegManager,
-            StreamManager,
-            SignatureManager,
-            address,
-            address payable
-        )
-    {
+    function run() public returns (DeployedContracts memory) {
         setUp();
         printAddress(upgradableOwner, "upgradableOwner");
         printAddress(bridgeAddress, "Bridge");
 
         // Deploy contracts
+        MemberRegistry memberRegistry = deployMemberRegistry(upgradableOwner);
+        if (memberRegistry.owner() != upgradableOwner) {
+            revert("MemberRegistry owner is not the upgradable owner");
+        }
         CommitteeRegistry committeeRegistry = deployCommitteeRegistry(upgradableOwner);
         if (committeeRegistry.owner() != upgradableOwner) {
             revert("CommitteeRegistry owner is not the upgradable owner");
@@ -121,8 +127,12 @@ contract DeployImplAndProxy is ScriptUtils {
         vm.startBroadcast(getDeployerKey());
         pegManager.setStreamManager(streamManager);
         pegManager.setSignatureManager(signatureManager);
+        pegManager.setMemberRegistry(memberRegistry);
         committeeRegistry.setPegManager(pegManager);
         committeeRegistry.setStreamManager(streamManager);
+        committeeRegistry.setMemberRegistry(memberRegistry);
+        memberRegistry.setStreamManager(streamManager);
+        memberRegistry.setCommitteeRegistry(address(committeeRegistry));
         vm.stopBroadcast();
 
         if (block.chainid == ChainIds.LOCAL) {
@@ -136,15 +146,16 @@ contract DeployImplAndProxy is ScriptUtils {
             revert("StreamManager streams not created");
         }
 
-        return (
-            committeeRegistry,
-            bitcoinManager,
-            pegManager,
-            streamManager,
-            signatureManager,
-            upgradableOwner,
-            bridgeAddress
-        );
+        return DeployedContracts({
+            committeeRegistry: committeeRegistry,
+            memberRegistry: memberRegistry,
+            bitcoinManager: bitcoinManager,
+            pegManager: pegManager,
+            streamManager: streamManager,
+            signatureManager: signatureManager,
+            upgradableOwner: upgradableOwner,
+            bridgeAddress: bridgeAddress
+        });
     }
 
     function deployCommitteeRegistry(address _upgradableOwner) public returns (CommitteeRegistry) {
@@ -155,6 +166,16 @@ contract DeployImplAndProxy is ScriptUtils {
         (, address proxyAdddress) =
             deployContractAndUUPSProxy(contractName, abi.encodeCall(CommitteeRegistry.initialize, (_upgradableOwner)));
         return CommitteeRegistry(proxyAdddress);
+    }
+
+    function deployMemberRegistry(address _upgradableOwner) public returns (MemberRegistry) {
+        string memory contractName = "MemberRegistry.sol";
+        if (vm.isContext(VmSafe.ForgeContext.TestGroup)) {
+            contractName = "MemberRegistryHarness.sol";
+        }
+        (, address proxyAdddress) =
+            deployContractAndUUPSProxy(contractName, abi.encodeCall(MemberRegistry.initialize, (_upgradableOwner)));
+        return MemberRegistry(proxyAdddress);
     }
 
     function deployBitcoinManager(address _upgradableOwner, BtcNetwork _btcBtcNetwork)

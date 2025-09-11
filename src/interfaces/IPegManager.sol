@@ -343,6 +343,9 @@ interface IPegManager {
     /// @notice Thrown when the stream manager address is set to zero
     error StreamManagerAddressZero();
 
+    /// @notice Thrown when the member registry address is set to zero
+    error MemberRegistryAddressZero();
+
     /// @notice Thrown when peg-out request amount exceeds uint64 limit
     /// @param amount The amount that exceeded the limit
     error PegoutRequestAmountExceedsUint64Limit(uint256 amount);

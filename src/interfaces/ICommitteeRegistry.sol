@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import {StreamDenomination, IStreamManager} from "./IStreamManager.sol";
 import {IPegManager} from "./IPegManager.sol";
 import {SignatureData} from "./ISignatureManager.sol";
+import {IMemberRegistry} from "./IMemberRegistry.sol";
 
 /// @dev Amount of bytes32 chunks for communication data
 uint8 constant COMMUNICATION_DATA_CHUNKS = 8;
@@ -210,60 +211,6 @@ interface ICommitteeRegistry {
     /// @param _stream The stream denomination to unsubscribe from
     function unsubscribeFromStream(StreamDenomination _stream) external;
 
-    /// @notice Withdraws available balance to the caller's address
-    /// @dev Can only withdraw balance that is not pre-staked or staked
-    function withdrawAvailableBalance() external;
-
-    /// @notice Retrieves all public keys for a specific member
-    /// @param _address The member's address
-    /// @return publicKeys Member public keys structure
-    function getMemberPublicKeys(address _address) external view returns (MemberKeys memory publicKeys);
-
-    /// @notice Gets the requested role for a member in a specific stream
-    /// @param _address The member's address
-    /// @param _denomination The stream denomination
-    /// @return The requested role for the member
-    function getMemberRequestedRole(address _address, StreamDenomination _denomination) external view returns (Role);
-
-    /// @notice Gets the available balance for a member
-    /// @param _address The member's address
-    /// @return The available balance that can be withdrawn
-    function getMemberAvailableBalance(address _address) external view returns (uint256);
-
-    /// @notice Gets the pre-staked balance for a member in a specific stream
-    /// @param _address The member's address
-    /// @param _denomination The stream denomination
-    /// @return The pre-staked balance for the stream
-    function getMemberPreStakedBalance(address _address, StreamDenomination _denomination)
-        external
-        view
-        returns (uint256);
-
-    /// @notice Gets the staked balance for a member in a specific stream and packet
-    /// @param _address The member's address
-    /// @param _denomination The stream denomination
-    /// @param _packetNumber The packet number
-    /// @return amount The staked amount in the packet
-    function getMemberStakedBalance(address _address, StreamDenomination _denomination, uint64 _packetNumber)
-        external
-        view
-        returns (uint256 amount);
-
-    /// @notice Gets the funding UTXO for a member in a specific stream
-    /// @param _streamId The stream ID
-    /// @param _memberAddress The member's address
-    /// @return The funding UTXO for the member's application to the stream
-    function getMemberFundingUTXO(uint64 _streamId, address _memberAddress) external view returns (UTXO memory);
-
-    /// @notice Gets all candidates for a specific role in a stream
-    /// @param _denomination The stream denomination
-    /// @param _role The role to get candidates for
-    /// @return Array of candidate addresses
-    function getCommitteeCandidates(StreamDenomination _denomination, Role _role)
-        external
-        view
-        returns (address[] memory);
-
     /// @notice Gets a committee by its ID
     /// @param _committeeId The committee ID
     /// @return Committee The complete committee information
@@ -274,15 +221,9 @@ interface ICommitteeRegistry {
     /// @return Array of committee members with their roles
     function getCommitteeMembers(uint128 _committeeId) external view returns (CommitteeMember[] memory);
 
-    /// @notice Gets the TAKE public key for a specific member
-    /// @param _memberAddress The member's address
-    /// @return The TAKE public key (x-coordinate only)
-    function getMemberTakePubKey(address _memberAddress) external view returns (bytes32);
-
-    /// @notice Gets the COMMUNICATION public key for a specific member
-    /// @param _address The member's address
-    /// @return RSAPublicKey The RSA COMMUNICATION public key
-    function getMemberComPubKey(address _address) external view returns (RSAPublicKey memory);
+    /// @notice Gets the member registry contract address
+    /// @return The member registry contract
+    function memberRegistry() external view returns (IMemberRegistry);
 
     /// @notice Allows a member to deposit information  formation
     /// @dev Called by members to provide their aggregated key for a pending committee
@@ -377,16 +318,6 @@ interface ICommitteeRegistry {
     /// @notice Release the committee members from a packet (return or reapply staked money)
     function releaseCommittee(uint64 _streamId, uint64 _packetNumber) external;
 
-    /// @notice Set the ReApply flag for a stream
-    /// @param _denomination The denomination of the stream
-    /// @param _reApply The reapply flag to set
-    function setReApplyForStream(StreamDenomination _denomination, bool _reApply) external;
-
-    /// @notice Get the ReApply flag for a stream
-    /// @param _denomination The denomination of the stream
-    /// @return reApply The reapply flag for the stream
-    function getReApplyForStream(StreamDenomination _denomination) external view returns (bool);
-
     // ===================== Events =====================
     /// @notice Event emitted when a new committee is created
     /// @param committeeId The ID of the newly created committee
@@ -397,54 +328,6 @@ interface ICommitteeRegistry {
     /// @param committeeId The stream ID for the pending committee
     /// @param _committee The pending committee information
     event NewPendingCommittee(uint128 indexed committeeId, Committee _committee);
-
-    /// @notice Event emitted when a new member is registered
-    /// @param member The member address
-    /// @param publicKeys The public keys of the new member
-    event NewMember(address indexed member, MemberKeys publicKeys);
-
-    /// @notice Event emitted when a member unsubscribes from a stream
-    /// @param member The member's address
-    /// @param stream The stream denomination
-    event MemberUnsubscribedFromStream(address indexed member, StreamDenomination stream);
-
-    /// @notice Event emitted when a member's balance is updated
-    /// @param memberAddress The member's address
-    /// @param availableBalance The new available balance
-    /// @param preStakedBalance The new pre-staked balance
-    event NewAvailableBalance(address indexed memberAddress, uint256 availableBalance, uint256 preStakedBalance);
-
-    /// @notice Event emitted when available balance is withdrawn
-    /// @param sender The address that withdrew the balance
-    /// @param amount The amount withdrawn
-    event AvailableBalanceRetrieved(address indexed sender, uint256 amount);
-
-    /// @notice Event emitted when a security bond is deposited
-    /// @param sender The address that deposited the bond
-    /// @param requestedStream The stream denomination
-    /// @param requestedRole The requested role
-    /// @param amount The amount deposited
-    event NewSecurityBondDeposit(
-        address indexed sender, StreamDenomination requestedStream, Role requestedRole, uint256 amount
-    );
-
-    /// @notice Event emitted when there are not enough watchtowers
-    /// @param denomination The stream denomination
-    /// @param required The required number of watchtowers
-    /// @param missing The number of missing watchtowers
-    event MissingWatchtowers(StreamDenomination denomination, uint256 required, uint256 missing);
-
-    /// @notice Event emitted when there are not enough operators
-    /// @param denomination The stream denomination
-    /// @param required The required number of operators
-    /// @param missing The number of missing operators
-    event MissingOperators(StreamDenomination denomination, uint256 required, uint256 missing);
-
-    /// @notice Event emitted when there are not enough members
-    /// @param denomination The stream denomination
-    /// @param required The required number of members
-    /// @param missing The number of missing members
-    event MissingMembers(StreamDenomination denomination, uint256 required, uint256 missing);
 
     /// @notice Event emitted when pending committee timeout is updated
     /// @param timeout The new timeout value
@@ -480,21 +363,6 @@ interface ICommitteeRegistry {
     /// @param committeeId The ID of the committee with no honest operators
     event NoRemainingHonestOperators(uint128 committeeId);
 
-    /// @notice Event emitted when a member reapplies to a stream
-    /// @param memberAddress The member's address
-    /// @param denomination The stream denomination
-    /// @param role The role requested by the member
-    /// @param preStakedBalance The pre-staked balance for the application
-    event MemberReApplied(
-        address indexed memberAddress, StreamDenomination denomination, Role role, uint256 preStakedBalance
-    );
-
-    /// @notice Event emitted when a member's reapply flag is updated
-    /// @param memberAddress The member's address
-    /// @param denomination The stream denomination
-    /// @param reApply The new reapply flag value
-    event MemberReApplyUpdated(address indexed memberAddress, StreamDenomination denomination, bool reApply);
-
     /// @notice Event emitted when a member has deposited their communication data
     /// @param _committeeId The ID of the committee for which the member deposited data
     /// @param member The address of the member who deposited the data
@@ -507,37 +375,6 @@ interface ICommitteeRegistry {
     /// @notice Event emitted when all committee members have deposited their communication data
     /// @param _committeeId The ID of the committee for which all communication data is ready
     event AllCommunicationDataReady(uint128 indexed _committeeId);
-
-    // Errors
-    /// @notice Thrown when streams and roles arrays have different lengths
-    /// @param streamsLength The length of the streams array
-    /// @param rolesLength The length of the roles array
-    error RequestedDifferentStreamsAndRolesLength(uint256 streamsLength, uint256 rolesLength);
-
-    /// @notice Thrown when no roles are requested
-    error RequestedNoRoles();
-
-    /// @notice Thrown when multiple roles are requested for the same stream
-    /// @param stream The stream denomination
-    /// @param role1 The first requested role
-    /// @param role2 The second requested role
-    error RequestedMultipleRolesForStream(StreamDenomination stream, Role role1, Role role2);
-
-    /// @notice Thrown when a member is already registered
-    /// @param memberAddress The address of the already registered member
-    error AlreadyRegisteredMember(address memberAddress);
-
-    /// @notice Thrown when there are too many members per committee
-    /// @param maxMemebersPerCommittee The maximum number of members allowed per committee
-    error TooManyMembersPerComitee(uint256 maxMemebersPerCommittee);
-
-    /// @notice Thrown when a committee is already registered
-    /// @param committeeId The ID of the already registered committee
-    error AlreadyRegisteredCommittee(uint128 committeeId);
-
-    /// @notice Thrown when a member is not found
-    /// @param memberAddress The address of the member not found
-    error MemberNotFound(address memberAddress);
 
     /// @notice Thrown when a committee is not in pending state
     /// @param committeeId The ID of the committee that is not pending
@@ -556,46 +393,6 @@ interface ICommitteeRegistry {
 
     /// @notice Error thrown when the aggregated key is all zeros
     error InvalidAggregatedKeyZero();
-
-    /// @notice Thrown when public keys are repeated
-    /// @param index The index of the first occurrence
-    /// @param publicKeyX The X-coordinate of the public key
-    /// @param repeatedIndex The index of the repeated occurrence
-    /// @param repeatedPublicKeyX The X-coordinate of the repeated public key
-    error RepeatedPublicKeys(uint256 index, bytes32 publicKeyX, uint256 repeatedIndex, bytes32 repeatedPublicKeyX);
-
-    /// @notice Thrown when a EDCSA public key is zero
-    /// @param keyType The type of the public key (TAKE, COVENANT, or COMMUNICATION)
-    /// @param publicKeyX The X-coordinate of the public key
-    /// @param publicKeyY The Y-coordinate of the public key
-    error InvalidZeroEDCSAPublicKey(PublicKeyType keyType, bytes32 publicKeyX, bytes32 publicKeyY);
-
-    /// @notice Thrown when a RSA public key is zero
-    /// @param keyType The type of the public key (TAKE, COVENANT, or COMMUNICATION)
-    error InvalidZeroRSAPublicKey(PublicKeyType keyType);
-
-    /// @notice Thrown when a public key doesn't match the expected value
-    /// @param keyType The type of the public key (TAKE, COVENANT, or COMMUNICATION)
-    /// @param currentPubKey The current public key
-    /// @param newPubKey The new public key
-    error PublicKeyMismatch(PublicKeyType keyType, bytes32 currentPubKey, bytes32 newPubKey);
-
-    /// @notice Thrown when a signature is zero
-    /// @param keyType The type of the public key (TAKE, COVENANT, or COMMUNICATION)
-    /// @param publicKey The public key registration with invalid signature
-    error InvalidZeroEDCSASignature(PublicKeyType keyType, ECDSAPublicKey publicKey);
-
-    /// @notice Thrown when a signature is invalid
-    /// @param keyType The type of the public key (TAKE, COVENANT, or COMMUNICATION)
-    /// @param publicKey The public key registration with invalid signature
-    /// @param recoveredSignerAddress The address recovered from the signature
-    /// @param signerAddress The expected signer address
-    error InvalidEDCSASignature(
-        PublicKeyType keyType, ECDSAPublicKey publicKey, address recoveredSignerAddress, address signerAddress
-    );
-
-    /// @notice Thrown when there are no committee members
-    error NoCommitteeMembers();
 
     /// @notice Thrown when a member is not in the committee
     /// @param committeeId The committee ID
@@ -618,68 +415,8 @@ interface ICommitteeRegistry {
     /// @notice Thrown when an address is zero
     error InvalidZeroAddress();
 
-    /// @notice Thrown when no role is requested for a stream
-    /// @param stream The stream denomination
-    error RequestedNoneRoleForStream(StreamDenomination stream);
-
-    /// @notice Thrown when there are too many members
-    /// @param maxMembers The maximum number of members allowed
-    error TooManyMembers(uint256 maxMembers);
-
-    /// @notice Thrown when there are not enough watchtowers
-    /// @param streamId The stream ID
-    error NotEnoughWatchtowers(uint64 streamId);
-
-    /// @notice Thrown when there are not enough operators
-    /// @param streamId The stream ID
-    error NotEnoughOperators(uint64 streamId);
-
-    /// @notice Thrown when there are not enough members
-    /// @param streamId The stream ID
-    error NotEnoughMembers(uint64 streamId);
-
-    /// @notice Thrown when a member is already registered for a stream
-    /// @param memberAddress The member's address
-    /// @param requestedStream The requested stream
-    /// @param requestedRole The requested role
-    /// @param currentRole The current role
-    error MemberAlreadyRegisteredForStream(
-        address memberAddress, StreamDenomination requestedStream, Role requestedRole, Role currentRole
-    );
-
-    /// @notice Thrown when a member is not a candidate for a stream
-    /// @param member The member's address
-    /// @param stream The stream denomination
-    error MemberIsNotCandidateForStream(address member, StreamDenomination stream);
-
-    /// @notice Thrown when there is no available balance to withdraw
-    /// @param member The member's address
-    error NoAvailableBalanceToWithdraw(address member);
-
-    /// @notice Thrown when a member is not registered
-    /// @param memberAddress The member's address
-    error MemberNotRegistered(address memberAddress);
-
-    /// @notice Thrown when the deposit bond is too low
-    /// @param sent The amount sent
-    /// @param minDeposit The minimum deposit required
-    error DespositBondTooLow(uint256 sent, uint256 minDeposit);
-
-    /// @notice Thrown when RSK transfer fails
-    /// @param memberAddress The member's address
-    /// @param amount The amount that failed to transfer
-    error FailedToSendRSK(address memberAddress, uint256 amount);
-
     /// @notice Thrown when a value is zero
     error InvalidZeroValue();
-
-    /// @notice Thrown when the funding UTXO transaction ID is zero
-    /// @param utxo The complete UTXO with zero transaction ID
-    error ZeroUTXOTxid(UTXO utxo);
-
-    /// @notice Thrown when the funding UTXO amount is zero
-    /// @param utxo The complete UTXO with zero amount
-    error ZeroUTXOAmount(UTXO utxo);
 
     /// @notice Thrown when minimum members requirement is invalid
     /// @param minMembers The minimum members requirement
@@ -708,11 +445,6 @@ interface ICommitteeRegistry {
     /// @param committeeId The ID of the committee where no operator was found
     error TakeOperatorNotFound(uint128 committeeId);
 
-    /// @notice Thrown when there are too many candidates for a stream
-    /// @param denomination The stream denomination
-    /// @param role The role for which there are too many candidates
-    error TooManyCandidatesForStream(StreamDenomination denomination, Role role);
-
     /// @notice Thrown when the number of submitted communication data entries does not match the committee size
     /// @param providedLength The actual length of the submitted communication data array
     /// @param expectedLength The expected number of entries (i.e., committee size)
@@ -734,33 +466,5 @@ interface ICommitteeRegistry {
     /// @param communicationDataLenght The number of communication data entries already stored
     error MemberAlreadyDepositedCommunicationData(
         uint128 committeeId, address memberAddress, uint256 communicationDataLenght
-    );
-
-    // Internal Errors
-    /// @notice Thrown when member index is out of bounds
-    /// @param memberIndex The invalid member index
-    error _MemberIndexOutOfBounds(uint16 memberIndex);
-
-    /// @notice Thrown when committee creation fails
-    /// @param streamId The stream ID
-    /// @param status The status indicating why creation failed
-    error _FailedToCreateCommittee(uint64 streamId, PendingCommitteeStatus status);
-
-    /// @notice Thrown when a member's take public key doesn't match the signature public key
-    /// @param committeeId The ID of the committee
-    /// @param memberAddress The member's address
-    /// @param memberPubKey The member's registered take public key
-    /// @param signaturePubKeyX The public key X-coordinate from the signature
-    error _InvalidOperatorTakePubKey(
-        uint128 committeeId, address memberAddress, bytes32 memberPubKey, bytes32 signaturePubKeyX
-    );
-
-    /// @notice Thrown when a member's pre-staked balance doesn't match their requested role requirements
-    /// @param memberAddress The member's address
-    /// @param denomination The stream denomination
-    /// @param preStakedBalance The member's pre-staked balance
-    /// @param requestedRole The role requested by the member
-    error _inconsistentPreStakedBalanceAndRole(
-        address memberAddress, StreamDenomination denomination, uint256 preStakedBalance, Role requestedRole
     );
 }
