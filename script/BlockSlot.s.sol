@@ -12,7 +12,7 @@ contract BlockSlotScript is ScriptUtils {
 
     function setUp() internal {
         // ====== Arguments ======
-        pegManager = PegManager(0x0165878A594ca255338adfa4d48449f69242Eb8F);
+        pegManager = PegManager(0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6);
         streamManager = IStreamManager(pegManager.streamManager());
     }
 

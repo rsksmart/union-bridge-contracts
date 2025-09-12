@@ -18,7 +18,7 @@ contract AddEveryMemberSignatureScript is ScriptUtils {
 
     function setUp() internal {
         // ====== Arguments ======
-        pegManager = PegManager(0x0165878A594ca255338adfa4d48449f69242Eb8F);
+        pegManager = PegManager(0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6);
         committeeRegistry = CommitteeRegistry(0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0);
         minCommitteMembers = committeeRegistry.committeeMemberCount();
         signatureManager = pegManager.signatureManager();

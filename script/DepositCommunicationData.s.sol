@@ -23,7 +23,7 @@ contract DepositCommunicationDataScript is ScriptUtils {
     RSAPublicKey comPubKey;
 
     function setUp(uint16 _mnemonicIndex, uint64 _streamIndex) internal {
-        committeeRegistry = ICommitteeRegistry(0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0);
+        committeeRegistry = ICommitteeRegistry(0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9);
         memberRegistry = committeeRegistry.memberRegistry();
 
         // Read args from command line / env
