@@ -17,7 +17,7 @@ contract AcceptPeginScript is ScriptUtils {
         // This is the peg-in request transaction hash that was previously registered
         // ====== Arguments ======
         // The other data is obtained from the peg-in request transaction
-        pegManager = PegManager(0x0165878A594ca255338adfa4d48449f69242Eb8F);
+        pegManager = PegManager(0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6);
         // =======================
         // Smart contract addresses
         streamManager = IStreamManager(pegManager.streamManager());
@@ -33,7 +33,8 @@ contract AcceptPeginScript is ScriptUtils {
         RequestPeginTempInfo memory requestPeginTempInfo = pegManager.getRequestPeginTempInfo(_requestPeginTxHash);
 
         // Get the committee public key
-        bytes32 committeePubKey = streamManager.getCommitteePubKey(streamPosition.streamId, streamPosition.packetNumber);
+        bytes memory committeePubKey =
+            streamManager.getCommitteePubKey(streamPosition.streamId, streamPosition.packetNumber);
 
         // BtcTransaction to verify
         BtcTransaction memory btcTransaction =

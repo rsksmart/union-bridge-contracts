@@ -8,7 +8,7 @@ import {ICommitteeRegistry, CommunicationData} from "src/interfaces/ICommitteeRe
 contract GetCommunicationDataForOneMemberScript is ScriptUtils {
     ICommitteeRegistry committeeRegistry;
 
-    bytes32 committeePubKey;
+    bytes committeePubKey;
     uint16 mnemonicIndex;
     uint64 stream;
     uint256 privKey;
@@ -16,7 +16,7 @@ contract GetCommunicationDataForOneMemberScript is ScriptUtils {
     bytes32 comPubKey;
 
     function setUp(uint16 _mnemonicIndex, uint64 _streamIndex) internal {
-        committeeRegistry = ICommitteeRegistry(0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0);
+        committeeRegistry = ICommitteeRegistry(0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9);
 
         // Read args from command line / env
         mnemonicIndex = _mnemonicIndex;

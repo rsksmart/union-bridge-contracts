@@ -7,6 +7,7 @@ import {BtcTxSPVProof, PegStatus} from "src/PegManager.sol";
 import {IPegManager, PegoutTempInfo, StreamPosition} from "src/interfaces/IPegManager.sol";
 import {PegManagerHarness} from "test/helpers/PegManagerHarness.sol";
 import {StreamManagerHarness} from "test/helpers/StreamManagerHarness.sol";
+import {MemberRegistryHarness} from "test/helpers/MemberRegistryHarness.sol";
 import {SignatureManager} from "src/SignatureManager.sol";
 import {Role, CommitteeMember, Committee, MemberRegistrationKeys, UTXO} from "src/CommitteeRegistry.sol";
 import {CommunicationData, COMMUNICATION_DATA_CHUNKS} from "src/interfaces/ICommitteeRegistry.sol";
@@ -22,6 +23,8 @@ import {Constants} from "src/libraries/Constants.sol";
 import {OpCodes} from "src/libraries/OpCodes.sol";
 import {Stream, SlotState} from "src/interfaces/IStreamManager.sol";
 import {CommitteeRegistryHarness} from "./CommitteeRegistryHarness.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+// import {console} from "forge-std/console.sol";
 
 abstract contract HelperContract is Test, TestUtils {
     bytes32 internal constant BTC_REIMBURSEMENT_PUBKEY =
@@ -30,7 +33,13 @@ abstract contract HelperContract is Test, TestUtils {
     uint128 constant COMMITTEE_ID_STREAM_1_COMMITTEE_1 = 118226726889222519722182588745663749063;
     uint128 constant COMMITTEE_ID_STREAM_1_COMMITTEE_2 = 9059004642890852444280677687625412743;
     uint128 constant COMMITTEE_ID_STREAM_1_COMMITTEE_3 = 252028015853910751738154200832734646518;
-    bytes32 constant COMMITTEE_PUB_KEY = 0xd1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d;
+    // 33-byte compressed public key (0x02 prefix + 32 bytes)
+
+    function COMMITTEE_PUB_KEY() internal pure returns (bytes memory) {
+        return
+            abi.encodePacked(bytes1(0x02), bytes32(0xd1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d));
+    }
+
     uint256 constant BLOCK_COMMITTEE_1 = 10;
     uint256 constant BLOCK_COMMITTEE_2 = 100000;
     uint256 constant BLOCK_COMMITTEE_3 = 200000;
@@ -47,6 +56,7 @@ abstract contract HelperContract is Test, TestUtils {
     BitcoinManager internal bitcoinManager;
     BridgeMock internal bridgeMock;
     CommitteeRegistryHarness internal registry;
+    MemberRegistryHarness internal memberRegistry;
     PegManagerHarness internal pm;
     SignatureManager internal signatureManager;
     StreamManagerHarness internal streamManager;
@@ -62,11 +72,15 @@ abstract contract HelperContract is Test, TestUtils {
         deployScript.run();
         bitcoinManager = deployScript.bitcoinManager();
         registry = CommitteeRegistryHarness(address(deployScript.committeeRegistry()));
+        memberRegistry = MemberRegistryHarness(address(deployScript.memberRegistry()));
         pm = PegManagerHarness(address(deployScript.pegManager()));
         streamManager = StreamManagerHarness(address(deployScript.streamManager()));
         // Set up bridge mock at bridge precompiled address
         bridgeMock = BridgeMock(deployScript.bridgeAddress());
         signatureManager = SignatureManager(deployScript.signatureManager());
+
+        // Set up the MemberRegistryHarness in the CommitteeRegistryHarness
+        registry.setMemberRegistryHarness(memberRegistry);
     }
 
     // ========================== UTXO Helper ==========================
@@ -397,7 +411,7 @@ abstract contract HelperContract is Test, TestUtils {
 
     function setup_depositAggregatedKey(uint128 _committeeId, address _memberAddress) internal {
         vm.prank(_memberAddress);
-        registry.depositAggregatedKey(_committeeId, COMMITTEE_PUB_KEY);
+        registry.depositAggregatedKey(_committeeId, COMMITTEE_PUB_KEY());
     }
 
     // This function is used to deposit the aggregated key for multiple members in a committee
@@ -439,7 +453,7 @@ abstract contract HelperContract is Test, TestUtils {
         (expectedCommittee, committeeId) = setup_pendingCommittee();
 
         setup_depositAggregatedKey_MultipleMembers(committeeId, 0, registry.committeeMemberCount());
-        expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY;
+        expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY();
         expectedCommittee.isPending = false;
         expectedCommittee.missingData = 0;
 
@@ -460,14 +474,14 @@ abstract contract HelperContract is Test, TestUtils {
         setup_registerNewMembers(numWatchtowers, numOperators, StreamDenomination(firstCommittee.streamId));
 
         secondCommittee = setup_getExpectedSecondCommittee();
-        secondCommittee.aggregatedKey = COMMITTEE_PUB_KEY;
+        secondCommittee.aggregatedKey = COMMITTEE_PUB_KEY();
 
         return (firstCommittee, secondCommittee, COMMITTEE_ID_STREAM_1_COMMITTEE_2);
     }
 
     function setup_getExpectedSecondCommittee() internal view returns (Committee memory) {
         Committee memory committee = Committee({
-            aggregatedKey: bytes32(0),
+            aggregatedKey: new bytes(0),
             members: new CommitteeMember[](registry.committeeMemberCount()),
             leaderAddress: address(0),
             operatorTakeIndex: 0,
@@ -500,7 +514,7 @@ abstract contract HelperContract is Test, TestUtils {
     function setup_getExpectedCommitteeBeforeExpire() internal view returns (Committee memory) {
         // NOTE: This function is tied to the initial setup of members that it's 0 members
         Committee memory committee = Committee({
-            aggregatedKey: bytes32(0),
+            aggregatedKey: new bytes(0),
             members: new CommitteeMember[](registry.committeeMemberCount()),
             leaderAddress: address(0),
             operatorTakeIndex: 0,
@@ -534,13 +548,13 @@ abstract contract HelperContract is Test, TestUtils {
         MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
         address user = vm.addr(privKey);
 
-        registry.registerMemberHarness(user, memberRegistrationKeys);
+        memberRegistry.registerMemberHarness(user, memberRegistrationKeys);
     }
 
     function setup_getExpectedCommitteeAfterExpire() internal view returns (Committee memory) {
         // NOTE: member order is tied to the timeout used in setup_pendingCommitteeAndExpire()
         Committee memory committee = Committee({
-            aggregatedKey: bytes32(0),
+            aggregatedKey: new bytes(0),
             members: new CommitteeMember[](registry.committeeMemberCount()),
             leaderAddress: address(0),
             operatorTakeIndex: 0,
@@ -636,7 +650,7 @@ abstract contract HelperContract is Test, TestUtils {
             operatorTakeUpdatedAt: block.timestamp, // Updated when triggerOperatorTake is called
             committeeId: COMMITTEE_ID_STREAM_1_COMMITTEE_1,
             takeOperatorAddress: operatorAddress,
-            takeOperatorPubKey: registry.getMemberTakePubKey(operatorAddress)
+            takeOperatorPubKey: memberRegistry.getMemberTakePubKey(operatorAddress)
         });
 
         StreamPosition memory expectedStreamPosition = StreamPosition({
@@ -733,7 +747,11 @@ abstract contract HelperContract is Test, TestUtils {
                 assertEq(
                     expected[i].data[j],
                     actual[i].data[j],
-                    string(abi.encodePacked(message, ": data differs at index [", i, "][", j, "]"))
+                    string(
+                        abi.encodePacked(
+                            message, ": data differs at index [", Strings.toString(i), "][", Strings.toString(j), "]"
+                        )
+                    )
                 );
             }
         }
@@ -744,7 +762,7 @@ abstract contract HelperContract is Test, TestUtils {
     /// @param memberAddress Address of the member depositing data
     /// @param memberIndex Index of the member in the committee (for generating valid data)
     function setup_depositCommunicationData(uint64 streamId, address memberAddress, uint256 memberIndex) internal {
-        (Committee memory committee,,) = registry.getPendingCommittee(streamId);
+        Committee memory committee = registry.getPendingCommittee(streamId);
         CommunicationData[] memory communicationData =
             createValidCommunicationData(committee.members.length, memberIndex);
 

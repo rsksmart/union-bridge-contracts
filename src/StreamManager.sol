@@ -92,14 +92,14 @@ contract StreamManager is IStreamManager, AccessControl {
     /// @param _streamId The ID of the stream to create a packet for
     /// @param _committeeId The ID of the committee that will process this packet
     /// @param _committeePubKey The public key of the committee for Bitcoin operations
-    function createNewPacket(uint64 _streamId, uint128 _committeeId, bytes32 _committeePubKey)
+    function createNewPacket(uint64 _streamId, uint128 _committeeId, bytes calldata _committeePubKey)
         external
         onlyCommitteeRegistry
     {
         _createNewPacket(_streamId, _committeeId, _committeePubKey);
     }
 
-    function _createNewPacket(uint64 _streamId, uint128 _committeeId, bytes32 _committeePubKey) internal {
+    function _createNewPacket(uint64 _streamId, uint128 _committeeId, bytes memory _committeePubKey) internal {
         uint64 packetNumber = uint64(packets[_streamId].length);
         packets[_streamId].push(
             Packet({packetNumber: packetNumber, committeeId: _committeeId, committeePubKey: _committeePubKey})
@@ -347,8 +347,8 @@ contract StreamManager is IStreamManager, AccessControl {
     /// @notice Gets the committee public key for a specific packet
     /// @param _streamId The ID of the stream
     /// @param _packetNumber The packet number
-    /// @return The committee public key for the packet
-    function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes32) {
+    /// @return bytes The committee public key for the packet
+    function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes memory) {
         return getPacket(_streamId, _packetNumber).committeePubKey;
     }
 

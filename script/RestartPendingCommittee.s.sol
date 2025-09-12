@@ -14,7 +14,7 @@ contract RestartPendingCommitteeScript is ScriptUtils {
 
     function setUp() internal {
         // ====== Arguments ======
-        pegManager = PegManager(0x0165878A594ca255338adfa4d48449f69242Eb8F);
+        pegManager = PegManager(0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6);
         committeeRegistry = CommitteeRegistry(0xA1B3C2D4f5e6F7a8B9C0d1E2f3a4b5c6D7e8f9A0);
         streamId = 1;
     }
@@ -22,7 +22,7 @@ contract RestartPendingCommitteeScript is ScriptUtils {
     function run() public {
         setUp();
 
-        (, uint256 createdAt,) = committeeRegistry.getPendingCommittee(streamId);
+        uint256 createdAt = committeeRegistry.getPendingCommittee(streamId).createdAt;
 
         console.log("=== Restart Pending Committee ===");
         vm.recordLogs();
@@ -32,7 +32,7 @@ contract RestartPendingCommitteeScript is ScriptUtils {
         committeeRegistry.restartPendingCommittee(streamId);
         vm.stopBroadcast();
 
-        (, uint256 createdAtNewCommittee,) = committeeRegistry.getPendingCommittee(streamId);
+        uint256 createdAtNewCommittee = committeeRegistry.getPendingCommittee(streamId).createdAt;
         if (createdAtNewCommittee > createdAt) {
             console.log("Pending committee restarted successfully.");
         } else {

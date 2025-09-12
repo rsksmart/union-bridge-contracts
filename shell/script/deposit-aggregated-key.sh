@@ -34,7 +34,7 @@ echo "=== DEPOSIT AGGREGATED KEY RPC: $RPC MNEMONIC_INDEX: $MNEMONIC_INDEX STREA
 # Run Forge script with --sig and inline args
 forge script \
   script/DepositAggregatedKey.s.sol \
-  --sig "run(uint16,uint64,bytes32)" "$MNEMONIC_INDEX" "$STREAM_INDEX" "$COMMITTEE_PUBKEY" \
+  --sig "run(uint16,uint64,bytes)" "$MNEMONIC_INDEX" "$STREAM_INDEX" "$COMMITTEE_PUBKEY" \
   --rpc-url "$RPC" \
   --legacy \
   --broadcast \

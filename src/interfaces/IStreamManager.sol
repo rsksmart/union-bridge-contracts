@@ -70,7 +70,7 @@ struct Packet {
     uint128 committeeId;
     /// @notice The internal key of the committee for this packet
     /// @dev This is the public key used for committee operations
-    bytes32 committeePubKey;
+    bytes committeePubKey;
 }
 
 /// @notice Represents a stream that manages funds of a specific denomination
@@ -121,8 +121,8 @@ interface IStreamManager is IAccessControl {
     /// @dev Only callable by the CommitteeRegistry smart contract
     /// @param _streamId The index of the stream to add the packet to
     /// @param _committeeId The ID of the committee responsible for this packet
-    /// @param _committeePubKey The public key of the selected committee for the packet
-    function createNewPacket(uint64 _streamId, uint128 _committeeId, bytes32 _committeePubKey) external;
+    /// @param _committeePubKey The public key of the selected committee for the packet (33 bytes)
+    function createNewPacket(uint64 _streamId, uint128 _committeeId, bytes calldata _committeePubKey) external;
 
     /// @notice Retrieves stream information for a given denomination
     /// @dev Looks up the stream that handles the specified Bitcoin amount
@@ -201,8 +201,8 @@ interface IStreamManager is IAccessControl {
     /// @notice Retrieves the committee public key for a specific packet
     /// @param _streamId The index of the stream
     /// @param _packetNumber The index of the packet within the stream
-    /// @return bytes32 The committee public key for this packet
-    function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes32);
+    /// @return bytes The committee public key for this packet (33 bytes)
+    function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes memory);
 
     /// @notice Marks a slot as paid and updates its state
     /// @dev Updates the slot state to COMPLETED and stores the peg-out transaction ID

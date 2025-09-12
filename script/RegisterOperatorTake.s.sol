@@ -7,6 +7,7 @@ import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {Slot, SlotState, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
 import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
+import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
 
 contract RegisterOperatorTakeScript is ScriptUtils {
     PegManager pegManager;
@@ -21,10 +22,11 @@ contract RegisterOperatorTakeScript is ScriptUtils {
     uint64 expectedSlotId;
 
     function setUp(bytes32 _acceptPeginTxHash) internal {
-        pegManager = PegManager(0x0165878A594ca255338adfa4d48449f69242Eb8F);
+        pegManager = PegManager(0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6);
 
         ICommitteeRegistry registry = ICommitteeRegistry(pegManager.committeeRegistry());
-        bytes32 operatorXOnlyPubKey = registry.getMemberTakePubKey(getDeployerAddress());
+        IMemberRegistry memberRegistry = registry.memberRegistry();
+        bytes32 operatorXOnlyPubKey = memberRegistry.getMemberTakePubKey(getDeployerAddress());
         operatorPubKey = abi.encodePacked(bytes1(0x02), operatorXOnlyPubKey);
         amount = 100_000; // 0.001 BTC
 

@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import {BaseProxy} from "./BaseProxy.sol";
 import {ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
+import {IMemberRegistry} from "./interfaces/IMemberRegistry.sol";
 import {ISignatureManager, SignatureData} from "./interfaces/ISignatureManager.sol";
 import {PrevoutData, BtcTxOut, IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
 import {
@@ -37,6 +38,9 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
 
     /// @notice Committee registry contract for managing committee and members
     ICommitteeRegistry public committeeRegistry;
+
+    /// @notice Member registry contract for managing member data
+    IMemberRegistry public memberRegistry;
 
     /// @notice Signature manager contract for handling multi-signature operations
     ISignatureManager public signatureManager;
@@ -112,6 +116,16 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         signatureManager = _signatureManager;
     }
 
+    /// @notice Sets the member registry contract address
+    /// @param _memberRegistry The member registry contract address
+    /// @dev Only callable by the contract owner
+    function setMemberRegistry(IMemberRegistry _memberRegistry) external onlyOwner {
+        if (address(_memberRegistry) == address(0)) {
+            revert MemberRegistryAddressZero();
+        }
+        memberRegistry = _memberRegistry;
+    }
+
     /// @notice Gets the accept peg-in transaction hash for a given request peg-in transaction hash
     /// @param _requestPeginTxHash The request peg-in transaction hash
     /// @return The accept peg-in transaction hash
@@ -149,7 +163,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
 
         // Get the current packet's committee key
         Packet memory currentPacket = streamManager.getPacket(stream.streamId, stream.peginPacketPointer);
-        bytes32 committeeKey = currentPacket.committeePubKey;
+        bytes memory committeeKey = currentPacket.committeePubKey;
 
         return bitcoinManager.getTemporaryPeginAddress(
             _rootstockDepositAddress, _value, _btcReimbursementPubKey, committeeKey
@@ -169,7 +183,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             address rskDestinationAddress,
             bytes32 btcReimbursementPubKey,
             Stream memory stream,
-            bytes32 committeePubKey
+            bytes memory committeePubKey
         ) = _extractPeginData(_peginRequestTxSPVProof);
 
         _validatePeginTransaction(
@@ -272,7 +286,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             address rskDestinationAddress,
             bytes32 btcReimbursementPubKey,
             Stream memory stream,
-            bytes32 committeePubKey
+            bytes memory committeePubKey
         )
     {
         // Second transaction should be OP_RETURN with data
@@ -291,7 +305,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         BtcTxSPVProof calldata _peginRequestTxSPVProof,
         address rskDestinationAddress,
         bytes32 btcReimbursementPubKey,
-        bytes32 committeePubKey,
+        bytes memory committeePubKey,
         Stream memory stream,
         bytes32 requestPeginTxHash
     ) internal view {
@@ -636,7 +650,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
 
         // slither-disable-next-line reentrancy-no-eth reentrancy-benign
         address takeOperatorAddress = committeeRegistry.getOperatorTakeAddress(pegoutInfo.committeeId, signatureData);
-        bytes32 takeOperatorPubKey = committeeRegistry.getMemberTakePubKey(takeOperatorAddress);
+        bytes32 takeOperatorPubKey = memberRegistry.getMemberTakePubKey(takeOperatorAddress);
 
         // Update state variables after external calls
         pegoutInfo.takeOperatorAddress = takeOperatorAddress;
@@ -700,7 +714,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         );
 
         // Validate that the first output is a P2WPKH paying the member
-        bytes32 takeOperatorPubKey = committeeRegistry.getMemberTakePubKey(pegoutInfo.takeOperatorAddress);
+        bytes32 takeOperatorPubKey = memberRegistry.getMemberTakePubKey(pegoutInfo.takeOperatorAddress);
         bitcoinManager.validatePegoutMemberOutput(_pegoutTxSPVProof.btcTx.outputs[0], takeOperatorPubKey);
 
         // update the peg status to COMPLETED

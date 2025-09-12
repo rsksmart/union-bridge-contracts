@@ -9,11 +9,13 @@ import {
     COMMUNICATION_DATA_CHUNKS,
     RSAPublicKey
 } from "src/interfaces/ICommitteeRegistry.sol";
+import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
 
 contract DepositCommunicationDataScript is ScriptUtils {
     ICommitteeRegistry committeeRegistry;
+    IMemberRegistry memberRegistry;
 
-    bytes32 committeePubKey;
+    bytes committeePubKey;
     uint16 mnemonicIndex;
     uint64 stream;
     uint256 privKey;
@@ -21,7 +23,8 @@ contract DepositCommunicationDataScript is ScriptUtils {
     RSAPublicKey comPubKey;
 
     function setUp(uint16 _mnemonicIndex, uint64 _streamIndex) internal {
-        committeeRegistry = ICommitteeRegistry(0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0);
+        committeeRegistry = ICommitteeRegistry(0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9);
+        memberRegistry = committeeRegistry.memberRegistry();
 
         // Read args from command line / env
         mnemonicIndex = _mnemonicIndex;
@@ -117,12 +120,12 @@ contract DepositCommunicationDataScript is ScriptUtils {
     }
 
     function getPendingCommitteeComPubKeys(uint64 _streamId) internal view returns (RSAPublicKey[] memory) {
-        (Committee memory committee,,) = committeeRegistry.getPendingCommittee(_streamId);
+        Committee memory committee = committeeRegistry.getPendingCommittee(_streamId);
 
         RSAPublicKey[] memory committeeMembersPubKeys = new RSAPublicKey[](committee.members.length);
         for (uint256 i = 0; i < committee.members.length; i++) {
             address memberAddress = committee.members[i].memberAddress;
-            committeeMembersPubKeys[i] = committeeRegistry.getMemberComPubKey(memberAddress);
+            committeeMembersPubKeys[i] = memberRegistry.getMemberComPubKey(memberAddress);
         }
         return committeeMembersPubKeys;
     }
