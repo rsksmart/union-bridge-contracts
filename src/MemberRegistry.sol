@@ -96,14 +96,12 @@ contract MemberRegistry is IMemberRegistry, BaseProxy {
     /// @param _role The role requested in the committee
     /// @param _publicKeys Member registration public keys
     /// @param _fundingUTXO The Bitcoin UTXO that will be used for the member funding
-    /// @param _depositAmount The amount being deposited
     function applyToStream(
         address _memberAddress,
         StreamDenomination _stream,
         Role _role,
         MemberRegistrationKeys calldata _publicKeys,
-        UTXO calldata _fundingUTXO,
-        uint256 _depositAmount
+        UTXO calldata _fundingUTXO
     ) external payable onlyCommitteeRegistry {
         Member storage member = _getOrRegisterMember(_memberAddress, _publicKeys);
 
@@ -118,6 +116,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy {
                 _memberAddress, _stream, _role, member.balance.applications[uint8(_stream)].requestedRole
             );
         }
+        uint256 _depositAmount = msg.value;
         uint256 minDeposit = streamManager.getMinimumDeposit(_stream, _role);
         if (_depositAmount < minDeposit) {
             revert DespositBondTooLow(_depositAmount, minDeposit);

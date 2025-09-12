@@ -1503,4 +1503,44 @@ contract TestMemberRegistry is Test, HelperContract {
         // Act
         memberRegistry.getMemberComPubKey(unregisteredAddress);
     }
+
+    function test_applyToStream_Revert_UnauthorizedAccount() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
+        address user = vm.addr(privKey);
+        uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, DEFAULT_ROLE);
+        vm.deal(user, minimumDeposit);
+
+        // Assert unauthorized account error when calling applyToStream directly on MemberRegistry
+        vm.expectRevert(abi.encodeWithSelector(IMemberRegistry.UnauthorizedAccount.selector, user));
+
+        // Act - call applyToStream directly on MemberRegistry instead of through CommitteeRegistry
+        vm.prank(user);
+        memberRegistry.applyToStream{value: minimumDeposit}(
+            user, DEFAULT_STREAM, DEFAULT_ROLE, memberRegistrationKeys, generateDefaultUTXO()
+        );
+    }
+
+    function test_unsubscribeFromStream_Revert_UnauthorizedAccount() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
+        address user = vm.addr(privKey);
+        uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, DEFAULT_ROLE);
+        vm.deal(user, minimumDeposit);
+
+        // First apply to stream through CommitteeRegistry to set up the test
+        vm.prank(user);
+        registry.applyToStream{value: minimumDeposit}(
+            DEFAULT_STREAM, DEFAULT_ROLE, memberRegistrationKeys, generateDefaultUTXO()
+        );
+
+        // Assert unauthorized account error when calling unsubscribeFromStream directly on MemberRegistry
+        vm.expectRevert(abi.encodeWithSelector(IMemberRegistry.UnauthorizedAccount.selector, user));
+
+        // Act - call unsubscribeFromStream directly on MemberRegistry instead of through CommitteeRegistry
+        vm.prank(user);
+        memberRegistry.unsubscribeFromStream(user, DEFAULT_STREAM);
+    }
 }

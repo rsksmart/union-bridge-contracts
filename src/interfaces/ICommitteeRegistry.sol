@@ -244,8 +244,8 @@ interface ICommitteeRegistry {
     /// @notice Returns the pending committee for the stream
     /// @dev This function will revert if  there is no pending committee or if it's expired
     /// @param _streamId The stream ID to get the pending committee for
-    /// @return committee The pending committee (contains createdAt and missingData fields)
-    function getPendingCommittee(uint64 _streamId) external view returns (Committee memory committee);
+    /// @return Committee The pending committee (contains createdAt and missingData fields)
+    function getPendingCommittee(uint64 _streamId) external view returns (Committee memory);
 
     /// @notice Returns the committee ID for a pending committee in the given stream
     /// @param _streamId The stream ID to get the pending committee ID for

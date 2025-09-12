@@ -27,14 +27,12 @@ interface IMemberRegistry {
     /// @param _role The role requested in the committee
     /// @param _publicKeys Member registration public keys
     /// @param _fundingUTXO The Bitcoin UTXO that will be used for the member funding
-    /// @param _depositAmount The amount being deposited
     function applyToStream(
         address _memberAddress,
         StreamDenomination _stream,
         Role _role,
         MemberRegistrationKeys calldata _publicKeys,
-        UTXO calldata _fundingUTXO,
-        uint256 _depositAmount
+        UTXO calldata _fundingUTXO
     ) external payable;
 
     /// @notice Internal function to handle member unsubscription from stream

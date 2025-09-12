@@ -83,7 +83,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         UTXO calldata _fundingUTXO
     ) external payable {
         // Delegate member registration to MemberRegistry
-        memberRegistry.applyToStream{value: msg.value}(msg.sender, _stream, _role, _publicKeys, _fundingUTXO, msg.value);
+        memberRegistry.applyToStream{value: msg.value}(msg.sender, _stream, _role, _publicKeys, _fundingUTXO);
 
         // Check if committee creation is needed after successful application
         _createCommitteeAfterApplyToStream(_stream);
@@ -376,8 +376,8 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     /// @dev This function will revert if  there is no pending committee or if it's expired
     /// @param _streamId The stream ID to get the pending committee for
     /// @return committee The pending committee (contains createdAt and missingData fields)
-    function getPendingCommittee(uint64 _streamId) external view returns (Committee memory committee) {
-        committee = _getPendingCommittee(_streamId);
+    function getPendingCommittee(uint64 _streamId) external view returns (Committee memory) {
+        return _getPendingCommittee(_streamId);
     }
 
     /// @notice Returns the committee ID for a pending committee in the given stream
