@@ -70,7 +70,7 @@ contract TestPegManager is Test, HelperContract {
         });
         PrevoutData memory expectedPrevoutData =
             PrevoutData({value: btcTransaction.outputs[0].amount, scriptPubKey: btcTransaction.outputs[0].scriptPubKey});
-        uint256 expectedCommitteeId = streamManager.getCommitteeId(setupStreamId, PACKET_NUMBER);
+        uint128 expectedCommitteeId = streamManager.getCommitteeId(setupStreamId, PACKET_NUMBER);
 
         // Assert
         vm.expectEmit(address(pm));

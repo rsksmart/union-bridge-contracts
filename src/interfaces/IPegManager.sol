@@ -144,7 +144,7 @@ interface IPegManager {
     /// @param prevoutData Data about the previous output being spent
     /// @param acceptPeginSignatureMessage The signature message for committee signing
     event PeginRequested(
-        uint256 indexed committeeId,
+        uint128 indexed committeeId,
         bytes32 indexed requestPeginTxHash,
         bytes32 indexed acceptPeginTxHash,
         uint64 vout,
