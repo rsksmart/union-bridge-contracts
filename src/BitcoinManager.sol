@@ -3,7 +3,14 @@ pragma solidity ^0.8.20;
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {BaseProxy} from "./BaseProxy.sol";
-import {PrevoutData, BtcTransaction, BtcTxIn, BtcTxOut, IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
+import {
+    PrevoutData,
+    BtcTransaction,
+    BtcTxIn,
+    BtcTxOut,
+    IBitcoinManager,
+    BitcoinSignatureData
+} from "./interfaces/IBitcoinManager.sol";
 import {BytesHelper} from "./libraries/BytesHelper.sol";
 import {BtcHelper} from "./libraries/BtcHelper.sol";
 import {BtcTxEncoder} from "./libraries/BtcTxEncoder.sol";
@@ -249,7 +256,7 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         bytes32 _userXOnlyPubKey,
         bytes32 _registerPeginTx,
         PrevoutData memory _prevoutData
-    ) external pure returns (bytes32, bytes32, bytes memory) {
+    ) external pure returns (BitcoinSignatureData memory) {
         // Prepare the inputs
         BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
         btcInputs[0] = BtcTxIn({
@@ -289,7 +296,12 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         // Return the tagged hash and the encoded data before hashing
         (bytes32 acceptPeginSignatureHash, bytes memory acceptPeginSignatureMessage) =
             taprootSignatureHash(Constants.SIGHASH_ALL, prevoutDatas, peginAcceptTx);
-        return (txHash, acceptPeginSignatureHash, acceptPeginSignatureMessage);
+        return BitcoinSignatureData({
+            tx: peginAcceptTx,
+            txHash: txHash,
+            signatureHash: acceptPeginSignatureHash,
+            signatureMessage: acceptPeginSignatureMessage
+        });
     }
 
     /// @dev Generates the Accept Pegin Taproot output script pub key with both key spend and script spend paths
@@ -360,11 +372,11 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
     /// @param _userPubKey The user's public key for the peg-out
     /// @param _acceptPeginTx The hash of the accept peg-in transaction
     /// @param _prevoutData The previous output data for the input
-    /// @return The signature hash and signature message
+    /// @return bytes32 The txHash, bytes32 the signature hash and bytes signature message
     function getPegoutSignatureHash(bytes memory _userPubKey, bytes32 _acceptPeginTx, PrevoutData memory _prevoutData)
         external
         pure
-        returns (bytes32, bytes memory)
+        returns (BitcoinSignatureData memory)
     {
         // Prepare the inputs
         BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
@@ -401,7 +413,16 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
             outputs: btcOutputs
         });
         // Return the tagged hash and the encoded data before hashing
-        return taprootSignatureHash(Constants.SIGHASH_ALL, prevoutDatas, pegoutTx);
+
+        bytes32 txHash = _getBtcTxHash(pegoutTx);
+        (bytes32 pegoutSignatureHash, bytes memory pegoutSignatureMessage) =
+            taprootSignatureHash(Constants.SIGHASH_ALL, prevoutDatas, pegoutTx);
+        return BitcoinSignatureData({
+            tx: pegoutTx,
+            txHash: txHash,
+            signatureHash: pegoutSignatureHash,
+            signatureMessage: pegoutSignatureMessage
+        });
     }
 
     /// @dev Returns Signature Hash. The signature hash is the actual "message" that we sign when creating the signature.

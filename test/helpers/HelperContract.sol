@@ -12,7 +12,9 @@ import {SignatureManager} from "src/SignatureManager.sol";
 import {Role, CommitteeMember, Committee, MemberRegistrationKeys, UTXO} from "src/CommitteeRegistry.sol";
 import {CommunicationData, COMMUNICATION_DATA_CHUNKS} from "src/interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination, Slot} from "src/interfaces/IStreamManager.sol";
-import {BtcTxIn, BtcTxOut, BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
+import {
+    BtcTxIn, BtcTxOut, BtcTransaction, BitcoinSignatureData, PrevoutData
+} from "src/interfaces/IBitcoinManager.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
 import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
@@ -24,7 +26,7 @@ import {OpCodes} from "src/libraries/OpCodes.sol";
 import {Stream, SlotState} from "src/interfaces/IStreamManager.sol";
 import {CommitteeRegistryHarness} from "./CommitteeRegistryHarness.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
-// import {console} from "forge-std/console.sol";
+import {console} from "forge-std/console.sol";
 
 abstract contract HelperContract is Test, TestUtils {
     bytes32 internal constant BTC_REIMBURSEMENT_PUBKEY =
@@ -377,17 +379,23 @@ abstract contract HelperContract is Test, TestUtils {
         assertEq(uint256(slot.state), uint256(SlotState.LOCKED), "Slot should be locked after peg-out request");
         assertEq(slot.acceptPeginTx, setup.acceptPeginTxHash, "Slot should reference the correct accept peg-in tx");
 
+        // Get the correct signature data that matches what tryPegout() will generate
+        BitcoinSignatureData memory pegoutSignatureData = bitcoinManager.getPegoutSignatureHash(
+            setup.userPubKey,
+            setup.acceptPeginTxHash,
+            PrevoutData({value: slot.acceptPeginAmount, scriptPubKey: slot.scriptPubKey})
+        );
+
         // Create a peg-out transaction that spends the accept peg-in UTXO
-        setup.pegoutTx = createPegoutTx(setup.acceptPeginTxHash, setup.userPubKey, slot.acceptPeginAmount);
+        setup.pegoutTx = pegoutSignatureData.tx;
 
         // Create SPV proof for the peg-out transaction
         setup.pegoutTxSPVProof = createBtcTxSPVProof(setup.pegoutTx);
 
-        // Calculate the expected transaction hash
-        // Hardcoded for packet 0, slot 0. This should be fixed when update createPegoutTx
-        setup.pegoutSignatureHash = hex"c151063d7a30a584ccd02ec37a51dadca1545fdf232f4d0a1435bb025d5b15dc";
-
-        setup.pegoutTxHash = bitcoinManager.getBtcTxHash(setup.pegoutTx);
+        setup.pegoutSignatureHash = pegoutSignatureData.signatureHash;
+        setup.pegoutTxHash = pegoutSignatureData.txHash;
+        console.log("Pegout tx hash:");
+        console.logBytes32(setup.pegoutTxHash);
     }
 
     function setup_pegFlow() internal returns (RegisterUserTakeSetup memory setup) {
@@ -406,7 +414,7 @@ abstract contract HelperContract is Test, TestUtils {
 
     function setup_pegoutAndMemberNonces() internal returns (RegisterUserTakeSetup memory setup) {
         setup = setup_pegout();
-        setup_addMemberNonce_MultipleMembers(setup.pegoutSignatureHash, 0, registry.committeeMemberCount());
+        setup_addMemberNonce_MultipleMembers(setup.pegoutTxHash, 0, registry.committeeMemberCount());
     }
 
     function setup_depositAggregatedKey(uint128 _committeeId, address _memberAddress) internal {
@@ -584,12 +592,12 @@ abstract contract HelperContract is Test, TestUtils {
         return committee;
     }
 
-    function setup_addMemberNonce(address _memberAddress, bytes32 _hashToSign, bytes memory _nonce) internal {
+    function setup_addMemberNonce(address _memberAddress, bytes32 _txHash, bytes memory _nonce) internal {
         vm.prank(_memberAddress);
-        signatureManager.addMemberNonce(_hashToSign, _nonce);
+        signatureManager.addMemberNonce(_txHash, _nonce);
     }
 
-    function setup_addMemberNonce_MultipleMembers(bytes32 _hashToSign, uint256 _memberIndexStart, uint256 _memberCount)
+    function setup_addMemberNonce_MultipleMembers(bytes32 _txHash, uint256 _memberIndexStart, uint256 _memberCount)
         internal
     {
         uint256 memberIndexEnd = _memberIndexStart + _memberCount;
@@ -597,17 +605,17 @@ abstract contract HelperContract is Test, TestUtils {
             // The nonce values are dummy values
             bytes memory nonce =
                 hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
-            setup_addMemberNonce(vm.addr(i + 1), _hashToSign, nonce);
+            setup_addMemberNonce(vm.addr(i + 1), _txHash, nonce);
         }
     }
 
-    function setup_addMemberSignature(address _memberAddress, bytes32 _hashToSign, bytes32 _signature) internal {
+    function setup_addMemberSignature(address _memberAddress, bytes32 _pegoutTxHash, bytes32 _signature) internal {
         vm.prank(_memberAddress);
-        signatureManager.addMemberSignature(_hashToSign, _signature);
+        signatureManager.addMemberSignature(_pegoutTxHash, _signature);
     }
 
     function setup_addMemberSignature_MultipleMembers(
-        bytes32 _hashToSign,
+        bytes32 _pegoutTxHash,
         uint256 _memberIndexStart,
         uint256 _membersCount
     ) internal {
@@ -615,7 +623,7 @@ abstract contract HelperContract is Test, TestUtils {
         for (uint256 i = _memberIndexStart; i < memberIndexEnd; i++) {
             // The signarture values are dummy values
             bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
-            setup_addMemberSignature(vm.addr(i + 1), _hashToSign, signature);
+            setup_addMemberSignature(vm.addr(i + 1), _pegoutTxHash, signature);
         }
     }
 
@@ -630,16 +638,16 @@ abstract contract HelperContract is Test, TestUtils {
         operatorAddress = vm.addr(firstHonestOpIndex + 3);
 
         // Add just 2 signatures for the first and second operators
-        setup_addMemberSignature_MultipleMembers(setup.pegoutSignatureHash, firstHonestOpIndex, 2);
+        setup_addMemberSignature_MultipleMembers(setup.pegoutTxHash, firstHonestOpIndex, 2);
 
         // Assert
-        assertEventOperatorTakeTriggered(setup.pegoutSignatureHash, setup, operatorAddress, createdAt);
+        assertEventOperatorTakeTriggered(setup.pegoutTxHash, setup, operatorAddress, createdAt);
 
-        pm.triggerOperatorTake(setup.pegoutSignatureHash);
+        pm.triggerOperatorTake(setup.pegoutTxHash);
     }
 
     function assertEventOperatorTakeTriggered(
-        bytes32 pegoutSignatureHash,
+        bytes32 pegoutTxHash,
         RegisterUserTakeSetup memory setup,
         address operatorAddress,
         uint256 createdAt
@@ -662,7 +670,7 @@ abstract contract HelperContract is Test, TestUtils {
 
         vm.expectEmit(address(pm));
         emit IPegManager.OperatorTakeTriggered(
-            pegoutSignatureHash,
+            pegoutTxHash,
             expectedPegoutInfo,
             expectedStreamPosition,
             block.timestamp,

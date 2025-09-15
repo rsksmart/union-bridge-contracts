@@ -79,6 +79,18 @@ struct PrevoutData {
     bytes scriptPubKey;
 }
 
+/// @notice Data structure for Bitcoin transaction signature information
+/// @dev Used by both accept peg-in and peg-out signature generation functions
+struct BitcoinSignatureData {
+    BtcTransaction tx;
+    /// @notice The transaction hash (txid)
+    bytes32 txHash;
+    /// @notice The hash to be signed by committee members
+    bytes32 signatureHash;
+    /// @notice The encoded data before hashing
+    bytes signatureMessage;
+}
+
 /// @notice Interface for managing Bitcoin transaction operations in the union bridge
 /// @dev This interface provides functions for generating addresses, validating transactions,
 /// @dev and calculating signature hashes for Bitcoin operations in the RSK union bridge
@@ -148,15 +160,13 @@ interface IBitcoinManager {
     /// @param _userXOnlyPubKey The user's public key (x-coordinate only, 32 bytes)
     /// @param _registerPeginTx The transaction hash of the peg-in request being spent
     /// @param _prevoutData Data about the previous output being spent (amount and scriptPubKey)
-    /// @return acceptPeginTxHash The hash of the accept peg-in transaction
-    /// @return acceptPeginSignatureHash The hash that needs to be signed by committee members
-    /// @return acceptPeginSignatureMessage The encoded data before hashing
+    /// @return BitcoinSignatureData containing txHash, signatureHash, and signatureMessage
     function getAcceptPeginSignatureHash(
         bytes memory _committeePubKey,
         bytes32 _userXOnlyPubKey,
         bytes32 _registerPeginTx,
         PrevoutData memory _prevoutData
-    ) external pure returns (bytes32, bytes32, bytes memory);
+    ) external pure returns (BitcoinSignatureData memory);
 
     /// @notice Generates a Taproot script pub key for accept peg-in transactions
     /// @dev Creates a P2TR script with committee key path for accepting peg-ins
@@ -192,12 +202,11 @@ interface IBitcoinManager {
     /// @param _userPubKey The user's public key in compressed format that will receive the funds
     /// @param _acceptPeginTx The transaction hash of the accept peg-in tx being spent
     /// @param _prevoutData Data about the previous output being spent (amount and scriptPubKey)
-    /// @return pegoutSignatureHash The hash that needs to be signed by committee members
-    /// @return pegoutSignatureMessage The encoded data before hashing
+    /// @return BitcoinSignatureData containing txHash, signatureHash, and signatureMessage
     function getPegoutSignatureHash(bytes memory _userPubKey, bytes32 _acceptPeginTx, PrevoutData memory _prevoutData)
         external
         pure
-        returns (bytes32, bytes memory);
+        returns (BitcoinSignatureData memory);
 
     /// @notice Validates that a peg-out transaction output is a P2WPKH paying the user
     /// @dev Ensures the output correctly pays the user with the expected P2WPKH script
