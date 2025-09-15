@@ -20,7 +20,7 @@ Creates a new packet in a specific stream with committee assignment
 
 
 ```solidity
-function createNewPacket(uint64 _streamId, uint128 _committeeId, bytes32 _committeePubKey) external;
+function createNewPacket(uint64 _streamId, uint128 _committeeId, bytes calldata _committeePubKey) external;
 ```
 **Parameters**
 
@@ -28,7 +28,7 @@ function createNewPacket(uint64 _streamId, uint128 _committeeId, bytes32 _commit
 |----|----|-----------|
 |`_streamId`|`uint64`|The index of the stream to add the packet to|
 |`_committeeId`|`uint128`|The ID of the committee responsible for this packet|
-|`_committeePubKey`|`bytes32`|The public key of the selected committee for the packet|
+|`_committeePubKey`|`bytes`|The public key of the selected committee for the packet (33 bytes)|
 
 
 ### getStream
@@ -291,7 +291,7 @@ function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external vie
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`bytes32`|bytes32 The committee public key for this packet|
+|`<none>`|`bytes`|The committee public key for this packet (33 bytes)|
 
 
 ### completeSlot

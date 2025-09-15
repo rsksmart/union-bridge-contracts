@@ -193,7 +193,7 @@ function validateRequestPeginP2TROutput(
 |`_rskDestinationAddress`|`address`|Address that will get the RBTC|
 |`_streamDenomination`|`uint64`|The expected amount in satoshis|
 |`_btcReimbursementPubKey`|`bytes32`|The user's public key (x-only, 32 bytes)|
-|`_committeePubKey`|`bytes32`|The committee's public key (x-only, 32 bytes)|
+|`_committeePubKey`|`bytes memory`|The committee's public key (compressed format, 33 bytes)|
 |`_p2trOut`|`BtcTxOut`|The P2TR output of the peg-in request|
 
 
@@ -293,7 +293,7 @@ function getAcceptPeginSignatureHash(
 
 
 ```solidity
-function getAcceptPeginTweakedPublicKey(bytes32 _committeePubKey) internal pure returns (bytes32);
+function getAcceptPeginTweakedPublicKey(bytes memory _committeePubKey) internal pure returns (bytes32);
 ```
 
 ### validateAcceptPeginP2TROutput
@@ -321,7 +321,7 @@ Generates the Accept Pegin Taproot output script pub key with both key spend and
 
 
 ```solidity
-function getAcceptPeginP2TRScriptPub(bytes32 _committeePubKey) public pure returns (bytes memory);
+function getAcceptPeginP2TRScriptPub(bytes memory _committeePubKey) public pure returns (bytes memory);
 ```
 **Parameters**
 

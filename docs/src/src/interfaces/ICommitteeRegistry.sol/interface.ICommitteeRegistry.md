@@ -1,19 +1,23 @@
 # ICommitteeRegistry
 [Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/9f14e34a8636f5a1e820830e7bebc3a177006c7a/src/interfaces/ICommitteeRegistry.sol)
 
-Interface for managing committee registration and formation in the union bridge
+Interface for managing committee formation, lifecycle, and coordination in the union bridge
 
-*This interface provides functions for member registration, committee formation,*
+*This interface provides functions for committee formation, committee data management,*
 
-*and balance management for the committee system*
+*and coordination with the MemberRegistry for member operations*
+
+*Note: Member registration and balance management functions have been moved to IMemberRegistry*
 
 
 ## Functions
 ### applyToStream
 
-Applies to participate in a stream with a specific role
+Applies to a stream with a specified role and public keys
 
-*Registers public keys, deposits required bond, and provides funding UTXO for the requested role*
+*Delegates member registration to MemberRegistry while handling validation and committee creation triggers*
+
+*Validates public keys and coordinates with MemberRegistry for member registration and candidacy*
 
 
 ```solidity
@@ -27,7 +31,7 @@ function applyToStream(
 **Parameters**
 
 |Name|Type|Description|
-|----|----|-----------|
+|----|----|--------------|
 |`_requestedStream`|`StreamDenomination`|The stream denomination to apply for|
 |`_requestedRole`|`Role`|The role requested in the committee|
 |`_publicKeys`|`MemberRegistrationKeys`|Member public key registration with ECDSA and RSA keys|
@@ -47,6 +51,24 @@ function unsubscribeFromStream(StreamDenomination _stream) external;
 |Name|Type|Description|
 |----|----|-----------|
 |`_stream`|`StreamDenomination`|The stream denomination to unsubscribe from|
+
+
+### memberRegistry
+
+Gets the MemberRegistry contract instance
+
+*Returns the contract responsible for member management operations*
+
+
+```solidity
+function memberRegistry() external view returns (IMemberRegistry);
+```
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`IMemberRegistry`|The MemberRegistry contract instance|
 
 
 ### withdrawAvailableBalance

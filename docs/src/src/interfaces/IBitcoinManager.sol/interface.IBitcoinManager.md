@@ -21,7 +21,7 @@ function getTemporaryPeginAddress(
     address _rskDestinationAddress,
     uint64 _value,
     bytes32 _btcReimbursementPubKey,
-    bytes32 _committeePubKey
+    bytes memory _committeePubKey
 ) external view returns (string memory temporaryPeginAddress);
 ```
 **Parameters**
@@ -31,7 +31,7 @@ function getTemporaryPeginAddress(
 |`_rskDestinationAddress`|`address`|The RSK address that will receive the RBTC|
 |`_value`|`uint64`|The amount in satoshis to peg in (must match stream denomination)|
 |`_btcReimbursementPubKey`|`bytes32`|The user's Bitcoin public key (x-coordinate only, 32 bytes)|
-|`_committeePubKey`|`bytes32`|The committee's public key (x-coordinate only, 32 bytes)|
+|`_committeePubKey`|`bytes memory`|The committee's public key (compressed format, 33 bytes)|
 
 **Returns**
 
@@ -79,7 +79,7 @@ function validateRequestPeginP2TROutput(
     address _rskDestinationAddress,
     uint64 _streamDenomination,
     bytes32 _btcReimbursementPubKey,
-    bytes32 _committeePubKey,
+    bytes memory _committeePubKey,
     BtcTxOut calldata _p2trOut
 ) external pure;
 ```
@@ -90,7 +90,7 @@ function validateRequestPeginP2TROutput(
 |`_rskDestinationAddress`|`address`|The RSK address that should receive the RBTC|
 |`_streamDenomination`|`uint64`|The expected amount in satoshis|
 |`_btcReimbursementPubKey`|`bytes32`|The user's Bitcoin public key (x-coordinate only)|
-|`_committeePubKey`|`bytes32`|The committee's public key (x-coordinate only)|
+|`_committeePubKey`|`bytes memory`|The committee's public key (compressed format, 33 bytes)|
 |`_p2trOut`|`BtcTxOut`|The Bitcoin transaction output to validate|
 
 
@@ -141,7 +141,7 @@ function getPeginRequestP2TRScriptPub(
 |`_rskDestinationAddress`|`address`|The RSK address that will receive the RBTC|
 |`_value`|`uint64`|The amount in satoshis (must match stream denomination)|
 |`_btcReimbursementPubKey`|`bytes32`|The user's public key (x-coordinate only, 32 bytes)|
-|`_committeePubKey`|`bytes32`|The committee's public key (x-coordinate only, 32 bytes)|
+|`_committeePubKey`|`bytes memory`|The committee's public key (compressed format, 33 bytes)|
 
 **Returns**
 
@@ -159,7 +159,7 @@ Calculates the signature hash for Bitcoin accept peg-in transactions
 
 ```solidity
 function getAcceptPeginSignatureHash(
-    bytes32 _committeePubKey,
+    bytes memory _committeePubKey,
     bytes32 _userXOnlyPubKey,
     bytes32 _registerPeginTx,
     PrevoutData memory _prevoutData
@@ -169,7 +169,7 @@ function getAcceptPeginSignatureHash(
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_committeePubKey`|`bytes32`|The committee's public key (x-coordinate only)|
+|`_committeePubKey`|`bytes memory`|The committee's public key (compressed format, 33 bytes)|
 |`_userXOnlyPubKey`|`bytes32`|The user's public key (x-coordinate only, 32 bytes)|
 |`_registerPeginTx`|`bytes32`|The transaction hash of the peg-in request being spent|
 |`_prevoutData`|`PrevoutData`|Data about the previous output being spent (amount and scriptPubKey)|
@@ -191,13 +191,13 @@ Generates a Taproot script pub key for accept peg-in transactions
 
 
 ```solidity
-function getAcceptPeginP2TRScriptPub(bytes32 _committeePubKey) external pure returns (bytes memory);
+function getAcceptPeginP2TRScriptPub(bytes memory _committeePubKey) external pure returns (bytes memory);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_committeePubKey`|`bytes32`|The committee's public key (x-coordinate only, 32 bytes)|
+|`_committeePubKey`|`bytes memory`|The committee's public key (compressed format, 33 bytes)|
 
 **Returns**
 
@@ -222,7 +222,7 @@ function validateAcceptPeginP2TROutput(bytes32 _committeePubKey, uint64 _inputAm
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_committeePubKey`|`bytes32`|The committee's public key (x-coordinate only, 32 bytes)|
+|`_committeePubKey`|`bytes memory`|The committee's public key (compressed format, 33 bytes)|
 |`_inputAmount`|`uint64`|The amount of the input being spent|
 |`_p2trOut`|`BtcTxOut`|The Bitcoin transaction output containing the P2TR output|
 
