@@ -3,7 +3,14 @@ pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
 import {HelperContract} from "./helpers/HelperContract.sol";
-import {BtcTxIn, BtcTxOut, BtcTransaction, IBitcoinManager, PrevoutData} from "src/interfaces/IBitcoinManager.sol";
+import {
+    BtcTxIn,
+    BtcTxOut,
+    BtcTransaction,
+    IBitcoinManager,
+    PrevoutData,
+    BitcoinSignatureData
+} from "src/interfaces/IBitcoinManager.sol";
 import {OpCodes} from "src/libraries/OpCodes.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {BtcTaproot} from "src/libraries/BtcTaproot.sol";
@@ -327,7 +334,9 @@ contract TestBtcHelper is Test, HelperContract {
         // prevoutData.value - (Constants.SPEED_UP_AMOUNT + Constants.P2TR_FEE); // 0.00008730 BTC
 
         // Act
-        (bytes32 result,) = bitcoinManager.getPegoutSignatureHash(userPubKey, acceptPeginTx, prevoutData);
+        BitcoinSignatureData memory pegoutData =
+            bitcoinManager.getPegoutSignatureHash(userPubKey, acceptPeginTx, prevoutData);
+        bytes32 result = pegoutData.signatureHash;
 
         // ExpectedHash hash computed externally from a run of the pegout flow of the protocol builder
         // using the following inputs and running on regtest

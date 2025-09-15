@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNKNOWN
 pragma solidity ^0.8.20;
 
-import {BtcTransaction, PrevoutData} from "./IBitcoinManager.sol";
+import {BtcTransaction, PrevoutData, BitcoinSignatureData} from "./IBitcoinManager.sol";
 import {IStreamManager, SlotState} from "./IStreamManager.sol";
 import {ISignatureManager} from "./ISignatureManager.sol";
 
@@ -226,8 +226,7 @@ interface IPegManager {
     /// @notice Event emitted when a peg-out is successfully requested
     /// @param userPubKey The user's public key that will receive the Bitcoin funds
     /// @param committeeId The ID of the committee responsible for this peg-out
-    /// @param pegoutSignatureHash The signature hash that committee members need to sign
-    /// @param pegoutSignatureMessage The signature message for committee signing
+    /// @param pegoutSignatureData The signature data for committee signing
     /// @param streamId The stream ID where the funds originated
     /// @param packetNumber The packet number within the stream
     /// @param slotId The slot ID within the packet
@@ -236,8 +235,7 @@ interface IPegManager {
     event PegoutRequested(
         bytes userPubKey,
         uint256 indexed committeeId,
-        bytes32 indexed pegoutSignatureHash,
-        bytes pegoutSignatureMessage,
+        BitcoinSignatureData pegoutSignatureData,
         uint64 streamId,
         uint64 packetNumber,
         uint64 slotId,
@@ -298,8 +296,8 @@ interface IPegManager {
     /// @dev signatures should be checked to see if the User Take was already signed
     /// @dev Partial signatures are used to skip those operators that have not signed the User Take
     /// @dev Emits OperatorTakeTriggered event upon successful triggering
-    /// @param _pegoutSignatureHash The signature hash of the peg-out request
-    function triggerOperatorTake(bytes32 _pegoutSignatureHash) external;
+    /// @param _pegoutTxHash The transaction hash of the peg-out request
+    function triggerOperatorTake(bytes32 _pegoutTxHash) external;
 
     // ===================== Events =====================
 
@@ -312,13 +310,13 @@ interface IPegManager {
     event OperatorTakeTimeoutUpdated(uint256 newTimeout);
 
     /// @notice Event emitted when operator take is triggered for a peg-out
-    /// @param pegoutSignatureHash The signature hash of the peg-out request
+    /// @param pegoutTxHash The transaction hash of the peg-out request
     /// @param pegoutInfo Complete pegout temporary information including operator details
     /// @param streamPosition Stream position information including slot ID
     /// @param updatedAt The timestamp when the operator take was triggered
     /// @param expireAt The timestamp when the operator take timeout expires
     event OperatorTakeTriggered(
-        bytes32 pegoutSignatureHash,
+        bytes32 pegoutTxHash,
         PegoutTempInfo pegoutInfo,
         StreamPosition streamPosition,
         uint256 updatedAt,

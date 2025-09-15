@@ -5,7 +5,7 @@ import {BaseProxy} from "./BaseProxy.sol";
 import {ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
 import {IMemberRegistry} from "./interfaces/IMemberRegistry.sol";
 import {ISignatureManager, SignatureData} from "./interfaces/ISignatureManager.sol";
-import {PrevoutData, BtcTxOut, IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
+import {PrevoutData, BtcTxOut, IBitcoinManager, BitcoinSignatureData} from "./interfaces/IBitcoinManager.sol";
 import {
     BtcTxSPVProof,
     RequestPeginTempInfo,
@@ -59,7 +59,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
 
     mapping(bytes32 acceptPeginTxHash => PegoutTempInfo tempInfo) internal pegoutTempInfo;
 
-    mapping(bytes32 pegoutSignatureHash => bytes32 acceptPeginTxHash) internal pegoutToPeginTxHash;
+    mapping(bytes32 pegoutTxHash => bytes32 acceptPeginTxHash) internal pegoutToPeginTxHash;
 
     // Key = keccak256(abi.encodePacked(streamId, packetNumber, slotId))
     mapping(bytes32 key => bytes32 pegoutSignatureHash) internal pegoutSighashes;
@@ -209,8 +209,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             scriptPubKey: _peginRequestTxSPVProof.btcTx.outputs[Constants.VOUT_INDEX_TAPTREE].scriptPubKey
         });
 
-        (bytes32 acceptPeginTxHash, bytes32 acceptPeginSignatureHash, bytes memory acceptPeginSignatureMessage) =
-        bitcoinManager.getAcceptPeginSignatureHash(
+        BitcoinSignatureData memory acceptPeginSignatureData = bitcoinManager.getAcceptPeginSignatureHash(
             committeePubKey, btcReimbursementPubKey, requestPeginTxHash, prevoutData
         );
 
@@ -218,7 +217,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         RequestPeginTempInfo memory requestPeginInfo = RequestPeginTempInfo({
             rskDestinationAddress: rskDestinationAddress,
             btcReimbursementPubKey: btcReimbursementPubKey,
-            acceptPeginSignatureHash: acceptPeginSignatureHash
+            acceptPeginSignatureHash: acceptPeginSignatureData.signatureHash
         });
         peginTempInfo[requestPeginTxHash] = requestPeginInfo;
 
@@ -226,7 +225,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         uint128 committeeId = streamManager.getCommitteeId(stream.streamId, packetNumber);
 
         // Store request mapping before external calls
-        peginRequests[requestPeginTxHash] = acceptPeginTxHash;
+        peginRequests[requestPeginTxHash] = acceptPeginSignatureData.txHash;
 
         // Reserve slot during request peg-in - external call
         // slither-disable-next-line reentrancy-no-eth reentrancy-benign
@@ -240,25 +239,25 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             pegStatus: PegStatus.REGISTERED
         });
 
-        streamPosition[acceptPeginTxHash] = streamPos;
+        streamPosition[acceptPeginSignatureData.txHash] = streamPos;
 
         // slither-disable-next-line reentrancy-events
         emit PeginRequested(
             committeeId,
             requestPeginTxHash,
-            acceptPeginTxHash,
+            acceptPeginSignatureData.txHash,
             Constants.VOUT_INDEX_TAPTREE,
             streamPos,
             requestPeginInfo,
             prevoutData,
-            acceptPeginSignatureMessage
+            acceptPeginSignatureData.signatureMessage
         );
 
         // Final external calls - moved to end to minimize reentrancy attack surface
         // slither-disable-next-line reentrancy-no-eth reentrancy-benign
-        signatureManager.initSignatures(acceptPeginSignatureHash, committeeId);
+        signatureManager.initSignatures(acceptPeginSignatureData.txHash, committeeId);
         // slither-disable-next-line reentrancy-no-eth reentrancy-benign
-        signatureManager.initOperatorTakeTxHashes(acceptPeginTxHash, committeeId);
+        signatureManager.initOperatorTakeTxHashes(acceptPeginSignatureData.txHash, committeeId);
     }
 
     function _validatePeginRequestProof(BtcTxSPVProof calldata _peginRequestTxSPVProof)
@@ -454,14 +453,15 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         (Slot memory slot, uint64 packetNumber) = streamManager.lockSlot(stream.streamId);
 
         // Compute the Bitcoin peg-out signature hash
-        (bytes32 pegoutSignatureHash, bytes memory pegoutSignatureMessage) = bitcoinManager.getPegoutSignatureHash(
+        BitcoinSignatureData memory pegoutSignatureData = bitcoinManager.getPegoutSignatureHash(
             _userPubKey,
             slot.acceptPeginTx,
             PrevoutData({value: slot.acceptPeginAmount, scriptPubKey: slot.scriptPubKey})
         );
 
-        uint128 committeeId =
-            _storePegoutAndInitSignatures(pegoutSignatureHash, stream.streamId, packetNumber, slot.slotId);
+        uint128 committeeId = _storePegoutAndInitSignatures(
+            pegoutSignatureData.txHash, pegoutSignatureData.signatureHash, stream.streamId, packetNumber, slot.slotId
+        );
 
         pegoutTempInfo[slot.acceptPeginTx] = PegoutTempInfo({
             userPubKey: _userPubKey,
@@ -474,7 +474,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         streamPosition[slot.acceptPeginTx].pegStatus = PegStatus.USER_TAKE;
 
         // Store the pegout to pegin tx hash mapping
-        pegoutToPeginTxHash[pegoutSignatureHash] = slot.acceptPeginTx;
+        pegoutToPeginTxHash[pegoutSignatureData.txHash] = slot.acceptPeginTx;
 
         // Compute pegout ID
         bytes32 pegoutId = keccak256(
@@ -491,8 +491,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         emit PegoutRequested(
             _userPubKey,
             committeeId,
-            pegoutSignatureHash,
-            pegoutSignatureMessage,
+            pegoutSignatureData,
             stream.streamId,
             packetNumber,
             slot.slotId,
@@ -597,20 +596,21 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
     }
 
     function _storePegoutAndInitSignatures(
+        bytes32 _pegoutTxHash,
         bytes32 _pegoutSignatureHash,
         uint64 _streamId,
         uint64 _packetNumber,
         uint64 _slotId
     ) internal returns (uint128) {
-        // Store the peg-out transaction hash on-chain and initialize the signatures
+        // Store the peg-out signature hash on-chain and initialize the signatures using txHash
         bytes32 key = keccak256(abi.encodePacked(_streamId, _packetNumber, _slotId));
         pegoutSighashes[key] = _pegoutSignatureHash;
 
         // Get the committee key
         uint128 committeeId = streamManager.getCommitteeId(_streamId, _packetNumber);
 
-        // Initialize the signatures for each member
-        signatureManager.initSignatures(_pegoutSignatureHash, committeeId);
+        // Initialize the signatures for each member using txHash instead of signatureHash
+        signatureManager.initSignatures(_pegoutTxHash, committeeId);
 
         return committeeId;
     }
@@ -621,11 +621,11 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
     /// @dev signatures should be checked to see if the User Take was already signed
     /// @dev Partial signatures are used to skip those operators that have not signed the User Take
     /// @dev Emits OperatorTakeTriggered event upon successful triggering
-    /// @param _pegoutSignatureHash The signature hash of the peg-out request
-    function triggerOperatorTake(bytes32 _pegoutSignatureHash) external {
-        bytes32 acceptPeginTxHash = pegoutToPeginTxHash[_pegoutSignatureHash];
+    /// @param _pegoutTxHash The transaction hash of the peg-out request
+    function triggerOperatorTake(bytes32 _pegoutTxHash) external {
+        bytes32 acceptPeginTxHash = pegoutToPeginTxHash[_pegoutTxHash];
         if (acceptPeginTxHash == bytes32(0)) {
-            revert PegoutSignatureHashNotFound(_pegoutSignatureHash);
+            revert PegoutSignatureHashNotFound(_pegoutTxHash);
         }
 
         PegoutTempInfo storage pegoutInfo = pegoutTempInfo[acceptPeginTxHash];
@@ -636,9 +636,9 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
 
         if (streamInfo.pegStatus == PegStatus.USER_TAKE) {
             // slither-disable-next-line unused-return
-            (uint8 missingSignatures,,) = signatureManager.getSignaturesStatus(_pegoutSignatureHash);
+            (uint8 missingSignatures,,) = signatureManager.getSignaturesStatus(_pegoutTxHash);
             if (missingSignatures == 0) {
-                revert UserTakeAlreadySigned(_pegoutSignatureHash);
+                revert UserTakeAlreadySigned(_pegoutTxHash);
             }
 
             // slither-disable-next-line timestamp
@@ -657,7 +657,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             revert InvalidPegStatus(streamInfo.pegStatus);
         }
 
-        SignatureData[] memory signatureData = signatureManager.getPartialSignatures(_pegoutSignatureHash);
+        SignatureData[] memory signatureData = signatureManager.getPartialSignatures(_pegoutTxHash);
 
         // slither-disable-next-line reentrancy-no-eth reentrancy-benign
         (address takeOperatorAddress, bytes32 operatorDisputePubKey) =
@@ -669,7 +669,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
 
         // slither-disable-next-line reentrancy-events
         emit OperatorTakeTriggered(
-            _pegoutSignatureHash, pegoutInfo, streamInfo, block.timestamp, block.timestamp + operatorTakeTimeout
+            _pegoutTxHash, pegoutInfo, streamInfo, block.timestamp, block.timestamp + operatorTakeTimeout
         );
 
         if (advanceSlot) {

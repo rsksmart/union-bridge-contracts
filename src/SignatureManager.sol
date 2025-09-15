@@ -95,14 +95,14 @@ contract SignatureManager is ISignatureManager, AccessControl {
 
     /// @notice Adds a signature for a committee member to the signature collection
     /// @dev Signatures can only be added after all nonces are present
-    /// @param _hashToSign The hash that needs to be signed by the committee
+    /// @param _txHash The hash that needs to be signed by the committee
     /// @param _signature The signature for the hash
     /// @return true if all signatures are now present, false otherwise
-    function addMemberSignature(bytes32 _hashToSign, bytes32 _signature) external returns (bool) {
+    function addMemberSignature(bytes32 _txHash, bytes32 _signature) external returns (bool) {
         // Check if all nonces are present
-        Signatures storage signatures = _getSignatures(_hashToSign);
+        Signatures storage signatures = _getSignatures(_txHash);
         if (signatures.missingNonces != 0) {
-            revert AllNoncesAreNotPresent(_hashToSign);
+            revert AllNoncesAreNotPresent(_txHash);
         }
         // Check if the signature is valid
         if (_signature == "") {
@@ -117,35 +117,35 @@ contract SignatureManager is ISignatureManager, AccessControl {
         SignatureData storage memberSignatureData = signatures.partialSignaturesData[msg.sender];
         // Check if the member has already added a signature
         if (memberSignatureData.signature != "") {
-            revert MemberHasAlreadySigned(msg.sender, _hashToSign);
+            revert MemberHasAlreadySigned(msg.sender, _txHash);
         }
         // Store the signature for the member
         memberSignatureData.signature = _signature;
-        emit SignatureAdded(_hashToSign, msg.sender, _signature);
+        emit SignatureAdded(_txHash, msg.sender, _signature);
 
         // Check if all signatures are present
         signatures.missingSignatures -= 1;
         if (signatures.missingSignatures != 0) {
             return false;
         }
-        emit AllSignaturesReady(_hashToSign);
+        emit AllSignaturesReady(_txHash);
         return true;
     }
 
     /// @notice Checks if all signatures are ready for a given hash
-    /// @param _hashToSign The hash to check signatures for
+    /// @param _txHash The hash to check signatures for
     /// @return true if all signatures are present, false otherwise
-    function checkAllSignaturesReady(bytes32 _hashToSign) external view returns (bool) {
-        Signatures storage signatures = _getSignatures(_hashToSign);
+    function checkAllSignaturesReady(bytes32 _txHash) external view returns (bool) {
+        Signatures storage signatures = _getSignatures(_txHash);
         return signatures.committeeId != 0 && signatures.missingSignatures == 0;
     }
 
     /// @notice Gets all partial signatures for a given hash
     /// @dev Returns signatures in the same order as committee members for Musig2 compatibility
-    /// @param _hashToSign The hash to get signatures for
+    /// @param _txHash The hash to get signatures for
     /// @return Array of signature data for all committee members
-    function getPartialSignatures(bytes32 _hashToSign) external view returns (SignatureData[] memory) {
-        Signatures storage signatures = _getSignatures(_hashToSign);
+    function getPartialSignatures(bytes32 _txHash) external view returns (SignatureData[] memory) {
+        Signatures storage signatures = _getSignatures(_txHash);
         CommitteeMember[] memory members = committeeRegistry.getCommitteeMembers(signatures.committeeId);
         uint8 memberCount = uint8(members.length);
         SignatureData[] memory partialSignaturesData = new SignatureData[](memberCount);
@@ -157,37 +157,37 @@ contract SignatureManager is ISignatureManager, AccessControl {
     }
 
     /// @notice Gets the status of the signatures for a given hash
-    /// @param _hashToSign The hash to get status for
+    /// @param _txHash The hash to get status for
     /// @return missingSignatures Number of missing signatures
     /// @return missingNonces Number of missing nonces
     /// @return committeeId The committee ID for this signature collection
-    function getSignaturesStatus(bytes32 _hashToSign) external view returns (uint8, uint8, uint128) {
-        Signatures storage signatures = _getSignatures(_hashToSign);
+    function getSignaturesStatus(bytes32 _txHash) external view returns (uint8, uint8, uint128) {
+        Signatures storage signatures = _getSignatures(_txHash);
         return (signatures.missingSignatures, signatures.missingNonces, signatures.committeeId);
     }
 
-    function _getSignatures(bytes32 _hashToSign) internal view returns (Signatures storage) {
+    function _getSignatures(bytes32 _txHash) internal view returns (Signatures storage) {
         // Check if the signature hash exists
         // slither-disable-next-line incorrect-equality timestamp
-        if (committeeSignatures[_hashToSign].committeeId == 0) {
-            revert HashToSignNotFound(_hashToSign);
+        if (committeeSignatures[_txHash].committeeId == 0) {
+            revert HashToSignNotFound(_txHash);
         }
-        return committeeSignatures[_hashToSign];
+        return committeeSignatures[_txHash];
     }
 
     /// @notice Initializes signature collection for a given hash
     /// @dev Can only be called by the PegManager
-    /// @param _hashToSign The hash that needs to be signed
+    /// @param _txHash The hash that needs to be signed
     /// @param _committeeId The committee ID that will sign the hash
-    function initSignatures(bytes32 _hashToSign, uint128 _committeeId) external onlyPegManager {
+    function initSignatures(bytes32 _txHash, uint128 _committeeId) external onlyPegManager {
         // Check if the signature hash is not empty
-        if (_hashToSign == "") {
-            revert InvalidHashToSign(_hashToSign);
+        if (_txHash == "") {
+            revert InvalidHashToSign(_txHash);
         }
         // Check if the signatures are already initialized
-        Signatures storage signatures = committeeSignatures[_hashToSign];
+        Signatures storage signatures = committeeSignatures[_txHash];
         if (signatures.committeeId != 0) {
-            revert SignaturesAlreadyInitialized(_hashToSign);
+            revert SignaturesAlreadyInitialized(_txHash);
         }
 
         // Get the members
