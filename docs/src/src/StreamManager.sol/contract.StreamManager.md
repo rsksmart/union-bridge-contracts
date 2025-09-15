@@ -1,5 +1,5 @@
 # StreamManager
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/9f14e34a8636f5a1e820830e7bebc3a177006c7a/src/StreamManager.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/71a497b0c34417fb9b1a1c1fb548ecdb459d7d61/src/StreamManager.sol)
 
 **Inherits:**
 [IStreamManager](/src/interfaces/IStreamManager.sol/interface.IStreamManager.md), [AccessControl](/src/AccessControl.sol/contract.AccessControl.md)
@@ -105,7 +105,7 @@ Creates a new packet for a stream
 
 
 ```solidity
-function createNewPacket(uint64 _streamId, uint128 _committeeId, bytes32 _committeePubKey)
+function createNewPacket(uint64 _streamId, uint128 _committeeId, bytes calldata _committeePubKey)
     external
     onlyCommitteeRegistry;
 ```
@@ -115,14 +115,14 @@ function createNewPacket(uint64 _streamId, uint128 _committeeId, bytes32 _commit
 |----|----|-----------|
 |`_streamId`|`uint64`|The ID of the stream to create a packet for|
 |`_committeeId`|`uint128`|The ID of the committee that will process this packet|
-|`_committeePubKey`|`bytes32`|The public key of the committee for Bitcoin operations|
+|`_committeePubKey`|`bytes`|The public key of the committee for Bitcoin operations|
 
 
 ### _createNewPacket
 
 
 ```solidity
-function _createNewPacket(uint64 _streamId, uint128 _committeeId, bytes32 _committeePubKey) internal;
+function _createNewPacket(uint64 _streamId, uint128 _committeeId, bytes memory _committeePubKey) internal;
 ```
 
 ### getStream
@@ -403,7 +403,7 @@ Gets the committee public key for a specific packet
 
 
 ```solidity
-function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes32);
+function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes memory);
 ```
 **Parameters**
 
@@ -416,7 +416,7 @@ function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external vie
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`bytes32`|The committee public key for the packet|
+|`<none>`|`bytes`|bytes The committee public key for the packet|
 
 
 ### completeSlot

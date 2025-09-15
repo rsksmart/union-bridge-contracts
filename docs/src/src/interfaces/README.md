@@ -26,6 +26,7 @@
 - [CommunicationData](ICommitteeRegistry.sol/struct.CommunicationData.md)
 - [ICommitteeRegistry](ICommitteeRegistry.sol/interface.ICommitteeRegistry.md)
 - [ICommitteeRegistry constants](ICommitteeRegistry.sol/constants.ICommitteeRegistry.md)
+- [IMemberRegistry](IMemberRegistry.sol/interface.IMemberRegistry.md)
 - [BtcTxSPVProof](IPegManager.sol/struct.BtcTxSPVProof.md)
 - [PegStatus](IPegManager.sol/enum.PegStatus.md)
 - [StreamPosition](IPegManager.sol/struct.StreamPosition.md)

@@ -32,8 +32,8 @@ The packet creation process follows four main phases:
 
 #### Phase 1: Member Application
 
-1. **Member applies to stream**: The member calls `applyToStream()` with their role (Operator/Watchtower) and public keys (handled by MemberRegistry)
-2. **Validation**: Member Registry validates public keys and signatures
+1. **Member applies to stream**: The member calls `applyToStream()` with their role (Operator/Watchtower) and public keys
+2. **Validation**: CommitteeRegistry validates public keys and signatures
 3. **Registration**: Member is registered and added as a candidate for their requested role
 4. **Committee creation trigger**: When enough members apply (minimum 3 operators + 3 watchtowers and at least 10 total) AND `shouldCreateCommittee` for the stream is true AND there is no pending committee or the pending committee has expired, a pending committee is created
 
@@ -41,7 +41,6 @@ The packet creation process follows four main phases:
 sequenceDiagram
     participant M as Member
     participant CR as CommitteeRegistry
-    participant MR as MemberRegistry
     participant ENV as Environment
 
     Note over M,ENV: Phase 1: Member Application
@@ -49,16 +48,14 @@ sequenceDiagram
 
     M->>CR: applyToStream(stream, OPERATOR, publicKeys)
     Note right of M: Sends bond amount + public keys
-    Note right of CR: Delegates member registration to MemberRegistry
-    CR->>MR: applyToStream(memberAddress, stream, role, publicKeys, fundingUTXO)
-    MR->>MR: _validatePublicKeys()
-    MR->>MR: Register/update member data and add to candidates
-    MR-->>CR: Member registered and added to stream candidates
+    CR->>CR: _validatePublicKeys()
+    CR->>CR: _getOrRegisterMember()
+    CR->>CR: _registerCandidateToStream()
     CR->>CR: _createCommitteeAfterApplyToStream()
     CR-->>M: NewSecurityBondDeposit event
 
     Note over M,ENV: Additional members apply similarly...
-    Note over M,ENV: Committee creation triggered when minimum requirements met AND no pending committee exists or the last pending committee has expired
+    Note over M,ENV: Committee creation triggered when minimum requirements met AND no pending committee exists or the pending committee has expired
 ```
 
 #### Phase 2: Committee Creation
@@ -74,7 +71,6 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant CR as CommitteeRegistry
-    participant MR as MemberRegistry
     participant ENV as Environment
 
     Note over CR,ENV: Phase 2: Committee Creation
@@ -82,14 +78,12 @@ sequenceDiagram
     Note over CR,ENV: System creates committee by selecting members
 
     CR->>CR: _createCommittee(streamId)
-    CR->>MR: selectCommitteeMembers()
-    Note right of CR: Delegates member selection to MemberRegistry
-    MR->>MR: Check minimum requirements (3 operators + 3 watchtowers)
-    MR->>MR: Randomly select operators from candidates
-    Note right of MR: Use Fisher-Yates shuffle for selection
-    MR->>MR: Randomly select watchtowers from candidates
-    Note right of MR: Ensure at least 10 members selected
-    MR-->>CR: Return selected committee members
+    CR->>CR: _selectCommittee()
+    Note right of CR: Check minimum requirements (3 operators + 3 watchtowers)
+    CR->>CR: Randomly select operators from candidates
+    Note right of CR: Use Fisher-Yates shuffle for selection
+    CR->>CR: Randomly select watchtowers from candidates
+    Note right of CR: Ensure at least 10 members selected
     CR->>CR: Create pending committee with selected members
     CR->>CR: Set missingData counter to member count
     CR-->>ENV: NewPendingCommittee event
