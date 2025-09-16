@@ -41,7 +41,10 @@ enum PegStatus {
     /// @notice Operation has been won by the operator and is awaiting committee acceptance
     OPERATOR_WON,
     /// @notice Operation has been completed and funds have been paid out
-    COMPLETED
+    COMPLETED,
+    /// @notice This must always be the last element since it represents the total count of enum elements
+    /// @dev Used for validation and iteration over the enum values
+    LENGTH
 }
 
 /// @notice Represents the position of funds within the stream and packet system

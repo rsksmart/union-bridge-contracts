@@ -30,7 +30,10 @@ enum Role {
     /// @notice Operator role - responsible for executing peg out operations
     OPERATOR,
     /// @notice Watchtower role - responsible for monitoring and dispute resolution
-    WATCHTOWER
+    WATCHTOWER,
+    /// @notice This must always be the last element since it represents the total count of enum elements
+    /// @dev Used for validation and iteration over the enum values
+    LENGTH
 }
 
 /// @notice Represents the status of a pending committee formation
@@ -43,7 +46,10 @@ enum PendingCommitteeStatus {
     /// @notice Not enough operators applied for the committee
     NOT_ENOUGH_OPERATORS,
     /// @notice Not enough watchtowers applied for the committee
-    NOT_ENOUGH_WATCHTOWERS
+    NOT_ENOUGH_WATCHTOWERS,
+    /// @notice This must always be the last element since it represents the total count of enum elements
+    /// @dev Used for validation and iteration over the enum values
+    LENGTH
 }
 
 /// @notice Represents the balance and application staking information for a member
@@ -79,7 +85,10 @@ enum PublicKeyType {
     /// @notice Public key used for covenant operations (dispute resolution)
     COVENANT,
     /// @notice Public key used for communication between members
-    COMMUNICATION
+    COMMUNICATION,
+    /// @notice This must always be the last element since it represents the total count of enum elements
+    /// @dev Used for validation and iteration over the enum values
+    LENGTH
 }
 
 /// @notice Represents the data needed for ECDSA public key registration
