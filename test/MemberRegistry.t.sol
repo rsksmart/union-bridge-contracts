@@ -94,7 +94,7 @@ contract TestMemberRegistry is Test, HelperContract {
             UTXO memory emptyUTXO = UTXO({txid: bytes32(0), outputIndex: 0, amount: 0});
 
             // Check all stream denominations
-            for (uint8 i = 0; i <= uint8(StreamDenomination._10BTC); i++) {
+            for (uint8 i = 0; i < uint8(StreamDenomination.LENGTH); i++) {
                 StreamDenomination currentStream = StreamDenomination(i);
                 UTXO memory expectedUTXO = (currentStream == DEFAULT_STREAM) ? defaultUTXO : emptyUTXO;
                 UTXO memory storedUTXO = memberRegistry.getMemberFundingUTXO(uint64(currentStream), user);
@@ -915,12 +915,12 @@ contract TestMemberRegistry is Test, HelperContract {
         Role requestedRole = Role.OPERATOR;
 
         // 1. Deposit in All Streams
-        for (uint8 i = 0; i <= uint8(StreamDenomination._10BTC); i++) {
+        for (uint8 i = 0; i < uint8(StreamDenomination.LENGTH); i++) {
             totalDeposited += setup_applyToStream(user, memberRegistrationKeys, StreamDenomination(i), requestedRole);
         }
 
         // 2. Unsubscribe from All Streams
-        for (uint8 i = 0; i <= uint8(StreamDenomination._10BTC); i++) {
+        for (uint8 i = 0; i < uint8(StreamDenomination.LENGTH); i++) {
             step_unsubscribeFromStream(user, StreamDenomination(i));
         }
 
@@ -1059,7 +1059,7 @@ contract TestMemberRegistry is Test, HelperContract {
         assertEq(
             memberRegistry.getMemberAvailableBalance(user), 0, "member available balance should be 0 after registration"
         );
-        for (uint64 i = 0; i <= uint8(StreamDenomination._10BTC); i++) {
+        for (uint64 i = 0; i < uint8(StreamDenomination.LENGTH); i++) {
             assertEq(
                 memberRegistry.getMemberPreStakedBalance(user, StreamDenomination(i)),
                 0,
@@ -1100,7 +1100,7 @@ contract TestMemberRegistry is Test, HelperContract {
             minimumDeposit,
             "member pre-staked should match the minimum deposit for stream"
         );
-        for (uint64 i = 0; i <= uint8(StreamDenomination._10BTC); i++) {
+        for (uint64 i = 0; i < uint8(StreamDenomination.LENGTH); i++) {
             if (i == uint8(DEFAULT_STREAM)) {
                 assertTrue(
                     memberRegistry.getMemberRequestedRole(user, StreamDenomination(i)) == role,

@@ -56,7 +56,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     function initialize(address _initialOwner) public virtual initializer {
         __BaseProxy_init(_initialOwner);
         pendingCommitteeTimeout = 1 days; // Default timeout for pending committees
-        for (uint64 i = 0; i <= uint64(StreamDenomination._10BTC); i++) {
+        for (uint64 i = 0; i < uint64(StreamDenomination.LENGTH); i++) {
             shouldCreateCommittee[i] = true;
         }
         minCommitteeWatchtowers = 3;

@@ -191,7 +191,7 @@ contract TestStreamManager is Test, HelperContract {
             uint256(200000000 gwei) // 20k USD to secure 10 BTC stream
         ];
 
-        for (uint8 i = 0; i <= uint8(StreamDenomination._10BTC); i++) {
+        for (uint8 i = 0; i < uint8(StreamDenomination.LENGTH); i++) {
             // Act
             uint256 minDepositOperator = streamManager.getMinimumDeposit(StreamDenomination(i), Role.OPERATOR);
             uint256 minDepositWatchtower = streamManager.getMinimumDeposit(StreamDenomination(i), Role.WATCHTOWER);

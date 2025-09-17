@@ -9,7 +9,10 @@ enum BtcNetwork {
     /// @notice Bitcoin testnet - the public test network
     TESTNET,
     /// @notice Bitcoin regtest - local development network
-    REGTEST
+    REGTEST,
+    /// @notice This must always be the last element since it represents the total count of enum elements
+    /// @dev Used for validation and iteration over the enum values
+    LENGTH
 }
 
 /// @title ChainIds

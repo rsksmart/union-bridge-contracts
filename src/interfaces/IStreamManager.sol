@@ -17,7 +17,10 @@ enum StreamDenomination {
     /// @notice 1 BTC (100,000,000 satoshis)
     _1BTC,
     /// @notice 10 BTC (1,000,000,000 satoshis)
-    _10BTC
+    _10BTC,
+    /// @notice This must always be the last element since it represents the total count of enum elements
+    /// @dev Used for validation and iteration over the enum values
+    LENGTH
 }
 
 /// @notice Represents the current state of a slot in the stream system
@@ -34,7 +37,10 @@ enum SlotState {
     /// @notice Slot has been paid out via peg-out transaction
     COMPLETED,
     /// @notice Slot is blocked due to timeout or refund proof
-    BLOCKED
+    BLOCKED,
+    /// @notice This must always be the last element since it represents the total count of enum elements
+    /// @dev Used for validation and iteration over the enum values
+    LENGTH
 }
 
 /// @notice Represents a slot within a packet that can hold funds

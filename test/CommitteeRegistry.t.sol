@@ -28,7 +28,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
     }
 
     function test_shouldCreateCommittee_AfterInit() external view {
-        for (uint64 i = 0; i <= uint64(StreamDenomination._10BTC); i++) {
+        for (uint64 i = 0; i < uint64(StreamDenomination.LENGTH); i++) {
             assertTrue(
                 registry.shouldCreateCommitteeHarness(i), "shouldCreateCommittee should be true after initialization"
             );
@@ -216,7 +216,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
             "shouldCreateCommittee should be false after setup completeCommittee call"
         );
 
-        for (uint64 i = 0; i <= uint64(StreamDenomination._10BTC); i++) {
+        for (uint64 i = 0; i < uint64(StreamDenomination.LENGTH); i++) {
             if (i != expectedCommittee.streamId) {
                 assertTrue(
                     registry.shouldCreateCommitteeHarness(i),
