@@ -1,5 +1,5 @@
 # PegManager
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/9f14e34a8636f5a1e820830e7bebc3a177006c7a/src/PegManager.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/71a497b0c34417fb9b1a1c1fb548ecdb459d7d61/src/PegManager.sol)
 
 **Inherits:**
 [IPegManager](/src/interfaces/IPegManager.sol/interface.IPegManager.md), [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md), [ProofValidator](/src/ProofValidator.sol/abstract.ProofValidator.md)
@@ -40,6 +40,15 @@ Committee registry contract for managing committee and members
 
 ```solidity
 ICommitteeRegistry public committeeRegistry;
+```
+
+
+### memberRegistry
+Member registry contract for managing member data
+
+
+```solidity
+IMemberRegistry public memberRegistry;
 ```
 
 
@@ -172,6 +181,23 @@ function setSignatureManager(ISignatureManager _signatureManager) external onlyO
 |Name|Type|Description|
 |----|----|-----------|
 |`_signatureManager`|`ISignatureManager`|The signature manager contract address|
+
+
+### setMemberRegistry
+
+Sets the member registry contract address
+
+*Only callable by the contract owner*
+
+
+```solidity
+function setMemberRegistry(IMemberRegistry _memberRegistry) external onlyOwner;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_memberRegistry`|`IMemberRegistry`|The member registry contract address|
 
 
 ### getPeginRequest
@@ -308,7 +334,7 @@ function _extractPeginData(BtcTxSPVProof calldata _peginRequestTxSPVProof)
         address rskDestinationAddress,
         bytes32 btcReimbursementPubKey,
         Stream memory stream,
-        bytes32 committeePubKey
+        bytes memory committeePubKey
     );
 ```
 
@@ -320,7 +346,7 @@ function _validatePeginTransaction(
     BtcTxSPVProof calldata _peginRequestTxSPVProof,
     address rskDestinationAddress,
     bytes32 btcReimbursementPubKey,
-    bytes32 committeePubKey,
+    bytes memory committeePubKey,
     Stream memory stream,
     bytes32 requestPeginTxHash
 ) internal view;

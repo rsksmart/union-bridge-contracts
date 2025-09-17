@@ -1,24 +1,15 @@
 # CommitteeRegistry
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/9f14e34a8636f5a1e820830e7bebc3a177006c7a/src/CommitteeRegistry.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/71a497b0c34417fb9b1a1c1fb548ecdb459d7d61/src/CommitteeRegistry.sol)
 
 **Inherits:**
 [ICommitteeRegistry](/src/interfaces/ICommitteeRegistry.sol/interface.ICommitteeRegistry.md), [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md)
 
-Manages registration, application, and selection of committee members for the union bridge system
+Manages committee formation, selection, and lifecycle for the union bridge system
 
-*Handles member registration, role assignment, committee formation, staking, and candidate management for all streams*
+*Handles committee creation, pending committee management, and coordination with MemberRegistry*
 
 
 ## State Variables
-### members
-Mapping of member addresses to their member data
-
-
-```solidity
-mapping(address => Member) internal members;
-```
-
-
 ### minCommitteeWatchtowers
 Minimum number of watchtowers required for a committee
 
@@ -100,21 +91,21 @@ IPegManager pegManager;
 ```
 
 
+### memberRegistry
+Member registry contract for member management
+
+
+```solidity
+IMemberRegistry public memberRegistry;
+```
+
+
 ### pendingCommitteeTimeout
 Timeout in seconds for pending committee formation
 
 
 ```solidity
 uint256 public pendingCommitteeTimeout;
-```
-
-
-### committeesCandidates
-Mapping of stream denomination and role to list of candidate addresses
-
-
-```solidity
-mapping(StreamDenomination denomination => mapping(Role role => address[] membersAddress)) internal committeesCandidates;
 ```
 
 
@@ -134,41 +125,11 @@ function initialize(address _initialOwner) public virtual initializer;
 |`_initialOwner`|`address`|The initial owner of the contract|
 
 
-### _initMemberBalance
+### _revertIfZero
 
 
 ```solidity
-function _initMemberBalance(Member storage _member) internal;
-```
-
-### _getMemberTakePubKey
-
-
-```solidity
-function _getMemberTakePubKey(address _address) internal view returns (bytes32);
-```
-
-### _getMemberComPubKey
-
-
-```solidity
-function _getMemberComPubKey(address _address) internal view returns (RSAPublicKey memory);
-```
-
-### _validateFundingUTXO
-
-
-```solidity
-function _validateFundingUTXO(UTXO calldata _utxo) internal pure;
-```
-
-### _getOrRegisterMember
-
-
-```solidity
-function _getOrRegisterMember(address _address, MemberRegistrationKeys calldata _publicKeys)
-    internal
-    returns (Member storage);
+function _revertIfZero(uint256 _value) internal pure;
 ```
 
 ### applyToStream
@@ -196,26 +157,6 @@ function applyToStream(
 |`_fundingUTXO`|`UTXO`|The Bitcoin UTXO that will be used for the member funding|
 
 
-### _committeesCandidatesHasSpace
-
-
-```solidity
-function _committeesCandidatesHasSpace(StreamDenomination _denomination, Role _role) internal view returns (bool);
-```
-
-### _registerCandidateToStream
-
-
-```solidity
-function _registerCandidateToStream(
-    address _memberAddress,
-    StreamDenomination _denomination,
-    Role _role,
-    uint256 _amount,
-    UTXO calldata _fundingUTXO
-) internal;
-```
-
 ### unsubscribeFromStream
 
 Unsubscribes from a stream and sets the pre-staked balance as available
@@ -236,117 +177,6 @@ function unsubscribeFromStream(StreamDenomination _denomination) external;
 
 ```solidity
 function _isInPendingCommittee(address _memberAddress, uint64 _streamId) internal view returns (bool);
-```
-
-### _unsubscribeFromStream
-
-
-```solidity
-function _unsubscribeFromStream(address _memberAddress, StreamDenomination _denomination) internal;
-```
-
-### _movePreStakedToAvailable
-
-
-```solidity
-function _movePreStakedToAvailable(Member storage _member, address _memberAddress, StreamDenomination _denomination)
-    internal;
-```
-
-### _movePreStakedToStaked
-
-
-```solidity
-function _movePreStakedToStaked(address _memberAddress, StreamDenomination _denomination, uint64 _packetNumber)
-    internal
-    returns (Role);
-```
-
-### _removeCandidatesAndUpdateBalance
-
-
-```solidity
-function _removeCandidatesAndUpdateBalance(
-    CommitteeMember[] memory _members,
-    StreamDenomination _denomination,
-    uint64 _packetNumber
-) internal;
-```
-
-### _removeFromCandidates
-
-
-```solidity
-function _removeFromCandidates(address _memberAddress, StreamDenomination _stream, Role _role) internal;
-```
-
-### withdrawAvailableBalance
-
-Withdraws available balance to the caller's address
-
-*Can only withdraw balance that is not pre-staked or staked*
-
-
-```solidity
-function withdrawAvailableBalance() external;
-```
-
-### _isRSAKeyEmpty
-
-
-```solidity
-function _isRSAKeyEmpty(bytes32[RSA_PUBLIC_KEY_CHUNKS] memory _rsaPublicKey) internal pure returns (bool);
-```
-
-### _getRSAKeyHash
-
-
-```solidity
-function _getRSAKeyHash(bytes32[RSA_PUBLIC_KEY_CHUNKS] memory _rsaPublicKey) internal pure returns (bytes32);
-```
-
-### _getAddressFromPublicKey
-
-
-```solidity
-function _getAddressFromPublicKey(bytes memory _uncompressedPublicKey) internal pure returns (address);
-```
-
-### _validatePublicKeys
-
-
-```solidity
-function _validatePublicKeys(MemberRegistrationKeys calldata _publicKeys) internal pure;
-```
-
-### _validateECDSAKey
-
-
-```solidity
-function _validateECDSAKey(ECDSAPublicKey calldata _key, PublicKeyType _type) internal pure;
-```
-
-### _validateRSAKey
-
-
-```solidity
-function _validateRSAKey(RSAPublicKey calldata _key, PublicKeyType _type) internal pure;
-```
-
-### _validateMemberKeyMatch
-
-
-```solidity
-function _validateMemberKeyMatch(Member storage _member, MemberRegistrationKeys calldata _publicKeys) internal view;
-```
-
-### _registerMember
-
-
-```solidity
-function _registerMember(address _memberAddress, MemberRegistrationKeys calldata _publicKeys)
-    internal
-    returns (Member storage);
 ```
 
 ### getCommittee
@@ -403,205 +233,6 @@ function getCommitteeMembers(uint128 _committeeId) external view returns (Commit
 
 ```solidity
 function _getCommitteeMembers(uint128 _committeeId) internal view returns (CommitteeMember[] memory);
-```
-
-### getMemberTakePubKey
-
-Gets the TAKE public key for a specific member
-
-
-```solidity
-function getMemberTakePubKey(address _address) external view returns (bytes32);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_address`|`address`|The member's address|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`<none>`|`bytes32`|The TAKE public key (x-coordinate only)|
-
-
-### getMemberComPubKey
-
-Gets the COMMUNICATION public key for a specific member
-
-
-```solidity
-function getMemberComPubKey(address _address) external view returns (RSAPublicKey memory);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_address`|`address`|The member's address|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`<none>`|`RSAPublicKey`|The RSA COMMUNICATION public key|
-
-
-### getMemberPublicKeys
-
-Retrieves all public keys for a specific member
-
-
-```solidity
-function getMemberPublicKeys(address _address) external view returns (MemberKeys memory publicKeys);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_address`|`address`|The member's address|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`publicKeys`|`MemberKeys`|Member public keys structure|
-
-
-### _getMemberApplicationData
-
-
-```solidity
-function _getMemberApplicationData(address _address, StreamDenomination _denomination)
-    internal
-    view
-    returns (ApplicationData storage);
-```
-
-### getMemberRequestedRole
-
-Gets the requested role for a member in a specific stream
-
-
-```solidity
-function getMemberRequestedRole(address _memberAddress, StreamDenomination _denomination)
-    external
-    view
-    returns (Role);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_memberAddress`|`address`|The member's address|
-|`_denomination`|`StreamDenomination`|The stream denomination|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`<none>`|`Role`|The requested role for the member|
-
-
-### getMemberAvailableBalance
-
-Gets the available balance for a member
-
-
-```solidity
-function getMemberAvailableBalance(address _address) external view returns (uint256);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_address`|`address`|The member's address|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`<none>`|`uint256`|The available balance that can be withdrawn|
-
-
-### getMemberPreStakedBalance
-
-Gets the pre-staked balance for a member in a specific stream
-
-
-```solidity
-function getMemberPreStakedBalance(address _memberAddress, StreamDenomination _denomination)
-    external
-    view
-    returns (uint256);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_memberAddress`|`address`|The member's address|
-|`_denomination`|`StreamDenomination`|The stream denomination|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`<none>`|`uint256`|The pre-staked balance for the stream|
-
-
-### getMemberStakedBalance
-
-Gets the staked balance for a member in a specific stream and packet
-
-
-```solidity
-function getMemberStakedBalance(address _address, StreamDenomination _denomination, uint64 _packetNumber)
-    external
-    view
-    returns (uint256 amount);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_address`|`address`|The member's address|
-|`_denomination`|`StreamDenomination`|The stream denomination|
-|`_packetNumber`|`uint64`|The packet number|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`amount`|`uint256`|The staked amount in the packet|
-
-
-### getMemberFundingUTXO
-
-Gets the funding UTXO for a member in a specific stream
-
-
-```solidity
-function getMemberFundingUTXO(uint64 _streamId, address _memberAddress) external view returns (UTXO memory);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_streamId`|`uint64`|The stream ID|
-|`_memberAddress`|`address`|The member's address|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`<none>`|`UTXO`|The funding UTXO for the member's application to the stream|
-
-
-### _getMember
-
-
-```solidity
-function _getMember(address _address) internal view returns (Member storage member);
 ```
 
 ### restartPendingCommittee
@@ -664,14 +295,14 @@ Allows a member to deposit information for committee formation
 
 
 ```solidity
-function depositAggregatedKey(uint128 _committeeId, bytes32 _aggregatedKey) external;
+function depositAggregatedKey(uint128 _committeeId, bytes memory _aggregatedKey) external;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
 |`_committeeId`|`uint128`|The ID of the pending committee|
-|`_aggregatedKey`|`bytes32`|The aggregated public key provided by the member|
+|`_aggregatedKey`|`bytes`|The aggregated public key provided by the member|
 
 
 ### depositCommunicationData
@@ -718,10 +349,7 @@ Returns the pending committee for the stream
 
 
 ```solidity
-function getPendingCommittee(uint64 _streamId)
-    external
-    view
-    returns (Committee memory committee, uint256 createdAt, uint256 missingData);
+function getPendingCommittee(uint64 _streamId) external view returns (Committee memory);
 ```
 **Parameters**
 
@@ -733,9 +361,7 @@ function getPendingCommittee(uint64 _streamId)
 
 |Name|Type|Description|
 |----|----|-----------|
-|`committee`|`Committee`|The pending committee|
-|`createdAt`|`uint256`|The timestamp when the pending committee was created|
-|`missingData`|`uint256`|The number of members that have not provided their data yet|
+|`<none>`|`Committee`|committee The pending committee (contains createdAt and missingData fields)|
 
 
 ### getPendingCommitteeId
@@ -832,57 +458,6 @@ function isPendingCommitteeExpired(uint64 _streamId) external view returns (bool
 function _deletePendingCommittee(uint64 _streamId) internal;
 ```
 
-### getCommitteeCandidates
-
-Gets all candidates for a specific role in a stream
-
-
-```solidity
-function getCommitteeCandidates(StreamDenomination _denomination, Role _role)
-    external
-    view
-    returns (address[] memory);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_denomination`|`StreamDenomination`|The stream denomination|
-|`_role`|`Role`|The role to get candidates for|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`<none>`|`address[]`|Array of candidate addresses|
-
-
-### _selectCommittee
-
-Randomly selects members to form a new committee for a given stream
-
-*Pseudo-randomly select at least minCommitteeWatchtowers watchtowers and minCommitteeOperators operators.
-- reverts with notEnoughWatchtowers if there are fewer than minCommitteeWatchtowers watchtower candidates
-- reverts with notEnoughOperators if there are fewer than minCommitteeOperators operator candidates*
-
-
-```solidity
-function _selectCommittee(uint64 _streamId) internal returns (CommitteeMember[] memory, PendingCommitteeStatus);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_streamId`|`uint64`|The ID of the stream to select committee members for (0-4)|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`<none>`|`CommitteeMember[]`|An array of committeeMemberCount CommitteeMembers containing the selected members.|
-|`<none>`|`PendingCommitteeStatus`||
-
-
 ### getOperatorTakeAddress
 
 Gets the next available operator address for take operations
@@ -946,6 +521,21 @@ function setPegManager(IPegManager _pegManager) external onlyOwner;
 |Name|Type|Description|
 |----|----|-----------|
 |`_pegManager`|`IPegManager`|The address of the Peg Manager contract|
+
+
+### setMemberRegistry
+
+Sets the Member Registry contract address
+
+
+```solidity
+function setMemberRegistry(IMemberRegistry _memberRegistry) external onlyOwner;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_memberRegistry`|`IMemberRegistry`|The address of the Member Registry contract|
 
 
 ### setPendingCommitteeTimeout
@@ -1036,66 +626,9 @@ function releaseCommittee(uint64 _streamId, uint64 _packetNumber) external onlyP
 |`_packetNumber`|`uint64`|The packet number where the committee was active|
 
 
-### _reapplyToStream
-
-
-```solidity
-function _reapplyToStream(address _memberAddress, StreamDenomination _denomination, uint64 _packetNumber, Role _role)
-    internal;
-```
-
-### _moveStakedToAvailable
-
-
-```solidity
-function _moveStakedToAvailable(address _memberAddress, StreamDenomination _denomination, uint64 _packetNumber)
-    internal;
-```
-
-### setReApplyForStream
-
-Sets the reapply flag for a member in a specific stream
-
-*Controls whether the member will automatically reapply after committee release*
-
-
-```solidity
-function setReApplyForStream(StreamDenomination _denomination, bool _reApply) external;
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_denomination`|`StreamDenomination`|The stream denomination to set the flag for|
-|`_reApply`|`bool`|True to automatically reapply, false to receive balance as available|
-
-
-### getReApplyForStream
-
-Gets the reapply flag for a member in a specific stream
-
-
-```solidity
-function getReApplyForStream(StreamDenomination _denomination) external view returns (bool);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_denomination`|`StreamDenomination`|The stream denomination to check|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`<none>`|`bool`|True if the member will automatically reapply, false otherwise|
-
-
 ### onlyPegManager
 
 Modifier to restrict access to the PegManager contract
-
-*Reverts if the caller is not the PegManager*
 
 
 ```solidity

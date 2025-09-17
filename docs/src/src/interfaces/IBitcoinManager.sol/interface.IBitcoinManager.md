@@ -1,5 +1,5 @@
 # IBitcoinManager
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/9f14e34a8636f5a1e820830e7bebc3a177006c7a/src/interfaces/IBitcoinManager.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/71a497b0c34417fb9b1a1c1fb548ecdb459d7d61/src/interfaces/IBitcoinManager.sol)
 
 Interface for managing Bitcoin transaction operations in the union bridge
 
@@ -21,7 +21,7 @@ function getTemporaryPeginAddress(
     address _rskDestinationAddress,
     uint64 _value,
     bytes32 _btcReimbursementPubKey,
-    bytes32 _committeePubKey
+    bytes memory _committeePubKey
 ) external view returns (string memory temporaryPeginAddress);
 ```
 **Parameters**
@@ -31,7 +31,7 @@ function getTemporaryPeginAddress(
 |`_rskDestinationAddress`|`address`|The RSK address that will receive the RBTC|
 |`_value`|`uint64`|The amount in satoshis to peg in (must match stream denomination)|
 |`_btcReimbursementPubKey`|`bytes32`|The user's Bitcoin public key (x-coordinate only, 32 bytes)|
-|`_committeePubKey`|`bytes32`|The committee's public key (x-coordinate only, 32 bytes)|
+|`_committeePubKey`|`bytes`|The committee's public key|
 
 **Returns**
 
@@ -79,7 +79,7 @@ function validateRequestPeginP2TROutput(
     address _rskDestinationAddress,
     uint64 _streamDenomination,
     bytes32 _btcReimbursementPubKey,
-    bytes32 _committeePubKey,
+    bytes memory _committeePubKey,
     BtcTxOut calldata _p2trOut
 ) external pure;
 ```
@@ -90,7 +90,7 @@ function validateRequestPeginP2TROutput(
 |`_rskDestinationAddress`|`address`|The RSK address that should receive the RBTC|
 |`_streamDenomination`|`uint64`|The expected amount in satoshis|
 |`_btcReimbursementPubKey`|`bytes32`|The user's Bitcoin public key (x-coordinate only)|
-|`_committeePubKey`|`bytes32`|The committee's public key (x-coordinate only)|
+|`_committeePubKey`|`bytes`|The committee's public key|
 |`_p2trOut`|`BtcTxOut`|The Bitcoin transaction output to validate|
 
 
@@ -131,7 +131,7 @@ function getPeginRequestP2TRScriptPub(
     address _rskDestinationAddress,
     uint64 _value,
     bytes32 _btcReimbursementPubKey,
-    bytes32 _committeePubKey
+    bytes memory _committeePubKey
 ) external pure returns (bytes memory);
 ```
 **Parameters**
@@ -141,7 +141,7 @@ function getPeginRequestP2TRScriptPub(
 |`_rskDestinationAddress`|`address`|The RSK address that will receive the RBTC|
 |`_value`|`uint64`|The amount in satoshis (must match stream denomination)|
 |`_btcReimbursementPubKey`|`bytes32`|The user's public key (x-coordinate only, 32 bytes)|
-|`_committeePubKey`|`bytes32`|The committee's public key (x-coordinate only, 32 bytes)|
+|`_committeePubKey`|`bytes`|The committee's public key (x-coordinate only, 32 bytes)|
 
 **Returns**
 
@@ -159,7 +159,7 @@ Calculates the signature hash for Bitcoin accept peg-in transactions
 
 ```solidity
 function getAcceptPeginSignatureHash(
-    bytes32 _committeePubKey,
+    bytes memory _committeePubKey,
     bytes32 _userXOnlyPubKey,
     bytes32 _registerPeginTx,
     PrevoutData memory _prevoutData
@@ -169,7 +169,7 @@ function getAcceptPeginSignatureHash(
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_committeePubKey`|`bytes32`|The committee's public key (x-coordinate only)|
+|`_committeePubKey`|`bytes`|The committee's public key (x-coordinate only)|
 |`_userXOnlyPubKey`|`bytes32`|The user's public key (x-coordinate only, 32 bytes)|
 |`_registerPeginTx`|`bytes32`|The transaction hash of the peg-in request being spent|
 |`_prevoutData`|`PrevoutData`|Data about the previous output being spent (amount and scriptPubKey)|
@@ -191,19 +191,19 @@ Generates a Taproot script pub key for accept peg-in transactions
 
 
 ```solidity
-function getAcceptPeginP2TRScriptPub(bytes32 _committeePubKey) external pure returns (bytes memory);
+function getAcceptPeginP2TRScriptPub(bytes memory _committeePubKey) external pure returns (bytes memory);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_committeePubKey`|`bytes32`|The committee's public key (x-coordinate only, 32 bytes)|
+|`_committeePubKey`|`bytes`|The committee's public key (x-coordinate only, 32 bytes)|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`bytes`|The Taproot script pub key for the accept peg-in output|
+|`<none>`|`bytes`|bytes The Taproot script pub key for the accept peg-in output|
 
 
 ### validateAcceptPeginP2TROutput
@@ -214,7 +214,7 @@ Validates a P2TR output for accept peg-in transactions
 
 
 ```solidity
-function validateAcceptPeginP2TROutput(bytes32 _committeePubKey, uint64 _inputAmount, BtcTxOut calldata _p2trOut)
+function validateAcceptPeginP2TROutput(bytes memory _committeePubKey, uint64 _inputAmount, BtcTxOut calldata _p2trOut)
     external
     pure;
 ```
@@ -222,7 +222,7 @@ function validateAcceptPeginP2TROutput(bytes32 _committeePubKey, uint64 _inputAm
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_committeePubKey`|`bytes32`|The committee's public key (x-coordinate only, 32 bytes)|
+|`_committeePubKey`|`bytes`|The committee's public key (x-coordinate only, 32 bytes)|
 |`_inputAmount`|`uint64`|The amount of the input being spent|
 |`_p2trOut`|`BtcTxOut`|The Bitcoin transaction output containing the P2TR output|
 
@@ -391,6 +391,43 @@ error InvalidPublicKey(bytes32 publicKey);
 |Name|Type|Description|
 |----|----|-----------|
 |`publicKey`|`bytes32`|The invalid public key that was provided|
+
+### InvalidPublicKeyLength
+Thrown when a public key has invalid length
+
+
+```solidity
+error InvalidPublicKeyLength(uint256 length);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`length`|`uint256`|The invalid length that was provided|
+
+### InvalidCommitteePublicKeyLength
+Error thrown when the committee public key has an invalid length
+
+
+```solidity
+error InvalidCommitteePublicKeyLength(uint256 length, uint256 expected);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`length`|`uint256`|The actual length provided|
+|`expected`|`uint256`|The expected length (33 bytes)|
+
+### InvalidCommitteePublicKeyZero
+Error thrown when the committee public key is all zeros
+
+
+```solidity
+error InvalidCommitteePublicKeyZero();
+```
 
 ### InvalidAddress
 Thrown when an address is invalid or zero address

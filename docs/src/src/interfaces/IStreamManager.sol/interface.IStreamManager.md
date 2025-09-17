@@ -1,5 +1,5 @@
 # IStreamManager
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/9f14e34a8636f5a1e820830e7bebc3a177006c7a/src/interfaces/IStreamManager.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/71a497b0c34417fb9b1a1c1fb548ecdb459d7d61/src/interfaces/IStreamManager.sol)
 
 **Inherits:**
 [IAccessControl](/src/interfaces/IAccessControl.sol/interface.IAccessControl.md)
@@ -20,7 +20,7 @@ Creates a new packet in a specific stream with committee assignment
 
 
 ```solidity
-function createNewPacket(uint64 _streamId, uint128 _committeeId, bytes32 _committeePubKey) external;
+function createNewPacket(uint64 _streamId, uint128 _committeeId, bytes calldata _committeePubKey) external;
 ```
 **Parameters**
 
@@ -28,7 +28,7 @@ function createNewPacket(uint64 _streamId, uint128 _committeeId, bytes32 _commit
 |----|----|-----------|
 |`_streamId`|`uint64`|The index of the stream to add the packet to|
 |`_committeeId`|`uint128`|The ID of the committee responsible for this packet|
-|`_committeePubKey`|`bytes32`|The public key of the selected committee for the packet|
+|`_committeePubKey`|`bytes`|The public key of the selected committee for the packet (33 bytes)|
 
 
 ### getStream
@@ -278,7 +278,7 @@ Retrieves the committee public key for a specific packet
 
 
 ```solidity
-function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes32);
+function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes memory);
 ```
 **Parameters**
 
@@ -291,7 +291,7 @@ function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external vie
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`bytes32`|bytes32 The committee public key for this packet|
+|`<none>`|`bytes`|bytes The committee public key for this packet (33 bytes)|
 
 
 ### completeSlot
