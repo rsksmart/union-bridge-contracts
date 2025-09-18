@@ -6,6 +6,6 @@ cd "$CURRENT_PATH/..";
 # https://getfoundry.sh/forge/reference/forge-bind
 forge bind \
     --module \
-    --select "^(PegManager|BitcoinManager|CommitteeRegistry|SignatureManager|StreamManager)$" \
+    --select "^(PegManager|BitcoinManager|CommitteeRegistry|SignatureManager|StreamManager|MemberRegistry)$" \
     --overwrite \
     --bindings-path ./crate/src/bindings

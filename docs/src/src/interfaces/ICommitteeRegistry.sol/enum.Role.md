@@ -1,5 +1,5 @@
 # Role
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/71a497b0c34417fb9b1a1c1fb548ecdb459d7d61/src/interfaces/ICommitteeRegistry.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b91181b0a4bd785ef0099b4b80f38101dfa816d0/src/interfaces/ICommitteeRegistry.sol)
 
 Represents the different roles a committee member can have
 
@@ -10,7 +10,8 @@ Represents the different roles a committee member can have
 enum Role {
     NONE,
     OPERATOR,
-    WATCHTOWER
+    WATCHTOWER,
+    LENGTH
 }
 ```
 
