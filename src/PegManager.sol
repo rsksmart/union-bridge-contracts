@@ -104,6 +104,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             revert StreamManagerAddressZero();
         }
         streamManager = _streamManager;
+        emit StreamManagerUpdated(_streamManager);
     }
 
     /// @notice Sets the signature manager contract address
@@ -114,6 +115,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             revert SignatureManagerAddressZero();
         }
         signatureManager = _signatureManager;
+        emit SignatureManagerUpdated(_signatureManager);
     }
 
     /// @notice Sets the member registry contract address
