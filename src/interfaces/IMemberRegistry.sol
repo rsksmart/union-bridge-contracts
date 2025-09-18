@@ -20,6 +20,10 @@ import {
 interface IMemberRegistry {
     // ===================== Member Lifecycle =====================
 
+    /// @notice External functions to handle member registration pauses
+    function pause() external;
+    function unpause() external;
+
     /// @notice Internal function to handle member application to stream
     /// @dev Called by CommitteeRegistry to handle member registration and candidacy
     /// @param _memberAddress The address of the member applying

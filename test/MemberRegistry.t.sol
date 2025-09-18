@@ -8,14 +8,16 @@ import {
     Committee,
     MemberRegistrationKeys,
     PublicKeyType,
+    CommitteeMember,
     MemberKeys,
     RSAPublicKey,
     UTXO
 } from "src/interfaces/ICommitteeRegistry.sol";
 import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
+import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
 import {IPegManager} from "src/interfaces/IPegManager.sol";
-import {HelperContract} from "test/helpers/HelperContract.sol";
+import {HelperContract, StreamManagerHarness} from "test/helpers/HelperContract.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
@@ -29,6 +31,335 @@ contract TestMemberRegistry is Test, HelperContract {
 
     function setUp() external {
         runTestDeployScript();
+    }
+
+    function pauseMemberRegistry() internal {
+        vm.prank(memberRegistry.committeeRegistry());
+        memberRegistry.pause();
+    }
+
+    function pauseAndUnpauseMemberRegistry() internal {
+        vm.startPrank(memberRegistry.committeeRegistry());
+        memberRegistry.pause();
+        memberRegistry.unpause();
+        vm.stopPrank();
+    }
+
+    function test_Success_CommitteeRegistryIsPauser() external view {
+        assertEq(memberRegistry.pauser(), memberRegistry.committeeRegistry());
+    }
+
+    function test_pause_Revert_UnauthorizedAccount_CallFromNotPauser() external {
+        // Arrange
+        address owner = memberRegistry.owner();
+
+        // Assert
+        // since committeeRegistry is the pauser,
+        // not even the owner can pause the contract
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.UnauthorizedAccount.selector, owner));
+
+        // Act
+        vm.prank(owner);
+        memberRegistry.pause();
+    }
+
+    function test_pause_Success_CallFromPauser() external {
+        // Arrange
+        address registryAddress = memberRegistry.committeeRegistry();
+
+        // Assert
+        vm.expectEmit(address(memberRegistry));
+        emit PausableUpgradeable.Paused(registryAddress);
+
+        // Act
+        vm.prank(registryAddress);
+        memberRegistry.pause();
+    }
+
+    function test_unpause_Revert_UnauthorizedAccount_CallFromNotPauser() external {
+        // Arrange
+        pauseMemberRegistry();
+        address owner = memberRegistry.owner();
+
+        // Assert
+        // since committeeRegistry is the pauser,
+        // not even the owner can unpause the contract
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.UnauthorizedAccount.selector, owner));
+
+        // Act
+        vm.prank(owner);
+        memberRegistry.unpause();
+    }
+
+    function test_unpause_Success_CallFromPauser() external {
+        // Arrange
+        pauseMemberRegistry();
+        address pauser = memberRegistry.pauser();
+
+        // Assert
+        vm.expectEmit(address(memberRegistry));
+        emit PausableUpgradeable.Unpaused(pauser);
+
+        // Act
+        vm.prank(pauser);
+        memberRegistry.unpause();
+    }
+
+    function test_unpause_Revert_ExpectedPause_CallFromPauser_ContractNotPaused() external {
+        // Arrange
+        address pauser = memberRegistry.pauser();
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.ExpectedPause.selector, address(this)));
+
+        // Act
+        vm.prank(pauser);
+        memberRegistry.unpause();
+    }
+
+    function test_pause_Revert_EnforcedPause_CallFromPauser_ContractAlreadyPaused() external {
+        // Arrange
+        pauseMemberRegistry();
+        address pauser = memberRegistry.pauser();
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector, address(this)));
+
+        // Act
+        vm.prank(pauser);
+        memberRegistry.pause();
+    }
+
+    function test_setCommitteeRegistry_Success_PausedContract() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        address newCommitteeRegistryAddress = vm.addr(privKey);
+
+        pauseMemberRegistry();
+
+        // Act
+        vm.prank(memberRegistry.owner());
+        memberRegistry.setCommitteeRegistry(newCommitteeRegistryAddress);
+
+        // Assert
+        assertEq(memberRegistry.committeeRegistry(), newCommitteeRegistryAddress);
+        assertEq(memberRegistry.pauser(), newCommitteeRegistryAddress);
+    }
+
+    function test_setStreamManager_Success_PausedContract() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        address newStreamManagerAddress = vm.addr(privKey);
+        StreamManagerHarness newStreamManager = StreamManagerHarness(newStreamManagerAddress);
+
+        pauseMemberRegistry();
+
+        // Act
+        vm.prank(memberRegistry.owner());
+        memberRegistry.setStreamManager(newStreamManager);
+
+        // Assert
+        assertEq(address(memberRegistry.streamManager()), newStreamManagerAddress);
+    }
+
+    function test_applyToStream_Success_PausedContract() external {
+        // Arrange
+        pauseMemberRegistry();
+
+        address registryAddress = memberRegistry.committeeRegistry();
+
+        uint256 privKey = uint256(1);
+        address member = vm.addr(privKey);
+        memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
+
+        StreamDenomination denomination = StreamDenomination._0_01BTC;
+        Role role = Role.OPERATOR;
+        uint256 minimumDeposit = streamManager.getMinimumDeposit(denomination, role);
+        vm.deal(registryAddress, 1 ether);
+
+        // Assert
+        vm.expectEmit(address(memberRegistry));
+        emit IMemberRegistry.NewSecurityBondDeposit(member, denomination, role, minimumDeposit);
+
+        // Act
+        vm.prank(registryAddress);
+        memberRegistry.applyToStream{value: minimumDeposit}(
+            member, denomination, role, memberRegistrationKeys, generateDefaultUTXO()
+        );
+    }
+
+    function test_unsubscribeFromStream_Success_PausedContract() external {
+        // Arrange
+        // member should have applied to the stream before unsubscribing from it
+        uint256 privKey = uint256(1);
+        address member = vm.addr(privKey);
+        memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
+        StreamDenomination denomination = StreamDenomination._0_01BTC;
+        Role role = Role.OPERATOR;
+        setup_applyToStream(denomination, member, memberRegistrationKeys, role);
+
+        address registryAddress = memberRegistry.committeeRegistry();
+        pauseMemberRegistry();
+
+        // Assert
+        vm.expectEmit(address(memberRegistry));
+        emit IMemberRegistry.MemberUnsubscribedFromStream(member, denomination);
+
+        // Act
+        vm.prank(registryAddress);
+        memberRegistry.unsubscribeFromStream(member, denomination);
+    }
+
+    function test_withdrawAvailableBalance_Revert_EnforcedPause_PausedContract() external {
+        // Arrange
+        // we have to be unsubscribed from stream to withdraw our balance
+        address registryAddress = memberRegistry.committeeRegistry();
+
+        uint256 privKey = uint256(1);
+        address member = vm.addr(privKey);
+        memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
+
+        StreamDenomination denomination = StreamDenomination._0_01BTC;
+        Role role = Role.OPERATOR;
+        setup_applyToStream(denomination, member, memberRegistrationKeys, role);
+
+        vm.prank(registryAddress);
+        memberRegistry.unsubscribeFromStream(member, denomination);
+
+        //uint256 amount = memberRegistry.getMemberAvailableBalance(member);
+        pauseMemberRegistry();
+
+        // Assert
+        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
+
+        // Act
+        vm.prank(member);
+        memberRegistry.withdrawAvailableBalance();
+    }
+
+    function test_withdrawAvailableBalance_Success_UnpausedContract() external {
+        // Arrange
+        // we have to be unsubscribed from stream to withdraw our balance
+        address registryAddress = memberRegistry.committeeRegistry();
+
+        uint256 privKey = uint256(1);
+        address member = vm.addr(privKey);
+        memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
+
+        StreamDenomination denomination = StreamDenomination._0_01BTC;
+        Role role = Role.OPERATOR;
+        setup_applyToStream(denomination, member, memberRegistrationKeys, role);
+
+        vm.prank(registryAddress);
+        memberRegistry.unsubscribeFromStream(member, denomination);
+
+        uint256 amount = memberRegistry.getMemberAvailableBalance(member);
+        pauseAndUnpauseMemberRegistry();
+
+        // Assert
+        vm.expectEmit(address(memberRegistry));
+        emit IMemberRegistry.AvailableBalanceRetrieved(member, amount);
+
+        // Act
+        vm.prank(member);
+        memberRegistry.withdrawAvailableBalance();
+    }
+
+    function test_releaseCommittee_Success_PausedContract() external {
+        // Arrange
+        address registryAddress = memberRegistry.committeeRegistry();
+        // create committee to be released
+        setup_pendingCommittee();
+        uint128 committeeId = COMMITTEE_ID_STREAM_1_COMMITTEE_1;
+        bytes memory committeePubKey = new bytes(1);
+
+        uint64 streamId = uint64(SETUP_PENDING_COMMITTEE_DENOMINATION);
+        uint64 packetNumber = 0;
+        vm.prank(address(registry));
+        streamManager.createNewPacket(streamId, committeeId, committeePubKey);
+        CommitteeMember[] memory members;
+
+        pauseMemberRegistry();
+
+        // Act
+        vm.prank(registryAddress);
+        memberRegistry.releaseCommitteeMembers(members, streamId, packetNumber);
+    }
+
+    function test_setReApplyForStream_Revert_EnforcedPause_PausedContract() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        address member = vm.addr(privKey);
+        memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
+
+        StreamDenomination denomination = StreamDenomination._0_01BTC;
+        Role role = Role.OPERATOR;
+        setup_applyToStream(denomination, member, memberRegistrationKeys, role);
+
+        pauseMemberRegistry();
+        bool reApply = true;
+
+        // Assert
+        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
+
+        // Act
+        vm.prank(member);
+        memberRegistry.setReApplyForStream(denomination, reApply);
+    }
+
+    function test_setReApplyForStream_Success_UnpausedContract() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        address member = vm.addr(privKey);
+        memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
+
+        StreamDenomination denomination = StreamDenomination._0_01BTC;
+        Role role = Role.OPERATOR;
+        setup_applyToStream(denomination, member, memberRegistrationKeys, role);
+
+        pauseAndUnpauseMemberRegistry();
+        bool reApply = true;
+
+        // Assert
+        vm.expectEmit(address(memberRegistry));
+        emit IMemberRegistry.MemberReApplyUpdated(member, denomination, reApply);
+
+        // Act
+        vm.prank(member);
+        memberRegistry.setReApplyForStream(denomination, reApply);
+    }
+
+    function test_removeCandidatesAndUpdateBalance_Success_PausedContract() external {
+        // Arrange
+        address registryAddress = memberRegistry.committeeRegistry();
+
+        StreamDenomination denomination = StreamDenomination._0_01BTC;
+        CommitteeMember[] memory members;
+        uint64 packetNumber = 0;
+
+        pauseMemberRegistry();
+
+        // Act
+        vm.prank(registryAddress);
+        memberRegistry.removeCandidatesAndUpdateBalance(members, denomination, packetNumber);
+    }
+
+    function test_selectCommittee_Success_PausedContract() external {
+        // Arrange
+        StreamDenomination denomination = StreamDenomination._0_01BTC;
+        uint64 streamId = uint64(denomination);
+
+        uint256 minWatchtowers = registry.minCommitteeWatchtowers();
+        uint256 minOperators = registry.minCommitteeOperators();
+        uint256 totalMemberCount = registry.committeeMemberCount();
+
+        pauseMemberRegistry();
+        address registryAddress = memberRegistry.committeeRegistry();
+
+        // Act
+        vm.prank(registryAddress);
+        memberRegistry.selectCommittee(streamId, minWatchtowers, minOperators, totalMemberCount);
     }
 
     function test_applyToStream_Success_Operator() external {

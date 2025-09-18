@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {BaseProxy} from "./BaseProxy.sol";
+import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {
     Role,
     CommitteeMember,
@@ -22,7 +23,10 @@ import {BytesHelper} from "./libraries/BytesHelper.sol";
 /// @title CommitteeRegistry
 /// @notice Manages committee formation, selection, and lifecycle for the union bridge system
 /// @dev Handles committee creation, pending committee management, and coordination with MemberRegistry
-contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
+contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, PausableUpgradeable {
+    /// @notice The address that can pause and unpause the contract
+    address public pauser;
+
     /// @notice Minimum number of watchtowers required for a committee
     uint256 public minCommitteeWatchtowers;
     /// @notice Minimum number of operators required for a committee
@@ -53,8 +57,13 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
 
     /// @notice Initializes the CommitteeRegistry contract
     /// @param _initialOwner The initial owner of the contract
-    function initialize(address _initialOwner) public virtual initializer {
+    function initialize(address _initialOwner, IMemberRegistry _memberRegistry) public virtual initializer {
         __BaseProxy_init(_initialOwner);
+        __Pausable_init();
+        if (address(_memberRegistry) == address(0)) {
+            revert MemberRegistryAddressZero();
+        }
+        memberRegistry = _memberRegistry;
         pendingCommitteeTimeout = 1 days; // Default timeout for pending committees
         for (uint64 i = 0; i < uint64(StreamDenomination.LENGTH); i++) {
             shouldCreateCommittee[i] = true;
@@ -64,6 +73,16 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         committeeMemberCount = 10;
     }
 
+    function pause() external onlyPauser {
+        _pause();
+        memberRegistry.pause();
+    }
+
+    function unpause() external onlyPauser {
+        _unpause();
+        memberRegistry.unpause();
+    }
+
     function _revertIfZero(uint256 _value) internal pure {
         if (_value == 0) {
             revert InvalidZeroValue();
@@ -71,6 +90,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     }
     /// @notice Applies to participate in a stream with a specific role
     /// @dev Registers public keys, deposits required bond, and provides funding UTXO for the requested role
+    /// @dev Only callable when contract is unpaused
     /// @param _stream The stream denomination to apply for
     /// @param _role The role requested in the committee
     /// @param _publicKeys Member registration public keys
@@ -79,12 +99,13 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     // Note: Event emission happens in _createCommittee() after external calls to trusted memberRegistry contract.
     // This is safe because memberRegistry is a trusted contract and the event accurately reflects final state.
     // slither-disable-next-line reentrancy-events
+
     function applyToStream(
         StreamDenomination _stream,
         Role _role,
         MemberRegistrationKeys calldata _publicKeys,
         UTXO calldata _fundingUTXO
-    ) external payable {
+    ) external payable whenNotPaused {
         // Delegate member registration to MemberRegistry
         memberRegistry.applyToStream{value: msg.value}(msg.sender, _stream, _role, _publicKeys, _fundingUTXO);
 
@@ -93,8 +114,9 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     }
 
     /// @notice Unsubscribes from a stream and sets the pre-staked balance as available
+    /// @dev Only callable when contract is unpaused
     /// @param _denomination The stream denomination to unsubscribe from
-    function unsubscribeFromStream(StreamDenomination _denomination) external {
+    function unsubscribeFromStream(StreamDenomination _denomination) external whenNotPaused {
         if (_isInPendingCommittee(msg.sender, uint64(_denomination))) {
             revert MemberIsInPendingCommittee(msg.sender, _denomination);
         }
@@ -138,7 +160,8 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         return _getCommittee(_committeeId).members;
     }
 
-    function restartPendingCommittee(uint64 _streamId) external {
+    /// @dev Only callable when contract is unpaused
+    function restartPendingCommittee(uint64 _streamId) external whenNotPaused {
         uint256 createdAt = _getPendingCommittee(_streamId).createdAt;
 
         // slither-disable-next-line timestamp
@@ -152,6 +175,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     }
 
     /// @notice Triggers the creation of a new committee for a stream if the timeout has expired
+    /// @dev Only callable by PegManager contract
     /// @dev This function is called when the slot usage threshold is reached
     /// @param _streamId The stream ID to create a new committee for
     function createCommittee(uint64 _streamId) external onlyPegManager {
@@ -255,9 +279,10 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
 
     /// @notice Allows a member to deposit information for committee formation
     /// @dev Called by members to provide their aggregated key for a pending committee
+    /// @dev Only callable when contract is unpaused
     /// @param _committeeId The ID of the pending committee
     /// @param _aggregatedKey The aggregated public key provided by the member
-    function depositAggregatedKey(uint128 _committeeId, bytes memory _aggregatedKey) external {
+    function depositAggregatedKey(uint128 _committeeId, bytes memory _aggregatedKey) external whenNotPaused {
         Committee storage pendingCommittee = _getPendingCommitteeById(_committeeId);
 
         if (_aggregatedKey.length != 33) {
@@ -307,7 +332,15 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         streamManager.createNewPacket(pendingCommittee.streamId, _committeeId, pendingCommittee.aggregatedKey);
     }
 
-    function depositCommunicationData(uint128 _committeeId, CommunicationData[] memory _communicationData) external {
+    /// @notice Allows a member to deposit communication data for its respective pending committee
+    /// @dev Called by members to provide their communication data for a pending committee
+    /// @dev Only callable when contract is unpaused
+    /// @param _committeeId The ID of the pending committee
+    /// @param _communicationData The communication data to be added
+    function depositCommunicationData(uint128 _committeeId, CommunicationData[] memory _communicationData)
+        external
+        whenNotPaused
+    {
         Committee storage pendingCommittee = _getPendingCommitteeById(_committeeId);
 
         CommunicationData[] storage communicationDataStorage =
@@ -495,6 +528,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
             revert InvalidZeroAddress();
         }
         pegManager = _pegManager;
+        pauser = address(_pegManager);
         emit PegManagerUpdated(address(_pegManager));
     }
 
@@ -556,6 +590,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
 
     /// @notice Releases committee members from a packet and handles their staked balance
     /// @dev Called by PegManager to release committee members after packet completion
+    /// @dev Only callable by PegManager contract
     /// @dev Members with reApply=true will be re-added as candidates, others get their balance as available
     /// @param _streamId The stream ID for the committee
     /// @param _packetNumber The packet number where the committee was active
@@ -578,6 +613,19 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
 
     function _onlyPegManager(address _account) internal view {
         if (address(pegManager) != _account) {
+            revert UnauthorizedAccount(_account);
+        }
+    }
+
+    /// @notice Modifier to restrict access to the Pauser
+    /// @dev Reverts if the caller is not the Pauser
+    modifier onlyPauser() {
+        _onlyPauser(msg.sender);
+        _;
+    }
+
+    function _onlyPauser(address _account) internal view {
+        if (pauser != _account) {
             revert UnauthorizedAccount(_account);
         }
     }
