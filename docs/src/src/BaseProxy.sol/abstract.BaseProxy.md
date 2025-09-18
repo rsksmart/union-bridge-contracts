@@ -1,5 +1,5 @@
 # BaseProxy
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/71a497b0c34417fb9b1a1c1fb548ecdb459d7d61/src/BaseProxy.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b91181b0a4bd785ef0099b4b80f38101dfa816d0/src/BaseProxy.sol)
 
 **Inherits:**
 UUPSUpgradeable, OwnableUpgradeable
