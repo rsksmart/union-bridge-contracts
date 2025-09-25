@@ -96,24 +96,65 @@ abstract contract HelperContract is Test, TestUtils {
 
     // ========================== Apply to stream ==========================
 
-    // Keep track of the number of members registered so if we want to register more members it'll use new addresses
+    function _registrationKeys(address a) internal returns (MemberRegistrationKeys memory) {
+        return generateRegistrationPublicKeys(uint256(uint160(a)));
+    }
+
+    function _applyOne(StreamDenomination denom, address memberAddr, Role role) internal {
+        MemberRegistrationKeys memory keys = _registrationKeys(memberAddr);
+        setup_applyToStream(denom, memberAddr, keys, role);
+    }
+
+    function _addrForIndex(uint256 base, uint256 i) internal view returns (address) {
+        return vm.addr(base + i + 1);
+    }
+
+    function _roleForIndex(uint256 i, uint256 numWatchtowers) internal pure returns (Role) {
+        return i < numWatchtowers ? Role.WATCHTOWER : Role.OPERATOR;
+    }
+
     function setup_registerNewMembers(uint256 numWatchtowers, uint256 numOperators, StreamDenomination denomination)
         internal
     {
-        // Register members with their mock keys. These are Bitcoin x-only public keys.
-        uint256 totalMembers = numWatchtowers + numOperators;
+        uint256 base = registeredMembersCounter;
+        _applyByCounts(denomination, numWatchtowers, numOperators, base);
+        registeredMembersCounter = base + numWatchtowers + numOperators;
+    }
 
-        for (uint256 memberIndex = 0; memberIndex < totalMembers; memberIndex++) {
-            address user = vm.addr(registeredMembersCounter + memberIndex + 1); // Use a different address for each member
-            MemberRegistrationKeys memory memberRegistrationKeys =
-                generateRegistrationPublicKeys(uint256(uint160(user))); // Generate public keys based on the address
-            // First numWatchtowers members are watchtowers, the rest are operators
-            Role role = memberIndex < numWatchtowers ? Role.WATCHTOWER : Role.OPERATOR;
-
-            setup_applyToStream(denomination, user, memberRegistrationKeys, role);
+    function setup_applyToStream_MultipleMembers(StreamDenomination denom, CommitteeMember[] memory committee)
+        internal
+    {
+        uint256 n = committee.length;
+        for (uint256 i = 0; i < n;) {
+            CommitteeMember memory m = committee[i];
+            _applyOne(denom, m.memberAddress, m.role);
+            unchecked {
+                ++i;
+            }
         }
+    }
 
-        registeredMembersCounter += totalMembers;
+    function setup_applyToStream_MultipleMembers(
+        StreamDenomination denom,
+        uint256 numWatchtowers,
+        uint256 numOperators,
+        uint256 memberIndexInit
+    ) internal {
+        _applyByCounts(denom, numWatchtowers, numOperators, memberIndexInit);
+    }
+
+    function _applyByCounts(StreamDenomination denom, uint256 numWatchtowers, uint256 numOperators, uint256 baseIndex)
+        internal
+    {
+        uint256 total = numWatchtowers + numOperators;
+        for (uint256 i = 0; i < total;) {
+            Role role = _roleForIndex(i, numWatchtowers);
+            address addr = _addrForIndex(baseIndex, i);
+            _applyOne(denom, addr, role);
+            unchecked {
+                ++i;
+            }
+        }
     }
 
     function setup_applyToStream(
@@ -131,41 +172,8 @@ abstract contract HelperContract is Test, TestUtils {
         );
     }
 
-    function setup_applyToStream_MultipleMembers(
-        StreamDenomination _denomination,
-        CommitteeMember[] memory _committeeMembers
-    ) internal {
-        uint256 totalMembers = _committeeMembers.length;
-
-        for (uint256 i = 0; i < totalMembers; i++) {
-            CommitteeMember memory member = _committeeMembers[i];
-            MemberRegistrationKeys memory memberRegistrationKeys =
-                generateRegistrationPublicKeys(uint256(uint160(member.memberAddress))); // Generate public keys based on the address
-            setup_applyToStream(_denomination, member.memberAddress, memberRegistrationKeys, member.role);
-        }
-    }
-
     function getMemberTakePubKey(address _memberAddress) internal returns (bytes32) {
         return generateRegistrationPublicKeys(uint256(uint160(_memberAddress))).takeKey.publicKeyX;
-    }
-
-    // This function should be used for members that has been already registered. But it won't fail if the member is not registered.
-    // It will just apply to the stream with the given denomination and role.
-    function setup_applyToStream_MultipleMembers(
-        StreamDenomination _denomination,
-        uint256 _numWatchtowers,
-        uint256 _numOperators,
-        uint256 _memberIndexInit
-    ) internal {
-        uint256 totalMembers = _numWatchtowers + _numOperators;
-
-        for (uint256 i = 0; i < totalMembers; i++) {
-            Role role = i < _numWatchtowers ? Role.WATCHTOWER : Role.OPERATOR;
-            address memberAddress = vm.addr(_memberIndexInit + i + 1);
-            MemberRegistrationKeys memory memberRegistrationKeys =
-                generateRegistrationPublicKeys(uint256(uint160(memberAddress))); // Generate public keys based on the address
-            setup_applyToStream(_denomination, memberAddress, memberRegistrationKeys, role);
-        }
     }
 
     // ========================== Peg In Request ==========================
