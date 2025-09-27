@@ -9,12 +9,17 @@ import {OpCodes} from "src/libraries/OpCodes.sol";
 import {TestUtils} from "test/helpers/TestUtils.sol";
 
 contract TestBtcScriptParser is Test, TestUtils {
+    bytes32 internal pubKey;
+
+    constructor() {
+        pubKey = generatePubKey(1);
+    }
+
     function setUp() external {}
 
-    function test_getTimelockScript_Success_OP_0() external {
+    function test_getTimelockScript_Success_OP_0() external view {
         // Arrange 1
         uint32 blocks = 0;
-        bytes32 pubKey = generatePubKey(1);
         // Act
         bytes memory script = BtcScriptParser.getTimelockScript(blocks, pubKey);
         // Assert
@@ -25,10 +30,9 @@ contract TestBtcScriptParser is Test, TestUtils {
         _checkScriptAfterPushBlock(script, i, pubKey);
     }
 
-    function test_getTimelockScript_Success_OP_PUSHNUM() external {
+    function test_getTimelockScript_Success_OP_PUSHNUM() external view {
         // Arrange 1
         uint32 blocks = 1;
-        bytes32 pubKey = generatePubKey(1);
         // Act
         bytes memory script = BtcScriptParser.getTimelockScript(blocks, pubKey);
         // Assert
@@ -49,10 +53,9 @@ contract TestBtcScriptParser is Test, TestUtils {
         _checkScriptAfterPushBlock(script, i, pubKey);
     }
 
-    function test_getTimelockScript_Success_OP_PUSHBYTES1() external {
+    function test_getTimelockScript_Success_OP_PUSHBYTES1() external view {
         // Arrange 17
         uint32 blocks = 17;
-        bytes32 pubKey = generatePubKey(1);
         // Act
         bytes memory script = BtcScriptParser.getTimelockScript(blocks, pubKey);
         // Assert
@@ -76,10 +79,9 @@ contract TestBtcScriptParser is Test, TestUtils {
         _checkScriptAfterPushBlock(script, i, pubKey);
     }
 
-    function test_getTimelockScript_Success_OP_PUSHBYTES2() external {
+    function test_getTimelockScript_Success_OP_PUSHBYTES2() external view {
         // Arrange 128
         uint32 blocks = 128;
-        bytes32 pubKey = generatePubKey(1);
         // Act
         bytes memory script = BtcScriptParser.getTimelockScript(blocks, pubKey);
         // Assert
@@ -111,10 +113,9 @@ contract TestBtcScriptParser is Test, TestUtils {
         _checkScriptAfterPushBlock(script, i, pubKey);
     }
 
-    function test_getTimelockScript_Success_OP_PUSHBYTES3() external {
+    function test_getTimelockScript_Success_OP_PUSHBYTES3() external view {
         // Arrange 32768
         uint32 blocks = 32768;
-        bytes32 pubKey = generatePubKey(1);
         // Act
         bytes memory script = BtcScriptParser.getTimelockScript(blocks, pubKey);
         // Assert
@@ -149,7 +150,6 @@ contract TestBtcScriptParser is Test, TestUtils {
     function test_getTimelockScript_Error_NumberTooLarge() external {
         // Arrange
         uint32 blocks = 65536;
-        bytes32 pubKey = generatePubKey(1);
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(BtcScriptParser.NumberTooLarge.selector, blocks, BtcScriptParser.MAX_BLOCK_TIMELOCK)
@@ -175,11 +175,11 @@ contract TestBtcScriptParser is Test, TestUtils {
         assertEq(_script[i], OpCodes.OP_CHECKSIG, "Seventh part should be OP_CHECKSIG");
     }
 
-    function test_getP2WPKHScript_Success() external {
+    function test_getP2WPKHScript_Success() external view {
         // Arrange
-        bytes memory pubKey = abi.encodePacked(uint8(0x02), generatePubKey(1));
+        bytes memory pubKey_ = abi.encodePacked(uint8(0x02), pubKey); //  bytes memory pubKey = abi.encodePacked(uint8(0x02), generatePubKey(1));
         // Act
-        bytes memory script = BtcScriptParser.getP2WPKHScript(pubKey);
+        bytes memory script = BtcScriptParser.getP2WPKHScript(pubKey_); //(pubKey);
         // Assert
         uint256 i = 0;
         assertEq(script[i], OpCodes.OP_0, "getP2WPKH first part should be OP_0");
@@ -188,7 +188,7 @@ contract TestBtcScriptParser is Test, TestUtils {
         i++;
         assertEq(
             bytes20(BytesHelper.bytesToAddress(script, i)),
-            BtcHelper.hash160(pubKey),
+            BtcHelper.hash160(pubKey_), //(pubKey),
             "getP2WPKH third part should be the Hash160 of the public key"
         );
     }
