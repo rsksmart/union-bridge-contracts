@@ -381,7 +381,7 @@ abstract contract HelperContract is Test, TestUtils {
         assertEq(slot.acceptPeginTx, setup.acceptPeginTxHash, "Slot should reference the correct accept peg-in tx");
 
         // Get the correct signature data that matches what tryPegout() will generate
-        BitcoinSignatureData memory pegoutSignatureData = bitcoinManager.getPegoutSignatureHash(
+        BitcoinSignatureData memory pegoutSignatureData = bitcoinManager.getPegoutTxData(
             setup.userPubKey,
             setup.acceptPeginTxHash,
             PrevoutData({value: slot.acceptPeginAmount, scriptPubKey: slot.scriptPubKey})

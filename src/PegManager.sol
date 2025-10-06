@@ -453,7 +453,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         (Slot memory slot, uint64 packetNumber) = streamManager.lockSlot(stream.streamId);
 
         // Compute the Bitcoin peg-out signature hash
-        BitcoinSignatureData memory pegoutSignatureData = bitcoinManager.getPegoutSignatureHash(
+        BitcoinSignatureData memory pegoutSignatureData = bitcoinManager.getPegoutTxData(
             _userPubKey,
             slot.acceptPeginTx,
             PrevoutData({value: slot.acceptPeginAmount, scriptPubKey: slot.scriptPubKey})
