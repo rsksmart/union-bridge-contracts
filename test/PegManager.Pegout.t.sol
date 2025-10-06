@@ -111,8 +111,8 @@ contract TestPegManager is Test, HelperContract {
 
         // Assert pegout signature hash matches expected
         assertEq(
-            pm.getPegoutSignatureHash(stream.streamId, packetNumber, slotId),
-            expectedSignatureData.signatureHash,
+            pm.getPegoutTxid(stream.streamId, packetNumber, slotId),
+            expectedSignatureData.txHash,
             "expected hash doesn't match the pegout computed one"
         );
 
@@ -189,8 +189,8 @@ contract TestPegManager is Test, HelperContract {
 
         // Assert pegout signature hash matches expected
         assertEq(
-            pm.getPegoutSignatureHash(stream.streamId, packetNumber, slotId),
-            expectedSignatureData.signatureHash,
+            pm.getPegoutTxid(stream.streamId, packetNumber, slotId),
+            expectedSignatureData.txHash,
             "expected hash doesn't match the pegout computed one"
         );
 
@@ -556,12 +556,12 @@ contract TestPegManager is Test, HelperContract {
         pm.triggerOperatorTake(setup.pegoutTxHash);
     }
 
-    function test_triggerOperatorTake_Revert_PegoutSignatureHashNotFound() external {
+    function test_triggerOperatorTake_Revert_PegoutTxidNotFound() external {
         // Arrange
         bytes32 pegoutTxHash = hex"0001";
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegManager.PegoutSignatureHashNotFound.selector, pegoutTxHash));
+        vm.expectRevert(abi.encodeWithSelector(IPegManager.PegoutTxidNotFound.selector, pegoutTxHash));
 
         // Act
         pm.triggerOperatorTake(pegoutTxHash);

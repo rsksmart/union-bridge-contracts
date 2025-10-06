@@ -36,7 +36,7 @@ contract TryPegoutScript is ScriptUtils {
         pegManager.tryPegout{value: amountInWei}(userPubKey);
         vm.stopBroadcast();
 
-        bytes32 pegoutSignatureHash = pegManager.getPegoutSignatureHash(stream.streamId, packetNumber, slotId);
+        bytes32 pegoutSignatureHash = pegManager.getPegoutTxid(stream.streamId, packetNumber, slotId);
         if (pegoutSignatureHash == bytes32(0)) {
             revert("Pegout not accepted");
         }
