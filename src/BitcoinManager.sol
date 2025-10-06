@@ -286,18 +286,18 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         btcOutputs[1] = BtcTxOut({amount: speedUpAmount, scriptPubKey: speedUpScriptPubKey});
 
         // Prepare Btc Transaction
-        BtcTransaction memory peginAcceptTx = BtcTransaction({
+        BtcTransaction memory acceptPeginTx = BtcTransaction({
             version: Constants.BTC_TX_VERSION,
             locktime: Constants.LOCKTIME,
             inputs: btcInputs,
             outputs: btcOutputs
         });
-        bytes32 txHash = _getBtcTxHash(peginAcceptTx);
+        bytes32 txHash = _getBtcTxHash(acceptPeginTx);
         // Return the tagged hash and the encoded data before hashing
         (bytes32 acceptPeginSignatureHash, bytes memory acceptPeginSignatureMessage) =
-            taprootSignatureHash(Constants.SIGHASH_ALL, prevoutDatas, peginAcceptTx);
+            taprootSignatureHash(Constants.SIGHASH_ALL, prevoutDatas, acceptPeginTx);
         return BitcoinSignatureData({
-            tx: peginAcceptTx,
+            tx: acceptPeginTx,
             txHash: txHash,
             signatureHash: acceptPeginSignatureHash,
             signatureMessage: acceptPeginSignatureMessage
