@@ -11,8 +11,8 @@
 
 set -e  # exit on error
 
-PEGIN_SIGNATURE_HASH="0x70060733eed344b4831039535f9d6bb218b151785578b607bca648f51e726ff0"
-PEGOUT_SIGNATURE_HASH="0xf41c3d81548f02e837d8016708f5c1c02324c64f83d19820088d7d1da0599430"
+PEGIN_TX_HASH="0x57450e6c6141e63115cf56fc9fd8c29e20792a8c488c3d9e2bd99edac6496ffc"
+PEGOUT_TX_HASH="0xa1fcb1ea38e5679173216935c3b8325ffbcc0c4c6c6c81f409b7584361a6ac7b"
 
 # Slot parameters for monitoring (using defaults from test setup)
 STREAM_ID=0
@@ -36,7 +36,7 @@ echo "After request pegin, slot should be in RESERVED state:"
 bash "$SCRIPT_DIR/get-slot-info.sh" -s "$STREAM_ID" -p "$PACKET_NUMBER" -l "$SLOT_ID"
 
 bash "$SCRIPT_DIR/operator-take/add-every-operator-take-tx-hash.sh"
-bash "$SCRIPT_DIR/signatures/add-every-member-nonce-and-signature.sh" -h "$PEGIN_SIGNATURE_HASH"
+bash "$SCRIPT_DIR/signatures/add-every-member-nonce-and-signature.sh" -h "$PEGIN_TX_HASH"
 
 # Accept pegin - this fills the reserved slot to FILLED state
 bash "$SCRIPT_DIR/accept-pegin.sh"
@@ -56,7 +56,7 @@ echo "================ CHECK SLOT STATE AFTER PEGOUT ================"
 echo "After try pegout, slot should be in LOCKED state:"
 bash "$SCRIPT_DIR/get-slot-info.sh" -s "$STREAM_ID" -p "$PACKET_NUMBER" -l "$SLOT_ID"
 
-bash "$SCRIPT_DIR/signatures/add-every-member-nonce-and-signature.sh" -h "$PEGOUT_SIGNATURE_HASH"
+bash "$SCRIPT_DIR/signatures/add-every-member-nonce-and-signature.sh" -h "$PEGOUT_TX_HASH"
 
 # Register user take - this completes the slot to COMPLETED state
 bash "$SCRIPT_DIR/register-user-take.sh"

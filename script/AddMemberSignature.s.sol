@@ -10,10 +10,10 @@ contract AddMemberSignature is ScriptUtils {
     PegManager pegManager;
     ISignatureManager signatureManager;
     bytes32 signature;
-    bytes32 signatureHash;
+    bytes32 txHash;
     uint256 privKey;
 
-    function setUp(uint16 _mnemonicIndex, bytes32 _signatureHash, bytes32 _signature) internal {
+    function setUp(uint16 _mnemonicIndex, bytes32 _txHash, bytes32 _signature) internal {
         // ====== Arguments ======
         pegManager = getPegManagerAddress();
         signatureManager = pegManager.signatureManager();
@@ -29,18 +29,18 @@ contract AddMemberSignature is ScriptUtils {
         }
         signature = _signature;
 
-        if (_signatureHash == bytes32(0)) {
-            revert("Signature hash must not be zero");
+        if (_txHash == bytes32(0)) {
+            revert("Transaction hash must not be zero");
         }
-        signatureHash = _signatureHash;
+        txHash = _txHash;
     }
 
-    function run(uint16 _mnemonicIndex, bytes32 _signatureHash, bytes32 _signature) public {
-        setUp(_mnemonicIndex, _signatureHash, _signature);
+    function run(uint16 _mnemonicIndex, bytes32 _txHash, bytes32 _signature) public {
+        setUp(_mnemonicIndex, _txHash, _signature);
 
         console.log("=== Adding Member Signature ===");
         vm.startBroadcast(privKey);
-        bool signaturesReady = signatureManager.addMemberSignature(signatureHash, signature);
+        bool signaturesReady = signatureManager.addMemberSignature(txHash, signature);
         vm.stopBroadcast();
 
         if (signaturesReady) {
