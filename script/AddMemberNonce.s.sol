@@ -10,11 +10,11 @@ contract AddMemberNonce is ScriptUtils {
     PegManager pegManager;
     ISignatureManager signatureManager;
     bytes nonce;
-    bytes32 signatureHash;
+    bytes32 txHash;
     uint256 privKey;
     address user;
 
-    function setUp(uint16 _mnemonicIndex, bytes32 _signatureHash, bytes memory _nonce) internal {
+    function setUp(uint16 _mnemonicIndex, bytes32 _txHash, bytes memory _nonce) internal {
         pegManager = PegManager(0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6);
         signatureManager = pegManager.signatureManager();
 
@@ -32,18 +32,18 @@ contract AddMemberNonce is ScriptUtils {
         }
         nonce = _nonce;
 
-        if (_signatureHash == bytes32(0)) {
-            revert("Signature hash must not be zero");
+        if (_txHash == bytes32(0)) {
+            revert("Transaction hash must not be zero");
         }
-        signatureHash = _signatureHash;
+        txHash = _txHash;
     }
 
-    function run(uint16 _mnemonicIndex, bytes32 _signatureHash, bytes memory _nonce) public {
-        setUp(_mnemonicIndex, _signatureHash, _nonce);
+    function run(uint16 _mnemonicIndex, bytes32 _txHash, bytes memory _nonce) public {
+        setUp(_mnemonicIndex, _txHash, _nonce);
 
         console.log("=== Adding Member Nonce ===");
         vm.startBroadcast(privKey);
-        bool noncesReady = signatureManager.addMemberNonce(signatureHash, _nonce);
+        bool noncesReady = signatureManager.addMemberNonce(txHash, _nonce);
         vm.stopBroadcast();
 
         if (noncesReady) {

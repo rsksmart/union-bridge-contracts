@@ -10,17 +10,17 @@ RPC=$LOCAL_RPC
 while getopts "m:h:s:" opt; do
   case "$opt" in
     m) MNEMONIC_INDEX=$OPTARG ;;
-    h) SIGNATURE_HASH=$OPTARG ;;
+    h) TX_HASH=$OPTARG ;;
     s) SIGNATURE=$OPTARG ;;
     \?)
-      echo "Usage: $0 -m <mnemonic_index> -h <signature_hash> -s <signature>"
+      echo "Usage: $0 -m <mnemonic_index> -h <tx_hash> -s <signature>"
       exit 1
       ;;
   esac
 done
 
 # Validate inputs
-if [ -z "$MNEMONIC_INDEX" ] || [ -z "$SIGNATURE_HASH" ] || [ -z "$SIGNATURE" ]; then
+if [ -z "$MNEMONIC_INDEX" ] || [ -z "$TX_HASH" ] || [ -z "$SIGNATURE" ]; then
   echo "Error: All three arguments -m, -h, and -s are required."
   exit 1
 fi
@@ -30,7 +30,7 @@ fi
 forge script \
   script/AddMemberSignature.s.sol \
   --sig "run(uint16,bytes32,bytes32)" \
-  "$MNEMONIC_INDEX" "$SIGNATURE_HASH" "$SIGNATURE" \
+  "$MNEMONIC_INDEX" "$TX_HASH" "$SIGNATURE" \
   --rpc-url "$RPC" \
   --legacy \
   --broadcast \
