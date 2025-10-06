@@ -62,7 +62,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
     mapping(bytes32 pegoutTxHash => bytes32 acceptPeginTxHash) internal pegoutToPeginTxHash;
 
     // Key = keccak256(abi.encodePacked(streamId, packetNumber, slotId))
-    mapping(bytes32 key => bytes32 pegoutSignatureHash) internal pegoutSighashes;
+    mapping(bytes32 key => bytes32 pegoutTxid) internal pegoutTxids;
 
     /// @notice Initializes the PegManager contract
     /// @param _initialOwner The initial owner of the contract
@@ -459,9 +459,8 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             PrevoutData({value: slot.acceptPeginAmount, scriptPubKey: slot.scriptPubKey})
         );
 
-        uint128 committeeId = _storePegoutAndInitSignatures(
-            pegoutSignatureData.txHash, pegoutSignatureData.signatureHash, stream.streamId, packetNumber, slot.slotId
-        );
+        uint128 committeeId =
+            _storePegoutAndInitSignatures(pegoutSignatureData.txHash, stream.streamId, packetNumber, slot.slotId);
 
         pegoutTempInfo[slot.acceptPeginTx] = PegoutTempInfo({
             userPubKey: _userPubKey,
@@ -575,13 +574,9 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
     /// @param packetNumber The packet number within the stream
     /// @param slotId The slot identifier within the packet
     /// @return The peg-out signature hash
-    function getPegoutSignatureHash(uint64 streamId, uint64 packetNumber, uint64 slotId)
-        external
-        view
-        returns (bytes32)
-    {
+    function getPegoutTxid(uint64 streamId, uint64 packetNumber, uint64 slotId) external view returns (bytes32) {
         bytes32 key = keccak256(abi.encodePacked(streamId, packetNumber, slotId));
-        return pegoutSighashes[key];
+        return pegoutTxids[key];
     }
 
     /// @notice Gets the stream position information for a given Bitcoin Pegin request transaction hash
@@ -597,14 +592,13 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
 
     function _storePegoutAndInitSignatures(
         bytes32 _pegoutTxHash,
-        bytes32 _pegoutSignatureHash,
         uint64 _streamId,
         uint64 _packetNumber,
         uint64 _slotId
     ) internal returns (uint128) {
         // Store the peg-out signature hash on-chain and initialize the signatures using txHash
         bytes32 key = keccak256(abi.encodePacked(_streamId, _packetNumber, _slotId));
-        pegoutSighashes[key] = _pegoutSignatureHash;
+        pegoutTxids[key] = _pegoutTxHash;
 
         // Get the committee key
         uint128 committeeId = streamManager.getCommitteeId(_streamId, _packetNumber);
@@ -625,7 +619,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
     function triggerOperatorTake(bytes32 _pegoutTxHash) external {
         bytes32 acceptPeginTxHash = pegoutToPeginTxHash[_pegoutTxHash];
         if (acceptPeginTxHash == bytes32(0)) {
-            revert PegoutSignatureHashNotFound(_pegoutTxHash);
+            revert PegoutTxidNotFound(_pegoutTxHash);
         }
 
         PegoutTempInfo storage pegoutInfo = pegoutTempInfo[acceptPeginTxHash];

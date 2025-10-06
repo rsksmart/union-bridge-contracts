@@ -218,10 +218,7 @@ interface IPegManager {
     /// @param packetNumber The packet number within the stream
     /// @param slotId The slot identifier within the packet
     /// @return The peg-out signature hash
-    function getPegoutSignatureHash(uint64 streamId, uint64 packetNumber, uint64 slotId)
-        external
-        view
-        returns (bytes32);
+    function getPegoutTxid(uint64 streamId, uint64 packetNumber, uint64 slotId) external view returns (bytes32);
 
     /// @notice Event emitted when a peg-out is successfully requested
     /// @param userPubKey The user's public key that will receive the Bitcoin funds
@@ -429,8 +426,8 @@ interface IPegManager {
     error UserTakeTimeoutNotExpired(uint256 createdAt, uint256 expireAt);
 
     /// @notice Thrown when trying to trigger operator take but user take was already signed
-    /// @param pegoutSignatureHash The signature hash of the peg-out request
-    error UserTakeAlreadySigned(bytes32 pegoutSignatureHash);
+    /// @param pegoutTxid The signature hash of the peg-out request
+    error UserTakeAlreadySigned(bytes32 pegoutTxid);
 
     /// @notice Thrown when trying to trigger operator take before operator take timeout has expired
     /// @param createdAt The timestamp when the operator take was updated
@@ -438,8 +435,8 @@ interface IPegManager {
     error OperatorTakeTimeoutNotExpired(uint256 createdAt, uint256 expireAt);
 
     /// @notice Thrown when a peg-out signature hash is not found in the system
-    /// @param pegoutSignatureHash The signature hash that was not found
-    error PegoutSignatureHashNotFound(bytes32 pegoutSignatureHash);
+    /// @param pegoutTxid The signature hash that was not found
+    error PegoutTxidNotFound(bytes32 pegoutTxid);
 
     /// @notice Thrown when the operator address does not match the expected operator that should advance the funds
     /// @param expectedOperator The expected operator address that should take the pegout
