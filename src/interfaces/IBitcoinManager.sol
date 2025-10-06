@@ -203,7 +203,7 @@ interface IBitcoinManager {
     /// @param _acceptPeginTx The transaction hash of the accept peg-in tx being spent
     /// @param _prevoutData Data about the previous output being spent (amount and scriptPubKey)
     /// @return BitcoinSignatureData containing txHash, signatureHash, and signatureMessage
-    function getPegoutSignatureHash(bytes memory _userPubKey, bytes32 _acceptPeginTx, PrevoutData memory _prevoutData)
+    function getPegoutTxData(bytes memory _userPubKey, bytes32 _acceptPeginTx, PrevoutData memory _prevoutData)
         external
         pure
         returns (BitcoinSignatureData memory);

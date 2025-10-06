@@ -318,7 +318,7 @@ contract TestBtcHelper is Test, HelperContract {
     }
 
     // ========================== REGISTER PEG OUT ==========================
-    function test_getPegoutSignatureHash_Success() external view {
+    function test_getPegoutTxData_Success() external view {
         // Arrange
         bytes32 p2tr_spk = 0x9687ca13c4fb3fa3ba05c2f9119dda026bfe66f0098dcf9b896a98ecb2e96702;
         bytes memory userPubKey = hex"027d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f";
@@ -334,8 +334,7 @@ contract TestBtcHelper is Test, HelperContract {
         // prevoutData.value - (Constants.SPEED_UP_AMOUNT + Constants.P2TR_FEE); // 0.00008730 BTC
 
         // Act
-        BitcoinSignatureData memory pegoutData =
-            bitcoinManager.getPegoutSignatureHash(userPubKey, acceptPeginTx, prevoutData);
+        BitcoinSignatureData memory pegoutData = bitcoinManager.getPegoutTxData(userPubKey, acceptPeginTx, prevoutData);
         bytes32 result = pegoutData.signatureHash;
 
         // ExpectedHash hash computed externally from a run of the pegout flow of the protocol builder

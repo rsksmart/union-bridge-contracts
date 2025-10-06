@@ -373,7 +373,7 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
     /// @param _acceptPeginTx The hash of the accept peg-in transaction
     /// @param _prevoutData The previous output data for the input
     /// @return bytes32 The txHash, bytes32 the signature hash and bytes signature message
-    function getPegoutSignatureHash(bytes memory _userPubKey, bytes32 _acceptPeginTx, PrevoutData memory _prevoutData)
+    function getPegoutTxData(bytes memory _userPubKey, bytes32 _acceptPeginTx, PrevoutData memory _prevoutData)
         external
         pure
         returns (BitcoinSignatureData memory)
