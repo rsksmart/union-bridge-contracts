@@ -21,7 +21,7 @@ struct BtcTxIn {
     /// @notice Unlocking script (signature script)
     /// @dev For SegWit inputs, this is typically empty as signatures are in the witness
     /// @dev For non-SegWit inputs, contains the unlocking script with signatures and public keys
-    /// @dev Note: Witness data is excluded as it's not needed for transaction hash calculation
+    /// @dev Note: Witness data is excluded as it's not needed for transaction id calculation
     bytes scriptSig;
 }
 
@@ -42,7 +42,7 @@ struct BtcTxOut {
 /// @notice Represents a complete Bitcoin transaction structure for union bridge operations
 /// @dev This struct follows Bitcoin's transaction format as defined in BIP-141 and related specifications
 /// @dev All multi-byte fields are stored in little-endian format (Bitcoin's native format)
-/// @dev The witness data is excluded from this struct as it's not needed for transaction hash calculation
+/// @dev The witness data is excluded from this struct as it's not needed for transaction id calculation
 /// @dev For more details on Bitcoin transaction structure, see: https://learnmeabitcoin.com/technical/transaction/#structure-inputs-txid
 struct BtcTransaction {
     /// @notice Transaction version number indicating the transaction format and features
@@ -83,8 +83,8 @@ struct PrevoutData {
 /// @dev Used by both accept peg-in and peg-out signature generation functions
 struct BitcoinSignatureData {
     BtcTransaction tx;
-    /// @notice The transaction hash (txid)
-    bytes32 txHash;
+    /// @notice The transaction id (txid)
+    bytes32 txid;
     /// @notice The hash to be signed by committee members
     bytes32 signatureHash;
     /// @notice The encoded data before hashing
@@ -133,12 +133,12 @@ interface IBitcoinManager {
         BtcTxOut calldata _p2trOut
     ) external pure;
 
-    /// @notice Calculates the Bitcoin transaction hash (txid) for a given transaction
+    /// @notice Calculates the Bitcoin transaction id (txid) for a given transaction
     /// @dev Encodes the transaction into Bitcoin's raw format and performs double SHA256 hash
     /// @dev This is the standard Bitcoin transaction ID used for referencing transactions
     /// @param _btcTx The Bitcoin transaction to hash
-    /// @return txHash The transaction hash in big-endian format (standard hex representation)
-    function getBtcTxHash(BtcTransaction calldata _btcTx) external pure returns (bytes32);
+    /// @return txid The transaction id in big-endian format (standard hex representation)
+    function getBtcTxid(BtcTransaction calldata _btcTx) external pure returns (bytes32);
 
     /// @notice Generates a Taproot script pub key for peg-in request transactions
     /// @dev Creates a P2TR script with both key spend and script spend paths for committee and user keys
@@ -158,9 +158,9 @@ interface IBitcoinManager {
     /// @dev Generates the hash that committee members must sign to accept a peg-in
     /// @param _committeePubKey The committee's public key (x-coordinate only)
     /// @param _userXOnlyPubKey The user's public key (x-coordinate only, 32 bytes)
-    /// @param _registerPeginTx The transaction hash of the peg-in request being spent
+    /// @param _registerPeginTx The transaction id of the peg-in request being spent
     /// @param _prevoutData Data about the previous output being spent (amount and scriptPubKey)
-    /// @return BitcoinSignatureData containing txHash, signatureHash, and signatureMessage
+    /// @return BitcoinSignatureData containing txid, signatureHash, and signatureMessage
     function getAcceptPeginSignatureHash(
         bytes memory _committeePubKey,
         bytes32 _userXOnlyPubKey,
@@ -200,9 +200,9 @@ interface IBitcoinManager {
     /// @notice Calculates the signature hash for Bitcoin peg-out transactions
     /// @dev Generates the hash that committee members must sign to authorize a peg-out
     /// @param _userPubKey The user's public key in compressed format that will receive the funds
-    /// @param _acceptPeginTx The transaction hash of the accept peg-in tx being spent
+    /// @param _acceptPeginTx The transaction id of the accept peg-in tx being spent
     /// @param _prevoutData Data about the previous output being spent (amount and scriptPubKey)
-    /// @return BitcoinSignatureData containing txHash, signatureHash, and signatureMessage
+    /// @return BitcoinSignatureData containing txid, signatureHash, and signatureMessage
     function getPegoutTxData(bytes memory _userPubKey, bytes32 _acceptPeginTx, PrevoutData memory _prevoutData)
         external
         pure

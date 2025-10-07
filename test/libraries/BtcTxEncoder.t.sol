@@ -132,7 +132,7 @@ contract TestBtcTxEncoder is Test {
         hex"0200000001d2b336bde0b006f9d9ffca836627e673bb6d6764a3fe2706f4c2c75d78810b369e06000000fdffffff012601000000000000160014d3b4045c40a133ee361f766ceae4d82398fc505800000000";
     }
 
-    function getExpectedTxHash() internal pure returns (bytes32) {
+    function getExpectedTxid() internal pure returns (bytes32) {
         return 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079;
     }
 }

@@ -10,7 +10,7 @@ contract AddMemberNonce is ScriptUtils {
     PegManager pegManager;
     ISignatureManager signatureManager;
     bytes nonce;
-    bytes32 txHash;
+    bytes32 txid;
     uint256 privKey;
     address user;
 
@@ -32,18 +32,18 @@ contract AddMemberNonce is ScriptUtils {
         }
         nonce = _nonce;
 
-        if (_txHash == bytes32(0)) {
-            revert("Transaction hash must not be zero");
+        if (_txid == bytes32(0)) {
+            revert("Transaction id must not be zero");
         }
-        txHash = _txHash;
+        txid = _txid;
     }
 
-    function run(uint16 _mnemonicIndex, bytes32 _txHash, bytes memory _nonce) public {
-        setUp(_mnemonicIndex, _txHash, _nonce);
+    function run(uint16 _mnemonicIndex, bytes32 _txid, bytes memory _nonce) public {
+        setUp(_mnemonicIndex, _txid, _nonce);
 
         console.log("=== Adding Member Nonce ===");
         vm.startBroadcast(privKey);
-        bool noncesReady = signatureManager.addMemberNonce(txHash, _nonce);
+        bool noncesReady = signatureManager.addMemberNonce(txid, _nonce);
         vm.stopBroadcast();
 
         if (noncesReady) {

@@ -14,7 +14,7 @@ contract RegisterOperatorTakeScript is ScriptUtils {
 
     uint64 amount;
     bytes operatorPubKey;
-    bytes32 acceptPeginTxHash;
+    bytes32 acceptPeginTxid;
 
     IStreamManager streamManager;
     uint64 expectedStreamId;
@@ -32,16 +32,16 @@ contract RegisterOperatorTakeScript is ScriptUtils {
 
         // Calculate expected slot and packet numbers
         streamManager = pegManager.streamManager();
-        StreamPosition memory streamPosition = pegManager.getStreamPosition(_acceptPeginTxHash);
+        StreamPosition memory streamPosition = pegManager.getStreamPosition(_acceptPeginTxid);
         expectedStreamId = streamPosition.streamId;
         expectedPacketNumber = streamPosition.packetNumber;
         expectedSlotId = streamPosition.slotId;
     }
 
-    function run(bytes32 _acceptPeginTxHash) public {
-        setUp(_acceptPeginTxHash);
+    function run(bytes32 _acceptPeginTxid) public {
+        setUp(_acceptPeginTxid);
 
-        BtcTransaction memory pegoutTx = createPegoutTx(_acceptPeginTxHash, operatorPubKey, amount);
+        BtcTransaction memory pegoutTx = createPegoutTx(_acceptPeginTxid, operatorPubKey, amount);
         BtcTxSPVProof memory pegoutTxSPVProof = createBtcTxSPVProof(pegoutTx);
 
         // Register operator take

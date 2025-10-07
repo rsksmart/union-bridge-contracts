@@ -6,7 +6,7 @@ import {
     ISignatureManager,
     Signatures,
     SignatureData,
-    OperatorTakeTxHashes,
+    OperatorTakeTxids,
     OperatorTakeData
 } from "./interfaces/ISignatureManager.sol";
 import {CommitteeMember, ICommitteeRegistry, Role} from "./interfaces/ICommitteeRegistry.sol";
@@ -15,7 +15,7 @@ import {AccessControl} from "./AccessControl.sol";
 /// @title Signature Manager
 /// @notice Manages signatures for peg-in and peg-out operations
 /// @dev Handles multi-signature operations for committee members using Musig2 protocol
-/// @dev Manages both signature collection and OperatorTake transaction hash collection
+/// @dev Manages both signature collection and OperatorTake transaction id collection
 contract SignatureManager is ISignatureManager, AccessControl {
     /// @notice The committee registry contract that manages committee membership
     /// @dev Used to verify committee membership and get member information
@@ -23,7 +23,7 @@ contract SignatureManager is ISignatureManager, AccessControl {
 
     // Signatures waiting for the committee to sign
     mapping(bytes32 hashToSign => Signatures signatures) internal committeeSignatures;
-    mapping(bytes32 acceptPeginTxHash => OperatorTakeTxHashes operatorTakeTxHashes) internal operatorTakeTxHashesMap;
+    mapping(bytes32 acceptPeginTxid => OperatorTakeTxids operatorTakeTxids) internal operatorTakeTxidsMap;
 
     /// @notice Initializes the SignatureManager contract
     /// @dev Sets up the committee registry and access control
@@ -95,14 +95,14 @@ contract SignatureManager is ISignatureManager, AccessControl {
 
     /// @notice Adds a signature for a committee member to the signature collection
     /// @dev Signatures can only be added after all nonces are present
-    /// @param _txHash The hash that needs to be signed by the committee
+    /// @param _txid The hash that needs to be signed by the committee
     /// @param _signature The signature for the hash
     /// @return true if all signatures are now present, false otherwise
-    function addMemberSignature(bytes32 _txHash, bytes32 _signature) external returns (bool) {
+    function addMemberSignature(bytes32 _txid, bytes32 _signature) external returns (bool) {
         // Check if all nonces are present
-        Signatures storage signatures = _getSignatures(_txHash);
+        Signatures storage signatures = _getSignatures(_txid);
         if (signatures.missingNonces != 0) {
-            revert AllNoncesAreNotPresent(_txHash);
+            revert AllNoncesAreNotPresent(_txid);
         }
         // Check if the signature is valid
         if (_signature == "") {
@@ -117,35 +117,35 @@ contract SignatureManager is ISignatureManager, AccessControl {
         SignatureData storage memberSignatureData = signatures.partialSignaturesData[msg.sender];
         // Check if the member has already added a signature
         if (memberSignatureData.signature != "") {
-            revert MemberHasAlreadySigned(msg.sender, _txHash);
+            revert MemberHasAlreadySigned(msg.sender, _txid);
         }
         // Store the signature for the member
         memberSignatureData.signature = _signature;
-        emit SignatureAdded(_txHash, msg.sender, _signature);
+        emit SignatureAdded(_txid, msg.sender, _signature);
 
         // Check if all signatures are present
         signatures.missingSignatures -= 1;
         if (signatures.missingSignatures != 0) {
             return false;
         }
-        emit AllSignaturesReady(_txHash);
+        emit AllSignaturesReady(_txid);
         return true;
     }
 
     /// @notice Checks if all signatures are ready for a given hash
-    /// @param _txHash The hash to check signatures for
+    /// @param _txid The hash to check signatures for
     /// @return true if all signatures are present, false otherwise
-    function checkAllSignaturesReady(bytes32 _txHash) external view returns (bool) {
-        Signatures storage signatures = _getSignatures(_txHash);
+    function checkAllSignaturesReady(bytes32 _txid) external view returns (bool) {
+        Signatures storage signatures = _getSignatures(_txid);
         return signatures.committeeId != 0 && signatures.missingSignatures == 0;
     }
 
     /// @notice Gets all partial signatures for a given hash
     /// @dev Returns signatures in the same order as committee members for Musig2 compatibility
-    /// @param _txHash The hash to get signatures for
+    /// @param _txid The hash to get signatures for
     /// @return Array of signature data for all committee members
-    function getPartialSignatures(bytes32 _txHash) external view returns (SignatureData[] memory) {
-        Signatures storage signatures = _getSignatures(_txHash);
+    function getPartialSignatures(bytes32 _txid) external view returns (SignatureData[] memory) {
+        Signatures storage signatures = _getSignatures(_txid);
         CommitteeMember[] memory members = committeeRegistry.getCommitteeMembers(signatures.committeeId);
         uint8 memberCount = uint8(members.length);
         SignatureData[] memory partialSignaturesData = new SignatureData[](memberCount);
@@ -157,37 +157,37 @@ contract SignatureManager is ISignatureManager, AccessControl {
     }
 
     /// @notice Gets the status of the signatures for a given hash
-    /// @param _txHash The hash to get status for
+    /// @param _txid The hash to get status for
     /// @return missingSignatures Number of missing signatures
     /// @return missingNonces Number of missing nonces
     /// @return committeeId The committee ID for this signature collection
-    function getSignaturesStatus(bytes32 _txHash) external view returns (uint8, uint8, uint128) {
-        Signatures storage signatures = _getSignatures(_txHash);
+    function getSignaturesStatus(bytes32 _txid) external view returns (uint8, uint8, uint128) {
+        Signatures storage signatures = _getSignatures(_txid);
         return (signatures.missingSignatures, signatures.missingNonces, signatures.committeeId);
     }
 
-    function _getSignatures(bytes32 _txHash) internal view returns (Signatures storage) {
+    function _getSignatures(bytes32 _txid) internal view returns (Signatures storage) {
         // Check if the signature hash exists
         // slither-disable-next-line incorrect-equality timestamp
-        if (committeeSignatures[_txHash].committeeId == 0) {
-            revert HashToSignNotFound(_txHash);
+        if (committeeSignatures[_txid].committeeId == 0) {
+            revert HashToSignNotFound(_txid);
         }
-        return committeeSignatures[_txHash];
+        return committeeSignatures[_txid];
     }
 
     /// @notice Initializes signature collection for a given hash
     /// @dev Can only be called by the PegManager
-    /// @param _txHash The hash that needs to be signed
+    /// @param _txid The hash that needs to be signed
     /// @param _committeeId The committee ID that will sign the hash
-    function initSignatures(bytes32 _txHash, uint128 _committeeId) external onlyPegManager {
+    function initSignatures(bytes32 _txid, uint128 _committeeId) external onlyPegManager {
         // Check if the signature hash is not empty
-        if (_txHash == "") {
-            revert InvalidHashToSign(_txHash);
+        if (_txid == "") {
+            revert InvalidHashToSign(_txid);
         }
         // Check if the signatures are already initialized
-        Signatures storage signatures = committeeSignatures[_txHash];
+        Signatures storage signatures = committeeSignatures[_txid];
         if (signatures.committeeId != 0) {
-            revert SignaturesAlreadyInitialized(_txHash);
+            revert SignaturesAlreadyInitialized(_txid);
         }
 
         // Get the members
@@ -200,23 +200,23 @@ contract SignatureManager is ISignatureManager, AccessControl {
         signatures.committeeId = _committeeId;
     }
 
-    /// @notice Initializes OperatorTake transaction hash collection for a given accept peg-in transaction
+    /// @notice Initializes OperatorTake transaction id collection for a given accept peg-in transaction
     /// @dev Can only be called by the PegManager
-    /// @param _acceptPeginTxHash The accept peg-in transaction hash
-    /// @param _committeeId The committee ID that will provide OperatorTake transaction hashes
-    function initOperatorTakeTxHashes(bytes32 _acceptPeginTxHash, uint128 _committeeId) external onlyPegManager {
-        // Check if the accept pegin tx hash is not empty
-        if (_acceptPeginTxHash == bytes32(0)) {
-            revert InvalidAcceptPeginTxHash(_acceptPeginTxHash);
+    /// @param _acceptPeginTxid The accept peg-in transaction id
+    /// @param _committeeId The committee ID that will provide OperatorTake transaction ides
+    function initOperatorTakeTxids(bytes32 _acceptPeginTxid, uint128 _committeeId) external onlyPegManager {
+        // Check if the accept pegin tx id is not empty
+        if (_acceptPeginTxid == bytes32(0)) {
+            revert InvalidAcceptPeginTxid(_acceptPeginTxid);
         }
 
         // Check if the signatures are already initialized
-        OperatorTakeTxHashes storage txHashes = operatorTakeTxHashesMap[_acceptPeginTxHash];
-        if (txHashes.committeeId != 0) {
-            revert OperatorTakeTxHashesAlreadyInitialized(_acceptPeginTxHash);
+        OperatorTakeTxids storage txids = operatorTakeTxidsMap[_acceptPeginTxid];
+        if (txids.committeeId != 0) {
+            revert OperatorTakeTxidsAlreadyInitialized(_acceptPeginTxid);
         }
 
-        // Only operators should provide Take1 tx hashes
+        // Only operators should provide Take1 tx ides
         uint256 operatorsCount = 0;
         CommitteeMember[] memory members = committeeRegistry.getCommitteeMembers(_committeeId);
         for (uint256 i = 0; i < members.length; i++) {
@@ -226,77 +226,73 @@ contract SignatureManager is ISignatureManager, AccessControl {
         }
 
         // Initialize missing hashes counter
-        txHashes.missingHashes = uint8(operatorsCount);
-        txHashes.committeeId = _committeeId;
+        txids.missingHashes = uint8(operatorsCount);
+        txids.committeeId = _committeeId;
     }
 
-    function _getOperatorTakeTxHashes(bytes32 _acceptPeginTxHash)
-        internal
-        view
-        returns (OperatorTakeTxHashes storage)
-    {
+    function _getOperatorTakeTxids(bytes32 _acceptPeginTxid) internal view returns (OperatorTakeTxids storage) {
         // slither-disable-next-line incorrect-equality timestamp
-        if (operatorTakeTxHashesMap[_acceptPeginTxHash].committeeId == 0) {
-            revert AcceptPeginTxHashNotFound(_acceptPeginTxHash);
+        if (operatorTakeTxidsMap[_acceptPeginTxid].committeeId == 0) {
+            revert AcceptPeginTxidNotFound(_acceptPeginTxid);
         }
-        return operatorTakeTxHashesMap[_acceptPeginTxHash];
+        return operatorTakeTxidsMap[_acceptPeginTxid];
     }
 
-    /// @notice Adds a OperatorTake transaction hash for an operator
-    /// @dev Only operators can add OperatorTake transaction hashes
-    /// @param _acceptPeginTxHash The accept peg-in transaction hash
-    /// @param _takeTxhash The OperatorTake transaction hash to add
-    function addOperatorTakeTxHash(bytes32 _acceptPeginTxHash, bytes32 _takeTxhash) external {
-        OperatorTakeTxHashes storage operatorTakeTxHashes = _getOperatorTakeTxHashes(_acceptPeginTxHash);
+    /// @notice Adds a OperatorTake transaction id for an operator
+    /// @dev Only operators can add OperatorTake transaction ides
+    /// @param _acceptPeginTxid The accept peg-in transaction id
+    /// @param _takeTxid The OperatorTake transaction id to add
+    function addOperatorTakeTxid(bytes32 _acceptPeginTxid, bytes32 _takeTxid) external {
+        OperatorTakeTxids storage operatorTakeTxids = _getOperatorTakeTxids(_acceptPeginTxid);
 
-        if (operatorTakeTxHashes.missingHashes == 0) {
-            revert AllOperatorTakeTxHashesAlreadyPresent(_acceptPeginTxHash);
+        if (operatorTakeTxids.missingHashes == 0) {
+            revert AllOperatorTakeTxidsAlreadyPresent(_acceptPeginTxid);
         }
         // Check if hash is valid
-        if (_takeTxhash == bytes32(0)) {
-            revert InvalidHash(_takeTxhash);
+        if (_takeTxid == bytes32(0)) {
+            revert InvalidHash(_takeTxid);
         }
 
-        Role role = _getMemberRole(operatorTakeTxHashes.committeeId, msg.sender);
+        Role role = _getMemberRole(operatorTakeTxids.committeeId, msg.sender);
 
         // Check if the member is in the committee
         if (role == Role.NONE) {
-            revert MemberNotFoundInCommittee(operatorTakeTxHashes.committeeId, msg.sender);
+            revert MemberNotFoundInCommittee(operatorTakeTxids.committeeId, msg.sender);
         }
 
-        // Only operators should add take 1 tx hashes
+        // Only operators should add take 1 tx ides
         if (role != Role.OPERATOR) {
-            revert MemberIsNotOperator(operatorTakeTxHashes.committeeId, msg.sender);
+            revert MemberIsNotOperator(operatorTakeTxids.committeeId, msg.sender);
         }
 
-        if (operatorTakeTxHashes.txHashes[msg.sender] != bytes32(0)) {
-            revert MemberAlreadyAddedOperatorTakeTxHash(_acceptPeginTxHash, msg.sender, _takeTxhash);
+        if (operatorTakeTxids.txids[msg.sender] != bytes32(0)) {
+            revert MemberAlreadyAddedOperatorTakeTxid(_acceptPeginTxid, msg.sender, _takeTxid);
         }
 
-        operatorTakeTxHashes.txHashes[msg.sender] = _takeTxhash;
-        emit OperatorTakeTxHashAdded(_acceptPeginTxHash, msg.sender, _takeTxhash);
+        operatorTakeTxids.txids[msg.sender] = _takeTxid;
+        emit OperatorTakeTxidAdded(_acceptPeginTxid, msg.sender, _takeTxid);
 
-        operatorTakeTxHashes.missingHashes -= 1;
-        if (operatorTakeTxHashes.missingHashes == 0) {
-            emit AllOperatorTakeTxHashesAdded(_acceptPeginTxHash);
+        operatorTakeTxids.missingHashes -= 1;
+        if (operatorTakeTxids.missingHashes == 0) {
+            emit AllOperatorTakeTxidsAdded(_acceptPeginTxid);
         }
     }
 
-    /// @notice Checks if all OperatorTake transaction hashes are ready for a given accept peg-in transaction
-    /// @param _acceptPeginTxHash The accept peg-in transaction hash to check
-    /// @return true if all OperatorTake transaction hashes are present, false otherwise
-    function checkAllOperatorTakesHashesReady(bytes32 _acceptPeginTxHash) external view returns (bool) {
-        OperatorTakeTxHashes storage operatorTakeTxHashes = _getOperatorTakeTxHashes(_acceptPeginTxHash);
-        return (operatorTakeTxHashes.missingHashes == 0);
+    /// @notice Checks if all OperatorTake transaction ides are ready for a given accept peg-in transaction
+    /// @param _acceptPeginTxid The accept peg-in transaction id to check
+    /// @return true if all OperatorTake transaction ides are present, false otherwise
+    function checkAllOperatorTakesHashesReady(bytes32 _acceptPeginTxid) external view returns (bool) {
+        OperatorTakeTxids storage operatorTakeTxids = _getOperatorTakeTxids(_acceptPeginTxid);
+        return (operatorTakeTxids.missingHashes == 0);
     }
 
     /// @notice Gets all OperatorTake transaction data for a given accept peg-in transaction
-    /// @param _acceptPeginTxHash The accept peg-in transaction hash
+    /// @param _acceptPeginTxid The accept peg-in transaction id
     /// @return Array of OperatorTake transaction data for all operators
-    function getOperatorTakeData(bytes32 _acceptPeginTxHash) external view returns (OperatorTakeData[] memory) {
-        OperatorTakeTxHashes storage operatorTakeTxHashes = _getOperatorTakeTxHashes(_acceptPeginTxHash);
+    function getOperatorTakeData(bytes32 _acceptPeginTxid) external view returns (OperatorTakeData[] memory) {
+        OperatorTakeTxids storage operatorTakeTxids = _getOperatorTakeTxids(_acceptPeginTxid);
         uint256 operatorsCount = 0;
-        CommitteeMember[] memory members = committeeRegistry.getCommitteeMembers(operatorTakeTxHashes.committeeId);
+        CommitteeMember[] memory members = committeeRegistry.getCommitteeMembers(operatorTakeTxids.committeeId);
         for (uint256 i = 0; i < members.length; i++) {
             if (members[i].role == Role.OPERATOR) {
                 operatorsCount++;
@@ -306,7 +302,7 @@ contract SignatureManager is ISignatureManager, AccessControl {
         operatorsCount = 0;
         for (uint256 i = 0; i < members.length; i++) {
             if (members[i].role == Role.OPERATOR) {
-                operatorTakeData[operatorsCount].txHash = operatorTakeTxHashes.txHashes[members[i].memberAddress];
+                operatorTakeData[operatorsCount].txid = operatorTakeTxids.txids[members[i].memberAddress];
                 operatorTakeData[operatorsCount].memberAddress = members[i].memberAddress;
                 operatorsCount++;
             }
@@ -315,10 +311,10 @@ contract SignatureManager is ISignatureManager, AccessControl {
         return operatorTakeData;
     }
 
-    /// @notice Gets the committee ID for a given accept peg-in transaction hash
-    /// @param _acceptPeginTxHash The accept peg-in transaction hash
-    /// @return The committee ID associated with this transaction hash
-    function getCommitteeIdByAcceptPeginTxHash(bytes32 _acceptPeginTxHash) external view returns (uint128) {
-        return _getOperatorTakeTxHashes(_acceptPeginTxHash).committeeId;
+    /// @notice Gets the committee ID for a given accept peg-in transaction id
+    /// @param _acceptPeginTxid The accept peg-in transaction id
+    /// @return The committee ID associated with this transaction id
+    function getCommitteeIdByAcceptPeginTxid(bytes32 _acceptPeginTxid) external view returns (uint128) {
+        return _getOperatorTakeTxids(_acceptPeginTxid).committeeId;
     }
 }

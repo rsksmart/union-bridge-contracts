@@ -10,17 +10,17 @@ RPC=$LOCAL_RPC
 while getopts "m:h:n:" opt; do
   case "$opt" in
     m) MNEMONIC_INDEX=$OPTARG ;;
-    h) TX_HASH=$OPTARG ;;
+    h) TXID=$OPTARG ;;
     n) NONCE=$OPTARG ;;
     \?)
-      echo "Usage: $0 -m <mnemonic_index> -h <tx_hash> -n <nonce>"
+      echo "Usage: $0 -m <mnemonic_index> -h <txid> -n <nonce>"
       exit 1
       ;;
   esac
 done
 
 # Validate inputs
-if [ -z "$MNEMONIC_INDEX" ] || [ -z "$TX_HASH" ] || [ -z "$NONCE" ]; then
+if [ -z "$MNEMONIC_INDEX" ] || [ -z "$TXID" ] || [ -z "$NONCE" ]; then
   echo "Error: All three arguments -m, -h, and -n are required."
   exit 1
 fi
@@ -30,7 +30,7 @@ fi
 forge script \
   script/AddMemberNonce.s.sol \
   --sig "run(uint16,bytes32,bytes)" \
-  "$MNEMONIC_INDEX" "$TX_HASH" "$NONCE" \
+  "$MNEMONIC_INDEX" "$TXID" "$NONCE" \
   --rpc-url "$RPC" \
   --legacy \
   --broadcast \

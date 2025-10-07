@@ -39,10 +39,10 @@ abstract contract ProofValidator is Initializable {
     error BridgeBtcBlockTooOld(int256 maxDepth);
 
     /// @notice Error thrown when the merkle proof for a Bitcoin transaction is invalid
-    /// @param txHash The transaction hash that failed merkle proof verification
+    /// @param txid The transaction id that failed merkle proof verification
     /// @param merkleBranchPath The merkle branch path that was used
     /// @param merkleBranchHashes The merkle branch hashes that were provided
-    error BridgeBtcTxInvalidMerkleBranch(bytes32 txHash, uint256 merkleBranchPath, bytes32[] merkleBranchHashes);
+    error BridgeBtcTxInvalidMerkleBranch(bytes32 txid, uint256 merkleBranchPath, bytes32[] merkleBranchHashes);
 
     /// @notice Error thrown when the RSK Bridge returns an unknown error code
     /// @param errorCode The unknown error code returned by the bridge
@@ -88,7 +88,7 @@ abstract contract ProofValidator is Initializable {
 
     /// @notice Verifies that a Bitcoin transaction exists in a block and has enough confirmations
     /// @param _minConfirmations The minimum number of confirmations required for the transaction
-    /// @param _txHash The hash of the Bitcoin transaction to verify
+    /// @param _txid The hash of the Bitcoin transaction to verify
     /// @param _blockHash The hash of the block containing the transaction
     /// @param _merkleBranchPath The path in the merkle tree to verify the transaction
     /// @param _merkleBranchHashes The hashes needed to verify the merkle proof
@@ -102,14 +102,14 @@ abstract contract ProofValidator is Initializable {
     ///      - Not enough confirmations
     function _verifyTxConfirmations(
         uint256 _minConfirmations,
-        bytes32 _txHash,
+        bytes32 _txid,
         bytes32 _blockHash,
         uint256 _merkleBranchPath,
         bytes32[] memory _merkleBranchHashes
     ) internal view {
         // Get tx confirmations using ProofValidator from Rsk bridge precompiled contract
         int256 confirmations =
-            bridge.getBtcTransactionConfirmations(_txHash, _blockHash, _merkleBranchPath, _merkleBranchHashes);
+            bridge.getBtcTransactionConfirmations(_txid, _blockHash, _merkleBranchPath, _merkleBranchHashes);
         // Validate block is in the Mainchain
         if (confirmations == BTC_TRANSACTION_CONFIRMATION_INEXISTENT_BLOCK_HASH_ERROR_CODE) {
             revert BridgeBtcInexistantBlockHash(_blockHash);
@@ -126,7 +126,7 @@ abstract contract ProofValidator is Initializable {
         }
         // Validate transaction is in the Block
         if (confirmations == BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE) {
-            revert BridgeBtcTxInvalidMerkleBranch(_txHash, _merkleBranchPath, _merkleBranchHashes);
+            revert BridgeBtcTxInvalidMerkleBranch(_txid, _merkleBranchPath, _merkleBranchHashes);
         }
         if (confirmations < 0) {
             revert BridgeBtcUnknownError(confirmations);

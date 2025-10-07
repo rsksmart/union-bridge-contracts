@@ -79,20 +79,20 @@ contract TestBtcHelper is Test, HelperContract {
         bitcoinManager.getTemporaryPeginAddress(rskAddress, value, btcReimbursementPubKey, committeePubKey);
     }
 
-    function test_getBtcTxHash_Success() external {
+    function test_getBtcTxid_Success() external {
         // Arrange
         BtcTransaction memory btcTx = getBtcPeginRequestTx();
         // Act
-        bytes32 txHash = bitcoinManager.getBtcTxHash(btcTx);
+        bytes32 txid = bitcoinManager.getBtcTxid(btcTx);
         // Assert
         assertEq(
-            txHash,
-            getBtcTxHash(btcTx),
+            txid,
+            getBtcTxid(btcTx),
             "Hashing the Transaction without the witness with Hash256 should give the correct txId"
         );
     }
 
-    function test_getBtcTxHash_peginRequest_Success() external view {
+    function test_getBtcTxid_peginRequest_Success() external view {
         // Arrange
         BtcTransaction memory btcTx =
             BtcTransaction({version: 2, inputs: new BtcTxIn[](1), outputs: new BtcTxOut[](2), locktime: 0});
@@ -111,10 +111,10 @@ contract TestBtcHelper is Test, HelperContract {
             scriptPubKey: hex"6a4552534b5f504547494e00000000000000007ac5496aee77c1ba1f0854206a26dda82a81d6d87d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f"
         });
         // Act
-        bytes32 txHash = bitcoinManager.getBtcTxHash(btcTx);
+        bytes32 txid = bitcoinManager.getBtcTxid(btcTx);
         // Assert
         assertEq(
-            txHash,
+            txid,
             0x3e2dae98db783476cc24e8fea4c7b6fdbfc6c211d576ab835ccf0c1e4e36f8f9,
             "Hashing the Transaction without the witness with Hash256 didn't give the correct txId"
         );

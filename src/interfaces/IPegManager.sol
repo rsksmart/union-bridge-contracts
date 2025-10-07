@@ -13,7 +13,7 @@ struct BtcTxSPVProof {
     /// @dev Used to verify the block exists and has sufficient confirmations
     bytes32 blockHash;
     /// @notice The Bitcoin transaction data
-    /// @dev Contains all transaction details needed for transaction hash calculation
+    /// @dev Contains all transaction details needed for transaction id calculation
     BtcTransaction btcTx;
     /// @notice Merkle path indicating left/right traversal in the merkle tree
     /// @dev Each bit represents whether to go left (0) or right (1) in the merkle tree
@@ -123,10 +123,10 @@ interface IPegManager {
         external
         returns (string memory temporaryPeginAddress);
 
-    /// @notice Retrieves the stream position information for a given Bitcoin transaction hash
-    /// @param btcTxHash The Bitcoin transaction hash to look up
+    /// @notice Retrieves the stream position information for a given Bitcoin transaction id
+    /// @param btcTxid The Bitcoin transaction id to look up
     /// @return The stream position containing stream, packet, slot, and status information
-    function getStreamPosition(bytes32 btcTxHash) external view returns (StreamPosition memory);
+    function getStreamPosition(bytes32 btcTxid) external view returns (StreamPosition memory);
 
     /// @notice Registers a peg-in request transaction from Bitcoin
     /// @dev Validates the SPV proof and initiates the peg-in process
@@ -136,8 +136,8 @@ interface IPegManager {
 
     /// @notice Event emitted when a peg-in request is successfully registered
     /// @param committeeId The ID of the committee responsible for this peg-in
-    /// @param requestPeginTxHash The hash of the peg-in request transaction
-    /// @param acceptPeginTxHash The hash of the accept peg-in transaction
+    /// @param requestPeginTxid The hash of the peg-in request transaction
+    /// @param acceptPeginTxid The hash of the accept peg-in transaction
     /// @param vout The output index of the transaction
     /// @param streamPosition The struct with the position information (stream, packet, slot, status)
     /// @param requestPeginInfo Temporary information needed for the accept phase
@@ -145,8 +145,8 @@ interface IPegManager {
     /// @param acceptPeginSignatureMessage The signature message for committee signing
     event PeginRequested(
         uint128 indexed committeeId,
-        bytes32 indexed requestPeginTxHash,
-        bytes32 indexed acceptPeginTxHash,
+        bytes32 indexed requestPeginTxid,
+        bytes32 indexed acceptPeginTxid,
         uint64 vout,
         StreamPosition streamPosition,
         RequestPeginTempInfo requestPeginInfo,
@@ -154,20 +154,20 @@ interface IPegManager {
         bytes acceptPeginSignatureMessage
     );
 
-    /// @notice Gets the accept peg-in transaction hash for a given request transaction hash
-    /// @param _btcTxHash The Bitcoin transaction hash of the peg-in request
-    /// @return The accept peg-in transaction hash
-    function getPeginRequest(bytes32 _btcTxHash) external view returns (bytes32);
+    /// @notice Gets the accept peg-in transaction id for a given request transaction id
+    /// @param _btcTxid The Bitcoin transaction id of the peg-in request
+    /// @return The accept peg-in transaction id
+    function getPeginRequest(bytes32 _btcTxid) external view returns (bytes32);
 
     /// @notice Gets temporary information stored during peg-in request processing
-    /// @param btcTxHash The Bitcoin transaction hash of the peg-in request
+    /// @param btcTxid The Bitcoin transaction id of the peg-in request
     /// @return The temporary information needed for the accept phase
-    function getRequestPeginTempInfo(bytes32 btcTxHash) external view returns (RequestPeginTempInfo memory);
+    function getRequestPeginTempInfo(bytes32 btcTxid) external view returns (RequestPeginTempInfo memory);
 
     /// @notice Gets temporary information stored during peg-out processing
-    /// @param acceptPeginTxHash The accept peg-in transaction hash
+    /// @param acceptPeginTxid The accept peg-in transaction id
     /// @return The temporary information needed for peg-out processing
-    function getPegoutTempInfo(bytes32 acceptPeginTxHash) external view returns (PegoutTempInfo memory);
+    function getPegoutTempInfo(bytes32 acceptPeginTxid) external view returns (PegoutTempInfo memory);
 
     // ===================== Accept Peg-in Request =====================
 
@@ -179,8 +179,8 @@ interface IPegManager {
 
     /// @notice Event emitted when a peg-in is successfully accepted
     /// @param blockHash The Bitcoin block hash containing the accept transaction
-    /// @param acceptPeginTxHash The hash of the accept peg-in transaction
-    /// @param peginRequestTxHash The hash of the original peg-in request transaction
+    /// @param acceptPeginTxid The hash of the accept peg-in transaction
+    /// @param peginRequestTxid The hash of the original peg-in request transaction
     /// @param vout The output index of the transaction
     /// @param streamPosition The final position of funds in the stream system
     /// @param speedUpPubKey The public key for speed-up transactions
@@ -189,8 +189,8 @@ interface IPegManager {
     /// @param utxoScriptPubKey The script pubkey of the UTXO
     event PeginAccepted(
         bytes32 indexed blockHash,
-        bytes32 indexed acceptPeginTxHash,
-        bytes32 indexed peginRequestTxHash,
+        bytes32 indexed acceptPeginTxid,
+        bytes32 indexed peginRequestTxid,
         uint64 vout,
         StreamPosition streamPosition,
         bytes32 speedUpPubKey,
@@ -242,16 +242,16 @@ interface IPegManager {
 
     /// @notice Event emitted when a peg-out is successfully registered
     /// @param blockHash The Bitcoin block hash containing the peg-out transaction
-    /// @param txHash The hash of the peg-out transaction
-    /// @param acceptPeginTxHash The hash of the original accept peg-in transaction
+    /// @param txid The hash of the peg-out transaction
+    /// @param acceptPeginTxid The hash of the original accept peg-in transaction
     /// @param committeeId The ID of the committee responsible for this peg-out
     /// @param streamId The stream ID where the funds originated
     /// @param packetNumber The packet number within the stream
     /// @param slotId The slot ID within the packet
     event PegoutRegistered(
         bytes32 indexed blockHash,
-        bytes32 indexed txHash,
-        bytes32 indexed acceptPeginTxHash,
+        bytes32 indexed txid,
+        bytes32 indexed acceptPeginTxid,
         uint128 committeeId,
         uint64 streamId,
         uint64 packetNumber,
@@ -293,8 +293,8 @@ interface IPegManager {
     /// @dev signatures should be checked to see if the User Take was already signed
     /// @dev Partial signatures are used to skip those operators that have not signed the User Take
     /// @dev Emits OperatorTakeTriggered event upon successful triggering
-    /// @param _pegoutTxHash The transaction hash of the peg-out request
-    function triggerOperatorTake(bytes32 _pegoutTxHash) external;
+    /// @param _pegoutTxid The transaction id of the peg-out request
+    function triggerOperatorTake(bytes32 _pegoutTxid) external;
 
     // ===================== Events =====================
 
@@ -307,13 +307,13 @@ interface IPegManager {
     event OperatorTakeTimeoutUpdated(uint256 newTimeout);
 
     /// @notice Event emitted when operator take is triggered for a peg-out
-    /// @param pegoutTxHash The transaction hash of the peg-out request
+    /// @param pegoutTxid The transaction id of the peg-out request
     /// @param pegoutInfo Complete pegout temporary information including operator details
     /// @param streamPosition Stream position information including slot ID
     /// @param updatedAt The timestamp when the operator take was triggered
     /// @param expireAt The timestamp when the operator take timeout expires
     event OperatorTakeTriggered(
-        bytes32 pegoutTxHash,
+        bytes32 pegoutTxid,
         PegoutTempInfo pegoutInfo,
         StreamPosition streamPosition,
         uint256 updatedAt,
@@ -357,21 +357,21 @@ interface IPegManager {
     error PegoutRequestAmountExceedsUint64Limit(uint256 amount);
 
     /// @notice Thrown when a peg-in has already been requested for the given transaction
-    /// @param btcTxHash The Bitcoin transaction hash that was already requested
-    error PeginAlreadyRequested(bytes32 btcTxHash);
+    /// @param btcTxid The Bitcoin transaction id that was already requested
+    error PeginAlreadyRequested(bytes32 btcTxid);
 
     /// @notice Thrown when trying to process a peg-in that hasn't been requested
-    /// @param btcTxHash The Bitcoin transaction hash that wasn't requested
-    error PeginNotRequested(bytes32 btcTxHash);
+    /// @param btcTxid The Bitcoin transaction id that wasn't requested
+    error PeginNotRequested(bytes32 btcTxid);
 
-    /// @notice Thrown when the accept peg-in transaction hash doesn't match the expected value
-    /// @param expected The expected transaction hash
-    /// @param actual The actual transaction hash received
-    error InvalidAcceptPeginTxHash(bytes32 expected, bytes32 actual);
+    /// @notice Thrown when the accept peg-in transaction id doesn't match the expected value
+    /// @param expected The expected transaction id
+    /// @param actual The actual transaction id received
+    error InvalidAcceptPeginTxid(bytes32 expected, bytes32 actual);
 
     /// @notice Thrown when a peg-in has already been accepted
-    /// @param btcTxHash The Bitcoin transaction hash that was already accepted
-    error PeginAlreadyAccepted(bytes32 btcTxHash);
+    /// @param btcTxid The Bitcoin transaction id that was already accepted
+    error PeginAlreadyAccepted(bytes32 btcTxid);
 
     /// @notice Thrown when the number of inputs doesn't match the expected count
     /// @param actual The actual number of inputs
