@@ -34,12 +34,12 @@ struct OperatorTakeData {
     address memberAddress;
 }
 
-/// @notice Represents the state of OperatorTake transaction ides for a specific accept peg-in
-/// @dev Tracks OperatorTake transaction ides provided by committee members
+/// @notice Represents the state of OperatorTake transaction id's for a specific accept peg-in
+/// @dev Tracks OperatorTake transaction id's provided by committee members
 struct OperatorTakeTxids {
-    /// @notice Mapping of member addresses to their OperatorTake transaction ides
+    /// @notice Mapping of member addresses to their OperatorTake transaction id's
     mapping(address memberAddress => bytes32 operatorTakeTxid) txids;
-    /// @notice Number of missing OperatorTake transaction ides
+    /// @notice Number of missing OperatorTake transaction id's
     uint8 missingHashes;
     /// @notice ID of the committee responsible for these hashes
     uint128 committeeId;
@@ -101,7 +101,7 @@ interface ISignatureManager is IAccessControl {
     /// @param _takeTxid The OperatorTake transaction id provided by the member
     function addOperatorTakeTxid(bytes32 _acceptPeginTxid, bytes32 _takeTxid) external;
 
-    /// @notice Checks if all OperatorTake transaction ides are ready
+    /// @notice Checks if all OperatorTake transaction id's are ready
     /// @param _acceptPeginTxid The accept peg-in transaction id
     /// @return True if all required OperatorTake hashes have been collected
     function checkAllOperatorTakesHashesReady(bytes32 _acceptPeginTxid) external view returns (bool);
@@ -143,7 +143,7 @@ interface ISignatureManager is IAccessControl {
     /// @param hash The OperatorTake transaction id provided by the member
     event OperatorTakeTxidAdded(bytes32 acceptPeginTxid, address memberAddress, bytes32 hash);
 
-    /// @notice Event emitted when all OperatorTake transaction ides are added
+    /// @notice Event emitted when all OperatorTake transaction id's are added
     /// @param acceptPeginTxid The accept peg-in transaction id
     event AllOperatorTakeTxidsAdded(bytes32 acceptPeginTxid);
 
@@ -198,7 +198,7 @@ interface ISignatureManager is IAccessControl {
     /// @param acceptPeginTxid The invalid accept peg-in transaction id
     error InvalidAcceptPeginTxid(bytes32 acceptPeginTxid);
 
-    /// @notice Thrown when OperatorTake transaction ides are already initialized
+    /// @notice Thrown when OperatorTake transaction id's are already initialized
     /// @param acceptPeginTxid The accept peg-in transaction id
     error OperatorTakeTxidsAlreadyInitialized(bytes32 acceptPeginTxid);
 
@@ -206,7 +206,7 @@ interface ISignatureManager is IAccessControl {
     /// @param acceptPeginTxid The accept peg-in transaction id that was not found
     error AcceptPeginTxidNotFound(bytes32 acceptPeginTxid);
 
-    /// @notice Thrown when all OperatorTake transaction ides are already present
+    /// @notice Thrown when all OperatorTake transaction id's are already present
     /// @param acceptPeginTxid The accept peg-in transaction id
     error AllOperatorTakeTxidsAlreadyPresent(bytes32 acceptPeginTxid);
 

@@ -639,7 +639,7 @@ contract TestSignatureManager is Test, HelperContract {
         address lastMemberAddress = vm.addr(lastOperatorIndex + 1);
         bytes32 lastMemberTxid = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
 
-        // Complet all operator OperatorTake tx ides here
+        // Complet all operator OperatorTake tx id's here
         setup_addOperatorTake_MultipleMembers(acceptPeginTxid, operatorIndexStart, operatorCount);
 
         // Assert

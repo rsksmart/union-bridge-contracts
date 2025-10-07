@@ -114,7 +114,7 @@ contract TestPegManager is Test, HelperContract {
 
         BtcTransaction memory expectedAcceptPeginTx = getBtcAcceptPeginTx(btcTransaction);
         // Registered Pegin Request
-        bytes32 acceptPeginTxid = pm.getPeginRequest(txid);
+        bytes32 acceptPeginTxid = pm.getAcceptPegin(txid);
         assertEq(acceptPeginTxid, getBtcTxid(expectedAcceptPeginTx), "Incorrect pegin request acceptPeginTxid");
         // Registered Peg In Temp info
         RequestPeginTempInfo memory peginTempInfo = pm.getRequestPeginTempInfo(txid);
