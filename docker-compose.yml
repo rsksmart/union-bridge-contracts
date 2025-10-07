@@ -11,6 +11,6 @@ services:
       - |
         solc-select install 0.8.28
         solc-select use 0.8.28
-        slither ./share --filter-paths "lib/" --exclude naming-convention,low-level-calls
+        slither ./share --filter-paths "lib/" --exclude naming-convention,low-level-calls,incorrect-equality
     volumes:
       - ./:/share

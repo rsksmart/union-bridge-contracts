@@ -234,6 +234,10 @@ interface IMemberRegistry {
     /// @param missing Number of members missing
     event MissingMembers(StreamDenomination denomination, uint256 required, uint256 missing);
 
+    /// @notice Event emitted when the committee registry address is updated
+    /// @param newCommitteeRegistry The new committee registry address
+    event CommitteeRegistryUpdated(address indexed newCommitteeRegistry);
+
     // ===================== Errors =====================
 
     /// @notice Thrown when a member is not registered
