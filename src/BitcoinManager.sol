@@ -85,7 +85,10 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         bytes32 merkleRoot = BtcTaproot.getBranch(timelockLeaf, extraDataLeaf);
 
         // Extract x-coordinate from compressed public key (skip first byte which is prefix)
+        // Assembly is required here for BIP340 X-only public key extraction from the 33-byte compressed format.
+        // BIP340 specifies Schnorr signatures use only the x-coordinate, stored at bytes 1-32 (skipping the prefix byte).
         bytes32 committeePubKeyX;
+        // slither-disable-next-line assembly
         assembly {
             committeePubKeyX := mload(add(_committeePubKey, 33))
         }
@@ -295,7 +298,10 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
     /// @dev Generates the Accept Pegin Taproot output script pub key with both key spend and script spend paths
     function getAcceptPeginTweakedPublicKey(bytes memory _committeePubKey) internal pure returns (bytes32) {
         // Extract x-coordinate from compressed public key (skip first byte which is prefix)
+        // Assembly is required here for BIP340 X-only public key extraction from the 33-byte compressed format.
+        // BIP340 specifies Schnorr signatures use only the x-coordinate, stored at bytes 1-32 (skipping the prefix byte).
         bytes32 committeePubKeyX;
+        // slither-disable-next-line assembly
         assembly {
             committeePubKeyX := mload(add(_committeePubKey, 33))
         }

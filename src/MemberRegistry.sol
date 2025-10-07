@@ -665,6 +665,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy {
             revert InvalidZeroAddress();
         }
         committeeRegistry = _committeeRegistry;
+        emit CommitteeRegistryUpdated(_committeeRegistry);
     }
 
     /// @notice Sets the Stream Manager contract address
