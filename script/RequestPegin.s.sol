@@ -93,7 +93,7 @@ contract RequestPeginScript is ScriptUtils {
         console.log("packetNumber");
         console.log(streamPosition.packetNumber);
         console.log("accept pegin Tx id");
-        console.logBytes32(pegManager.getPeginRequest(peginRequestTxid));
+        console.logBytes32(pegManager.getAcceptPegin(peginRequestTxid));
         RequestPeginTempInfo memory requestPeginTempInfo = pegManager.getRequestPeginTempInfo(peginRequestTxid);
         console.log("accept pegin Signature Hash");
         console.logBytes32(requestPeginTempInfo.acceptPeginSignatureHash);

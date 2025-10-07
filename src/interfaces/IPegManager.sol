@@ -157,7 +157,7 @@ interface IPegManager {
     /// @notice Gets the accept peg-in transaction id for a given request transaction id
     /// @param _btcTxid The Bitcoin transaction id of the peg-in request
     /// @return The accept peg-in transaction id
-    function getPeginRequest(bytes32 _btcTxid) external view returns (bytes32);
+    function getAcceptPegin(bytes32 _btcTxid) external view returns (bytes32);
 
     /// @notice Gets temporary information stored during peg-in request processing
     /// @param btcTxid The Bitcoin transaction id of the peg-in request
