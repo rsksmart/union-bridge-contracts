@@ -20,6 +20,13 @@ import {Constants} from "src/libraries/Constants.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 contract TestMemberRegistry is Test, HelperContract {
+    MemberRegistrationKeys internal memberRegistrationKeys;
+
+    constructor() {
+        uint256 privKey = uint256(1);
+        memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
+    }
+
     function setUp() external {
         runTestDeployScript();
     }
@@ -41,7 +48,6 @@ contract TestMemberRegistry is Test, HelperContract {
         Role oppositeRole = _role == Role.OPERATOR ? Role.WATCHTOWER : Role.OPERATOR;
 
         uint256 privKey = uint256(1);
-        MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
         MemberKeys memory pubKeys = getXPublicKeysFromRegistration(memberRegistrationKeys);
         address user = vm.addr(privKey);
         uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, _role);
@@ -159,7 +165,6 @@ contract TestMemberRegistry is Test, HelperContract {
     function test_applyToStream_Revert_PublicKeyMismatch_TAKE() external {
         // Arrange
         uint256 privKey = uint256(1);
-        MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
         MemberRegistrationKeys memory differentPubKey = generateRegistrationPublicKeys(privKey + 1);
         address user = vm.addr(privKey);
         Role role = Role.OPERATOR;
@@ -193,7 +198,6 @@ contract TestMemberRegistry is Test, HelperContract {
     function test_applyToStream_Revert_PublicKeyMismatch_COVENANT() external {
         // Arrange
         uint256 privKey = uint256(1);
-        MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
 
         // Create fresh keys for second registration with different COVENANT key only
         MemberRegistrationKeys memory differentPubKey;
@@ -233,7 +237,6 @@ contract TestMemberRegistry is Test, HelperContract {
     function test_applyToStream_Revert_PublicKeyMismatch_COMMUNICATION() external {
         // Arrange
         uint256 privKey = uint256(1);
-        MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
 
         // Create fresh keys for second registration with different COMMUNICATION key only
         MemberRegistrationKeys memory differentPubKey;
@@ -274,7 +277,6 @@ contract TestMemberRegistry is Test, HelperContract {
     function test_applyToStream_Revert_memberAlreadyRegisteredForStream() external {
         // Arrange
         uint256 privKey = uint256(1);
-        MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
         address user = vm.addr(privKey);
         Role role = Role.OPERATOR;
         uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, role);
@@ -308,7 +310,6 @@ contract TestMemberRegistry is Test, HelperContract {
     function test_applyToStream_Revert_requestedNoneRoleForStream() external {
         // Arrange
         uint256 privKey = uint256(1);
-        MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
         address user = vm.addr(privKey);
         uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, Role.OPERATOR);
         vm.deal(user, minimumDeposit);
@@ -326,7 +327,6 @@ contract TestMemberRegistry is Test, HelperContract {
     function test_applyToStream_Revert_despositBondTooLow() external {
         // Arrange
         uint256 privKey = uint256(1);
-        MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
         address user = vm.addr(privKey);
         uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, DEFAULT_ROLE);
         vm.deal(user, minimumDeposit - 1);
@@ -346,7 +346,6 @@ contract TestMemberRegistry is Test, HelperContract {
     function test_applyToStream_Revert_ZeroUTXOTxid() external {
         // Arrange
         uint256 privKey = uint256(1);
-        MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
         address user = vm.addr(privKey);
         uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, DEFAULT_ROLE);
         vm.deal(user, minimumDeposit);
@@ -365,7 +364,6 @@ contract TestMemberRegistry is Test, HelperContract {
     function test_applyToStream_Revert_ZeroUTXOAmount() external {
         // Arrange
         uint256 privKey = uint256(1);
-        MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
         address user = vm.addr(privKey);
         uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, DEFAULT_ROLE);
         vm.deal(user, minimumDeposit);
@@ -396,7 +394,6 @@ contract TestMemberRegistry is Test, HelperContract {
         address user = vm.addr(privKey);
         uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, DEFAULT_ROLE);
         vm.deal(user, minimumDeposit);
-        MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
 
         // Set the public key to 0
         memberRegistrationKeys.takeKey.publicKeyX = bytes32(0);
@@ -423,7 +420,6 @@ contract TestMemberRegistry is Test, HelperContract {
         address user = vm.addr(privKey);
         uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, DEFAULT_ROLE);
         vm.deal(user, minimumDeposit);
-        MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
 
         // Set the public key to 0
         memberRegistrationKeys.takeKey.publicKeyY = bytes32(0);
@@ -450,7 +446,6 @@ contract TestMemberRegistry is Test, HelperContract {
         address user = vm.addr(privKey);
         uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, DEFAULT_ROLE);
         vm.deal(user, minimumDeposit);
-        MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
 
         // Set the signature V to 0
         memberRegistrationKeys.takeKey.v = 0;
@@ -474,7 +469,6 @@ contract TestMemberRegistry is Test, HelperContract {
         address user = vm.addr(privKey);
         uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, DEFAULT_ROLE);
         vm.deal(user, minimumDeposit);
-        MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
 
         // Set the signature R to 0
         memberRegistrationKeys.takeKey.r = bytes32(0);
@@ -498,7 +492,6 @@ contract TestMemberRegistry is Test, HelperContract {
         address user = vm.addr(privKey);
         uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, DEFAULT_ROLE);
         vm.deal(user, minimumDeposit);
-        MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
 
         // Set the signature S to 0
         memberRegistrationKeys.takeKey.s = bytes32(0);
@@ -522,7 +515,6 @@ contract TestMemberRegistry is Test, HelperContract {
         address user = vm.addr(privKey);
         uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, DEFAULT_ROLE);
         vm.deal(user, minimumDeposit);
-        MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
 
         // Set RSA public key to empty (initialized to all zeros)
         RSAPublicKey memory emptyRSAKey;
@@ -545,7 +537,7 @@ contract TestMemberRegistry is Test, HelperContract {
         address user = vm.addr(privKey);
         uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, DEFAULT_ROLE);
         vm.deal(user, minimumDeposit);
-        MemberRegistrationKeys memory incorrectPubKeysRegistration = generateRegistrationPublicKeys(privKey);
+        MemberRegistrationKeys memory incorrectPubKeysRegistration = memberRegistrationKeys;
 
         // V can only be 27 or 28, so we set it to 29 to trigger the error
         incorrectPubKeysRegistration.takeKey.v = 29;
@@ -565,7 +557,7 @@ contract TestMemberRegistry is Test, HelperContract {
         address user = vm.addr(privKey);
         uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, DEFAULT_ROLE);
         vm.deal(user, minimumDeposit);
-        MemberRegistrationKeys memory incorrectPubKeysRegistration = generateRegistrationPublicKeys(privKey);
+        MemberRegistrationKeys memory incorrectPubKeysRegistration = memberRegistrationKeys;
 
         incorrectPubKeysRegistration.takeKey.s = keccak256(abi.encodePacked(incorrectPubKeysRegistration.takeKey.s));
 
@@ -587,7 +579,6 @@ contract TestMemberRegistry is Test, HelperContract {
         address user = vm.addr(privKey);
         uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, DEFAULT_ROLE);
         vm.deal(user, minimumDeposit);
-        MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
 
         // Set incorrect signature
         memberRegistrationKeys.takeKey.v = memberRegistrationKeys.takeKey.v == 27 ? 28 : 27;
@@ -618,7 +609,7 @@ contract TestMemberRegistry is Test, HelperContract {
         Role role = Role.OPERATOR;
         uint256 privKey = uint256(1);
         address user = vm.addr(privKey);
-        MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
+        MemberRegistrationKeys memory memberRegistrationKeysMemory = memberRegistrationKeys;
         uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, role);
         vm.deal(user, minimumDeposit);
 
@@ -627,7 +618,7 @@ contract TestMemberRegistry is Test, HelperContract {
         // Act
         vm.prank(user);
         registry.applyToStream{value: minimumDeposit}(
-            DEFAULT_STREAM, role, memberRegistrationKeys, generateDefaultUTXO()
+            DEFAULT_STREAM, role, memberRegistrationKeysMemory, generateDefaultUTXO()
         );
         uint256 gasUsed = gasStart - gasleft();
         assertLe(gasUsed, 700_000, "gas used should be less than 700_000");
@@ -642,7 +633,6 @@ contract TestMemberRegistry is Test, HelperContract {
         Role oppositeRole = _role == Role.OPERATOR ? Role.WATCHTOWER : Role.OPERATOR;
 
         uint256 privKey = uint256(1);
-        MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
         address user = vm.addr(privKey);
         uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, _role);
         vm.deal(user, minimumDeposit);
@@ -695,7 +685,6 @@ contract TestMemberRegistry is Test, HelperContract {
     function test_unsubscribeFromStream_Revert_memberIsNotCandidateForStream() external {
         // Arrange
         uint256 privKey = uint256(1);
-        MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
         address user = vm.addr(privKey);
         Role role = Role.OPERATOR;
         uint256 minimumDeposit = streamManager.getMinimumDeposit(StreamDenomination._0_001BTC, role);
@@ -752,7 +741,6 @@ contract TestMemberRegistry is Test, HelperContract {
     function test_withdrawAvailableBalance_Success() external {
         // Arrange
         uint256 privKey = uint256(1);
-        MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
         address user = vm.addr(privKey);
         uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, DEFAULT_ROLE);
         vm.deal(user, minimumDeposit);
@@ -796,7 +784,6 @@ contract TestMemberRegistry is Test, HelperContract {
     function test_withdrawAvailableBalance_Revert_noAvailableBalanceToWithdraw() external {
         // Arrange
         uint256 privKey = uint256(1);
-        MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
         address user = vm.addr(privKey);
         uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, DEFAULT_ROLE);
         vm.deal(user, minimumDeposit);
@@ -818,51 +805,53 @@ contract TestMemberRegistry is Test, HelperContract {
     }
 
     function setup_applyToStream(
-        address user,
-        MemberRegistrationKeys memory memberRegistrationKeys,
-        StreamDenomination stream,
-        Role requestedRole
+        address _user,
+        MemberRegistrationKeys memory _memberRegistrationKeys,
+        StreamDenomination _stream,
+        Role _requestedRole
     ) internal returns (uint256) {
         // Arrange
-        address[] memory committeesCandidates = memberRegistry.getCommitteeCandidates(stream, requestedRole);
+        address[] memory committeesCandidates = memberRegistry.getCommitteeCandidates(_stream, _requestedRole);
         uint256 candidatesAmountBeforeDeposit = committeesCandidates.length;
 
         // Determine the minimum bond required (getMinimumDeposit(stream))
-        uint256 minimumDeposit = streamManager.getMinimumDeposit(stream, requestedRole);
-        vm.deal(user, minimumDeposit);
+        uint256 minimumDeposit = streamManager.getMinimumDeposit(_stream, _requestedRole);
+        vm.deal(_user, minimumDeposit);
 
         // Act
-        vm.prank(user);
+        vm.prank(_user);
         registry.applyToStream{value: minimumDeposit}(
-            stream, requestedRole, memberRegistrationKeys, generateDefaultUTXO()
+            _stream, _requestedRole, _memberRegistrationKeys, generateDefaultUTXO()
         );
 
         // Assert that preStaked[streamIndex] equals the deposited amount
         assertEq(
-            memberRegistry.getMemberPreStakedBalance(user, stream),
+            memberRegistry.getMemberPreStakedBalance(_user, _stream),
             minimumDeposit,
             "member pre-staked should match the minimum deposit for stream"
         );
         // Assert that requested role is set
         assertTrue(
-            memberRegistry.getMemberRequestedRole(user, stream) == requestedRole,
+            memberRegistry.getMemberRequestedRole(_user, _stream) == _requestedRole,
             "member requested role should match the requested role for stream"
         );
         // Assert that available is still 0
         assertEq(
-            memberRegistry.getMemberAvailableBalance(user),
+            memberRegistry.getMemberAvailableBalance(_user),
             0,
             "member available balance should be 0 after deposit for stream"
         );
         // Assert that the member is listed in committeesCandidates[stream]
-        committeesCandidates = memberRegistry.getCommitteeCandidates(stream, requestedRole);
+        committeesCandidates = memberRegistry.getCommitteeCandidates(_stream, _requestedRole);
         assertEq(
             candidatesAmountBeforeDeposit + 1,
             committeesCandidates.length,
             "candidates amount should increase by 1 after deposit for stream"
         );
         assertEq(
-            committeesCandidates[committeesCandidates.length - 1], user, "candidate address should match member address"
+            committeesCandidates[committeesCandidates.length - 1],
+            _user,
+            "candidate address should match member address"
         );
         return minimumDeposit;
     }
@@ -909,7 +898,6 @@ contract TestMemberRegistry is Test, HelperContract {
     function test_Integration_applyToStream_unsubscribeFromStream_withdrawAvailableBalance_every_stream() external {
         // Arrange
         uint256 privKey = uint256(1);
-        MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
         address user = vm.addr(privKey);
         uint256 totalDeposited = 0;
         Role requestedRole = Role.OPERATOR;
@@ -967,7 +955,6 @@ contract TestMemberRegistry is Test, HelperContract {
         // Arrange
         uint256 privKey = uint256(1);
         address userAddress = vm.addr(privKey);
-        MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
         MemberKeys memory pubKeys = getXPublicKeysFromRegistration(memberRegistrationKeys);
         setup_applyToStream(StreamDenomination._0_001BTC, userAddress, memberRegistrationKeys, Role.OPERATOR);
 
@@ -1036,7 +1023,6 @@ contract TestMemberRegistry is Test, HelperContract {
     function test_registerMember_Success() external {
         // Arrange
         uint256 privKey = uint256(1);
-        MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
         MemberKeys memory pubKeys = getXPublicKeysFromRegistration(memberRegistrationKeys);
         address user = vm.addr(privKey);
 
@@ -1146,7 +1132,6 @@ contract TestMemberRegistry is Test, HelperContract {
     function test_setReApplyForStream_Success() external {
         // Arrange
         uint256 privKey = uint256(1);
-        MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
         address user = vm.addr(privKey);
         setup_applyToStream(user, memberRegistrationKeys, DEFAULT_STREAM, Role.OPERATOR);
 
@@ -1180,7 +1165,6 @@ contract TestMemberRegistry is Test, HelperContract {
     function test_setReApplyForStream_Success_beforeApply() external {
         // Arrange
         uint256 privKey = uint256(1);
-        MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
         address user = vm.addr(privKey);
         StreamDenomination denomination = StreamDenomination._0_001BTC;
         StreamDenomination differentDenomination = StreamDenomination._0_01BTC;
@@ -1474,7 +1458,7 @@ contract TestMemberRegistry is Test, HelperContract {
         // Arrange
         uint256 privKey = 1;
         address memberAddress = vm.addr(privKey);
-        MemberRegistrationKeys memory publicKeysRegistration = generateRegistrationPublicKeys(privKey);
+        MemberRegistrationKeys memory publicKeysRegistration = memberRegistrationKeys;
 
         // Register the member by applying to a stream
         setup_applyToStream(StreamDenomination._0_01BTC, memberAddress, publicKeysRegistration, Role.OPERATOR);
@@ -1507,7 +1491,6 @@ contract TestMemberRegistry is Test, HelperContract {
     function test_applyToStream_Revert_UnauthorizedAccount() external {
         // Arrange
         uint256 privKey = uint256(1);
-        MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
         address user = vm.addr(privKey);
         uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, DEFAULT_ROLE);
         vm.deal(user, minimumDeposit);
@@ -1525,7 +1508,6 @@ contract TestMemberRegistry is Test, HelperContract {
     function test_unsubscribeFromStream_Revert_UnauthorizedAccount() external {
         // Arrange
         uint256 privKey = uint256(1);
-        MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
         address user = vm.addr(privKey);
         uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, DEFAULT_ROLE);
         vm.deal(user, minimumDeposit);
