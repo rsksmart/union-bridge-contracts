@@ -13,8 +13,8 @@ contract AcceptPeginScript is ScriptUtils {
     IStreamManager streamManager;
     IBitcoinManager bitcoinManager;
 
-    function setUp(bytes32 _requestPeginTxHash) internal returns (BtcTxSPVProof memory peginAcceptedTxSPVProof) {
-        // This is the peg-in request transaction hash that was previously registered
+    function setUp(bytes32 _requestPeginTxid) internal returns (BtcTxSPVProof memory peginAcceptedTxSPVProof) {
+        // This is the peg-in request transaction id that was previously registered
         // ====== Arguments ======
         // The other data is obtained from the peg-in request transaction
         pegManager = PegManager(0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6);
@@ -24,13 +24,13 @@ contract AcceptPeginScript is ScriptUtils {
         bitcoinManager = IBitcoinManager(pegManager.bitcoinManager());
 
         // Check if the peg-in request exists and is in REGISTERED status
-        StreamPosition memory streamPosition = pegManager.getStreamPosition(_requestPeginTxHash);
+        StreamPosition memory streamPosition = pegManager.getStreamPosition(_requestPeginTxid);
         if (streamPosition.pegStatus != PegStatus.REGISTERED) {
             revert("PeginRequest not registered or already accepted");
         }
 
         // Get the peg-in request temporary info
-        RequestPeginTempInfo memory requestPeginTempInfo = pegManager.getRequestPeginTempInfo(_requestPeginTxHash);
+        RequestPeginTempInfo memory requestPeginTempInfo = pegManager.getRequestPeginTempInfo(_requestPeginTxid);
 
         // Get the committee public key
         bytes memory committeePubKey =
@@ -42,7 +42,7 @@ contract AcceptPeginScript is ScriptUtils {
 
         // Input consuming the peg-in request UTXO
         btcTransaction.inputs[0] = BtcTxIn({
-            txId: _requestPeginTxHash,
+            txId: _requestPeginTxid,
             vout: 0, // VOUT_INDEX_TAPTREE is 0
             scriptSig: hex"",
             sequence: 0xFFFFFFFD
@@ -72,12 +72,12 @@ contract AcceptPeginScript is ScriptUtils {
             0x3fcef4a1ddf759a858190b89ecbd1ff3dffb49704e110b68baf5b5de7021910f;
     }
 
-    function run(bytes32 _requestPeginTxHash) public {
-        BtcTxSPVProof memory peginAcceptedTxSPVProof = setUp(_requestPeginTxHash);
-        // get Tx hash
-        bytes32 peginAcceptedTxHash = bitcoinManager.getBtcTxHash(peginAcceptedTxSPVProof.btcTx);
-        console.log("peginAcceptedTxHash");
-        console.logBytes32(peginAcceptedTxHash);
+    function run(bytes32 _requestPeginTxid) public {
+        BtcTxSPVProof memory peginAcceptedTxSPVProof = setUp(_requestPeginTxid);
+        // get Tx id
+        bytes32 peginAcceptedTxid = bitcoinManager.getBtcTxid(peginAcceptedTxSPVProof.btcTx);
+        console.log("peginAcceptedTxid");
+        console.logBytes32(peginAcceptedTxid);
 
         // accept peginRequest
         vm.startBroadcast(getDeployerKey());
@@ -85,7 +85,7 @@ contract AcceptPeginScript is ScriptUtils {
         vm.stopBroadcast();
 
         // check if peginRequest is accepted
-        StreamPosition memory streamPosition = pegManager.getStreamPosition(_requestPeginTxHash);
+        StreamPosition memory streamPosition = pegManager.getStreamPosition(_requestPeginTxid);
         if (streamPosition.pegStatus != PegStatus.ACCEPTED) {
             revert("PeginRequest not accepted");
         }

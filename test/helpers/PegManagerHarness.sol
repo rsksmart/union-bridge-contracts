@@ -18,8 +18,8 @@ contract PegManagerHarness is PegManager {
         PegManager.initialize(_initialOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager, _settings);
     }
 
-    function setPegoutTempInfoHarness(bytes32 _acceptPeginTxHash, bytes memory _userPubKey) external {
-        pegoutTempInfo[_acceptPeginTxHash] = PegoutTempInfo({
+    function setPegoutTempInfoHarness(bytes32 _acceptPeginTxid, bytes memory _userPubKey) external {
+        pegoutTempInfo[_acceptPeginTxid] = PegoutTempInfo({
             userPubKey: _userPubKey,
             createdAt: block.timestamp,
             operatorTakeUpdatedAt: 0,
@@ -30,13 +30,13 @@ contract PegManagerHarness is PegManager {
     }
 
     function setStreamPositionHarness(
-        bytes32 _acceptPeginTxhash,
+        bytes32 _acceptPeginTxid,
         uint64 _streamId,
         uint64 _packetNumber,
         uint64 _slotId,
         PegStatus _pegStatus
     ) external {
-        streamPosition[_acceptPeginTxhash] =
+        streamPosition[_acceptPeginTxid] =
             StreamPosition({streamId: _streamId, packetNumber: _packetNumber, slotId: _slotId, pegStatus: _pegStatus});
     }
 }

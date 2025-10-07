@@ -28,18 +28,18 @@ struct Signatures {
 /// @notice Represents OperatorTake transaction data for a committee member
 /// @dev Used for OperatorTake operations (advance funds to the user)
 struct OperatorTakeData {
-    /// @notice The transaction hash provided by the member
-    bytes32 txHash;
+    /// @notice The transaction id provided by the member
+    bytes32 txid;
     /// @notice The member's address
     address memberAddress;
 }
 
-/// @notice Represents the state of OperatorTake transaction hashes for a specific accept peg-in
-/// @dev Tracks OperatorTake transaction hashes provided by committee members
-struct OperatorTakeTxHashes {
-    /// @notice Mapping of member addresses to their OperatorTake transaction hashes
-    mapping(address memberAddress => bytes32 operatorTakeTxHash) txHashes;
-    /// @notice Number of missing OperatorTake transaction hashes
+/// @notice Represents the state of OperatorTake transaction ides for a specific accept peg-in
+/// @dev Tracks OperatorTake transaction ides provided by committee members
+struct OperatorTakeTxids {
+    /// @notice Mapping of member addresses to their OperatorTake transaction ides
+    mapping(address memberAddress => bytes32 operatorTakeTxid) txids;
+    /// @notice Number of missing OperatorTake transaction ides
     uint8 missingHashes;
     /// @notice ID of the committee responsible for these hashes
     uint128 committeeId;
@@ -89,32 +89,32 @@ interface ISignatureManager is IAccessControl {
         view
         returns (uint8 missingSignatures, uint8 missingNonces, uint128 committeeId);
 
-    /// @notice Initializes OperatorTake transaction hash collection for a specific accept peg-in
+    /// @notice Initializes OperatorTake transaction id collection for a specific accept peg-in
     /// @dev Sets up the OperatorTake hash tracking structure for committee members
-    /// @param _acceptPeginTxHash The accept peg-in transaction hash
+    /// @param _acceptPeginTxid The accept peg-in transaction id
     /// @param _committeeId The ID of the committee responsible for OperatorTake operations
-    function initOperatorTakeTxHashes(bytes32 _acceptPeginTxHash, uint128 _committeeId) external;
+    function initOperatorTakeTxids(bytes32 _acceptPeginTxid, uint128 _committeeId) external;
 
-    /// @notice Adds a OperatorTake transaction hash for a committee member
-    /// @dev Called by committee operators to provide their OperatorTake transaction hash
-    /// @param _acceptPeginTxHash The accept peg-in transaction hash
-    /// @param _takeTxhash The OperatorTake transaction hash provided by the member
-    function addOperatorTakeTxHash(bytes32 _acceptPeginTxHash, bytes32 _takeTxhash) external;
+    /// @notice Adds a OperatorTake transaction id for a committee member
+    /// @dev Called by committee operators to provide their OperatorTake transaction id
+    /// @param _acceptPeginTxid The accept peg-in transaction id
+    /// @param _takeTxid The OperatorTake transaction id provided by the member
+    function addOperatorTakeTxid(bytes32 _acceptPeginTxid, bytes32 _takeTxid) external;
 
-    /// @notice Checks if all OperatorTake transaction hashes are ready
-    /// @param _acceptPeginTxHash The accept peg-in transaction hash
+    /// @notice Checks if all OperatorTake transaction ides are ready
+    /// @param _acceptPeginTxid The accept peg-in transaction id
     /// @return True if all required OperatorTake hashes have been collected
-    function checkAllOperatorTakesHashesReady(bytes32 _acceptPeginTxHash) external view returns (bool);
+    function checkAllOperatorTakesHashesReady(bytes32 _acceptPeginTxid) external view returns (bool);
 
     /// @notice Retrieves all OperatorTake data for a specific accept peg-in
-    /// @param _acceptPeginTxHash The accept peg-in transaction hash
+    /// @param _acceptPeginTxid The accept peg-in transaction id
     /// @return Array of OperatorTake data from all committee members
-    function getOperatorTakeData(bytes32 _acceptPeginTxHash) external view returns (OperatorTakeData[] memory);
+    function getOperatorTakeData(bytes32 _acceptPeginTxid) external view returns (OperatorTakeData[] memory);
 
-    /// @notice Gets the committee ID for a specific accept peg-in transaction hash
-    /// @param _acceptPeginTxHash The accept peg-in transaction hash
+    /// @notice Gets the committee ID for a specific accept peg-in transaction id
+    /// @param _acceptPeginTxid The accept peg-in transaction id
     /// @return The committee ID responsible for this accept peg-in
-    function getCommitteeIdByAcceptPeginTxHash(bytes32 _acceptPeginTxHash) external view returns (uint128);
+    function getCommitteeIdByAcceptPeginTxid(bytes32 _acceptPeginTxid) external view returns (uint128);
 
     // Events
     /// @notice Event emitted when a nonce is added by a committee member
@@ -137,15 +137,15 @@ interface ISignatureManager is IAccessControl {
     /// @param hashToSign The hash for which all signatures are ready
     event AllSignaturesReady(bytes32 indexed hashToSign);
 
-    /// @notice Event emitted when a OperatorTake transaction hash is added
-    /// @param acceptPeginTxHash The accept peg-in transaction hash
+    /// @notice Event emitted when a OperatorTake transaction id is added
+    /// @param acceptPeginTxid The accept peg-in transaction id
     /// @param memberAddress The member's address
-    /// @param hash The OperatorTake transaction hash provided by the member
-    event OperatorTakeTxHashAdded(bytes32 acceptPeginTxHash, address memberAddress, bytes32 hash);
+    /// @param hash The OperatorTake transaction id provided by the member
+    event OperatorTakeTxidAdded(bytes32 acceptPeginTxid, address memberAddress, bytes32 hash);
 
-    /// @notice Event emitted when all OperatorTake transaction hashes are added
-    /// @param acceptPeginTxHash The accept peg-in transaction hash
-    event AllOperatorTakeTxHashesAdded(bytes32 acceptPeginTxHash);
+    /// @notice Event emitted when all OperatorTake transaction ides are added
+    /// @param acceptPeginTxid The accept peg-in transaction id
+    event AllOperatorTakeTxidsAdded(bytes32 acceptPeginTxid);
 
     // Errors
     /// @notice Thrown when the committee registry address is set to zero
@@ -174,8 +174,8 @@ interface ISignatureManager is IAccessControl {
 
     /// @notice Thrown when a member has already signed
     /// @param memberAddress The member's address
-    /// @param pegoutTxHash The peg-out transaction hash
-    error MemberHasAlreadySigned(address memberAddress, bytes32 pegoutTxHash);
+    /// @param pegoutTxid The peg-out transaction id
+    error MemberHasAlreadySigned(address memberAddress, bytes32 pegoutTxid);
 
     /// @notice Thrown when a member is not found
     /// @param memberAddress The member's address
@@ -194,21 +194,21 @@ interface ISignatureManager is IAccessControl {
     /// @param hashToSign The hash for which signatures are already initialized
     error SignaturesAlreadyInitialized(bytes32 hashToSign);
 
-    /// @notice Thrown when the accept peg-in transaction hash is invalid
-    /// @param acceptPeginTxHash The invalid accept peg-in transaction hash
-    error InvalidAcceptPeginTxHash(bytes32 acceptPeginTxHash);
+    /// @notice Thrown when the accept peg-in transaction id is invalid
+    /// @param acceptPeginTxid The invalid accept peg-in transaction id
+    error InvalidAcceptPeginTxid(bytes32 acceptPeginTxid);
 
-    /// @notice Thrown when OperatorTake transaction hashes are already initialized
-    /// @param acceptPeginTxHash The accept peg-in transaction hash
-    error OperatorTakeTxHashesAlreadyInitialized(bytes32 acceptPeginTxHash);
+    /// @notice Thrown when OperatorTake transaction ides are already initialized
+    /// @param acceptPeginTxid The accept peg-in transaction id
+    error OperatorTakeTxidsAlreadyInitialized(bytes32 acceptPeginTxid);
 
-    /// @notice Thrown when an accept peg-in transaction hash is not found
-    /// @param acceptPeginTxHash The accept peg-in transaction hash that was not found
-    error AcceptPeginTxHashNotFound(bytes32 acceptPeginTxHash);
+    /// @notice Thrown when an accept peg-in transaction id is not found
+    /// @param acceptPeginTxid The accept peg-in transaction id that was not found
+    error AcceptPeginTxidNotFound(bytes32 acceptPeginTxid);
 
-    /// @notice Thrown when all OperatorTake transaction hashes are already present
-    /// @param acceptPeginTxHash The accept peg-in transaction hash
-    error AllOperatorTakeTxHashesAlreadyPresent(bytes32 acceptPeginTxHash);
+    /// @notice Thrown when all OperatorTake transaction ides are already present
+    /// @param acceptPeginTxid The accept peg-in transaction id
+    error AllOperatorTakeTxidsAlreadyPresent(bytes32 acceptPeginTxid);
 
     /// @notice Thrown when a hash is invalid
     /// @param hash The invalid hash
@@ -219,9 +219,9 @@ interface ISignatureManager is IAccessControl {
     /// @param memberAddress The member's address
     error MemberIsNotOperator(uint128 committeeId, address memberAddress);
 
-    /// @notice Thrown when a member has already added a OperatorTake transaction hash
-    /// @param acceptPeginTxHash The accept peg-in transaction hash
+    /// @notice Thrown when a member has already added a OperatorTake transaction id
+    /// @param acceptPeginTxid The accept peg-in transaction id
     /// @param memberAddress The member's address
-    /// @param hash The OperatorTake transaction hash that was already added
-    error MemberAlreadyAddedOperatorTakeTxHash(bytes32 acceptPeginTxHash, address memberAddress, bytes32 hash);
+    /// @param hash The OperatorTake transaction id that was already added
+    error MemberAlreadyAddedOperatorTakeTxid(bytes32 acceptPeginTxid, address memberAddress, bytes32 hash);
 }

@@ -352,18 +352,18 @@ contract StreamManager is IStreamManager, AccessControl {
         return getPacket(_streamId, _packetNumber).committeePubKey;
     }
 
-    /// @notice Marks a slot as completed and stores the UserTake transaction hash
+    /// @notice Marks a slot as completed and stores the UserTake transaction id
     /// @dev Can only be called by the PegManager
     /// @param _streamId The ID of the stream
     /// @param _packetNumber The packet number
     /// @param _slotId The slot ID
-    /// @param _acceptPeginTxHash The hash of the accept peg-in transaction
+    /// @param _acceptPeginTxid The hash of the accept peg-in transaction
     /// @param _userTakeTx The hash of the UserTake transaction
     function completeSlot(
         uint64 _streamId,
         uint64 _packetNumber,
         uint64 _slotId,
-        bytes32 _acceptPeginTxHash,
+        bytes32 _acceptPeginTxid,
         bytes32 _userTakeTx
     ) external onlyPegManager {
         Slot storage slot = _getSlot(_streamId, _packetNumber, _slotId);
@@ -374,11 +374,11 @@ contract StreamManager is IStreamManager, AccessControl {
         }
 
         // Validate that the first input references the correct accept peg-in transaction
-        if (slot.acceptPeginTx != _acceptPeginTxHash) {
-            revert InvalidAcceptPeginTxHash(slot.acceptPeginTx, _acceptPeginTxHash);
+        if (slot.acceptPeginTx != _acceptPeginTxid) {
+            revert InvalidAcceptPeginTxid(slot.acceptPeginTx, _acceptPeginTxid);
         }
 
-        // Update the slot state to COMPLETED and store the user take tx hash
+        // Update the slot state to COMPLETED and store the user take tx id
         slot.state = SlotState.COMPLETED;
         slot.take0Tx = _userTakeTx;
     }

@@ -77,7 +77,7 @@ abstract contract ScriptUtils is Script {
     }
 
     // ========================== Peg out ==========================
-    function createPegoutTx(bytes32 _acceptPeginTxHash, bytes memory _userPubKey, uint64 _amount)
+    function createPegoutTx(bytes32 _acceptPeginTxid, bytes memory _userPubKey, uint64 _amount)
         internal
         pure
         returns (BtcTransaction memory)
@@ -85,7 +85,7 @@ abstract contract ScriptUtils is Script {
         // Input: spend the accept peg-in UTXO
         BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
         btcInputs[0] = BtcTxIn({
-            txId: _acceptPeginTxHash,
+            txId: _acceptPeginTxid,
             vout: 0, // P2TR output is at index 0
             sequence: 0xfffffffd,
             scriptSig: hex""

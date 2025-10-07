@@ -215,13 +215,13 @@ interface IStreamManager is IAccessControl {
     /// @param _streamId The index of the stream
     /// @param _packetNumber The index of the packet within the stream
     /// @param _slotId The index of the slot within the packet
-    /// @param _acceptPeginTxHash The expected accept peg-in transaction hash for validation
+    /// @param _acceptPeginTxid The expected accept peg-in transaction id for validation
     /// @param _userTakeTx The transaction ID of the normal peg-out transaction
     function completeSlot(
         uint64 _streamId,
         uint64 _packetNumber,
         uint64 _slotId,
-        bytes32 _acceptPeginTxHash,
+        bytes32 _acceptPeginTxid,
         bytes32 _userTakeTx
     ) external;
 
@@ -403,10 +403,10 @@ interface IStreamManager is IAccessControl {
     /// @param expected The expected slot state
     error InvalidSlotState(SlotState actual, SlotState expected);
 
-    /// @notice Thrown when the accept peg-in transaction hash doesn't match
-    /// @param expected The expected transaction hash
-    /// @param actual The actual transaction hash
-    error InvalidAcceptPeginTxHash(bytes32 expected, bytes32 actual);
+    /// @notice Thrown when the accept peg-in transaction id doesn't match
+    /// @param expected The expected transaction id
+    /// @param actual The actual transaction id
+    error InvalidAcceptPeginTxid(bytes32 expected, bytes32 actual);
 
     /// @notice Thrown when an address is zero
     error InvalidZeroAddress();

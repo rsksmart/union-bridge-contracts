@@ -12,7 +12,7 @@ contract RegisterUserTakeScript is ScriptUtils {
 
     uint64 amount;
     bytes userPubKey;
-    bytes32 acceptPeginTxHash;
+    bytes32 acceptPeginTxid;
 
     Stream stream;
     uint64 expectedPacketNumber;
@@ -21,7 +21,7 @@ contract RegisterUserTakeScript is ScriptUtils {
     function setUp() internal {
         pegManager = PegManager(0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6);
 
-        acceptPeginTxHash = 0x57450e6c6141e63115cf56fc9fd8c29e20792a8c488c3d9e2bd99edac6496ffc;
+        acceptPeginTxid = 0x57450e6c6141e63115cf56fc9fd8c29e20792a8c488c3d9e2bd99edac6496ffc;
         userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
         amount = 100_000; // 0.001 BTC
 
@@ -34,7 +34,7 @@ contract RegisterUserTakeScript is ScriptUtils {
     function run() public {
         setUp();
 
-        BtcTransaction memory pegoutTx = createPegoutTx(acceptPeginTxHash, userPubKey, amount);
+        BtcTransaction memory pegoutTx = createPegoutTx(acceptPeginTxid, userPubKey, amount);
         BtcTxSPVProof memory pegoutTxSPVProof = createBtcTxSPVProof(pegoutTx);
 
         // Register peg-out transaction

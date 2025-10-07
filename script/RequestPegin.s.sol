@@ -68,12 +68,12 @@ contract RequestPeginScript is ScriptUtils {
 
     function run(address _rskDestinationAddress) public {
         BtcTxSPVProof memory peginRequestTxSPVProof = setUp(_rskDestinationAddress);
-        // get Tx hash
-        bytes32 peginRequestTxHash = bitcoinManager.getBtcTxHash(peginRequestTxSPVProof.btcTx);
-        console.log("peginRequestTxHash");
-        console.logBytes32(peginRequestTxHash);
+        // get Tx id
+        bytes32 peginRequestTxid = bitcoinManager.getBtcTxid(peginRequestTxSPVProof.btcTx);
+        console.log("peginRequestTxid");
+        console.logBytes32(peginRequestTxid);
         // check if peginRequest is already registered
-        StreamPosition memory streamPosition = pegManager.getStreamPosition(peginRequestTxHash);
+        StreamPosition memory streamPosition = pegManager.getStreamPosition(peginRequestTxid);
         if (streamPosition.pegStatus != PegStatus.NOT_REGISTERED) {
             revert("PeginRequest already registered");
         }
@@ -83,7 +83,7 @@ contract RequestPeginScript is ScriptUtils {
         pegManager.requestPegin(peginRequestTxSPVProof);
         vm.stopBroadcast();
         // check if peginRequest is registered
-        streamPosition = pegManager.getStreamPosition(peginRequestTxHash);
+        streamPosition = pegManager.getStreamPosition(peginRequestTxid);
         if (streamPosition.pegStatus != PegStatus.REGISTERED) {
             revert("PeginRequest not registered");
         }
@@ -92,9 +92,9 @@ contract RequestPeginScript is ScriptUtils {
         console.log(streamPosition.streamId);
         console.log("packetNumber");
         console.log(streamPosition.packetNumber);
-        console.log("accept pegin Tx Hash");
-        console.logBytes32(pegManager.getPeginRequest(peginRequestTxHash));
-        RequestPeginTempInfo memory requestPeginTempInfo = pegManager.getRequestPeginTempInfo(peginRequestTxHash);
+        console.log("accept pegin Tx id");
+        console.logBytes32(pegManager.getPeginRequest(peginRequestTxid));
+        RequestPeginTempInfo memory requestPeginTempInfo = pegManager.getRequestPeginTempInfo(peginRequestTxid);
         console.log("accept pegin Signature Hash");
         console.logBytes32(requestPeginTempInfo.acceptPeginSignatureHash);
     }
