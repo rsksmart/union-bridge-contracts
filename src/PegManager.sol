@@ -51,7 +51,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
     /// @notice Timeout for operator take operations
     uint256 public operatorTakeTimeout;
 
-    mapping(bytes32 requestPeginTxid => bytes32 acceptPeginTxid) internal peginRequests;
+    mapping(bytes32 requestPeginTxid => bytes32 acceptPeginTxid) internal acceptPegins;
 
     mapping(bytes32 acceptPeginTxid => StreamPosition streamPosition) internal streamPosition;
 
@@ -137,8 +137,8 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
     /// @notice Gets the accept peg-in transaction id for a given request peg-in transaction id
     /// @param _requestPeginTxid The request peg-in transaction id
     /// @return The accept peg-in transaction id
-    function getPeginRequest(bytes32 _requestPeginTxid) external view returns (bytes32) {
-        return peginRequests[_requestPeginTxid];
+    function getAcceptPegin(bytes32 _requestPeginTxid) external view returns (bytes32) {
+        return acceptPegins[_requestPeginTxid];
     }
 
     /// @notice Gets the temporary peg-in information for a given request peg-in transaction id
@@ -225,7 +225,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         uint128 committeeId = streamManager.getCommitteeId(stream.streamId, packetNumber);
 
         // Store request mapping before external calls
-        peginRequests[requestPeginTxid] = acceptPeginSignatureData.txid;
+        acceptPegins[requestPeginTxid] = acceptPeginSignatureData.txid;
 
         // Reserve slot during request peg-in - external call
         // slither-disable-next-line reentrancy-no-eth reentrancy-benign
@@ -360,8 +360,8 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         bytes32 acceptPegintxid = bitcoinManager.getBtcTxid(_peginAcceptedTxSPVProof.btcTx);
 
         // Validate the txid is the same calculated at request peg in tx
-        if (peginRequests[requestPeginTxid] != acceptPegintxid) {
-            revert InvalidAcceptPeginTxid(peginRequests[requestPeginTxid], acceptPegintxid);
+        if (acceptPegins[requestPeginTxid] != acceptPegintxid) {
+            revert InvalidAcceptPeginTxid(acceptPegins[requestPeginTxid], acceptPegintxid);
         }
 
         // Verify the acceptPegintxid part of the Merkle Root of Tx of a Block
@@ -585,7 +585,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
     }
 
     function _getStreamPosition(bytes32 _acceptPeginTxid) internal view returns (StreamPosition memory) {
-        return streamPosition[peginRequests[_acceptPeginTxid]];
+        return streamPosition[acceptPegins[_acceptPeginTxid]];
     }
 
     function _storePegoutAndInitSignatures(bytes32 _pegoutTxid, uint64 _streamId, uint64 _packetNumber, uint64 _slotId)

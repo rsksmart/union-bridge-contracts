@@ -530,7 +530,7 @@ contract TestPegManager is Test, HelperContract {
         assertEq(streamPosition.streamId, stream.streamId, "Stream ID should match");
         assertEq(streamPosition.packetNumber, expectedPacketNumber, "Packet number should match");
         assertEq(streamPosition.slotId, expectedSlotId, "Slot ID should match");
-        assertEq(pm.getPeginRequest(requestPeginTxid), acceptPeginTxid, "Accept peg-in tx id should match");
+        assertEq(pm.getAcceptPegin(requestPeginTxid), acceptPeginTxid, "Accept peg-in tx id should match");
         assertTrue(
             streamManager.getSlot(stream.streamId, expectedPacketNumber, expectedSlotId).state == SlotState.COMPLETED,
             "Slot state should be COMPLETED"
