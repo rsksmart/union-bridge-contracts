@@ -22,7 +22,7 @@ contract TestProofValidator is Test, HelperContract {
         bridgeMock.setBtcTransactionConfirmations(actualConfirmations);
         // Proof arguments
         uint256 minConfirmations = 10;
-        bytes32 txHash = 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079;
+        bytes32 txid = 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079;
         bytes32 blockHash = 0x0000000000000000000282fa21665766e58eb6cb94e458c3ef6d4af1121e38d9;
         uint256 merkleBranchPath = 4285202432;
         bytes32[] memory merkleBranchHashes = new bytes32[](13);
@@ -42,7 +42,7 @@ contract TestProofValidator is Test, HelperContract {
 
         // Act
         proofValidator.verifyTxConfirmationsHarness(
-            minConfirmations, txHash, blockHash, merkleBranchPath, merkleBranchHashes
+            minConfirmations, txid, blockHash, merkleBranchPath, merkleBranchHashes
         );
     }
 
@@ -53,7 +53,7 @@ contract TestProofValidator is Test, HelperContract {
         bridgeMock.setBtcTransactionConfirmations(actualConfirmations);
         // Proof arguments
         uint256 minConfirmations = 10;
-        bytes32 txHash = 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079;
+        bytes32 txid = 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079;
         bytes32 blockHash = 0x0000000000000000000282fa21665766e58eb6cb94e458c3ef6d4af1121e38d9;
         uint256 merkleBranchPath = 4285202432;
         bytes32[] memory merkleBranchHashes = new bytes32[](13);
@@ -61,7 +61,7 @@ contract TestProofValidator is Test, HelperContract {
 
         // Act
         proofValidator.verifyTxConfirmationsHarness(
-            minConfirmations, txHash, blockHash, merkleBranchPath, merkleBranchHashes
+            minConfirmations, txid, blockHash, merkleBranchPath, merkleBranchHashes
         );
     }
 
@@ -72,7 +72,7 @@ contract TestProofValidator is Test, HelperContract {
         bridgeMock.setBtcTransactionConfirmations(actualConfirmations);
         // Proof arguments
         uint256 minConfirmations = 10;
-        bytes32 txHash = 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079;
+        bytes32 txid = 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079;
         bytes32 blockHash = 0x0000000000000000000282fa21665766e58eb6cb94e458c3ef6d4af1121e38d9;
         uint256 merkleBranchPath = 4285202432;
         bytes32[] memory merkleBranchHashes = new bytes32[](1);
@@ -82,7 +82,7 @@ contract TestProofValidator is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(ProofValidator.BridgeBtcInexistantBlockHash.selector, blockHash));
         // Act
         proofValidator.verifyTxConfirmationsHarness(
-            minConfirmations, txHash, blockHash, merkleBranchPath, merkleBranchHashes
+            minConfirmations, txid, blockHash, merkleBranchPath, merkleBranchHashes
         );
     }
 
@@ -93,7 +93,7 @@ contract TestProofValidator is Test, HelperContract {
         bridgeMock.setBtcTransactionConfirmations(actualConfirmations);
         // Proof arguments
         uint256 minConfirmations = 10;
-        bytes32 txHash = 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079;
+        bytes32 txid = 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079;
         bytes32 blockHash = 0x0000000000000000000282fa21665766e58eb6cb94e458c3ef6d4af1121e38d9;
         uint256 merkleBranchPath = 4285202432;
         bytes32[] memory merkleBranchHashes = new bytes32[](1);
@@ -103,7 +103,7 @@ contract TestProofValidator is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(ProofValidator.BridgeBtcBlockNotInBestChain.selector, blockHash));
         // Act
         proofValidator.verifyTxConfirmationsHarness(
-            minConfirmations, txHash, blockHash, merkleBranchPath, merkleBranchHashes
+            minConfirmations, txid, blockHash, merkleBranchPath, merkleBranchHashes
         );
     }
 
@@ -114,7 +114,7 @@ contract TestProofValidator is Test, HelperContract {
         bridgeMock.setBtcTransactionConfirmations(actualConfirmations);
         // Proof arguments
         uint256 minConfirmations = 10;
-        bytes32 txHash = 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079;
+        bytes32 txid = 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079;
         bytes32 blockHash = 0x0000000000000000000282fa21665766e58eb6cb94e458c3ef6d4af1121e38d9;
         uint256 merkleBranchPath = 4285202432;
         bytes32[] memory merkleBranchHashes = new bytes32[](1);
@@ -124,7 +124,7 @@ contract TestProofValidator is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(ProofValidator.BridgeBtcInconsistentBlock.selector, blockHash));
         // Act
         proofValidator.verifyTxConfirmationsHarness(
-            minConfirmations, txHash, blockHash, merkleBranchPath, merkleBranchHashes
+            minConfirmations, txid, blockHash, merkleBranchPath, merkleBranchHashes
         );
     }
 
@@ -135,7 +135,7 @@ contract TestProofValidator is Test, HelperContract {
         bridgeMock.setBtcTransactionConfirmations(actualConfirmations);
         // Proof arguments
         uint256 minConfirmations = 10;
-        bytes32 txHash = 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079;
+        bytes32 txid = 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079;
         bytes32 blockHash = 0x0000000000000000000282fa21665766e58eb6cb94e458c3ef6d4af1121e38d9;
         uint256 merkleBranchPath = 4285202432;
         bytes32[] memory merkleBranchHashes = new bytes32[](1);
@@ -145,7 +145,7 @@ contract TestProofValidator is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(ProofValidator.BridgeBtcBlockTooOld.selector, 4320));
         // Act
         proofValidator.verifyTxConfirmationsHarness(
-            minConfirmations, txHash, blockHash, merkleBranchPath, merkleBranchHashes
+            minConfirmations, txid, blockHash, merkleBranchPath, merkleBranchHashes
         );
     }
 
@@ -156,7 +156,7 @@ contract TestProofValidator is Test, HelperContract {
         bridgeMock.setBtcTransactionConfirmations(actualConfirmations);
         // Proof arguments
         uint256 minConfirmations = 10;
-        bytes32 txHash = 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079;
+        bytes32 txid = 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079;
         bytes32 blockHash = 0x0000000000000000000282fa21665766e58eb6cb94e458c3ef6d4af1121e38d9;
         uint256 merkleBranchPath = 4285202432;
         bytes32[] memory merkleBranchHashes = new bytes32[](1);
@@ -165,12 +165,12 @@ contract TestProofValidator is Test, HelperContract {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(
-                ProofValidator.BridgeBtcTxInvalidMerkleBranch.selector, txHash, merkleBranchPath, merkleBranchHashes
+                ProofValidator.BridgeBtcTxInvalidMerkleBranch.selector, txid, merkleBranchPath, merkleBranchHashes
             )
         );
         // Act
         proofValidator.verifyTxConfirmationsHarness(
-            minConfirmations, txHash, blockHash, merkleBranchPath, merkleBranchHashes
+            minConfirmations, txid, blockHash, merkleBranchPath, merkleBranchHashes
         );
     }
 
@@ -181,7 +181,7 @@ contract TestProofValidator is Test, HelperContract {
         bridgeMock.setBtcTransactionConfirmations(actualConfirmations);
         // Proof arguments
         uint256 minConfirmations = 10;
-        bytes32 txHash = 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079;
+        bytes32 txid = 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079;
         bytes32 blockHash = 0x0000000000000000000282fa21665766e58eb6cb94e458c3ef6d4af1121e38d9;
         uint256 merkleBranchPath = 4285202432;
         bytes32[] memory merkleBranchHashes = new bytes32[](1);
@@ -191,7 +191,7 @@ contract TestProofValidator is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(ProofValidator.BridgeBtcUnknownError.selector, actualConfirmations));
         // Act
         proofValidator.verifyTxConfirmationsHarness(
-            minConfirmations, txHash, blockHash, merkleBranchPath, merkleBranchHashes
+            minConfirmations, txid, blockHash, merkleBranchPath, merkleBranchHashes
         );
     }
 
@@ -202,7 +202,7 @@ contract TestProofValidator is Test, HelperContract {
         bridgeMock.setBtcTransactionConfirmations(actualConfirmations);
         // Proof arguments
         uint256 minConfirmations = 10;
-        bytes32 txHash = 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079;
+        bytes32 txid = 0xc00e989a80847a9e2d3e605904ae24c097b1e5abcfa6805434ab802abfcfd079;
         bytes32 blockHash = 0x0000000000000000000282fa21665766e58eb6cb94e458c3ef6d4af1121e38d9;
         uint256 merkleBranchPath = 4285202432;
         bytes32[] memory merkleBranchHashes = new bytes32[](1);
@@ -216,7 +216,7 @@ contract TestProofValidator is Test, HelperContract {
         );
         // Act
         proofValidator.verifyTxConfirmationsHarness(
-            minConfirmations, txHash, blockHash, merkleBranchPath, merkleBranchHashes
+            minConfirmations, txid, blockHash, merkleBranchPath, merkleBranchHashes
         );
     }
 }

@@ -86,11 +86,11 @@ contract BridgeMock is IBridge {
         return abi.encodePacked(mockBlockHash);
     }
 
-    function getBtcTxHashProcessedHeight(string calldata) external pure override returns (int64) {
+    function getBtcTxidProcessedHeight(string calldata) external pure override returns (int64) {
         return int64(0);
     }
 
-    function isBtcTxHashAlreadyProcessed(string calldata) external pure override returns (bool) {
+    function isBtcTxidAlreadyProcessed(string calldata) external pure override returns (bool) {
         return false;
     }
 
@@ -99,10 +99,7 @@ contract BridgeMock is IBridge {
     } // regtest genesis fed addr
 
     function registerBtcTransaction(bytes calldata atx, int256 height, bytes calldata pmt) external override {}
-    function addSignature(bytes calldata pubkey, bytes[] calldata signatures, bytes calldata txhash)
-        external
-        override
-    {}
+    function addSignature(bytes calldata pubkey, bytes[] calldata signatures, bytes calldata txid) external override {}
     function receiveHeaders(bytes[] calldata blocks) external override {}
 
     function receiveHeader(bytes calldata) external pure override returns (int256) {
