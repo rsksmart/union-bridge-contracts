@@ -470,6 +470,17 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
 
         // TODO: return RBTC to the RSK Legacy Bridge following https://github.com/rsksmart/RSKIPs/pull/502
 
+        // Compute pegout ID
+        bytes32 pegoutId = keccak256(
+            abi.encode(
+                stream.streamId,
+                packetNumber,
+                slot.slotId,
+                msg.sender,
+                bytes32(bridge.getBtcBlockchainBlockHashAtDepth(1))
+            )
+        );
+
         // slither-disable-next-line reentrancy-events
         emit PegoutRequested(
             _userPubKey,
@@ -480,17 +491,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             packetNumber,
             slot.slotId,
             stream.denomination,
-            // NOTE: not in a function because of stack too deep
-            // this hash is the pegout id
-            keccak256(
-                abi.encode(
-                    stream.streamId,
-                    packetNumber,
-                    slot.slotId,
-                    msg.sender,
-                    bytes32(bridge.getBtcBlockchainBlockHashAtDepth(1))
-                )
-            )
+            pegoutId
         );
     }
 

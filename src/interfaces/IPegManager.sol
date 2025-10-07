@@ -234,7 +234,7 @@ interface IPegManager {
     /// @param amount The amount being peg-out in satoshis
     /// @param pegoutId The unique identifier for this peg-out operation
     event PegoutRequested(
-        bytes indexed userPubKey,
+        bytes userPubKey,
         uint256 indexed committeeId,
         bytes32 indexed pegoutSignatureHash,
         bytes pegoutSignatureMessage,
