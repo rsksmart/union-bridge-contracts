@@ -76,6 +76,9 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     /// @param _publicKeys Member registration public keys
     /// @param _fundingUTXO The Bitcoin UTXO that will be used for the member funding
 
+    // Note: Event emission happens in _createCommittee() after external calls to trusted memberRegistry contract.
+    // This is safe because memberRegistry is a trusted contract and the event accurately reflects final state.
+    // slither-disable-next-line reentrancy-events
     function applyToStream(
         StreamDenomination _stream,
         Role _role,
@@ -187,6 +190,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         // This function return true if there is a pending committee
         // If there is a pending committee, we should not create a new one at least it's expired
         uint256 createdAt = committeesById[pendingCommittees[_streamId]].createdAt;
+        // NOTE: Slither flags this as dangerous-strict-equalities, but this is a false positive.
         if (createdAt == 0) {
             return false;
         }
@@ -200,6 +204,10 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         return true;
     }
 
+    // Note: State changes after external call to memberRegistry.selectCommittee() are necessary because
+    // we need the returned committee member data to populate state. memberRegistry is a trusted contract
+    // controlled by the same owner, making reentrancy attacks impossible.
+    // slither-disable-next-line reentrancy-benign,reentrancy-events
     function _createCommittee(uint64 _streamId) internal returns (PendingCommitteeStatus) {
         // NOTE: This method is called from the pegManager, so we should not revert.
         (CommitteeMember[] memory committeeMembers, PendingCommitteeStatus status) = memberRegistry.selectCommittee(
@@ -286,15 +294,16 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
             return;
         }
 
-        // Create unique committee id associated to the streamId and packetNumber.
+        // Follow checks-effects-interactions pattern: state changes before external calls
+        _deletePendingCommittee(pendingCommittee.streamId);
+        emit NewCommittee(_committeeId, pendingCommittee);
+
+        // External calls last to prevent reentrancy
         memberRegistry.removeCandidatesAndUpdateBalance(
             pendingCommittee.members,
             StreamDenomination(pendingCommittee.streamId),
             streamManager.getPacketsLength(pendingCommittee.streamId)
         );
-
-        _deletePendingCommittee(pendingCommittee.streamId);
-        emit NewCommittee(_committeeId, pendingCommittee);
         streamManager.createNewPacket(pendingCommittee.streamId, _committeeId, pendingCommittee.aggregatedKey);
     }
 
@@ -424,6 +433,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
     function isPendingCommitteeExpired(uint64 _streamId) external view returns (bool) {
         uint256 createdAt = committeesById[pendingCommittees[_streamId]].createdAt;
         // If no pending committee in proccess we return false
+        // NOTE: Slither flags this as dangerous-strict-equalities, but this is a false positive.
         if (createdAt == 0) {
             return false;
         }
@@ -553,9 +563,9 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         uint128 committeeId = streamManager.getCommitteeId(_streamId, _packetNumber);
         CommitteeMember[] memory committeeMembers = _getCommitteeMembers(committeeId);
 
+        emit CommitteeMembersReleased(_streamId, _packetNumber);
         // Delegate member release operations to MemberRegistry
         memberRegistry.releaseCommitteeMembers(committeeMembers, _streamId, _packetNumber);
-        emit CommitteeMembersReleased(_streamId, _packetNumber);
     }
 
     // ===================== Modifiers =====================
