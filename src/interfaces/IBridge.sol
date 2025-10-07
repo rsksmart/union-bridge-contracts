@@ -57,15 +57,15 @@ interface IBridge {
     /// @return The block hash at the specified depth
     /// function getBtcBlockchainBlockHashAtDepth(int256 depth) external view returns (bytes memory);
 
-    /// @notice Gets the processed height for a Bitcoin transaction id
-    /// @param hash The Bitcoin transaction id
+    /// @notice Gets the processed height for a Bitcoin transaction hash
+    /// @param hash The Bitcoin transaction hash
     /// @return The processed height for the transaction
-    function getBtcTxidProcessedHeight(string calldata hash) external view returns (int64);
+    function getBtcTxHashProcessedHeight(string calldata hash) external view returns (int64);
 
-    /// @notice Checks if a Bitcoin transaction id has already been processed
-    /// @param hash The Bitcoin transaction id to check
+    /// @notice Checks if a Bitcoin transaction hash has already been processed
+    /// @param hash The Bitcoin transaction hash to check
     /// @return True if the transaction has already been processed
-    function isBtcTxidAlreadyProcessed(string calldata hash) external view returns (bool);
+    function isBtcTxHashAlreadyProcessed(string calldata hash) external view returns (bool);
 
     /// @notice Gets the federation address
     /// @return The federation address
@@ -80,8 +80,8 @@ interface IBridge {
     /// @notice Adds a signature for a transaction
     /// @param pubkey The public key of the signer
     /// @param signatures Array of signatures
-    /// @param txid The transaction id
-    function addSignature(bytes calldata pubkey, bytes[] calldata signatures, bytes calldata txid) external;
+    /// @param txHash The transaction hash
+    function addSignature(bytes calldata pubkey, bytes[] calldata signatures, bytes calldata txHash) external;
 
     /// @notice Receives multiple block headers
     /// @param blocks Array of serialized block headers
@@ -262,13 +262,13 @@ interface IBridge {
     function getMinimumLockTxValue() external view returns (int256);
 
     /// @notice Gets the number of confirmations for a Bitcoin transaction
-    /// @param txid The Bitcoin transaction id
+    /// @param txHash The Bitcoin transaction hash
     /// @param blockHash The block hash containing the transaction
     /// @param merkleBranchPath The merkle branch path
     /// @param merkleBranchHashes Array of merkle branch hashes
     /// @return The number of confirmations or error code
     function getBtcTransactionConfirmations(
-        bytes32 txid,
+        bytes32 txHash,
         bytes32 blockHash,
         uint256 merkleBranchPath,
         bytes32[] calldata merkleBranchHashes
