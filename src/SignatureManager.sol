@@ -203,7 +203,7 @@ contract SignatureManager is ISignatureManager, AccessControl {
     /// @notice Initializes OperatorTake transaction id collection for a given accept peg-in transaction
     /// @dev Can only be called by the PegManager
     /// @param _acceptPeginTxid The accept peg-in transaction id
-    /// @param _committeeId The committee ID that will provide OperatorTake transaction ides
+    /// @param _committeeId The committee ID that will provide OperatorTake transaction id's
     function initOperatorTakeTxids(bytes32 _acceptPeginTxid, uint128 _committeeId) external onlyPegManager {
         // Check if the accept pegin tx id is not empty
         if (_acceptPeginTxid == bytes32(0)) {
@@ -216,7 +216,7 @@ contract SignatureManager is ISignatureManager, AccessControl {
             revert OperatorTakeTxidsAlreadyInitialized(_acceptPeginTxid);
         }
 
-        // Only operators should provide Take1 tx ides
+        // Only operators should provide Take1 tx id's
         uint256 operatorsCount = 0;
         CommitteeMember[] memory members = committeeRegistry.getCommitteeMembers(_committeeId);
         for (uint256 i = 0; i < members.length; i++) {
@@ -239,7 +239,7 @@ contract SignatureManager is ISignatureManager, AccessControl {
     }
 
     /// @notice Adds a OperatorTake transaction id for an operator
-    /// @dev Only operators can add OperatorTake transaction ides
+    /// @dev Only operators can add OperatorTake transaction id's
     /// @param _acceptPeginTxid The accept peg-in transaction id
     /// @param _takeTxid The OperatorTake transaction id to add
     function addOperatorTakeTxid(bytes32 _acceptPeginTxid, bytes32 _takeTxid) external {
@@ -260,7 +260,7 @@ contract SignatureManager is ISignatureManager, AccessControl {
             revert MemberNotFoundInCommittee(operatorTakeTxids.committeeId, msg.sender);
         }
 
-        // Only operators should add take 1 tx ides
+        // Only operators should add take 1 tx id's
         if (role != Role.OPERATOR) {
             revert MemberIsNotOperator(operatorTakeTxids.committeeId, msg.sender);
         }
@@ -278,9 +278,9 @@ contract SignatureManager is ISignatureManager, AccessControl {
         }
     }
 
-    /// @notice Checks if all OperatorTake transaction ides are ready for a given accept peg-in transaction
+    /// @notice Checks if all OperatorTake transaction id's are ready for a given accept peg-in transaction
     /// @param _acceptPeginTxid The accept peg-in transaction id to check
-    /// @return true if all OperatorTake transaction ides are present, false otherwise
+    /// @return true if all OperatorTake transaction id's are present, false otherwise
     function checkAllOperatorTakesHashesReady(bytes32 _acceptPeginTxid) external view returns (bool) {
         OperatorTakeTxids storage operatorTakeTxids = _getOperatorTakeTxids(_acceptPeginTxid);
         return (operatorTakeTxids.missingHashes == 0);
