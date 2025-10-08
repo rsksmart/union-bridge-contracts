@@ -1040,11 +1040,10 @@ pub mod SignatureManager {
     pub static DEPLOYED_BYTECODE: alloy_sol_types::private::Bytes = alloy_sol_types::private::Bytes::from_static(
         b"`\x80`@R`\x046\x10a\x01IW`\x005`\xE0\x1C\x80c\xAD<\xB1\xCC\x11a\0\xB6W\x80c\xE4\"nL\x11a\0oW\x80c\xE4\"nL\x14a\x03\xECW\x80c\xE8C\xA6G\x14a\x04\x0CW\x80c\xEA\xE1\xD1\xFA\x14a\x04,W\x80c\xF2\xFD\xE3\x8B\x14a\x04LW\x80c\xF8\xC8v^\x14a\x04lW\x80c\xFB}Fa\x14a\x04\x8CW`\0\x80\xFD[\x80c\xAD<\xB1\xCC\x14a\x03\x0EW\x80c\xB1\x8D?\xF9\x14a\x03LW\x80c\xBC\x0EZ\xF3\x14a\x03lW\x80c\xBF\xBB3^\x14a\x03\x8CW\x80c\xD1\x1F\xDF\xAF\x14a\x03\xACW\x80c\xE3\x82\xE5b\x14a\x03\xCCW`\0\x80\xFD[\x80cR\xD1\x90-\x11a\x01\x08W\x80cR\xD1\x90-\x14a\x02CW\x80ca\xFB\xEBH\x14a\x02fW\x80cqP\x18\xA6\x14a\x02\xAFW\x80c\x87\x7F\x90\xB4\x14a\x02\xC4W\x80c\x8D\xA5\xCB[\x14a\x02\xE4W\x80c\xAA\xF1\x0FB\x14a\x02\xF9W`\0\x80\xFD[\x80b\x99U`\x14a\x01NW\x80b\xD76\x82\x14a\x01\x84W\x80c8\x9E\x06\x8C\x14a\x01\xB1W\x80c:\xA9\x8A\x94\x14a\x01\xDEW\x80c=\t\x19\x9D\x14a\x02\0W\x80cO\x1E\xF2\x86\x14a\x020W[`\0\x80\xFD[4\x80\x15a\x01ZW`\0\x80\xFD[P`\x02Ta\x01n\x90`\x01`\x01`\xA0\x1B\x03\x16\x81V[`@Qa\x01{\x91\x90a\x1D!V[`@Q\x80\x91\x03\x90\xF3[4\x80\x15a\x01\x90W`\0\x80\xFD[Pa\x01\xA4a\x01\x9F6`\x04a\x1D5V[a\x04\xB9V[`@Qa\x01{\x91\x90a\x1DNV[4\x80\x15a\x01\xBDW`\0\x80\xFD[Pa\x01\xD1a\x01\xCC6`\x04a\x1D5V[a\x07'V[`@Qa\x01{\x91\x90a\x1D\xA6V[4\x80\x15a\x01\xEAW`\0\x80\xFD[Pa\x01\xFEa\x01\xF96`\x04a\x1D\xCFV[a\x07JV[\0[4\x80\x15a\x02\x0CW`\0\x80\xFD[Pa\x02 a\x02\x1B6`\x04a\x1E\xF7V[a\x08\xB2V[`@Q\x90\x15\x15\x81R` \x01a\x01{V[a\x01\xFEa\x02>6`\x04a\x1F=V[a\ntV[4\x80\x15a\x02OW`\0\x80\xFD[Pa\x02Xa\n\x93V[`@Q\x90\x81R` \x01a\x01{V[4\x80\x15a\x02rW`\0\x80\xFD[Pa\x02\x86a\x02\x816`\x04a\x1D5V[a\n\xB0V[`@\x80Q`\xFF\x94\x85\x16\x81R\x93\x90\x92\x16` \x84\x01R`\x01`\x01`\x80\x1B\x03\x16\x90\x82\x01R``\x01a\x01{V[4\x80\x15a\x02\xBBW`\0\x80\xFD[Pa\x01\xFEa\n\xEBV[4\x80\x15a\x02\xD0W`\0\x80\xFD[Pa\x02 a\x02\xDF6`\x04a\x1D5V[a\n\xFFV[4\x80\x15a\x02\xF0W`\0\x80\xFD[Pa\x01na\x0B\x1AV[4\x80\x15a\x03\x05W`\0\x80\xFD[Pa\x01na\x0BHV[4\x80\x15a\x03\x1AW`\0\x80\xFD[Pa\x03?`@Q\x80`@\x01`@R\x80`\x05\x81R` \x01d\x03R\xE3\x02\xE3`\xDC\x1B\x81RP\x81V[`@Qa\x01{\x91\x90a\x1F\xC6V[4\x80\x15a\x03XW`\0\x80\xFD[Pa\x01\xFEa\x03g6`\x04a\x1F\xD9V[a\x0BWV[4\x80\x15a\x03xW`\0\x80\xFD[Pa\x01\xFEa\x03\x876`\x04a\x1F\xFBV[a\rtV[4\x80\x15a\x03\x98W`\0\x80\xFD[Pa\x01\xFEa\x03\xA76`\x04a 7V[a\x0E\xA0V[4\x80\x15a\x03\xB8W`\0\x80\xFD[Pa\x02 a\x03\xC76`\x04a\x1F\xD9V[a\x0F\x88V[4\x80\x15a\x03\xD8W`\0\x80\xFD[P`\x01Ta\x01n\x90`\x01`\x01`\xA0\x1B\x03\x16\x81V[4\x80\x15a\x03\xF8W`\0\x80\xFD[P`\0Ta\x01n\x90`\x01`\x01`\xA0\x1B\x03\x16\x81V[4\x80\x15a\x04\x18W`\0\x80\xFD[Pa\x01\xFEa\x04'6`\x04a\x1F\xFBV[a\x11HV[4\x80\x15a\x048W`\0\x80\xFD[Pa\x02 a\x04G6`\x04a\x1D5V[a\x12\xBDV[4\x80\x15a\x04XW`\0\x80\xFD[Pa\x01\xFEa\x04g6`\x04a 7V[a\x12\xFAV[4\x80\x15a\x04xW`\0\x80\xFD[Pa\x01\xFEa\x04\x876`\x04a TV[a\x138V[4\x80\x15a\x04\x98W`\0\x80\xFD[Pa\x04\xACa\x04\xA76`\x04a\x1D5V[a\x14gV[`@Qa\x01{\x91\x90a \xB0V[```\0a\x04\xC6\x83a\x16\x8CV[`\x02T`\x01\x82\x01T`@Qc\r\xFD\xDC\x85`\xE1\x1B\x81R\x92\x93P`\0\x92\x83\x92`\x01`\x01`\xA0\x1B\x03\x16\x91c\x1B\xFB\xB9\n\x91a\x05\x0E\x91a\x01\0\x90\x04`\x01`\x01`\x80\x1B\x03\x16\x90`\x04\x01a\x1D\xA6V[`\0`@Q\x80\x83\x03\x81\x86Z\xFA\x15\x80\x15a\x05+W=`\0\x80>=`\0\xFD[PPPP`@Q=`\0\x82>`\x1F=\x90\x81\x01`\x1F\x19\x16\x82\x01`@Ra\x05S\x91\x90\x81\x01\x90a!,V[\x90P`\0[\x81Q\x81\x10\x15a\x05\xADW`\x01\x82\x82\x81Q\x81\x10a\x05uWa\x05ua\"1V[` \x02` \x01\x01Q` \x01Q`\x03\x81\x11\x15a\x05\x92Wa\x05\x92a\"\x1BV[\x03a\x05\xA5W\x82a\x05\xA1\x81a\"]V[\x93PP[`\x01\x01a\x05XV[P`\0\x82`\x01`\x01`@\x1B\x03\x81\x11\x15a\x05\xC8Wa\x05\xC8a\x1E\x1AV[`@Q\x90\x80\x82R\x80` \x02` \x01\x82\x01`@R\x80\x15a\x06\rW\x81` \x01[`@\x80Q\x80\x82\x01\x90\x91R`\0\x80\x82R` \x82\x01R\x81R` \x01\x90`\x01\x90\x03\x90\x81a\x05\xE6W\x90P[P\x90P`\0\x92P`\0[\x82Q\x81\x10\x15a\x07\x1DW`\x01\x83\x82\x81Q\x81\x10a\x064Wa\x064a\"1V[` \x02` \x01\x01Q` \x01Q`\x03\x81\x11\x15a\x06QWa\x06Qa\"\x1BV[\x03a\x07\x15W\x84`\0\x01`\0\x84\x83\x81Q\x81\x10a\x06nWa\x06na\"1V[` \x02` \x01\x01Q`\0\x01Q`\x01`\x01`\xA0\x1B\x03\x16`\x01`\x01`\xA0\x1B\x03\x16\x81R` \x01\x90\x81R` \x01`\0 T\x82\x85\x81Q\x81\x10a\x06\xADWa\x06\xADa\"1V[` \x02` \x01\x01Q`\0\x01\x81\x81RPP\x82\x81\x81Q\x81\x10a\x06\xCFWa\x06\xCFa\"1V[` \x02` \x01\x01Q`\0\x01Q\x82\x85\x81Q\x81\x10a\x06\xEDWa\x06\xEDa\"1V[` \x90\x81\x02\x91\x90\x91\x01\x81\x01Q`\x01`\x01`\xA0\x1B\x03\x90\x92\x16\x91\x01R\x83a\x07\x11\x81a\"]V[\x94PP[`\x01\x01a\x06\x17V[P\x95\x94PPPPPV[`\0a\x072\x82a\x16\x8CV[`\x01\x01Ta\x01\0\x90\x04`\x01`\x01`\x80\x1B\x03\x16\x92\x91PPV[`\0a\x07Ta\x16\xE0V[\x80T\x90\x91P`\xFF`\x01`@\x1B\x82\x04\x16\x15\x90`\x01`\x01`@\x1B\x03\x16`\0\x81\x15\x80\x15a\x07{WP\x82[\x90P`\0\x82`\x01`\x01`@\x1B\x03\x16`\x01\x14\x80\x15a\x07\x97WP0;\x15[\x90P\x81\x15\x80\x15a\x07\xA5WP\x80\x15[\x15a\x07\xC3W`@Qc\xF9.\xE8\xA9`\xE0\x1B\x81R`\x04\x01`@Q\x80\x91\x03\x90\xFD[\x84Tg\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\x19\x16`\x01\x17\x85U\x83\x15a\x07\xEDW\x84T`\xFF`@\x1B\x19\x16`\x01`@\x1B\x17\x85U[`\x01`\x01`\xA0\x1B\x03\x87\x16a\x08\x14W`@Qc!\xE7\x999`\xE2\x1B\x81R`\x04\x01`@Q\x80\x91\x03\x90\xFD[`\x01`\x01`\xA0\x1B\x03\x86\x16a\x08;W`@Qc\x0Ex\xC4#`\xE0\x1B\x81R`\x04\x01`@Q\x80\x91\x03\x90\xFD[`\0\x80T`\x01`\x01`\xA0\x1B\x03\x80\x8A\x16`\x01`\x01`\xA0\x1B\x03\x19\x92\x83\x16\x17\x90\x92U`\x01\x80T\x92\x89\x16\x92\x90\x91\x16\x91\x90\x91\x17\x90Ua\x08t\x88a\x0E\xA0V[\x83\x15a\x08\xA8W\x84T`\xFF`@\x1B\x19\x16\x85U`@Q`\x01\x81R`\0\x80Q` a$q\x839\x81Q\x91R\x90` \x01`@Q\x80\x91\x03\x90\xA1[PPPPPPPPV[\x80Q`\0\x903\x90`B\x14a\x08\xEEW\x82Q`@Q`\x01b#\x05\xAD`\xE2\x1B\x03\x19\x81R`\x04\x81\x01\x91\x90\x91R`B`$\x82\x01R`D\x01[`@Q\x80\x91\x03\x90\xFD[`\0a\x08\xF9\x85a\x17\x04V[`\x01\x81\x01T\x90\x91Pa\t\x1A\x90b\x01\0\0\x90\x04`\x01`\x01`\x80\x1B\x03\x16\x83a\x17YV[a\tNW`\x01\x81\x01T`@Qc\x08\x9En\xD9`\xE4\x1B\x81Ra\x08\xE5\x91b\x01\0\0\x90\x04`\x01`\x01`\x80\x1B\x03\x16\x90\x84\x90`\x04\x01a\"vV[`\x01`\x01`\xA0\x1B\x03\x82\x16`\0\x90\x81R` \x82\x90R`@\x90 `\x01\x81\x01\x80Ta\tu\x90a\"\x98V[\x15\x90Pa\t\x99W\x82\x85`@Qc\x02_b\xE3`\xE4\x1B\x81R`\x04\x01a\x08\xE5\x92\x91\x90a\"\xD2V[`\x01\x81\x01a\t\xA7\x86\x82a#EV[P\x82`\x01`\x01`\xA0\x1B\x03\x16\x86\x7F\xB5 es\x90\xD9W\x19H\xBC\xCB\xF4\xE2B\xD3\xEDP\xF4\x1D\x18C=\xAC\xECX\xBC\xC1\xA53pi \x87`@Qa\t\xE2\x91\x90a\x1F\xC6V[`@Q\x80\x91\x03\x90\xA3`\x01\x82\x81\x01\x80T\x82\x90a\n\x06\x90\x82\x90a\x01\0\x90\x04`\xFF\x16a$\x03V[\x82T`\xFF\x91\x82\x16a\x01\0\x93\x84\n\x90\x81\x02\x90\x83\x02\x19\x90\x91\x16\x17\x90\x92U`\x01\x85\x01T\x04\x16\x15\x90Pa\n;W`\0\x93PPPPa\nnV[`@Q\x86\x90\x7F@o\x93\xD1Y\xEB\xB5\x06\x82\x922\xD2\xE4\xA2n\xCBK\xBC\xE8\xD9\xD8\xAD\xC4\x96\x06\xFB/m\xB9\xB1Lz\x90`\0\x90\xA2`\x01\x93PPPP[\x92\x91PPV[a\n|a\x17\x80V[a\n\x85\x82a\x18\x0EV[a\n\x8F\x82\x82a\x18\x16V[PPV[`\0a\n\x9Da\x18\xCFV[P`\0\x80Q` a$\x91\x839\x81Q\x91R\x90V[`\0\x80`\0\x80a\n\xBF\x85a\x17\x04V[`\x01\x01T`\xFF\x80\x82\x16\x97a\x01\0\x83\x04\x90\x91\x16\x96Pb\x01\0\0\x90\x91\x04`\x01`\x01`\x80\x1B\x03\x16\x94P\x92PPPV[a\n\xF3a\x19\x18V[a\n\xFD`\0a\x19JV[V[`\0\x80a\x0B\x0B\x83a\x16\x8CV[`\x01\x01T`\xFF\x16\x15\x93\x92PPPV[\x7F\x90\x16\xD0\x9Dr\xD4\x0F\xDA\xE2\xFD\x8C\xEA\xC6\xB6#Lw\x06!O\xD3\x9C\x1C\xD1\xE6\t\xA0R\x8C\x19\x93\0T`\x01`\x01`\xA0\x1B\x03\x16\x90V[`\0a\x0BRa\x19\xBBV[\x90P\x90V[3`\0a\x0Bc\x84a\x16\x8CV[`\x01\x81\x01T\x90\x91P`\xFF\x16`\0\x03a\x0B\x91W`@QcJ\xA1\xA0]`\xE0\x1B\x81R`\x04\x81\x01\x85\x90R`$\x01a\x08\xE5V[\x82a\x0B\xB2W`@QcD\xD6Y\xBF`\xE0\x1B\x81R`\x04\x81\x01\x84\x90R`$\x01a\x08\xE5V[`\x01\x81\x01T`\0\x90a\x0B\xD2\x90a\x01\0\x90\x04`\x01`\x01`\x80\x1B\x03\x16\x84a\x19\xD7V[\x90P`\0\x81`\x03\x81\x11\x15a\x0B\xE8Wa\x0B\xE8a\"\x1BV[\x03a\x0C\x1CW`\x01\x82\x01T`@Qc\x08\x9En\xD9`\xE4\x1B\x81Ra\x08\xE5\x91a\x01\0\x90\x04`\x01`\x01`\x80\x1B\x03\x16\x90\x85\x90`\x04\x01a\"vV[`\x01\x81`\x03\x81\x11\x15a\x0C0Wa\x0C0a\"\x1BV[\x14a\x0CdW`\x01\x82\x01T`@Qc>\xF3\xD7\x19`\xE1\x1B\x81Ra\x08\xE5\x91a\x01\0\x90\x04`\x01`\x01`\x80\x1B\x03\x16\x90\x85\x90`\x04\x01a\"vV[`\x01`\x01`\xA0\x1B\x03\x83\x16`\0\x90\x81R` \x83\x90R`@\x90 T\x15a\x0C\xA1W\x84\x83\x85`@Qc\xA8\xCEx\xD7`\xE0\x1B\x81R`\x04\x01a\x08\xE5\x93\x92\x91\x90a$\x1CV[`\x01`\x01`\xA0\x1B\x03\x83\x16`\0\x90\x81R` \x83\x90R`@\x90\x81\x90 \x85\x90UQ\x7F\x9C_\x92\xC3G\xCB@H\xEE\xFF\xF2&\xD0r\xA6\x18\xCD\xA0%\xB3\x1C\x8CH\x90\x1AS\x8D\x0E\x91,\xAC\xE5\x90a\x0C\xF0\x90\x87\x90\x86\x90\x88\x90a$\x1CV[`@Q\x80\x91\x03\x90\xA1`\x01\x82\x81\x01\x80T`\0\x90a\r\x10\x90\x84\x90`\xFF\x16a$\x03V[\x82Ta\x01\0\x92\x90\x92\n`\xFF\x81\x81\x02\x19\x90\x93\x16\x91\x83\x16\x02\x17\x90\x91U`\x01\x84\x01T\x16`\0\x03\x90Pa\rmW`@Q\x85\x81R\x7F\xEA\xCC\x1Ab\xEC\xE8Ur\xF9.D\xDD\xAF(\xA1+F\xC6(P\xA0\xBD)\xFF\x1D\xA9\xD8\xACX\xC6\xED\x82\x90` \x01`@Q\x80\x91\x03\x90\xA1[PPPPPV[a\r|a\x1A\xCCV[\x81`\0\x03a\r\xA0W`@Qc#|\x14+`\xE1\x1B\x81R`\x04\x81\x01\x83\x90R`$\x01a\x08\xE5V[`\0\x82\x81R`\x03` R`@\x90 `\x01\x81\x01Tb\x01\0\0\x90\x04`\x01`\x01`\x80\x1B\x03\x16\x15a\r\xE3W`@Qcx\x15\x18%`\xE1\x1B\x81R`\x04\x81\x01\x84\x90R`$\x01a\x08\xE5V[`\x02T`@Qc\r\xFD\xDC\x85`\xE1\x1B\x81R`\0\x91`\x01`\x01`\xA0\x1B\x03\x16\x90c\x1B\xFB\xB9\n\x90a\x0E\x14\x90\x86\x90`\x04\x01a\x1D\xA6V[`\0`@Q\x80\x83\x03\x81\x86Z\xFA\x15\x80\x15a\x0E1W=`\0\x80>=`\0\xFD[PPPP`@Q=`\0\x82>`\x1F=\x90\x81\x01`\x1F\x19\x16\x82\x01`@Ra\x0EY\x91\x90\x81\x01\x90a!,V[Q`\x01\x90\x92\x01\x80T`\x01`\x01`\x80\x1B\x03\x90\x94\x16b\x01\0\0\x02b\x01\0\0`\x01`\x90\x1B\x03\x19`\xFF\x90\x94\x16a\x01\0\x81\x02a\xFF\xFF\x19\x90\x96\x16\x17\x94\x90\x94\x17\x92\x90\x92\x16\x92\x90\x92\x17\x90UPPV[`\0a\x0E\xAAa\x16\xE0V[\x80T\x90\x91P`\xFF`\x01`@\x1B\x82\x04\x16\x15\x90`\x01`\x01`@\x1B\x03\x16`\0\x81\x15\x80\x15a\x0E\xD1WP\x82[\x90P`\0\x82`\x01`\x01`@\x1B\x03\x16`\x01\x14\x80\x15a\x0E\xEDWP0;\x15[\x90P\x81\x15\x80\x15a\x0E\xFBWP\x80\x15[\x15a\x0F\x19W`@Qc\xF9.\xE8\xA9`\xE0\x1B\x81R`\x04\x01`@Q\x80\x91\x03\x90\xFD[\x84Tg\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\x19\x16`\x01\x17\x85U\x83\x15a\x0FCW\x84T`\xFF`@\x1B\x19\x16`\x01`@\x1B\x17\x85U[a\x0FL\x86a\x1B\x17V[\x83\x15a\x0F\x80W\x84T`\xFF`@\x1B\x19\x16\x85U`@Q`\x01\x81R`\0\x80Q` a$q\x839\x81Q\x91R\x90` \x01`@Q\x80\x91\x03\x90\xA1[PPPPPPV[`\x003\x81a\x0F\x95\x85a\x17\x04V[`\x01\x81\x01T\x90\x91Pa\x01\0\x90\x04`\xFF\x16\x15a\x0F\xC6W`@Qc\x01\xF8\xFF\x19`\xE3\x1B\x81R`\x04\x81\x01\x86\x90R`$\x01a\x08\xE5V[\x83`\0\x03a\x0F\xE7W`@Qc\x8B\xAAW\x9F`\xE0\x1B\x81R`\x04\x01`@Q\x80\x91\x03\x90\xFD[`\x01\x81\x01Ta\x10\x05\x90b\x01\0\0\x90\x04`\x01`\x01`\x80\x1B\x03\x16\x83a\x17YV[a\x109W`\x01\x81\x01T`@Qc\x08\x9En\xD9`\xE4\x1B\x81Ra\x08\xE5\x91b\x01\0\0\x90\x04`\x01`\x01`\x80\x1B\x03\x16\x90\x84\x90`\x04\x01a\"vV[`\x01`\x01`\xA0\x1B\x03\x82\x16`\0\x90\x81R` \x82\x90R`@\x90 \x80T\x15a\x10\x83W`@Qcs\xBEO\xD1`\xE0\x1B\x81R`\x01`\x01`\xA0\x1B\x03\x84\x16`\x04\x82\x01R`$\x81\x01\x87\x90R`D\x01a\x08\xE5V[\x84\x81U`@Q\x85\x81R`\x01`\x01`\xA0\x1B\x03\x84\x16\x90\x87\x90\x7F\x15\xD4\x8D\xF7o\x90\xC8r\xA8\x92\x1E[\x8D\x11\xF7V\"~ \x01\n\xD5y\xCBDdI\xEA\xCE&\xE1|\x90` \x01`@Q\x80\x91\x03\x90\xA3`\x01\x82\x81\x01\x80T`\0\x90a\x10\xDE\x90\x84\x90`\xFF\x16a$\x03V[\x82Ta\x01\0\x92\x90\x92\n`\xFF\x81\x81\x02\x19\x90\x93\x16\x91\x83\x16\x02\x17\x90\x91U`\x01\x84\x01T\x16\x15\x90Pa\x11\x11W`\0\x93PPPPa\nnV[`@Q\x86\x90\x7F\xD3\x01t\xEF\xA4d\xC56j\xB4R\x85\xD78,\x99i\xC1\x9C\xAE[&\x9AN\xE2\xAD\x89\xCA\xBAp\xBA\x8F\x90`\0\x90\xA2P`\x01\x95\x94PPPPPV[a\x11Pa\x1A\xCCV[\x81a\x11qW`@Qc%\xDDzA`\xE2\x1B\x81R`\x04\x81\x01\x83\x90R`$\x01a\x08\xE5V[`\0\x82\x81R`\x04` R`@\x90 `\x01\x81\x01Ta\x01\0\x90\x04`\x01`\x01`\x80\x1B\x03\x16\x15a\x11\xB3W`@QcVwz\xD3`\xE1\x1B\x81R`\x04\x81\x01\x84\x90R`$\x01a\x08\xE5V[`\x02T`@Qc\r\xFD\xDC\x85`\xE1\x1B\x81R`\0\x91\x82\x91`\x01`\x01`\xA0\x1B\x03\x90\x91\x16\x90c\x1B\xFB\xB9\n\x90a\x11\xE8\x90\x87\x90`\x04\x01a\x1D\xA6V[`\0`@Q\x80\x83\x03\x81\x86Z\xFA\x15\x80\x15a\x12\x05W=`\0\x80>=`\0\xFD[PPPP`@Q=`\0\x82>`\x1F=\x90\x81\x01`\x1F\x19\x16\x82\x01`@Ra\x12-\x91\x90\x81\x01\x90a!,V[\x90P`\0[\x81Q\x81\x10\x15a\x12\x87W`\x01\x82\x82\x81Q\x81\x10a\x12OWa\x12Oa\"1V[` \x02` \x01\x01Q` \x01Q`\x03\x81\x11\x15a\x12lWa\x12la\"\x1BV[\x03a\x12\x7FW\x82a\x12{\x81a\"]V[\x93PP[`\x01\x01a\x122V[PP`\x01\x90\x91\x01\x80T`\x01`\x01`\x80\x1B\x03\x90\x93\x16a\x01\0\x02`\x01`\x01`\x88\x1B\x03\x19\x90\x93\x16`\xFF\x90\x92\x16\x91\x90\x91\x17\x91\x90\x91\x17\x90UPV[`\0\x80a\x12\xC9\x83a\x17\x04V[`\x01\x81\x01T\x90\x91Pb\x01\0\0\x90\x04`\x01`\x01`\x80\x1B\x03\x16\x15\x80\x15\x90a\x12\xF3WP`\x01\x81\x01T`\xFF\x16\x15[\x93\x92PPPV[a\x13\x02a\x19\x18V[`\x01`\x01`\xA0\x1B\x03\x81\x16a\x13,W`\0`@Qc\x1EO\xBD\xF7`\xE0\x1B\x81R`\x04\x01a\x08\xE5\x91\x90a\x1D!V[a\x135\x81a\x19JV[PV[`\0a\x13Ba\x16\xE0V[\x80T\x90\x91P`\xFF`\x01`@\x1B\x82\x04\x16\x15\x90`\x01`\x01`@\x1B\x03\x16`\0\x81\x15\x80\x15a\x13iWP\x82[\x90P`\0\x82`\x01`\x01`@\x1B\x03\x16`\x01\x14\x80\x15a\x13\x85WP0;\x15[\x90P\x81\x15\x80\x15a\x13\x93WP\x80\x15[\x15a\x13\xB1W`@Qc\xF9.\xE8\xA9`\xE0\x1B\x81R`\x04\x01`@Q\x80\x91\x03\x90\xFD[\x84Tg\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\x19\x16`\x01\x17\x85U\x83\x15a\x13\xDBW\x84T`\xFF`@\x1B\x19\x16`\x01`@\x1B\x17\x85U[`\x01`\x01`\xA0\x1B\x03\x86\x16a\x14\x02W`@Qc\r\xE10\xA7`\xE1\x1B\x81R`\x04\x01`@Q\x80\x91\x03\x90\xFD[`\x02\x80T`\x01`\x01`\xA0\x1B\x03\x19\x16`\x01`\x01`\xA0\x1B\x03\x88\x16\x17\x90Ua\x14(\x89\x89\x89a\x07JV[\x83\x15a\x14\\W\x84T`\xFF`@\x1B\x19\x16\x85U`@Q`\x01\x81R`\0\x80Q` a$q\x839\x81Q\x91R\x90` \x01`@Q\x80\x91\x03\x90\xA1[PPPPPPPPPV[```\0a\x14t\x83a\x17\x04V[`\x02T`\x01\x82\x01T`@Qc\r\xFD\xDC\x85`\xE1\x1B\x81R\x92\x93P`\0\x92`\x01`\x01`\xA0\x1B\x03\x90\x92\x16\x91c\x1B\xFB\xB9\n\x91a\x14\xBE\x91b\x01\0\0\x90\x91\x04`\x01`\x01`\x80\x1B\x03\x16\x90`\x04\x01a\x1D\xA6V[`\0`@Q\x80\x83\x03\x81\x86Z\xFA\x15\x80\x15a\x14\xDBW=`\0\x80>=`\0\xFD[PPPP`@Q=`\0\x82>`\x1F=\x90\x81\x01`\x1F\x19\x16\x82\x01`@Ra\x15\x03\x91\x90\x81\x01\x90a!,V[\x80Q\x90\x91P`\0`\xFF\x82\x16`\x01`\x01`@\x1B\x03\x81\x11\x15a\x15%Wa\x15%a\x1E\x1AV[`@Q\x90\x80\x82R\x80` \x02` \x01\x82\x01`@R\x80\x15a\x15kW\x81` \x01[`@\x80Q\x80\x82\x01\x90\x91R`\0\x81R``` \x82\x01R\x81R` \x01\x90`\x01\x90\x03\x90\x81a\x15CW\x90P[P\x90P`\0[\x82`\xFF\x16\x81\x10\x15a\x07\x1DW\x84`\0\x01`\0\x85\x83\x81Q\x81\x10a\x15\x94Wa\x15\x94a\"1V[` \x02` \x01\x01Q`\0\x01Q`\x01`\x01`\xA0\x1B\x03\x16`\x01`\x01`\xA0\x1B\x03\x16\x81R` \x01\x90\x81R` \x01`\0 `@Q\x80`@\x01`@R\x90\x81`\0\x82\x01T\x81R` \x01`\x01\x82\x01\x80Ta\x15\xE5\x90a\"\x98V[\x80`\x1F\x01` \x80\x91\x04\x02` \x01`@Q\x90\x81\x01`@R\x80\x92\x91\x90\x81\x81R` \x01\x82\x80Ta\x16\x11\x90a\"\x98V[\x80\x15a\x16^W\x80`\x1F\x10a\x163Wa\x01\0\x80\x83T\x04\x02\x83R\x91` \x01\x91a\x16^V[\x82\x01\x91\x90`\0R` `\0 \x90[\x81T\x81R\x90`\x01\x01\x90` \x01\x80\x83\x11a\x16AW\x82\x90\x03`\x1F\x16\x82\x01\x91[PPPPP\x81RPP\x82\x82\x81Q\x81\x10a\x16yWa\x16ya\"1V[` \x90\x81\x02\x91\x90\x91\x01\x01R`\x01\x01a\x15qV[`\0\x81\x81R`\x04` R`@\x81 `\x01\x01Ta\x01\0\x90\x04`\x01`\x01`\x80\x1B\x03\x16\x81\x03a\x16\xCEW`@Qc\x82\xAC\x86\xE7`\xE0\x1B\x81R`\x04\x81\x01\x83\x90R`$\x01a\x08\xE5V[P`\0\x90\x81R`\x04` R`@\x90 \x90V[\x7F\xF0\xC5~\x16\x84\r\xF0@\xF1P\x88\xDC/\x81\xFE9\x1C9#\xBE\xC7>#\xA9f.\xFC\x9C\"\x9Cj\0\x90V[`\0\x81\x81R`\x03` R`@\x81 `\x01\x01Tb\x01\0\0\x90\x04`\x01`\x01`\x80\x1B\x03\x16\x81\x03a\x17GW`@Qc+\xFE\n\xC7`\xE0\x1B\x81R`\x04\x81\x01\x83\x90R`$\x01a\x08\xE5V[P`\0\x90\x81R`\x03` R`@\x90 \x90V[`\0\x80a\x17f\x84\x84a\x19\xD7V[`\x03\x81\x11\x15a\x17wWa\x17wa\"\x1BV[\x14\x15\x93\x92PPPV[0`\x01`\x01`\xA0\x1B\x03\x7F\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x16\x14\x80a\x17\xF0WP\x7F\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0`\x01`\x01`\xA0\x1B\x03\x16a\x17\xE4a\x19\xBBV[`\x01`\x01`\xA0\x1B\x03\x16\x14\x15[\x15a\n\xFDW`@Qcp>F\xDD`\xE1\x1B\x81R`\x04\x01`@Q\x80\x91\x03\x90\xFD[a\x135a\x19\x18V[\x81`\x01`\x01`\xA0\x1B\x03\x16cR\xD1\x90-`@Q\x81c\xFF\xFF\xFF\xFF\x16`\xE0\x1B\x81R`\x04\x01` `@Q\x80\x83\x03\x81\x86Z\xFA\x92PPP\x80\x15a\x18pWP`@\x80Q`\x1F=\x90\x81\x01`\x1F\x19\x16\x82\x01\x90\x92Ra\x18m\x91\x81\x01\x90a$;V[`\x01[a\x18\x8FW\x81`@QcL\x9C\x8C\xE3`\xE0\x1B\x81R`\x04\x01a\x08\xE5\x91\x90a\x1D!V[`\0\x80Q` a$\x91\x839\x81Q\x91R\x81\x14a\x18\xC0W`@Qc*\x87Ri`\xE2\x1B\x81R`\x04\x81\x01\x82\x90R`$\x01a\x08\xE5V[a\x18\xCA\x83\x83a\x1B\x1FV[PPPV[0`\x01`\x01`\xA0\x1B\x03\x7F\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x16\x14a\n\xFDW`@Qcp>F\xDD`\xE1\x1B\x81R`\x04\x01`@Q\x80\x91\x03\x90\xFD[3a\x19!a\x0B\x1AV[`\x01`\x01`\xA0\x1B\x03\x16\x14a\n\xFDW3`@Qc\x11\x8C\xDA\xA7`\xE0\x1B\x81R`\x04\x01a\x08\xE5\x91\x90a\x1D!V[\x7F\x90\x16\xD0\x9Dr\xD4\x0F\xDA\xE2\xFD\x8C\xEA\xC6\xB6#Lw\x06!O\xD3\x9C\x1C\xD1\xE6\t\xA0R\x8C\x19\x93\0\x80T`\x01`\x01`\xA0\x1B\x03\x19\x81\x16`\x01`\x01`\xA0\x1B\x03\x84\x81\x16\x91\x82\x17\x84U`@Q\x92\x16\x91\x82\x90\x7F\x8B\xE0\x07\x9CS\x16Y\x14\x13D\xCD\x1F\xD0\xA4\xF2\x84\x19I\x7F\x97\"\xA3\xDA\xAF\xE3\xB4\x18okdW\xE0\x90`\0\x90\xA3PPPV[`\0\x80Q` a$\x91\x839\x81Q\x91RT`\x01`\x01`\xA0\x1B\x03\x16\x90V[`\x02T`@Qc\r\xFD\xDC\x85`\xE1\x1B\x81R`\0\x91\x82\x91`\x01`\x01`\xA0\x1B\x03\x90\x91\x16\x90c\x1B\xFB\xB9\n\x90a\x1A\x0C\x90\x87\x90`\x04\x01a\x1D\xA6V[`\0`@Q\x80\x83\x03\x81\x86Z\xFA\x15\x80\x15a\x1A)W=`\0\x80>=`\0\xFD[PPPP`@Q=`\0\x82>`\x1F=\x90\x81\x01`\x1F\x19\x16\x82\x01`@Ra\x1AQ\x91\x90\x81\x01\x90a!,V[\x90P`\0\x80[\x82Q\x81\x10\x15a\x1A\xC3W\x84`\x01`\x01`\xA0\x1B\x03\x16\x83\x82\x81Q\x81\x10a\x1A|Wa\x1A|a\"1V[` \x02` \x01\x01Q`\0\x01Q`\x01`\x01`\xA0\x1B\x03\x16\x03a\x1A\xBBW\x82\x81\x81Q\x81\x10a\x1A\xA8Wa\x1A\xA8a\"1V[` \x02` \x01\x01Q` \x01Q\x91Pa\x1A\xC3V[`\x01\x01a\x1AWV[P\x94\x93PPPPV[`\0T3\x90`\x01`\x01`\xA0\x1B\x03\x16\x81\x14\x80\x15\x90a\x1A\xF7WP`\x01T`\x01`\x01`\xA0\x1B\x03\x82\x81\x16\x91\x16\x14\x15[\x15a\x135W\x80`@Qc2\xB2\xBA\xA3`\xE0\x1B\x81R`\x04\x01a\x08\xE5\x91\x90a\x1D!V[a\x13\x02a\x1BuV[a\x1B(\x82a\x1B\x9AV[`@Q`\x01`\x01`\xA0\x1B\x03\x83\x16\x90\x7F\xBC|\xD7Z \xEE'\xFD\x9A\xDE\xBA\xB3 A\xF7U!M\xBCk\xFF\xA9\x0C\xC0\"[9\xDA.\\-;\x90`\0\x90\xA2\x80Q\x15a\x1BmWa\x18\xCA\x82\x82a\x1B\xF6V[a\n\x8Fa\x1ClV[a\x1B}a\x1C\x8BV[a\n\xFDW`@Qc\x1A\xFC\xD7\x9F`\xE3\x1B\x81R`\x04\x01`@Q\x80\x91\x03\x90\xFD[\x80`\x01`\x01`\xA0\x1B\x03\x16;`\0\x03a\x1B\xC7W\x80`@QcL\x9C\x8C\xE3`\xE0\x1B\x81R`\x04\x01a\x08\xE5\x91\x90a\x1D!V[`\0\x80Q` a$\x91\x839\x81Q\x91R\x80T`\x01`\x01`\xA0\x1B\x03\x19\x16`\x01`\x01`\xA0\x1B\x03\x92\x90\x92\x16\x91\x90\x91\x17\x90UV[```\0\x80\x84`\x01`\x01`\xA0\x1B\x03\x16\x84`@Qa\x1C\x13\x91\x90a$TV[`\0`@Q\x80\x83\x03\x81\x85Z\xF4\x91PP=\x80`\0\x81\x14a\x1CNW`@Q\x91P`\x1F\x19`?=\x01\x16\x82\x01`@R=\x82R=`\0` \x84\x01>a\x1CSV[``\x91P[P\x91P\x91Pa\x1Cc\x85\x83\x83a\x1C\xA5V[\x95\x94PPPPPV[4\x15a\n\xFDW`@Qc\xB3\x98\x97\x9F`\xE0\x1B\x81R`\x04\x01`@Q\x80\x91\x03\x90\xFD[`\0a\x1C\x95a\x16\xE0V[T`\x01`@\x1B\x90\x04`\xFF\x16\x91\x90PV[``\x82a\x1C\xBAWa\x1C\xB5\x82a\x1C\xF8V[a\x12\xF3V[\x81Q\x15\x80\x15a\x1C\xD1WP`\x01`\x01`\xA0\x1B\x03\x84\x16;\x15[\x15a\x1C\xF1W\x83`@Qc\x99\x96\xB3\x15`\xE0\x1B\x81R`\x04\x01a\x08\xE5\x91\x90a\x1D!V[P\x92\x91PPV[\x80Q\x15a\x1D\x08W\x80Q\x80\x82` \x01\xFD[`@Qc\xD6\xBD\xA2u`\xE0\x1B\x81R`\x04\x01`@Q\x80\x91\x03\x90\xFD[`\x01`\x01`\xA0\x1B\x03\x91\x90\x91\x16\x81R` \x01\x90V[`\0` \x82\x84\x03\x12\x15a\x1DGW`\0\x80\xFD[P5\x91\x90PV[` \x80\x82R\x82Q\x82\x82\x01\x81\x90R`\0\x91\x84\x01\x90`@\x84\x01\x90\x83[\x81\x81\x10\x15a\x1D\x9BW\x83Q\x80Q\x84R` \x90\x81\x01Q`\x01`\x01`\xA0\x1B\x03\x16\x81\x85\x01R\x90\x93\x01\x92`@\x90\x92\x01\x91`\x01\x01a\x1DhV[P\x90\x95\x94PPPPPV[`\x01`\x01`\x80\x1B\x03\x91\x90\x91\x16\x81R` \x01\x90V[`\x01`\x01`\xA0\x1B\x03\x81\x16\x81\x14a\x135W`\0\x80\xFD[`\0\x80`\0``\x84\x86\x03\x12\x15a\x1D\xE4W`\0\x80\xFD[\x835a\x1D\xEF\x81a\x1D\xBAV[\x92P` \x84\x015a\x1D\xFF\x81a\x1D\xBAV[\x91P`@\x84\x015a\x1E\x0F\x81a\x1D\xBAV[\x80\x91PP\x92P\x92P\x92V[cNH{q`\xE0\x1B`\0R`A`\x04R`$`\0\xFD[`@\x80Q\x90\x81\x01`\x01`\x01`@\x1B\x03\x81\x11\x82\x82\x10\x17\x15a\x1ERWa\x1ERa\x1E\x1AV[`@R\x90V[`@Q`\x1F\x82\x01`\x1F\x19\x16\x81\x01`\x01`\x01`@\x1B\x03\x81\x11\x82\x82\x10\x17\x15a\x1E\x80Wa\x1E\x80a\x1E\x1AV[`@R\x91\x90PV[`\0\x82`\x1F\x83\x01\x12a\x1E\x99W`\0\x80\xFD[\x815`\x01`\x01`@\x1B\x03\x81\x11\x15a\x1E\xB2Wa\x1E\xB2a\x1E\x1AV[a\x1E\xC5`\x1F\x82\x01`\x1F\x19\x16` \x01a\x1EXV[\x81\x81R\x84` \x83\x86\x01\x01\x11\x15a\x1E\xDAW`\0\x80\xFD[\x81` \x85\x01` \x83\x017`\0\x91\x81\x01` \x01\x91\x90\x91R\x93\x92PPPV[`\0\x80`@\x83\x85\x03\x12\x15a\x1F\nW`\0\x80\xFD[\x825\x91P` \x83\x015`\x01`\x01`@\x1B\x03\x81\x11\x15a\x1F'W`\0\x80\xFD[a\x1F3\x85\x82\x86\x01a\x1E\x88V[\x91PP\x92P\x92\x90PV[`\0\x80`@\x83\x85\x03\x12\x15a\x1FPW`\0\x80\xFD[\x825a\x1F[\x81a\x1D\xBAV[\x91P` \x83\x015`\x01`\x01`@\x1B\x03\x81\x11\x15a\x1F'W`\0\x80\xFD[`\0[\x83\x81\x10\x15a\x1F\x91W\x81\x81\x01Q\x83\x82\x01R` \x01a\x1FyV[PP`\0\x91\x01RV[`\0\x81Q\x80\x84Ra\x1F\xB2\x81` \x86\x01` \x86\x01a\x1FvV[`\x1F\x01`\x1F\x19\x16\x92\x90\x92\x01` \x01\x92\x91PPV[` \x81R`\0a\x12\xF3` \x83\x01\x84a\x1F\x9AV[`\0\x80`@\x83\x85\x03\x12\x15a\x1F\xECW`\0\x80\xFD[PP\x805\x92` \x90\x91\x015\x91PV[`\0\x80`@\x83\x85\x03\x12\x15a \x0EW`\0\x80\xFD[\x825\x91P` \x83\x015`\x01`\x01`\x80\x1B\x03\x81\x16\x81\x14a ,W`\0\x80\xFD[\x80\x91PP\x92P\x92\x90PV[`\0` \x82\x84\x03\x12\x15a IW`\0\x80\xFD[\x815a\x12\xF3\x81a\x1D\xBAV[`\0\x80`\0\x80`\x80\x85\x87\x03\x12\x15a jW`\0\x80\xFD[\x845a u\x81a\x1D\xBAV[\x93P` \x85\x015a \x85\x81a\x1D\xBAV[\x92P`@\x85\x015a \x95\x81a\x1D\xBAV[\x91P``\x85\x015a \xA5\x81a\x1D\xBAV[\x93\x96\x92\x95P\x90\x93PPV[`\0` \x82\x01` \x83R\x80\x84Q\x80\x83R`@\x85\x01\x91P`@\x81`\x05\x1B\x86\x01\x01\x92P` \x86\x01`\0[\x82\x81\x10\x15a! W`?\x19\x87\x86\x03\x01\x84R\x81Q\x80Q\x86R` \x81\x01Q\x90P`@` \x87\x01Ra!\n`@\x87\x01\x82a\x1F\x9AV[\x95PP` \x93\x84\x01\x93\x91\x90\x91\x01\x90`\x01\x01a \xD8V[P\x92\x96\x95PPPPPPV[`\0` \x82\x84\x03\x12\x15a!>W`\0\x80\xFD[\x81Q`\x01`\x01`@\x1B\x03\x81\x11\x15a!TW`\0\x80\xFD[\x82\x01`\x1F\x81\x01\x84\x13a!eW`\0\x80\xFD[\x80Q`\x01`\x01`@\x1B\x03\x81\x11\x15a!~Wa!~a\x1E\x1AV[a!\x8D` \x82`\x05\x1B\x01a\x1EXV[\x80\x82\x82R` \x82\x01\x91P` \x83`\x06\x1B\x85\x01\x01\x92P\x86\x83\x11\x15a!\xAFW`\0\x80\xFD[` \x84\x01\x93P[\x82\x84\x10\x15a\"\x11W`@\x84\x88\x03\x12\x15a!\xCEW`\0\x80\xFD[a!\xD6a\x1E0V[\x84Qa!\xE1\x81a\x1D\xBAV[\x81R` \x85\x01Q`\x04\x81\x10a!\xF5W`\0\x80\xFD[\x80` \x83\x01RP\x80\x83RP` \x82\x01\x91P`@\x84\x01\x93Pa!\xB6V[\x96\x95PPPPPPV[cNH{q`\xE0\x1B`\0R`!`\x04R`$`\0\xFD[cNH{q`\xE0\x1B`\0R`2`\x04R`$`\0\xFD[cNH{q`\xE0\x1B`\0R`\x11`\x04R`$`\0\xFD[`\0`\x01\x82\x01a\"oWa\"oa\"GV[P`\x01\x01\x90V[`\x01`\x01`\x80\x1B\x03\x92\x90\x92\x16\x82R`\x01`\x01`\xA0\x1B\x03\x16` \x82\x01R`@\x01\x90V[`\x01\x81\x81\x1C\x90\x82\x16\x80a\"\xACW`\x7F\x82\x16\x91P[` \x82\x10\x81\x03a\"\xCCWcNH{q`\xE0\x1B`\0R`\"`\x04R`$`\0\xFD[P\x91\x90PV[`\x01`\x01`\xA0\x1B\x03\x83\x16\x81R`@` \x82\x01\x81\x90R`\0\x90a\"\xF6\x90\x83\x01\x84a\x1F\x9AV[\x94\x93PPPPV[`\x1F\x82\x11\x15a\x18\xCAW\x80`\0R` `\0 `\x1F\x84\x01`\x05\x1C\x81\x01` \x85\x10\x15a#%WP\x80[`\x1F\x84\x01`\x05\x1C\x82\x01\x91P[\x81\x81\x10\x15a\rmW`\0\x81U`\x01\x01a#1V[\x81Q`\x01`\x01`@\x1B\x03\x81\x11\x15a#^Wa#^a\x1E\x1AV[a#r\x81a#l\x84Ta\"\x98V[\x84a\"\xFEV[` `\x1F\x82\x11`\x01\x81\x14a#\xA6W`\0\x83\x15a#\x8EWP\x84\x82\x01Q[`\0\x19`\x03\x85\x90\x1B\x1C\x19\x16`\x01\x84\x90\x1B\x17\x84Ua\rmV[`\0\x84\x81R` \x81 `\x1F\x19\x85\x16\x91[\x82\x81\x10\x15a#\xD6W\x87\x85\x01Q\x82U` \x94\x85\x01\x94`\x01\x90\x92\x01\x91\x01a#\xB6V[P\x84\x82\x10\x15a#\xF4W\x86\x84\x01Q`\0\x19`\x03\x87\x90\x1B`\xF8\x16\x1C\x19\x16\x81U[PPPP`\x01\x90\x81\x1B\x01\x90UPV[`\xFF\x82\x81\x16\x82\x82\x16\x03\x90\x81\x11\x15a\nnWa\nna\"GV[\x92\x83R`\x01`\x01`\xA0\x1B\x03\x91\x90\x91\x16` \x83\x01R`@\x82\x01R``\x01\x90V[`\0` \x82\x84\x03\x12\x15a$MW`\0\x80\xFD[PQ\x91\x90PV[`\0\x82Qa$f\x81\x84` \x87\x01a\x1FvV[\x91\x90\x91\x01\x92\x91PPV\xFE\xC7\xF5\x05\xB2\xF3q\xAE!u\xEEI\x13\xF4I\x9E\x1F&3\xA7\xB5\x93c!\xEE\xD1\xCD\xAE\xB6\x11Q\x81\xD26\x08\x94\xA1;\xA1\xA3!\x06g\xC8(I-\xB9\x8D\xCA> v\xCC75\xA9 \xA3\xCAP]8+\xBC\xA2dipfsX\"\x12 \xBECG\xD13zA|\xA3\x15~\x92\xDF\xB6\xF63\xB5W[-\x1D\xDD\xC0\x9C\xBF\xD2Yl{Ca\x81dsolcC\0\x08\x1E\x003",
     );
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**```solidity
-struct OperatorTakeData { bytes32 txid; address memberAddress; }
-```*/
+    struct OperatorTakeData { bytes32 txid; address memberAddress; }
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct OperatorTakeData {
@@ -1073,9 +1072,7 @@ struct OperatorTakeData { bytes32 txid; address memberAddress; }
         );
         #[cfg(test)]
         #[allow(dead_code, unreachable_patterns)]
-        fn _type_assertion(
-            _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-        ) {
+        fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
             match _t {
                 alloy_sol_types::private::AssertTypeEq::<
                     <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -1121,64 +1118,50 @@ struct OperatorTakeData { bytes32 txid; address memberAddress; }
                 if let Some(size) = <Self as alloy_sol_types::SolType>::ENCODED_SIZE {
                     return size;
                 }
-                let tuple = <UnderlyingRustTuple<
-                    '_,
-                > as ::core::convert::From<Self>>::from(self.clone());
-                <UnderlyingSolTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_encoded_size(&tuple)
+                let tuple =
+                    <UnderlyingRustTuple<'_> as ::core::convert::From<Self>>::from(self.clone());
+                <UnderlyingSolTuple<'_> as alloy_sol_types::SolType>::abi_encoded_size(&tuple)
             }
             #[inline]
             fn stv_eip712_data_word(&self) -> alloy_sol_types::Word {
                 <Self as alloy_sol_types::SolStruct>::eip712_hash_struct(self)
             }
             #[inline]
-            fn stv_abi_encode_packed_to(
-                &self,
-                out: &mut alloy_sol_types::private::Vec<u8>,
-            ) {
-                let tuple = <UnderlyingRustTuple<
-                    '_,
-                > as ::core::convert::From<Self>>::from(self.clone());
-                <UnderlyingSolTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_encode_packed_to(&tuple, out)
+            fn stv_abi_encode_packed_to(&self, out: &mut alloy_sol_types::private::Vec<u8>) {
+                let tuple =
+                    <UnderlyingRustTuple<'_> as ::core::convert::From<Self>>::from(self.clone());
+                <UnderlyingSolTuple<'_> as alloy_sol_types::SolType>::abi_encode_packed_to(
+                    &tuple, out,
+                )
             }
             #[inline]
             fn stv_abi_packed_encoded_size(&self) -> usize {
                 if let Some(size) = <Self as alloy_sol_types::SolType>::PACKED_ENCODED_SIZE {
                     return size;
                 }
-                let tuple = <UnderlyingRustTuple<
-                    '_,
-                > as ::core::convert::From<Self>>::from(self.clone());
-                <UnderlyingSolTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_packed_encoded_size(&tuple)
+                let tuple =
+                    <UnderlyingRustTuple<'_> as ::core::convert::From<Self>>::from(self.clone());
+                <UnderlyingSolTuple<'_> as alloy_sol_types::SolType>::abi_packed_encoded_size(
+                    &tuple,
+                )
             }
         }
         #[automatically_derived]
         impl alloy_sol_types::SolType for OperatorTakeData {
             type RustType = Self;
-            type Token<'a> = <UnderlyingSolTuple<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <UnderlyingSolTuple<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SOL_NAME: &'static str = <Self as alloy_sol_types::SolStruct>::NAME;
-            const ENCODED_SIZE: Option<usize> = <UnderlyingSolTuple<
-                '_,
-            > as alloy_sol_types::SolType>::ENCODED_SIZE;
-            const PACKED_ENCODED_SIZE: Option<usize> = <UnderlyingSolTuple<
-                '_,
-            > as alloy_sol_types::SolType>::PACKED_ENCODED_SIZE;
+            const ENCODED_SIZE: Option<usize> =
+                <UnderlyingSolTuple<'_> as alloy_sol_types::SolType>::ENCODED_SIZE;
+            const PACKED_ENCODED_SIZE: Option<usize> =
+                <UnderlyingSolTuple<'_> as alloy_sol_types::SolType>::PACKED_ENCODED_SIZE;
             #[inline]
             fn valid_token(token: &Self::Token<'_>) -> bool {
                 <UnderlyingSolTuple<'_> as alloy_sol_types::SolType>::valid_token(token)
             }
             #[inline]
             fn detokenize(token: Self::Token<'_>) -> Self::RustType {
-                let tuple = <UnderlyingSolTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::detokenize(token);
+                let tuple = <UnderlyingSolTuple<'_> as alloy_sol_types::SolType>::detokenize(token);
                 <Self as ::core::convert::From<UnderlyingRustTuple<'_>>>::from(tuple)
             }
         }
@@ -1192,9 +1175,9 @@ struct OperatorTakeData { bytes32 txid; address memberAddress; }
                 )
             }
             #[inline]
-            fn eip712_components() -> alloy_sol_types::private::Vec<
-                alloy_sol_types::private::Cow<'static, str>,
-            > {
+            fn eip712_components(
+            ) -> alloy_sol_types::private::Vec<alloy_sol_types::private::Cow<'static, str>>
+            {
                 alloy_sol_types::private::Vec::new()
             }
             #[inline]
@@ -1233,9 +1216,7 @@ struct OperatorTakeData { bytes32 txid; address memberAddress; }
                 rust: &Self::RustType,
                 out: &mut alloy_sol_types::private::Vec<u8>,
             ) {
-                out.reserve(
-                    <Self as alloy_sol_types::EventTopic>::topic_preimage_length(rust),
-                );
+                out.reserve(<Self as alloy_sol_types::EventTopic>::topic_preimage_length(rust));
                 <alloy::sol_types::sol_data::FixedBytes<
                     32,
                 > as alloy_sol_types::EventTopic>::encode_topic_preimage(
@@ -1248,25 +1229,17 @@ struct OperatorTakeData { bytes32 txid; address memberAddress; }
                 );
             }
             #[inline]
-            fn encode_topic(
-                rust: &Self::RustType,
-            ) -> alloy_sol_types::abi::token::WordToken {
+            fn encode_topic(rust: &Self::RustType) -> alloy_sol_types::abi::token::WordToken {
                 let mut out = alloy_sol_types::private::Vec::new();
-                <Self as alloy_sol_types::EventTopic>::encode_topic_preimage(
-                    rust,
-                    &mut out,
-                );
-                alloy_sol_types::abi::token::WordToken(
-                    alloy_sol_types::private::keccak256(out),
-                )
+                <Self as alloy_sol_types::EventTopic>::encode_topic_preimage(rust, &mut out);
+                alloy_sol_types::abi::token::WordToken(alloy_sol_types::private::keccak256(out))
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**```solidity
-struct SignatureData { bytes32 signature; bytes nonce; }
-```*/
+    struct SignatureData { bytes32 signature; bytes nonce; }
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct SignatureData {
@@ -1295,9 +1268,7 @@ struct SignatureData { bytes32 signature; bytes nonce; }
         );
         #[cfg(test)]
         #[allow(dead_code, unreachable_patterns)]
-        fn _type_assertion(
-            _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-        ) {
+        fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
             match _t {
                 alloy_sol_types::private::AssertTypeEq::<
                     <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -1343,64 +1314,50 @@ struct SignatureData { bytes32 signature; bytes nonce; }
                 if let Some(size) = <Self as alloy_sol_types::SolType>::ENCODED_SIZE {
                     return size;
                 }
-                let tuple = <UnderlyingRustTuple<
-                    '_,
-                > as ::core::convert::From<Self>>::from(self.clone());
-                <UnderlyingSolTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_encoded_size(&tuple)
+                let tuple =
+                    <UnderlyingRustTuple<'_> as ::core::convert::From<Self>>::from(self.clone());
+                <UnderlyingSolTuple<'_> as alloy_sol_types::SolType>::abi_encoded_size(&tuple)
             }
             #[inline]
             fn stv_eip712_data_word(&self) -> alloy_sol_types::Word {
                 <Self as alloy_sol_types::SolStruct>::eip712_hash_struct(self)
             }
             #[inline]
-            fn stv_abi_encode_packed_to(
-                &self,
-                out: &mut alloy_sol_types::private::Vec<u8>,
-            ) {
-                let tuple = <UnderlyingRustTuple<
-                    '_,
-                > as ::core::convert::From<Self>>::from(self.clone());
-                <UnderlyingSolTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_encode_packed_to(&tuple, out)
+            fn stv_abi_encode_packed_to(&self, out: &mut alloy_sol_types::private::Vec<u8>) {
+                let tuple =
+                    <UnderlyingRustTuple<'_> as ::core::convert::From<Self>>::from(self.clone());
+                <UnderlyingSolTuple<'_> as alloy_sol_types::SolType>::abi_encode_packed_to(
+                    &tuple, out,
+                )
             }
             #[inline]
             fn stv_abi_packed_encoded_size(&self) -> usize {
                 if let Some(size) = <Self as alloy_sol_types::SolType>::PACKED_ENCODED_SIZE {
                     return size;
                 }
-                let tuple = <UnderlyingRustTuple<
-                    '_,
-                > as ::core::convert::From<Self>>::from(self.clone());
-                <UnderlyingSolTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_packed_encoded_size(&tuple)
+                let tuple =
+                    <UnderlyingRustTuple<'_> as ::core::convert::From<Self>>::from(self.clone());
+                <UnderlyingSolTuple<'_> as alloy_sol_types::SolType>::abi_packed_encoded_size(
+                    &tuple,
+                )
             }
         }
         #[automatically_derived]
         impl alloy_sol_types::SolType for SignatureData {
             type RustType = Self;
-            type Token<'a> = <UnderlyingSolTuple<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <UnderlyingSolTuple<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SOL_NAME: &'static str = <Self as alloy_sol_types::SolStruct>::NAME;
-            const ENCODED_SIZE: Option<usize> = <UnderlyingSolTuple<
-                '_,
-            > as alloy_sol_types::SolType>::ENCODED_SIZE;
-            const PACKED_ENCODED_SIZE: Option<usize> = <UnderlyingSolTuple<
-                '_,
-            > as alloy_sol_types::SolType>::PACKED_ENCODED_SIZE;
+            const ENCODED_SIZE: Option<usize> =
+                <UnderlyingSolTuple<'_> as alloy_sol_types::SolType>::ENCODED_SIZE;
+            const PACKED_ENCODED_SIZE: Option<usize> =
+                <UnderlyingSolTuple<'_> as alloy_sol_types::SolType>::PACKED_ENCODED_SIZE;
             #[inline]
             fn valid_token(token: &Self::Token<'_>) -> bool {
                 <UnderlyingSolTuple<'_> as alloy_sol_types::SolType>::valid_token(token)
             }
             #[inline]
             fn detokenize(token: Self::Token<'_>) -> Self::RustType {
-                let tuple = <UnderlyingSolTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::detokenize(token);
+                let tuple = <UnderlyingSolTuple<'_> as alloy_sol_types::SolType>::detokenize(token);
                 <Self as ::core::convert::From<UnderlyingRustTuple<'_>>>::from(tuple)
             }
         }
@@ -1414,9 +1371,9 @@ struct SignatureData { bytes32 signature; bytes nonce; }
                 )
             }
             #[inline]
-            fn eip712_components() -> alloy_sol_types::private::Vec<
-                alloy_sol_types::private::Cow<'static, str>,
-            > {
+            fn eip712_components(
+            ) -> alloy_sol_types::private::Vec<alloy_sol_types::private::Cow<'static, str>>
+            {
                 alloy_sol_types::private::Vec::new()
             }
             #[inline]
@@ -1457,9 +1414,7 @@ struct SignatureData { bytes32 signature; bytes nonce; }
                 rust: &Self::RustType,
                 out: &mut alloy_sol_types::private::Vec<u8>,
             ) {
-                out.reserve(
-                    <Self as alloy_sol_types::EventTopic>::topic_preimage_length(rust),
-                );
+                out.reserve(<Self as alloy_sol_types::EventTopic>::topic_preimage_length(rust));
                 <alloy::sol_types::sol_data::FixedBytes<
                     32,
                 > as alloy_sol_types::EventTopic>::encode_topic_preimage(
@@ -1472,26 +1427,18 @@ struct SignatureData { bytes32 signature; bytes nonce; }
                 );
             }
             #[inline]
-            fn encode_topic(
-                rust: &Self::RustType,
-            ) -> alloy_sol_types::abi::token::WordToken {
+            fn encode_topic(rust: &Self::RustType) -> alloy_sol_types::abi::token::WordToken {
                 let mut out = alloy_sol_types::private::Vec::new();
-                <Self as alloy_sol_types::EventTopic>::encode_topic_preimage(
-                    rust,
-                    &mut out,
-                );
-                alloy_sol_types::abi::token::WordToken(
-                    alloy_sol_types::private::keccak256(out),
-                )
+                <Self as alloy_sol_types::EventTopic>::encode_topic_preimage(rust, &mut out);
+                alloy_sol_types::abi::token::WordToken(alloy_sol_types::private::keccak256(out))
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Custom error with signature `AcceptPeginTxidNotFound(bytes32)` and selector `0x82ac86e7`.
-```solidity
-error AcceptPeginTxidNotFound(bytes32 acceptPeginTxid);
-```*/
+    ```solidity
+    error AcceptPeginTxidNotFound(bytes32 acceptPeginTxid);
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct AcceptPeginTxidNotFound {
@@ -1512,9 +1459,7 @@ error AcceptPeginTxidNotFound(bytes32 acceptPeginTxid);
         type UnderlyingRustTuple<'a> = (alloy::sol_types::private::FixedBytes<32>,);
         #[cfg(test)]
         #[allow(dead_code, unreachable_patterns)]
-        fn _type_assertion(
-            _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-        ) {
+        fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
             match _t {
                 alloy_sol_types::private::AssertTypeEq::<
                     <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -1532,15 +1477,15 @@ error AcceptPeginTxidNotFound(bytes32 acceptPeginTxid);
         #[doc(hidden)]
         impl ::core::convert::From<UnderlyingRustTuple<'_>> for AcceptPeginTxidNotFound {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self { acceptPeginTxid: tuple.0 }
+                Self {
+                    acceptPeginTxid: tuple.0,
+                }
             }
         }
         #[automatically_derived]
         impl alloy_sol_types::SolError for AcceptPeginTxidNotFound {
             type Parameters<'a> = UnderlyingSolTuple<'a>;
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "AcceptPeginTxidNotFound(bytes32)";
             const SELECTOR: [u8; 4] = [130u8, 172u8, 134u8, 231u8];
             #[inline]
@@ -1559,19 +1504,18 @@ error AcceptPeginTxidNotFound(bytes32 acceptPeginTxid);
             }
             #[inline]
             fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
-                <Self::Parameters<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Self::new)
+                <Self::Parameters<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Self::new)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Custom error with signature `AddressEmptyCode(address)` and selector `0x9996b315`.
-```solidity
-error AddressEmptyCode(address target);
-```*/
+    ```solidity
+    error AddressEmptyCode(address target);
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct AddressEmptyCode {
@@ -1592,9 +1536,7 @@ error AddressEmptyCode(address target);
         type UnderlyingRustTuple<'a> = (alloy::sol_types::private::Address,);
         #[cfg(test)]
         #[allow(dead_code, unreachable_patterns)]
-        fn _type_assertion(
-            _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-        ) {
+        fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
             match _t {
                 alloy_sol_types::private::AssertTypeEq::<
                     <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -1618,9 +1560,7 @@ error AddressEmptyCode(address target);
         #[automatically_derived]
         impl alloy_sol_types::SolError for AddressEmptyCode {
             type Parameters<'a> = UnderlyingSolTuple<'a>;
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "AddressEmptyCode(address)";
             const SELECTOR: [u8; 4] = [153u8, 150u8, 179u8, 21u8];
             #[inline]
@@ -1639,19 +1579,18 @@ error AddressEmptyCode(address target);
             }
             #[inline]
             fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
-                <Self::Parameters<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Self::new)
+                <Self::Parameters<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Self::new)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Custom error with signature `AllNoncesAreNotPresent(bytes32)` and selector `0x0fc7f8c8`.
-```solidity
-error AllNoncesAreNotPresent(bytes32 hashToSign);
-```*/
+    ```solidity
+    error AllNoncesAreNotPresent(bytes32 hashToSign);
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct AllNoncesAreNotPresent {
@@ -1672,9 +1611,7 @@ error AllNoncesAreNotPresent(bytes32 hashToSign);
         type UnderlyingRustTuple<'a> = (alloy::sol_types::private::FixedBytes<32>,);
         #[cfg(test)]
         #[allow(dead_code, unreachable_patterns)]
-        fn _type_assertion(
-            _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-        ) {
+        fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
             match _t {
                 alloy_sol_types::private::AssertTypeEq::<
                     <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -1692,15 +1629,15 @@ error AllNoncesAreNotPresent(bytes32 hashToSign);
         #[doc(hidden)]
         impl ::core::convert::From<UnderlyingRustTuple<'_>> for AllNoncesAreNotPresent {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self { hashToSign: tuple.0 }
+                Self {
+                    hashToSign: tuple.0,
+                }
             }
         }
         #[automatically_derived]
         impl alloy_sol_types::SolError for AllNoncesAreNotPresent {
             type Parameters<'a> = UnderlyingSolTuple<'a>;
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "AllNoncesAreNotPresent(bytes32)";
             const SELECTOR: [u8; 4] = [15u8, 199u8, 248u8, 200u8];
             #[inline]
@@ -1719,19 +1656,18 @@ error AllNoncesAreNotPresent(bytes32 hashToSign);
             }
             #[inline]
             fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
-                <Self::Parameters<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Self::new)
+                <Self::Parameters<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Self::new)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Custom error with signature `AllOperatorTakeTxidsAlreadyPresent(bytes32)` and selector `0x4aa1a05d`.
-```solidity
-error AllOperatorTakeTxidsAlreadyPresent(bytes32 acceptPeginTxid);
-```*/
+    ```solidity
+    error AllOperatorTakeTxidsAlreadyPresent(bytes32 acceptPeginTxid);
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct AllOperatorTakeTxidsAlreadyPresent {
@@ -1752,9 +1688,7 @@ error AllOperatorTakeTxidsAlreadyPresent(bytes32 acceptPeginTxid);
         type UnderlyingRustTuple<'a> = (alloy::sol_types::private::FixedBytes<32>,);
         #[cfg(test)]
         #[allow(dead_code, unreachable_patterns)]
-        fn _type_assertion(
-            _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-        ) {
+        fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
             match _t {
                 alloy_sol_types::private::AssertTypeEq::<
                     <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -1763,26 +1697,24 @@ error AllOperatorTakeTxidsAlreadyPresent(bytes32 acceptPeginTxid);
         }
         #[automatically_derived]
         #[doc(hidden)]
-        impl ::core::convert::From<AllOperatorTakeTxidsAlreadyPresent>
-        for UnderlyingRustTuple<'_> {
+        impl ::core::convert::From<AllOperatorTakeTxidsAlreadyPresent> for UnderlyingRustTuple<'_> {
             fn from(value: AllOperatorTakeTxidsAlreadyPresent) -> Self {
                 (value.acceptPeginTxid,)
             }
         }
         #[automatically_derived]
         #[doc(hidden)]
-        impl ::core::convert::From<UnderlyingRustTuple<'_>>
-        for AllOperatorTakeTxidsAlreadyPresent {
+        impl ::core::convert::From<UnderlyingRustTuple<'_>> for AllOperatorTakeTxidsAlreadyPresent {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self { acceptPeginTxid: tuple.0 }
+                Self {
+                    acceptPeginTxid: tuple.0,
+                }
             }
         }
         #[automatically_derived]
         impl alloy_sol_types::SolError for AllOperatorTakeTxidsAlreadyPresent {
             type Parameters<'a> = UnderlyingSolTuple<'a>;
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "AllOperatorTakeTxidsAlreadyPresent(bytes32)";
             const SELECTOR: [u8; 4] = [74u8, 161u8, 160u8, 93u8];
             #[inline]
@@ -1801,19 +1733,18 @@ error AllOperatorTakeTxidsAlreadyPresent(bytes32 acceptPeginTxid);
             }
             #[inline]
             fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
-                <Self::Parameters<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Self::new)
+                <Self::Parameters<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Self::new)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Custom error with signature `CommitteeRegistryAddressZero()` and selector `0x1bc2614e`.
-```solidity
-error CommitteeRegistryAddressZero();
-```*/
+    ```solidity
+    error CommitteeRegistryAddressZero();
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct CommitteeRegistryAddressZero;
@@ -1831,9 +1762,7 @@ error CommitteeRegistryAddressZero();
         type UnderlyingRustTuple<'a> = ();
         #[cfg(test)]
         #[allow(dead_code, unreachable_patterns)]
-        fn _type_assertion(
-            _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-        ) {
+        fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
             match _t {
                 alloy_sol_types::private::AssertTypeEq::<
                     <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -1842,16 +1771,14 @@ error CommitteeRegistryAddressZero();
         }
         #[automatically_derived]
         #[doc(hidden)]
-        impl ::core::convert::From<CommitteeRegistryAddressZero>
-        for UnderlyingRustTuple<'_> {
+        impl ::core::convert::From<CommitteeRegistryAddressZero> for UnderlyingRustTuple<'_> {
             fn from(value: CommitteeRegistryAddressZero) -> Self {
                 ()
             }
         }
         #[automatically_derived]
         #[doc(hidden)]
-        impl ::core::convert::From<UnderlyingRustTuple<'_>>
-        for CommitteeRegistryAddressZero {
+        impl ::core::convert::From<UnderlyingRustTuple<'_>> for CommitteeRegistryAddressZero {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
                 Self
             }
@@ -1859,9 +1786,7 @@ error CommitteeRegistryAddressZero();
         #[automatically_derived]
         impl alloy_sol_types::SolError for CommitteeRegistryAddressZero {
             type Parameters<'a> = UnderlyingSolTuple<'a>;
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "CommitteeRegistryAddressZero()";
             const SELECTOR: [u8; 4] = [27u8, 194u8, 97u8, 78u8];
             #[inline]
@@ -1876,19 +1801,18 @@ error CommitteeRegistryAddressZero();
             }
             #[inline]
             fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
-                <Self::Parameters<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Self::new)
+                <Self::Parameters<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Self::new)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Custom error with signature `ERC1967InvalidImplementation(address)` and selector `0x4c9c8ce3`.
-```solidity
-error ERC1967InvalidImplementation(address implementation);
-```*/
+    ```solidity
+    error ERC1967InvalidImplementation(address implementation);
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct ERC1967InvalidImplementation {
@@ -1909,9 +1833,7 @@ error ERC1967InvalidImplementation(address implementation);
         type UnderlyingRustTuple<'a> = (alloy::sol_types::private::Address,);
         #[cfg(test)]
         #[allow(dead_code, unreachable_patterns)]
-        fn _type_assertion(
-            _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-        ) {
+        fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
             match _t {
                 alloy_sol_types::private::AssertTypeEq::<
                     <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -1920,26 +1842,24 @@ error ERC1967InvalidImplementation(address implementation);
         }
         #[automatically_derived]
         #[doc(hidden)]
-        impl ::core::convert::From<ERC1967InvalidImplementation>
-        for UnderlyingRustTuple<'_> {
+        impl ::core::convert::From<ERC1967InvalidImplementation> for UnderlyingRustTuple<'_> {
             fn from(value: ERC1967InvalidImplementation) -> Self {
                 (value.implementation,)
             }
         }
         #[automatically_derived]
         #[doc(hidden)]
-        impl ::core::convert::From<UnderlyingRustTuple<'_>>
-        for ERC1967InvalidImplementation {
+        impl ::core::convert::From<UnderlyingRustTuple<'_>> for ERC1967InvalidImplementation {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self { implementation: tuple.0 }
+                Self {
+                    implementation: tuple.0,
+                }
             }
         }
         #[automatically_derived]
         impl alloy_sol_types::SolError for ERC1967InvalidImplementation {
             type Parameters<'a> = UnderlyingSolTuple<'a>;
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "ERC1967InvalidImplementation(address)";
             const SELECTOR: [u8; 4] = [76u8, 156u8, 140u8, 227u8];
             #[inline]
@@ -1958,19 +1878,18 @@ error ERC1967InvalidImplementation(address implementation);
             }
             #[inline]
             fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
-                <Self::Parameters<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Self::new)
+                <Self::Parameters<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Self::new)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Custom error with signature `ERC1967NonPayable()` and selector `0xb398979f`.
-```solidity
-error ERC1967NonPayable();
-```*/
+    ```solidity
+    error ERC1967NonPayable();
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct ERC1967NonPayable;
@@ -1988,9 +1907,7 @@ error ERC1967NonPayable();
         type UnderlyingRustTuple<'a> = ();
         #[cfg(test)]
         #[allow(dead_code, unreachable_patterns)]
-        fn _type_assertion(
-            _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-        ) {
+        fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
             match _t {
                 alloy_sol_types::private::AssertTypeEq::<
                     <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -2014,9 +1931,7 @@ error ERC1967NonPayable();
         #[automatically_derived]
         impl alloy_sol_types::SolError for ERC1967NonPayable {
             type Parameters<'a> = UnderlyingSolTuple<'a>;
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "ERC1967NonPayable()";
             const SELECTOR: [u8; 4] = [179u8, 152u8, 151u8, 159u8];
             #[inline]
@@ -2031,19 +1946,18 @@ error ERC1967NonPayable();
             }
             #[inline]
             fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
-                <Self::Parameters<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Self::new)
+                <Self::Parameters<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Self::new)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Custom error with signature `FailedCall()` and selector `0xd6bda275`.
-```solidity
-error FailedCall();
-```*/
+    ```solidity
+    error FailedCall();
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct FailedCall;
@@ -2061,9 +1975,7 @@ error FailedCall();
         type UnderlyingRustTuple<'a> = ();
         #[cfg(test)]
         #[allow(dead_code, unreachable_patterns)]
-        fn _type_assertion(
-            _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-        ) {
+        fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
             match _t {
                 alloy_sol_types::private::AssertTypeEq::<
                     <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -2087,9 +1999,7 @@ error FailedCall();
         #[automatically_derived]
         impl alloy_sol_types::SolError for FailedCall {
             type Parameters<'a> = UnderlyingSolTuple<'a>;
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "FailedCall()";
             const SELECTOR: [u8; 4] = [214u8, 189u8, 162u8, 117u8];
             #[inline]
@@ -2104,19 +2014,18 @@ error FailedCall();
             }
             #[inline]
             fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
-                <Self::Parameters<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Self::new)
+                <Self::Parameters<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Self::new)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Custom error with signature `HashToSignNotFound(bytes32)` and selector `0x2bfe0ac7`.
-```solidity
-error HashToSignNotFound(bytes32 hashToSign);
-```*/
+    ```solidity
+    error HashToSignNotFound(bytes32 hashToSign);
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct HashToSignNotFound {
@@ -2137,9 +2046,7 @@ error HashToSignNotFound(bytes32 hashToSign);
         type UnderlyingRustTuple<'a> = (alloy::sol_types::private::FixedBytes<32>,);
         #[cfg(test)]
         #[allow(dead_code, unreachable_patterns)]
-        fn _type_assertion(
-            _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-        ) {
+        fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
             match _t {
                 alloy_sol_types::private::AssertTypeEq::<
                     <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -2157,15 +2064,15 @@ error HashToSignNotFound(bytes32 hashToSign);
         #[doc(hidden)]
         impl ::core::convert::From<UnderlyingRustTuple<'_>> for HashToSignNotFound {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self { hashToSign: tuple.0 }
+                Self {
+                    hashToSign: tuple.0,
+                }
             }
         }
         #[automatically_derived]
         impl alloy_sol_types::SolError for HashToSignNotFound {
             type Parameters<'a> = UnderlyingSolTuple<'a>;
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "HashToSignNotFound(bytes32)";
             const SELECTOR: [u8; 4] = [43u8, 254u8, 10u8, 199u8];
             #[inline]
@@ -2184,19 +2091,18 @@ error HashToSignNotFound(bytes32 hashToSign);
             }
             #[inline]
             fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
-                <Self::Parameters<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Self::new)
+                <Self::Parameters<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Self::new)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Custom error with signature `InvalidAcceptPeginTxid(bytes32)` and selector `0x9775e904`.
-```solidity
-error InvalidAcceptPeginTxid(bytes32 acceptPeginTxid);
-```*/
+    ```solidity
+    error InvalidAcceptPeginTxid(bytes32 acceptPeginTxid);
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct InvalidAcceptPeginTxid {
@@ -2217,9 +2123,7 @@ error InvalidAcceptPeginTxid(bytes32 acceptPeginTxid);
         type UnderlyingRustTuple<'a> = (alloy::sol_types::private::FixedBytes<32>,);
         #[cfg(test)]
         #[allow(dead_code, unreachable_patterns)]
-        fn _type_assertion(
-            _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-        ) {
+        fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
             match _t {
                 alloy_sol_types::private::AssertTypeEq::<
                     <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -2237,15 +2141,15 @@ error InvalidAcceptPeginTxid(bytes32 acceptPeginTxid);
         #[doc(hidden)]
         impl ::core::convert::From<UnderlyingRustTuple<'_>> for InvalidAcceptPeginTxid {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self { acceptPeginTxid: tuple.0 }
+                Self {
+                    acceptPeginTxid: tuple.0,
+                }
             }
         }
         #[automatically_derived]
         impl alloy_sol_types::SolError for InvalidAcceptPeginTxid {
             type Parameters<'a> = UnderlyingSolTuple<'a>;
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "InvalidAcceptPeginTxid(bytes32)";
             const SELECTOR: [u8; 4] = [151u8, 117u8, 233u8, 4u8];
             #[inline]
@@ -2264,19 +2168,18 @@ error InvalidAcceptPeginTxid(bytes32 acceptPeginTxid);
             }
             #[inline]
             fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
-                <Self::Parameters<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Self::new)
+                <Self::Parameters<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Self::new)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Custom error with signature `InvalidHash(bytes32)` and selector `0x44d659bf`.
-```solidity
-error InvalidHash(bytes32 hash);
-```*/
+    ```solidity
+    error InvalidHash(bytes32 hash);
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct InvalidHash {
@@ -2297,9 +2200,7 @@ error InvalidHash(bytes32 hash);
         type UnderlyingRustTuple<'a> = (alloy::sol_types::private::FixedBytes<32>,);
         #[cfg(test)]
         #[allow(dead_code, unreachable_patterns)]
-        fn _type_assertion(
-            _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-        ) {
+        fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
             match _t {
                 alloy_sol_types::private::AssertTypeEq::<
                     <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -2323,9 +2224,7 @@ error InvalidHash(bytes32 hash);
         #[automatically_derived]
         impl alloy_sol_types::SolError for InvalidHash {
             type Parameters<'a> = UnderlyingSolTuple<'a>;
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "InvalidHash(bytes32)";
             const SELECTOR: [u8; 4] = [68u8, 214u8, 89u8, 191u8];
             #[inline]
@@ -2344,19 +2243,18 @@ error InvalidHash(bytes32 hash);
             }
             #[inline]
             fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
-                <Self::Parameters<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Self::new)
+                <Self::Parameters<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Self::new)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Custom error with signature `InvalidHashToSign(bytes32)` and selector `0x46f82856`.
-```solidity
-error InvalidHashToSign(bytes32 hashToSign);
-```*/
+    ```solidity
+    error InvalidHashToSign(bytes32 hashToSign);
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct InvalidHashToSign {
@@ -2377,9 +2275,7 @@ error InvalidHashToSign(bytes32 hashToSign);
         type UnderlyingRustTuple<'a> = (alloy::sol_types::private::FixedBytes<32>,);
         #[cfg(test)]
         #[allow(dead_code, unreachable_patterns)]
-        fn _type_assertion(
-            _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-        ) {
+        fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
             match _t {
                 alloy_sol_types::private::AssertTypeEq::<
                     <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -2397,15 +2293,15 @@ error InvalidHashToSign(bytes32 hashToSign);
         #[doc(hidden)]
         impl ::core::convert::From<UnderlyingRustTuple<'_>> for InvalidHashToSign {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self { hashToSign: tuple.0 }
+                Self {
+                    hashToSign: tuple.0,
+                }
             }
         }
         #[automatically_derived]
         impl alloy_sol_types::SolError for InvalidHashToSign {
             type Parameters<'a> = UnderlyingSolTuple<'a>;
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "InvalidHashToSign(bytes32)";
             const SELECTOR: [u8; 4] = [70u8, 248u8, 40u8, 86u8];
             #[inline]
@@ -2424,19 +2320,18 @@ error InvalidHashToSign(bytes32 hashToSign);
             }
             #[inline]
             fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
-                <Self::Parameters<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Self::new)
+                <Self::Parameters<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Self::new)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Custom error with signature `InvalidInitialization()` and selector `0xf92ee8a9`.
-```solidity
-error InvalidInitialization();
-```*/
+    ```solidity
+    error InvalidInitialization();
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct InvalidInitialization;
@@ -2454,9 +2349,7 @@ error InvalidInitialization();
         type UnderlyingRustTuple<'a> = ();
         #[cfg(test)]
         #[allow(dead_code, unreachable_patterns)]
-        fn _type_assertion(
-            _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-        ) {
+        fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
             match _t {
                 alloy_sol_types::private::AssertTypeEq::<
                     <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -2480,9 +2373,7 @@ error InvalidInitialization();
         #[automatically_derived]
         impl alloy_sol_types::SolError for InvalidInitialization {
             type Parameters<'a> = UnderlyingSolTuple<'a>;
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "InvalidInitialization()";
             const SELECTOR: [u8; 4] = [249u8, 46u8, 232u8, 169u8];
             #[inline]
@@ -2497,19 +2388,18 @@ error InvalidInitialization();
             }
             #[inline]
             fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
-                <Self::Parameters<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Self::new)
+                <Self::Parameters<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Self::new)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Custom error with signature `InvalidNonceLength(uint256,uint8)` and selector `0xff73e94c`.
-```solidity
-error InvalidNonceLength(uint256 actual, uint8 expected);
-```*/
+    ```solidity
+    error InvalidNonceLength(uint256 actual, uint8 expected);
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct InvalidNonceLength {
@@ -2532,15 +2422,10 @@ error InvalidNonceLength(uint256 actual, uint8 expected);
             alloy::sol_types::sol_data::Uint<8>,
         );
         #[doc(hidden)]
-        type UnderlyingRustTuple<'a> = (
-            alloy::sol_types::private::primitives::aliases::U256,
-            u8,
-        );
+        type UnderlyingRustTuple<'a> = (alloy::sol_types::private::primitives::aliases::U256, u8);
         #[cfg(test)]
         #[allow(dead_code, unreachable_patterns)]
-        fn _type_assertion(
-            _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-        ) {
+        fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
             match _t {
                 alloy_sol_types::private::AssertTypeEq::<
                     <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -2567,9 +2452,7 @@ error InvalidNonceLength(uint256 actual, uint8 expected);
         #[automatically_derived]
         impl alloy_sol_types::SolError for InvalidNonceLength {
             type Parameters<'a> = UnderlyingSolTuple<'a>;
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "InvalidNonceLength(uint256,uint8)";
             const SELECTOR: [u8; 4] = [255u8, 115u8, 233u8, 76u8];
             #[inline]
@@ -2581,29 +2464,28 @@ error InvalidNonceLength(uint256 actual, uint8 expected);
             #[inline]
             fn tokenize(&self) -> Self::Token<'_> {
                 (
-                    <alloy::sol_types::sol_data::Uint<
-                        256,
-                    > as alloy_sol_types::SolType>::tokenize(&self.actual),
-                    <alloy::sol_types::sol_data::Uint<
-                        8,
-                    > as alloy_sol_types::SolType>::tokenize(&self.expected),
+                    <alloy::sol_types::sol_data::Uint<256> as alloy_sol_types::SolType>::tokenize(
+                        &self.actual,
+                    ),
+                    <alloy::sol_types::sol_data::Uint<8> as alloy_sol_types::SolType>::tokenize(
+                        &self.expected,
+                    ),
                 )
             }
             #[inline]
             fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
-                <Self::Parameters<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Self::new)
+                <Self::Parameters<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Self::new)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Custom error with signature `InvalidSignature()` and selector `0x8baa579f`.
-```solidity
-error InvalidSignature();
-```*/
+    ```solidity
+    error InvalidSignature();
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct InvalidSignature;
@@ -2621,9 +2503,7 @@ error InvalidSignature();
         type UnderlyingRustTuple<'a> = ();
         #[cfg(test)]
         #[allow(dead_code, unreachable_patterns)]
-        fn _type_assertion(
-            _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-        ) {
+        fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
             match _t {
                 alloy_sol_types::private::AssertTypeEq::<
                     <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -2647,9 +2527,7 @@ error InvalidSignature();
         #[automatically_derived]
         impl alloy_sol_types::SolError for InvalidSignature {
             type Parameters<'a> = UnderlyingSolTuple<'a>;
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "InvalidSignature()";
             const SELECTOR: [u8; 4] = [139u8, 170u8, 87u8, 159u8];
             #[inline]
@@ -2664,19 +2542,18 @@ error InvalidSignature();
             }
             #[inline]
             fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
-                <Self::Parameters<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Self::new)
+                <Self::Parameters<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Self::new)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Custom error with signature `MemberAlreadyAddedNonce(address,bytes)` and selector `0x25f62e30`.
-```solidity
-error MemberAlreadyAddedNonce(address memberAddress, bytes nonce);
-```*/
+    ```solidity
+    error MemberAlreadyAddedNonce(address memberAddress, bytes nonce);
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct MemberAlreadyAddedNonce {
@@ -2705,9 +2582,7 @@ error MemberAlreadyAddedNonce(address memberAddress, bytes nonce);
         );
         #[cfg(test)]
         #[allow(dead_code, unreachable_patterns)]
-        fn _type_assertion(
-            _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-        ) {
+        fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
             match _t {
                 alloy_sol_types::private::AssertTypeEq::<
                     <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -2734,9 +2609,7 @@ error MemberAlreadyAddedNonce(address memberAddress, bytes nonce);
         #[automatically_derived]
         impl alloy_sol_types::SolError for MemberAlreadyAddedNonce {
             type Parameters<'a> = UnderlyingSolTuple<'a>;
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "MemberAlreadyAddedNonce(address,bytes)";
             const SELECTOR: [u8; 4] = [37u8, 246u8, 46u8, 48u8];
             #[inline]
@@ -2758,19 +2631,18 @@ error MemberAlreadyAddedNonce(address memberAddress, bytes nonce);
             }
             #[inline]
             fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
-                <Self::Parameters<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Self::new)
+                <Self::Parameters<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Self::new)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Custom error with signature `MemberAlreadyAddedOperatorTakeTxid(bytes32,address,bytes32)` and selector `0xa8ce78d7`.
-```solidity
-error MemberAlreadyAddedOperatorTakeTxid(bytes32 acceptPeginTxid, address memberAddress, bytes32 hash);
-```*/
+    ```solidity
+    error MemberAlreadyAddedOperatorTakeTxid(bytes32 acceptPeginTxid, address memberAddress, bytes32 hash);
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct MemberAlreadyAddedOperatorTakeTxid {
@@ -2803,9 +2675,7 @@ error MemberAlreadyAddedOperatorTakeTxid(bytes32 acceptPeginTxid, address member
         );
         #[cfg(test)]
         #[allow(dead_code, unreachable_patterns)]
-        fn _type_assertion(
-            _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-        ) {
+        fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
             match _t {
                 alloy_sol_types::private::AssertTypeEq::<
                     <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -2814,16 +2684,14 @@ error MemberAlreadyAddedOperatorTakeTxid(bytes32 acceptPeginTxid, address member
         }
         #[automatically_derived]
         #[doc(hidden)]
-        impl ::core::convert::From<MemberAlreadyAddedOperatorTakeTxid>
-        for UnderlyingRustTuple<'_> {
+        impl ::core::convert::From<MemberAlreadyAddedOperatorTakeTxid> for UnderlyingRustTuple<'_> {
             fn from(value: MemberAlreadyAddedOperatorTakeTxid) -> Self {
                 (value.acceptPeginTxid, value.memberAddress, value.hash)
             }
         }
         #[automatically_derived]
         #[doc(hidden)]
-        impl ::core::convert::From<UnderlyingRustTuple<'_>>
-        for MemberAlreadyAddedOperatorTakeTxid {
+        impl ::core::convert::From<UnderlyingRustTuple<'_>> for MemberAlreadyAddedOperatorTakeTxid {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
                 Self {
                     acceptPeginTxid: tuple.0,
@@ -2835,10 +2703,9 @@ error MemberAlreadyAddedOperatorTakeTxid(bytes32 acceptPeginTxid, address member
         #[automatically_derived]
         impl alloy_sol_types::SolError for MemberAlreadyAddedOperatorTakeTxid {
             type Parameters<'a> = UnderlyingSolTuple<'a>;
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
-            const SIGNATURE: &'static str = "MemberAlreadyAddedOperatorTakeTxid(bytes32,address,bytes32)";
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
+            const SIGNATURE: &'static str =
+                "MemberAlreadyAddedOperatorTakeTxid(bytes32,address,bytes32)";
             const SELECTOR: [u8; 4] = [168u8, 206u8, 120u8, 215u8];
             #[inline]
             fn new<'a>(
@@ -2862,19 +2729,18 @@ error MemberAlreadyAddedOperatorTakeTxid(bytes32 acceptPeginTxid, address member
             }
             #[inline]
             fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
-                <Self::Parameters<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Self::new)
+                <Self::Parameters<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Self::new)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Custom error with signature `MemberHasAlreadySigned(address,bytes32)` and selector `0x73be4fd1`.
-```solidity
-error MemberHasAlreadySigned(address memberAddress, bytes32 pegoutTxid);
-```*/
+    ```solidity
+    error MemberHasAlreadySigned(address memberAddress, bytes32 pegoutTxid);
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct MemberHasAlreadySigned {
@@ -2903,9 +2769,7 @@ error MemberHasAlreadySigned(address memberAddress, bytes32 pegoutTxid);
         );
         #[cfg(test)]
         #[allow(dead_code, unreachable_patterns)]
-        fn _type_assertion(
-            _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-        ) {
+        fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
             match _t {
                 alloy_sol_types::private::AssertTypeEq::<
                     <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -2932,9 +2796,7 @@ error MemberHasAlreadySigned(address memberAddress, bytes32 pegoutTxid);
         #[automatically_derived]
         impl alloy_sol_types::SolError for MemberHasAlreadySigned {
             type Parameters<'a> = UnderlyingSolTuple<'a>;
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "MemberHasAlreadySigned(address,bytes32)";
             const SELECTOR: [u8; 4] = [115u8, 190u8, 79u8, 209u8];
             #[inline]
@@ -2956,19 +2818,18 @@ error MemberHasAlreadySigned(address memberAddress, bytes32 pegoutTxid);
             }
             #[inline]
             fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
-                <Self::Parameters<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Self::new)
+                <Self::Parameters<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Self::new)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Custom error with signature `MemberIsNotOperator(uint128,address)` and selector `0x7de7ae32`.
-```solidity
-error MemberIsNotOperator(uint128 committeeId, address memberAddress);
-```*/
+    ```solidity
+    error MemberIsNotOperator(uint128 committeeId, address memberAddress);
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct MemberIsNotOperator {
@@ -2994,9 +2855,7 @@ error MemberIsNotOperator(uint128 committeeId, address memberAddress);
         type UnderlyingRustTuple<'a> = (u128, alloy::sol_types::private::Address);
         #[cfg(test)]
         #[allow(dead_code, unreachable_patterns)]
-        fn _type_assertion(
-            _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-        ) {
+        fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
             match _t {
                 alloy_sol_types::private::AssertTypeEq::<
                     <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -3023,9 +2882,7 @@ error MemberIsNotOperator(uint128 committeeId, address memberAddress);
         #[automatically_derived]
         impl alloy_sol_types::SolError for MemberIsNotOperator {
             type Parameters<'a> = UnderlyingSolTuple<'a>;
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "MemberIsNotOperator(uint128,address)";
             const SELECTOR: [u8; 4] = [125u8, 231u8, 174u8, 50u8];
             #[inline]
@@ -3037,9 +2894,9 @@ error MemberIsNotOperator(uint128 committeeId, address memberAddress);
             #[inline]
             fn tokenize(&self) -> Self::Token<'_> {
                 (
-                    <alloy::sol_types::sol_data::Uint<
-                        128,
-                    > as alloy_sol_types::SolType>::tokenize(&self.committeeId),
+                    <alloy::sol_types::sol_data::Uint<128> as alloy_sol_types::SolType>::tokenize(
+                        &self.committeeId,
+                    ),
                     <alloy::sol_types::sol_data::Address as alloy_sol_types::SolType>::tokenize(
                         &self.memberAddress,
                     ),
@@ -3047,19 +2904,18 @@ error MemberIsNotOperator(uint128 committeeId, address memberAddress);
             }
             #[inline]
             fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
-                <Self::Parameters<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Self::new)
+                <Self::Parameters<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Self::new)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Custom error with signature `MemberNotFound(address)` and selector `0x51c46842`.
-```solidity
-error MemberNotFound(address memberAddress);
-```*/
+    ```solidity
+    error MemberNotFound(address memberAddress);
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct MemberNotFound {
@@ -3080,9 +2936,7 @@ error MemberNotFound(address memberAddress);
         type UnderlyingRustTuple<'a> = (alloy::sol_types::private::Address,);
         #[cfg(test)]
         #[allow(dead_code, unreachable_patterns)]
-        fn _type_assertion(
-            _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-        ) {
+        fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
             match _t {
                 alloy_sol_types::private::AssertTypeEq::<
                     <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -3100,15 +2954,15 @@ error MemberNotFound(address memberAddress);
         #[doc(hidden)]
         impl ::core::convert::From<UnderlyingRustTuple<'_>> for MemberNotFound {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self { memberAddress: tuple.0 }
+                Self {
+                    memberAddress: tuple.0,
+                }
             }
         }
         #[automatically_derived]
         impl alloy_sol_types::SolError for MemberNotFound {
             type Parameters<'a> = UnderlyingSolTuple<'a>;
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "MemberNotFound(address)";
             const SELECTOR: [u8; 4] = [81u8, 196u8, 104u8, 66u8];
             #[inline]
@@ -3127,19 +2981,18 @@ error MemberNotFound(address memberAddress);
             }
             #[inline]
             fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
-                <Self::Parameters<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Self::new)
+                <Self::Parameters<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Self::new)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Custom error with signature `MemberNotFoundInCommittee(uint128,address)` and selector `0x89e6ed90`.
-```solidity
-error MemberNotFoundInCommittee(uint128 committeeId, address memberAddress);
-```*/
+    ```solidity
+    error MemberNotFoundInCommittee(uint128 committeeId, address memberAddress);
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct MemberNotFoundInCommittee {
@@ -3165,9 +3018,7 @@ error MemberNotFoundInCommittee(uint128 committeeId, address memberAddress);
         type UnderlyingRustTuple<'a> = (u128, alloy::sol_types::private::Address);
         #[cfg(test)]
         #[allow(dead_code, unreachable_patterns)]
-        fn _type_assertion(
-            _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-        ) {
+        fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
             match _t {
                 alloy_sol_types::private::AssertTypeEq::<
                     <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -3176,16 +3027,14 @@ error MemberNotFoundInCommittee(uint128 committeeId, address memberAddress);
         }
         #[automatically_derived]
         #[doc(hidden)]
-        impl ::core::convert::From<MemberNotFoundInCommittee>
-        for UnderlyingRustTuple<'_> {
+        impl ::core::convert::From<MemberNotFoundInCommittee> for UnderlyingRustTuple<'_> {
             fn from(value: MemberNotFoundInCommittee) -> Self {
                 (value.committeeId, value.memberAddress)
             }
         }
         #[automatically_derived]
         #[doc(hidden)]
-        impl ::core::convert::From<UnderlyingRustTuple<'_>>
-        for MemberNotFoundInCommittee {
+        impl ::core::convert::From<UnderlyingRustTuple<'_>> for MemberNotFoundInCommittee {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
                 Self {
                     committeeId: tuple.0,
@@ -3196,9 +3045,7 @@ error MemberNotFoundInCommittee(uint128 committeeId, address memberAddress);
         #[automatically_derived]
         impl alloy_sol_types::SolError for MemberNotFoundInCommittee {
             type Parameters<'a> = UnderlyingSolTuple<'a>;
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "MemberNotFoundInCommittee(uint128,address)";
             const SELECTOR: [u8; 4] = [137u8, 230u8, 237u8, 144u8];
             #[inline]
@@ -3210,9 +3057,9 @@ error MemberNotFoundInCommittee(uint128 committeeId, address memberAddress);
             #[inline]
             fn tokenize(&self) -> Self::Token<'_> {
                 (
-                    <alloy::sol_types::sol_data::Uint<
-                        128,
-                    > as alloy_sol_types::SolType>::tokenize(&self.committeeId),
+                    <alloy::sol_types::sol_data::Uint<128> as alloy_sol_types::SolType>::tokenize(
+                        &self.committeeId,
+                    ),
                     <alloy::sol_types::sol_data::Address as alloy_sol_types::SolType>::tokenize(
                         &self.memberAddress,
                     ),
@@ -3220,19 +3067,18 @@ error MemberNotFoundInCommittee(uint128 committeeId, address memberAddress);
             }
             #[inline]
             fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
-                <Self::Parameters<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Self::new)
+                <Self::Parameters<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Self::new)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Custom error with signature `NotInitializing()` and selector `0xd7e6bcf8`.
-```solidity
-error NotInitializing();
-```*/
+    ```solidity
+    error NotInitializing();
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct NotInitializing;
@@ -3250,9 +3096,7 @@ error NotInitializing();
         type UnderlyingRustTuple<'a> = ();
         #[cfg(test)]
         #[allow(dead_code, unreachable_patterns)]
-        fn _type_assertion(
-            _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-        ) {
+        fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
             match _t {
                 alloy_sol_types::private::AssertTypeEq::<
                     <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -3276,9 +3120,7 @@ error NotInitializing();
         #[automatically_derived]
         impl alloy_sol_types::SolError for NotInitializing {
             type Parameters<'a> = UnderlyingSolTuple<'a>;
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "NotInitializing()";
             const SELECTOR: [u8; 4] = [215u8, 230u8, 188u8, 248u8];
             #[inline]
@@ -3293,19 +3135,18 @@ error NotInitializing();
             }
             #[inline]
             fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
-                <Self::Parameters<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Self::new)
+                <Self::Parameters<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Self::new)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Custom error with signature `OperatorTakeTxidsAlreadyInitialized(bytes32)` and selector `0xaceef5a6`.
-```solidity
-error OperatorTakeTxidsAlreadyInitialized(bytes32 acceptPeginTxid);
-```*/
+    ```solidity
+    error OperatorTakeTxidsAlreadyInitialized(bytes32 acceptPeginTxid);
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct OperatorTakeTxidsAlreadyInitialized {
@@ -3326,9 +3167,7 @@ error OperatorTakeTxidsAlreadyInitialized(bytes32 acceptPeginTxid);
         type UnderlyingRustTuple<'a> = (alloy::sol_types::private::FixedBytes<32>,);
         #[cfg(test)]
         #[allow(dead_code, unreachable_patterns)]
-        fn _type_assertion(
-            _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-        ) {
+        fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
             match _t {
                 alloy_sol_types::private::AssertTypeEq::<
                     <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -3337,26 +3176,24 @@ error OperatorTakeTxidsAlreadyInitialized(bytes32 acceptPeginTxid);
         }
         #[automatically_derived]
         #[doc(hidden)]
-        impl ::core::convert::From<OperatorTakeTxidsAlreadyInitialized>
-        for UnderlyingRustTuple<'_> {
+        impl ::core::convert::From<OperatorTakeTxidsAlreadyInitialized> for UnderlyingRustTuple<'_> {
             fn from(value: OperatorTakeTxidsAlreadyInitialized) -> Self {
                 (value.acceptPeginTxid,)
             }
         }
         #[automatically_derived]
         #[doc(hidden)]
-        impl ::core::convert::From<UnderlyingRustTuple<'_>>
-        for OperatorTakeTxidsAlreadyInitialized {
+        impl ::core::convert::From<UnderlyingRustTuple<'_>> for OperatorTakeTxidsAlreadyInitialized {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self { acceptPeginTxid: tuple.0 }
+                Self {
+                    acceptPeginTxid: tuple.0,
+                }
             }
         }
         #[automatically_derived]
         impl alloy_sol_types::SolError for OperatorTakeTxidsAlreadyInitialized {
             type Parameters<'a> = UnderlyingSolTuple<'a>;
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "OperatorTakeTxidsAlreadyInitialized(bytes32)";
             const SELECTOR: [u8; 4] = [172u8, 238u8, 245u8, 166u8];
             #[inline]
@@ -3375,19 +3212,18 @@ error OperatorTakeTxidsAlreadyInitialized(bytes32 acceptPeginTxid);
             }
             #[inline]
             fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
-                <Self::Parameters<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Self::new)
+                <Self::Parameters<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Self::new)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Custom error with signature `OwnableInvalidOwner(address)` and selector `0x1e4fbdf7`.
-```solidity
-error OwnableInvalidOwner(address owner);
-```*/
+    ```solidity
+    error OwnableInvalidOwner(address owner);
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct OwnableInvalidOwner {
@@ -3408,9 +3244,7 @@ error OwnableInvalidOwner(address owner);
         type UnderlyingRustTuple<'a> = (alloy::sol_types::private::Address,);
         #[cfg(test)]
         #[allow(dead_code, unreachable_patterns)]
-        fn _type_assertion(
-            _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-        ) {
+        fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
             match _t {
                 alloy_sol_types::private::AssertTypeEq::<
                     <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -3434,9 +3268,7 @@ error OwnableInvalidOwner(address owner);
         #[automatically_derived]
         impl alloy_sol_types::SolError for OwnableInvalidOwner {
             type Parameters<'a> = UnderlyingSolTuple<'a>;
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "OwnableInvalidOwner(address)";
             const SELECTOR: [u8; 4] = [30u8, 79u8, 189u8, 247u8];
             #[inline]
@@ -3455,19 +3287,18 @@ error OwnableInvalidOwner(address owner);
             }
             #[inline]
             fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
-                <Self::Parameters<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Self::new)
+                <Self::Parameters<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Self::new)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Custom error with signature `OwnableUnauthorizedAccount(address)` and selector `0x118cdaa7`.
-```solidity
-error OwnableUnauthorizedAccount(address account);
-```*/
+    ```solidity
+    error OwnableUnauthorizedAccount(address account);
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct OwnableUnauthorizedAccount {
@@ -3488,9 +3319,7 @@ error OwnableUnauthorizedAccount(address account);
         type UnderlyingRustTuple<'a> = (alloy::sol_types::private::Address,);
         #[cfg(test)]
         #[allow(dead_code, unreachable_patterns)]
-        fn _type_assertion(
-            _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-        ) {
+        fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
             match _t {
                 alloy_sol_types::private::AssertTypeEq::<
                     <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -3499,16 +3328,14 @@ error OwnableUnauthorizedAccount(address account);
         }
         #[automatically_derived]
         #[doc(hidden)]
-        impl ::core::convert::From<OwnableUnauthorizedAccount>
-        for UnderlyingRustTuple<'_> {
+        impl ::core::convert::From<OwnableUnauthorizedAccount> for UnderlyingRustTuple<'_> {
             fn from(value: OwnableUnauthorizedAccount) -> Self {
                 (value.account,)
             }
         }
         #[automatically_derived]
         #[doc(hidden)]
-        impl ::core::convert::From<UnderlyingRustTuple<'_>>
-        for OwnableUnauthorizedAccount {
+        impl ::core::convert::From<UnderlyingRustTuple<'_>> for OwnableUnauthorizedAccount {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
                 Self { account: tuple.0 }
             }
@@ -3516,9 +3343,7 @@ error OwnableUnauthorizedAccount(address account);
         #[automatically_derived]
         impl alloy_sol_types::SolError for OwnableUnauthorizedAccount {
             type Parameters<'a> = UnderlyingSolTuple<'a>;
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "OwnableUnauthorizedAccount(address)";
             const SELECTOR: [u8; 4] = [17u8, 140u8, 218u8, 167u8];
             #[inline]
@@ -3537,19 +3362,18 @@ error OwnableUnauthorizedAccount(address account);
             }
             #[inline]
             fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
-                <Self::Parameters<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Self::new)
+                <Self::Parameters<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Self::new)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Custom error with signature `PeginManagerAddressZero()` and selector `0x879e64e4`.
-```solidity
-error PeginManagerAddressZero();
-```*/
+    ```solidity
+    error PeginManagerAddressZero();
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct PeginManagerAddressZero;
@@ -3567,9 +3391,7 @@ error PeginManagerAddressZero();
         type UnderlyingRustTuple<'a> = ();
         #[cfg(test)]
         #[allow(dead_code, unreachable_patterns)]
-        fn _type_assertion(
-            _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-        ) {
+        fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
             match _t {
                 alloy_sol_types::private::AssertTypeEq::<
                     <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -3593,9 +3415,7 @@ error PeginManagerAddressZero();
         #[automatically_derived]
         impl alloy_sol_types::SolError for PeginManagerAddressZero {
             type Parameters<'a> = UnderlyingSolTuple<'a>;
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "PeginManagerAddressZero()";
             const SELECTOR: [u8; 4] = [135u8, 158u8, 100u8, 228u8];
             #[inline]
@@ -3610,19 +3430,18 @@ error PeginManagerAddressZero();
             }
             #[inline]
             fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
-                <Self::Parameters<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Self::new)
+                <Self::Parameters<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Self::new)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Custom error with signature `PegoutManagerAddressZero()` and selector `0x0e78c423`.
-```solidity
-error PegoutManagerAddressZero();
-```*/
+    ```solidity
+    error PegoutManagerAddressZero();
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct PegoutManagerAddressZero;
@@ -3640,9 +3459,7 @@ error PegoutManagerAddressZero();
         type UnderlyingRustTuple<'a> = ();
         #[cfg(test)]
         #[allow(dead_code, unreachable_patterns)]
-        fn _type_assertion(
-            _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-        ) {
+        fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
             match _t {
                 alloy_sol_types::private::AssertTypeEq::<
                     <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -3651,16 +3468,14 @@ error PegoutManagerAddressZero();
         }
         #[automatically_derived]
         #[doc(hidden)]
-        impl ::core::convert::From<PegoutManagerAddressZero>
-        for UnderlyingRustTuple<'_> {
+        impl ::core::convert::From<PegoutManagerAddressZero> for UnderlyingRustTuple<'_> {
             fn from(value: PegoutManagerAddressZero) -> Self {
                 ()
             }
         }
         #[automatically_derived]
         #[doc(hidden)]
-        impl ::core::convert::From<UnderlyingRustTuple<'_>>
-        for PegoutManagerAddressZero {
+        impl ::core::convert::From<UnderlyingRustTuple<'_>> for PegoutManagerAddressZero {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
                 Self
             }
@@ -3668,9 +3483,7 @@ error PegoutManagerAddressZero();
         #[automatically_derived]
         impl alloy_sol_types::SolError for PegoutManagerAddressZero {
             type Parameters<'a> = UnderlyingSolTuple<'a>;
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "PegoutManagerAddressZero()";
             const SELECTOR: [u8; 4] = [14u8, 120u8, 196u8, 35u8];
             #[inline]
@@ -3685,19 +3498,18 @@ error PegoutManagerAddressZero();
             }
             #[inline]
             fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
-                <Self::Parameters<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Self::new)
+                <Self::Parameters<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Self::new)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Custom error with signature `SignaturesAlreadyInitialized(bytes32)` and selector `0xf02a304a`.
-```solidity
-error SignaturesAlreadyInitialized(bytes32 hashToSign);
-```*/
+    ```solidity
+    error SignaturesAlreadyInitialized(bytes32 hashToSign);
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct SignaturesAlreadyInitialized {
@@ -3718,9 +3530,7 @@ error SignaturesAlreadyInitialized(bytes32 hashToSign);
         type UnderlyingRustTuple<'a> = (alloy::sol_types::private::FixedBytes<32>,);
         #[cfg(test)]
         #[allow(dead_code, unreachable_patterns)]
-        fn _type_assertion(
-            _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-        ) {
+        fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
             match _t {
                 alloy_sol_types::private::AssertTypeEq::<
                     <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -3729,26 +3539,24 @@ error SignaturesAlreadyInitialized(bytes32 hashToSign);
         }
         #[automatically_derived]
         #[doc(hidden)]
-        impl ::core::convert::From<SignaturesAlreadyInitialized>
-        for UnderlyingRustTuple<'_> {
+        impl ::core::convert::From<SignaturesAlreadyInitialized> for UnderlyingRustTuple<'_> {
             fn from(value: SignaturesAlreadyInitialized) -> Self {
                 (value.hashToSign,)
             }
         }
         #[automatically_derived]
         #[doc(hidden)]
-        impl ::core::convert::From<UnderlyingRustTuple<'_>>
-        for SignaturesAlreadyInitialized {
+        impl ::core::convert::From<UnderlyingRustTuple<'_>> for SignaturesAlreadyInitialized {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                Self { hashToSign: tuple.0 }
+                Self {
+                    hashToSign: tuple.0,
+                }
             }
         }
         #[automatically_derived]
         impl alloy_sol_types::SolError for SignaturesAlreadyInitialized {
             type Parameters<'a> = UnderlyingSolTuple<'a>;
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "SignaturesAlreadyInitialized(bytes32)";
             const SELECTOR: [u8; 4] = [240u8, 42u8, 48u8, 74u8];
             #[inline]
@@ -3767,19 +3575,18 @@ error SignaturesAlreadyInitialized(bytes32 hashToSign);
             }
             #[inline]
             fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
-                <Self::Parameters<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Self::new)
+                <Self::Parameters<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Self::new)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Custom error with signature `UUPSUnauthorizedCallContext()` and selector `0xe07c8dba`.
-```solidity
-error UUPSUnauthorizedCallContext();
-```*/
+    ```solidity
+    error UUPSUnauthorizedCallContext();
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct UUPSUnauthorizedCallContext;
@@ -3797,9 +3604,7 @@ error UUPSUnauthorizedCallContext();
         type UnderlyingRustTuple<'a> = ();
         #[cfg(test)]
         #[allow(dead_code, unreachable_patterns)]
-        fn _type_assertion(
-            _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-        ) {
+        fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
             match _t {
                 alloy_sol_types::private::AssertTypeEq::<
                     <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -3808,16 +3613,14 @@ error UUPSUnauthorizedCallContext();
         }
         #[automatically_derived]
         #[doc(hidden)]
-        impl ::core::convert::From<UUPSUnauthorizedCallContext>
-        for UnderlyingRustTuple<'_> {
+        impl ::core::convert::From<UUPSUnauthorizedCallContext> for UnderlyingRustTuple<'_> {
             fn from(value: UUPSUnauthorizedCallContext) -> Self {
                 ()
             }
         }
         #[automatically_derived]
         #[doc(hidden)]
-        impl ::core::convert::From<UnderlyingRustTuple<'_>>
-        for UUPSUnauthorizedCallContext {
+        impl ::core::convert::From<UnderlyingRustTuple<'_>> for UUPSUnauthorizedCallContext {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
                 Self
             }
@@ -3825,9 +3628,7 @@ error UUPSUnauthorizedCallContext();
         #[automatically_derived]
         impl alloy_sol_types::SolError for UUPSUnauthorizedCallContext {
             type Parameters<'a> = UnderlyingSolTuple<'a>;
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "UUPSUnauthorizedCallContext()";
             const SELECTOR: [u8; 4] = [224u8, 124u8, 141u8, 186u8];
             #[inline]
@@ -3842,19 +3643,18 @@ error UUPSUnauthorizedCallContext();
             }
             #[inline]
             fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
-                <Self::Parameters<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Self::new)
+                <Self::Parameters<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Self::new)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Custom error with signature `UUPSUnsupportedProxiableUUID(bytes32)` and selector `0xaa1d49a4`.
-```solidity
-error UUPSUnsupportedProxiableUUID(bytes32 slot);
-```*/
+    ```solidity
+    error UUPSUnsupportedProxiableUUID(bytes32 slot);
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct UUPSUnsupportedProxiableUUID {
@@ -3875,9 +3675,7 @@ error UUPSUnsupportedProxiableUUID(bytes32 slot);
         type UnderlyingRustTuple<'a> = (alloy::sol_types::private::FixedBytes<32>,);
         #[cfg(test)]
         #[allow(dead_code, unreachable_patterns)]
-        fn _type_assertion(
-            _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-        ) {
+        fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
             match _t {
                 alloy_sol_types::private::AssertTypeEq::<
                     <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -3886,16 +3684,14 @@ error UUPSUnsupportedProxiableUUID(bytes32 slot);
         }
         #[automatically_derived]
         #[doc(hidden)]
-        impl ::core::convert::From<UUPSUnsupportedProxiableUUID>
-        for UnderlyingRustTuple<'_> {
+        impl ::core::convert::From<UUPSUnsupportedProxiableUUID> for UnderlyingRustTuple<'_> {
             fn from(value: UUPSUnsupportedProxiableUUID) -> Self {
                 (value.slot,)
             }
         }
         #[automatically_derived]
         #[doc(hidden)]
-        impl ::core::convert::From<UnderlyingRustTuple<'_>>
-        for UUPSUnsupportedProxiableUUID {
+        impl ::core::convert::From<UnderlyingRustTuple<'_>> for UUPSUnsupportedProxiableUUID {
             fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
                 Self { slot: tuple.0 }
             }
@@ -3903,9 +3699,7 @@ error UUPSUnsupportedProxiableUUID(bytes32 slot);
         #[automatically_derived]
         impl alloy_sol_types::SolError for UUPSUnsupportedProxiableUUID {
             type Parameters<'a> = UnderlyingSolTuple<'a>;
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "UUPSUnsupportedProxiableUUID(bytes32)";
             const SELECTOR: [u8; 4] = [170u8, 29u8, 73u8, 164u8];
             #[inline]
@@ -3924,19 +3718,18 @@ error UUPSUnsupportedProxiableUUID(bytes32 slot);
             }
             #[inline]
             fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
-                <Self::Parameters<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Self::new)
+                <Self::Parameters<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Self::new)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Custom error with signature `UnauthorizedAccount(address)` and selector `0x32b2baa3`.
-```solidity
-error UnauthorizedAccount(address sender);
-```*/
+    ```solidity
+    error UnauthorizedAccount(address sender);
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct UnauthorizedAccount {
@@ -3957,9 +3750,7 @@ error UnauthorizedAccount(address sender);
         type UnderlyingRustTuple<'a> = (alloy::sol_types::private::Address,);
         #[cfg(test)]
         #[allow(dead_code, unreachable_patterns)]
-        fn _type_assertion(
-            _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-        ) {
+        fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
             match _t {
                 alloy_sol_types::private::AssertTypeEq::<
                     <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -3983,9 +3774,7 @@ error UnauthorizedAccount(address sender);
         #[automatically_derived]
         impl alloy_sol_types::SolError for UnauthorizedAccount {
             type Parameters<'a> = UnderlyingSolTuple<'a>;
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "UnauthorizedAccount(address)";
             const SELECTOR: [u8; 4] = [50u8, 178u8, 186u8, 163u8];
             #[inline]
@@ -4004,19 +3793,18 @@ error UnauthorizedAccount(address sender);
             }
             #[inline]
             fn abi_decode_raw_validate(data: &[u8]) -> alloy_sol_types::Result<Self> {
-                <Self::Parameters<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Self::new)
+                <Self::Parameters<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Self::new)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Event with signature `AllNoncesReady(bytes32)` and selector `0x406f93d159ebb506829232d2e4a26ecb4bbce8d9d8adc49606fb2f6db9b14c7a`.
-```solidity
-event AllNoncesReady(bytes32 indexed hashToSign);
-```*/
+    ```solidity
+    event AllNoncesReady(bytes32 indexed hashToSign);
+    ```*/
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -4039,19 +3827,18 @@ event AllNoncesReady(bytes32 indexed hashToSign);
         #[automatically_derived]
         impl alloy_sol_types::SolEvent for AllNoncesReady {
             type DataTuple<'a> = ();
-            type DataToken<'a> = <Self::DataTuple<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type DataToken<'a> = <Self::DataTuple<'a> as alloy_sol_types::SolType>::Token<'a>;
             type TopicList = (
                 alloy_sol_types::sol_data::FixedBytes<32>,
                 alloy::sol_types::sol_data::FixedBytes<32>,
             );
             const SIGNATURE: &'static str = "AllNoncesReady(bytes32)";
-            const SIGNATURE_HASH: alloy_sol_types::private::B256 = alloy_sol_types::private::B256::new([
-                64u8, 111u8, 147u8, 209u8, 89u8, 235u8, 181u8, 6u8, 130u8, 146u8, 50u8,
-                210u8, 228u8, 162u8, 110u8, 203u8, 75u8, 188u8, 232u8, 217u8, 216u8,
-                173u8, 196u8, 150u8, 6u8, 251u8, 47u8, 109u8, 185u8, 177u8, 76u8, 122u8,
-            ]);
+            const SIGNATURE_HASH: alloy_sol_types::private::B256 =
+                alloy_sol_types::private::B256::new([
+                    64u8, 111u8, 147u8, 209u8, 89u8, 235u8, 181u8, 6u8, 130u8, 146u8, 50u8, 210u8,
+                    228u8, 162u8, 110u8, 203u8, 75u8, 188u8, 232u8, 217u8, 216u8, 173u8, 196u8,
+                    150u8, 6u8, 251u8, 47u8, 109u8, 185u8, 177u8, 76u8, 122u8,
+                ]);
             const ANONYMOUS: bool = false;
             #[allow(unused_variables)]
             #[inline]
@@ -4059,20 +3846,20 @@ event AllNoncesReady(bytes32 indexed hashToSign);
                 topics: <Self::TopicList as alloy_sol_types::SolType>::RustType,
                 data: <Self::DataTuple<'_> as alloy_sol_types::SolType>::RustType,
             ) -> Self {
-                Self { hashToSign: topics.1 }
+                Self {
+                    hashToSign: topics.1,
+                }
             }
             #[inline]
             fn check_signature(
                 topics: &<Self::TopicList as alloy_sol_types::SolType>::RustType,
             ) -> alloy_sol_types::Result<()> {
                 if topics.0 != Self::SIGNATURE_HASH {
-                    return Err(
-                        alloy_sol_types::Error::invalid_event_signature_hash(
-                            Self::SIGNATURE,
-                            topics.0,
-                            Self::SIGNATURE_HASH,
-                        ),
-                    );
+                    return Err(alloy_sol_types::Error::invalid_event_signature_hash(
+                        Self::SIGNATURE,
+                        topics.0,
+                        Self::SIGNATURE_HASH,
+                    ));
                 }
                 Ok(())
             }
@@ -4092,9 +3879,7 @@ event AllNoncesReady(bytes32 indexed hashToSign);
                 if out.len() < <Self::TopicList as alloy_sol_types::TopicList>::COUNT {
                     return Err(alloy_sol_types::Error::Overrun);
                 }
-                out[0usize] = alloy_sol_types::abi::token::WordToken(
-                    Self::SIGNATURE_HASH,
-                );
+                out[0usize] = alloy_sol_types::abi::token::WordToken(Self::SIGNATURE_HASH);
                 out[1usize] = <alloy::sol_types::sol_data::FixedBytes<
                     32,
                 > as alloy_sol_types::EventTopic>::encode_topic(&self.hashToSign);
@@ -4118,12 +3903,11 @@ event AllNoncesReady(bytes32 indexed hashToSign);
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Event with signature `AllOperatorTakeTxidsAdded(bytes32)` and selector `0xeacc1a62ece85572f92e44ddaf28a12b46c62850a0bd29ff1da9d8ac58c6ed82`.
-```solidity
-event AllOperatorTakeTxidsAdded(bytes32 acceptPeginTxid);
-```*/
+    ```solidity
+    event AllOperatorTakeTxidsAdded(bytes32 acceptPeginTxid);
+    ```*/
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -4146,16 +3930,15 @@ event AllOperatorTakeTxidsAdded(bytes32 acceptPeginTxid);
         #[automatically_derived]
         impl alloy_sol_types::SolEvent for AllOperatorTakeTxidsAdded {
             type DataTuple<'a> = (alloy::sol_types::sol_data::FixedBytes<32>,);
-            type DataToken<'a> = <Self::DataTuple<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type DataToken<'a> = <Self::DataTuple<'a> as alloy_sol_types::SolType>::Token<'a>;
             type TopicList = (alloy_sol_types::sol_data::FixedBytes<32>,);
             const SIGNATURE: &'static str = "AllOperatorTakeTxidsAdded(bytes32)";
-            const SIGNATURE_HASH: alloy_sol_types::private::B256 = alloy_sol_types::private::B256::new([
-                234u8, 204u8, 26u8, 98u8, 236u8, 232u8, 85u8, 114u8, 249u8, 46u8, 68u8,
-                221u8, 175u8, 40u8, 161u8, 43u8, 70u8, 198u8, 40u8, 80u8, 160u8, 189u8,
-                41u8, 255u8, 29u8, 169u8, 216u8, 172u8, 88u8, 198u8, 237u8, 130u8,
-            ]);
+            const SIGNATURE_HASH: alloy_sol_types::private::B256 =
+                alloy_sol_types::private::B256::new([
+                    234u8, 204u8, 26u8, 98u8, 236u8, 232u8, 85u8, 114u8, 249u8, 46u8, 68u8, 221u8,
+                    175u8, 40u8, 161u8, 43u8, 70u8, 198u8, 40u8, 80u8, 160u8, 189u8, 41u8, 255u8,
+                    29u8, 169u8, 216u8, 172u8, 88u8, 198u8, 237u8, 130u8,
+                ]);
             const ANONYMOUS: bool = false;
             #[allow(unused_variables)]
             #[inline]
@@ -4163,20 +3946,20 @@ event AllOperatorTakeTxidsAdded(bytes32 acceptPeginTxid);
                 topics: <Self::TopicList as alloy_sol_types::SolType>::RustType,
                 data: <Self::DataTuple<'_> as alloy_sol_types::SolType>::RustType,
             ) -> Self {
-                Self { acceptPeginTxid: data.0 }
+                Self {
+                    acceptPeginTxid: data.0,
+                }
             }
             #[inline]
             fn check_signature(
                 topics: &<Self::TopicList as alloy_sol_types::SolType>::RustType,
             ) -> alloy_sol_types::Result<()> {
                 if topics.0 != Self::SIGNATURE_HASH {
-                    return Err(
-                        alloy_sol_types::Error::invalid_event_signature_hash(
-                            Self::SIGNATURE,
-                            topics.0,
-                            Self::SIGNATURE_HASH,
-                        ),
-                    );
+                    return Err(alloy_sol_types::Error::invalid_event_signature_hash(
+                        Self::SIGNATURE,
+                        topics.0,
+                        Self::SIGNATURE_HASH,
+                    ));
                 }
                 Ok(())
             }
@@ -4200,9 +3983,7 @@ event AllOperatorTakeTxidsAdded(bytes32 acceptPeginTxid);
                 if out.len() < <Self::TopicList as alloy_sol_types::TopicList>::COUNT {
                     return Err(alloy_sol_types::Error::Overrun);
                 }
-                out[0usize] = alloy_sol_types::abi::token::WordToken(
-                    Self::SIGNATURE_HASH,
-                );
+                out[0usize] = alloy_sol_types::abi::token::WordToken(Self::SIGNATURE_HASH);
                 Ok(())
             }
         }
@@ -4218,19 +3999,16 @@ event AllOperatorTakeTxidsAdded(bytes32 acceptPeginTxid);
         #[automatically_derived]
         impl From<&AllOperatorTakeTxidsAdded> for alloy_sol_types::private::LogData {
             #[inline]
-            fn from(
-                this: &AllOperatorTakeTxidsAdded,
-            ) -> alloy_sol_types::private::LogData {
+            fn from(this: &AllOperatorTakeTxidsAdded) -> alloy_sol_types::private::LogData {
                 alloy_sol_types::SolEvent::encode_log_data(this)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Event with signature `AllSignaturesReady(bytes32)` and selector `0xd30174efa464c5366ab45285d7382c9969c19cae5b269a4ee2ad89caba70ba8f`.
-```solidity
-event AllSignaturesReady(bytes32 indexed hashToSign);
-```*/
+    ```solidity
+    event AllSignaturesReady(bytes32 indexed hashToSign);
+    ```*/
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -4253,19 +4031,18 @@ event AllSignaturesReady(bytes32 indexed hashToSign);
         #[automatically_derived]
         impl alloy_sol_types::SolEvent for AllSignaturesReady {
             type DataTuple<'a> = ();
-            type DataToken<'a> = <Self::DataTuple<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type DataToken<'a> = <Self::DataTuple<'a> as alloy_sol_types::SolType>::Token<'a>;
             type TopicList = (
                 alloy_sol_types::sol_data::FixedBytes<32>,
                 alloy::sol_types::sol_data::FixedBytes<32>,
             );
             const SIGNATURE: &'static str = "AllSignaturesReady(bytes32)";
-            const SIGNATURE_HASH: alloy_sol_types::private::B256 = alloy_sol_types::private::B256::new([
-                211u8, 1u8, 116u8, 239u8, 164u8, 100u8, 197u8, 54u8, 106u8, 180u8, 82u8,
-                133u8, 215u8, 56u8, 44u8, 153u8, 105u8, 193u8, 156u8, 174u8, 91u8, 38u8,
-                154u8, 78u8, 226u8, 173u8, 137u8, 202u8, 186u8, 112u8, 186u8, 143u8,
-            ]);
+            const SIGNATURE_HASH: alloy_sol_types::private::B256 =
+                alloy_sol_types::private::B256::new([
+                    211u8, 1u8, 116u8, 239u8, 164u8, 100u8, 197u8, 54u8, 106u8, 180u8, 82u8, 133u8,
+                    215u8, 56u8, 44u8, 153u8, 105u8, 193u8, 156u8, 174u8, 91u8, 38u8, 154u8, 78u8,
+                    226u8, 173u8, 137u8, 202u8, 186u8, 112u8, 186u8, 143u8,
+                ]);
             const ANONYMOUS: bool = false;
             #[allow(unused_variables)]
             #[inline]
@@ -4273,20 +4050,20 @@ event AllSignaturesReady(bytes32 indexed hashToSign);
                 topics: <Self::TopicList as alloy_sol_types::SolType>::RustType,
                 data: <Self::DataTuple<'_> as alloy_sol_types::SolType>::RustType,
             ) -> Self {
-                Self { hashToSign: topics.1 }
+                Self {
+                    hashToSign: topics.1,
+                }
             }
             #[inline]
             fn check_signature(
                 topics: &<Self::TopicList as alloy_sol_types::SolType>::RustType,
             ) -> alloy_sol_types::Result<()> {
                 if topics.0 != Self::SIGNATURE_HASH {
-                    return Err(
-                        alloy_sol_types::Error::invalid_event_signature_hash(
-                            Self::SIGNATURE,
-                            topics.0,
-                            Self::SIGNATURE_HASH,
-                        ),
-                    );
+                    return Err(alloy_sol_types::Error::invalid_event_signature_hash(
+                        Self::SIGNATURE,
+                        topics.0,
+                        Self::SIGNATURE_HASH,
+                    ));
                 }
                 Ok(())
             }
@@ -4306,9 +4083,7 @@ event AllSignaturesReady(bytes32 indexed hashToSign);
                 if out.len() < <Self::TopicList as alloy_sol_types::TopicList>::COUNT {
                     return Err(alloy_sol_types::Error::Overrun);
                 }
-                out[0usize] = alloy_sol_types::abi::token::WordToken(
-                    Self::SIGNATURE_HASH,
-                );
+                out[0usize] = alloy_sol_types::abi::token::WordToken(Self::SIGNATURE_HASH);
                 out[1usize] = <alloy::sol_types::sol_data::FixedBytes<
                     32,
                 > as alloy_sol_types::EventTopic>::encode_topic(&self.hashToSign);
@@ -4332,12 +4107,11 @@ event AllSignaturesReady(bytes32 indexed hashToSign);
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Event with signature `Initialized(uint64)` and selector `0xc7f505b2f371ae2175ee4913f4499e1f2633a7b5936321eed1cdaeb6115181d2`.
-```solidity
-event Initialized(uint64 version);
-```*/
+    ```solidity
+    event Initialized(uint64 version);
+    ```*/
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -4360,16 +4134,15 @@ event Initialized(uint64 version);
         #[automatically_derived]
         impl alloy_sol_types::SolEvent for Initialized {
             type DataTuple<'a> = (alloy::sol_types::sol_data::Uint<64>,);
-            type DataToken<'a> = <Self::DataTuple<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type DataToken<'a> = <Self::DataTuple<'a> as alloy_sol_types::SolType>::Token<'a>;
             type TopicList = (alloy_sol_types::sol_data::FixedBytes<32>,);
             const SIGNATURE: &'static str = "Initialized(uint64)";
-            const SIGNATURE_HASH: alloy_sol_types::private::B256 = alloy_sol_types::private::B256::new([
-                199u8, 245u8, 5u8, 178u8, 243u8, 113u8, 174u8, 33u8, 117u8, 238u8, 73u8,
-                19u8, 244u8, 73u8, 158u8, 31u8, 38u8, 51u8, 167u8, 181u8, 147u8, 99u8,
-                33u8, 238u8, 209u8, 205u8, 174u8, 182u8, 17u8, 81u8, 129u8, 210u8,
-            ]);
+            const SIGNATURE_HASH: alloy_sol_types::private::B256 =
+                alloy_sol_types::private::B256::new([
+                    199u8, 245u8, 5u8, 178u8, 243u8, 113u8, 174u8, 33u8, 117u8, 238u8, 73u8, 19u8,
+                    244u8, 73u8, 158u8, 31u8, 38u8, 51u8, 167u8, 181u8, 147u8, 99u8, 33u8, 238u8,
+                    209u8, 205u8, 174u8, 182u8, 17u8, 81u8, 129u8, 210u8,
+                ]);
             const ANONYMOUS: bool = false;
             #[allow(unused_variables)]
             #[inline]
@@ -4384,22 +4157,20 @@ event Initialized(uint64 version);
                 topics: &<Self::TopicList as alloy_sol_types::SolType>::RustType,
             ) -> alloy_sol_types::Result<()> {
                 if topics.0 != Self::SIGNATURE_HASH {
-                    return Err(
-                        alloy_sol_types::Error::invalid_event_signature_hash(
-                            Self::SIGNATURE,
-                            topics.0,
-                            Self::SIGNATURE_HASH,
-                        ),
-                    );
+                    return Err(alloy_sol_types::Error::invalid_event_signature_hash(
+                        Self::SIGNATURE,
+                        topics.0,
+                        Self::SIGNATURE_HASH,
+                    ));
                 }
                 Ok(())
             }
             #[inline]
             fn tokenize_body(&self) -> Self::DataToken<'_> {
                 (
-                    <alloy::sol_types::sol_data::Uint<
-                        64,
-                    > as alloy_sol_types::SolType>::tokenize(&self.version),
+                    <alloy::sol_types::sol_data::Uint<64> as alloy_sol_types::SolType>::tokenize(
+                        &self.version,
+                    ),
                 )
             }
             #[inline]
@@ -4414,9 +4185,7 @@ event Initialized(uint64 version);
                 if out.len() < <Self::TopicList as alloy_sol_types::TopicList>::COUNT {
                     return Err(alloy_sol_types::Error::Overrun);
                 }
-                out[0usize] = alloy_sol_types::abi::token::WordToken(
-                    Self::SIGNATURE_HASH,
-                );
+                out[0usize] = alloy_sol_types::abi::token::WordToken(Self::SIGNATURE_HASH);
                 Ok(())
             }
         }
@@ -4437,12 +4206,11 @@ event Initialized(uint64 version);
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Event with signature `NonceAdded(bytes32,address,bytes)` and selector `0xb520657390d9571948bccbf4e242d3ed50f41d18433dacec58bcc1a533706920`.
-```solidity
-event NonceAdded(bytes32 indexed hashToSign, address indexed memberAddress, bytes nonce);
-```*/
+    ```solidity
+    event NonceAdded(bytes32 indexed hashToSign, address indexed memberAddress, bytes nonce);
+    ```*/
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -4469,20 +4237,19 @@ event NonceAdded(bytes32 indexed hashToSign, address indexed memberAddress, byte
         #[automatically_derived]
         impl alloy_sol_types::SolEvent for NonceAdded {
             type DataTuple<'a> = (alloy::sol_types::sol_data::Bytes,);
-            type DataToken<'a> = <Self::DataTuple<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type DataToken<'a> = <Self::DataTuple<'a> as alloy_sol_types::SolType>::Token<'a>;
             type TopicList = (
                 alloy_sol_types::sol_data::FixedBytes<32>,
                 alloy::sol_types::sol_data::FixedBytes<32>,
                 alloy::sol_types::sol_data::Address,
             );
             const SIGNATURE: &'static str = "NonceAdded(bytes32,address,bytes)";
-            const SIGNATURE_HASH: alloy_sol_types::private::B256 = alloy_sol_types::private::B256::new([
-                181u8, 32u8, 101u8, 115u8, 144u8, 217u8, 87u8, 25u8, 72u8, 188u8, 203u8,
-                244u8, 226u8, 66u8, 211u8, 237u8, 80u8, 244u8, 29u8, 24u8, 67u8, 61u8,
-                172u8, 236u8, 88u8, 188u8, 193u8, 165u8, 51u8, 112u8, 105u8, 32u8,
-            ]);
+            const SIGNATURE_HASH: alloy_sol_types::private::B256 =
+                alloy_sol_types::private::B256::new([
+                    181u8, 32u8, 101u8, 115u8, 144u8, 217u8, 87u8, 25u8, 72u8, 188u8, 203u8, 244u8,
+                    226u8, 66u8, 211u8, 237u8, 80u8, 244u8, 29u8, 24u8, 67u8, 61u8, 172u8, 236u8,
+                    88u8, 188u8, 193u8, 165u8, 51u8, 112u8, 105u8, 32u8,
+                ]);
             const ANONYMOUS: bool = false;
             #[allow(unused_variables)]
             #[inline]
@@ -4501,13 +4268,11 @@ event NonceAdded(bytes32 indexed hashToSign, address indexed memberAddress, byte
                 topics: &<Self::TopicList as alloy_sol_types::SolType>::RustType,
             ) -> alloy_sol_types::Result<()> {
                 if topics.0 != Self::SIGNATURE_HASH {
-                    return Err(
-                        alloy_sol_types::Error::invalid_event_signature_hash(
-                            Self::SIGNATURE,
-                            topics.0,
-                            Self::SIGNATURE_HASH,
-                        ),
-                    );
+                    return Err(alloy_sol_types::Error::invalid_event_signature_hash(
+                        Self::SIGNATURE,
+                        topics.0,
+                        Self::SIGNATURE_HASH,
+                    ));
                 }
                 Ok(())
             }
@@ -4535,9 +4300,7 @@ event NonceAdded(bytes32 indexed hashToSign, address indexed memberAddress, byte
                 if out.len() < <Self::TopicList as alloy_sol_types::TopicList>::COUNT {
                     return Err(alloy_sol_types::Error::Overrun);
                 }
-                out[0usize] = alloy_sol_types::abi::token::WordToken(
-                    Self::SIGNATURE_HASH,
-                );
+                out[0usize] = alloy_sol_types::abi::token::WordToken(Self::SIGNATURE_HASH);
                 out[1usize] = <alloy::sol_types::sol_data::FixedBytes<
                     32,
                 > as alloy_sol_types::EventTopic>::encode_topic(&self.hashToSign);
@@ -4564,12 +4327,11 @@ event NonceAdded(bytes32 indexed hashToSign, address indexed memberAddress, byte
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Event with signature `OperatorTakeTxidAdded(bytes32,address,bytes32)` and selector `0x9c5f92c347cb4048eefff226d072a618cda025b31c8c48901a538d0e912cace5`.
-```solidity
-event OperatorTakeTxidAdded(bytes32 acceptPeginTxid, address memberAddress, bytes32 hash);
-```*/
+    ```solidity
+    event OperatorTakeTxidAdded(bytes32 acceptPeginTxid, address memberAddress, bytes32 hash);
+    ```*/
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -4600,16 +4362,15 @@ event OperatorTakeTxidAdded(bytes32 acceptPeginTxid, address memberAddress, byte
                 alloy::sol_types::sol_data::Address,
                 alloy::sol_types::sol_data::FixedBytes<32>,
             );
-            type DataToken<'a> = <Self::DataTuple<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type DataToken<'a> = <Self::DataTuple<'a> as alloy_sol_types::SolType>::Token<'a>;
             type TopicList = (alloy_sol_types::sol_data::FixedBytes<32>,);
             const SIGNATURE: &'static str = "OperatorTakeTxidAdded(bytes32,address,bytes32)";
-            const SIGNATURE_HASH: alloy_sol_types::private::B256 = alloy_sol_types::private::B256::new([
-                156u8, 95u8, 146u8, 195u8, 71u8, 203u8, 64u8, 72u8, 238u8, 255u8, 242u8,
-                38u8, 208u8, 114u8, 166u8, 24u8, 205u8, 160u8, 37u8, 179u8, 28u8, 140u8,
-                72u8, 144u8, 26u8, 83u8, 141u8, 14u8, 145u8, 44u8, 172u8, 229u8,
-            ]);
+            const SIGNATURE_HASH: alloy_sol_types::private::B256 =
+                alloy_sol_types::private::B256::new([
+                    156u8, 95u8, 146u8, 195u8, 71u8, 203u8, 64u8, 72u8, 238u8, 255u8, 242u8, 38u8,
+                    208u8, 114u8, 166u8, 24u8, 205u8, 160u8, 37u8, 179u8, 28u8, 140u8, 72u8, 144u8,
+                    26u8, 83u8, 141u8, 14u8, 145u8, 44u8, 172u8, 229u8,
+                ]);
             const ANONYMOUS: bool = false;
             #[allow(unused_variables)]
             #[inline]
@@ -4628,13 +4389,11 @@ event OperatorTakeTxidAdded(bytes32 acceptPeginTxid, address memberAddress, byte
                 topics: &<Self::TopicList as alloy_sol_types::SolType>::RustType,
             ) -> alloy_sol_types::Result<()> {
                 if topics.0 != Self::SIGNATURE_HASH {
-                    return Err(
-                        alloy_sol_types::Error::invalid_event_signature_hash(
-                            Self::SIGNATURE,
-                            topics.0,
-                            Self::SIGNATURE_HASH,
-                        ),
-                    );
+                    return Err(alloy_sol_types::Error::invalid_event_signature_hash(
+                        Self::SIGNATURE,
+                        topics.0,
+                        Self::SIGNATURE_HASH,
+                    ));
                 }
                 Ok(())
             }
@@ -4664,9 +4423,7 @@ event OperatorTakeTxidAdded(bytes32 acceptPeginTxid, address memberAddress, byte
                 if out.len() < <Self::TopicList as alloy_sol_types::TopicList>::COUNT {
                     return Err(alloy_sol_types::Error::Overrun);
                 }
-                out[0usize] = alloy_sol_types::abi::token::WordToken(
-                    Self::SIGNATURE_HASH,
-                );
+                out[0usize] = alloy_sol_types::abi::token::WordToken(Self::SIGNATURE_HASH);
                 Ok(())
             }
         }
@@ -4687,12 +4444,11 @@ event OperatorTakeTxidAdded(bytes32 acceptPeginTxid, address memberAddress, byte
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Event with signature `OwnershipTransferred(address,address)` and selector `0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0`.
-```solidity
-event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
-```*/
+    ```solidity
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+    ```*/
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -4717,20 +4473,19 @@ event OwnershipTransferred(address indexed previousOwner, address indexed newOwn
         #[automatically_derived]
         impl alloy_sol_types::SolEvent for OwnershipTransferred {
             type DataTuple<'a> = ();
-            type DataToken<'a> = <Self::DataTuple<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type DataToken<'a> = <Self::DataTuple<'a> as alloy_sol_types::SolType>::Token<'a>;
             type TopicList = (
                 alloy_sol_types::sol_data::FixedBytes<32>,
                 alloy::sol_types::sol_data::Address,
                 alloy::sol_types::sol_data::Address,
             );
             const SIGNATURE: &'static str = "OwnershipTransferred(address,address)";
-            const SIGNATURE_HASH: alloy_sol_types::private::B256 = alloy_sol_types::private::B256::new([
-                139u8, 224u8, 7u8, 156u8, 83u8, 22u8, 89u8, 20u8, 19u8, 68u8, 205u8,
-                31u8, 208u8, 164u8, 242u8, 132u8, 25u8, 73u8, 127u8, 151u8, 34u8, 163u8,
-                218u8, 175u8, 227u8, 180u8, 24u8, 111u8, 107u8, 100u8, 87u8, 224u8,
-            ]);
+            const SIGNATURE_HASH: alloy_sol_types::private::B256 =
+                alloy_sol_types::private::B256::new([
+                    139u8, 224u8, 7u8, 156u8, 83u8, 22u8, 89u8, 20u8, 19u8, 68u8, 205u8, 31u8,
+                    208u8, 164u8, 242u8, 132u8, 25u8, 73u8, 127u8, 151u8, 34u8, 163u8, 218u8,
+                    175u8, 227u8, 180u8, 24u8, 111u8, 107u8, 100u8, 87u8, 224u8,
+                ]);
             const ANONYMOUS: bool = false;
             #[allow(unused_variables)]
             #[inline]
@@ -4748,13 +4503,11 @@ event OwnershipTransferred(address indexed previousOwner, address indexed newOwn
                 topics: &<Self::TopicList as alloy_sol_types::SolType>::RustType,
             ) -> alloy_sol_types::Result<()> {
                 if topics.0 != Self::SIGNATURE_HASH {
-                    return Err(
-                        alloy_sol_types::Error::invalid_event_signature_hash(
-                            Self::SIGNATURE,
-                            topics.0,
-                            Self::SIGNATURE_HASH,
-                        ),
-                    );
+                    return Err(alloy_sol_types::Error::invalid_event_signature_hash(
+                        Self::SIGNATURE,
+                        topics.0,
+                        Self::SIGNATURE_HASH,
+                    ));
                 }
                 Ok(())
             }
@@ -4778,9 +4531,7 @@ event OwnershipTransferred(address indexed previousOwner, address indexed newOwn
                 if out.len() < <Self::TopicList as alloy_sol_types::TopicList>::COUNT {
                     return Err(alloy_sol_types::Error::Overrun);
                 }
-                out[0usize] = alloy_sol_types::abi::token::WordToken(
-                    Self::SIGNATURE_HASH,
-                );
+                out[0usize] = alloy_sol_types::abi::token::WordToken(Self::SIGNATURE_HASH);
                 out[1usize] = <alloy::sol_types::sol_data::Address as alloy_sol_types::EventTopic>::encode_topic(
                     &self.previousOwner,
                 );
@@ -4807,12 +4558,11 @@ event OwnershipTransferred(address indexed previousOwner, address indexed newOwn
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Event with signature `SignatureAdded(bytes32,address,bytes32)` and selector `0x15d48df76f90c872a8921e5b8d11f756227e20010ad579cb446449eace26e17c`.
-```solidity
-event SignatureAdded(bytes32 indexed hashToSign, address indexed memberAddress, bytes32 signature);
-```*/
+    ```solidity
+    event SignatureAdded(bytes32 indexed hashToSign, address indexed memberAddress, bytes32 signature);
+    ```*/
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -4839,20 +4589,19 @@ event SignatureAdded(bytes32 indexed hashToSign, address indexed memberAddress, 
         #[automatically_derived]
         impl alloy_sol_types::SolEvent for SignatureAdded {
             type DataTuple<'a> = (alloy::sol_types::sol_data::FixedBytes<32>,);
-            type DataToken<'a> = <Self::DataTuple<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type DataToken<'a> = <Self::DataTuple<'a> as alloy_sol_types::SolType>::Token<'a>;
             type TopicList = (
                 alloy_sol_types::sol_data::FixedBytes<32>,
                 alloy::sol_types::sol_data::FixedBytes<32>,
                 alloy::sol_types::sol_data::Address,
             );
             const SIGNATURE: &'static str = "SignatureAdded(bytes32,address,bytes32)";
-            const SIGNATURE_HASH: alloy_sol_types::private::B256 = alloy_sol_types::private::B256::new([
-                21u8, 212u8, 141u8, 247u8, 111u8, 144u8, 200u8, 114u8, 168u8, 146u8,
-                30u8, 91u8, 141u8, 17u8, 247u8, 86u8, 34u8, 126u8, 32u8, 1u8, 10u8,
-                213u8, 121u8, 203u8, 68u8, 100u8, 73u8, 234u8, 206u8, 38u8, 225u8, 124u8,
-            ]);
+            const SIGNATURE_HASH: alloy_sol_types::private::B256 =
+                alloy_sol_types::private::B256::new([
+                    21u8, 212u8, 141u8, 247u8, 111u8, 144u8, 200u8, 114u8, 168u8, 146u8, 30u8,
+                    91u8, 141u8, 17u8, 247u8, 86u8, 34u8, 126u8, 32u8, 1u8, 10u8, 213u8, 121u8,
+                    203u8, 68u8, 100u8, 73u8, 234u8, 206u8, 38u8, 225u8, 124u8,
+                ]);
             const ANONYMOUS: bool = false;
             #[allow(unused_variables)]
             #[inline]
@@ -4871,13 +4620,11 @@ event SignatureAdded(bytes32 indexed hashToSign, address indexed memberAddress, 
                 topics: &<Self::TopicList as alloy_sol_types::SolType>::RustType,
             ) -> alloy_sol_types::Result<()> {
                 if topics.0 != Self::SIGNATURE_HASH {
-                    return Err(
-                        alloy_sol_types::Error::invalid_event_signature_hash(
-                            Self::SIGNATURE,
-                            topics.0,
-                            Self::SIGNATURE_HASH,
-                        ),
-                    );
+                    return Err(alloy_sol_types::Error::invalid_event_signature_hash(
+                        Self::SIGNATURE,
+                        topics.0,
+                        Self::SIGNATURE_HASH,
+                    ));
                 }
                 Ok(())
             }
@@ -4905,9 +4652,7 @@ event SignatureAdded(bytes32 indexed hashToSign, address indexed memberAddress, 
                 if out.len() < <Self::TopicList as alloy_sol_types::TopicList>::COUNT {
                     return Err(alloy_sol_types::Error::Overrun);
                 }
-                out[0usize] = alloy_sol_types::abi::token::WordToken(
-                    Self::SIGNATURE_HASH,
-                );
+                out[0usize] = alloy_sol_types::abi::token::WordToken(Self::SIGNATURE_HASH);
                 out[1usize] = <alloy::sol_types::sol_data::FixedBytes<
                     32,
                 > as alloy_sol_types::EventTopic>::encode_topic(&self.hashToSign);
@@ -4934,12 +4679,11 @@ event SignatureAdded(bytes32 indexed hashToSign, address indexed memberAddress, 
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Event with signature `Upgraded(address)` and selector `0xbc7cd75a20ee27fd9adebab32041f755214dbc6bffa90cc0225b39da2e5c2d3b`.
-```solidity
-event Upgraded(address indexed implementation);
-```*/
+    ```solidity
+    event Upgraded(address indexed implementation);
+    ```*/
     #[allow(
         non_camel_case_types,
         non_snake_case,
@@ -4962,19 +4706,18 @@ event Upgraded(address indexed implementation);
         #[automatically_derived]
         impl alloy_sol_types::SolEvent for Upgraded {
             type DataTuple<'a> = ();
-            type DataToken<'a> = <Self::DataTuple<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type DataToken<'a> = <Self::DataTuple<'a> as alloy_sol_types::SolType>::Token<'a>;
             type TopicList = (
                 alloy_sol_types::sol_data::FixedBytes<32>,
                 alloy::sol_types::sol_data::Address,
             );
             const SIGNATURE: &'static str = "Upgraded(address)";
-            const SIGNATURE_HASH: alloy_sol_types::private::B256 = alloy_sol_types::private::B256::new([
-                188u8, 124u8, 215u8, 90u8, 32u8, 238u8, 39u8, 253u8, 154u8, 222u8, 186u8,
-                179u8, 32u8, 65u8, 247u8, 85u8, 33u8, 77u8, 188u8, 107u8, 255u8, 169u8,
-                12u8, 192u8, 34u8, 91u8, 57u8, 218u8, 46u8, 92u8, 45u8, 59u8,
-            ]);
+            const SIGNATURE_HASH: alloy_sol_types::private::B256 =
+                alloy_sol_types::private::B256::new([
+                    188u8, 124u8, 215u8, 90u8, 32u8, 238u8, 39u8, 253u8, 154u8, 222u8, 186u8,
+                    179u8, 32u8, 65u8, 247u8, 85u8, 33u8, 77u8, 188u8, 107u8, 255u8, 169u8, 12u8,
+                    192u8, 34u8, 91u8, 57u8, 218u8, 46u8, 92u8, 45u8, 59u8,
+                ]);
             const ANONYMOUS: bool = false;
             #[allow(unused_variables)]
             #[inline]
@@ -4982,20 +4725,20 @@ event Upgraded(address indexed implementation);
                 topics: <Self::TopicList as alloy_sol_types::SolType>::RustType,
                 data: <Self::DataTuple<'_> as alloy_sol_types::SolType>::RustType,
             ) -> Self {
-                Self { implementation: topics.1 }
+                Self {
+                    implementation: topics.1,
+                }
             }
             #[inline]
             fn check_signature(
                 topics: &<Self::TopicList as alloy_sol_types::SolType>::RustType,
             ) -> alloy_sol_types::Result<()> {
                 if topics.0 != Self::SIGNATURE_HASH {
-                    return Err(
-                        alloy_sol_types::Error::invalid_event_signature_hash(
-                            Self::SIGNATURE,
-                            topics.0,
-                            Self::SIGNATURE_HASH,
-                        ),
-                    );
+                    return Err(alloy_sol_types::Error::invalid_event_signature_hash(
+                        Self::SIGNATURE,
+                        topics.0,
+                        Self::SIGNATURE_HASH,
+                    ));
                 }
                 Ok(())
             }
@@ -5015,9 +4758,7 @@ event Upgraded(address indexed implementation);
                 if out.len() < <Self::TopicList as alloy_sol_types::TopicList>::COUNT {
                     return Err(alloy_sol_types::Error::Overrun);
                 }
-                out[0usize] = alloy_sol_types::abi::token::WordToken(
-                    Self::SIGNATURE_HASH,
-                );
+                out[0usize] = alloy_sol_types::abi::token::WordToken(Self::SIGNATURE_HASH);
                 out[1usize] = <alloy::sol_types::sol_data::Address as alloy_sol_types::EventTopic>::encode_topic(
                     &self.implementation,
                 );
@@ -5041,17 +4782,15 @@ event Upgraded(address indexed implementation);
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Function with signature `UPGRADE_INTERFACE_VERSION()` and selector `0xad3cb1cc`.
-```solidity
-function UPGRADE_INTERFACE_VERSION() external view returns (string memory);
-```*/
+    ```solidity
+    function UPGRADE_INTERFACE_VERSION() external view returns (string memory);
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct UPGRADE_INTERFACE_VERSIONCall;
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`UPGRADE_INTERFACE_VERSION()`](UPGRADE_INTERFACE_VERSIONCall) function.
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
@@ -5074,9 +4813,7 @@ function UPGRADE_INTERFACE_VERSION() external view returns (string memory);
             type UnderlyingRustTuple<'a> = ();
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -5085,16 +4822,14 @@ function UPGRADE_INTERFACE_VERSION() external view returns (string memory);
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<UPGRADE_INTERFACE_VERSIONCall>
-            for UnderlyingRustTuple<'_> {
+            impl ::core::convert::From<UPGRADE_INTERFACE_VERSIONCall> for UnderlyingRustTuple<'_> {
                 fn from(value: UPGRADE_INTERFACE_VERSIONCall) -> Self {
                     ()
                 }
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<UnderlyingRustTuple<'_>>
-            for UPGRADE_INTERFACE_VERSIONCall {
+            impl ::core::convert::From<UnderlyingRustTuple<'_>> for UPGRADE_INTERFACE_VERSIONCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
                     Self
                 }
@@ -5107,9 +4842,7 @@ function UPGRADE_INTERFACE_VERSION() external view returns (string memory);
             type UnderlyingRustTuple<'a> = (alloy::sol_types::private::String,);
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -5118,16 +4851,14 @@ function UPGRADE_INTERFACE_VERSION() external view returns (string memory);
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<UPGRADE_INTERFACE_VERSIONReturn>
-            for UnderlyingRustTuple<'_> {
+            impl ::core::convert::From<UPGRADE_INTERFACE_VERSIONReturn> for UnderlyingRustTuple<'_> {
                 fn from(value: UPGRADE_INTERFACE_VERSIONReturn) -> Self {
                     (value._0,)
                 }
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<UnderlyingRustTuple<'_>>
-            for UPGRADE_INTERFACE_VERSIONReturn {
+            impl ::core::convert::From<UnderlyingRustTuple<'_>> for UPGRADE_INTERFACE_VERSIONReturn {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
                     Self { _0: tuple.0 }
                 }
@@ -5136,14 +4867,10 @@ function UPGRADE_INTERFACE_VERSION() external view returns (string memory);
         #[automatically_derived]
         impl alloy_sol_types::SolCall for UPGRADE_INTERFACE_VERSIONCall {
             type Parameters<'a> = ();
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             type Return = alloy::sol_types::private::String;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::String,);
-            type ReturnToken<'a> = <Self::ReturnTuple<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type ReturnToken<'a> = <Self::ReturnTuple<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "UPGRADE_INTERFACE_VERSION()";
             const SELECTOR: [u8; 4] = [173u8, 60u8, 177u8, 204u8];
             #[inline]
@@ -5158,42 +4885,34 @@ function UPGRADE_INTERFACE_VERSION() external view returns (string memory);
             }
             #[inline]
             fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
-                (
-                    <alloy::sol_types::sol_data::String as alloy_sol_types::SolType>::tokenize(
-                        ret,
-                    ),
-                )
+                (<alloy::sol_types::sol_data::String as alloy_sol_types::SolType>::tokenize(ret),)
             }
             #[inline]
             fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
-                    .map(|r| {
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence(data).map(
+                    |r| {
                         let r: UPGRADE_INTERFACE_VERSIONReturn = r.into();
                         r._0
-                    })
+                    },
+                )
             }
             #[inline]
-            fn abi_decode_returns_validate(
-                data: &[u8],
-            ) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(|r| {
-                        let r: UPGRADE_INTERFACE_VERSIONReturn = r.into();
-                        r._0
-                    })
+            fn abi_decode_returns_validate(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(|r| {
+                    let r: UPGRADE_INTERFACE_VERSIONReturn = r.into();
+                    r._0
+                })
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Function with signature `__AccessControl_init(address,address,address)` and selector `0x3aa98a94`.
-```solidity
-function __AccessControl_init(address _initialOwner, address _peginManager, address _pegoutManager) external;
-```*/
+    ```solidity
+    function __AccessControl_init(address _initialOwner, address _peginManager, address _pegoutManager) external;
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct __AccessControl_initCall {
@@ -5231,9 +4950,7 @@ function __AccessControl_init(address _initialOwner, address _peginManager, addr
             );
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -5242,16 +4959,18 @@ function __AccessControl_init(address _initialOwner, address _peginManager, addr
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<__AccessControl_initCall>
-            for UnderlyingRustTuple<'_> {
+            impl ::core::convert::From<__AccessControl_initCall> for UnderlyingRustTuple<'_> {
                 fn from(value: __AccessControl_initCall) -> Self {
-                    (value._initialOwner, value._peginManager, value._pegoutManager)
+                    (
+                        value._initialOwner,
+                        value._peginManager,
+                        value._pegoutManager,
+                    )
                 }
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<UnderlyingRustTuple<'_>>
-            for __AccessControl_initCall {
+            impl ::core::convert::From<UnderlyingRustTuple<'_>> for __AccessControl_initCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
                     Self {
                         _initialOwner: tuple.0,
@@ -5268,9 +4987,7 @@ function __AccessControl_init(address _initialOwner, address _peginManager, addr
             type UnderlyingRustTuple<'a> = ();
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -5279,16 +4996,14 @@ function __AccessControl_init(address _initialOwner, address _peginManager, addr
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<__AccessControl_initReturn>
-            for UnderlyingRustTuple<'_> {
+            impl ::core::convert::From<__AccessControl_initReturn> for UnderlyingRustTuple<'_> {
                 fn from(value: __AccessControl_initReturn) -> Self {
                     ()
                 }
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<UnderlyingRustTuple<'_>>
-            for __AccessControl_initReturn {
+            impl ::core::convert::From<UnderlyingRustTuple<'_>> for __AccessControl_initReturn {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
                     Self {}
                 }
@@ -5297,9 +5012,8 @@ function __AccessControl_init(address _initialOwner, address _peginManager, addr
         impl __AccessControl_initReturn {
             fn _tokenize(
                 &self,
-            ) -> <__AccessControl_initCall as alloy_sol_types::SolCall>::ReturnToken<
-                '_,
-            > {
+            ) -> <__AccessControl_initCall as alloy_sol_types::SolCall>::ReturnToken<'_>
+            {
                 ()
             }
         }
@@ -5310,14 +5024,10 @@ function __AccessControl_init(address _initialOwner, address _peginManager, addr
                 alloy::sol_types::sol_data::Address,
                 alloy::sol_types::sol_data::Address,
             );
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             type Return = __AccessControl_initReturn;
             type ReturnTuple<'a> = ();
-            type ReturnToken<'a> = <Self::ReturnTuple<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type ReturnToken<'a> = <Self::ReturnTuple<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "__AccessControl_init(address,address,address)";
             const SELECTOR: [u8; 4] = [58u8, 169u8, 138u8, 148u8];
             #[inline]
@@ -5346,28 +5056,23 @@ function __AccessControl_init(address _initialOwner, address _peginManager, addr
             }
             #[inline]
             fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence(data)
                     .map(Into::into)
             }
             #[inline]
-            fn abi_decode_returns_validate(
-                data: &[u8],
-            ) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Into::into)
+            fn abi_decode_returns_validate(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Into::into)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Function with signature `__BaseProxy_init(address)` and selector `0xbfbb335e`.
-```solidity
-function __BaseProxy_init(address _initialOwner) external;
-```*/
+    ```solidity
+    function __BaseProxy_init(address _initialOwner) external;
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct __BaseProxy_initCall {
@@ -5393,9 +5098,7 @@ function __BaseProxy_init(address _initialOwner) external;
             type UnderlyingRustTuple<'a> = (alloy::sol_types::private::Address,);
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -5404,18 +5107,18 @@ function __BaseProxy_init(address _initialOwner) external;
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<__BaseProxy_initCall>
-            for UnderlyingRustTuple<'_> {
+            impl ::core::convert::From<__BaseProxy_initCall> for UnderlyingRustTuple<'_> {
                 fn from(value: __BaseProxy_initCall) -> Self {
                     (value._initialOwner,)
                 }
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<UnderlyingRustTuple<'_>>
-            for __BaseProxy_initCall {
+            impl ::core::convert::From<UnderlyingRustTuple<'_>> for __BaseProxy_initCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self { _initialOwner: tuple.0 }
+                    Self {
+                        _initialOwner: tuple.0,
+                    }
                 }
             }
         }
@@ -5426,9 +5129,7 @@ function __BaseProxy_init(address _initialOwner) external;
             type UnderlyingRustTuple<'a> = ();
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -5437,16 +5138,14 @@ function __BaseProxy_init(address _initialOwner) external;
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<__BaseProxy_initReturn>
-            for UnderlyingRustTuple<'_> {
+            impl ::core::convert::From<__BaseProxy_initReturn> for UnderlyingRustTuple<'_> {
                 fn from(value: __BaseProxy_initReturn) -> Self {
                     ()
                 }
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<UnderlyingRustTuple<'_>>
-            for __BaseProxy_initReturn {
+            impl ::core::convert::From<UnderlyingRustTuple<'_>> for __BaseProxy_initReturn {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
                     Self {}
                 }
@@ -5462,14 +5161,10 @@ function __BaseProxy_init(address _initialOwner) external;
         #[automatically_derived]
         impl alloy_sol_types::SolCall for __BaseProxy_initCall {
             type Parameters<'a> = (alloy::sol_types::sol_data::Address,);
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             type Return = __BaseProxy_initReturn;
             type ReturnTuple<'a> = ();
-            type ReturnToken<'a> = <Self::ReturnTuple<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type ReturnToken<'a> = <Self::ReturnTuple<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "__BaseProxy_init(address)";
             const SELECTOR: [u8; 4] = [191u8, 187u8, 51u8, 94u8];
             #[inline]
@@ -5492,28 +5187,23 @@ function __BaseProxy_init(address _initialOwner) external;
             }
             #[inline]
             fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence(data)
                     .map(Into::into)
             }
             #[inline]
-            fn abi_decode_returns_validate(
-                data: &[u8],
-            ) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Into::into)
+            fn abi_decode_returns_validate(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Into::into)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Function with signature `addMemberNonce(bytes32,bytes)` and selector `0x3d09199d`.
-```solidity
-function addMemberNonce(bytes32 _hashToSign, bytes memory _nonce) external returns (bool);
-```*/
+    ```solidity
+    function addMemberNonce(bytes32 _hashToSign, bytes memory _nonce) external returns (bool);
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct addMemberNonceCall {
@@ -5522,8 +5212,7 @@ function addMemberNonce(bytes32 _hashToSign, bytes memory _nonce) external retur
         #[allow(missing_docs)]
         pub _nonce: alloy::sol_types::private::Bytes,
     }
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`addMemberNonce(bytes32,bytes)`](addMemberNonceCall) function.
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
@@ -5552,9 +5241,7 @@ function addMemberNonce(bytes32 _hashToSign, bytes memory _nonce) external retur
             );
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -5586,9 +5273,7 @@ function addMemberNonce(bytes32 _hashToSign, bytes memory _nonce) external retur
             type UnderlyingRustTuple<'a> = (bool,);
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -5597,16 +5282,14 @@ function addMemberNonce(bytes32 _hashToSign, bytes memory _nonce) external retur
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<addMemberNonceReturn>
-            for UnderlyingRustTuple<'_> {
+            impl ::core::convert::From<addMemberNonceReturn> for UnderlyingRustTuple<'_> {
                 fn from(value: addMemberNonceReturn) -> Self {
                     (value._0,)
                 }
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<UnderlyingRustTuple<'_>>
-            for addMemberNonceReturn {
+            impl ::core::convert::From<UnderlyingRustTuple<'_>> for addMemberNonceReturn {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
                     Self { _0: tuple.0 }
                 }
@@ -5618,14 +5301,10 @@ function addMemberNonce(bytes32 _hashToSign, bytes memory _nonce) external retur
                 alloy::sol_types::sol_data::FixedBytes<32>,
                 alloy::sol_types::sol_data::Bytes,
             );
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             type Return = bool;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Bool,);
-            type ReturnToken<'a> = <Self::ReturnTuple<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type ReturnToken<'a> = <Self::ReturnTuple<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "addMemberNonce(bytes32,bytes)";
             const SELECTOR: [u8; 4] = [61u8, 9u8, 25u8, 157u8];
             #[inline]
@@ -5647,42 +5326,34 @@ function addMemberNonce(bytes32 _hashToSign, bytes memory _nonce) external retur
             }
             #[inline]
             fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
-                (
-                    <alloy::sol_types::sol_data::Bool as alloy_sol_types::SolType>::tokenize(
-                        ret,
-                    ),
-                )
+                (<alloy::sol_types::sol_data::Bool as alloy_sol_types::SolType>::tokenize(ret),)
             }
             #[inline]
             fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
-                    .map(|r| {
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence(data).map(
+                    |r| {
                         let r: addMemberNonceReturn = r.into();
                         r._0
-                    })
+                    },
+                )
             }
             #[inline]
-            fn abi_decode_returns_validate(
-                data: &[u8],
-            ) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(|r| {
-                        let r: addMemberNonceReturn = r.into();
-                        r._0
-                    })
+            fn abi_decode_returns_validate(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(|r| {
+                    let r: addMemberNonceReturn = r.into();
+                    r._0
+                })
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Function with signature `addMemberSignature(bytes32,bytes32)` and selector `0xd11fdfaf`.
-```solidity
-function addMemberSignature(bytes32 _txid, bytes32 _signature) external returns (bool);
-```*/
+    ```solidity
+    function addMemberSignature(bytes32 _txid, bytes32 _signature) external returns (bool);
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct addMemberSignatureCall {
@@ -5691,8 +5362,7 @@ function addMemberSignature(bytes32 _txid, bytes32 _signature) external returns 
         #[allow(missing_docs)]
         pub _signature: alloy::sol_types::private::FixedBytes<32>,
     }
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`addMemberSignature(bytes32,bytes32)`](addMemberSignatureCall) function.
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
@@ -5721,9 +5391,7 @@ function addMemberSignature(bytes32 _txid, bytes32 _signature) external returns 
             );
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -5732,16 +5400,14 @@ function addMemberSignature(bytes32 _txid, bytes32 _signature) external returns 
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<addMemberSignatureCall>
-            for UnderlyingRustTuple<'_> {
+            impl ::core::convert::From<addMemberSignatureCall> for UnderlyingRustTuple<'_> {
                 fn from(value: addMemberSignatureCall) -> Self {
                     (value._txid, value._signature)
                 }
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<UnderlyingRustTuple<'_>>
-            for addMemberSignatureCall {
+            impl ::core::convert::From<UnderlyingRustTuple<'_>> for addMemberSignatureCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
                     Self {
                         _txid: tuple.0,
@@ -5757,9 +5423,7 @@ function addMemberSignature(bytes32 _txid, bytes32 _signature) external returns 
             type UnderlyingRustTuple<'a> = (bool,);
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -5768,16 +5432,14 @@ function addMemberSignature(bytes32 _txid, bytes32 _signature) external returns 
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<addMemberSignatureReturn>
-            for UnderlyingRustTuple<'_> {
+            impl ::core::convert::From<addMemberSignatureReturn> for UnderlyingRustTuple<'_> {
                 fn from(value: addMemberSignatureReturn) -> Self {
                     (value._0,)
                 }
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<UnderlyingRustTuple<'_>>
-            for addMemberSignatureReturn {
+            impl ::core::convert::From<UnderlyingRustTuple<'_>> for addMemberSignatureReturn {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
                     Self { _0: tuple.0 }
                 }
@@ -5789,14 +5451,10 @@ function addMemberSignature(bytes32 _txid, bytes32 _signature) external returns 
                 alloy::sol_types::sol_data::FixedBytes<32>,
                 alloy::sol_types::sol_data::FixedBytes<32>,
             );
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             type Return = bool;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Bool,);
-            type ReturnToken<'a> = <Self::ReturnTuple<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type ReturnToken<'a> = <Self::ReturnTuple<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "addMemberSignature(bytes32,bytes32)";
             const SELECTOR: [u8; 4] = [209u8, 31u8, 223u8, 175u8];
             #[inline]
@@ -5818,42 +5476,34 @@ function addMemberSignature(bytes32 _txid, bytes32 _signature) external returns 
             }
             #[inline]
             fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
-                (
-                    <alloy::sol_types::sol_data::Bool as alloy_sol_types::SolType>::tokenize(
-                        ret,
-                    ),
-                )
+                (<alloy::sol_types::sol_data::Bool as alloy_sol_types::SolType>::tokenize(ret),)
             }
             #[inline]
             fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
-                    .map(|r| {
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence(data).map(
+                    |r| {
                         let r: addMemberSignatureReturn = r.into();
                         r._0
-                    })
+                    },
+                )
             }
             #[inline]
-            fn abi_decode_returns_validate(
-                data: &[u8],
-            ) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(|r| {
-                        let r: addMemberSignatureReturn = r.into();
-                        r._0
-                    })
+            fn abi_decode_returns_validate(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(|r| {
+                    let r: addMemberSignatureReturn = r.into();
+                    r._0
+                })
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Function with signature `addOperatorTakeTxid(bytes32,bytes32)` and selector `0xb18d3ff9`.
-```solidity
-function addOperatorTakeTxid(bytes32 _acceptPeginTxid, bytes32 _takeTxid) external;
-```*/
+    ```solidity
+    function addOperatorTakeTxid(bytes32 _acceptPeginTxid, bytes32 _takeTxid) external;
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct addOperatorTakeTxidCall {
@@ -5887,9 +5537,7 @@ function addOperatorTakeTxid(bytes32 _acceptPeginTxid, bytes32 _takeTxid) extern
             );
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -5898,16 +5546,14 @@ function addOperatorTakeTxid(bytes32 _acceptPeginTxid, bytes32 _takeTxid) extern
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<addOperatorTakeTxidCall>
-            for UnderlyingRustTuple<'_> {
+            impl ::core::convert::From<addOperatorTakeTxidCall> for UnderlyingRustTuple<'_> {
                 fn from(value: addOperatorTakeTxidCall) -> Self {
                     (value._acceptPeginTxid, value._takeTxid)
                 }
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<UnderlyingRustTuple<'_>>
-            for addOperatorTakeTxidCall {
+            impl ::core::convert::From<UnderlyingRustTuple<'_>> for addOperatorTakeTxidCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
                     Self {
                         _acceptPeginTxid: tuple.0,
@@ -5923,9 +5569,7 @@ function addOperatorTakeTxid(bytes32 _acceptPeginTxid, bytes32 _takeTxid) extern
             type UnderlyingRustTuple<'a> = ();
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -5934,16 +5578,14 @@ function addOperatorTakeTxid(bytes32 _acceptPeginTxid, bytes32 _takeTxid) extern
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<addOperatorTakeTxidReturn>
-            for UnderlyingRustTuple<'_> {
+            impl ::core::convert::From<addOperatorTakeTxidReturn> for UnderlyingRustTuple<'_> {
                 fn from(value: addOperatorTakeTxidReturn) -> Self {
                     ()
                 }
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<UnderlyingRustTuple<'_>>
-            for addOperatorTakeTxidReturn {
+            impl ::core::convert::From<UnderlyingRustTuple<'_>> for addOperatorTakeTxidReturn {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
                     Self {}
                 }
@@ -5952,7 +5594,8 @@ function addOperatorTakeTxid(bytes32 _acceptPeginTxid, bytes32 _takeTxid) extern
         impl addOperatorTakeTxidReturn {
             fn _tokenize(
                 &self,
-            ) -> <addOperatorTakeTxidCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
+            ) -> <addOperatorTakeTxidCall as alloy_sol_types::SolCall>::ReturnToken<'_>
+            {
                 ()
             }
         }
@@ -5962,14 +5605,10 @@ function addOperatorTakeTxid(bytes32 _acceptPeginTxid, bytes32 _takeTxid) extern
                 alloy::sol_types::sol_data::FixedBytes<32>,
                 alloy::sol_types::sol_data::FixedBytes<32>,
             );
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             type Return = addOperatorTakeTxidReturn;
             type ReturnTuple<'a> = ();
-            type ReturnToken<'a> = <Self::ReturnTuple<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type ReturnToken<'a> = <Self::ReturnTuple<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "addOperatorTakeTxid(bytes32,bytes32)";
             const SELECTOR: [u8; 4] = [177u8, 141u8, 63u8, 249u8];
             #[inline]
@@ -5995,36 +5634,30 @@ function addOperatorTakeTxid(bytes32 _acceptPeginTxid, bytes32 _takeTxid) extern
             }
             #[inline]
             fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence(data)
                     .map(Into::into)
             }
             #[inline]
-            fn abi_decode_returns_validate(
-                data: &[u8],
-            ) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Into::into)
+            fn abi_decode_returns_validate(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Into::into)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Function with signature `checkAllOperatorTakesHashesReady(bytes32)` and selector `0x877f90b4`.
-```solidity
-function checkAllOperatorTakesHashesReady(bytes32 _acceptPeginTxid) external view returns (bool);
-```*/
+    ```solidity
+    function checkAllOperatorTakesHashesReady(bytes32 _acceptPeginTxid) external view returns (bool);
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct checkAllOperatorTakesHashesReadyCall {
         #[allow(missing_docs)]
         pub _acceptPeginTxid: alloy::sol_types::private::FixedBytes<32>,
     }
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`checkAllOperatorTakesHashesReady(bytes32)`](checkAllOperatorTakesHashesReadyCall) function.
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
@@ -6047,9 +5680,7 @@ function checkAllOperatorTakesHashesReady(bytes32 _acceptPeginTxid) external vie
             type UnderlyingRustTuple<'a> = (alloy::sol_types::private::FixedBytes<32>,);
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -6058,18 +5689,18 @@ function checkAllOperatorTakesHashesReady(bytes32 _acceptPeginTxid) external vie
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<checkAllOperatorTakesHashesReadyCall>
-            for UnderlyingRustTuple<'_> {
+            impl ::core::convert::From<checkAllOperatorTakesHashesReadyCall> for UnderlyingRustTuple<'_> {
                 fn from(value: checkAllOperatorTakesHashesReadyCall) -> Self {
                     (value._acceptPeginTxid,)
                 }
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<UnderlyingRustTuple<'_>>
-            for checkAllOperatorTakesHashesReadyCall {
+            impl ::core::convert::From<UnderlyingRustTuple<'_>> for checkAllOperatorTakesHashesReadyCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self { _acceptPeginTxid: tuple.0 }
+                    Self {
+                        _acceptPeginTxid: tuple.0,
+                    }
                 }
             }
         }
@@ -6080,9 +5711,7 @@ function checkAllOperatorTakesHashesReady(bytes32 _acceptPeginTxid) external vie
             type UnderlyingRustTuple<'a> = (bool,);
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -6091,16 +5720,14 @@ function checkAllOperatorTakesHashesReady(bytes32 _acceptPeginTxid) external vie
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<checkAllOperatorTakesHashesReadyReturn>
-            for UnderlyingRustTuple<'_> {
+            impl ::core::convert::From<checkAllOperatorTakesHashesReadyReturn> for UnderlyingRustTuple<'_> {
                 fn from(value: checkAllOperatorTakesHashesReadyReturn) -> Self {
                     (value._0,)
                 }
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<UnderlyingRustTuple<'_>>
-            for checkAllOperatorTakesHashesReadyReturn {
+            impl ::core::convert::From<UnderlyingRustTuple<'_>> for checkAllOperatorTakesHashesReadyReturn {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
                     Self { _0: tuple.0 }
                 }
@@ -6109,14 +5736,10 @@ function checkAllOperatorTakesHashesReady(bytes32 _acceptPeginTxid) external vie
         #[automatically_derived]
         impl alloy_sol_types::SolCall for checkAllOperatorTakesHashesReadyCall {
             type Parameters<'a> = (alloy::sol_types::sol_data::FixedBytes<32>,);
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             type Return = bool;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Bool,);
-            type ReturnToken<'a> = <Self::ReturnTuple<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type ReturnToken<'a> = <Self::ReturnTuple<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "checkAllOperatorTakesHashesReady(bytes32)";
             const SELECTOR: [u8; 4] = [135u8, 127u8, 144u8, 180u8];
             #[inline]
@@ -6135,50 +5758,41 @@ function checkAllOperatorTakesHashesReady(bytes32 _acceptPeginTxid) external vie
             }
             #[inline]
             fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
-                (
-                    <alloy::sol_types::sol_data::Bool as alloy_sol_types::SolType>::tokenize(
-                        ret,
-                    ),
-                )
+                (<alloy::sol_types::sol_data::Bool as alloy_sol_types::SolType>::tokenize(ret),)
             }
             #[inline]
             fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
-                    .map(|r| {
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence(data).map(
+                    |r| {
                         let r: checkAllOperatorTakesHashesReadyReturn = r.into();
                         r._0
-                    })
+                    },
+                )
             }
             #[inline]
-            fn abi_decode_returns_validate(
-                data: &[u8],
-            ) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(|r| {
-                        let r: checkAllOperatorTakesHashesReadyReturn = r.into();
-                        r._0
-                    })
+            fn abi_decode_returns_validate(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(|r| {
+                    let r: checkAllOperatorTakesHashesReadyReturn = r.into();
+                    r._0
+                })
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Function with signature `checkAllSignaturesReady(bytes32)` and selector `0xeae1d1fa`.
-```solidity
-function checkAllSignaturesReady(bytes32 _txid) external view returns (bool);
-```*/
+    ```solidity
+    function checkAllSignaturesReady(bytes32 _txid) external view returns (bool);
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct checkAllSignaturesReadyCall {
         #[allow(missing_docs)]
         pub _txid: alloy::sol_types::private::FixedBytes<32>,
     }
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`checkAllSignaturesReady(bytes32)`](checkAllSignaturesReadyCall) function.
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
@@ -6201,9 +5815,7 @@ function checkAllSignaturesReady(bytes32 _txid) external view returns (bool);
             type UnderlyingRustTuple<'a> = (alloy::sol_types::private::FixedBytes<32>,);
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -6212,16 +5824,14 @@ function checkAllSignaturesReady(bytes32 _txid) external view returns (bool);
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<checkAllSignaturesReadyCall>
-            for UnderlyingRustTuple<'_> {
+            impl ::core::convert::From<checkAllSignaturesReadyCall> for UnderlyingRustTuple<'_> {
                 fn from(value: checkAllSignaturesReadyCall) -> Self {
                     (value._txid,)
                 }
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<UnderlyingRustTuple<'_>>
-            for checkAllSignaturesReadyCall {
+            impl ::core::convert::From<UnderlyingRustTuple<'_>> for checkAllSignaturesReadyCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
                     Self { _txid: tuple.0 }
                 }
@@ -6234,9 +5844,7 @@ function checkAllSignaturesReady(bytes32 _txid) external view returns (bool);
             type UnderlyingRustTuple<'a> = (bool,);
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -6245,16 +5853,14 @@ function checkAllSignaturesReady(bytes32 _txid) external view returns (bool);
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<checkAllSignaturesReadyReturn>
-            for UnderlyingRustTuple<'_> {
+            impl ::core::convert::From<checkAllSignaturesReadyReturn> for UnderlyingRustTuple<'_> {
                 fn from(value: checkAllSignaturesReadyReturn) -> Self {
                     (value._0,)
                 }
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<UnderlyingRustTuple<'_>>
-            for checkAllSignaturesReadyReturn {
+            impl ::core::convert::From<UnderlyingRustTuple<'_>> for checkAllSignaturesReadyReturn {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
                     Self { _0: tuple.0 }
                 }
@@ -6263,14 +5869,10 @@ function checkAllSignaturesReady(bytes32 _txid) external view returns (bool);
         #[automatically_derived]
         impl alloy_sol_types::SolCall for checkAllSignaturesReadyCall {
             type Parameters<'a> = (alloy::sol_types::sol_data::FixedBytes<32>,);
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             type Return = bool;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Bool,);
-            type ReturnToken<'a> = <Self::ReturnTuple<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type ReturnToken<'a> = <Self::ReturnTuple<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "checkAllSignaturesReady(bytes32)";
             const SELECTOR: [u8; 4] = [234u8, 225u8, 209u8, 250u8];
             #[inline]
@@ -6289,47 +5891,38 @@ function checkAllSignaturesReady(bytes32 _txid) external view returns (bool);
             }
             #[inline]
             fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
-                (
-                    <alloy::sol_types::sol_data::Bool as alloy_sol_types::SolType>::tokenize(
-                        ret,
-                    ),
-                )
+                (<alloy::sol_types::sol_data::Bool as alloy_sol_types::SolType>::tokenize(ret),)
             }
             #[inline]
             fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
-                    .map(|r| {
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence(data).map(
+                    |r| {
                         let r: checkAllSignaturesReadyReturn = r.into();
                         r._0
-                    })
+                    },
+                )
             }
             #[inline]
-            fn abi_decode_returns_validate(
-                data: &[u8],
-            ) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(|r| {
-                        let r: checkAllSignaturesReadyReturn = r.into();
-                        r._0
-                    })
+            fn abi_decode_returns_validate(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(|r| {
+                    let r: checkAllSignaturesReadyReturn = r.into();
+                    r._0
+                })
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Function with signature `committeeRegistry()` and selector `0x00995560`.
-```solidity
-function committeeRegistry() external view returns (address);
-```*/
+    ```solidity
+    function committeeRegistry() external view returns (address);
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct committeeRegistryCall;
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`committeeRegistry()`](committeeRegistryCall) function.
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
@@ -6352,9 +5945,7 @@ function committeeRegistry() external view returns (address);
             type UnderlyingRustTuple<'a> = ();
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -6363,16 +5954,14 @@ function committeeRegistry() external view returns (address);
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<committeeRegistryCall>
-            for UnderlyingRustTuple<'_> {
+            impl ::core::convert::From<committeeRegistryCall> for UnderlyingRustTuple<'_> {
                 fn from(value: committeeRegistryCall) -> Self {
                     ()
                 }
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<UnderlyingRustTuple<'_>>
-            for committeeRegistryCall {
+            impl ::core::convert::From<UnderlyingRustTuple<'_>> for committeeRegistryCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
                     Self
                 }
@@ -6385,9 +5974,7 @@ function committeeRegistry() external view returns (address);
             type UnderlyingRustTuple<'a> = (alloy::sol_types::private::Address,);
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -6396,16 +5983,14 @@ function committeeRegistry() external view returns (address);
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<committeeRegistryReturn>
-            for UnderlyingRustTuple<'_> {
+            impl ::core::convert::From<committeeRegistryReturn> for UnderlyingRustTuple<'_> {
                 fn from(value: committeeRegistryReturn) -> Self {
                     (value._0,)
                 }
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<UnderlyingRustTuple<'_>>
-            for committeeRegistryReturn {
+            impl ::core::convert::From<UnderlyingRustTuple<'_>> for committeeRegistryReturn {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
                     Self { _0: tuple.0 }
                 }
@@ -6414,14 +5999,10 @@ function committeeRegistry() external view returns (address);
         #[automatically_derived]
         impl alloy_sol_types::SolCall for committeeRegistryCall {
             type Parameters<'a> = ();
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             type Return = alloy::sol_types::private::Address;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Address,);
-            type ReturnToken<'a> = <Self::ReturnTuple<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type ReturnToken<'a> = <Self::ReturnTuple<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "committeeRegistry()";
             const SELECTOR: [u8; 4] = [0u8, 153u8, 85u8, 96u8];
             #[inline]
@@ -6444,42 +6025,37 @@ function committeeRegistry() external view returns (address);
             }
             #[inline]
             fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
-                    .map(|r| {
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence(data).map(
+                    |r| {
                         let r: committeeRegistryReturn = r.into();
                         r._0
-                    })
+                    },
+                )
             }
             #[inline]
-            fn abi_decode_returns_validate(
-                data: &[u8],
-            ) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(|r| {
-                        let r: committeeRegistryReturn = r.into();
-                        r._0
-                    })
+            fn abi_decode_returns_validate(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(|r| {
+                    let r: committeeRegistryReturn = r.into();
+                    r._0
+                })
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Function with signature `getCommitteeIdByAcceptPeginTxid(bytes32)` and selector `0x389e068c`.
-```solidity
-function getCommitteeIdByAcceptPeginTxid(bytes32 _acceptPeginTxid) external view returns (uint128);
-```*/
+    ```solidity
+    function getCommitteeIdByAcceptPeginTxid(bytes32 _acceptPeginTxid) external view returns (uint128);
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct getCommitteeIdByAcceptPeginTxidCall {
         #[allow(missing_docs)]
         pub _acceptPeginTxid: alloy::sol_types::private::FixedBytes<32>,
     }
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`getCommitteeIdByAcceptPeginTxid(bytes32)`](getCommitteeIdByAcceptPeginTxidCall) function.
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
@@ -6502,9 +6078,7 @@ function getCommitteeIdByAcceptPeginTxid(bytes32 _acceptPeginTxid) external view
             type UnderlyingRustTuple<'a> = (alloy::sol_types::private::FixedBytes<32>,);
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -6513,18 +6087,18 @@ function getCommitteeIdByAcceptPeginTxid(bytes32 _acceptPeginTxid) external view
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<getCommitteeIdByAcceptPeginTxidCall>
-            for UnderlyingRustTuple<'_> {
+            impl ::core::convert::From<getCommitteeIdByAcceptPeginTxidCall> for UnderlyingRustTuple<'_> {
                 fn from(value: getCommitteeIdByAcceptPeginTxidCall) -> Self {
                     (value._acceptPeginTxid,)
                 }
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<UnderlyingRustTuple<'_>>
-            for getCommitteeIdByAcceptPeginTxidCall {
+            impl ::core::convert::From<UnderlyingRustTuple<'_>> for getCommitteeIdByAcceptPeginTxidCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self { _acceptPeginTxid: tuple.0 }
+                    Self {
+                        _acceptPeginTxid: tuple.0,
+                    }
                 }
             }
         }
@@ -6535,9 +6109,7 @@ function getCommitteeIdByAcceptPeginTxid(bytes32 _acceptPeginTxid) external view
             type UnderlyingRustTuple<'a> = (u128,);
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -6546,16 +6118,14 @@ function getCommitteeIdByAcceptPeginTxid(bytes32 _acceptPeginTxid) external view
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<getCommitteeIdByAcceptPeginTxidReturn>
-            for UnderlyingRustTuple<'_> {
+            impl ::core::convert::From<getCommitteeIdByAcceptPeginTxidReturn> for UnderlyingRustTuple<'_> {
                 fn from(value: getCommitteeIdByAcceptPeginTxidReturn) -> Self {
                     (value._0,)
                 }
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<UnderlyingRustTuple<'_>>
-            for getCommitteeIdByAcceptPeginTxidReturn {
+            impl ::core::convert::From<UnderlyingRustTuple<'_>> for getCommitteeIdByAcceptPeginTxidReturn {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
                     Self { _0: tuple.0 }
                 }
@@ -6564,14 +6134,10 @@ function getCommitteeIdByAcceptPeginTxid(bytes32 _acceptPeginTxid) external view
         #[automatically_derived]
         impl alloy_sol_types::SolCall for getCommitteeIdByAcceptPeginTxidCall {
             type Parameters<'a> = (alloy::sol_types::sol_data::FixedBytes<32>,);
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             type Return = u128;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Uint<128>,);
-            type ReturnToken<'a> = <Self::ReturnTuple<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type ReturnToken<'a> = <Self::ReturnTuple<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "getCommitteeIdByAcceptPeginTxid(bytes32)";
             const SELECTOR: [u8; 4] = [56u8, 158u8, 6u8, 140u8];
             #[inline]
@@ -6591,46 +6157,41 @@ function getCommitteeIdByAcceptPeginTxid(bytes32 _acceptPeginTxid) external view
             #[inline]
             fn tokenize_returns(ret: &Self::Return) -> Self::ReturnToken<'_> {
                 (
-                    <alloy::sol_types::sol_data::Uint<
-                        128,
-                    > as alloy_sol_types::SolType>::tokenize(ret),
+                    <alloy::sol_types::sol_data::Uint<128> as alloy_sol_types::SolType>::tokenize(
+                        ret,
+                    ),
                 )
             }
             #[inline]
             fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
-                    .map(|r| {
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence(data).map(
+                    |r| {
                         let r: getCommitteeIdByAcceptPeginTxidReturn = r.into();
                         r._0
-                    })
+                    },
+                )
             }
             #[inline]
-            fn abi_decode_returns_validate(
-                data: &[u8],
-            ) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(|r| {
-                        let r: getCommitteeIdByAcceptPeginTxidReturn = r.into();
-                        r._0
-                    })
+            fn abi_decode_returns_validate(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(|r| {
+                    let r: getCommitteeIdByAcceptPeginTxidReturn = r.into();
+                    r._0
+                })
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Function with signature `getImplementation()` and selector `0xaaf10f42`.
-```solidity
-function getImplementation() external view returns (address);
-```*/
+    ```solidity
+    function getImplementation() external view returns (address);
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct getImplementationCall;
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`getImplementation()`](getImplementationCall) function.
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
@@ -6653,9 +6214,7 @@ function getImplementation() external view returns (address);
             type UnderlyingRustTuple<'a> = ();
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -6664,16 +6223,14 @@ function getImplementation() external view returns (address);
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<getImplementationCall>
-            for UnderlyingRustTuple<'_> {
+            impl ::core::convert::From<getImplementationCall> for UnderlyingRustTuple<'_> {
                 fn from(value: getImplementationCall) -> Self {
                     ()
                 }
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<UnderlyingRustTuple<'_>>
-            for getImplementationCall {
+            impl ::core::convert::From<UnderlyingRustTuple<'_>> for getImplementationCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
                     Self
                 }
@@ -6686,9 +6243,7 @@ function getImplementation() external view returns (address);
             type UnderlyingRustTuple<'a> = (alloy::sol_types::private::Address,);
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -6697,16 +6252,14 @@ function getImplementation() external view returns (address);
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<getImplementationReturn>
-            for UnderlyingRustTuple<'_> {
+            impl ::core::convert::From<getImplementationReturn> for UnderlyingRustTuple<'_> {
                 fn from(value: getImplementationReturn) -> Self {
                     (value._0,)
                 }
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<UnderlyingRustTuple<'_>>
-            for getImplementationReturn {
+            impl ::core::convert::From<UnderlyingRustTuple<'_>> for getImplementationReturn {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
                     Self { _0: tuple.0 }
                 }
@@ -6715,14 +6268,10 @@ function getImplementation() external view returns (address);
         #[automatically_derived]
         impl alloy_sol_types::SolCall for getImplementationCall {
             type Parameters<'a> = ();
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             type Return = alloy::sol_types::private::Address;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Address,);
-            type ReturnToken<'a> = <Self::ReturnTuple<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type ReturnToken<'a> = <Self::ReturnTuple<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "getImplementation()";
             const SELECTOR: [u8; 4] = [170u8, 241u8, 15u8, 66u8];
             #[inline]
@@ -6745,42 +6294,37 @@ function getImplementation() external view returns (address);
             }
             #[inline]
             fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
-                    .map(|r| {
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence(data).map(
+                    |r| {
                         let r: getImplementationReturn = r.into();
                         r._0
-                    })
+                    },
+                )
             }
             #[inline]
-            fn abi_decode_returns_validate(
-                data: &[u8],
-            ) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(|r| {
-                        let r: getImplementationReturn = r.into();
-                        r._0
-                    })
+            fn abi_decode_returns_validate(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(|r| {
+                    let r: getImplementationReturn = r.into();
+                    r._0
+                })
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Function with signature `getOperatorTakeData(bytes32)` and selector `0x00d73682`.
-```solidity
-function getOperatorTakeData(bytes32 _acceptPeginTxid) external view returns (OperatorTakeData[] memory);
-```*/
+    ```solidity
+    function getOperatorTakeData(bytes32 _acceptPeginTxid) external view returns (OperatorTakeData[] memory);
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct getOperatorTakeDataCall {
         #[allow(missing_docs)]
         pub _acceptPeginTxid: alloy::sol_types::private::FixedBytes<32>,
     }
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`getOperatorTakeData(bytes32)`](getOperatorTakeDataCall) function.
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
@@ -6805,9 +6349,7 @@ function getOperatorTakeData(bytes32 _acceptPeginTxid) external view returns (Op
             type UnderlyingRustTuple<'a> = (alloy::sol_types::private::FixedBytes<32>,);
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -6816,26 +6358,24 @@ function getOperatorTakeData(bytes32 _acceptPeginTxid) external view returns (Op
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<getOperatorTakeDataCall>
-            for UnderlyingRustTuple<'_> {
+            impl ::core::convert::From<getOperatorTakeDataCall> for UnderlyingRustTuple<'_> {
                 fn from(value: getOperatorTakeDataCall) -> Self {
                     (value._acceptPeginTxid,)
                 }
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<UnderlyingRustTuple<'_>>
-            for getOperatorTakeDataCall {
+            impl ::core::convert::From<UnderlyingRustTuple<'_>> for getOperatorTakeDataCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
-                    Self { _acceptPeginTxid: tuple.0 }
+                    Self {
+                        _acceptPeginTxid: tuple.0,
+                    }
                 }
             }
         }
         {
             #[doc(hidden)]
-            type UnderlyingSolTuple<'a> = (
-                alloy::sol_types::sol_data::Array<OperatorTakeData>,
-            );
+            type UnderlyingSolTuple<'a> = (alloy::sol_types::sol_data::Array<OperatorTakeData>,);
             #[doc(hidden)]
             type UnderlyingRustTuple<'a> = (
                 alloy::sol_types::private::Vec<
@@ -6844,9 +6384,7 @@ function getOperatorTakeData(bytes32 _acceptPeginTxid) external view returns (Op
             );
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -6855,16 +6393,14 @@ function getOperatorTakeData(bytes32 _acceptPeginTxid) external view returns (Op
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<getOperatorTakeDataReturn>
-            for UnderlyingRustTuple<'_> {
+            impl ::core::convert::From<getOperatorTakeDataReturn> for UnderlyingRustTuple<'_> {
                 fn from(value: getOperatorTakeDataReturn) -> Self {
                     (value._0,)
                 }
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<UnderlyingRustTuple<'_>>
-            for getOperatorTakeDataReturn {
+            impl ::core::convert::From<UnderlyingRustTuple<'_>> for getOperatorTakeDataReturn {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
                     Self { _0: tuple.0 }
                 }
@@ -6873,18 +6409,12 @@ function getOperatorTakeData(bytes32 _acceptPeginTxid) external view returns (Op
         #[automatically_derived]
         impl alloy_sol_types::SolCall for getOperatorTakeDataCall {
             type Parameters<'a> = (alloy::sol_types::sol_data::FixedBytes<32>,);
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             type Return = alloy::sol_types::private::Vec<
                 <OperatorTakeData as alloy::sol_types::SolType>::RustType,
             >;
-            type ReturnTuple<'a> = (
-                alloy::sol_types::sol_data::Array<OperatorTakeData>,
-            );
-            type ReturnToken<'a> = <Self::ReturnTuple<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type ReturnTuple<'a> = (alloy::sol_types::sol_data::Array<OperatorTakeData>,);
+            type ReturnToken<'a> = <Self::ReturnTuple<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "getOperatorTakeData(bytes32)";
             const SELECTOR: [u8; 4] = [0u8, 215u8, 54u8, 130u8];
             #[inline]
@@ -6911,50 +6441,44 @@ function getOperatorTakeData(bytes32 _acceptPeginTxid) external view returns (Op
             }
             #[inline]
             fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
-                    .map(|r| {
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence(data).map(
+                    |r| {
                         let r: getOperatorTakeDataReturn = r.into();
                         r._0
-                    })
+                    },
+                )
             }
             #[inline]
-            fn abi_decode_returns_validate(
-                data: &[u8],
-            ) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(|r| {
-                        let r: getOperatorTakeDataReturn = r.into();
-                        r._0
-                    })
+            fn abi_decode_returns_validate(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(|r| {
+                    let r: getOperatorTakeDataReturn = r.into();
+                    r._0
+                })
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Function with signature `getPartialSignatures(bytes32)` and selector `0xfb7d4661`.
-```solidity
-function getPartialSignatures(bytes32 _txid) external view returns (SignatureData[] memory);
-```*/
+    ```solidity
+    function getPartialSignatures(bytes32 _txid) external view returns (SignatureData[] memory);
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct getPartialSignaturesCall {
         #[allow(missing_docs)]
         pub _txid: alloy::sol_types::private::FixedBytes<32>,
     }
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`getPartialSignatures(bytes32)`](getPartialSignaturesCall) function.
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct getPartialSignaturesReturn {
         #[allow(missing_docs)]
-        pub _0: alloy::sol_types::private::Vec<
-            <SignatureData as alloy::sol_types::SolType>::RustType,
-        >,
+        pub _0:
+            alloy::sol_types::private::Vec<<SignatureData as alloy::sol_types::SolType>::RustType>,
     }
     #[allow(
         non_camel_case_types,
@@ -6971,9 +6495,7 @@ function getPartialSignatures(bytes32 _txid) external view returns (SignatureDat
             type UnderlyingRustTuple<'a> = (alloy::sol_types::private::FixedBytes<32>,);
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -6982,16 +6504,14 @@ function getPartialSignatures(bytes32 _txid) external view returns (SignatureDat
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<getPartialSignaturesCall>
-            for UnderlyingRustTuple<'_> {
+            impl ::core::convert::From<getPartialSignaturesCall> for UnderlyingRustTuple<'_> {
                 fn from(value: getPartialSignaturesCall) -> Self {
                     (value._txid,)
                 }
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<UnderlyingRustTuple<'_>>
-            for getPartialSignaturesCall {
+            impl ::core::convert::From<UnderlyingRustTuple<'_>> for getPartialSignaturesCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
                     Self { _txid: tuple.0 }
                 }
@@ -6999,9 +6519,7 @@ function getPartialSignatures(bytes32 _txid) external view returns (SignatureDat
         }
         {
             #[doc(hidden)]
-            type UnderlyingSolTuple<'a> = (
-                alloy::sol_types::sol_data::Array<SignatureData>,
-            );
+            type UnderlyingSolTuple<'a> = (alloy::sol_types::sol_data::Array<SignatureData>,);
             #[doc(hidden)]
             type UnderlyingRustTuple<'a> = (
                 alloy::sol_types::private::Vec<
@@ -7010,9 +6528,7 @@ function getPartialSignatures(bytes32 _txid) external view returns (SignatureDat
             );
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -7021,16 +6537,14 @@ function getPartialSignatures(bytes32 _txid) external view returns (SignatureDat
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<getPartialSignaturesReturn>
-            for UnderlyingRustTuple<'_> {
+            impl ::core::convert::From<getPartialSignaturesReturn> for UnderlyingRustTuple<'_> {
                 fn from(value: getPartialSignaturesReturn) -> Self {
                     (value._0,)
                 }
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<UnderlyingRustTuple<'_>>
-            for getPartialSignaturesReturn {
+            impl ::core::convert::From<UnderlyingRustTuple<'_>> for getPartialSignaturesReturn {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
                     Self { _0: tuple.0 }
                 }
@@ -7039,16 +6553,12 @@ function getPartialSignatures(bytes32 _txid) external view returns (SignatureDat
         #[automatically_derived]
         impl alloy_sol_types::SolCall for getPartialSignaturesCall {
             type Parameters<'a> = (alloy::sol_types::sol_data::FixedBytes<32>,);
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             type Return = alloy::sol_types::private::Vec<
                 <SignatureData as alloy::sol_types::SolType>::RustType,
             >;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Array<SignatureData>,);
-            type ReturnToken<'a> = <Self::ReturnTuple<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type ReturnToken<'a> = <Self::ReturnTuple<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "getPartialSignatures(bytes32)";
             const SELECTOR: [u8; 4] = [251u8, 125u8, 70u8, 97u8];
             #[inline]
@@ -7075,42 +6585,37 @@ function getPartialSignatures(bytes32 _txid) external view returns (SignatureDat
             }
             #[inline]
             fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
-                    .map(|r| {
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence(data).map(
+                    |r| {
                         let r: getPartialSignaturesReturn = r.into();
                         r._0
-                    })
+                    },
+                )
             }
             #[inline]
-            fn abi_decode_returns_validate(
-                data: &[u8],
-            ) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(|r| {
-                        let r: getPartialSignaturesReturn = r.into();
-                        r._0
-                    })
+            fn abi_decode_returns_validate(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(|r| {
+                    let r: getPartialSignaturesReturn = r.into();
+                    r._0
+                })
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Function with signature `getSignaturesStatus(bytes32)` and selector `0x61fbeb48`.
-```solidity
-function getSignaturesStatus(bytes32 _txid) external view returns (uint8, uint8, uint128);
-```*/
+    ```solidity
+    function getSignaturesStatus(bytes32 _txid) external view returns (uint8, uint8, uint128);
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct getSignaturesStatusCall {
         #[allow(missing_docs)]
         pub _txid: alloy::sol_types::private::FixedBytes<32>,
     }
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`getSignaturesStatus(bytes32)`](getSignaturesStatusCall) function.
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
@@ -7137,9 +6642,7 @@ function getSignaturesStatus(bytes32 _txid) external view returns (uint8, uint8,
             type UnderlyingRustTuple<'a> = (alloy::sol_types::private::FixedBytes<32>,);
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -7148,16 +6651,14 @@ function getSignaturesStatus(bytes32 _txid) external view returns (uint8, uint8,
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<getSignaturesStatusCall>
-            for UnderlyingRustTuple<'_> {
+            impl ::core::convert::From<getSignaturesStatusCall> for UnderlyingRustTuple<'_> {
                 fn from(value: getSignaturesStatusCall) -> Self {
                     (value._txid,)
                 }
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<UnderlyingRustTuple<'_>>
-            for getSignaturesStatusCall {
+            impl ::core::convert::From<UnderlyingRustTuple<'_>> for getSignaturesStatusCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
                     Self { _txid: tuple.0 }
                 }
@@ -7174,9 +6675,7 @@ function getSignaturesStatus(bytes32 _txid) external view returns (uint8, uint8,
             type UnderlyingRustTuple<'a> = (u8, u8, u128);
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -7185,16 +6684,14 @@ function getSignaturesStatus(bytes32 _txid) external view returns (uint8, uint8,
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<getSignaturesStatusReturn>
-            for UnderlyingRustTuple<'_> {
+            impl ::core::convert::From<getSignaturesStatusReturn> for UnderlyingRustTuple<'_> {
                 fn from(value: getSignaturesStatusReturn) -> Self {
                     (value._0, value._1, value._2)
                 }
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<UnderlyingRustTuple<'_>>
-            for getSignaturesStatusReturn {
+            impl ::core::convert::From<UnderlyingRustTuple<'_>> for getSignaturesStatusReturn {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
                     Self {
                         _0: tuple.0,
@@ -7207,35 +6704,32 @@ function getSignaturesStatus(bytes32 _txid) external view returns (uint8, uint8,
         impl getSignaturesStatusReturn {
             fn _tokenize(
                 &self,
-            ) -> <getSignaturesStatusCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
+            ) -> <getSignaturesStatusCall as alloy_sol_types::SolCall>::ReturnToken<'_>
+            {
                 (
-                    <alloy::sol_types::sol_data::Uint<
-                        8,
-                    > as alloy_sol_types::SolType>::tokenize(&self._0),
-                    <alloy::sol_types::sol_data::Uint<
-                        8,
-                    > as alloy_sol_types::SolType>::tokenize(&self._1),
-                    <alloy::sol_types::sol_data::Uint<
-                        128,
-                    > as alloy_sol_types::SolType>::tokenize(&self._2),
+                    <alloy::sol_types::sol_data::Uint<8> as alloy_sol_types::SolType>::tokenize(
+                        &self._0,
+                    ),
+                    <alloy::sol_types::sol_data::Uint<8> as alloy_sol_types::SolType>::tokenize(
+                        &self._1,
+                    ),
+                    <alloy::sol_types::sol_data::Uint<128> as alloy_sol_types::SolType>::tokenize(
+                        &self._2,
+                    ),
                 )
             }
         }
         #[automatically_derived]
         impl alloy_sol_types::SolCall for getSignaturesStatusCall {
             type Parameters<'a> = (alloy::sol_types::sol_data::FixedBytes<32>,);
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             type Return = getSignaturesStatusReturn;
             type ReturnTuple<'a> = (
                 alloy::sol_types::sol_data::Uint<8>,
                 alloy::sol_types::sol_data::Uint<8>,
                 alloy::sol_types::sol_data::Uint<128>,
             );
-            type ReturnToken<'a> = <Self::ReturnTuple<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type ReturnToken<'a> = <Self::ReturnTuple<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "getSignaturesStatus(bytes32)";
             const SELECTOR: [u8; 4] = [97u8, 251u8, 235u8, 72u8];
             #[inline]
@@ -7258,28 +6752,23 @@ function getSignaturesStatus(bytes32 _txid) external view returns (uint8, uint8,
             }
             #[inline]
             fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence(data)
                     .map(Into::into)
             }
             #[inline]
-            fn abi_decode_returns_validate(
-                data: &[u8],
-            ) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Into::into)
+            fn abi_decode_returns_validate(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Into::into)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Function with signature `initOperatorTakeTxids(bytes32,uint128)` and selector `0xe843a647`.
-```solidity
-function initOperatorTakeTxids(bytes32 _acceptPeginTxid, uint128 _committeeId) external;
-```*/
+    ```solidity
+    function initOperatorTakeTxids(bytes32 _acceptPeginTxid, uint128 _committeeId) external;
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct initOperatorTakeTxidsCall {
@@ -7307,15 +6796,10 @@ function initOperatorTakeTxids(bytes32 _acceptPeginTxid, uint128 _committeeId) e
                 alloy::sol_types::sol_data::Uint<128>,
             );
             #[doc(hidden)]
-            type UnderlyingRustTuple<'a> = (
-                alloy::sol_types::private::FixedBytes<32>,
-                u128,
-            );
+            type UnderlyingRustTuple<'a> = (alloy::sol_types::private::FixedBytes<32>, u128);
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -7324,16 +6808,14 @@ function initOperatorTakeTxids(bytes32 _acceptPeginTxid, uint128 _committeeId) e
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<initOperatorTakeTxidsCall>
-            for UnderlyingRustTuple<'_> {
+            impl ::core::convert::From<initOperatorTakeTxidsCall> for UnderlyingRustTuple<'_> {
                 fn from(value: initOperatorTakeTxidsCall) -> Self {
                     (value._acceptPeginTxid, value._committeeId)
                 }
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<UnderlyingRustTuple<'_>>
-            for initOperatorTakeTxidsCall {
+            impl ::core::convert::From<UnderlyingRustTuple<'_>> for initOperatorTakeTxidsCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
                     Self {
                         _acceptPeginTxid: tuple.0,
@@ -7349,9 +6831,7 @@ function initOperatorTakeTxids(bytes32 _acceptPeginTxid, uint128 _committeeId) e
             type UnderlyingRustTuple<'a> = ();
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -7360,16 +6840,14 @@ function initOperatorTakeTxids(bytes32 _acceptPeginTxid, uint128 _committeeId) e
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<initOperatorTakeTxidsReturn>
-            for UnderlyingRustTuple<'_> {
+            impl ::core::convert::From<initOperatorTakeTxidsReturn> for UnderlyingRustTuple<'_> {
                 fn from(value: initOperatorTakeTxidsReturn) -> Self {
                     ()
                 }
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<UnderlyingRustTuple<'_>>
-            for initOperatorTakeTxidsReturn {
+            impl ::core::convert::From<UnderlyingRustTuple<'_>> for initOperatorTakeTxidsReturn {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
                     Self {}
                 }
@@ -7378,9 +6856,8 @@ function initOperatorTakeTxids(bytes32 _acceptPeginTxid, uint128 _committeeId) e
         impl initOperatorTakeTxidsReturn {
             fn _tokenize(
                 &self,
-            ) -> <initOperatorTakeTxidsCall as alloy_sol_types::SolCall>::ReturnToken<
-                '_,
-            > {
+            ) -> <initOperatorTakeTxidsCall as alloy_sol_types::SolCall>::ReturnToken<'_>
+            {
                 ()
             }
         }
@@ -7390,14 +6867,10 @@ function initOperatorTakeTxids(bytes32 _acceptPeginTxid, uint128 _committeeId) e
                 alloy::sol_types::sol_data::FixedBytes<32>,
                 alloy::sol_types::sol_data::Uint<128>,
             );
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             type Return = initOperatorTakeTxidsReturn;
             type ReturnTuple<'a> = ();
-            type ReturnToken<'a> = <Self::ReturnTuple<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type ReturnToken<'a> = <Self::ReturnTuple<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "initOperatorTakeTxids(bytes32,uint128)";
             const SELECTOR: [u8; 4] = [232u8, 67u8, 166u8, 71u8];
             #[inline]
@@ -7423,28 +6896,23 @@ function initOperatorTakeTxids(bytes32 _acceptPeginTxid, uint128 _committeeId) e
             }
             #[inline]
             fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence(data)
                     .map(Into::into)
             }
             #[inline]
-            fn abi_decode_returns_validate(
-                data: &[u8],
-            ) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Into::into)
+            fn abi_decode_returns_validate(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Into::into)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Function with signature `initSignatures(bytes32,uint128)` and selector `0xbc0e5af3`.
-```solidity
-function initSignatures(bytes32 _txid, uint128 _committeeId) external;
-```*/
+    ```solidity
+    function initSignatures(bytes32 _txid, uint128 _committeeId) external;
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct initSignaturesCall {
@@ -7472,15 +6940,10 @@ function initSignatures(bytes32 _txid, uint128 _committeeId) external;
                 alloy::sol_types::sol_data::Uint<128>,
             );
             #[doc(hidden)]
-            type UnderlyingRustTuple<'a> = (
-                alloy::sol_types::private::FixedBytes<32>,
-                u128,
-            );
+            type UnderlyingRustTuple<'a> = (alloy::sol_types::private::FixedBytes<32>, u128);
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -7512,9 +6975,7 @@ function initSignatures(bytes32 _txid, uint128 _committeeId) external;
             type UnderlyingRustTuple<'a> = ();
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -7523,16 +6984,14 @@ function initSignatures(bytes32 _txid, uint128 _committeeId) external;
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<initSignaturesReturn>
-            for UnderlyingRustTuple<'_> {
+            impl ::core::convert::From<initSignaturesReturn> for UnderlyingRustTuple<'_> {
                 fn from(value: initSignaturesReturn) -> Self {
                     ()
                 }
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<UnderlyingRustTuple<'_>>
-            for initSignaturesReturn {
+            impl ::core::convert::From<UnderlyingRustTuple<'_>> for initSignaturesReturn {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
                     Self {}
                 }
@@ -7551,14 +7010,10 @@ function initSignatures(bytes32 _txid, uint128 _committeeId) external;
                 alloy::sol_types::sol_data::FixedBytes<32>,
                 alloy::sol_types::sol_data::Uint<128>,
             );
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             type Return = initSignaturesReturn;
             type ReturnTuple<'a> = ();
-            type ReturnToken<'a> = <Self::ReturnTuple<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type ReturnToken<'a> = <Self::ReturnTuple<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "initSignatures(bytes32,uint128)";
             const SELECTOR: [u8; 4] = [188u8, 14u8, 90u8, 243u8];
             #[inline]
@@ -7584,28 +7039,23 @@ function initSignatures(bytes32 _txid, uint128 _committeeId) external;
             }
             #[inline]
             fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence(data)
                     .map(Into::into)
             }
             #[inline]
-            fn abi_decode_returns_validate(
-                data: &[u8],
-            ) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Into::into)
+            fn abi_decode_returns_validate(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Into::into)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Function with signature `initialize(address,address,address,address)` and selector `0xf8c8765e`.
-```solidity
-function initialize(address _initialOwner, address _peginManager, address _pegoutManager, address _committeeRegistry) external;
-```*/
+    ```solidity
+    function initialize(address _initialOwner, address _peginManager, address _pegoutManager, address _committeeRegistry) external;
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct initializeCall {
@@ -7647,9 +7097,7 @@ function initialize(address _initialOwner, address _peginManager, address _pegou
             );
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -7688,9 +7136,7 @@ function initialize(address _initialOwner, address _peginManager, address _pegou
             type UnderlyingRustTuple<'a> = ();
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -7713,9 +7159,7 @@ function initialize(address _initialOwner, address _peginManager, address _pegou
             }
         }
         impl initializeReturn {
-            fn _tokenize(
-                &self,
-            ) -> <initializeCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
+            fn _tokenize(&self) -> <initializeCall as alloy_sol_types::SolCall>::ReturnToken<'_> {
                 ()
             }
         }
@@ -7727,14 +7171,10 @@ function initialize(address _initialOwner, address _peginManager, address _pegou
                 alloy::sol_types::sol_data::Address,
                 alloy::sol_types::sol_data::Address,
             );
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             type Return = initializeReturn;
             type ReturnTuple<'a> = ();
-            type ReturnToken<'a> = <Self::ReturnTuple<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type ReturnToken<'a> = <Self::ReturnTuple<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "initialize(address,address,address,address)";
             const SELECTOR: [u8; 4] = [248u8, 200u8, 118u8, 94u8];
             #[inline]
@@ -7766,33 +7206,27 @@ function initialize(address _initialOwner, address _peginManager, address _pegou
             }
             #[inline]
             fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence(data)
                     .map(Into::into)
             }
             #[inline]
-            fn abi_decode_returns_validate(
-                data: &[u8],
-            ) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Into::into)
+            fn abi_decode_returns_validate(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Into::into)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Function with signature `owner()` and selector `0x8da5cb5b`.
-```solidity
-function owner() external view returns (address);
-```*/
+    ```solidity
+    function owner() external view returns (address);
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct ownerCall;
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`owner()`](ownerCall) function.
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
@@ -7815,9 +7249,7 @@ function owner() external view returns (address);
             type UnderlyingRustTuple<'a> = ();
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -7846,9 +7278,7 @@ function owner() external view returns (address);
             type UnderlyingRustTuple<'a> = (alloy::sol_types::private::Address,);
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -7873,14 +7303,10 @@ function owner() external view returns (address);
         #[automatically_derived]
         impl alloy_sol_types::SolCall for ownerCall {
             type Parameters<'a> = ();
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             type Return = alloy::sol_types::private::Address;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Address,);
-            type ReturnToken<'a> = <Self::ReturnTuple<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type ReturnToken<'a> = <Self::ReturnTuple<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "owner()";
             const SELECTOR: [u8; 4] = [141u8, 165u8, 203u8, 91u8];
             #[inline]
@@ -7903,39 +7329,34 @@ function owner() external view returns (address);
             }
             #[inline]
             fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
-                    .map(|r| {
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence(data).map(
+                    |r| {
                         let r: ownerReturn = r.into();
                         r._0
-                    })
+                    },
+                )
             }
             #[inline]
-            fn abi_decode_returns_validate(
-                data: &[u8],
-            ) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(|r| {
-                        let r: ownerReturn = r.into();
-                        r._0
-                    })
+            fn abi_decode_returns_validate(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(|r| {
+                    let r: ownerReturn = r.into();
+                    r._0
+                })
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Function with signature `peginManager()` and selector `0xe4226e4c`.
-```solidity
-function peginManager() external view returns (address);
-```*/
+    ```solidity
+    function peginManager() external view returns (address);
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct peginManagerCall;
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`peginManager()`](peginManagerCall) function.
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
@@ -7958,9 +7379,7 @@ function peginManager() external view returns (address);
             type UnderlyingRustTuple<'a> = ();
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -7989,9 +7408,7 @@ function peginManager() external view returns (address);
             type UnderlyingRustTuple<'a> = (alloy::sol_types::private::Address,);
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -8016,14 +7433,10 @@ function peginManager() external view returns (address);
         #[automatically_derived]
         impl alloy_sol_types::SolCall for peginManagerCall {
             type Parameters<'a> = ();
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             type Return = alloy::sol_types::private::Address;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Address,);
-            type ReturnToken<'a> = <Self::ReturnTuple<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type ReturnToken<'a> = <Self::ReturnTuple<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "peginManager()";
             const SELECTOR: [u8; 4] = [228u8, 34u8, 110u8, 76u8];
             #[inline]
@@ -8046,39 +7459,34 @@ function peginManager() external view returns (address);
             }
             #[inline]
             fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
-                    .map(|r| {
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence(data).map(
+                    |r| {
                         let r: peginManagerReturn = r.into();
                         r._0
-                    })
+                    },
+                )
             }
             #[inline]
-            fn abi_decode_returns_validate(
-                data: &[u8],
-            ) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(|r| {
-                        let r: peginManagerReturn = r.into();
-                        r._0
-                    })
+            fn abi_decode_returns_validate(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(|r| {
+                    let r: peginManagerReturn = r.into();
+                    r._0
+                })
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Function with signature `pegoutManager()` and selector `0xe382e562`.
-```solidity
-function pegoutManager() external view returns (address);
-```*/
+    ```solidity
+    function pegoutManager() external view returns (address);
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct pegoutManagerCall;
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`pegoutManager()`](pegoutManagerCall) function.
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
@@ -8101,9 +7509,7 @@ function pegoutManager() external view returns (address);
             type UnderlyingRustTuple<'a> = ();
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -8132,9 +7538,7 @@ function pegoutManager() external view returns (address);
             type UnderlyingRustTuple<'a> = (alloy::sol_types::private::Address,);
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -8159,14 +7563,10 @@ function pegoutManager() external view returns (address);
         #[automatically_derived]
         impl alloy_sol_types::SolCall for pegoutManagerCall {
             type Parameters<'a> = ();
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             type Return = alloy::sol_types::private::Address;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::Address,);
-            type ReturnToken<'a> = <Self::ReturnTuple<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type ReturnToken<'a> = <Self::ReturnTuple<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "pegoutManager()";
             const SELECTOR: [u8; 4] = [227u8, 130u8, 229u8, 98u8];
             #[inline]
@@ -8189,39 +7589,34 @@ function pegoutManager() external view returns (address);
             }
             #[inline]
             fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
-                    .map(|r| {
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence(data).map(
+                    |r| {
                         let r: pegoutManagerReturn = r.into();
                         r._0
-                    })
+                    },
+                )
             }
             #[inline]
-            fn abi_decode_returns_validate(
-                data: &[u8],
-            ) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(|r| {
-                        let r: pegoutManagerReturn = r.into();
-                        r._0
-                    })
+            fn abi_decode_returns_validate(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(|r| {
+                    let r: pegoutManagerReturn = r.into();
+                    r._0
+                })
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Function with signature `proxiableUUID()` and selector `0x52d1902d`.
-```solidity
-function proxiableUUID() external view returns (bytes32);
-```*/
+    ```solidity
+    function proxiableUUID() external view returns (bytes32);
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct proxiableUUIDCall;
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     ///Container type for the return parameters of the [`proxiableUUID()`](proxiableUUIDCall) function.
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
@@ -8244,9 +7639,7 @@ function proxiableUUID() external view returns (bytes32);
             type UnderlyingRustTuple<'a> = ();
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -8275,9 +7668,7 @@ function proxiableUUID() external view returns (bytes32);
             type UnderlyingRustTuple<'a> = (alloy::sol_types::private::FixedBytes<32>,);
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -8302,14 +7693,10 @@ function proxiableUUID() external view returns (bytes32);
         #[automatically_derived]
         impl alloy_sol_types::SolCall for proxiableUUIDCall {
             type Parameters<'a> = ();
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             type Return = alloy::sol_types::private::FixedBytes<32>;
             type ReturnTuple<'a> = (alloy::sol_types::sol_data::FixedBytes<32>,);
-            type ReturnToken<'a> = <Self::ReturnTuple<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type ReturnToken<'a> = <Self::ReturnTuple<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "proxiableUUID()";
             const SELECTOR: [u8; 4] = [82u8, 209u8, 144u8, 45u8];
             #[inline]
@@ -8332,34 +7719,30 @@ function proxiableUUID() external view returns (bytes32);
             }
             #[inline]
             fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
-                    .map(|r| {
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence(data).map(
+                    |r| {
                         let r: proxiableUUIDReturn = r.into();
                         r._0
-                    })
+                    },
+                )
             }
             #[inline]
-            fn abi_decode_returns_validate(
-                data: &[u8],
-            ) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(|r| {
-                        let r: proxiableUUIDReturn = r.into();
-                        r._0
-                    })
+            fn abi_decode_returns_validate(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(|r| {
+                    let r: proxiableUUIDReturn = r.into();
+                    r._0
+                })
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Function with signature `renounceOwnership()` and selector `0x715018a6`.
-```solidity
-function renounceOwnership() external;
-```*/
+    ```solidity
+    function renounceOwnership() external;
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct renounceOwnershipCall;
@@ -8382,9 +7765,7 @@ function renounceOwnership() external;
             type UnderlyingRustTuple<'a> = ();
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -8393,16 +7774,14 @@ function renounceOwnership() external;
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<renounceOwnershipCall>
-            for UnderlyingRustTuple<'_> {
+            impl ::core::convert::From<renounceOwnershipCall> for UnderlyingRustTuple<'_> {
                 fn from(value: renounceOwnershipCall) -> Self {
                     ()
                 }
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<UnderlyingRustTuple<'_>>
-            for renounceOwnershipCall {
+            impl ::core::convert::From<UnderlyingRustTuple<'_>> for renounceOwnershipCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
                     Self
                 }
@@ -8415,9 +7794,7 @@ function renounceOwnership() external;
             type UnderlyingRustTuple<'a> = ();
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -8426,16 +7803,14 @@ function renounceOwnership() external;
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<renounceOwnershipReturn>
-            for UnderlyingRustTuple<'_> {
+            impl ::core::convert::From<renounceOwnershipReturn> for UnderlyingRustTuple<'_> {
                 fn from(value: renounceOwnershipReturn) -> Self {
                     ()
                 }
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<UnderlyingRustTuple<'_>>
-            for renounceOwnershipReturn {
+            impl ::core::convert::From<UnderlyingRustTuple<'_>> for renounceOwnershipReturn {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
                     Self {}
                 }
@@ -8451,14 +7826,10 @@ function renounceOwnership() external;
         #[automatically_derived]
         impl alloy_sol_types::SolCall for renounceOwnershipCall {
             type Parameters<'a> = ();
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             type Return = renounceOwnershipReturn;
             type ReturnTuple<'a> = ();
-            type ReturnToken<'a> = <Self::ReturnTuple<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type ReturnToken<'a> = <Self::ReturnTuple<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "renounceOwnership()";
             const SELECTOR: [u8; 4] = [113u8, 80u8, 24u8, 166u8];
             #[inline]
@@ -8477,28 +7848,23 @@ function renounceOwnership() external;
             }
             #[inline]
             fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence(data)
                     .map(Into::into)
             }
             #[inline]
-            fn abi_decode_returns_validate(
-                data: &[u8],
-            ) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Into::into)
+            fn abi_decode_returns_validate(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Into::into)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Function with signature `transferOwnership(address)` and selector `0xf2fde38b`.
-```solidity
-function transferOwnership(address newOwner) external;
-```*/
+    ```solidity
+    function transferOwnership(address newOwner) external;
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct transferOwnershipCall {
@@ -8524,9 +7890,7 @@ function transferOwnership(address newOwner) external;
             type UnderlyingRustTuple<'a> = (alloy::sol_types::private::Address,);
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -8535,16 +7899,14 @@ function transferOwnership(address newOwner) external;
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<transferOwnershipCall>
-            for UnderlyingRustTuple<'_> {
+            impl ::core::convert::From<transferOwnershipCall> for UnderlyingRustTuple<'_> {
                 fn from(value: transferOwnershipCall) -> Self {
                     (value.newOwner,)
                 }
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<UnderlyingRustTuple<'_>>
-            for transferOwnershipCall {
+            impl ::core::convert::From<UnderlyingRustTuple<'_>> for transferOwnershipCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
                     Self { newOwner: tuple.0 }
                 }
@@ -8557,9 +7919,7 @@ function transferOwnership(address newOwner) external;
             type UnderlyingRustTuple<'a> = ();
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -8568,16 +7928,14 @@ function transferOwnership(address newOwner) external;
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<transferOwnershipReturn>
-            for UnderlyingRustTuple<'_> {
+            impl ::core::convert::From<transferOwnershipReturn> for UnderlyingRustTuple<'_> {
                 fn from(value: transferOwnershipReturn) -> Self {
                     ()
                 }
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<UnderlyingRustTuple<'_>>
-            for transferOwnershipReturn {
+            impl ::core::convert::From<UnderlyingRustTuple<'_>> for transferOwnershipReturn {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
                     Self {}
                 }
@@ -8593,14 +7951,10 @@ function transferOwnership(address newOwner) external;
         #[automatically_derived]
         impl alloy_sol_types::SolCall for transferOwnershipCall {
             type Parameters<'a> = (alloy::sol_types::sol_data::Address,);
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             type Return = transferOwnershipReturn;
             type ReturnTuple<'a> = ();
-            type ReturnToken<'a> = <Self::ReturnTuple<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type ReturnToken<'a> = <Self::ReturnTuple<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "transferOwnership(address)";
             const SELECTOR: [u8; 4] = [242u8, 253u8, 227u8, 139u8];
             #[inline]
@@ -8623,28 +7977,23 @@ function transferOwnership(address newOwner) external;
             }
             #[inline]
             fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence(data)
                     .map(Into::into)
             }
             #[inline]
-            fn abi_decode_returns_validate(
-                data: &[u8],
-            ) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Into::into)
+            fn abi_decode_returns_validate(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Into::into)
             }
         }
     };
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Default, Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Default, Debug, PartialEq, Eq, Hash)]
     /**Function with signature `upgradeToAndCall(address,bytes)` and selector `0x4f1ef286`.
-```solidity
-function upgradeToAndCall(address newImplementation, bytes memory data) external payable;
-```*/
+    ```solidity
+    function upgradeToAndCall(address newImplementation, bytes memory data) external payable;
+    ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     pub struct upgradeToAndCallCall {
@@ -8678,9 +8027,7 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
             );
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -8689,16 +8036,14 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<upgradeToAndCallCall>
-            for UnderlyingRustTuple<'_> {
+            impl ::core::convert::From<upgradeToAndCallCall> for UnderlyingRustTuple<'_> {
                 fn from(value: upgradeToAndCallCall) -> Self {
                     (value.newImplementation, value.data)
                 }
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<UnderlyingRustTuple<'_>>
-            for upgradeToAndCallCall {
+            impl ::core::convert::From<UnderlyingRustTuple<'_>> for upgradeToAndCallCall {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
                     Self {
                         newImplementation: tuple.0,
@@ -8714,9 +8059,7 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
             type UnderlyingRustTuple<'a> = ();
             #[cfg(test)]
             #[allow(dead_code, unreachable_patterns)]
-            fn _type_assertion(
-                _t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>,
-            ) {
+            fn _type_assertion(_t: alloy_sol_types::private::AssertTypeEq<UnderlyingRustTuple>) {
                 match _t {
                     alloy_sol_types::private::AssertTypeEq::<
                         <UnderlyingSolTuple as alloy_sol_types::SolType>::RustType,
@@ -8725,16 +8068,14 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<upgradeToAndCallReturn>
-            for UnderlyingRustTuple<'_> {
+            impl ::core::convert::From<upgradeToAndCallReturn> for UnderlyingRustTuple<'_> {
                 fn from(value: upgradeToAndCallReturn) -> Self {
                     ()
                 }
             }
             #[automatically_derived]
             #[doc(hidden)]
-            impl ::core::convert::From<UnderlyingRustTuple<'_>>
-            for upgradeToAndCallReturn {
+            impl ::core::convert::From<UnderlyingRustTuple<'_>> for upgradeToAndCallReturn {
                 fn from(tuple: UnderlyingRustTuple<'_>) -> Self {
                     Self {}
                 }
@@ -8753,14 +8094,10 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 alloy::sol_types::sol_data::Address,
                 alloy::sol_types::sol_data::Bytes,
             );
-            type Token<'a> = <Self::Parameters<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type Token<'a> = <Self::Parameters<'a> as alloy_sol_types::SolType>::Token<'a>;
             type Return = upgradeToAndCallReturn;
             type ReturnTuple<'a> = ();
-            type ReturnToken<'a> = <Self::ReturnTuple<
-                'a,
-            > as alloy_sol_types::SolType>::Token<'a>;
+            type ReturnToken<'a> = <Self::ReturnTuple<'a> as alloy_sol_types::SolType>::Token<'a>;
             const SIGNATURE: &'static str = "upgradeToAndCall(address,bytes)";
             const SELECTOR: [u8; 4] = [79u8, 30u8, 242u8, 134u8];
             #[inline]
@@ -8786,25 +8123,20 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
             }
             #[inline]
             fn abi_decode_returns(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence(data)
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence(data)
                     .map(Into::into)
             }
             #[inline]
-            fn abi_decode_returns_validate(
-                data: &[u8],
-            ) -> alloy_sol_types::Result<Self::Return> {
-                <Self::ReturnTuple<
-                    '_,
-                > as alloy_sol_types::SolType>::abi_decode_sequence_validate(data)
-                    .map(Into::into)
+            fn abi_decode_returns_validate(data: &[u8]) -> alloy_sol_types::Result<Self::Return> {
+                <Self::ReturnTuple<'_> as alloy_sol_types::SolType>::abi_decode_sequence_validate(
+                    data,
+                )
+                .map(Into::into)
             }
         }
     };
     ///Container for all the [`SignatureManager`](self) function calls.
     #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive()]
     pub enum SignatureManagerCalls {
         #[allow(missing_docs)]
         UPGRADE_INTERFACE_VERSION(UPGRADE_INTERFACE_VERSIONCall),
@@ -8946,19 +8278,11 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 Self::initSignatures(_) => {
                     <initSignaturesCall as alloy_sol_types::SolCall>::SELECTOR
                 }
-                Self::initialize(_) => {
-                    <initializeCall as alloy_sol_types::SolCall>::SELECTOR
-                }
+                Self::initialize(_) => <initializeCall as alloy_sol_types::SolCall>::SELECTOR,
                 Self::owner(_) => <ownerCall as alloy_sol_types::SolCall>::SELECTOR,
-                Self::peginManager(_) => {
-                    <peginManagerCall as alloy_sol_types::SolCall>::SELECTOR
-                }
-                Self::pegoutManager(_) => {
-                    <pegoutManagerCall as alloy_sol_types::SolCall>::SELECTOR
-                }
-                Self::proxiableUUID(_) => {
-                    <proxiableUUIDCall as alloy_sol_types::SolCall>::SELECTOR
-                }
+                Self::peginManager(_) => <peginManagerCall as alloy_sol_types::SolCall>::SELECTOR,
+                Self::pegoutManager(_) => <pegoutManagerCall as alloy_sol_types::SolCall>::SELECTOR,
+                Self::proxiableUUID(_) => <proxiableUUIDCall as alloy_sol_types::SolCall>::SELECTOR,
                 Self::renounceOwnership(_) => {
                     <renounceOwnershipCall as alloy_sol_types::SolCall>::SELECTOR
                 }
@@ -8980,20 +8304,13 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
         }
         #[inline]
         #[allow(non_snake_case)]
-        fn abi_decode_raw(
-            selector: [u8; 4],
-            data: &[u8],
-        ) -> alloy_sol_types::Result<Self> {
-            static DECODE_SHIMS: &[fn(
-                &[u8],
-            ) -> alloy_sol_types::Result<SignatureManagerCalls>] = &[
+        fn abi_decode_raw(selector: [u8; 4], data: &[u8]) -> alloy_sol_types::Result<Self> {
+            static DECODE_SHIMS: &[fn(&[u8]) -> alloy_sol_types::Result<SignatureManagerCalls>] = &[
                 {
                     fn committeeRegistry(
                         data: &[u8],
                     ) -> alloy_sol_types::Result<SignatureManagerCalls> {
-                        <committeeRegistryCall as alloy_sol_types::SolCall>::abi_decode_raw(
-                                data,
-                            )
+                        <committeeRegistryCall as alloy_sol_types::SolCall>::abi_decode_raw(data)
                             .map(SignatureManagerCalls::committeeRegistry)
                     }
                     committeeRegistry
@@ -9002,9 +8319,7 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                     fn getOperatorTakeData(
                         data: &[u8],
                     ) -> alloy_sol_types::Result<SignatureManagerCalls> {
-                        <getOperatorTakeDataCall as alloy_sol_types::SolCall>::abi_decode_raw(
-                                data,
-                            )
+                        <getOperatorTakeDataCall as alloy_sol_types::SolCall>::abi_decode_raw(data)
                             .map(SignatureManagerCalls::getOperatorTakeData)
                     }
                     getOperatorTakeData
@@ -9024,9 +8339,7 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                     fn __AccessControl_init(
                         data: &[u8],
                     ) -> alloy_sol_types::Result<SignatureManagerCalls> {
-                        <__AccessControl_initCall as alloy_sol_types::SolCall>::abi_decode_raw(
-                                data,
-                            )
+                        <__AccessControl_initCall as alloy_sol_types::SolCall>::abi_decode_raw(data)
                             .map(SignatureManagerCalls::__AccessControl_init)
                     }
                     __AccessControl_init
@@ -9035,9 +8348,7 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                     fn addMemberNonce(
                         data: &[u8],
                     ) -> alloy_sol_types::Result<SignatureManagerCalls> {
-                        <addMemberNonceCall as alloy_sol_types::SolCall>::abi_decode_raw(
-                                data,
-                            )
+                        <addMemberNonceCall as alloy_sol_types::SolCall>::abi_decode_raw(data)
                             .map(SignatureManagerCalls::addMemberNonce)
                     }
                     addMemberNonce
@@ -9046,9 +8357,7 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                     fn upgradeToAndCall(
                         data: &[u8],
                     ) -> alloy_sol_types::Result<SignatureManagerCalls> {
-                        <upgradeToAndCallCall as alloy_sol_types::SolCall>::abi_decode_raw(
-                                data,
-                            )
+                        <upgradeToAndCallCall as alloy_sol_types::SolCall>::abi_decode_raw(data)
                             .map(SignatureManagerCalls::upgradeToAndCall)
                     }
                     upgradeToAndCall
@@ -9057,9 +8366,7 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                     fn proxiableUUID(
                         data: &[u8],
                     ) -> alloy_sol_types::Result<SignatureManagerCalls> {
-                        <proxiableUUIDCall as alloy_sol_types::SolCall>::abi_decode_raw(
-                                data,
-                            )
+                        <proxiableUUIDCall as alloy_sol_types::SolCall>::abi_decode_raw(data)
                             .map(SignatureManagerCalls::proxiableUUID)
                     }
                     proxiableUUID
@@ -9068,9 +8375,7 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                     fn getSignaturesStatus(
                         data: &[u8],
                     ) -> alloy_sol_types::Result<SignatureManagerCalls> {
-                        <getSignaturesStatusCall as alloy_sol_types::SolCall>::abi_decode_raw(
-                                data,
-                            )
+                        <getSignaturesStatusCall as alloy_sol_types::SolCall>::abi_decode_raw(data)
                             .map(SignatureManagerCalls::getSignaturesStatus)
                     }
                     getSignaturesStatus
@@ -9079,9 +8384,7 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                     fn renounceOwnership(
                         data: &[u8],
                     ) -> alloy_sol_types::Result<SignatureManagerCalls> {
-                        <renounceOwnershipCall as alloy_sol_types::SolCall>::abi_decode_raw(
-                                data,
-                            )
+                        <renounceOwnershipCall as alloy_sol_types::SolCall>::abi_decode_raw(data)
                             .map(SignatureManagerCalls::renounceOwnership)
                     }
                     renounceOwnership
@@ -9098,9 +8401,7 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                     checkAllOperatorTakesHashesReady
                 },
                 {
-                    fn owner(
-                        data: &[u8],
-                    ) -> alloy_sol_types::Result<SignatureManagerCalls> {
+                    fn owner(data: &[u8]) -> alloy_sol_types::Result<SignatureManagerCalls> {
                         <ownerCall as alloy_sol_types::SolCall>::abi_decode_raw(data)
                             .map(SignatureManagerCalls::owner)
                     }
@@ -9110,9 +8411,7 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                     fn getImplementation(
                         data: &[u8],
                     ) -> alloy_sol_types::Result<SignatureManagerCalls> {
-                        <getImplementationCall as alloy_sol_types::SolCall>::abi_decode_raw(
-                                data,
-                            )
+                        <getImplementationCall as alloy_sol_types::SolCall>::abi_decode_raw(data)
                             .map(SignatureManagerCalls::getImplementation)
                     }
                     getImplementation
@@ -9122,9 +8421,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                         data: &[u8],
                     ) -> alloy_sol_types::Result<SignatureManagerCalls> {
                         <UPGRADE_INTERFACE_VERSIONCall as alloy_sol_types::SolCall>::abi_decode_raw(
-                                data,
-                            )
-                            .map(SignatureManagerCalls::UPGRADE_INTERFACE_VERSION)
+                            data,
+                        )
+                        .map(SignatureManagerCalls::UPGRADE_INTERFACE_VERSION)
                     }
                     UPGRADE_INTERFACE_VERSION
                 },
@@ -9132,9 +8431,7 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                     fn addOperatorTakeTxid(
                         data: &[u8],
                     ) -> alloy_sol_types::Result<SignatureManagerCalls> {
-                        <addOperatorTakeTxidCall as alloy_sol_types::SolCall>::abi_decode_raw(
-                                data,
-                            )
+                        <addOperatorTakeTxidCall as alloy_sol_types::SolCall>::abi_decode_raw(data)
                             .map(SignatureManagerCalls::addOperatorTakeTxid)
                     }
                     addOperatorTakeTxid
@@ -9143,9 +8440,7 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                     fn initSignatures(
                         data: &[u8],
                     ) -> alloy_sol_types::Result<SignatureManagerCalls> {
-                        <initSignaturesCall as alloy_sol_types::SolCall>::abi_decode_raw(
-                                data,
-                            )
+                        <initSignaturesCall as alloy_sol_types::SolCall>::abi_decode_raw(data)
                             .map(SignatureManagerCalls::initSignatures)
                     }
                     initSignatures
@@ -9154,9 +8449,7 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                     fn __BaseProxy_init(
                         data: &[u8],
                     ) -> alloy_sol_types::Result<SignatureManagerCalls> {
-                        <__BaseProxy_initCall as alloy_sol_types::SolCall>::abi_decode_raw(
-                                data,
-                            )
+                        <__BaseProxy_initCall as alloy_sol_types::SolCall>::abi_decode_raw(data)
                             .map(SignatureManagerCalls::__BaseProxy_init)
                     }
                     __BaseProxy_init
@@ -9165,9 +8458,7 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                     fn addMemberSignature(
                         data: &[u8],
                     ) -> alloy_sol_types::Result<SignatureManagerCalls> {
-                        <addMemberSignatureCall as alloy_sol_types::SolCall>::abi_decode_raw(
-                                data,
-                            )
+                        <addMemberSignatureCall as alloy_sol_types::SolCall>::abi_decode_raw(data)
                             .map(SignatureManagerCalls::addMemberSignature)
                     }
                     addMemberSignature
@@ -9176,20 +8467,14 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                     fn pegoutManager(
                         data: &[u8],
                     ) -> alloy_sol_types::Result<SignatureManagerCalls> {
-                        <pegoutManagerCall as alloy_sol_types::SolCall>::abi_decode_raw(
-                                data,
-                            )
+                        <pegoutManagerCall as alloy_sol_types::SolCall>::abi_decode_raw(data)
                             .map(SignatureManagerCalls::pegoutManager)
                     }
                     pegoutManager
                 },
                 {
-                    fn peginManager(
-                        data: &[u8],
-                    ) -> alloy_sol_types::Result<SignatureManagerCalls> {
-                        <peginManagerCall as alloy_sol_types::SolCall>::abi_decode_raw(
-                                data,
-                            )
+                    fn peginManager(data: &[u8]) -> alloy_sol_types::Result<SignatureManagerCalls> {
+                        <peginManagerCall as alloy_sol_types::SolCall>::abi_decode_raw(data)
                             .map(SignatureManagerCalls::peginManager)
                     }
                     peginManager
@@ -9199,9 +8484,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                         data: &[u8],
                     ) -> alloy_sol_types::Result<SignatureManagerCalls> {
                         <initOperatorTakeTxidsCall as alloy_sol_types::SolCall>::abi_decode_raw(
-                                data,
-                            )
-                            .map(SignatureManagerCalls::initOperatorTakeTxids)
+                            data,
+                        )
+                        .map(SignatureManagerCalls::initOperatorTakeTxids)
                     }
                     initOperatorTakeTxids
                 },
@@ -9210,9 +8495,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                         data: &[u8],
                     ) -> alloy_sol_types::Result<SignatureManagerCalls> {
                         <checkAllSignaturesReadyCall as alloy_sol_types::SolCall>::abi_decode_raw(
-                                data,
-                            )
-                            .map(SignatureManagerCalls::checkAllSignaturesReady)
+                            data,
+                        )
+                        .map(SignatureManagerCalls::checkAllSignaturesReady)
                     }
                     checkAllSignaturesReady
                 },
@@ -9220,20 +8505,14 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                     fn transferOwnership(
                         data: &[u8],
                     ) -> alloy_sol_types::Result<SignatureManagerCalls> {
-                        <transferOwnershipCall as alloy_sol_types::SolCall>::abi_decode_raw(
-                                data,
-                            )
+                        <transferOwnershipCall as alloy_sol_types::SolCall>::abi_decode_raw(data)
                             .map(SignatureManagerCalls::transferOwnership)
                     }
                     transferOwnership
                 },
                 {
-                    fn initialize(
-                        data: &[u8],
-                    ) -> alloy_sol_types::Result<SignatureManagerCalls> {
-                        <initializeCall as alloy_sol_types::SolCall>::abi_decode_raw(
-                                data,
-                            )
+                    fn initialize(data: &[u8]) -> alloy_sol_types::Result<SignatureManagerCalls> {
+                        <initializeCall as alloy_sol_types::SolCall>::abi_decode_raw(data)
                             .map(SignatureManagerCalls::initialize)
                     }
                     initialize
@@ -9242,21 +8521,17 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                     fn getPartialSignatures(
                         data: &[u8],
                     ) -> alloy_sol_types::Result<SignatureManagerCalls> {
-                        <getPartialSignaturesCall as alloy_sol_types::SolCall>::abi_decode_raw(
-                                data,
-                            )
+                        <getPartialSignaturesCall as alloy_sol_types::SolCall>::abi_decode_raw(data)
                             .map(SignatureManagerCalls::getPartialSignatures)
                     }
                     getPartialSignatures
                 },
             ];
             let Ok(idx) = Self::SELECTORS.binary_search(&selector) else {
-                return Err(
-                    alloy_sol_types::Error::unknown_selector(
-                        <Self as alloy_sol_types::SolInterface>::NAME,
-                        selector,
-                    ),
-                );
+                return Err(alloy_sol_types::Error::unknown_selector(
+                    <Self as alloy_sol_types::SolInterface>::NAME,
+                    selector,
+                ));
             };
             DECODE_SHIMS[idx](data)
         }
@@ -9268,7 +8543,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
         ) -> alloy_sol_types::Result<Self> {
             static DECODE_VALIDATE_SHIMS: &[fn(
                 &[u8],
-            ) -> alloy_sol_types::Result<SignatureManagerCalls>] = &[
+            ) -> alloy_sol_types::Result<
+                SignatureManagerCalls,
+            >] = &[
                 {
                     fn committeeRegistry(
                         data: &[u8],
@@ -9318,9 +8595,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                         data: &[u8],
                     ) -> alloy_sol_types::Result<SignatureManagerCalls> {
                         <addMemberNonceCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
-                                data,
-                            )
-                            .map(SignatureManagerCalls::addMemberNonce)
+                            data,
+                        )
+                        .map(SignatureManagerCalls::addMemberNonce)
                     }
                     addMemberNonce
                 },
@@ -9329,9 +8606,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                         data: &[u8],
                     ) -> alloy_sol_types::Result<SignatureManagerCalls> {
                         <upgradeToAndCallCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
-                                data,
-                            )
-                            .map(SignatureManagerCalls::upgradeToAndCall)
+                            data,
+                        )
+                        .map(SignatureManagerCalls::upgradeToAndCall)
                     }
                     upgradeToAndCall
                 },
@@ -9340,9 +8617,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                         data: &[u8],
                     ) -> alloy_sol_types::Result<SignatureManagerCalls> {
                         <proxiableUUIDCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
-                                data,
-                            )
-                            .map(SignatureManagerCalls::proxiableUUID)
+                            data,
+                        )
+                        .map(SignatureManagerCalls::proxiableUUID)
                     }
                     proxiableUUID
                 },
@@ -9380,12 +8657,8 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                     checkAllOperatorTakesHashesReady
                 },
                 {
-                    fn owner(
-                        data: &[u8],
-                    ) -> alloy_sol_types::Result<SignatureManagerCalls> {
-                        <ownerCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
-                                data,
-                            )
+                    fn owner(data: &[u8]) -> alloy_sol_types::Result<SignatureManagerCalls> {
+                        <ownerCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(data)
                             .map(SignatureManagerCalls::owner)
                     }
                     owner
@@ -9428,9 +8701,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                         data: &[u8],
                     ) -> alloy_sol_types::Result<SignatureManagerCalls> {
                         <initSignaturesCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
-                                data,
-                            )
-                            .map(SignatureManagerCalls::initSignatures)
+                            data,
+                        )
+                        .map(SignatureManagerCalls::initSignatures)
                     }
                     initSignatures
                 },
@@ -9439,9 +8712,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                         data: &[u8],
                     ) -> alloy_sol_types::Result<SignatureManagerCalls> {
                         <__BaseProxy_initCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
-                                data,
-                            )
-                            .map(SignatureManagerCalls::__BaseProxy_init)
+                            data,
+                        )
+                        .map(SignatureManagerCalls::__BaseProxy_init)
                     }
                     __BaseProxy_init
                 },
@@ -9461,20 +8734,18 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                         data: &[u8],
                     ) -> alloy_sol_types::Result<SignatureManagerCalls> {
                         <pegoutManagerCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
-                                data,
-                            )
-                            .map(SignatureManagerCalls::pegoutManager)
+                            data,
+                        )
+                        .map(SignatureManagerCalls::pegoutManager)
                     }
                     pegoutManager
                 },
                 {
-                    fn peginManager(
-                        data: &[u8],
-                    ) -> alloy_sol_types::Result<SignatureManagerCalls> {
+                    fn peginManager(data: &[u8]) -> alloy_sol_types::Result<SignatureManagerCalls> {
                         <peginManagerCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
-                                data,
-                            )
-                            .map(SignatureManagerCalls::peginManager)
+                            data,
+                        )
+                        .map(SignatureManagerCalls::peginManager)
                     }
                     peginManager
                 },
@@ -9512,12 +8783,8 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                     transferOwnership
                 },
                 {
-                    fn initialize(
-                        data: &[u8],
-                    ) -> alloy_sol_types::Result<SignatureManagerCalls> {
-                        <initializeCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(
-                                data,
-                            )
+                    fn initialize(data: &[u8]) -> alloy_sol_types::Result<SignatureManagerCalls> {
+                        <initializeCall as alloy_sol_types::SolCall>::abi_decode_raw_validate(data)
                             .map(SignatureManagerCalls::initialize)
                     }
                     initialize
@@ -9535,12 +8802,10 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 },
             ];
             let Ok(idx) = Self::SELECTORS.binary_search(&selector) else {
-                return Err(
-                    alloy_sol_types::Error::unknown_selector(
-                        <Self as alloy_sol_types::SolInterface>::NAME,
-                        selector,
-                    ),
-                );
+                return Err(alloy_sol_types::Error::unknown_selector(
+                    <Self as alloy_sol_types::SolInterface>::NAME,
+                    selector,
+                ));
             };
             DECODE_VALIDATE_SHIMS[idx](data)
         }
@@ -9813,8 +9078,7 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
         }
     }
     ///Container for all the [`SignatureManager`](self) custom errors.
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Debug, PartialEq, Eq, Hash)]
     pub enum SignatureManagerErrors {
         #[allow(missing_docs)]
         AcceptPeginTxidNotFound(AcceptPeginTxidNotFound),
@@ -9950,18 +9214,14 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 Self::ERC1967NonPayable(_) => {
                     <ERC1967NonPayable as alloy_sol_types::SolError>::SELECTOR
                 }
-                Self::FailedCall(_) => {
-                    <FailedCall as alloy_sol_types::SolError>::SELECTOR
-                }
+                Self::FailedCall(_) => <FailedCall as alloy_sol_types::SolError>::SELECTOR,
                 Self::HashToSignNotFound(_) => {
                     <HashToSignNotFound as alloy_sol_types::SolError>::SELECTOR
                 }
                 Self::InvalidAcceptPeginTxid(_) => {
                     <InvalidAcceptPeginTxid as alloy_sol_types::SolError>::SELECTOR
                 }
-                Self::InvalidHash(_) => {
-                    <InvalidHash as alloy_sol_types::SolError>::SELECTOR
-                }
+                Self::InvalidHash(_) => <InvalidHash as alloy_sol_types::SolError>::SELECTOR,
                 Self::InvalidHashToSign(_) => {
                     <InvalidHashToSign as alloy_sol_types::SolError>::SELECTOR
                 }
@@ -9986,9 +9246,7 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 Self::MemberIsNotOperator(_) => {
                     <MemberIsNotOperator as alloy_sol_types::SolError>::SELECTOR
                 }
-                Self::MemberNotFound(_) => {
-                    <MemberNotFound as alloy_sol_types::SolError>::SELECTOR
-                }
+                Self::MemberNotFound(_) => <MemberNotFound as alloy_sol_types::SolError>::SELECTOR,
                 Self::MemberNotFoundInCommittee(_) => {
                     <MemberNotFoundInCommittee as alloy_sol_types::SolError>::SELECTOR
                 }
@@ -10034,364 +9292,367 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
         }
         #[inline]
         #[allow(non_snake_case)]
-        fn abi_decode_raw(
-            selector: [u8; 4],
-            data: &[u8],
-        ) -> alloy_sol_types::Result<Self> {
-            static DECODE_SHIMS: &[fn(
-                &[u8],
-            ) -> alloy_sol_types::Result<SignatureManagerErrors>] = &[
-                {
-                    fn PegoutManagerAddressZero(
-                        data: &[u8],
-                    ) -> alloy_sol_types::Result<SignatureManagerErrors> {
-                        <PegoutManagerAddressZero as alloy_sol_types::SolError>::abi_decode_raw(
+        fn abi_decode_raw(selector: [u8; 4], data: &[u8]) -> alloy_sol_types::Result<Self> {
+            static DECODE_SHIMS: &[fn(&[u8]) -> alloy_sol_types::Result<SignatureManagerErrors>] =
+                &[
+                    {
+                        fn PegoutManagerAddressZero(
+                            data: &[u8],
+                        ) -> alloy_sol_types::Result<SignatureManagerErrors>
+                        {
+                            <PegoutManagerAddressZero as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
                             )
                             .map(SignatureManagerErrors::PegoutManagerAddressZero)
-                    }
-                    PegoutManagerAddressZero
-                },
-                {
-                    fn AllNoncesAreNotPresent(
-                        data: &[u8],
-                    ) -> alloy_sol_types::Result<SignatureManagerErrors> {
-                        <AllNoncesAreNotPresent as alloy_sol_types::SolError>::abi_decode_raw(
+                        }
+                        PegoutManagerAddressZero
+                    },
+                    {
+                        fn AllNoncesAreNotPresent(
+                            data: &[u8],
+                        ) -> alloy_sol_types::Result<SignatureManagerErrors>
+                        {
+                            <AllNoncesAreNotPresent as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
                             )
                             .map(SignatureManagerErrors::AllNoncesAreNotPresent)
-                    }
-                    AllNoncesAreNotPresent
-                },
-                {
-                    fn OwnableUnauthorizedAccount(
-                        data: &[u8],
-                    ) -> alloy_sol_types::Result<SignatureManagerErrors> {
-                        <OwnableUnauthorizedAccount as alloy_sol_types::SolError>::abi_decode_raw(
+                        }
+                        AllNoncesAreNotPresent
+                    },
+                    {
+                        fn OwnableUnauthorizedAccount(
+                            data: &[u8],
+                        ) -> alloy_sol_types::Result<SignatureManagerErrors>
+                        {
+                            <OwnableUnauthorizedAccount as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
                             )
                             .map(SignatureManagerErrors::OwnableUnauthorizedAccount)
-                    }
-                    OwnableUnauthorizedAccount
-                },
-                {
-                    fn CommitteeRegistryAddressZero(
-                        data: &[u8],
-                    ) -> alloy_sol_types::Result<SignatureManagerErrors> {
-                        <CommitteeRegistryAddressZero as alloy_sol_types::SolError>::abi_decode_raw(
+                        }
+                        OwnableUnauthorizedAccount
+                    },
+                    {
+                        fn CommitteeRegistryAddressZero(
+                            data: &[u8],
+                        ) -> alloy_sol_types::Result<SignatureManagerErrors>
+                        {
+                            <CommitteeRegistryAddressZero as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
                             )
                             .map(SignatureManagerErrors::CommitteeRegistryAddressZero)
-                    }
-                    CommitteeRegistryAddressZero
-                },
-                {
-                    fn OwnableInvalidOwner(
-                        data: &[u8],
-                    ) -> alloy_sol_types::Result<SignatureManagerErrors> {
-                        <OwnableInvalidOwner as alloy_sol_types::SolError>::abi_decode_raw(
-                                data,
-                            )
-                            .map(SignatureManagerErrors::OwnableInvalidOwner)
-                    }
-                    OwnableInvalidOwner
-                },
-                {
-                    fn MemberAlreadyAddedNonce(
-                        data: &[u8],
-                    ) -> alloy_sol_types::Result<SignatureManagerErrors> {
-                        <MemberAlreadyAddedNonce as alloy_sol_types::SolError>::abi_decode_raw(
+                        }
+                        CommitteeRegistryAddressZero
+                    },
+                    {
+                        fn OwnableInvalidOwner(
+                            data: &[u8],
+                        ) -> alloy_sol_types::Result<SignatureManagerErrors>
+                        {
+                            <OwnableInvalidOwner as alloy_sol_types::SolError>::abi_decode_raw(data)
+                                .map(SignatureManagerErrors::OwnableInvalidOwner)
+                        }
+                        OwnableInvalidOwner
+                    },
+                    {
+                        fn MemberAlreadyAddedNonce(
+                            data: &[u8],
+                        ) -> alloy_sol_types::Result<SignatureManagerErrors>
+                        {
+                            <MemberAlreadyAddedNonce as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
                             )
                             .map(SignatureManagerErrors::MemberAlreadyAddedNonce)
-                    }
-                    MemberAlreadyAddedNonce
-                },
-                {
-                    fn HashToSignNotFound(
-                        data: &[u8],
-                    ) -> alloy_sol_types::Result<SignatureManagerErrors> {
-                        <HashToSignNotFound as alloy_sol_types::SolError>::abi_decode_raw(
-                                data,
-                            )
-                            .map(SignatureManagerErrors::HashToSignNotFound)
-                    }
-                    HashToSignNotFound
-                },
-                {
-                    fn UnauthorizedAccount(
-                        data: &[u8],
-                    ) -> alloy_sol_types::Result<SignatureManagerErrors> {
-                        <UnauthorizedAccount as alloy_sol_types::SolError>::abi_decode_raw(
-                                data,
-                            )
-                            .map(SignatureManagerErrors::UnauthorizedAccount)
-                    }
-                    UnauthorizedAccount
-                },
-                {
-                    fn InvalidHash(
-                        data: &[u8],
-                    ) -> alloy_sol_types::Result<SignatureManagerErrors> {
-                        <InvalidHash as alloy_sol_types::SolError>::abi_decode_raw(data)
-                            .map(SignatureManagerErrors::InvalidHash)
-                    }
-                    InvalidHash
-                },
-                {
-                    fn InvalidHashToSign(
-                        data: &[u8],
-                    ) -> alloy_sol_types::Result<SignatureManagerErrors> {
-                        <InvalidHashToSign as alloy_sol_types::SolError>::abi_decode_raw(
-                                data,
-                            )
-                            .map(SignatureManagerErrors::InvalidHashToSign)
-                    }
-                    InvalidHashToSign
-                },
-                {
-                    fn AllOperatorTakeTxidsAlreadyPresent(
-                        data: &[u8],
-                    ) -> alloy_sol_types::Result<SignatureManagerErrors> {
-                        <AllOperatorTakeTxidsAlreadyPresent as alloy_sol_types::SolError>::abi_decode_raw(
+                        }
+                        MemberAlreadyAddedNonce
+                    },
+                    {
+                        fn HashToSignNotFound(
+                            data: &[u8],
+                        ) -> alloy_sol_types::Result<SignatureManagerErrors>
+                        {
+                            <HashToSignNotFound as alloy_sol_types::SolError>::abi_decode_raw(data)
+                                .map(SignatureManagerErrors::HashToSignNotFound)
+                        }
+                        HashToSignNotFound
+                    },
+                    {
+                        fn UnauthorizedAccount(
+                            data: &[u8],
+                        ) -> alloy_sol_types::Result<SignatureManagerErrors>
+                        {
+                            <UnauthorizedAccount as alloy_sol_types::SolError>::abi_decode_raw(data)
+                                .map(SignatureManagerErrors::UnauthorizedAccount)
+                        }
+                        UnauthorizedAccount
+                    },
+                    {
+                        fn InvalidHash(
+                            data: &[u8],
+                        ) -> alloy_sol_types::Result<SignatureManagerErrors>
+                        {
+                            <InvalidHash as alloy_sol_types::SolError>::abi_decode_raw(data)
+                                .map(SignatureManagerErrors::InvalidHash)
+                        }
+                        InvalidHash
+                    },
+                    {
+                        fn InvalidHashToSign(
+                            data: &[u8],
+                        ) -> alloy_sol_types::Result<SignatureManagerErrors>
+                        {
+                            <InvalidHashToSign as alloy_sol_types::SolError>::abi_decode_raw(data)
+                                .map(SignatureManagerErrors::InvalidHashToSign)
+                        }
+                        InvalidHashToSign
+                    },
+                    {
+                        fn AllOperatorTakeTxidsAlreadyPresent(
+                            data: &[u8],
+                        ) -> alloy_sol_types::Result<SignatureManagerErrors>
+                        {
+                            <AllOperatorTakeTxidsAlreadyPresent as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
                             )
                             .map(
                                 SignatureManagerErrors::AllOperatorTakeTxidsAlreadyPresent,
                             )
-                    }
-                    AllOperatorTakeTxidsAlreadyPresent
-                },
-                {
-                    fn ERC1967InvalidImplementation(
-                        data: &[u8],
-                    ) -> alloy_sol_types::Result<SignatureManagerErrors> {
-                        <ERC1967InvalidImplementation as alloy_sol_types::SolError>::abi_decode_raw(
+                        }
+                        AllOperatorTakeTxidsAlreadyPresent
+                    },
+                    {
+                        fn ERC1967InvalidImplementation(
+                            data: &[u8],
+                        ) -> alloy_sol_types::Result<SignatureManagerErrors>
+                        {
+                            <ERC1967InvalidImplementation as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
                             )
                             .map(SignatureManagerErrors::ERC1967InvalidImplementation)
-                    }
-                    ERC1967InvalidImplementation
-                },
-                {
-                    fn MemberNotFound(
-                        data: &[u8],
-                    ) -> alloy_sol_types::Result<SignatureManagerErrors> {
-                        <MemberNotFound as alloy_sol_types::SolError>::abi_decode_raw(
-                                data,
-                            )
-                            .map(SignatureManagerErrors::MemberNotFound)
-                    }
-                    MemberNotFound
-                },
-                {
-                    fn MemberHasAlreadySigned(
-                        data: &[u8],
-                    ) -> alloy_sol_types::Result<SignatureManagerErrors> {
-                        <MemberHasAlreadySigned as alloy_sol_types::SolError>::abi_decode_raw(
+                        }
+                        ERC1967InvalidImplementation
+                    },
+                    {
+                        fn MemberNotFound(
+                            data: &[u8],
+                        ) -> alloy_sol_types::Result<SignatureManagerErrors>
+                        {
+                            <MemberNotFound as alloy_sol_types::SolError>::abi_decode_raw(data)
+                                .map(SignatureManagerErrors::MemberNotFound)
+                        }
+                        MemberNotFound
+                    },
+                    {
+                        fn MemberHasAlreadySigned(
+                            data: &[u8],
+                        ) -> alloy_sol_types::Result<SignatureManagerErrors>
+                        {
+                            <MemberHasAlreadySigned as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
                             )
                             .map(SignatureManagerErrors::MemberHasAlreadySigned)
-                    }
-                    MemberHasAlreadySigned
-                },
-                {
-                    fn MemberIsNotOperator(
-                        data: &[u8],
-                    ) -> alloy_sol_types::Result<SignatureManagerErrors> {
-                        <MemberIsNotOperator as alloy_sol_types::SolError>::abi_decode_raw(
-                                data,
-                            )
-                            .map(SignatureManagerErrors::MemberIsNotOperator)
-                    }
-                    MemberIsNotOperator
-                },
-                {
-                    fn AcceptPeginTxidNotFound(
-                        data: &[u8],
-                    ) -> alloy_sol_types::Result<SignatureManagerErrors> {
-                        <AcceptPeginTxidNotFound as alloy_sol_types::SolError>::abi_decode_raw(
+                        }
+                        MemberHasAlreadySigned
+                    },
+                    {
+                        fn MemberIsNotOperator(
+                            data: &[u8],
+                        ) -> alloy_sol_types::Result<SignatureManagerErrors>
+                        {
+                            <MemberIsNotOperator as alloy_sol_types::SolError>::abi_decode_raw(data)
+                                .map(SignatureManagerErrors::MemberIsNotOperator)
+                        }
+                        MemberIsNotOperator
+                    },
+                    {
+                        fn AcceptPeginTxidNotFound(
+                            data: &[u8],
+                        ) -> alloy_sol_types::Result<SignatureManagerErrors>
+                        {
+                            <AcceptPeginTxidNotFound as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
                             )
                             .map(SignatureManagerErrors::AcceptPeginTxidNotFound)
-                    }
-                    AcceptPeginTxidNotFound
-                },
-                {
-                    fn PeginManagerAddressZero(
-                        data: &[u8],
-                    ) -> alloy_sol_types::Result<SignatureManagerErrors> {
-                        <PeginManagerAddressZero as alloy_sol_types::SolError>::abi_decode_raw(
+                        }
+                        AcceptPeginTxidNotFound
+                    },
+                    {
+                        fn PeginManagerAddressZero(
+                            data: &[u8],
+                        ) -> alloy_sol_types::Result<SignatureManagerErrors>
+                        {
+                            <PeginManagerAddressZero as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
                             )
                             .map(SignatureManagerErrors::PeginManagerAddressZero)
-                    }
-                    PeginManagerAddressZero
-                },
-                {
-                    fn MemberNotFoundInCommittee(
-                        data: &[u8],
-                    ) -> alloy_sol_types::Result<SignatureManagerErrors> {
-                        <MemberNotFoundInCommittee as alloy_sol_types::SolError>::abi_decode_raw(
+                        }
+                        PeginManagerAddressZero
+                    },
+                    {
+                        fn MemberNotFoundInCommittee(
+                            data: &[u8],
+                        ) -> alloy_sol_types::Result<SignatureManagerErrors>
+                        {
+                            <MemberNotFoundInCommittee as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
                             )
                             .map(SignatureManagerErrors::MemberNotFoundInCommittee)
-                    }
-                    MemberNotFoundInCommittee
-                },
-                {
-                    fn InvalidSignature(
-                        data: &[u8],
-                    ) -> alloy_sol_types::Result<SignatureManagerErrors> {
-                        <InvalidSignature as alloy_sol_types::SolError>::abi_decode_raw(
-                                data,
-                            )
-                            .map(SignatureManagerErrors::InvalidSignature)
-                    }
-                    InvalidSignature
-                },
-                {
-                    fn InvalidAcceptPeginTxid(
-                        data: &[u8],
-                    ) -> alloy_sol_types::Result<SignatureManagerErrors> {
-                        <InvalidAcceptPeginTxid as alloy_sol_types::SolError>::abi_decode_raw(
+                        }
+                        MemberNotFoundInCommittee
+                    },
+                    {
+                        fn InvalidSignature(
+                            data: &[u8],
+                        ) -> alloy_sol_types::Result<SignatureManagerErrors>
+                        {
+                            <InvalidSignature as alloy_sol_types::SolError>::abi_decode_raw(data)
+                                .map(SignatureManagerErrors::InvalidSignature)
+                        }
+                        InvalidSignature
+                    },
+                    {
+                        fn InvalidAcceptPeginTxid(
+                            data: &[u8],
+                        ) -> alloy_sol_types::Result<SignatureManagerErrors>
+                        {
+                            <InvalidAcceptPeginTxid as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
                             )
                             .map(SignatureManagerErrors::InvalidAcceptPeginTxid)
-                    }
-                    InvalidAcceptPeginTxid
-                },
-                {
-                    fn AddressEmptyCode(
-                        data: &[u8],
-                    ) -> alloy_sol_types::Result<SignatureManagerErrors> {
-                        <AddressEmptyCode as alloy_sol_types::SolError>::abi_decode_raw(
-                                data,
-                            )
-                            .map(SignatureManagerErrors::AddressEmptyCode)
-                    }
-                    AddressEmptyCode
-                },
-                {
-                    fn MemberAlreadyAddedOperatorTakeTxid(
-                        data: &[u8],
-                    ) -> alloy_sol_types::Result<SignatureManagerErrors> {
-                        <MemberAlreadyAddedOperatorTakeTxid as alloy_sol_types::SolError>::abi_decode_raw(
+                        }
+                        InvalidAcceptPeginTxid
+                    },
+                    {
+                        fn AddressEmptyCode(
+                            data: &[u8],
+                        ) -> alloy_sol_types::Result<SignatureManagerErrors>
+                        {
+                            <AddressEmptyCode as alloy_sol_types::SolError>::abi_decode_raw(data)
+                                .map(SignatureManagerErrors::AddressEmptyCode)
+                        }
+                        AddressEmptyCode
+                    },
+                    {
+                        fn MemberAlreadyAddedOperatorTakeTxid(
+                            data: &[u8],
+                        ) -> alloy_sol_types::Result<SignatureManagerErrors>
+                        {
+                            <MemberAlreadyAddedOperatorTakeTxid as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
                             )
                             .map(
                                 SignatureManagerErrors::MemberAlreadyAddedOperatorTakeTxid,
                             )
-                    }
-                    MemberAlreadyAddedOperatorTakeTxid
-                },
-                {
-                    fn UUPSUnsupportedProxiableUUID(
-                        data: &[u8],
-                    ) -> alloy_sol_types::Result<SignatureManagerErrors> {
-                        <UUPSUnsupportedProxiableUUID as alloy_sol_types::SolError>::abi_decode_raw(
+                        }
+                        MemberAlreadyAddedOperatorTakeTxid
+                    },
+                    {
+                        fn UUPSUnsupportedProxiableUUID(
+                            data: &[u8],
+                        ) -> alloy_sol_types::Result<SignatureManagerErrors>
+                        {
+                            <UUPSUnsupportedProxiableUUID as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
                             )
                             .map(SignatureManagerErrors::UUPSUnsupportedProxiableUUID)
-                    }
-                    UUPSUnsupportedProxiableUUID
-                },
-                {
-                    fn OperatorTakeTxidsAlreadyInitialized(
-                        data: &[u8],
-                    ) -> alloy_sol_types::Result<SignatureManagerErrors> {
-                        <OperatorTakeTxidsAlreadyInitialized as alloy_sol_types::SolError>::abi_decode_raw(
+                        }
+                        UUPSUnsupportedProxiableUUID
+                    },
+                    {
+                        fn OperatorTakeTxidsAlreadyInitialized(
+                            data: &[u8],
+                        ) -> alloy_sol_types::Result<SignatureManagerErrors>
+                        {
+                            <OperatorTakeTxidsAlreadyInitialized as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
                             )
                             .map(
                                 SignatureManagerErrors::OperatorTakeTxidsAlreadyInitialized,
                             )
-                    }
-                    OperatorTakeTxidsAlreadyInitialized
-                },
-                {
-                    fn ERC1967NonPayable(
-                        data: &[u8],
-                    ) -> alloy_sol_types::Result<SignatureManagerErrors> {
-                        <ERC1967NonPayable as alloy_sol_types::SolError>::abi_decode_raw(
-                                data,
-                            )
-                            .map(SignatureManagerErrors::ERC1967NonPayable)
-                    }
-                    ERC1967NonPayable
-                },
-                {
-                    fn FailedCall(
-                        data: &[u8],
-                    ) -> alloy_sol_types::Result<SignatureManagerErrors> {
-                        <FailedCall as alloy_sol_types::SolError>::abi_decode_raw(data)
-                            .map(SignatureManagerErrors::FailedCall)
-                    }
-                    FailedCall
-                },
-                {
-                    fn NotInitializing(
-                        data: &[u8],
-                    ) -> alloy_sol_types::Result<SignatureManagerErrors> {
-                        <NotInitializing as alloy_sol_types::SolError>::abi_decode_raw(
-                                data,
-                            )
-                            .map(SignatureManagerErrors::NotInitializing)
-                    }
-                    NotInitializing
-                },
-                {
-                    fn UUPSUnauthorizedCallContext(
-                        data: &[u8],
-                    ) -> alloy_sol_types::Result<SignatureManagerErrors> {
-                        <UUPSUnauthorizedCallContext as alloy_sol_types::SolError>::abi_decode_raw(
+                        }
+                        OperatorTakeTxidsAlreadyInitialized
+                    },
+                    {
+                        fn ERC1967NonPayable(
+                            data: &[u8],
+                        ) -> alloy_sol_types::Result<SignatureManagerErrors>
+                        {
+                            <ERC1967NonPayable as alloy_sol_types::SolError>::abi_decode_raw(data)
+                                .map(SignatureManagerErrors::ERC1967NonPayable)
+                        }
+                        ERC1967NonPayable
+                    },
+                    {
+                        fn FailedCall(
+                            data: &[u8],
+                        ) -> alloy_sol_types::Result<SignatureManagerErrors>
+                        {
+                            <FailedCall as alloy_sol_types::SolError>::abi_decode_raw(data)
+                                .map(SignatureManagerErrors::FailedCall)
+                        }
+                        FailedCall
+                    },
+                    {
+                        fn NotInitializing(
+                            data: &[u8],
+                        ) -> alloy_sol_types::Result<SignatureManagerErrors>
+                        {
+                            <NotInitializing as alloy_sol_types::SolError>::abi_decode_raw(data)
+                                .map(SignatureManagerErrors::NotInitializing)
+                        }
+                        NotInitializing
+                    },
+                    {
+                        fn UUPSUnauthorizedCallContext(
+                            data: &[u8],
+                        ) -> alloy_sol_types::Result<SignatureManagerErrors>
+                        {
+                            <UUPSUnauthorizedCallContext as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
                             )
                             .map(SignatureManagerErrors::UUPSUnauthorizedCallContext)
-                    }
-                    UUPSUnauthorizedCallContext
-                },
-                {
-                    fn SignaturesAlreadyInitialized(
-                        data: &[u8],
-                    ) -> alloy_sol_types::Result<SignatureManagerErrors> {
-                        <SignaturesAlreadyInitialized as alloy_sol_types::SolError>::abi_decode_raw(
+                        }
+                        UUPSUnauthorizedCallContext
+                    },
+                    {
+                        fn SignaturesAlreadyInitialized(
+                            data: &[u8],
+                        ) -> alloy_sol_types::Result<SignatureManagerErrors>
+                        {
+                            <SignaturesAlreadyInitialized as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
                             )
                             .map(SignatureManagerErrors::SignaturesAlreadyInitialized)
-                    }
-                    SignaturesAlreadyInitialized
-                },
-                {
-                    fn InvalidInitialization(
-                        data: &[u8],
-                    ) -> alloy_sol_types::Result<SignatureManagerErrors> {
-                        <InvalidInitialization as alloy_sol_types::SolError>::abi_decode_raw(
+                        }
+                        SignaturesAlreadyInitialized
+                    },
+                    {
+                        fn InvalidInitialization(
+                            data: &[u8],
+                        ) -> alloy_sol_types::Result<SignatureManagerErrors>
+                        {
+                            <InvalidInitialization as alloy_sol_types::SolError>::abi_decode_raw(
                                 data,
                             )
                             .map(SignatureManagerErrors::InvalidInitialization)
-                    }
-                    InvalidInitialization
-                },
-                {
-                    fn InvalidNonceLength(
-                        data: &[u8],
-                    ) -> alloy_sol_types::Result<SignatureManagerErrors> {
-                        <InvalidNonceLength as alloy_sol_types::SolError>::abi_decode_raw(
-                                data,
-                            )
-                            .map(SignatureManagerErrors::InvalidNonceLength)
-                    }
-                    InvalidNonceLength
-                },
-            ];
+                        }
+                        InvalidInitialization
+                    },
+                    {
+                        fn InvalidNonceLength(
+                            data: &[u8],
+                        ) -> alloy_sol_types::Result<SignatureManagerErrors>
+                        {
+                            <InvalidNonceLength as alloy_sol_types::SolError>::abi_decode_raw(data)
+                                .map(SignatureManagerErrors::InvalidNonceLength)
+                        }
+                        InvalidNonceLength
+                    },
+                ];
             let Ok(idx) = Self::SELECTORS.binary_search(&selector) else {
-                return Err(
-                    alloy_sol_types::Error::unknown_selector(
-                        <Self as alloy_sol_types::SolInterface>::NAME,
-                        selector,
-                    ),
-                );
+                return Err(alloy_sol_types::Error::unknown_selector(
+                    <Self as alloy_sol_types::SolInterface>::NAME,
+                    selector,
+                ));
             };
             DECODE_SHIMS[idx](data)
         }
@@ -10403,7 +9664,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
         ) -> alloy_sol_types::Result<Self> {
             static DECODE_VALIDATE_SHIMS: &[fn(
                 &[u8],
-            ) -> alloy_sol_types::Result<SignatureManagerErrors>] = &[
+            ) -> alloy_sol_types::Result<
+                SignatureManagerErrors,
+            >] = &[
                 {
                     fn PegoutManagerAddressZero(
                         data: &[u8],
@@ -10453,9 +9716,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                         data: &[u8],
                     ) -> alloy_sol_types::Result<SignatureManagerErrors> {
                         <OwnableInvalidOwner as alloy_sol_types::SolError>::abi_decode_raw_validate(
-                                data,
-                            )
-                            .map(SignatureManagerErrors::OwnableInvalidOwner)
+                            data,
+                        )
+                        .map(SignatureManagerErrors::OwnableInvalidOwner)
                     }
                     OwnableInvalidOwner
                 },
@@ -10475,9 +9738,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                         data: &[u8],
                     ) -> alloy_sol_types::Result<SignatureManagerErrors> {
                         <HashToSignNotFound as alloy_sol_types::SolError>::abi_decode_raw_validate(
-                                data,
-                            )
-                            .map(SignatureManagerErrors::HashToSignNotFound)
+                            data,
+                        )
+                        .map(SignatureManagerErrors::HashToSignNotFound)
                     }
                     HashToSignNotFound
                 },
@@ -10486,19 +9749,15 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                         data: &[u8],
                     ) -> alloy_sol_types::Result<SignatureManagerErrors> {
                         <UnauthorizedAccount as alloy_sol_types::SolError>::abi_decode_raw_validate(
-                                data,
-                            )
-                            .map(SignatureManagerErrors::UnauthorizedAccount)
+                            data,
+                        )
+                        .map(SignatureManagerErrors::UnauthorizedAccount)
                     }
                     UnauthorizedAccount
                 },
                 {
-                    fn InvalidHash(
-                        data: &[u8],
-                    ) -> alloy_sol_types::Result<SignatureManagerErrors> {
-                        <InvalidHash as alloy_sol_types::SolError>::abi_decode_raw_validate(
-                                data,
-                            )
+                    fn InvalidHash(data: &[u8]) -> alloy_sol_types::Result<SignatureManagerErrors> {
+                        <InvalidHash as alloy_sol_types::SolError>::abi_decode_raw_validate(data)
                             .map(SignatureManagerErrors::InvalidHash)
                     }
                     InvalidHash
@@ -10508,9 +9767,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                         data: &[u8],
                     ) -> alloy_sol_types::Result<SignatureManagerErrors> {
                         <InvalidHashToSign as alloy_sol_types::SolError>::abi_decode_raw_validate(
-                                data,
-                            )
-                            .map(SignatureManagerErrors::InvalidHashToSign)
+                            data,
+                        )
+                        .map(SignatureManagerErrors::InvalidHashToSign)
                     }
                     InvalidHashToSign
                 },
@@ -10542,9 +9801,7 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                     fn MemberNotFound(
                         data: &[u8],
                     ) -> alloy_sol_types::Result<SignatureManagerErrors> {
-                        <MemberNotFound as alloy_sol_types::SolError>::abi_decode_raw_validate(
-                                data,
-                            )
+                        <MemberNotFound as alloy_sol_types::SolError>::abi_decode_raw_validate(data)
                             .map(SignatureManagerErrors::MemberNotFound)
                     }
                     MemberNotFound
@@ -10565,9 +9822,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                         data: &[u8],
                     ) -> alloy_sol_types::Result<SignatureManagerErrors> {
                         <MemberIsNotOperator as alloy_sol_types::SolError>::abi_decode_raw_validate(
-                                data,
-                            )
-                            .map(SignatureManagerErrors::MemberIsNotOperator)
+                            data,
+                        )
+                        .map(SignatureManagerErrors::MemberIsNotOperator)
                     }
                     MemberIsNotOperator
                 },
@@ -10609,9 +9866,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                         data: &[u8],
                     ) -> alloy_sol_types::Result<SignatureManagerErrors> {
                         <InvalidSignature as alloy_sol_types::SolError>::abi_decode_raw_validate(
-                                data,
-                            )
-                            .map(SignatureManagerErrors::InvalidSignature)
+                            data,
+                        )
+                        .map(SignatureManagerErrors::InvalidSignature)
                     }
                     InvalidSignature
                 },
@@ -10631,9 +9888,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                         data: &[u8],
                     ) -> alloy_sol_types::Result<SignatureManagerErrors> {
                         <AddressEmptyCode as alloy_sol_types::SolError>::abi_decode_raw_validate(
-                                data,
-                            )
-                            .map(SignatureManagerErrors::AddressEmptyCode)
+                            data,
+                        )
+                        .map(SignatureManagerErrors::AddressEmptyCode)
                     }
                     AddressEmptyCode
                 },
@@ -10679,19 +9936,15 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                         data: &[u8],
                     ) -> alloy_sol_types::Result<SignatureManagerErrors> {
                         <ERC1967NonPayable as alloy_sol_types::SolError>::abi_decode_raw_validate(
-                                data,
-                            )
-                            .map(SignatureManagerErrors::ERC1967NonPayable)
+                            data,
+                        )
+                        .map(SignatureManagerErrors::ERC1967NonPayable)
                     }
                     ERC1967NonPayable
                 },
                 {
-                    fn FailedCall(
-                        data: &[u8],
-                    ) -> alloy_sol_types::Result<SignatureManagerErrors> {
-                        <FailedCall as alloy_sol_types::SolError>::abi_decode_raw_validate(
-                                data,
-                            )
+                    fn FailedCall(data: &[u8]) -> alloy_sol_types::Result<SignatureManagerErrors> {
+                        <FailedCall as alloy_sol_types::SolError>::abi_decode_raw_validate(data)
                             .map(SignatureManagerErrors::FailedCall)
                     }
                     FailedCall
@@ -10701,9 +9954,9 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                         data: &[u8],
                     ) -> alloy_sol_types::Result<SignatureManagerErrors> {
                         <NotInitializing as alloy_sol_types::SolError>::abi_decode_raw_validate(
-                                data,
-                            )
-                            .map(SignatureManagerErrors::NotInitializing)
+                            data,
+                        )
+                        .map(SignatureManagerErrors::NotInitializing)
                     }
                     NotInitializing
                 },
@@ -10745,20 +9998,18 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                         data: &[u8],
                     ) -> alloy_sol_types::Result<SignatureManagerErrors> {
                         <InvalidNonceLength as alloy_sol_types::SolError>::abi_decode_raw_validate(
-                                data,
-                            )
-                            .map(SignatureManagerErrors::InvalidNonceLength)
+                            data,
+                        )
+                        .map(SignatureManagerErrors::InvalidNonceLength)
                     }
                     InvalidNonceLength
                 },
             ];
             let Ok(idx) = Self::SELECTORS.binary_search(&selector) else {
-                return Err(
-                    alloy_sol_types::Error::unknown_selector(
-                        <Self as alloy_sol_types::SolInterface>::NAME,
-                        selector,
-                    ),
-                );
+                return Err(alloy_sol_types::Error::unknown_selector(
+                    <Self as alloy_sol_types::SolInterface>::NAME,
+                    selector,
+                ));
             };
             DECODE_VALIDATE_SHIMS[idx](data)
         }
@@ -11108,8 +10359,7 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
         }
     }
     ///Container for all the [`SignatureManager`](self) events.
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[derive(Debug, PartialEq, Eq, Hash)]
+    #[derive(serde::Serialize, serde::Deserialize, Debug, PartialEq, Eq, Hash)]
     pub enum SignatureManagerEvents {
         #[allow(missing_docs)]
         AllNoncesReady(AllNoncesReady),
@@ -11140,49 +10390,49 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
         /// Prefer using `SolInterface` methods instead.
         pub const SELECTORS: &'static [[u8; 32usize]] = &[
             [
-                21u8, 212u8, 141u8, 247u8, 111u8, 144u8, 200u8, 114u8, 168u8, 146u8,
-                30u8, 91u8, 141u8, 17u8, 247u8, 86u8, 34u8, 126u8, 32u8, 1u8, 10u8,
-                213u8, 121u8, 203u8, 68u8, 100u8, 73u8, 234u8, 206u8, 38u8, 225u8, 124u8,
+                21u8, 212u8, 141u8, 247u8, 111u8, 144u8, 200u8, 114u8, 168u8, 146u8, 30u8, 91u8,
+                141u8, 17u8, 247u8, 86u8, 34u8, 126u8, 32u8, 1u8, 10u8, 213u8, 121u8, 203u8, 68u8,
+                100u8, 73u8, 234u8, 206u8, 38u8, 225u8, 124u8,
             ],
             [
-                64u8, 111u8, 147u8, 209u8, 89u8, 235u8, 181u8, 6u8, 130u8, 146u8, 50u8,
-                210u8, 228u8, 162u8, 110u8, 203u8, 75u8, 188u8, 232u8, 217u8, 216u8,
-                173u8, 196u8, 150u8, 6u8, 251u8, 47u8, 109u8, 185u8, 177u8, 76u8, 122u8,
+                64u8, 111u8, 147u8, 209u8, 89u8, 235u8, 181u8, 6u8, 130u8, 146u8, 50u8, 210u8,
+                228u8, 162u8, 110u8, 203u8, 75u8, 188u8, 232u8, 217u8, 216u8, 173u8, 196u8, 150u8,
+                6u8, 251u8, 47u8, 109u8, 185u8, 177u8, 76u8, 122u8,
             ],
             [
-                139u8, 224u8, 7u8, 156u8, 83u8, 22u8, 89u8, 20u8, 19u8, 68u8, 205u8,
-                31u8, 208u8, 164u8, 242u8, 132u8, 25u8, 73u8, 127u8, 151u8, 34u8, 163u8,
-                218u8, 175u8, 227u8, 180u8, 24u8, 111u8, 107u8, 100u8, 87u8, 224u8,
+                139u8, 224u8, 7u8, 156u8, 83u8, 22u8, 89u8, 20u8, 19u8, 68u8, 205u8, 31u8, 208u8,
+                164u8, 242u8, 132u8, 25u8, 73u8, 127u8, 151u8, 34u8, 163u8, 218u8, 175u8, 227u8,
+                180u8, 24u8, 111u8, 107u8, 100u8, 87u8, 224u8,
             ],
             [
-                156u8, 95u8, 146u8, 195u8, 71u8, 203u8, 64u8, 72u8, 238u8, 255u8, 242u8,
-                38u8, 208u8, 114u8, 166u8, 24u8, 205u8, 160u8, 37u8, 179u8, 28u8, 140u8,
-                72u8, 144u8, 26u8, 83u8, 141u8, 14u8, 145u8, 44u8, 172u8, 229u8,
+                156u8, 95u8, 146u8, 195u8, 71u8, 203u8, 64u8, 72u8, 238u8, 255u8, 242u8, 38u8,
+                208u8, 114u8, 166u8, 24u8, 205u8, 160u8, 37u8, 179u8, 28u8, 140u8, 72u8, 144u8,
+                26u8, 83u8, 141u8, 14u8, 145u8, 44u8, 172u8, 229u8,
             ],
             [
-                181u8, 32u8, 101u8, 115u8, 144u8, 217u8, 87u8, 25u8, 72u8, 188u8, 203u8,
-                244u8, 226u8, 66u8, 211u8, 237u8, 80u8, 244u8, 29u8, 24u8, 67u8, 61u8,
-                172u8, 236u8, 88u8, 188u8, 193u8, 165u8, 51u8, 112u8, 105u8, 32u8,
+                181u8, 32u8, 101u8, 115u8, 144u8, 217u8, 87u8, 25u8, 72u8, 188u8, 203u8, 244u8,
+                226u8, 66u8, 211u8, 237u8, 80u8, 244u8, 29u8, 24u8, 67u8, 61u8, 172u8, 236u8, 88u8,
+                188u8, 193u8, 165u8, 51u8, 112u8, 105u8, 32u8,
             ],
             [
-                188u8, 124u8, 215u8, 90u8, 32u8, 238u8, 39u8, 253u8, 154u8, 222u8, 186u8,
-                179u8, 32u8, 65u8, 247u8, 85u8, 33u8, 77u8, 188u8, 107u8, 255u8, 169u8,
-                12u8, 192u8, 34u8, 91u8, 57u8, 218u8, 46u8, 92u8, 45u8, 59u8,
+                188u8, 124u8, 215u8, 90u8, 32u8, 238u8, 39u8, 253u8, 154u8, 222u8, 186u8, 179u8,
+                32u8, 65u8, 247u8, 85u8, 33u8, 77u8, 188u8, 107u8, 255u8, 169u8, 12u8, 192u8, 34u8,
+                91u8, 57u8, 218u8, 46u8, 92u8, 45u8, 59u8,
             ],
             [
-                199u8, 245u8, 5u8, 178u8, 243u8, 113u8, 174u8, 33u8, 117u8, 238u8, 73u8,
-                19u8, 244u8, 73u8, 158u8, 31u8, 38u8, 51u8, 167u8, 181u8, 147u8, 99u8,
-                33u8, 238u8, 209u8, 205u8, 174u8, 182u8, 17u8, 81u8, 129u8, 210u8,
+                199u8, 245u8, 5u8, 178u8, 243u8, 113u8, 174u8, 33u8, 117u8, 238u8, 73u8, 19u8,
+                244u8, 73u8, 158u8, 31u8, 38u8, 51u8, 167u8, 181u8, 147u8, 99u8, 33u8, 238u8,
+                209u8, 205u8, 174u8, 182u8, 17u8, 81u8, 129u8, 210u8,
             ],
             [
-                211u8, 1u8, 116u8, 239u8, 164u8, 100u8, 197u8, 54u8, 106u8, 180u8, 82u8,
-                133u8, 215u8, 56u8, 44u8, 153u8, 105u8, 193u8, 156u8, 174u8, 91u8, 38u8,
-                154u8, 78u8, 226u8, 173u8, 137u8, 202u8, 186u8, 112u8, 186u8, 143u8,
+                211u8, 1u8, 116u8, 239u8, 164u8, 100u8, 197u8, 54u8, 106u8, 180u8, 82u8, 133u8,
+                215u8, 56u8, 44u8, 153u8, 105u8, 193u8, 156u8, 174u8, 91u8, 38u8, 154u8, 78u8,
+                226u8, 173u8, 137u8, 202u8, 186u8, 112u8, 186u8, 143u8,
             ],
             [
-                234u8, 204u8, 26u8, 98u8, 236u8, 232u8, 85u8, 114u8, 249u8, 46u8, 68u8,
-                221u8, 175u8, 40u8, 161u8, 43u8, 70u8, 198u8, 40u8, 80u8, 160u8, 189u8,
-                41u8, 255u8, 29u8, 169u8, 216u8, 172u8, 88u8, 198u8, 237u8, 130u8,
+                234u8, 204u8, 26u8, 98u8, 236u8, 232u8, 85u8, 114u8, 249u8, 46u8, 68u8, 221u8,
+                175u8, 40u8, 161u8, 43u8, 70u8, 198u8, 40u8, 80u8, 160u8, 189u8, 41u8, 255u8, 29u8,
+                169u8, 216u8, 172u8, 88u8, 198u8, 237u8, 130u8,
             ],
         ];
     }
@@ -11196,84 +10446,56 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
         ) -> alloy_sol_types::Result<Self> {
             match topics.first().copied() {
                 Some(<AllNoncesReady as alloy_sol_types::SolEvent>::SIGNATURE_HASH) => {
-                    <AllNoncesReady as alloy_sol_types::SolEvent>::decode_raw_log(
-                            topics,
-                            data,
-                        )
+                    <AllNoncesReady as alloy_sol_types::SolEvent>::decode_raw_log(topics, data)
                         .map(Self::AllNoncesReady)
                 }
-                Some(
-                    <AllOperatorTakeTxidsAdded as alloy_sol_types::SolEvent>::SIGNATURE_HASH,
-                ) => {
+                Some(<AllOperatorTakeTxidsAdded as alloy_sol_types::SolEvent>::SIGNATURE_HASH) => {
                     <AllOperatorTakeTxidsAdded as alloy_sol_types::SolEvent>::decode_raw_log(
-                            topics,
-                            data,
-                        )
-                        .map(Self::AllOperatorTakeTxidsAdded)
+                        topics, data,
+                    )
+                    .map(Self::AllOperatorTakeTxidsAdded)
                 }
-                Some(
-                    <AllSignaturesReady as alloy_sol_types::SolEvent>::SIGNATURE_HASH,
-                ) => {
-                    <AllSignaturesReady as alloy_sol_types::SolEvent>::decode_raw_log(
-                            topics,
-                            data,
-                        )
+                Some(<AllSignaturesReady as alloy_sol_types::SolEvent>::SIGNATURE_HASH) => {
+                    <AllSignaturesReady as alloy_sol_types::SolEvent>::decode_raw_log(topics, data)
                         .map(Self::AllSignaturesReady)
                 }
                 Some(<Initialized as alloy_sol_types::SolEvent>::SIGNATURE_HASH) => {
-                    <Initialized as alloy_sol_types::SolEvent>::decode_raw_log(
-                            topics,
-                            data,
-                        )
+                    <Initialized as alloy_sol_types::SolEvent>::decode_raw_log(topics, data)
                         .map(Self::Initialized)
                 }
                 Some(<NonceAdded as alloy_sol_types::SolEvent>::SIGNATURE_HASH) => {
-                    <NonceAdded as alloy_sol_types::SolEvent>::decode_raw_log(
-                            topics,
-                            data,
-                        )
+                    <NonceAdded as alloy_sol_types::SolEvent>::decode_raw_log(topics, data)
                         .map(Self::NonceAdded)
                 }
-                Some(
-                    <OperatorTakeTxidAdded as alloy_sol_types::SolEvent>::SIGNATURE_HASH,
-                ) => {
+                Some(<OperatorTakeTxidAdded as alloy_sol_types::SolEvent>::SIGNATURE_HASH) => {
                     <OperatorTakeTxidAdded as alloy_sol_types::SolEvent>::decode_raw_log(
-                            topics,
-                            data,
-                        )
-                        .map(Self::OperatorTakeTxidAdded)
+                        topics, data,
+                    )
+                    .map(Self::OperatorTakeTxidAdded)
                 }
-                Some(
-                    <OwnershipTransferred as alloy_sol_types::SolEvent>::SIGNATURE_HASH,
-                ) => {
+                Some(<OwnershipTransferred as alloy_sol_types::SolEvent>::SIGNATURE_HASH) => {
                     <OwnershipTransferred as alloy_sol_types::SolEvent>::decode_raw_log(
-                            topics,
-                            data,
-                        )
-                        .map(Self::OwnershipTransferred)
+                        topics, data,
+                    )
+                    .map(Self::OwnershipTransferred)
                 }
                 Some(<SignatureAdded as alloy_sol_types::SolEvent>::SIGNATURE_HASH) => {
-                    <SignatureAdded as alloy_sol_types::SolEvent>::decode_raw_log(
-                            topics,
-                            data,
-                        )
+                    <SignatureAdded as alloy_sol_types::SolEvent>::decode_raw_log(topics, data)
                         .map(Self::SignatureAdded)
                 }
                 Some(<Upgraded as alloy_sol_types::SolEvent>::SIGNATURE_HASH) => {
                     <Upgraded as alloy_sol_types::SolEvent>::decode_raw_log(topics, data)
                         .map(Self::Upgraded)
                 }
-                _ => {
-                    alloy_sol_types::private::Err(alloy_sol_types::Error::InvalidLog {
-                        name: <Self as alloy_sol_types::SolEventInterface>::NAME,
-                        log: alloy_sol_types::private::Box::new(
-                            alloy_sol_types::private::LogData::new_unchecked(
-                                topics.to_vec(),
-                                data.to_vec().into(),
-                            ),
+                _ => alloy_sol_types::private::Err(alloy_sol_types::Error::InvalidLog {
+                    name: <Self as alloy_sol_types::SolEventInterface>::NAME,
+                    log: alloy_sol_types::private::Box::new(
+                        alloy_sol_types::private::LogData::new_unchecked(
+                            topics.to_vec(),
+                            data.to_vec().into(),
                         ),
-                    })
-                }
+                    ),
+                }),
             }
         }
     }
@@ -11305,9 +10527,7 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
                 Self::SignatureAdded(inner) => {
                     alloy_sol_types::private::IntoLogData::to_log_data(inner)
                 }
-                Self::Upgraded(inner) => {
-                    alloy_sol_types::private::IntoLogData::to_log_data(inner)
-                }
+                Self::Upgraded(inner) => alloy_sol_types::private::IntoLogData::to_log_data(inner),
             }
         }
         fn into_log_data(self) -> alloy_sol_types::private::LogData {
@@ -11345,7 +10565,7 @@ function upgradeToAndCall(address newImplementation, bytes memory data) external
     use alloy::contract as alloy_contract;
     /**Creates a new wrapper around an on-chain [`SignatureManager`](self) contract instance.
 
-See the [wrapper's documentation](`SignatureManagerInstance`) for more details.*/
+    See the [wrapper's documentation](`SignatureManagerInstance`) for more details.*/
     #[inline]
     pub const fn new<
         P: alloy_contract::private::Provider<N>,
@@ -11358,43 +10578,41 @@ See the [wrapper's documentation](`SignatureManagerInstance`) for more details.*
     }
     /**Deploys this contract using the given `provider` and constructor arguments, if any.
 
-Returns a new instance of the contract, if the deployment was successful.
+    Returns a new instance of the contract, if the deployment was successful.
 
-For more fine-grained control over the deployment process, use [`deploy_builder`] instead.*/
+    For more fine-grained control over the deployment process, use [`deploy_builder`] instead.*/
     #[inline]
-    pub fn deploy<
-        P: alloy_contract::private::Provider<N>,
-        N: alloy_contract::private::Network,
-    >(
+    pub fn deploy<P: alloy_contract::private::Provider<N>, N: alloy_contract::private::Network>(
         provider: P,
-    ) -> impl ::core::future::Future<
-        Output = alloy_contract::Result<SignatureManagerInstance<P, N>>,
-    > {
+    ) -> impl ::core::future::Future<Output = alloy_contract::Result<SignatureManagerInstance<P, N>>>
+    {
         SignatureManagerInstance::<P, N>::deploy(provider)
     }
     /**Creates a `RawCallBuilder` for deploying this contract using the given `provider`
-and constructor arguments, if any.
+    and constructor arguments, if any.
 
-This is a simple wrapper around creating a `RawCallBuilder` with the data set to
-the bytecode concatenated with the constructor's ABI-encoded arguments.*/
+    This is a simple wrapper around creating a `RawCallBuilder` with the data set to
+    the bytecode concatenated with the constructor's ABI-encoded arguments.*/
     #[inline]
     pub fn deploy_builder<
         P: alloy_contract::private::Provider<N>,
         N: alloy_contract::private::Network,
-    >(provider: P) -> alloy_contract::RawCallBuilder<P, N> {
+    >(
+        provider: P,
+    ) -> alloy_contract::RawCallBuilder<P, N> {
         SignatureManagerInstance::<P, N>::deploy_builder(provider)
     }
     /**A [`SignatureManager`](self) instance.
 
-Contains type-safe methods for interacting with an on-chain instance of the
-[`SignatureManager`](self) contract located at a given `address`, using a given
-provider `P`.
+    Contains type-safe methods for interacting with an on-chain instance of the
+    [`SignatureManager`](self) contract located at a given `address`, using a given
+    provider `P`.
 
-If the contract bytecode is available (see the [`sol!`](alloy_sol_types::sol!)
-documentation on how to provide it), the `deploy` and `deploy_builder` methods can
-be used to deploy a new instance of the contract.
+    If the contract bytecode is available (see the [`sol!`](alloy_sol_types::sol!)
+    documentation on how to provide it), the `deploy` and `deploy_builder` methods can
+    be used to deploy a new instance of the contract.
 
-See the [module-level documentation](self) for all the available methods.*/
+    See the [module-level documentation](self) for all the available methods.*/
     #[derive(Clone)]
     pub struct SignatureManagerInstance<P, N = alloy_contract::private::Ethereum> {
         address: alloy_sol_types::private::Address,
@@ -11405,23 +10623,21 @@ See the [module-level documentation](self) for all the available methods.*/
     impl<P, N> ::core::fmt::Debug for SignatureManagerInstance<P, N> {
         #[inline]
         fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-            f.debug_tuple("SignatureManagerInstance").field(&self.address).finish()
+            f.debug_tuple("SignatureManagerInstance")
+                .field(&self.address)
+                .finish()
         }
     }
     /// Instantiation and getters/setters.
     #[automatically_derived]
-    impl<
-        P: alloy_contract::private::Provider<N>,
-        N: alloy_contract::private::Network,
-    > SignatureManagerInstance<P, N> {
+    impl<P: alloy_contract::private::Provider<N>, N: alloy_contract::private::Network>
+        SignatureManagerInstance<P, N>
+    {
         /**Creates a new wrapper around an on-chain [`SignatureManager`](self) contract instance.
 
-See the [wrapper's documentation](`SignatureManagerInstance`) for more details.*/
+        See the [wrapper's documentation](`SignatureManagerInstance`) for more details.*/
         #[inline]
-        pub const fn new(
-            address: alloy_sol_types::private::Address,
-            provider: P,
-        ) -> Self {
+        pub const fn new(address: alloy_sol_types::private::Address, provider: P) -> Self {
             Self {
                 address,
                 provider,
@@ -11430,22 +10646,20 @@ See the [wrapper's documentation](`SignatureManagerInstance`) for more details.*
         }
         /**Deploys this contract using the given `provider` and constructor arguments, if any.
 
-Returns a new instance of the contract, if the deployment was successful.
+        Returns a new instance of the contract, if the deployment was successful.
 
-For more fine-grained control over the deployment process, use [`deploy_builder`] instead.*/
+        For more fine-grained control over the deployment process, use [`deploy_builder`] instead.*/
         #[inline]
-        pub async fn deploy(
-            provider: P,
-        ) -> alloy_contract::Result<SignatureManagerInstance<P, N>> {
+        pub async fn deploy(provider: P) -> alloy_contract::Result<SignatureManagerInstance<P, N>> {
             let call_builder = Self::deploy_builder(provider);
             let contract_address = call_builder.deploy().await?;
             Ok(Self::new(contract_address, call_builder.provider))
         }
         /**Creates a `RawCallBuilder` for deploying this contract using the given `provider`
-and constructor arguments, if any.
+        and constructor arguments, if any.
 
-This is a simple wrapper around creating a `RawCallBuilder` with the data set to
-the bytecode concatenated with the constructor's ABI-encoded arguments.*/
+        This is a simple wrapper around creating a `RawCallBuilder` with the data set to
+        the bytecode concatenated with the constructor's ABI-encoded arguments.*/
         #[inline]
         pub fn deploy_builder(provider: P) -> alloy_contract::RawCallBuilder<P, N> {
             alloy_contract::RawCallBuilder::new_raw_deploy(
@@ -11487,10 +10701,9 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
     }
     /// Function calls.
     #[automatically_derived]
-    impl<
-        P: alloy_contract::private::Provider<N>,
-        N: alloy_contract::private::Network,
-    > SignatureManagerInstance<P, N> {
+    impl<P: alloy_contract::private::Provider<N>, N: alloy_contract::private::Network>
+        SignatureManagerInstance<P, N>
+    {
         /// Creates a new call builder using this contract instance's provider and address.
         ///
         /// Note that the call can be any function call, not just those defined in this
@@ -11514,24 +10727,18 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             _peginManager: alloy::sol_types::private::Address,
             _pegoutManager: alloy::sol_types::private::Address,
         ) -> alloy_contract::SolCallBuilder<&P, __AccessControl_initCall, N> {
-            self.call_builder(
-                &__AccessControl_initCall {
-                    _initialOwner,
-                    _peginManager,
-                    _pegoutManager,
-                },
-            )
+            self.call_builder(&__AccessControl_initCall {
+                _initialOwner,
+                _peginManager,
+                _pegoutManager,
+            })
         }
         ///Creates a new call builder for the [`__BaseProxy_init`] function.
         pub fn __BaseProxy_init(
             &self,
             _initialOwner: alloy::sol_types::private::Address,
         ) -> alloy_contract::SolCallBuilder<&P, __BaseProxy_initCall, N> {
-            self.call_builder(
-                &__BaseProxy_initCall {
-                    _initialOwner,
-                },
-            )
+            self.call_builder(&__BaseProxy_initCall { _initialOwner })
         }
         ///Creates a new call builder for the [`addMemberNonce`] function.
         pub fn addMemberNonce(
@@ -11539,12 +10746,10 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             _hashToSign: alloy::sol_types::private::FixedBytes<32>,
             _nonce: alloy::sol_types::private::Bytes,
         ) -> alloy_contract::SolCallBuilder<&P, addMemberNonceCall, N> {
-            self.call_builder(
-                &addMemberNonceCall {
-                    _hashToSign,
-                    _nonce,
-                },
-            )
+            self.call_builder(&addMemberNonceCall {
+                _hashToSign,
+                _nonce,
+            })
         }
         ///Creates a new call builder for the [`addMemberSignature`] function.
         pub fn addMemberSignature(
@@ -11552,12 +10757,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             _txid: alloy::sol_types::private::FixedBytes<32>,
             _signature: alloy::sol_types::private::FixedBytes<32>,
         ) -> alloy_contract::SolCallBuilder<&P, addMemberSignatureCall, N> {
-            self.call_builder(
-                &addMemberSignatureCall {
-                    _txid,
-                    _signature,
-                },
-            )
+            self.call_builder(&addMemberSignatureCall { _txid, _signature })
         }
         ///Creates a new call builder for the [`addOperatorTakeTxid`] function.
         pub fn addOperatorTakeTxid(
@@ -11565,38 +10765,24 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             _acceptPeginTxid: alloy::sol_types::private::FixedBytes<32>,
             _takeTxid: alloy::sol_types::private::FixedBytes<32>,
         ) -> alloy_contract::SolCallBuilder<&P, addOperatorTakeTxidCall, N> {
-            self.call_builder(
-                &addOperatorTakeTxidCall {
-                    _acceptPeginTxid,
-                    _takeTxid,
-                },
-            )
+            self.call_builder(&addOperatorTakeTxidCall {
+                _acceptPeginTxid,
+                _takeTxid,
+            })
         }
         ///Creates a new call builder for the [`checkAllOperatorTakesHashesReady`] function.
         pub fn checkAllOperatorTakesHashesReady(
             &self,
             _acceptPeginTxid: alloy::sol_types::private::FixedBytes<32>,
-        ) -> alloy_contract::SolCallBuilder<
-            &P,
-            checkAllOperatorTakesHashesReadyCall,
-            N,
-        > {
-            self.call_builder(
-                &checkAllOperatorTakesHashesReadyCall {
-                    _acceptPeginTxid,
-                },
-            )
+        ) -> alloy_contract::SolCallBuilder<&P, checkAllOperatorTakesHashesReadyCall, N> {
+            self.call_builder(&checkAllOperatorTakesHashesReadyCall { _acceptPeginTxid })
         }
         ///Creates a new call builder for the [`checkAllSignaturesReady`] function.
         pub fn checkAllSignaturesReady(
             &self,
             _txid: alloy::sol_types::private::FixedBytes<32>,
         ) -> alloy_contract::SolCallBuilder<&P, checkAllSignaturesReadyCall, N> {
-            self.call_builder(
-                &checkAllSignaturesReadyCall {
-                    _txid,
-                },
-            )
+            self.call_builder(&checkAllSignaturesReadyCall { _txid })
         }
         ///Creates a new call builder for the [`committeeRegistry`] function.
         pub fn committeeRegistry(
@@ -11609,11 +10795,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             &self,
             _acceptPeginTxid: alloy::sol_types::private::FixedBytes<32>,
         ) -> alloy_contract::SolCallBuilder<&P, getCommitteeIdByAcceptPeginTxidCall, N> {
-            self.call_builder(
-                &getCommitteeIdByAcceptPeginTxidCall {
-                    _acceptPeginTxid,
-                },
-            )
+            self.call_builder(&getCommitteeIdByAcceptPeginTxidCall { _acceptPeginTxid })
         }
         ///Creates a new call builder for the [`getImplementation`] function.
         pub fn getImplementation(
@@ -11626,11 +10808,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             &self,
             _acceptPeginTxid: alloy::sol_types::private::FixedBytes<32>,
         ) -> alloy_contract::SolCallBuilder<&P, getOperatorTakeDataCall, N> {
-            self.call_builder(
-                &getOperatorTakeDataCall {
-                    _acceptPeginTxid,
-                },
-            )
+            self.call_builder(&getOperatorTakeDataCall { _acceptPeginTxid })
         }
         ///Creates a new call builder for the [`getPartialSignatures`] function.
         pub fn getPartialSignatures(
@@ -11652,12 +10830,10 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             _acceptPeginTxid: alloy::sol_types::private::FixedBytes<32>,
             _committeeId: u128,
         ) -> alloy_contract::SolCallBuilder<&P, initOperatorTakeTxidsCall, N> {
-            self.call_builder(
-                &initOperatorTakeTxidsCall {
-                    _acceptPeginTxid,
-                    _committeeId,
-                },
-            )
+            self.call_builder(&initOperatorTakeTxidsCall {
+                _acceptPeginTxid,
+                _committeeId,
+            })
         }
         ///Creates a new call builder for the [`initSignatures`] function.
         pub fn initSignatures(
@@ -11665,12 +10841,10 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             _txid: alloy::sol_types::private::FixedBytes<32>,
             _committeeId: u128,
         ) -> alloy_contract::SolCallBuilder<&P, initSignaturesCall, N> {
-            self.call_builder(
-                &initSignaturesCall {
-                    _txid,
-                    _committeeId,
-                },
-            )
+            self.call_builder(&initSignaturesCall {
+                _txid,
+                _committeeId,
+            })
         }
         ///Creates a new call builder for the [`initialize`] function.
         pub fn initialize(
@@ -11680,35 +10854,27 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             _pegoutManager: alloy::sol_types::private::Address,
             _committeeRegistry: alloy::sol_types::private::Address,
         ) -> alloy_contract::SolCallBuilder<&P, initializeCall, N> {
-            self.call_builder(
-                &initializeCall {
-                    _initialOwner,
-                    _peginManager,
-                    _pegoutManager,
-                    _committeeRegistry,
-                },
-            )
+            self.call_builder(&initializeCall {
+                _initialOwner,
+                _peginManager,
+                _pegoutManager,
+                _committeeRegistry,
+            })
         }
         ///Creates a new call builder for the [`owner`] function.
         pub fn owner(&self) -> alloy_contract::SolCallBuilder<&P, ownerCall, N> {
             self.call_builder(&ownerCall)
         }
         ///Creates a new call builder for the [`peginManager`] function.
-        pub fn peginManager(
-            &self,
-        ) -> alloy_contract::SolCallBuilder<&P, peginManagerCall, N> {
+        pub fn peginManager(&self) -> alloy_contract::SolCallBuilder<&P, peginManagerCall, N> {
             self.call_builder(&peginManagerCall)
         }
         ///Creates a new call builder for the [`pegoutManager`] function.
-        pub fn pegoutManager(
-            &self,
-        ) -> alloy_contract::SolCallBuilder<&P, pegoutManagerCall, N> {
+        pub fn pegoutManager(&self) -> alloy_contract::SolCallBuilder<&P, pegoutManagerCall, N> {
             self.call_builder(&pegoutManagerCall)
         }
         ///Creates a new call builder for the [`proxiableUUID`] function.
-        pub fn proxiableUUID(
-            &self,
-        ) -> alloy_contract::SolCallBuilder<&P, proxiableUUIDCall, N> {
+        pub fn proxiableUUID(&self) -> alloy_contract::SolCallBuilder<&P, proxiableUUIDCall, N> {
             self.call_builder(&proxiableUUIDCall)
         }
         ///Creates a new call builder for the [`renounceOwnership`] function.
@@ -11730,20 +10896,17 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             newImplementation: alloy::sol_types::private::Address,
             data: alloy::sol_types::private::Bytes,
         ) -> alloy_contract::SolCallBuilder<&P, upgradeToAndCallCall, N> {
-            self.call_builder(
-                &upgradeToAndCallCall {
-                    newImplementation,
-                    data,
-                },
-            )
+            self.call_builder(&upgradeToAndCallCall {
+                newImplementation,
+                data,
+            })
         }
     }
     /// Event filters.
     #[automatically_derived]
-    impl<
-        P: alloy_contract::private::Provider<N>,
-        N: alloy_contract::private::Network,
-    > SignatureManagerInstance<P, N> {
+    impl<P: alloy_contract::private::Provider<N>, N: alloy_contract::private::Network>
+        SignatureManagerInstance<P, N>
+    {
         /// Creates a new event filter using this contract instance's provider and address.
         ///
         /// Note that the type can be any event, not just those defined in this contract.
@@ -11754,9 +10917,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             alloy_contract::Event::new_sol(&self.provider, &self.address)
         }
         ///Creates a new event filter for the [`AllNoncesReady`] event.
-        pub fn AllNoncesReady_filter(
-            &self,
-        ) -> alloy_contract::Event<&P, AllNoncesReady, N> {
+        pub fn AllNoncesReady_filter(&self) -> alloy_contract::Event<&P, AllNoncesReady, N> {
             self.event_filter::<AllNoncesReady>()
         }
         ///Creates a new event filter for the [`AllOperatorTakeTxidsAdded`] event.
@@ -11792,9 +10953,7 @@ the bytecode concatenated with the constructor's ABI-encoded arguments.*/
             self.event_filter::<OwnershipTransferred>()
         }
         ///Creates a new event filter for the [`SignatureAdded`] event.
-        pub fn SignatureAdded_filter(
-            &self,
-        ) -> alloy_contract::Event<&P, SignatureAdded, N> {
+        pub fn SignatureAdded_filter(&self) -> alloy_contract::Event<&P, SignatureAdded, N> {
             self.event_filter::<SignatureAdded>()
         }
         ///Creates a new event filter for the [`Upgraded`] event.
