@@ -1,5 +1,5 @@
 # IPegManager
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b91181b0a4bd785ef0099b4b80f38101dfa816d0/src/interfaces/IPegManager.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/5935b1ba9b5693ff58c693caac2763a4b158c822/src/interfaces/IPegManager.sol)
 
 Interface for managing peg-in and peg-out operations in the union bridge
 
@@ -72,17 +72,17 @@ function getTemporaryPeginAddress(address _rootstockDepositAddress, uint64 _valu
 
 ### getStreamPosition
 
-Retrieves the stream position information for a given Bitcoin transaction hash
+Retrieves the stream position information for a given Bitcoin transaction id
 
 
 ```solidity
-function getStreamPosition(bytes32 btcTxHash) external view returns (StreamPosition memory);
+function getStreamPosition(bytes32 btcTxid) external view returns (StreamPosition memory);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`btcTxHash`|`bytes32`|The Bitcoin transaction hash to look up|
+|`btcTxid`|`bytes32`|The Bitcoin transaction id to look up|
 
 **Returns**
 
@@ -110,25 +110,25 @@ function requestPegin(BtcTxSPVProof calldata _peginRequestTxSPVProof) external;
 |`_peginRequestTxSPVProof`|`BtcTxSPVProof`|The BTC SPV proof of the peg-in request transaction|
 
 
-### getPeginRequest
+### getAcceptPegin
 
-Gets the accept peg-in transaction hash for a given request transaction hash
+Gets the accept peg-in transaction id for a given request transaction id
 
 
 ```solidity
-function getPeginRequest(bytes32 _btcTxHash) external view returns (bytes32);
+function getAcceptPegin(bytes32 _btcTxid) external view returns (bytes32);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_btcTxHash`|`bytes32`|The Bitcoin transaction hash of the peg-in request|
+|`_btcTxid`|`bytes32`|The Bitcoin transaction id of the peg-in request|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`bytes32`|The accept peg-in transaction hash|
+|`<none>`|`bytes32`|The accept peg-in transaction id|
 
 
 ### getRequestPeginTempInfo
@@ -137,13 +137,13 @@ Gets temporary information stored during peg-in request processing
 
 
 ```solidity
-function getRequestPeginTempInfo(bytes32 btcTxHash) external view returns (RequestPeginTempInfo memory);
+function getRequestPeginTempInfo(bytes32 btcTxid) external view returns (RequestPeginTempInfo memory);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`btcTxHash`|`bytes32`|The Bitcoin transaction hash of the peg-in request|
+|`btcTxid`|`bytes32`|The Bitcoin transaction id of the peg-in request|
 
 **Returns**
 
@@ -158,13 +158,13 @@ Gets temporary information stored during peg-out processing
 
 
 ```solidity
-function getPegoutTempInfo(bytes32 acceptPeginTxHash) external view returns (PegoutTempInfo memory);
+function getPegoutTempInfo(bytes32 acceptPeginTxid) external view returns (PegoutTempInfo memory);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`acceptPeginTxHash`|`bytes32`|The accept peg-in transaction hash|
+|`acceptPeginTxid`|`bytes32`|The accept peg-in transaction id|
 
 **Returns**
 
@@ -230,13 +230,13 @@ function registerUserTake(BtcTxSPVProof calldata _pegoutTxSPVProof) external;
 |`_pegoutTxSPVProof`|`BtcTxSPVProof`|The BTC SPV proof of the peg-out transaction|
 
 
-### getPegoutSignatureHash
+### getPegoutTxid
 
 Gets the peg-out signature hash for a specific stream, packet, and slot
 
 
 ```solidity
-function getPegoutSignatureHash(uint64 streamId, uint64 packetNumber, uint64 slotId) external view returns (bytes32);
+function getPegoutTxid(uint64 streamId, uint64 packetNumber, uint64 slotId) external view returns (bytes32);
 ```
 **Parameters**
 
@@ -362,13 +362,13 @@ Triggers the operator take process for a peg-out when not all committee members 
 
 
 ```solidity
-function triggerOperatorTake(bytes32 _pegoutSignatureHash) external;
+function triggerOperatorTake(bytes32 _pegoutTxid) external;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_pegoutSignatureHash`|`bytes32`|The signature hash of the peg-out request|
+|`_pegoutTxid`|`bytes32`|The transaction id of the peg-out request|
 
 
 ## Events
@@ -378,9 +378,9 @@ Event emitted when a peg-in request is successfully registered
 
 ```solidity
 event PeginRequested(
-    uint256 indexed committeeId,
-    bytes32 indexed requestPeginTxHash,
-    bytes32 indexed acceptPeginTxHash,
+    uint128 indexed committeeId,
+    bytes32 indexed requestPeginTxid,
+    bytes32 indexed acceptPeginTxid,
     uint64 vout,
     StreamPosition streamPosition,
     RequestPeginTempInfo requestPeginInfo,
@@ -393,9 +393,9 @@ event PeginRequested(
 
 |Name|Type|Description|
 |----|----|-----------|
-|`committeeId`|`uint256`|The ID of the committee responsible for this peg-in|
-|`requestPeginTxHash`|`bytes32`|The hash of the peg-in request transaction|
-|`acceptPeginTxHash`|`bytes32`|The hash of the accept peg-in transaction|
+|`committeeId`|`uint128`|The ID of the committee responsible for this peg-in|
+|`requestPeginTxid`|`bytes32`|The hash of the peg-in request transaction|
+|`acceptPeginTxid`|`bytes32`|The hash of the accept peg-in transaction|
 |`vout`|`uint64`|The output index of the transaction|
 |`streamPosition`|`StreamPosition`|The struct with the position information (stream, packet, slot, status)|
 |`requestPeginInfo`|`RequestPeginTempInfo`|Temporary information needed for the accept phase|
@@ -409,8 +409,8 @@ Event emitted when a peg-in is successfully accepted
 ```solidity
 event PeginAccepted(
     bytes32 indexed blockHash,
-    bytes32 indexed acceptPeginTxHash,
-    bytes32 indexed peginRequestTxHash,
+    bytes32 indexed acceptPeginTxid,
+    bytes32 indexed peginRequestTxid,
     uint64 vout,
     StreamPosition streamPosition,
     bytes32 speedUpPubKey,
@@ -425,8 +425,8 @@ event PeginAccepted(
 |Name|Type|Description|
 |----|----|-----------|
 |`blockHash`|`bytes32`|The Bitcoin block hash containing the accept transaction|
-|`acceptPeginTxHash`|`bytes32`|The hash of the accept peg-in transaction|
-|`peginRequestTxHash`|`bytes32`|The hash of the original peg-in request transaction|
+|`acceptPeginTxid`|`bytes32`|The hash of the accept peg-in transaction|
+|`peginRequestTxid`|`bytes32`|The hash of the original peg-in request transaction|
 |`vout`|`uint64`|The output index of the transaction|
 |`streamPosition`|`StreamPosition`|The final position of funds in the stream system|
 |`speedUpPubKey`|`bytes32`|The public key for speed-up transactions|
@@ -440,10 +440,9 @@ Event emitted when a peg-out is successfully requested
 
 ```solidity
 event PegoutRequested(
-    bytes indexed userPubKey,
+    bytes userPubKey,
     uint256 indexed committeeId,
-    bytes32 indexed pegoutSignatureHash,
-    bytes pegoutSignatureMessage,
+    BitcoinSignatureData pegoutSignatureData,
     uint64 streamId,
     uint64 packetNumber,
     uint64 slotId,
@@ -458,8 +457,7 @@ event PegoutRequested(
 |----|----|-----------|
 |`userPubKey`|`bytes`|The user's public key that will receive the Bitcoin funds|
 |`committeeId`|`uint256`|The ID of the committee responsible for this peg-out|
-|`pegoutSignatureHash`|`bytes32`|The signature hash that committee members need to sign|
-|`pegoutSignatureMessage`|`bytes`|The signature message for committee signing|
+|`pegoutSignatureData`|`BitcoinSignatureData`|The signature data for committee signing|
 |`streamId`|`uint64`|The stream ID where the funds originated|
 |`packetNumber`|`uint64`|The packet number within the stream|
 |`slotId`|`uint64`|The slot ID within the packet|
@@ -473,8 +471,8 @@ Event emitted when a peg-out is successfully registered
 ```solidity
 event PegoutRegistered(
     bytes32 indexed blockHash,
-    bytes32 indexed txHash,
-    bytes32 indexed acceptPeginTxHash,
+    bytes32 indexed txid,
+    bytes32 indexed acceptPeginTxid,
     uint128 committeeId,
     uint64 streamId,
     uint64 packetNumber,
@@ -487,8 +485,8 @@ event PegoutRegistered(
 |Name|Type|Description|
 |----|----|-----------|
 |`blockHash`|`bytes32`|The Bitcoin block hash containing the peg-out transaction|
-|`txHash`|`bytes32`|The hash of the peg-out transaction|
-|`acceptPeginTxHash`|`bytes32`|The hash of the original accept peg-in transaction|
+|`txid`|`bytes32`|The hash of the peg-out transaction|
+|`acceptPeginTxid`|`bytes32`|The hash of the original accept peg-in transaction|
 |`committeeId`|`uint128`|The ID of the committee responsible for this peg-out|
 |`streamId`|`uint64`|The stream ID where the funds originated|
 |`packetNumber`|`uint64`|The packet number within the stream|
@@ -528,11 +526,7 @@ Event emitted when operator take is triggered for a peg-out
 
 ```solidity
 event OperatorTakeTriggered(
-    bytes32 pegoutSignatureHash,
-    PegoutTempInfo pegoutInfo,
-    StreamPosition streamPosition,
-    uint256 updatedAt,
-    uint256 expireAt
+    bytes32 pegoutTxid, PegoutTempInfo pegoutInfo, StreamPosition streamPosition, uint256 updatedAt, uint256 expireAt
 );
 ```
 
@@ -540,7 +534,7 @@ event OperatorTakeTriggered(
 
 |Name|Type|Description|
 |----|----|-----------|
-|`pegoutSignatureHash`|`bytes32`|The signature hash of the peg-out request|
+|`pegoutTxid`|`bytes32`|The transaction id of the peg-out request|
 |`pegoutInfo`|`PegoutTempInfo`|Complete pegout temporary information including operator details|
 |`streamPosition`|`StreamPosition`|Stream position information including slot ID|
 |`updatedAt`|`uint256`|The timestamp when the operator take was triggered|
@@ -564,6 +558,34 @@ event PacketClosed(uint64 indexed streamId, uint64 indexed packetNumber);
 |----|----|-----------|
 |`streamId`|`uint64`|The ID of the stream where the packet was closed|
 |`packetNumber`|`uint64`|The number of the packet that was closed|
+
+### StreamManagerUpdated
+Event emitted when the stream manager contract address is updated
+
+
+```solidity
+event StreamManagerUpdated(IStreamManager _streamManager);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_streamManager`|`IStreamManager`|The stream manager contract address|
+
+### SignatureManagerUpdated
+Event emitted when the signature manager contract address is updated
+
+
+```solidity
+event SignatureManagerUpdated(ISignatureManager _signatureManager);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_signatureManager`|`ISignatureManager`|The signature manager contract address|
 
 ## Errors
 ### BitcoinManagerAddressZero
@@ -625,57 +647,57 @@ Thrown when a peg-in has already been requested for the given transaction
 
 
 ```solidity
-error PeginAlreadyRequested(bytes32 btcTxHash);
+error PeginAlreadyRequested(bytes32 btcTxid);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`btcTxHash`|`bytes32`|The Bitcoin transaction hash that was already requested|
+|`btcTxid`|`bytes32`|The Bitcoin transaction id that was already requested|
 
 ### PeginNotRequested
 Thrown when trying to process a peg-in that hasn't been requested
 
 
 ```solidity
-error PeginNotRequested(bytes32 btcTxHash);
+error PeginNotRequested(bytes32 btcTxid);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`btcTxHash`|`bytes32`|The Bitcoin transaction hash that wasn't requested|
+|`btcTxid`|`bytes32`|The Bitcoin transaction id that wasn't requested|
 
-### InvalidAcceptPeginTxHash
-Thrown when the accept peg-in transaction hash doesn't match the expected value
+### InvalidAcceptPeginTxid
+Thrown when the accept peg-in transaction id doesn't match the expected value
 
 
 ```solidity
-error InvalidAcceptPeginTxHash(bytes32 expected, bytes32 actual);
+error InvalidAcceptPeginTxid(bytes32 expected, bytes32 actual);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`expected`|`bytes32`|The expected transaction hash|
-|`actual`|`bytes32`|The actual transaction hash received|
+|`expected`|`bytes32`|The expected transaction id|
+|`actual`|`bytes32`|The actual transaction id received|
 
 ### PeginAlreadyAccepted
 Thrown when a peg-in has already been accepted
 
 
 ```solidity
-error PeginAlreadyAccepted(bytes32 btcTxHash);
+error PeginAlreadyAccepted(bytes32 btcTxid);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`btcTxHash`|`bytes32`|The Bitcoin transaction hash that was already accepted|
+|`btcTxid`|`bytes32`|The Bitcoin transaction id that was already accepted|
 
 ### IncorrectInputsNumber
 Thrown when the number of inputs doesn't match the expected count
@@ -844,14 +866,14 @@ Thrown when trying to trigger operator take but user take was already signed
 
 
 ```solidity
-error UserTakeAlreadySigned(bytes32 pegoutSignatureHash);
+error UserTakeAlreadySigned(bytes32 pegoutTxid);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`pegoutSignatureHash`|`bytes32`|The signature hash of the peg-out request|
+|`pegoutTxid`|`bytes32`|The signature hash of the peg-out request|
 
 ### OperatorTakeTimeoutNotExpired
 Thrown when trying to trigger operator take before operator take timeout has expired
@@ -868,19 +890,19 @@ error OperatorTakeTimeoutNotExpired(uint256 createdAt, uint256 expireAt);
 |`createdAt`|`uint256`|The timestamp when the operator take was updated|
 |`expireAt`|`uint256`|The timestamp when the operator take timeout expires|
 
-### PegoutSignatureHashNotFound
+### PegoutTxidNotFound
 Thrown when a peg-out signature hash is not found in the system
 
 
 ```solidity
-error PegoutSignatureHashNotFound(bytes32 pegoutSignatureHash);
+error PegoutTxidNotFound(bytes32 pegoutTxid);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`pegoutSignatureHash`|`bytes32`|The signature hash that was not found|
+|`pegoutTxid`|`bytes32`|The signature hash that was not found|
 
 ### OperatorTakeAddressNotMatch
 Thrown when the operator address does not match the expected operator that should advance the funds

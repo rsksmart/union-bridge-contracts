@@ -1,5 +1,5 @@
 # CommitteeRegistry
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b91181b0a4bd785ef0099b4b80f38101dfa816d0/src/CommitteeRegistry.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/5935b1ba9b5693ff58c693caac2763a4b158c822/src/CommitteeRegistry.sol)
 
 **Inherits:**
 [ICommitteeRegistry](/src/interfaces/ICommitteeRegistry.sol/interface.ICommitteeRegistry.md), [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md)
@@ -526,6 +526,8 @@ function setPegManager(IPegManager _pegManager) external onlyOwner;
 ### setMemberRegistry
 
 Sets the Member Registry contract address
+
+*Only callable by the contract owner*
 
 
 ```solidity
