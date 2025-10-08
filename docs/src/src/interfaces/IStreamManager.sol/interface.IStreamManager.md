@@ -1,5 +1,5 @@
 # IStreamManager
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/3db9056f26f2b3b61c05819d9eb725e59c32f233/src/interfaces/IStreamManager.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/5935b1ba9b5693ff58c693caac2763a4b158c822/src/interfaces/IStreamManager.sol)
 
 **Inherits:**
 [IAccessControl](/src/interfaces/IAccessControl.sol/interface.IAccessControl.md)
@@ -306,7 +306,7 @@ function completeSlot(
     uint64 _streamId,
     uint64 _packetNumber,
     uint64 _slotId,
-    bytes32 _acceptPeginTxHash,
+    bytes32 _acceptPeginTxid,
     bytes32 _userTakeTx
 ) external;
 ```
@@ -317,7 +317,7 @@ function completeSlot(
 |`_streamId`|`uint64`|The index of the stream|
 |`_packetNumber`|`uint64`|The index of the packet within the stream|
 |`_slotId`|`uint64`|The index of the slot within the packet|
-|`_acceptPeginTxHash`|`bytes32`|The expected accept peg-in transaction hash for validation|
+|`_acceptPeginTxid`|`bytes32`|The expected accept peg-in transaction id for validation|
 |`_userTakeTx`|`bytes32`|The transaction ID of the normal peg-out transaction|
 
 
@@ -590,6 +590,50 @@ event DisablementPaymentsPerChallengeUpdated(uint256 newCost);
 |----|----|-----------|
 |`newCost`|`uint256`|The new disablement payments per challenge in wei|
 
+### CommitteeRegistryUpdated
+Event emitted when the committee registry contract address  is updated
+
+
+```solidity
+event CommitteeRegistryUpdated(ICommitteeRegistry _committeeRegistry);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_committeeRegistry`|`ICommitteeRegistry`|The new committee registry contract address|
+
+### PeginConfirmationsUpdated
+Event emitted when the number of confirmations required for peg-in transactions is updated
+
+
+```solidity
+event PeginConfirmationsUpdated(uint64 _streamId, uint8 _confirmations);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_streamId`|`uint64`|The ID of the stream|
+|`_confirmations`|`uint8`|The number of confirmations required|
+
+### PegoutConfirmationsUpdated
+Event emitted when the number of confirmations required for peg-out transactions is updated
+
+
+```solidity
+event PegoutConfirmationsUpdated(uint64 _streamId, uint8 _confirmations);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_streamId`|`uint64`|The ID of the stream|
+|`_confirmations`|`uint8`|The number of confirmations required|
+
 ## Errors
 ### StreamNotFoundByDenomination
 Thrown when a stream is not found for the given denomination
@@ -811,20 +855,20 @@ error InvalidSlotState(SlotState actual, SlotState expected);
 |`actual`|`SlotState`|The actual slot state|
 |`expected`|`SlotState`|The expected slot state|
 
-### InvalidAcceptPeginTxHash
-Thrown when the accept peg-in transaction hash doesn't match
+### InvalidAcceptPeginTxid
+Thrown when the accept peg-in transaction id doesn't match
 
 
 ```solidity
-error InvalidAcceptPeginTxHash(bytes32 expected, bytes32 actual);
+error InvalidAcceptPeginTxid(bytes32 expected, bytes32 actual);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`expected`|`bytes32`|The expected transaction hash|
-|`actual`|`bytes32`|The actual transaction hash|
+|`expected`|`bytes32`|The expected transaction id|
+|`actual`|`bytes32`|The actual transaction id|
 
 ### InvalidZeroAddress
 Thrown when an address is zero

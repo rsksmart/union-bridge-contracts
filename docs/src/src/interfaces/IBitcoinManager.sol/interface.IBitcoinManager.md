@@ -1,5 +1,5 @@
 # IBitcoinManager
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/3db9056f26f2b3b61c05819d9eb725e59c32f233/src/interfaces/IBitcoinManager.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/5935b1ba9b5693ff58c693caac2763a4b158c822/src/interfaces/IBitcoinManager.sol)
 
 Interface for managing Bitcoin transaction operations in the union bridge
 
@@ -94,9 +94,9 @@ function validateRequestPeginP2TROutput(
 |`_p2trOut`|`BtcTxOut`|The Bitcoin transaction output to validate|
 
 
-### getBtcTxHash
+### getBtcTxid
 
-Calculates the Bitcoin transaction hash (txid) for a given transaction
+Calculates the Bitcoin transaction id (txid) for a given transaction
 
 *Encodes the transaction into Bitcoin's raw format and performs double SHA256 hash*
 
@@ -104,7 +104,7 @@ Calculates the Bitcoin transaction hash (txid) for a given transaction
 
 
 ```solidity
-function getBtcTxHash(BtcTransaction calldata _btcTx) external pure returns (bytes32);
+function getBtcTxid(BtcTransaction calldata _btcTx) external pure returns (bytes32);
 ```
 **Parameters**
 
@@ -116,7 +116,7 @@ function getBtcTxHash(BtcTransaction calldata _btcTx) external pure returns (byt
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`bytes32`|txHash The transaction hash in big-endian format (standard hex representation)|
+|`<none>`|`bytes32`|txid The transaction id in big-endian format (standard hex representation)|
 
 
 ### getPeginRequestP2TRScriptPub
@@ -163,7 +163,7 @@ function getAcceptPeginSignatureHash(
     bytes32 _userXOnlyPubKey,
     bytes32 _registerPeginTx,
     PrevoutData memory _prevoutData
-) external pure returns (bytes32, bytes32, bytes memory);
+) external pure returns (BitcoinSignatureData memory);
 ```
 **Parameters**
 
@@ -171,16 +171,14 @@ function getAcceptPeginSignatureHash(
 |----|----|-----------|
 |`_committeePubKey`|`bytes`|The committee's public key (x-coordinate only)|
 |`_userXOnlyPubKey`|`bytes32`|The user's public key (x-coordinate only, 32 bytes)|
-|`_registerPeginTx`|`bytes32`|The transaction hash of the peg-in request being spent|
+|`_registerPeginTx`|`bytes32`|The transaction id of the peg-in request being spent|
 |`_prevoutData`|`PrevoutData`|Data about the previous output being spent (amount and scriptPubKey)|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`bytes32`|acceptPeginTxHash The hash of the accept peg-in transaction|
-|`<none>`|`bytes32`|acceptPeginSignatureHash The hash that needs to be signed by committee members|
-|`<none>`|`bytes`|acceptPeginSignatureMessage The encoded data before hashing|
+|`<none>`|`BitcoinSignatureData`|BitcoinSignatureData containing txid, signatureHash, and signatureMessage|
 
 
 ### getAcceptPeginP2TRScriptPub
@@ -268,7 +266,7 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut calldata _speedUpOut) e
 |`_speedUpOut`|`BtcTxOut`|The Bitcoin transaction output containing the speed-up output|
 
 
-### getPegoutSignatureHash
+### getPegoutTxData
 
 Calculates the signature hash for Bitcoin peg-out transactions
 
@@ -276,25 +274,24 @@ Calculates the signature hash for Bitcoin peg-out transactions
 
 
 ```solidity
-function getPegoutSignatureHash(bytes memory _userPubKey, bytes32 _acceptPeginTx, PrevoutData memory _prevoutData)
+function getPegoutTxData(bytes memory _userPubKey, bytes32 _acceptPeginTx, PrevoutData memory _prevoutData)
     external
     pure
-    returns (bytes32, bytes memory);
+    returns (BitcoinSignatureData memory);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
 |`_userPubKey`|`bytes`|The user's public key in compressed format that will receive the funds|
-|`_acceptPeginTx`|`bytes32`|The transaction hash of the accept peg-in tx being spent|
+|`_acceptPeginTx`|`bytes32`|The transaction id of the accept peg-in tx being spent|
 |`_prevoutData`|`PrevoutData`|Data about the previous output being spent (amount and scriptPubKey)|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`bytes32`|pegoutSignatureHash The hash that needs to be signed by committee members|
-|`<none>`|`bytes`|pegoutSignatureMessage The encoded data before hashing|
+|`<none>`|`BitcoinSignatureData`|BitcoinSignatureData containing txid, signatureHash, and signatureMessage|
 
 
 ### validatePegoutUserOutput

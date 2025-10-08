@@ -1,5 +1,5 @@
 # ICommitteeRegistry
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/3db9056f26f2b3b61c05819d9eb725e59c32f233/src/interfaces/ICommitteeRegistry.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/5935b1ba9b5693ff58c693caac2763a4b158c822/src/interfaces/ICommitteeRegistry.sol)
 
 Interface for managing committee registration and formation in the union bridge
 
@@ -667,6 +667,35 @@ event AllCommunicationDataReady(uint128 indexed _committeeId);
 |Name|Type|Description|
 |----|----|-----------|
 |`_committeeId`|`uint128`|The ID of the committee for which all communication data is ready|
+
+### MemberRegistryUpdated
+Event emitted when the member registry address is updated
+
+
+```solidity
+event MemberRegistryUpdated(address memberRegistry);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`memberRegistry`|`address`|The new member registry address|
+
+### CommitteeMembersReleased
+Event emitted when members from a packet's committee are released
+
+
+```solidity
+event CommitteeMembersReleased(uint64 streamId, uint64 packetNumber);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`streamId`|`uint64`|The stream ID for the committee|
+|`packetNumber`|`uint64`|The packet number where the committee was active|
 
 ## Errors
 ### CommitteeIsNotPending

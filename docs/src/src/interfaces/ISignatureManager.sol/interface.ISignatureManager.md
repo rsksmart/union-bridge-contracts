@@ -1,5 +1,5 @@
 # ISignatureManager
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/3db9056f26f2b3b61c05819d9eb725e59c32f233/src/interfaces/ISignatureManager.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/5935b1ba9b5693ff58c693caac2763a4b158c822/src/interfaces/ISignatureManager.sol)
 
 **Inherits:**
 [IAccessControl](/src/interfaces/IAccessControl.sol/interface.IAccessControl.md)
@@ -146,55 +146,55 @@ function getSignaturesStatus(bytes32 _hashToSign)
 |`committeeId`|`uint128`|The committee ID responsible for these signatures|
 
 
-### initOperatorTakeTxHashes
+### initOperatorTakeTxids
 
-Initializes OperatorTake transaction hash collection for a specific accept peg-in
+Initializes OperatorTake transaction id collection for a specific accept peg-in
 
 *Sets up the OperatorTake hash tracking structure for committee members*
 
 
 ```solidity
-function initOperatorTakeTxHashes(bytes32 _acceptPeginTxHash, uint128 _committeeId) external;
+function initOperatorTakeTxids(bytes32 _acceptPeginTxid, uint128 _committeeId) external;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_acceptPeginTxHash`|`bytes32`|The accept peg-in transaction hash|
+|`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction id|
 |`_committeeId`|`uint128`|The ID of the committee responsible for OperatorTake operations|
 
 
-### addOperatorTakeTxHash
+### addOperatorTakeTxid
 
-Adds a OperatorTake transaction hash for a committee member
+Adds a OperatorTake transaction id for a committee member
 
-*Called by committee operators to provide their OperatorTake transaction hash*
+*Called by committee operators to provide their OperatorTake transaction id*
 
 
 ```solidity
-function addOperatorTakeTxHash(bytes32 _acceptPeginTxHash, bytes32 _takeTxhash) external;
+function addOperatorTakeTxid(bytes32 _acceptPeginTxid, bytes32 _takeTxid) external;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_acceptPeginTxHash`|`bytes32`|The accept peg-in transaction hash|
-|`_takeTxhash`|`bytes32`|The OperatorTake transaction hash provided by the member|
+|`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction id|
+|`_takeTxid`|`bytes32`|The OperatorTake transaction id provided by the member|
 
 
 ### checkAllOperatorTakesHashesReady
 
-Checks if all OperatorTake transaction hashes are ready
+Checks if all OperatorTake transaction id's are ready
 
 
 ```solidity
-function checkAllOperatorTakesHashesReady(bytes32 _acceptPeginTxHash) external view returns (bool);
+function checkAllOperatorTakesHashesReady(bytes32 _acceptPeginTxid) external view returns (bool);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_acceptPeginTxHash`|`bytes32`|The accept peg-in transaction hash|
+|`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction id|
 
 **Returns**
 
@@ -209,13 +209,13 @@ Retrieves all OperatorTake data for a specific accept peg-in
 
 
 ```solidity
-function getOperatorTakeData(bytes32 _acceptPeginTxHash) external view returns (OperatorTakeData[] memory);
+function getOperatorTakeData(bytes32 _acceptPeginTxid) external view returns (OperatorTakeData[] memory);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_acceptPeginTxHash`|`bytes32`|The accept peg-in transaction hash|
+|`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction id|
 
 **Returns**
 
@@ -224,19 +224,19 @@ function getOperatorTakeData(bytes32 _acceptPeginTxHash) external view returns (
 |`<none>`|`OperatorTakeData[]`|Array of OperatorTake data from all committee members|
 
 
-### getCommitteeIdByAcceptPeginTxHash
+### getCommitteeIdByAcceptPeginTxid
 
-Gets the committee ID for a specific accept peg-in transaction hash
+Gets the committee ID for a specific accept peg-in transaction id
 
 
 ```solidity
-function getCommitteeIdByAcceptPeginTxHash(bytes32 _acceptPeginTxHash) external view returns (uint128);
+function getCommitteeIdByAcceptPeginTxid(bytes32 _acceptPeginTxid) external view returns (uint128);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_acceptPeginTxHash`|`bytes32`|The accept peg-in transaction hash|
+|`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction id|
 
 **Returns**
 
@@ -306,35 +306,35 @@ event AllSignaturesReady(bytes32 indexed hashToSign);
 |----|----|-----------|
 |`hashToSign`|`bytes32`|The hash for which all signatures are ready|
 
-### OperatorTakeTxHashAdded
-Event emitted when a OperatorTake transaction hash is added
+### OperatorTakeTxidAdded
+Event emitted when a OperatorTake transaction id is added
 
 
 ```solidity
-event OperatorTakeTxHashAdded(bytes32 acceptPeginTxHash, address memberAddress, bytes32 hash);
+event OperatorTakeTxidAdded(bytes32 acceptPeginTxid, address memberAddress, bytes32 hash);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`acceptPeginTxHash`|`bytes32`|The accept peg-in transaction hash|
+|`acceptPeginTxid`|`bytes32`|The accept peg-in transaction id|
 |`memberAddress`|`address`|The member's address|
-|`hash`|`bytes32`|The OperatorTake transaction hash provided by the member|
+|`hash`|`bytes32`|The OperatorTake transaction id provided by the member|
 
-### AllOperatorTakeTxHashesAdded
-Event emitted when all OperatorTake transaction hashes are added
+### AllOperatorTakeTxidsAdded
+Event emitted when all OperatorTake transaction id's are added
 
 
 ```solidity
-event AllOperatorTakeTxHashesAdded(bytes32 acceptPeginTxHash);
+event AllOperatorTakeTxidsAdded(bytes32 acceptPeginTxid);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`acceptPeginTxHash`|`bytes32`|The accept peg-in transaction hash|
+|`acceptPeginTxid`|`bytes32`|The accept peg-in transaction id|
 
 ## Errors
 ### CommitteeRegistryAddressZero
@@ -416,7 +416,7 @@ Thrown when a member has already signed
 
 
 ```solidity
-error MemberHasAlreadySigned(address memberAddress, bytes32 pegoutTxHash);
+error MemberHasAlreadySigned(address memberAddress, bytes32 pegoutTxid);
 ```
 
 **Parameters**
@@ -424,7 +424,7 @@ error MemberHasAlreadySigned(address memberAddress, bytes32 pegoutTxHash);
 |Name|Type|Description|
 |----|----|-----------|
 |`memberAddress`|`address`|The member's address|
-|`pegoutTxHash`|`bytes32`|The peg-out transaction hash|
+|`pegoutTxid`|`bytes32`|The peg-out transaction id|
 
 ### MemberNotFound
 Thrown when a member is not found
@@ -483,61 +483,61 @@ error SignaturesAlreadyInitialized(bytes32 hashToSign);
 |----|----|-----------|
 |`hashToSign`|`bytes32`|The hash for which signatures are already initialized|
 
-### InvalidAcceptPeginTxHash
-Thrown when the accept peg-in transaction hash is invalid
+### InvalidAcceptPeginTxid
+Thrown when the accept peg-in transaction id is invalid
 
 
 ```solidity
-error InvalidAcceptPeginTxHash(bytes32 acceptPeginTxHash);
+error InvalidAcceptPeginTxid(bytes32 acceptPeginTxid);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`acceptPeginTxHash`|`bytes32`|The invalid accept peg-in transaction hash|
+|`acceptPeginTxid`|`bytes32`|The invalid accept peg-in transaction id|
 
-### OperatorTakeTxHashesAlreadyInitialized
-Thrown when OperatorTake transaction hashes are already initialized
+### OperatorTakeTxidsAlreadyInitialized
+Thrown when OperatorTake transaction id's are already initialized
 
 
 ```solidity
-error OperatorTakeTxHashesAlreadyInitialized(bytes32 acceptPeginTxHash);
+error OperatorTakeTxidsAlreadyInitialized(bytes32 acceptPeginTxid);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`acceptPeginTxHash`|`bytes32`|The accept peg-in transaction hash|
+|`acceptPeginTxid`|`bytes32`|The accept peg-in transaction id|
 
-### AcceptPeginTxHashNotFound
-Thrown when an accept peg-in transaction hash is not found
+### AcceptPeginTxidNotFound
+Thrown when an accept peg-in transaction id is not found
 
 
 ```solidity
-error AcceptPeginTxHashNotFound(bytes32 acceptPeginTxHash);
+error AcceptPeginTxidNotFound(bytes32 acceptPeginTxid);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`acceptPeginTxHash`|`bytes32`|The accept peg-in transaction hash that was not found|
+|`acceptPeginTxid`|`bytes32`|The accept peg-in transaction id that was not found|
 
-### AllOperatorTakeTxHashesAlreadyPresent
-Thrown when all OperatorTake transaction hashes are already present
+### AllOperatorTakeTxidsAlreadyPresent
+Thrown when all OperatorTake transaction id's are already present
 
 
 ```solidity
-error AllOperatorTakeTxHashesAlreadyPresent(bytes32 acceptPeginTxHash);
+error AllOperatorTakeTxidsAlreadyPresent(bytes32 acceptPeginTxid);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`acceptPeginTxHash`|`bytes32`|The accept peg-in transaction hash|
+|`acceptPeginTxid`|`bytes32`|The accept peg-in transaction id|
 
 ### InvalidHash
 Thrown when a hash is invalid
@@ -568,19 +568,19 @@ error MemberIsNotOperator(uint128 committeeId, address memberAddress);
 |`committeeId`|`uint128`|The committee ID|
 |`memberAddress`|`address`|The member's address|
 
-### MemberAlreadyAddedOperatorTakeTxHash
-Thrown when a member has already added a OperatorTake transaction hash
+### MemberAlreadyAddedOperatorTakeTxid
+Thrown when a member has already added a OperatorTake transaction id
 
 
 ```solidity
-error MemberAlreadyAddedOperatorTakeTxHash(bytes32 acceptPeginTxHash, address memberAddress, bytes32 hash);
+error MemberAlreadyAddedOperatorTakeTxid(bytes32 acceptPeginTxid, address memberAddress, bytes32 hash);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`acceptPeginTxHash`|`bytes32`|The accept peg-in transaction hash|
+|`acceptPeginTxid`|`bytes32`|The accept peg-in transaction id|
 |`memberAddress`|`address`|The member's address|
-|`hash`|`bytes32`|The OperatorTake transaction hash that was already added|
+|`hash`|`bytes32`|The OperatorTake transaction id that was already added|
 

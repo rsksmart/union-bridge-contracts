@@ -1,5 +1,5 @@
 # StreamManager
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/3db9056f26f2b3b61c05819d9eb725e59c32f233/src/StreamManager.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/5935b1ba9b5693ff58c693caac2763a4b158c822/src/StreamManager.sol)
 
 **Inherits:**
 [IStreamManager](/src/interfaces/IStreamManager.sol/interface.IStreamManager.md), [AccessControl](/src/AccessControl.sol/contract.AccessControl.md)
@@ -421,7 +421,7 @@ function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external vie
 
 ### completeSlot
 
-Marks a slot as completed and stores the UserTake transaction hash
+Marks a slot as completed and stores the UserTake transaction id
 
 *Can only be called by the PegManager*
 
@@ -431,7 +431,7 @@ function completeSlot(
     uint64 _streamId,
     uint64 _packetNumber,
     uint64 _slotId,
-    bytes32 _acceptPeginTxHash,
+    bytes32 _acceptPeginTxid,
     bytes32 _userTakeTx
 ) external onlyPegManager;
 ```
@@ -442,7 +442,7 @@ function completeSlot(
 |`_streamId`|`uint64`|The ID of the stream|
 |`_packetNumber`|`uint64`|The packet number|
 |`_slotId`|`uint64`|The slot ID|
-|`_acceptPeginTxHash`|`bytes32`|The hash of the accept peg-in transaction|
+|`_acceptPeginTxid`|`bytes32`|The hash of the accept peg-in transaction|
 |`_userTakeTx`|`bytes32`|The hash of the UserTake transaction|
 
 

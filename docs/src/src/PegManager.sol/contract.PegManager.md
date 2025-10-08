@@ -1,5 +1,5 @@
 # PegManager
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/3db9056f26f2b3b61c05819d9eb725e59c32f233/src/PegManager.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/5935b1ba9b5693ff58c693caac2763a4b158c822/src/PegManager.sol)
 
 **Inherits:**
 [IPegManager](/src/interfaces/IPegManager.sol/interface.IPegManager.md), [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md), [ProofValidator](/src/ProofValidator.sol/abstract.ProofValidator.md)
@@ -79,45 +79,45 @@ uint256 public operatorTakeTimeout;
 ```
 
 
-### peginRequests
+### acceptPegins
 
 ```solidity
-mapping(bytes32 requestPeginTxHash => bytes32 acceptPeginTxhash) internal peginRequests;
+mapping(bytes32 requestPeginTxid => bytes32 acceptPeginTxid) internal acceptPegins;
 ```
 
 
 ### streamPosition
 
 ```solidity
-mapping(bytes32 acceptPeginTxhash => StreamPosition streamPosition) internal streamPosition;
+mapping(bytes32 acceptPeginTxid => StreamPosition streamPosition) internal streamPosition;
 ```
 
 
 ### peginTempInfo
 
 ```solidity
-mapping(bytes32 requestPeginTxHash => RequestPeginTempInfo tempInfo) internal peginTempInfo;
+mapping(bytes32 requestPeginTxid => RequestPeginTempInfo tempInfo) internal peginTempInfo;
 ```
 
 
 ### pegoutTempInfo
 
 ```solidity
-mapping(bytes32 acceptPeginTxHash => PegoutTempInfo tempInfo) internal pegoutTempInfo;
+mapping(bytes32 acceptPeginTxid => PegoutTempInfo tempInfo) internal pegoutTempInfo;
 ```
 
 
-### pegoutToPeginTxHash
+### pegoutToPeginTxid
 
 ```solidity
-mapping(bytes32 pegoutSignatureHash => bytes32 acceptPeginTxHash) internal pegoutToPeginTxHash;
+mapping(bytes32 pegoutTxid => bytes32 acceptPeginTxid) internal pegoutToPeginTxid;
 ```
 
 
-### pegoutSighashes
+### pegoutTxids
 
 ```solidity
-mapping(bytes32 key => bytes32 pegoutSignatureHash) internal pegoutSighashes;
+mapping(bytes32 key => bytes32 pegoutTxid) internal pegoutTxids;
 ```
 
 
@@ -211,40 +211,40 @@ function setMemberRegistry(IMemberRegistry _memberRegistry) external onlyOwner;
 |`_memberRegistry`|`IMemberRegistry`|The member registry contract address|
 
 
-### getPeginRequest
+### getAcceptPegin
 
-Gets the accept peg-in transaction hash for a given request peg-in transaction hash
+Gets the accept peg-in transaction id for a given request peg-in transaction id
 
 
 ```solidity
-function getPeginRequest(bytes32 _requestPeginTxHash) external view returns (bytes32);
+function getAcceptPegin(bytes32 _requestPeginTxid) external view returns (bytes32);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_requestPeginTxHash`|`bytes32`|The request peg-in transaction hash|
+|`_requestPeginTxid`|`bytes32`|The request peg-in transaction id|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`bytes32`|The accept peg-in transaction hash|
+|`<none>`|`bytes32`|The accept peg-in transaction id|
 
 
 ### getRequestPeginTempInfo
 
-Gets the temporary peg-in information for a given request peg-in transaction hash
+Gets the temporary peg-in information for a given request peg-in transaction id
 
 
 ```solidity
-function getRequestPeginTempInfo(bytes32 _btcTxHash) external view returns (RequestPeginTempInfo memory);
+function getRequestPeginTempInfo(bytes32 _btcTxid) external view returns (RequestPeginTempInfo memory);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_btcTxHash`|`bytes32`|The request peg-in transaction hash|
+|`_btcTxid`|`bytes32`|The request peg-in transaction id|
 
 **Returns**
 
@@ -255,17 +255,17 @@ function getRequestPeginTempInfo(bytes32 _btcTxHash) external view returns (Requ
 
 ### getPegoutTempInfo
 
-Gets the temporary peg-out information for a given accept peg-in transaction hash
+Gets the temporary peg-out information for a given accept peg-in transaction id
 
 
 ```solidity
-function getPegoutTempInfo(bytes32 _acceptPeginTxHash) external view returns (PegoutTempInfo memory);
+function getPegoutTempInfo(bytes32 _acceptPeginTxid) external view returns (PegoutTempInfo memory);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_acceptPeginTxHash`|`bytes32`|The accept peg-in transaction hash|
+|`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction id|
 
 **Returns**
 
@@ -330,7 +330,7 @@ function requestPegin(BtcTxSPVProof calldata _peginRequestTxSPVProof) external;
 function _validatePeginRequestProof(BtcTxSPVProof calldata _peginRequestTxSPVProof)
     internal
     view
-    returns (bytes32 requestPeginTxHash);
+    returns (bytes32 requestPeginTxid);
 ```
 
 ### _extractPeginData
@@ -359,7 +359,7 @@ function _validatePeginTransaction(
     bytes32 btcReimbursementPubKey,
     bytes memory committeePubKey,
     Stream memory stream,
-    bytes32 requestPeginTxHash
+    bytes32 requestPeginTxid
 ) internal view;
 ```
 
@@ -389,9 +389,9 @@ function acceptPegin(BtcTxSPVProof calldata _peginAcceptedTxSPVProof) external;
 
 ```solidity
 function _storePegin(
-    bytes32 _requestPeginTxHash,
+    bytes32 _requestPeginTxid,
     bytes32 _blockHash,
-    bytes32 _acceptPegintxHash,
+    bytes32 _acceptPegintxid,
     BtcTxOut memory _acceptPeginTxOutput
 ) internal;
 ```
@@ -445,13 +445,13 @@ function registerUserTake(BtcTxSPVProof calldata _pegoutTxSPVProof) external;
 |`_pegoutTxSPVProof`|`BtcTxSPVProof`|The BTC SPV proof of the peg-out transaction|
 
 
-### getPegoutSignatureHash
+### getPegoutTxid
 
 Gets the peg-out signature hash for a specific stream, packet, and slot
 
 
 ```solidity
-function getPegoutSignatureHash(uint64 streamId, uint64 packetNumber, uint64 slotId) external view returns (bytes32);
+function getPegoutTxid(uint64 streamId, uint64 packetNumber, uint64 slotId) external view returns (bytes32);
 ```
 **Parameters**
 
@@ -470,17 +470,17 @@ function getPegoutSignatureHash(uint64 streamId, uint64 packetNumber, uint64 slo
 
 ### getStreamPosition
 
-Gets the stream position information for a given Bitcoin Pegin request transaction hash
+Gets the stream position information for a given Bitcoin Pegin request transaction id
 
 
 ```solidity
-function getStreamPosition(bytes32 _acceptPeginTxHash) external view returns (StreamPosition memory);
+function getStreamPosition(bytes32 _acceptPeginTxid) external view returns (StreamPosition memory);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_acceptPeginTxHash`|`bytes32`|The accept peg-in Bitcoin transaction hash|
+|`_acceptPeginTxid`|`bytes32`|The accept peg-in Bitcoin transaction id|
 
 **Returns**
 
@@ -493,19 +493,16 @@ function getStreamPosition(bytes32 _acceptPeginTxHash) external view returns (St
 
 
 ```solidity
-function _getStreamPosition(bytes32 _acceptPeginTxHash) internal view returns (StreamPosition memory);
+function _getStreamPosition(bytes32 _acceptPeginTxid) internal view returns (StreamPosition memory);
 ```
 
 ### _storePegoutAndInitSignatures
 
 
 ```solidity
-function _storePegoutAndInitSignatures(
-    bytes32 _pegoutSignatureHash,
-    uint64 _streamId,
-    uint64 _packetNumber,
-    uint64 _slotId
-) internal returns (uint128);
+function _storePegoutAndInitSignatures(bytes32 _pegoutTxid, uint64 _streamId, uint64 _packetNumber, uint64 _slotId)
+    internal
+    returns (uint128);
 ```
 
 ### triggerOperatorTake
@@ -524,13 +521,13 @@ Triggers the operator take process for a peg-out when not all committee members 
 
 
 ```solidity
-function triggerOperatorTake(bytes32 _pegoutSignatureHash) external;
+function triggerOperatorTake(bytes32 _pegoutTxid) external;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_pegoutSignatureHash`|`bytes32`|The signature hash of the peg-out request|
+|`_pegoutTxid`|`bytes32`|The transaction id of the peg-out request|
 
 
 ### registerOperatorTake
