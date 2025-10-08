@@ -1,5 +1,5 @@
 # BtcTransaction
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b91181b0a4bd785ef0099b4b80f38101dfa816d0/src/interfaces/IBitcoinManager.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/5935b1ba9b5693ff58c693caac2763a4b158c822/src/interfaces/IBitcoinManager.sol)
 
 Represents a complete Bitcoin transaction structure for union bridge operations
 
@@ -7,7 +7,7 @@ Represents a complete Bitcoin transaction structure for union bridge operations
 
 *All multi-byte fields are stored in little-endian format (Bitcoin's native format)*
 
-*The witness data is excluded from this struct as it's not needed for transaction hash calculation*
+*The witness data is excluded from this struct as it's not needed for transaction id calculation*
 
 *For more details on Bitcoin transaction structure, see: https://learnmeabitcoin.com/technical/transaction/#structure-inputs-txid*
 

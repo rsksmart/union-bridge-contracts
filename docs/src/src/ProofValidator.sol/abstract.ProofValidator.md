@@ -1,5 +1,5 @@
 # ProofValidator
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b91181b0a4bd785ef0099b4b80f38101dfa816d0/src/ProofValidator.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/5935b1ba9b5693ff58c693caac2763a4b158c822/src/ProofValidator.sol)
 
 **Inherits:**
 Initializable
@@ -61,7 +61,7 @@ Verifies that a Bitcoin transaction exists in a block and has enough confirmatio
 ```solidity
 function _verifyTxConfirmations(
     uint256 _minConfirmations,
-    bytes32 _txHash,
+    bytes32 _txid,
     bytes32 _blockHash,
     uint256 _merkleBranchPath,
     bytes32[] memory _merkleBranchHashes
@@ -72,7 +72,7 @@ function _verifyTxConfirmations(
 |Name|Type|Description|
 |----|----|-----------|
 |`_minConfirmations`|`uint256`|The minimum number of confirmations required for the transaction|
-|`_txHash`|`bytes32`|The hash of the Bitcoin transaction to verify|
+|`_txid`|`bytes32`|The hash of the Bitcoin transaction to verify|
 |`_blockHash`|`bytes32`|The hash of the block containing the transaction|
 |`_merkleBranchPath`|`uint256`|The path in the merkle tree to verify the transaction|
 |`_merkleBranchHashes`|`bytes32[]`|The hashes needed to verify the merkle proof|
@@ -140,14 +140,14 @@ Error thrown when the merkle proof for a Bitcoin transaction is invalid
 
 
 ```solidity
-error BridgeBtcTxInvalidMerkleBranch(bytes32 txHash, uint256 merkleBranchPath, bytes32[] merkleBranchHashes);
+error BridgeBtcTxInvalidMerkleBranch(bytes32 txid, uint256 merkleBranchPath, bytes32[] merkleBranchHashes);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`txHash`|`bytes32`|The transaction hash that failed merkle proof verification|
+|`txid`|`bytes32`|The transaction id that failed merkle proof verification|
 |`merkleBranchPath`|`uint256`|The merkle branch path that was used|
 |`merkleBranchHashes`|`bytes32[]`|The merkle branch hashes that were provided|
 

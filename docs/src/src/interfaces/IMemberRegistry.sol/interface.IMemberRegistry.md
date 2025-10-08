@@ -1,5 +1,5 @@
 # IMemberRegistry
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b91181b0a4bd785ef0099b4b80f38101dfa816d0/src/interfaces/IMemberRegistry.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/5935b1ba9b5693ff58c693caac2763a4b158c822/src/interfaces/IMemberRegistry.sol)
 
 Interface for managing committee member registration, applications, and balance tracking
 
@@ -578,6 +578,20 @@ event MissingMembers(StreamDenomination denomination, uint256 required, uint256 
 |`denomination`|`StreamDenomination`|The stream denomination|
 |`required`|`uint256`|Number of members required|
 |`missing`|`uint256`|Number of members missing|
+
+### CommitteeRegistryUpdated
+Event emitted when the committee registry address is updated
+
+
+```solidity
+event CommitteeRegistryUpdated(address indexed newCommitteeRegistry);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`newCommitteeRegistry`|`address`|The new committee registry address|
 
 ## Errors
 ### MemberNotRegistered

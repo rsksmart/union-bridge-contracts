@@ -1,5 +1,5 @@
 # SignatureManager
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b91181b0a4bd785ef0099b4b80f38101dfa816d0/src/SignatureManager.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/5935b1ba9b5693ff58c693caac2763a4b158c822/src/SignatureManager.sol)
 
 **Inherits:**
 [ISignatureManager](/src/interfaces/ISignatureManager.sol/interface.ISignatureManager.md), [AccessControl](/src/AccessControl.sol/contract.AccessControl.md)
@@ -8,7 +8,7 @@ Manages signatures for peg-in and peg-out operations
 
 *Handles multi-signature operations for committee members using Musig2 protocol*
 
-*Manages both signature collection and OperatorTake transaction hash collection*
+*Manages both signature collection and OperatorTake transaction id collection*
 
 
 ## State Variables
@@ -30,10 +30,10 @@ mapping(bytes32 hashToSign => Signatures signatures) internal committeeSignature
 ```
 
 
-### operatorTakeTxHashesMap
+### operatorTakeTxidsMap
 
 ```solidity
-mapping(bytes32 acceptPeginTxHash => OperatorTakeTxHashes operatorTakeTxHashes) internal operatorTakeTxHashesMap;
+mapping(bytes32 acceptPeginTxid => OperatorTakeTxids operatorTakeTxids) internal operatorTakeTxidsMap;
 ```
 
 
@@ -107,13 +107,13 @@ Adds a signature for a committee member to the signature collection
 
 
 ```solidity
-function addMemberSignature(bytes32 _hashToSign, bytes32 _signature) external returns (bool);
+function addMemberSignature(bytes32 _txid, bytes32 _signature) external returns (bool);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_hashToSign`|`bytes32`|The hash that needs to be signed by the committee|
+|`_txid`|`bytes32`|The hash that needs to be signed by the committee|
 |`_signature`|`bytes32`|The signature for the hash|
 
 **Returns**
@@ -129,13 +129,13 @@ Checks if all signatures are ready for a given hash
 
 
 ```solidity
-function checkAllSignaturesReady(bytes32 _hashToSign) external view returns (bool);
+function checkAllSignaturesReady(bytes32 _txid) external view returns (bool);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_hashToSign`|`bytes32`|The hash to check signatures for|
+|`_txid`|`bytes32`|The hash to check signatures for|
 
 **Returns**
 
@@ -152,13 +152,13 @@ Gets all partial signatures for a given hash
 
 
 ```solidity
-function getPartialSignatures(bytes32 _hashToSign) external view returns (SignatureData[] memory);
+function getPartialSignatures(bytes32 _txid) external view returns (SignatureData[] memory);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_hashToSign`|`bytes32`|The hash to get signatures for|
+|`_txid`|`bytes32`|The hash to get signatures for|
 
 **Returns**
 
@@ -173,13 +173,13 @@ Gets the status of the signatures for a given hash
 
 
 ```solidity
-function getSignaturesStatus(bytes32 _hashToSign) external view returns (uint8, uint8, uint128);
+function getSignaturesStatus(bytes32 _txid) external view returns (uint8, uint8, uint128);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_hashToSign`|`bytes32`|The hash to get status for|
+|`_txid`|`bytes32`|The hash to get status for|
 
 **Returns**
 
@@ -194,7 +194,7 @@ function getSignaturesStatus(bytes32 _hashToSign) external view returns (uint8, 
 
 
 ```solidity
-function _getSignatures(bytes32 _hashToSign) internal view returns (Signatures storage);
+function _getSignatures(bytes32 _txid) internal view returns (Signatures storage);
 ```
 
 ### initSignatures
@@ -205,78 +205,78 @@ Initializes signature collection for a given hash
 
 
 ```solidity
-function initSignatures(bytes32 _hashToSign, uint128 _committeeId) external onlyPegManager;
+function initSignatures(bytes32 _txid, uint128 _committeeId) external onlyPegManager;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_hashToSign`|`bytes32`|The hash that needs to be signed|
+|`_txid`|`bytes32`|The hash that needs to be signed|
 |`_committeeId`|`uint128`|The committee ID that will sign the hash|
 
 
-### initOperatorTakeTxHashes
+### initOperatorTakeTxids
 
-Initializes OperatorTake transaction hash collection for a given accept peg-in transaction
+Initializes OperatorTake transaction id collection for a given accept peg-in transaction
 
 *Can only be called by the PegManager*
 
 
 ```solidity
-function initOperatorTakeTxHashes(bytes32 _acceptPeginTxHash, uint128 _committeeId) external onlyPegManager;
+function initOperatorTakeTxids(bytes32 _acceptPeginTxid, uint128 _committeeId) external onlyPegManager;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_acceptPeginTxHash`|`bytes32`|The accept peg-in transaction hash|
-|`_committeeId`|`uint128`|The committee ID that will provide OperatorTake transaction hashes|
+|`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction id|
+|`_committeeId`|`uint128`|The committee ID that will provide OperatorTake transaction id's|
 
 
-### _getOperatorTakeTxHashes
+### _getOperatorTakeTxids
 
 
 ```solidity
-function _getOperatorTakeTxHashes(bytes32 _acceptPeginTxHash) internal view returns (OperatorTakeTxHashes storage);
+function _getOperatorTakeTxids(bytes32 _acceptPeginTxid) internal view returns (OperatorTakeTxids storage);
 ```
 
-### addOperatorTakeTxHash
+### addOperatorTakeTxid
 
-Adds a OperatorTake transaction hash for an operator
+Adds a OperatorTake transaction id for an operator
 
-*Only operators can add OperatorTake transaction hashes*
+*Only operators can add OperatorTake transaction id's*
 
 
 ```solidity
-function addOperatorTakeTxHash(bytes32 _acceptPeginTxHash, bytes32 _takeTxhash) external;
+function addOperatorTakeTxid(bytes32 _acceptPeginTxid, bytes32 _takeTxid) external;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_acceptPeginTxHash`|`bytes32`|The accept peg-in transaction hash|
-|`_takeTxhash`|`bytes32`|The OperatorTake transaction hash to add|
+|`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction id|
+|`_takeTxid`|`bytes32`|The OperatorTake transaction id to add|
 
 
 ### checkAllOperatorTakesHashesReady
 
-Checks if all OperatorTake transaction hashes are ready for a given accept peg-in transaction
+Checks if all OperatorTake transaction id's are ready for a given accept peg-in transaction
 
 
 ```solidity
-function checkAllOperatorTakesHashesReady(bytes32 _acceptPeginTxHash) external view returns (bool);
+function checkAllOperatorTakesHashesReady(bytes32 _acceptPeginTxid) external view returns (bool);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_acceptPeginTxHash`|`bytes32`|The accept peg-in transaction hash to check|
+|`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction id to check|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`bool`|true if all OperatorTake transaction hashes are present, false otherwise|
+|`<none>`|`bool`|true if all OperatorTake transaction id's are present, false otherwise|
 
 
 ### getOperatorTakeData
@@ -285,13 +285,13 @@ Gets all OperatorTake transaction data for a given accept peg-in transaction
 
 
 ```solidity
-function getOperatorTakeData(bytes32 _acceptPeginTxHash) external view returns (OperatorTakeData[] memory);
+function getOperatorTakeData(bytes32 _acceptPeginTxid) external view returns (OperatorTakeData[] memory);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_acceptPeginTxHash`|`bytes32`|The accept peg-in transaction hash|
+|`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction id|
 
 **Returns**
 
@@ -300,24 +300,24 @@ function getOperatorTakeData(bytes32 _acceptPeginTxHash) external view returns (
 |`<none>`|`OperatorTakeData[]`|Array of OperatorTake transaction data for all operators|
 
 
-### getCommitteeIdByAcceptPeginTxHash
+### getCommitteeIdByAcceptPeginTxid
 
-Gets the committee ID for a given accept peg-in transaction hash
+Gets the committee ID for a given accept peg-in transaction id
 
 
 ```solidity
-function getCommitteeIdByAcceptPeginTxHash(bytes32 _acceptPeginTxHash) external view returns (uint128);
+function getCommitteeIdByAcceptPeginTxid(bytes32 _acceptPeginTxid) external view returns (uint128);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_acceptPeginTxHash`|`bytes32`|The accept peg-in transaction hash|
+|`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction id|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`uint128`|The committee ID associated with this transaction hash|
+|`<none>`|`uint128`|The committee ID associated with this transaction id|
 
 

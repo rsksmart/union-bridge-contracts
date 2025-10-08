@@ -1,5 +1,5 @@
 # BitcoinManager
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b91181b0a4bd785ef0099b4b80f38101dfa816d0/src/BitcoinManager.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/5935b1ba9b5693ff58c693caac2763a4b158c822/src/BitcoinManager.sol)
 
 **Inherits:**
 [IBitcoinManager](/src/interfaces/IBitcoinManager.sol/interface.IBitcoinManager.md), Initializable, [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md)
@@ -44,15 +44,15 @@ function initialize(address _initialOwner, BtcNetwork _network) public initializ
 |`_network`|`BtcNetwork`|The Bitcoin network to operate on|
 
 
-### getBtcTxHash
+### getBtcTxid
 
 Converts a Bitcoin transaction to raw hex format and calculates its hash
 
-*Uses Bitcoin format encoding and then applies hash256 to get the transaction hash*
+*Uses Bitcoin format encoding and then applies hash256 to get the transaction id*
 
 
 ```solidity
-function getBtcTxHash(BtcTransaction calldata _btcTx) external pure returns (bytes32);
+function getBtcTxid(BtcTransaction calldata _btcTx) external pure returns (bytes32);
 ```
 **Parameters**
 
@@ -64,14 +64,14 @@ function getBtcTxHash(BtcTransaction calldata _btcTx) external pure returns (byt
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`bytes32`|The transaction hash in bytes32 format|
+|`<none>`|`bytes32`|The transaction id in bytes32 format|
 
 
-### _getBtcTxHash
+### _getBtcTxid
 
 
 ```solidity
-function _getBtcTxHash(BtcTransaction memory _btcTx) internal pure returns (bytes32);
+function _getBtcTxid(BtcTransaction memory _btcTx) internal pure returns (bytes32);
 ```
 
 ### getTemporaryPeginAddress
@@ -267,7 +267,7 @@ function getAcceptPeginSignatureHash(
     bytes32 _userXOnlyPubKey,
     bytes32 _registerPeginTx,
     PrevoutData memory _prevoutData
-) external pure returns (bytes32, bytes32, bytes memory);
+) external pure returns (BitcoinSignatureData memory);
 ```
 **Parameters**
 
@@ -282,9 +282,7 @@ function getAcceptPeginSignatureHash(
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`bytes32`|The transaction hash, signature hash, and signature message|
-|`<none>`|`bytes32`||
-|`<none>`|`bytes`||
+|`<none>`|`BitcoinSignatureData`|The transaction id, signature hash, and signature message|
 
 
 ### getAcceptPeginTweakedPublicKey
@@ -373,16 +371,16 @@ function getSpeedUpScriptPub(bytes32 _pubKey) public pure returns (bytes memory)
 |`<none>`|`bytes`|The P2WPKH script pub key bytes|
 
 
-### getPegoutSignatureHash
+### getPegoutTxData
 
 Generates the signature hash for a peg-out transaction
 
 
 ```solidity
-function getPegoutSignatureHash(bytes memory _userPubKey, bytes32 _acceptPeginTx, PrevoutData memory _prevoutData)
+function getPegoutTxData(bytes memory _userPubKey, bytes32 _acceptPeginTx, PrevoutData memory _prevoutData)
     external
     pure
-    returns (bytes32, bytes memory);
+    returns (BitcoinSignatureData memory);
 ```
 **Parameters**
 
@@ -396,8 +394,7 @@ function getPegoutSignatureHash(bytes memory _userPubKey, bytes32 _acceptPeginTx
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`bytes32`|The signature hash and signature message|
-|`<none>`|`bytes`||
+|`<none>`|`BitcoinSignatureData`|bytes32 The txid, bytes32 the signature hash and bytes signature message|
 
 
 ### taprootSignatureHash
