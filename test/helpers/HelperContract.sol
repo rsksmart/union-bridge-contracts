@@ -117,11 +117,7 @@ abstract contract HelperContract is Test, TestUtils {
      * @param  memberAddress The member's address.
      * @param  memberRole    The member role (WATCHTOWER or OPERATOR).
      */
-    function _applyMemberToStream(
-        StreamDenomination denomination,
-        address memberAddress,
-        Role memberRole
-    ) internal {
+    function _applyMemberToStream(StreamDenomination denomination, address memberAddress, Role memberRole) internal {
         MemberRegistrationKeys memory keys = _deriveRegistrationKeysFromAddress(memberAddress);
         setup_applyToStream(denomination, memberAddress, keys, memberRole);
     }
@@ -165,11 +161,9 @@ abstract contract HelperContract is Test, TestUtils {
      * @param  numOperators   Number of operator members to register.
      * @param  denomination   Stream denomination to apply for.
      */
-    function setup_registerNewMembers(
-        uint256 numWatchtowers,
-        uint256 numOperators,
-        StreamDenomination denomination
-    ) internal {
+    function setup_registerNewMembers(uint256 numWatchtowers, uint256 numOperators, StreamDenomination denomination)
+        internal
+    {
         uint256 startingMemberIndex = registeredMembersCounter;
         _applyMembersByCounts(denomination, numWatchtowers, numOperators, startingMemberIndex);
         registeredMembersCounter = startingMemberIndex + numWatchtowers + numOperators;
