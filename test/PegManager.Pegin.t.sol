@@ -45,8 +45,10 @@ contract TestPegManager is Test, HelperContract {
         // Address is different according to amount and destination address
         string memory tempAddress = "bcrt1p9hdr74xdg69a7w6r4pfsrrnj3l7ku54x5jdmtwf4thnjyhkmeuhs79pnrw";
 
-        string memory result = pm.getTemporaryPeginAddress(dummyRskAddress, VALUE, BTC_REIMBURSEMENT_PUBKEY);
+        (string memory result, uint64 packetNumber) =
+            pm.getTemporaryPeginAddress(dummyRskAddress, VALUE, BTC_REIMBURSEMENT_PUBKEY);
         assertEq(result, tempAddress, "Incorrect temporary peg in address at PegManager");
+        assertEq(packetNumber, 0, "Incorrect packet number at PegManager");
     }
 
     // ========================== REQUEST PEGIN ==========================

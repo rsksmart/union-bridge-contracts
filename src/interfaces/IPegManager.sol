@@ -121,7 +121,7 @@ interface IPegManager {
     /// @return temporaryPeginAddress The generated temporary Bitcoin address for deposit
     function getTemporaryPeginAddress(address _rootstockDepositAddress, uint64 _value, bytes32 _btcReimbursementPubKey)
         external
-        returns (string memory temporaryPeginAddress);
+        returns (string memory temporaryPeginAddress, uint64 packetNumber);
 
     /// @notice Retrieves the stream position information for a given Bitcoin transaction id
     /// @param btcTxid The Bitcoin transaction id to look up
