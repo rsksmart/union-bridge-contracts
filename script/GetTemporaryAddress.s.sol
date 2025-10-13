@@ -22,9 +22,11 @@ contract GetTemporaryAddressScript is Script {
     function run() public {
         setUp();
 
-        string memory result =
+        (string memory result, uint64 packetNumber) =
             pegManager.getTemporaryPeginAddress(rootstock_deposit_address, value, btc_reimbursement_pub_key);
         console.log("=== getTemporaryPeginAddress ==");
         console.log(result);
+        console.log("=== Packet Number ===");
+        console.log(packetNumber);
     }
 }

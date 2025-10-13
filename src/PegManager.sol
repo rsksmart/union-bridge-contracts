@@ -158,7 +158,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
     function getTemporaryPeginAddress(address _rootstockDepositAddress, uint64 _value, bytes32 _btcReimbursementPubKey)
         external
         view
-        returns (string memory bitcoinDepositAddress)
+        returns (string memory bitcoinDepositAddress, uint64 packetNumber)
     {
         // Get the stream for this value
         Stream memory stream = streamManager.getStream(_value);
@@ -167,8 +167,11 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         Packet memory currentPacket = streamManager.getPacket(stream.streamId, stream.peginPacketPointer);
         bytes memory committeeKey = currentPacket.committeePubKey;
 
-        return bitcoinManager.getTemporaryPeginAddress(
-            _rootstockDepositAddress, _value, _btcReimbursementPubKey, committeeKey
+        return (
+            bitcoinManager.getTemporaryPeginAddress(
+                _rootstockDepositAddress, _value, _btcReimbursementPubKey, committeeKey
+            ),
+            currentPacket.packetNumber
         );
     }
 
