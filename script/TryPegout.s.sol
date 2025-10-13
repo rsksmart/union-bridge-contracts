@@ -5,9 +5,10 @@ import {console} from "forge-std/console.sol";
 import {PegManager} from "src/PegManager.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
+import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
 import {Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
 
-contract TryPegoutScript is ScriptUtils {
+contract TryPegoutScript is ScriptUtils, ContractAddressManager {
     PegManager pegManager;
     IStreamManager streamManager;
     uint64 amount;
@@ -16,7 +17,7 @@ contract TryPegoutScript is ScriptUtils {
 
     function setUp() internal {
         // ====== Arguments ======
-        pegManager = PegManager(0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6);
+        pegManager = PegManager(getPegManager());
         streamManager = IStreamManager(pegManager.streamManager());
         amount = 100_000; // 0.001 BTC
         amountInWei = BtcHelper.satoshiToWei(amount);

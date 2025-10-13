@@ -4,15 +4,16 @@ pragma solidity ^0.8.20;
 import {console} from "forge-std/console.sol";
 import {BridgeMock} from "test/helpers/BridgeMock.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
+import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
 
-contract SetMockBridgeConfirmationsScript is ScriptUtils {
+contract SetMockBridgeConfirmationsScript is ScriptUtils, ContractAddressManager {
     BridgeMock bridgeMock;
     int256 confirmations;
 
     function setUp() internal {
         // ====== Arguments ======
         confirmations = -1;
-        bridgeMock = BridgeMock(payable(0x5FbDB2315678afecb367f032d93F642f64180aa3));
+        bridgeMock = BridgeMock(getBridge());
     }
 
     function run() public {

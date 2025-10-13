@@ -3,9 +3,10 @@ pragma solidity ^0.8.20;
 
 import {console} from "forge-std/console.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
+import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
 import {ICommitteeRegistry, CommunicationData} from "src/interfaces/ICommitteeRegistry.sol";
 
-contract GetCommunicationDataForOneMemberScript is ScriptUtils {
+contract GetCommunicationDataForOneMemberScript is ScriptUtils, ContractAddressManager {
     ICommitteeRegistry committeeRegistry;
 
     bytes committeePubKey;
@@ -16,7 +17,7 @@ contract GetCommunicationDataForOneMemberScript is ScriptUtils {
     bytes32 comPubKey;
 
     function setUp(uint16 _mnemonicIndex, uint64 _streamIndex) internal {
-        committeeRegistry = ICommitteeRegistry(0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9);
+        committeeRegistry = ICommitteeRegistry(getCommitteeRegistry());
 
         // Read args from command line / env
         mnemonicIndex = _mnemonicIndex;

@@ -18,19 +18,43 @@ SCRIPT_DIR="$CURRENT_PATH/.."
 
 # set up environment variables
 source .env
+
+# Parse args for --alphanet flag
+ALPHANET_FLAG=""
 RPC=$LOCAL_RPC
+while getopts ":-:" opt; do
+  case "$opt" in
+    -)
+      case "${OPTARG}" in
+        alphanet)
+          ALPHANET_FLAG="--alphanet"
+          RPC=$RSK_ALPHANET_RPC
+          ;;
+        *)
+          echo "Unknown option --${OPTARG}" >&2
+          exit 1
+          ;;
+      esac
+      ;;
+    *)
+      echo "Unknown option -${opt}" >&2
+      exit 1
+      ;;
+  esac
+done
+
 echo "================ RUN OPERATOR TAKE FLOW ================"
 
-bash "$SCRIPT_DIR/request-pegin.sh" -a "$RSK_DESTINATION_ADDRESS"
-bash "$SCRIPT_DIR/operator-take/add-every-operator-take-txid.sh" -a "$ACCEPT_PEGIN_TXID" -t "$TAKE_TXID"
-bash "$SCRIPT_DIR/signatures/add-every-member-nonce-and-signature.sh" -h "$ACCEPT_PEGIN_TXID"
-bash "$SCRIPT_DIR/accept-pegin.sh" -r "$REQUEST_PEGIN_TXID"
-bash "$SCRIPT_DIR/try-pegout.sh"
-bash "$SCRIPT_DIR/signatures/add-member-nonce.sh" -m "$MNEMONIC_INDEX" -h "$PEGOUT_TXID" -n "$NONCE"
+bash "$SCRIPT_DIR/request-pegin.sh" -a "$RSK_DESTINATION_ADDRESS" $ALPHANET_FLAG
+bash "$SCRIPT_DIR/operator-take/add-every-operator-take-txid.sh" -a "$ACCEPT_PEGIN_TXID" -t "$TAKE_TXID" $ALPHANET_FLAG
+bash "$SCRIPT_DIR/signatures/add-every-member-nonce-and-signature.sh" -h "$ACCEPT_PEGIN_TXID" $ALPHANET_FLAG
+bash "$SCRIPT_DIR/accept-pegin.sh" -r "$REQUEST_PEGIN_TXID" $ALPHANET_FLAG
+bash "$SCRIPT_DIR/try-pegout.sh" $ALPHANET_FLAG
+bash "$SCRIPT_DIR/signatures/add-member-nonce.sh" -m "$MNEMONIC_INDEX" -h "$PEGOUT_TXID" -n "$NONCE" $ALPHANET_FLAG
 # Advance the time for user take timeout
 echo "================ ADVANCE $RPC TIME TO $TIMESTAMP ================"
 cast rpc evm_setNextBlockTimestamp $TIMESTAMP --rpc-url $RPC
 cast rpc evm_mine --rpc-url $RPC
 # Start the operator take flow
-bash "$SCRIPT_DIR/operator-take/trigger-operator-take.sh" -p "$PEGOUT_TXID"
-bash "$SCRIPT_DIR/operator-take/register-operator-take.sh" -a "$ACCEPT_PEGIN_TXID"
+bash "$SCRIPT_DIR/operator-take/trigger-operator-take.sh" -p "$PEGOUT_TXID" $ALPHANET_FLAG
+bash "$SCRIPT_DIR/operator-take/register-operator-take.sh" -a "$ACCEPT_PEGIN_TXID" $ALPHANET_FLAG

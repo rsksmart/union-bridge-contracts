@@ -9,7 +9,7 @@ source .env
 RPC=$LOCAL_RPC
 
 # Parse args
-while getopts "m:s:r:t:o:a:" opt; do
+while getopts "m:s:r:t:o:a:-:" opt; do
   case "$opt" in
     m) MNEMONIC_INDEX=$OPTARG ;;
     s) STREAM_INDEX=$OPTARG ;;
@@ -17,8 +17,20 @@ while getopts "m:s:r:t:o:a:" opt; do
     t) TXID=$OPTARG ;;
     o) OUTPUT_INDEX=$OPTARG ;;
     a) AMOUNT=$OPTARG ;;
+    -)
+      case "${OPTARG}" in
+        alphanet)
+          RPC=$RSK_ALPHANET_RPC
+          export NETWORK=alphanet
+          ;;
+        *)
+          echo "Unknown option --${OPTARG}"
+          exit 1
+          ;;
+      esac
+      ;;
     \?)
-      echo "Usage: $0 -m <mnemonic_index> -s <stream_index> -r <role_index> [-t <txid>] [-o <output_index>] [-a <amount>]"
+      echo "Usage: $0 -m <mnemonic_index> -s <stream_index> -r <role_index> [-t <txid>] [-o <output_index>] [-a <amount>] [--alphanet]"
       exit 1
       ;;
   esac

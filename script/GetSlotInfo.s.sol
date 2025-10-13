@@ -2,17 +2,15 @@
 pragma solidity ^0.8.20;
 
 import {console} from "forge-std/console.sol";
-import {PegManager} from "src/PegManager.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
+import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
 import {Slot, SlotState, IStreamManager} from "src/interfaces/IStreamManager.sol";
 
-contract GetSlotInfoScript is ScriptUtils {
-    PegManager pegManager;
+contract GetSlotInfoScript is ScriptUtils, ContractAddressManager {
     IStreamManager streamManager;
 
     function setUp() internal {
-        pegManager = PegManager(0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6);
-        streamManager = IStreamManager(pegManager.streamManager());
+        streamManager = IStreamManager(getStreamManager());
     }
 
     function run(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) public {

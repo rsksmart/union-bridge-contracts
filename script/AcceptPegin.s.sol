@@ -7,8 +7,9 @@ import {IBitcoinManager, BtcTransaction, BtcTxIn, BtcTxOut} from "src/interfaces
 import {Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
+import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
 
-contract AcceptPeginScript is ScriptUtils {
+contract AcceptPeginScript is ScriptUtils, ContractAddressManager {
     PegManager pegManager;
     IStreamManager streamManager;
     IBitcoinManager bitcoinManager;
@@ -17,7 +18,7 @@ contract AcceptPeginScript is ScriptUtils {
         // This is the peg-in request transaction id that was previously registered
         // ====== Arguments ======
         // The other data is obtained from the peg-in request transaction
-        pegManager = PegManager(0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6);
+        pegManager = PegManager(getPegManager());
         // =======================
         // Smart contract addresses
         streamManager = IStreamManager(pegManager.streamManager());

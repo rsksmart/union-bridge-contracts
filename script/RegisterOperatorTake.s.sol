@@ -4,12 +4,13 @@ pragma solidity ^0.8.20;
 import {console} from "forge-std/console.sol";
 import {PegManager, BtcTxSPVProof, StreamPosition} from "src/PegManager.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
+import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
 import {Slot, SlotState, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
 import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
 
-contract RegisterOperatorTakeScript is ScriptUtils {
+contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
     PegManager pegManager;
 
     uint64 amount;
@@ -22,16 +23,16 @@ contract RegisterOperatorTakeScript is ScriptUtils {
     uint64 expectedSlotId;
 
     function setUp(bytes32 _acceptPeginTxid) internal {
-        pegManager = PegManager(0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6);
+        pegManager = PegManager(getPegManager());
 
-        ICommitteeRegistry registry = ICommitteeRegistry(pegManager.committeeRegistry());
+        ICommitteeRegistry registry = ICommitteeRegistry(getCommitteeRegistry());
         IMemberRegistry memberRegistry = registry.memberRegistry();
         bytes32 operatorXOnlyPubKey = memberRegistry.getMemberTakePubKey(getDeployerAddress());
         operatorPubKey = abi.encodePacked(bytes1(0x02), operatorXOnlyPubKey);
         amount = 100_000; // 0.001 BTC
 
         // Calculate expected slot and packet numbers
-        streamManager = pegManager.streamManager();
+        streamManager = IStreamManager(getStreamManager());
         StreamPosition memory streamPosition = pegManager.getStreamPosition(_acceptPeginTxid);
         expectedStreamId = streamPosition.streamId;
         expectedPacketNumber = streamPosition.packetNumber;

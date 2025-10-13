@@ -7,6 +7,29 @@ cd "$CURRENT_PATH/../.."
 # set up environment variables
 source .env
 RPC=$LOCAL_RPC
+
+# Parse args
+while getopts ":-:" opt; do
+  case "$opt" in
+    -)
+      case "${OPTARG}" in
+        alphanet)
+          RPC=$RSK_ALPHANET_RPC
+          export NETWORK=alphanet
+          ;;
+        *)
+          echo "Unknown option --${OPTARG}"
+          exit 1
+          ;;
+      esac
+      ;;
+    *)
+      echo "Usage: $0 [--alphanet]"
+      exit 1
+      ;;
+  esac
+done
+
 echo "================ SET MOCK BRIDGE CONFIRMATIONS TO $RPC ================"
 forge script \
     script/SetMockBridgeConfirmations.s.sol \

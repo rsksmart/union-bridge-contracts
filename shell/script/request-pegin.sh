@@ -7,20 +7,32 @@ cd "$CURRENT_PATH/../.."
 # Defaults
 RSK_DESTINATION_ADDRESS="0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
 
+# set up environment variables
+source .env
+RPC=$LOCAL_RPC
+
 # Parse args
-while getopts ":a:" opt; do
+while getopts ":a:-:" opt; do
   case "$opt" in
     a) RSK_DESTINATION_ADDRESS="$OPTARG" ;;
+    -)
+      case "${OPTARG}" in
+        alphanet)
+          RPC=$RSK_ALPHANET_RPC
+          export NETWORK=alphanet
+          ;;
+        *)
+          echo "Unknown option --${OPTARG}"
+          exit 1
+          ;;
+      esac
+      ;;
     *)
-      echo "Usage: $0 -a <rsk_destination_address>"
+      echo "Usage: $0 -a <rsk_destination_address> [--alphanet]"
       exit 1
       ;;
   esac
 done
-
-# set up environment variables
-source .env
-RPC=$LOCAL_RPC
 echo "================ REGISTER PEGIN REQUEST TO $RPC ================"
 forge script \
     script/RequestPegin.s.sol \

@@ -3,17 +3,16 @@ pragma solidity ^0.8.20;
 
 import {console} from "forge-std/console.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
+import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
 import {
     ICommitteeRegistry, MemberRegistrationKeys, MemberKeys, Role, UTXO
 } from "src/interfaces/ICommitteeRegistry.sol";
 import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
 import {StreamDenomination, IStreamManager} from "src/interfaces/IStreamManager.sol";
-import {PegManager} from "src/PegManager.sol";
 
-contract ApplyToStreamScript is ScriptUtils {
+contract ApplyToStreamScript is ScriptUtils, ContractAddressManager {
     ICommitteeRegistry committeeRegistry;
     IMemberRegistry memberRegistry;
-    PegManager pegManager;
     IStreamManager streamManager;
     uint256 minimumDeposit;
     uint256 mnemonicIndex;
@@ -32,10 +31,9 @@ contract ApplyToStreamScript is ScriptUtils {
         uint32 _outputIndex,
         uint64 _amount
     ) internal {
-        pegManager = PegManager(0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6);
-        committeeRegistry = pegManager.committeeRegistry();
+        committeeRegistry = ICommitteeRegistry(getCommitteeRegistry());
         memberRegistry = committeeRegistry.memberRegistry();
-        streamManager = IStreamManager(pegManager.streamManager());
+        streamManager = IStreamManager(getStreamManager());
         // Read args from command line / env
         mnemonicIndex = _mnemonicIndex;
         if (mnemonicIndex > 9) {
