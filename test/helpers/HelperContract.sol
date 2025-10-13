@@ -97,69 +97,7 @@ abstract contract HelperContract is Test, TestUtils {
     // ========================== Apply to stream ==========================
 
     /**
-     * @notice Derives deterministic mock registration keys from an EOA address.
-     * @dev    Converts `address` → uint160 → uint256 and uses it as the seed
-     *         for `generateRegistrationPublicKeys`. Intended for tests only.
-     * @param  memberAddress The member's address.
-     * @return keys          Deterministically derived registration keys.
-     */
-    function _deriveRegistrationKeysFromAddress(address memberAddress)
-        internal
-        returns (MemberRegistrationKeys memory keys)
-    {
-        return generateRegistrationPublicKeys(uint256(uint160(memberAddress)));
-    }
-
-    /**
-     * @notice Applies a single member to a stream with keys derived from their address.
-     * @dev    This is the single “sink” used by all entry points in this section.
-     * @param  denomination  Stream denomination to apply for.
-     * @param  memberAddress The member's address.
-     * @param  memberRole    The member role (WATCHTOWER or OPERATOR).
-     */
-    function _applyMemberToStream(StreamDenomination denomination, address memberAddress, Role memberRole) internal {
-        MemberRegistrationKeys memory keys = _deriveRegistrationKeysFromAddress(memberAddress);
-        setup_applyToStream(denomination, memberAddress, keys, memberRole);
-    }
-
-    /**
-     * @notice Returns a deterministic address for a given position, based on a starting index.
-     * @dev    Uses Foundry's `vm.addr` to generate EOAs for test scenarios.
-     * @param  startingMemberIndex Base index to start from (e.g., a counter).
-     * @param  memberOffset        Zero-based offset from the base index.
-     * @return memberAddress       Deterministic address for this position.
-     */
-    function _addressForIndex(uint256 startingMemberIndex, uint256 memberOffset)
-        internal
-        view
-        returns (address memberAddress)
-    {
-        // +1 to avoid returning address(0) at offset 0
-        return vm.addr(startingMemberIndex + memberOffset + 1);
-    }
-
-    /**
-     * @notice Computes the role for a member position in a watchtower-first layout.
-     * @dev    Positions [0, numWatchtowers) are WATCHTOWER, remaining are OPERATOR.
-     * @param  memberIndex     Zero-based index within the enrollment batch.
-     * @param  numWatchtowers  Number of watchtower members at the front.
-     * @return roleForPosition Role corresponding to the position.
-     */
-    function _roleForMemberIndex(uint256 memberIndex, uint256 numWatchtowers)
-        internal
-        pure
-        returns (Role roleForPosition)
-    {
-        return memberIndex < numWatchtowers ? Role.WATCHTOWER : Role.OPERATOR;
-    }
-
-    /**
      * @notice Registers a batch of new members (watchtowers first, then operators)
-     *         using the evolving `registeredMembersCounter` as the address seed base.
-     * @dev    Mirrors the original behavior while delegating the loop to `_applyMembersByCounts`.
-     * @param  numWatchtowers Number of watchtower members to register.
-     * @param  numOperators   Number of operator members to register.
-     * @param  denomination   Stream denomination to apply for.
      */
     function setup_registerNewMembers(uint256 numWatchtowers, uint256 numOperators, StreamDenomination denomination)
         internal
@@ -170,71 +108,7 @@ abstract contract HelperContract is Test, TestUtils {
     }
 
     /**
-     * @notice Applies an explicit list of committee members to a stream.
-     * @dev    Each item supplies both the address and the role.
-     * @param  denomination     Stream denomination to apply for.
-     * @param  committeeMembers List of members (address + role) to apply.
-     */
-    function setup_applyToStream_MultipleMembers(
-        StreamDenomination denomination,
-        CommitteeMember[] memory committeeMembers
-    ) internal {
-        uint256 totalMembers = committeeMembers.length;
-        for (uint256 memberIndex = 0; memberIndex < totalMembers; memberIndex++) {
-            CommitteeMember memory committeeMember = committeeMembers[memberIndex];
-            _applyMemberToStream(denomination, committeeMember.memberAddress, committeeMember.role);
-        }
-    }
-
-    /**
-     * @notice Applies a batch of members determined by counts and a base index.
-     * @dev    Addresses are derived from `startingMemberIndex` using `vm.addr`.
-     *         The first `numWatchtowers` members become WATCHTOWER, the rest OPERATOR.
-     * @param  denomination        Stream denomination to apply for.
-     * @param  numWatchtowers      Number of watchtower members at the front.
-     * @param  numOperators        Number of operator members after watchtowers.
-     * @param  startingMemberIndex Base index used to derive addresses with `vm.addr`.
-     */
-    function setup_applyToStream_MultipleMembers(
-        StreamDenomination denomination,
-        uint256 numWatchtowers,
-        uint256 numOperators,
-        uint256 startingMemberIndex
-    ) internal {
-        _applyMembersByCounts(denomination, numWatchtowers, numOperators, startingMemberIndex);
-    }
-
-    /**
-     * @notice Shared implementation used by the count-based entry points.
-     * @dev    Iterates over (numWatchtowers + numOperators) positions, deriving
-     *         addresses from `startingMemberIndex` and assigning roles by index.
-     * @param  denomination         Stream denomination to apply for.
-     * @param  numWatchtowers       Number of watchtower members to register first.
-     * @param  numOperators         Number of operator members to register after watchtowers.
-     * @param  startingMemberIndex  Base index used to derive addresses with `vm.addr`.
-     */
-    function _applyMembersByCounts(
-        StreamDenomination denomination,
-        uint256 numWatchtowers,
-        uint256 numOperators,
-        uint256 startingMemberIndex
-    ) internal {
-        uint256 totalMembers = numWatchtowers + numOperators;
-        for (uint256 memberIndex = 0; memberIndex < totalMembers; memberIndex++) {
-            Role roleForPosition = _roleForMemberIndex(memberIndex, numWatchtowers);
-            address memberAddress = _addressForIndex(startingMemberIndex, memberIndex);
-            _applyMemberToStream(denomination, memberAddress, roleForPosition);
-        }
-    }
-
-    /**
-     * @notice Applies a single address to a stream by sending the minimum deposit and calling the registry.
-     * @dev    Pulls the minimum deposit from `streamManager`, funds the member EOA with `vm.deal`,
-     *         and performs `registry.applyToStream`. This helper is the concrete sink for the above flows.
-     * @param  _denomination              Stream denomination to apply for.
-     * @param  _address                   Member address that will apply.
-     * @param  _publicKeysRegistration    Registration public keys derived for the member.
-     * @param  _role                      Role requested by the member (WATCHTOWER or OPERATOR).
+     * @notice Applies a single address to a stream by sending the minimum deposit and calling the registry.                   Role requested by the member (WATCHTOWER or OPERATOR).
      */
     function setup_applyToStream(
         StreamDenomination _denomination,
@@ -251,8 +125,95 @@ abstract contract HelperContract is Test, TestUtils {
         );
     }
 
+    /**
+     * @notice Applies an explicit list of committee members to a stream.
+     */
+    function setup_applyToStream_MultipleMembers(
+        StreamDenomination _denomination,
+        CommitteeMember[] memory _committeeMembers
+    ) internal {
+        uint256 totalMembers = _committeeMembers.length;
+
+        for (uint256 memberIndex = 0; memberIndex < totalMembers; memberIndex++) {
+            CommitteeMember memory committeeMember = _committeeMembers[memberIndex];
+            _applyMemberToStream(_denomination, committeeMember.memberAddress, committeeMember.role);
+        }
+    }
+
     function getMemberTakePubKey(address _memberAddress) internal returns (bytes32) {
         return generateRegistrationPublicKeys(uint256(uint160(_memberAddress))).takeKey.publicKeyX;
+    }
+
+    /**
+     * @notice Applies a batch of members determined by counts and a base index.
+     * Should be used for members that has been already registered; it won't fail if the member is not registered.
+     * It will just apply to the stream with the given denomination and role.
+     */
+    function setup_applyToStream_MultipleMembers(
+        StreamDenomination _denomination,
+        uint256 _numWatchtowers,
+        uint256 _numOperators,
+        uint256 _startingMemberIndex
+    ) internal {
+        _applyMembersByCounts(_denomination, _numWatchtowers, _numOperators, _startingMemberIndex);
+    }
+
+    /**
+     * @notice Derives deterministic mock registration keys from an EOA address.
+     */
+    function _deriveRegistrationKeysFromAddress(address memberAddress)
+        internal
+        returns (MemberRegistrationKeys memory keys)
+    {
+        return generateRegistrationPublicKeys(uint256(uint160(memberAddress)));
+    }
+
+    /**
+     * @notice Applies a single member to a stream with keys derived from their address.
+     */
+    function _applyMemberToStream(StreamDenomination denomination, address memberAddress, Role memberRole) internal {
+        MemberRegistrationKeys memory keys = _deriveRegistrationKeysFromAddress(memberAddress);
+        setup_applyToStream(denomination, memberAddress, keys, memberRole);
+    }
+
+    /**
+     * @notice Returns a deterministic address for a given position, based on a starting index.
+     */
+    function _addressForIndex(uint256 startingMemberIndex, uint256 memberOffset)
+        internal
+        view
+        returns (address memberAddress)
+    {
+        // +1 to avoid returning address(0) at offset 0
+        return vm.addr(startingMemberIndex + memberOffset + 1);
+    }
+
+    /**
+     * @notice Computes the role for a member position in a watchtower-first layout.
+     */
+    function _roleForMemberIndex(uint256 memberIndex, uint256 numWatchtowers)
+        internal
+        pure
+        returns (Role roleForPosition)
+    {
+        return memberIndex < numWatchtowers ? Role.WATCHTOWER : Role.OPERATOR;
+    }
+
+    /**
+     * @notice Shared implementation used by the count-based entry points.
+     */
+    function _applyMembersByCounts(
+        StreamDenomination denomination,
+        uint256 numWatchtowers,
+        uint256 numOperators,
+        uint256 startingMemberIndex
+    ) internal {
+        uint256 totalMembers = numWatchtowers + numOperators;
+        for (uint256 memberIndex = 0; memberIndex < totalMembers; memberIndex++) {
+            Role roleForPosition = _roleForMemberIndex(memberIndex, numWatchtowers);
+            address memberAddress = _addressForIndex(startingMemberIndex, memberIndex);
+            _applyMemberToStream(denomination, memberAddress, roleForPosition);
+        }
     }
 
     // ========================== Peg In Request ==========================
