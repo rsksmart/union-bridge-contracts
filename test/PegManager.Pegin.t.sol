@@ -48,7 +48,7 @@ contract TestPegManager is Test, HelperContract {
         (string memory result, uint64 packetNumber) =
             pm.getTemporaryPeginAddress(dummyRskAddress, VALUE, BTC_REIMBURSEMENT_PUBKEY);
         assertEq(result, tempAddress, "Incorrect temporary peg in address at PegManager");
-        assertEq(packetNumber, 0, "Incorrect packet number at PegManager");
+        assertEq(packetNumber, PACKET_NUMBER, "Incorrect packet number at PegManager");
     }
 
     // ========================== REQUEST PEGIN ==========================
