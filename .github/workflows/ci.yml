@@ -19,7 +19,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: v1.2.3
+          version: v1.3.1
 
       - name: Start Anvil
         run: anvil --port 8545 --silent &
