@@ -5,6 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {HelperContract, StreamManagerHarness} from "test/helpers/HelperContract.sol";
 import {BtcTransaction, BtcTxSPVProof, IPegManager, BitcoinSignatureData} from "src/interfaces/IPegManager.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import {Pausable} from "src/Pausable.sol";
 import {SlotState, Stream} from "src/interfaces/IStreamManager.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {Committee} from "src/interfaces/ICommitteeRegistry.sol";
@@ -48,7 +49,7 @@ contract TestPegManager is Test, HelperContract {
 
     function test_pause_Revert_UnauthorizedAccount_CallFromNotPauser() external {
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegManager.UnauthorizedAccount.selector, address(this)));
+        vm.expectRevert(abi.encodeWithSelector(Pausable.UnauthorizedAccount.selector, address(this)));
 
         // Act
         pm.pause();
@@ -72,7 +73,7 @@ contract TestPegManager is Test, HelperContract {
         pausePegManager();
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegManager.UnauthorizedAccount.selector, address(this)));
+        vm.expectRevert(abi.encodeWithSelector(Pausable.UnauthorizedAccount.selector, address(this)));
 
         // Act
         pm.unpause();

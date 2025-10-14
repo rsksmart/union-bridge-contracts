@@ -337,10 +337,6 @@ interface IPegManager {
 
     // ===================== Errors =====================
 
-    /// @notice Thrown when an account is not authorized
-    /// @param account The unauthorized account
-    error UnauthorizedAccount(address account);
-
     /// @notice Thrown when the Bitcoin manager address is set to zero
     error BitcoinManagerAddressZero();
 

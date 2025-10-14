@@ -15,6 +15,7 @@ import {
 } from "src/interfaces/ICommitteeRegistry.sol";
 import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import {Pausable} from "src/Pausable.sol";
 import {StreamDenomination, IStreamManager, Stream} from "src/interfaces/IStreamManager.sol";
 import {
     HelperContract,
@@ -53,7 +54,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_pause_Revert_UnauthorizedAccount_CallFromNotPauser() external {
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.UnauthorizedAccount.selector, address(this)));
+        vm.expectRevert(abi.encodeWithSelector(Pausable.UnauthorizedAccount.selector, address(this)));
 
         // Act
         registry.pause();
@@ -77,7 +78,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         pauseRegistry();
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.UnauthorizedAccount.selector, address(this)));
+        vm.expectRevert(abi.encodeWithSelector(Pausable.UnauthorizedAccount.selector, address(this)));
 
         // Act
         registry.unpause();
@@ -1355,7 +1356,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_createCommittee_UnauthorizedAccount() external {
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.UnauthorizedAccount.selector, address(this)));
+        vm.expectRevert(abi.encodeWithSelector(Pausable.UnauthorizedAccount.selector, address(this)));
 
         // Act
         registry.createCommittee(0);

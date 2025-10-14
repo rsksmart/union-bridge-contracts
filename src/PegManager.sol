@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {BaseProxy} from "./BaseProxy.sol";
-import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import {Pausable} from "./Pausable.sol";
 import {ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
 import {IMemberRegistry} from "./interfaces/IMemberRegistry.sol";
 import {ISignatureManager, SignatureData} from "./interfaces/ISignatureManager.sol";
@@ -30,10 +30,7 @@ import {Constants} from "./libraries/Constants.sol";
 /// - Managing temporary Bitcoin deposit addresses
 /// - Coordinating with StreamManager for slot allocation
 /// - Integrating with CommitteeRegistry for committee management
-contract PegManager is BaseProxy, ProofValidator, PausableUpgradeable, IPegManager {
-    /// @notice The address that can pause and unpause the contract
-    address public pauser;
-
+contract PegManager is BaseProxy, ProofValidator, Pausable, IPegManager {
     /// @notice Bitcoin manager contract for Bitcoin transaction validation and address generation
     IBitcoinManager public bitcoinManager;
 
@@ -103,12 +100,16 @@ contract PegManager is BaseProxy, ProofValidator, PausableUpgradeable, IPegManag
         operatorTakeTimeout = _settings.operatorTakeTimeout;
     }
 
-    function pause() external onlyPauser {
+    /// @notice Pauses the contract and the committee registry
+    /// @dev Only callable by the pauser
+    function pause() external override onlyPauser {
         _pause();
         committeeRegistry.pause();
     }
 
-    function unpause() external onlyPauser {
+    /// @notice Unpauses the contract and the committee registry
+    /// @dev Only callable by the pauser
+    function unpause() external override onlyPauser {
         _unpause();
         committeeRegistry.unpause();
     }
@@ -777,20 +778,5 @@ contract PegManager is BaseProxy, ProofValidator, PausableUpgradeable, IPegManag
         }
         operatorTakeTimeout = _timeout;
         emit OperatorTakeTimeoutUpdated(operatorTakeTimeout);
-    }
-
-    // ===================== Modifiers =====================
-
-    /// @notice Modifier to restrict access to the Pauser
-    /// @dev Reverts if the caller is not the Pauser
-    modifier onlyPauser() {
-        _onlyPauser(msg.sender);
-        _;
-    }
-
-    function _onlyPauser(address _account) internal view {
-        if (pauser != _account) {
-            revert UnauthorizedAccount(_account);
-        }
     }
 }

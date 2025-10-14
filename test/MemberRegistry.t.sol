@@ -15,6 +15,7 @@ import {
 } from "src/interfaces/ICommitteeRegistry.sol";
 import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import {Pausable} from "src/Pausable.sol";
 import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
 import {IPegManager} from "src/interfaces/IPegManager.sol";
 import {HelperContract, StreamManagerHarness} from "test/helpers/HelperContract.sol";
@@ -56,7 +57,7 @@ contract TestMemberRegistry is Test, HelperContract {
         // Assert
         // since committeeRegistry is the pauser,
         // not even the owner can pause the contract
-        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.UnauthorizedAccount.selector, owner));
+        vm.expectRevert(abi.encodeWithSelector(Pausable.UnauthorizedAccount.selector, owner));
 
         // Act
         vm.prank(owner);
@@ -85,7 +86,7 @@ contract TestMemberRegistry is Test, HelperContract {
         // since committeeRegistry is the pauser,
         // not even the owner can unpause the contract
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.UnauthorizedAccount.selector, owner));
+        vm.expectRevert(abi.encodeWithSelector(Pausable.UnauthorizedAccount.selector, owner));
 
         // Act
         vm.prank(owner);
@@ -1827,7 +1828,7 @@ contract TestMemberRegistry is Test, HelperContract {
         vm.deal(user, minimumDeposit);
 
         // Assert unauthorized account error when calling applyToStream directly on MemberRegistry
-        vm.expectRevert(abi.encodeWithSelector(IMemberRegistry.UnauthorizedAccount.selector, user));
+        vm.expectRevert(abi.encodeWithSelector(Pausable.UnauthorizedAccount.selector, user));
 
         // Act - call applyToStream directly on MemberRegistry instead of through CommitteeRegistry
         vm.prank(user);
@@ -1850,7 +1851,7 @@ contract TestMemberRegistry is Test, HelperContract {
         );
 
         // Assert unauthorized account error when calling unsubscribeFromStream directly on MemberRegistry
-        vm.expectRevert(abi.encodeWithSelector(IMemberRegistry.UnauthorizedAccount.selector, user));
+        vm.expectRevert(abi.encodeWithSelector(Pausable.UnauthorizedAccount.selector, user));
 
         // Act - call unsubscribeFromStream directly on MemberRegistry instead of through CommitteeRegistry
         vm.prank(user);

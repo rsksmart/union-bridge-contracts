@@ -296,10 +296,6 @@ interface IMemberRegistry {
     /// @param role The role for which there are too many candidates
     error TooManyCandidatesForStream(StreamDenomination denomination, Role role);
 
-    /// @notice Thrown when an account is not authorized
-    /// @param account The unauthorized account
-    error UnauthorizedAccount(address account);
-
     /// @notice Thrown when an address is zero
     error InvalidZeroAddress();
 

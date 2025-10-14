@@ -430,10 +430,6 @@ interface ICommitteeRegistry {
     /// @param committeeId The committee ID
     error CommitteeNotFound(uint128 committeeId);
 
-    /// @notice Thrown when an account is not authorized
-    /// @param account The unauthorized account
-    error UnauthorizedAccount(address account);
-
     /// @notice Thrown when an address is zero
     error InvalidZeroAddress();
 
