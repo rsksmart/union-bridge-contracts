@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import {CommitteeRegistry} from "src/CommitteeRegistry.sol";
 import {Role, CommitteeMember} from "src/interfaces/ICommitteeRegistry.sol";
+import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
 import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
 import {PendingCommitteeStatus, CommunicationData} from "src/interfaces/ICommitteeRegistry.sol";
 import {MemberRegistryHarness} from "./MemberRegistryHarness.sol";
@@ -14,8 +15,8 @@ contract CommitteeRegistryHarness is CommitteeRegistry {
 
     MemberRegistryHarness public memberRegistryHarness;
 
-    function initialize(address _initialOwner) public override initializer {
-        CommitteeRegistry.initialize(_initialOwner);
+    function initialize(address _initialOwner, IMemberRegistry _memberRegistryHarness) public override initializer {
+        CommitteeRegistry.initialize(_initialOwner, _memberRegistryHarness);
     }
 
     function selectCommittee(uint64 _denomination) public returns (CommitteeMember[] memory, PendingCommitteeStatus) {

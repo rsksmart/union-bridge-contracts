@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {BaseProxy} from "./BaseProxy.sol";
+import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
 import {IMemberRegistry} from "./interfaces/IMemberRegistry.sol";
 import {ISignatureManager, SignatureData} from "./interfaces/ISignatureManager.sol";
@@ -29,7 +30,10 @@ import {Constants} from "./libraries/Constants.sol";
 /// - Managing temporary Bitcoin deposit addresses
 /// - Coordinating with StreamManager for slot allocation
 /// - Integrating with CommitteeRegistry for committee management
-contract PegManager is IPegManager, BaseProxy, ProofValidator {
+contract PegManager is BaseProxy, ProofValidator, PausableUpgradeable, IPegManager {
+    /// @notice The address that can pause and unpause the contract
+    address public pauser;
+
     /// @notice Bitcoin manager contract for Bitcoin transaction validation and address generation
     IBitcoinManager public bitcoinManager;
 
@@ -92,8 +96,21 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         __BaseProxy_init(_initialOwner);
         __ProofValidator_init(_bridgeAddress);
 
+        __Pausable_init();
+        pauser = _initialOwner;
+
         userTakeTimeout = _settings.userTakeTimeout;
         operatorTakeTimeout = _settings.operatorTakeTimeout;
+    }
+
+    function pause() external onlyPauser {
+        _pause();
+        committeeRegistry.pause();
+    }
+
+    function unpause() external onlyPauser {
+        _unpause();
+        committeeRegistry.unpause();
     }
 
     /// @notice Sets the stream manager contract address
@@ -180,7 +197,8 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
     /// @dev This function validates the peg-in request transaction and initiates the peg-in process
     /// @dev The transaction must have at least 2 outputs: one P2TR output and one OP_RETURN output
     /// @dev Emits the PeginRequested event
-    function requestPegin(BtcTxSPVProof calldata _peginRequestTxSPVProof) external {
+    /// @dev Only callable when contract is unpaused
+    function requestPegin(BtcTxSPVProof calldata _peginRequestTxSPVProof) external whenNotPaused {
         bytes32 requestPeginTxid = _validatePeginRequestProof(_peginRequestTxSPVProof);
 
         (
@@ -340,7 +358,8 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
     /// @dev This function validates the accept peg-in transaction, it must spend the output from the request peg-in transaction
     /// @dev Updates the stream position to ACCEPTED and stores the peg-in transaction in the stream
     /// @dev Emits the PeginAccepted event
-    function acceptPegin(BtcTxSPVProof calldata _peginAcceptedTxSPVProof) external {
+    /// @dev Only callable when contract is unpaused
+    function acceptPegin(BtcTxSPVProof calldata _peginAcceptedTxSPVProof) external whenNotPaused {
         // The first input consumes the the peg in request utxo
         bytes32 requestPeginTxid = _peginAcceptedTxSPVProof.btcTx.inputs[Constants.VOUT_INDEX_TAPTREE].txId;
 
@@ -440,7 +459,8 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
     /// @dev This function LOCKS a slot in the appropriate stream and prepares the peg-out transaction
     /// @dev The user must send the exact amount of RBTC they want to peg-out
     /// @dev Emits the PegoutRequested event
-    function tryPegout(bytes calldata _userPubKey) external payable {
+    /// @dev Only callable when contract is unpaused
+    function tryPegout(bytes calldata _userPubKey) external payable whenNotPaused {
         _validatePegoutRequest(_userPubKey, msg.value);
 
         Stream memory stream = streamManager.getStream(uint64(BtcHelper.weiToSatoshi(msg.value)));
@@ -501,7 +521,8 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
     /// @dev This function validates the peg-out transaction and marks the slot as COMPLETED
     /// @dev The transaction must spend the accept peg-in output and pay to the user's address
     /// @dev Emits the PegoutRegistered event
-    function registerUserTake(BtcTxSPVProof calldata _pegoutTxSPVProof) external {
+    /// @dev Only callable when contract is unpaused
+    function registerUserTake(BtcTxSPVProof calldata _pegoutTxSPVProof) external whenNotPaused {
         // Get the accept peg-in tx id from the first input (this is what gets spent)
         bytes32 acceptPeginTxid = _pegoutTxSPVProof.btcTx.inputs[0].txId;
         uint32 vout = _pegoutTxSPVProof.btcTx.inputs[0].vout;
@@ -606,8 +627,9 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
     /// @dev signatures should be checked to see if the User Take was already signed
     /// @dev Partial signatures are used to skip those operators that have not signed the User Take
     /// @dev Emits OperatorTakeTriggered event upon successful triggering
+    /// @dev Only callable when contract is unpaused
     /// @param _pegoutTxid The transaction id of the peg-out request
-    function triggerOperatorTake(bytes32 _pegoutTxid) external {
+    function triggerOperatorTake(bytes32 _pegoutTxid) external whenNotPaused {
         bytes32 acceptPeginTxid = pegoutToPeginTxid[_pegoutTxid];
         if (acceptPeginTxid == bytes32(0)) {
             revert PegoutTxidNotFound(_pegoutTxid);
@@ -667,7 +689,8 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
     /// @dev Validates the SPV proof and marks the slot as paid when operator takes over
     /// @dev Only callable when the peg status is OPERATOR_TAKE
     /// @dev Emits PegoutRegistered event upon successful deposit
-    function registerOperatorTake(BtcTxSPVProof calldata _pegoutTxSPVProof) external {
+    /// @dev Only callable when contract is unpaused
+    function registerOperatorTake(BtcTxSPVProof calldata _pegoutTxSPVProof) external whenNotPaused {
         // Get the accept peg-in tx id from the first input (this is what gets spent)
         bytes32 acceptPeginTxid = _pegoutTxSPVProof.btcTx.inputs[0].txId;
         uint32 vout = _pegoutTxSPVProof.btcTx.inputs[0].vout;
@@ -754,5 +777,20 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         }
         operatorTakeTimeout = _timeout;
         emit OperatorTakeTimeoutUpdated(operatorTakeTimeout);
+    }
+
+    // ===================== Modifiers =====================
+
+    /// @notice Modifier to restrict access to the Pauser
+    /// @dev Reverts if the caller is not the Pauser
+    modifier onlyPauser() {
+        _onlyPauser(msg.sender);
+        _;
+    }
+
+    function _onlyPauser(address _account) internal view {
+        if (pauser != _account) {
+            revert UnauthorizedAccount(_account);
+        }
     }
 }

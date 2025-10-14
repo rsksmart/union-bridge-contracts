@@ -16,6 +16,7 @@ import {BridgeMock} from "test/helpers/BridgeMock.sol";
 import {ChainIds} from "src/libraries/Network.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
+import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
 import {IPegManager, PegManagerSettings} from "src/interfaces/IPegManager.sol";
 import {StreamManagerSettings} from "src/interfaces/IStreamManager.sol";
 import {StreamManagerSettingsConfig} from "script/helpers/StreamManagerSettingsConfig.sol";
@@ -84,7 +85,7 @@ contract DeployImplAndProxy is ScriptUtils {
         if (memberRegistry.owner() != upgradableOwner) {
             revert("MemberRegistry owner is not the upgradable owner");
         }
-        CommitteeRegistry committeeRegistry = deployCommitteeRegistry(upgradableOwner);
+        CommitteeRegistry committeeRegistry = deployCommitteeRegistry(upgradableOwner, memberRegistry);
         if (committeeRegistry.owner() != upgradableOwner) {
             revert("CommitteeRegistry owner is not the upgradable owner");
         }
@@ -130,7 +131,6 @@ contract DeployImplAndProxy is ScriptUtils {
         pegManager.setMemberRegistry(memberRegistry);
         committeeRegistry.setPegManager(pegManager);
         committeeRegistry.setStreamManager(streamManager);
-        committeeRegistry.setMemberRegistry(memberRegistry);
         memberRegistry.setStreamManager(streamManager);
         memberRegistry.setCommitteeRegistry(address(committeeRegistry));
         vm.stopBroadcast();
@@ -158,13 +158,17 @@ contract DeployImplAndProxy is ScriptUtils {
         });
     }
 
-    function deployCommitteeRegistry(address _upgradableOwner) public returns (CommitteeRegistry) {
+    function deployCommitteeRegistry(address _upgradableOwner, IMemberRegistry _memberRegistry)
+        public
+        returns (CommitteeRegistry)
+    {
         string memory contractName = "CommitteeRegistry.sol";
         if (vm.isContext(VmSafe.ForgeContext.TestGroup)) {
             contractName = "CommitteeRegistryHarness.sol";
         }
-        (, address proxyAdddress) =
-            deployContractAndUUPSProxy(contractName, abi.encodeCall(CommitteeRegistry.initialize, (_upgradableOwner)));
+        (, address proxyAdddress) = deployContractAndUUPSProxy(
+            contractName, abi.encodeCall(CommitteeRegistry.initialize, (_upgradableOwner, _memberRegistry))
+        );
         return CommitteeRegistry(proxyAdddress);
     }
 

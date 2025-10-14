@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {BaseProxy} from "./BaseProxy.sol";
+import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {
     Role,
     Member,
@@ -25,7 +26,10 @@ import {Constants} from "./libraries/Constants.sol";
 /// @title MemberRegistry
 /// @notice Manages member registration, applications, and balance tracking for the union bridge system
 /// @dev Handles member lifecycle operations including registration, candidacy, and balance management
-contract MemberRegistry is IMemberRegistry, BaseProxy {
+contract MemberRegistry is IMemberRegistry, BaseProxy, PausableUpgradeable {
+    /// @notice The address that can pause and unpause the contract
+    address public pauser;
+
     /// @notice Mapping of member addresses to their member data
     mapping(address => Member) internal members;
 
@@ -43,6 +47,15 @@ contract MemberRegistry is IMemberRegistry, BaseProxy {
     /// @param _initialOwner The initial owner of the contract
     function initialize(address _initialOwner) public virtual initializer {
         __BaseProxy_init(_initialOwner);
+        __Pausable_init();
+    }
+
+    function pause() external onlyPauser {
+        _pause();
+    }
+
+    function unpause() external onlyPauser {
+        _unpause();
     }
 
     function _validateFundingUTXO(UTXO calldata _utxo) internal pure {
@@ -91,6 +104,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy {
 
     /// @notice Internal function to handle member application to stream
     /// @dev Called by CommitteeRegistry to handle member registration and candidacy
+    /// @dev Only callable by CommitteeRegistry contract
     /// @param _memberAddress The address of the member applying
     /// @param _stream The stream denomination to apply for
     /// @param _role The role requested in the committee
@@ -152,6 +166,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy {
 
     /// @notice Internal function to handle member unsubscription from stream
     /// @dev Called by CommitteeRegistry after pending committee checks
+    /// @dev Only callable by CommitteeRegistry contract
     /// @param _memberAddress The address of the member unsubscribing
     /// @param _denomination The stream denomination to unsubscribe from
     function unsubscribeFromStream(address _memberAddress, StreamDenomination _denomination)
@@ -164,7 +179,8 @@ contract MemberRegistry is IMemberRegistry, BaseProxy {
 
     /// @notice Withdraws available balance to the caller's address
     /// @dev Can only withdraw balance that is not pre-staked or staked
-    function withdrawAvailableBalance() external {
+    /// @dev Only callable when contract is unpaused
+    function withdrawAvailableBalance() external whenNotPaused {
         Member storage member = _getMember(msg.sender);
         uint256 amount = member.balance.available;
         if (amount == 0) {
@@ -181,6 +197,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy {
 
     /// @notice Internal function to handle committee member release operations
     /// @dev Called by CommitteeRegistry after committee completion
+    /// @dev Only callable by CommitteeRegistry contract
     /// @param _committeeMembers Array of committee members to release
     /// @param _streamId The stream ID
     /// @param _packetNumber The packet number
@@ -490,9 +507,10 @@ contract MemberRegistry is IMemberRegistry, BaseProxy {
 
     /// @notice Sets the reapply flag for a member in a specific stream
     /// @dev Controls whether the member will automatically reapply after committee release
+    /// @dev Only callable when contract is unpaused
     /// @param _denomination The stream denomination to set the flag for
     /// @param _reApply True to automatically reapply, false to receive balance as available
-    function setReApplyForStream(StreamDenomination _denomination, bool _reApply) external override {
+    function setReApplyForStream(StreamDenomination _denomination, bool _reApply) external override whenNotPaused {
         ApplicationData storage applicationData = _getMemberApplicationData(msg.sender, _denomination);
         applicationData.reApply = _reApply;
 
@@ -510,6 +528,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy {
 
     /// @notice Removes candidates from pool and updates their balances
     /// @dev Called by CommitteeRegistry during committee formation
+    /// @dev Only callable by Committee Registry contract
     /// @param _members Array of committee members
     /// @param _denomination The stream denomination
     /// @param _packetNumber The packet number
@@ -557,6 +576,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy {
     /// @dev Pseudo-randomly select at least minCommitteeWatchtowers watchtowers and minCommitteeOperators operators.
     /// @dev reverts with notEnoughWatchtowers if there are fewer than minCommitteeWatchtowers watchtower candidates
     /// @dev reverts with notEnoughOperators if there are fewer than minCommitteeOperators operator candidates
+    /// @dev Only callable by CommitteeRegistry contract
     /// @param _streamId The ID of the stream to select committee members for (0-4)
     /// @return An array of committeeMemberCount CommitteeMembers containing the selected members.
     function selectCommittee(
@@ -655,6 +675,19 @@ contract MemberRegistry is IMemberRegistry, BaseProxy {
         _;
     }
 
+    /// @notice Modifier to restrict access to the Pauser
+    /// @dev Reverts if the caller is not the Pauser
+    modifier onlyPauser() {
+        _onlyPauser(msg.sender);
+        _;
+    }
+
+    function _onlyPauser(address _account) internal view {
+        if (pauser != _account) {
+            revert UnauthorizedAccount(_account);
+        }
+    }
+
     // ===================== Administrative Functions =====================
 
     /// @notice Sets the CommitteeRegistry contract address
@@ -666,6 +699,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy {
         }
         committeeRegistry = _committeeRegistry;
         emit CommitteeRegistryUpdated(_committeeRegistry);
+        pauser = _committeeRegistry;
     }
 
     /// @notice Sets the Stream Manager contract address

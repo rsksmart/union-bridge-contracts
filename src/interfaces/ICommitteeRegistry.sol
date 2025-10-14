@@ -203,6 +203,10 @@ struct CommunicationData {
 /// @dev This interface provides functions for member registration, committee formation,
 /// @dev and balance management for the committee system
 interface ICommitteeRegistry {
+    /// @notice External functions to handle committee registration pauses
+    function pause() external;
+    function unpause() external;
+
     /// @notice Applies to participate in a stream with a specific role
     /// @dev Registers public keys, deposits required bond, and provides funding UTXO for the requested role
     /// @param _requestedStream The stream denomination to apply for
@@ -435,6 +439,9 @@ interface ICommitteeRegistry {
 
     /// @notice Thrown when a value is zero
     error InvalidZeroValue();
+
+    /// @notice Thrown when the member registry address is zero
+    error MemberRegistryAddressZero();
 
     /// @notice Thrown when minimum members requirement is invalid
     /// @param minMembers The minimum members requirement
