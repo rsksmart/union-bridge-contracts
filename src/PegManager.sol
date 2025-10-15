@@ -102,15 +102,15 @@ contract PegManager is BaseProxy, ProofValidator, Pausable, IPegManager {
 
     /// @notice Pauses the contract and the committee registry
     /// @dev Only callable by the pauser
-    function pause() external override onlyPauser {
-        _pause();
+    function pause() external onlyPauser {
+        super._pause();
         committeeRegistry.pause();
     }
 
     /// @notice Unpauses the contract and the committee registry
     /// @dev Only callable by the pauser
-    function unpause() external override onlyPauser {
-        _unpause();
+    function unpause() external onlyPauser {
+        super._unpause();
         committeeRegistry.unpause();
     }
 

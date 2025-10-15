@@ -47,12 +47,12 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, Pausable {
         __Pausable_init();
     }
 
-    function pause() external override(Pausable, IMemberRegistry) onlyPauser {
-        _pause();
+    function pause() external onlyPauser {
+        super._pause();
     }
 
-    function unpause() external override(Pausable, IMemberRegistry) onlyPauser {
-        _unpause();
+    function unpause() external onlyPauser {
+        super._unpause();
     }
 
     function _validateFundingUTXO(UTXO calldata _utxo) internal pure {

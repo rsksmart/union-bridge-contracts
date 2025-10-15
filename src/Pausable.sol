@@ -10,18 +10,6 @@ abstract contract Pausable is PausableUpgradeable {
     /// @notice The address that can pause and unpause the contract
     address public pauser;
 
-    /// @notice Pauses the contract
-    /// @dev Only callable by the pauser
-    function pause() external virtual onlyPauser {
-        _pause();
-    }
-
-    /// @notice Unpauses the contract
-    /// @dev Only callable by the pauser
-    function unpause() external virtual onlyPauser {
-        _unpause();
-    }
-
     /// @notice Modifier to restrict access to the Pauser
     /// @dev Reverts if the caller is not the Pauser
     modifier onlyPauser() {

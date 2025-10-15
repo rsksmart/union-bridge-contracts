@@ -70,13 +70,13 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, Pausable {
         committeeMemberCount = 10;
     }
 
-    function pause() external override(Pausable, ICommitteeRegistry) onlyPauser {
-        _pause();
+    function pause() external onlyPauser {
+        super._pause();
         memberRegistry.pause();
     }
 
-    function unpause() external override(Pausable, ICommitteeRegistry) onlyPauser {
-        _unpause();
+    function unpause() external onlyPauser {
+        super._unpause();
         memberRegistry.unpause();
     }
 
