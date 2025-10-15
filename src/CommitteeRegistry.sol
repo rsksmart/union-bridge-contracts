@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {BaseProxy} from "./BaseProxy.sol";
-import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import {Pausable} from "./Pausable.sol";
 import {
     Role,
     CommitteeMember,
@@ -23,10 +23,7 @@ import {BytesHelper} from "./libraries/BytesHelper.sol";
 /// @title CommitteeRegistry
 /// @notice Manages committee formation, selection, and lifecycle for the union bridge system
 /// @dev Handles committee creation, pending committee management, and coordination with MemberRegistry
-contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, PausableUpgradeable {
-    /// @notice The address that can pause and unpause the contract
-    address public pauser;
-
+contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, Pausable {
     /// @notice Minimum number of watchtowers required for a committee
     uint256 public minCommitteeWatchtowers;
     /// @notice Minimum number of operators required for a committee
@@ -59,7 +56,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, PausableUpgradeable
     /// @param _initialOwner The initial owner of the contract
     function initialize(address _initialOwner, IMemberRegistry _memberRegistry) public virtual initializer {
         __BaseProxy_init(_initialOwner);
-        __Pausable_init();
+        __Pauser_init();
         if (address(_memberRegistry) == address(0)) {
             revert MemberRegistryAddressZero();
         }
@@ -73,13 +70,15 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, PausableUpgradeable
         committeeMemberCount = 10;
     }
 
-    function pause() external onlyPauser {
-        _pause();
+    /// @notice Pauses the contract and the member registry
+    function _pause() internal override {
+        super._pause();
         memberRegistry.pause();
     }
 
-    function unpause() external onlyPauser {
-        _unpause();
+    /// @notice Unpauses the contract and the member registry
+    function _unpause() internal override {
+        super._unpause();
         memberRegistry.unpause();
     }
 
@@ -613,19 +612,6 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, PausableUpgradeable
 
     function _onlyPegManager(address _account) internal view {
         if (address(pegManager) != _account) {
-            revert UnauthorizedAccount(_account);
-        }
-    }
-
-    /// @notice Modifier to restrict access to the Pauser
-    /// @dev Reverts if the caller is not the Pauser
-    modifier onlyPauser() {
-        _onlyPauser(msg.sender);
-        _;
-    }
-
-    function _onlyPauser(address _account) internal view {
-        if (pauser != _account) {
             revert UnauthorizedAccount(_account);
         }
     }

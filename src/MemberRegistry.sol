@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {BaseProxy} from "./BaseProxy.sol";
-import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import {Pausable} from "./Pausable.sol";
 import {
     Role,
     Member,
@@ -26,10 +26,7 @@ import {Constants} from "./libraries/Constants.sol";
 /// @title MemberRegistry
 /// @notice Manages member registration, applications, and balance tracking for the union bridge system
 /// @dev Handles member lifecycle operations including registration, candidacy, and balance management
-contract MemberRegistry is IMemberRegistry, BaseProxy, PausableUpgradeable {
-    /// @notice The address that can pause and unpause the contract
-    address public pauser;
-
+contract MemberRegistry is IMemberRegistry, BaseProxy, Pausable {
     /// @notice Mapping of member addresses to their member data
     mapping(address => Member) internal members;
 
@@ -47,15 +44,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, PausableUpgradeable {
     /// @param _initialOwner The initial owner of the contract
     function initialize(address _initialOwner) public virtual initializer {
         __BaseProxy_init(_initialOwner);
-        __Pausable_init();
-    }
-
-    function pause() external onlyPauser {
-        _pause();
-    }
-
-    function unpause() external onlyPauser {
-        _unpause();
+        __Pauser_init();
     }
 
     function _validateFundingUTXO(UTXO calldata _utxo) internal pure {
@@ -673,19 +662,6 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, PausableUpgradeable {
             revert UnauthorizedAccount(msg.sender);
         }
         _;
-    }
-
-    /// @notice Modifier to restrict access to the Pauser
-    /// @dev Reverts if the caller is not the Pauser
-    modifier onlyPauser() {
-        _onlyPauser(msg.sender);
-        _;
-    }
-
-    function _onlyPauser(address _account) internal view {
-        if (pauser != _account) {
-            revert UnauthorizedAccount(_account);
-        }
     }
 
     // ===================== Administrative Functions =====================

@@ -178,7 +178,7 @@ abstract contract HelperContract is Test, TestUtils {
      */
     function _addressForIndex(uint256 startingMemberIndex, uint256 memberOffset)
         internal
-        view
+        pure
         returns (address memberAddress)
     {
         // +1 to avoid returning address(0) at offset 0
