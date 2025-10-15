@@ -7,8 +7,9 @@ import {IBitcoinManager, BtcTransaction, BtcTxIn, BtcTxOut} from "src/interfaces
 import {Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {OpCodes} from "src/libraries/OpCodes.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
+import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
 
-contract RequestPeginScript is ScriptUtils {
+contract RequestPeginScript is ScriptUtils, ContractAddressManager {
     PegManager pegManager;
     IStreamManager streamManager;
     IBitcoinManager bitcoinManager;
@@ -17,7 +18,7 @@ contract RequestPeginScript is ScriptUtils {
         // ====== Arguments ======
         uint64 value = 100_000;
         bytes32 btcReimbursementPubKey = 0x7d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f;
-        pegManager = PegManager(0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6);
+        pegManager = PegManager(getPegManager());
         // =======================
         // Smart contract addresses
         streamManager = IStreamManager(pegManager.streamManager());
@@ -82,6 +83,40 @@ contract RequestPeginScript is ScriptUtils {
         vm.startBroadcast(getDeployerKey());
         pegManager.requestPegin(peginRequestTxSPVProof);
         vm.stopBroadcast();
+
+        // NOTE: the following code is needed if we want to test the requestPegin on alphanet with the real RSK Bridge
+
+        // // Output encoded calldata for manual cast call
+        // bytes memory callData = abi.encodeWithSignature(
+        //     "requestPegin((bytes32,(uint32,(bytes32,uint32,uint32,bytes)[],(uint64,bytes)[],uint32),uint256,bytes32[]))",
+        //     peginRequestTxSPVProof
+        // );
+        // console.log("=== ENCODED CALLDATA FOR CAST ===");
+        // console.logBytes(callData);
+        // console.log("=== END ENCODED CALLDATA ===");
+
+        // // Try calling requestPegin via vm.rpc
+        // console.log("=== TRYING REQUEST PEGIN VIA VM.RPC ===");
+        // string memory callDataHex = vm.toString(callData);
+        // string memory pegManagerAddr = vm.toString(address(pegManager));
+
+        // string memory params =
+        //     string(abi.encodePacked('[{"to":"', pegManagerAddr, '","data":"', callDataHex, '"},"latest"]'));
+
+        // try vm.rpc("eth_call", params) returns (bytes memory result) {
+        //     console.log("RPC call success! Result length:", result.length);
+        //     if (result.length > 0) {
+        //         console.logBytes(result);
+        //     }
+        // } catch Error(string memory reason) {
+        //     console.log("RPC call failed with reason:", reason);
+        //     return;
+        // } catch (bytes memory lowLevelData) {
+        //     console.log("RPC call failed with low level data:");
+        //     console.logBytes(lowLevelData);
+        //     return;
+        // }
+
         // check if peginRequest is registered
         streamPosition = pegManager.getStreamPosition(peginRequestTxid);
         if (streamPosition.pegStatus != PegStatus.REGISTERED) {

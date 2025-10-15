@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
+import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
 import {
     ICommitteeRegistry,
     Committee,
@@ -11,7 +12,7 @@ import {
 } from "src/interfaces/ICommitteeRegistry.sol";
 import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
 
-contract DepositCommunicationDataScript is ScriptUtils {
+contract DepositCommunicationDataScript is ScriptUtils, ContractAddressManager {
     ICommitteeRegistry committeeRegistry;
     IMemberRegistry memberRegistry;
 
@@ -23,7 +24,7 @@ contract DepositCommunicationDataScript is ScriptUtils {
     RSAPublicKey comPubKey;
 
     function setUp(uint16 _mnemonicIndex, uint64 _streamIndex) internal {
-        committeeRegistry = ICommitteeRegistry(0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9);
+        committeeRegistry = ICommitteeRegistry(getCommitteeRegistry());
         memberRegistry = committeeRegistry.memberRegistry();
 
         // Read args from command line / env

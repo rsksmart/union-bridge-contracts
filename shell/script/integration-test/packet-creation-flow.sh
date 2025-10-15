@@ -19,15 +19,27 @@ SCRIPT_DIR="$CURRENT_PATH/.."
 OPERATOR_AMOUNT=3
 WATCHTOWER_AMOUNT=7
 STREAM=0
+ALPHANET_FLAG=""
 
 # Parse optional args
-while getopts "o:w:s:" opt; do
+while getopts "o:w:s:-:" opt; do
   case "$opt" in
     o) OPERATOR_AMOUNT=$OPTARG ;;
     w) WATCHTOWER_AMOUNT=$OPTARG ;;
     s) STREAM=$OPTARG ;;
+    -)
+      case "${OPTARG}" in
+        alphanet)
+          ALPHANET_FLAG="--alphanet"
+          ;;
+        *)
+          echo "Unknown option --${OPTARG}" >&2
+          exit 1
+          ;;
+      esac
+      ;;
     \?)
-      echo "Usage: $0 [-o operator_amount] [-w watchtower_amount] [-s stream_index]"
+      echo "Usage: $0 [-o operator_amount] [-w watchtower_amount] [-s stream_index] [--alphanet]"
       exit 1
       ;;
   esac
@@ -65,7 +77,7 @@ for ((i=0; i<=MAX_MNEMONIC_INDEX; i++)); do
   else
     ROLE=2  # Watchtower
   fi
-  bash "$SCRIPT_DIR/apply-to-stream.sh" -m "$i" -s "$STREAM" -r "$ROLE"
+  bash "$SCRIPT_DIR/apply-to-stream.sh" -m "$i" -s "$STREAM" -r "$ROLE" $ALPHANET_FLAG
 done
 
 # Check if COMMITTEE_PK is defined in the environment
@@ -75,13 +87,13 @@ if [ -z "$COMMITTEE_PK" ]; then
 fi
 
 for ((i=0; i<=MAX_MNEMONIC_INDEX; i++)); do
-  bash "$SCRIPT_DIR/deposit-communication-data.sh" -m "$i" -s "$STREAM"
+  bash "$SCRIPT_DIR/deposit-communication-data.sh" -m "$i" -s "$STREAM" $ALPHANET_FLAG
 done
 
 for ((i=0; i<=MAX_MNEMONIC_INDEX; i++)); do
-  bash "$SCRIPT_DIR/get-communication-data-for-one-member.sh" -m "$i" -s "$STREAM"
+  bash "$SCRIPT_DIR/get-communication-data-for-one-member.sh" -m "$i" -s "$STREAM" $ALPHANET_FLAG
 done
 
 for ((i=0; i<=MAX_MNEMONIC_INDEX; i++)); do
-  bash "$SCRIPT_DIR/deposit-aggregated-key.sh" -m "$i" -s "$STREAM" -p "$COMMITTEE_PK"
+  bash "$SCRIPT_DIR/deposit-aggregated-key.sh" -m "$i" -s "$STREAM" -p "$COMMITTEE_PK" $ALPHANET_FLAG
 done

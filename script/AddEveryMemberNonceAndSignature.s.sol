@@ -6,8 +6,9 @@ import {PegManager} from "src/PegManager.sol";
 import {CommitteeRegistry} from "src/CommitteeRegistry.sol";
 import {ISignatureManager} from "src/interfaces/ISignatureManager.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
+import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
 
-contract AddEveryMemberSignatureScript is ScriptUtils {
+contract AddEveryMemberSignatureScript is ScriptUtils, ContractAddressManager {
     PegManager pegManager;
     CommitteeRegistry committeeRegistry;
     ISignatureManager signatureManager;
@@ -18,8 +19,8 @@ contract AddEveryMemberSignatureScript is ScriptUtils {
 
     function setUp() internal {
         // ====== Arguments ======
-        pegManager = PegManager(0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6);
-        committeeRegistry = CommitteeRegistry(0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0);
+        pegManager = PegManager(getPegManager());
+        committeeRegistry = CommitteeRegistry(getCommitteeRegistry());
         minCommitteMembers = committeeRegistry.committeeMemberCount();
         signatureManager = pegManager.signatureManager();
         signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";

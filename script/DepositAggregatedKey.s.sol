@@ -3,22 +3,20 @@ pragma solidity ^0.8.20;
 
 import {console} from "forge-std/console.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
+import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
 import {ICommitteeRegistry, Committee} from "src/interfaces/ICommitteeRegistry.sol";
 import {IStreamManager} from "src/interfaces/IStreamManager.sol";
-import {PegManager} from "src/PegManager.sol";
 
-contract DepositAggregatedKeyScript is ScriptUtils {
+contract DepositAggregatedKeyScript is ScriptUtils, ContractAddressManager {
     ICommitteeRegistry committeeRegistry;
     IStreamManager streamManager;
-    PegManager pegManager;
 
     uint256 privKey;
     address user;
 
     function setUp(uint16 _mnemonicIndex, uint64 _streamIndex, bytes memory _committeePubKey) internal {
-        pegManager = PegManager(0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6);
-        committeeRegistry = pegManager.committeeRegistry();
-        streamManager = IStreamManager(pegManager.streamManager());
+        committeeRegistry = ICommitteeRegistry(getCommitteeRegistry());
+        streamManager = IStreamManager(getStreamManager());
 
         // Read args from command line / env
         if (_mnemonicIndex > 9) {

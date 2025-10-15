@@ -12,14 +12,30 @@ STREAM_ID=""
 PACKET_NUMBER=""
 SLOT_ID=""
 
+# set up environment variables
+source .env
+RPC=$LOCAL_RPC
+
 # Parse args
-while getopts ":s:p:l:" opt; do
+while getopts ":s:p:l:-:" opt; do
   case "$opt" in
     s) STREAM_ID="$OPTARG" ;;
     p) PACKET_NUMBER="$OPTARG" ;;
     l) SLOT_ID="$OPTARG" ;;
+    -)
+      case "${OPTARG}" in
+        alphanet)
+          RPC=$RSK_ALPHANET_RPC
+          export NETWORK=alphanet
+          ;;
+        *)
+          echo "Unknown option --${OPTARG}"
+          exit 1
+          ;;
+      esac
+      ;;
     *)
-      echo "Usage: $0 -s <stream_id> -p <packet_number> -l <slot_id>"
+      echo "Usage: $0 -s <stream_id> -p <packet_number> -l <slot_id> [--alphanet]"
       echo "Example: $0 -s 1 -p 0 -l 0"
       exit 1
       ;;
@@ -32,10 +48,6 @@ if [ -z "$STREAM_ID" ] || [ -z "$PACKET_NUMBER" ] || [ -z "$SLOT_ID" ]; then
     echo "Usage: $0 -s <stream_id> -p <packet_number> -l <slot_id>"
     exit 1
 fi
-
-# set up environment variables
-source .env
-RPC=$LOCAL_RPC
 
 echo "================ GET SLOT INFO FROM $RPC ================"
 echo "Stream ID: $STREAM_ID, Packet: $PACKET_NUMBER, Slot: $SLOT_ID"

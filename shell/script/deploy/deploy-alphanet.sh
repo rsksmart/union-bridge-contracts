@@ -7,14 +7,15 @@ CURRENT_PATH=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 cd "$CURRENT_PATH/../../.."
 # set up environment variables
 source .env
-RPC=$RSK_TESTNET_RPC
-echo "================ DEPLOY CONTRACTS TO $RPC ================"
-# deploy to rsk testnet
+RPC=$RSK_ALPHANET_RPC
+echo "================ DEPLOY CONTRACTS TO ALPHANET: $RPC ================"
+# deploy to alphanet
 forge script \
     script/deploy/DeployScript.s.sol \
     --rpc-url $RPC \
     --legacy \
     --broadcast \
+    --gas-price 60000000 \
     --slow \
     -vvvv \
     --interactives 1

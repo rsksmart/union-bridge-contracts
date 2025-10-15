@@ -4,10 +4,11 @@ pragma solidity ^0.8.20;
 import {console} from "forge-std/console.sol";
 import {PegManager, BtcTxSPVProof} from "src/PegManager.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
+import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
 import {Slot, Stream, SlotState} from "src/interfaces/IStreamManager.sol";
 import {BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
 
-contract RegisterUserTakeScript is ScriptUtils {
+contract RegisterUserTakeScript is ScriptUtils, ContractAddressManager {
     PegManager pegManager;
 
     uint64 amount;
@@ -19,7 +20,7 @@ contract RegisterUserTakeScript is ScriptUtils {
     uint64 expectedSlotId;
 
     function setUp() internal {
-        pegManager = PegManager(0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6);
+        pegManager = PegManager(getPegManager());
 
         acceptPeginTxid = 0x57450e6c6141e63115cf56fc9fd8c29e20792a8c488c3d9e2bd99edac6496ffc;
         userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";

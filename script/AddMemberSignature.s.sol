@@ -5,8 +5,9 @@ import {console} from "forge-std/console.sol";
 import {PegManager} from "src/PegManager.sol";
 import {ISignatureManager} from "src/interfaces/ISignatureManager.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
+import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
 
-contract AddMemberSignature is ScriptUtils {
+contract AddMemberSignature is ScriptUtils, ContractAddressManager {
     PegManager pegManager;
     ISignatureManager signatureManager;
     bytes32 signature;
@@ -15,7 +16,7 @@ contract AddMemberSignature is ScriptUtils {
 
     function setUp(uint16 _mnemonicIndex, bytes32 _txid, bytes32 _signature) internal {
         // ====== Arguments ======
-        pegManager = PegManager(0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6);
+        pegManager = PegManager(getPegManager());
         signatureManager = pegManager.signatureManager();
 
         // Read args from command line / env

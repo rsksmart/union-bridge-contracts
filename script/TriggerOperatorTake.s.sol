@@ -4,9 +4,10 @@ pragma solidity ^0.8.20;
 import {console} from "forge-std/console.sol";
 import {PegManager} from "src/PegManager.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
+import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
 import {Slot, Stream, SlotState, IStreamManager} from "src/interfaces/IStreamManager.sol";
 
-contract RegisterOperatorTakeScript is ScriptUtils {
+contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
     PegManager pegManager;
 
     uint64 amount;
@@ -16,7 +17,7 @@ contract RegisterOperatorTakeScript is ScriptUtils {
     uint64 expectedSlotId;
 
     function setUp() internal {
-        pegManager = PegManager(0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6);
+        pegManager = PegManager(getPegManager());
         amount = 100_000; // 0.001 BTC
 
         // Calculate expected slot and packet numbers
