@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import {BtcTransaction, PrevoutData, BitcoinSignatureData} from "./IBitcoinManager.sol";
 import {IStreamManager, SlotState} from "./IStreamManager.sol";
 import {ISignatureManager} from "./ISignatureManager.sol";
+import {IPausable} from "./IPausable.sol";
 
 /// @notice Represents a Bitcoin transaction with SPV proof for bridge validation
 /// @dev Contains the transaction data along with merkle proof for block inclusion verification
@@ -100,7 +101,7 @@ struct PegManagerSettings {
 /// @notice Interface for managing peg-in and peg-out operations in the union bridge
 /// @dev This interface provides functions for processing Bitcoin to RSK and RSK to Bitcoin transfers
 /// @dev Handles the complete lifecycle of peg operations including request, acceptance, and completion
-interface IPegManager {
+interface IPegManager is IPausable {
     /// @notice Sets the stream manager contract address
     /// @dev Only callable by the contract owner
     /// @param _streamManager The address of the stream manager contract

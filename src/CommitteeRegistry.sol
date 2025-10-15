@@ -56,7 +56,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, Pausable {
     /// @param _initialOwner The initial owner of the contract
     function initialize(address _initialOwner, IMemberRegistry _memberRegistry) public virtual initializer {
         __BaseProxy_init(_initialOwner);
-        __Pausable_init();
+        __Pauser_init();
         if (address(_memberRegistry) == address(0)) {
             revert MemberRegistryAddressZero();
         }
@@ -70,12 +70,14 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, Pausable {
         committeeMemberCount = 10;
     }
 
-    function pause() external onlyPauser {
+    /// @notice Pauses the contract and the member registry
+    function _pause() internal override {
         super._pause();
         memberRegistry.pause();
     }
 
-    function unpause() external onlyPauser {
+    /// @notice Unpauses the contract and the member registry
+    function _unpause() internal override {
         super._unpause();
         memberRegistry.unpause();
     }

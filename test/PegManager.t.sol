@@ -66,6 +66,11 @@ contract TestPegManager is Test, HelperContract {
         // Act
         vm.prank(pauser);
         pm.pause();
+
+        // Assert
+        assertTrue(pm.isPaused());
+        assertTrue(pm.committeeRegistry().isPaused());
+        assertTrue(pm.memberRegistry().isPaused());
     }
 
     function test_unpause_Revert_UnauthorizedAccount_CallFromNotPauser() external {
@@ -91,6 +96,11 @@ contract TestPegManager is Test, HelperContract {
         // Act
         vm.prank(pauser);
         pm.unpause();
+
+        // Assert
+        assertFalse(pm.isPaused());
+        assertFalse(pm.committeeRegistry().isPaused());
+        assertFalse(pm.memberRegistry().isPaused());
     }
 
     function test_unpause_Revert_ExpectedPause_CallFromPauser_ContractNotPaused() external {
