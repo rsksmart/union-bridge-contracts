@@ -13,16 +13,13 @@ import {
     UTXO,
     PendingCommitteeStatus
 } from "./ICommitteeRegistry.sol";
+import {IPausable} from "./IPausable.sol";
 
 /// @title IMemberRegistry
 /// @notice Interface for managing committee member registration, applications, and balance tracking
 /// @dev Handles member lifecycle operations including registration, candidacy, and balance management
-interface IMemberRegistry {
+interface IMemberRegistry is IPausable {
     // ===================== Member Lifecycle =====================
-
-    /// @notice External functions to handle member registration pauses
-    function pause() external;
-    function unpause() external;
 
     /// @notice Internal function to handle member application to stream
     /// @dev Called by CommitteeRegistry to handle member registration and candidacy

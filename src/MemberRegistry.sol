@@ -44,15 +44,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, Pausable {
     /// @param _initialOwner The initial owner of the contract
     function initialize(address _initialOwner) public virtual initializer {
         __BaseProxy_init(_initialOwner);
-        __Pausable_init();
-    }
-
-    function pause() external onlyPauser {
-        super._pause();
-    }
-
-    function unpause() external onlyPauser {
-        super._unpause();
+        __Pauser_init();
     }
 
     function _validateFundingUTXO(UTXO calldata _utxo) internal pure {

@@ -30,7 +30,7 @@ import {Constants} from "./libraries/Constants.sol";
 /// - Managing temporary Bitcoin deposit addresses
 /// - Coordinating with StreamManager for slot allocation
 /// - Integrating with CommitteeRegistry for committee management
-contract PegManager is BaseProxy, ProofValidator, Pausable, IPegManager {
+contract PegManager is IPegManager, BaseProxy, ProofValidator, Pausable {
     /// @notice Bitcoin manager contract for Bitcoin transaction validation and address generation
     IBitcoinManager public bitcoinManager;
 
@@ -93,7 +93,7 @@ contract PegManager is BaseProxy, ProofValidator, Pausable, IPegManager {
         __BaseProxy_init(_initialOwner);
         __ProofValidator_init(_bridgeAddress);
 
-        __Pausable_init();
+        __Pauser_init();
         pauser = _initialOwner;
 
         userTakeTimeout = _settings.userTakeTimeout;
@@ -101,15 +101,13 @@ contract PegManager is BaseProxy, ProofValidator, Pausable, IPegManager {
     }
 
     /// @notice Pauses the contract and the committee registry
-    /// @dev Only callable by the pauser
-    function pause() external onlyPauser {
+    function _pause() internal override {
         super._pause();
         committeeRegistry.pause();
     }
 
     /// @notice Unpauses the contract and the committee registry
-    /// @dev Only callable by the pauser
-    function unpause() external onlyPauser {
+    function _unpause() internal override {
         super._unpause();
         committeeRegistry.unpause();
     }
