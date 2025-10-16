@@ -19,11 +19,12 @@ import {IPegManager} from "./interfaces/IPegManager.sol";
 import {SignatureData} from "./interfaces/ISignatureManager.sol";
 import {IMemberRegistry} from "./interfaces/IMemberRegistry.sol";
 import {BytesHelper} from "./libraries/BytesHelper.sol";
+import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 /// @title CommitteeRegistry
 /// @notice Manages committee formation, selection, and lifecycle for the union bridge system
 /// @dev Handles committee creation, pending committee management, and coordination with MemberRegistry
-contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, Pausable {
+contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgradeable, Pausable {
     /// @notice Minimum number of watchtowers required for a committee
     uint256 public minCommitteeWatchtowers;
     /// @notice Minimum number of operators required for a committee
@@ -56,6 +57,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, Pausable {
     /// @param _initialOwner The initial owner of the contract
     function initialize(address _initialOwner, IMemberRegistry _memberRegistry) public virtual initializer {
         __BaseProxy_init(_initialOwner);
+        __ReentrancyGuard_init();
         __Pauser_init();
         if (address(_memberRegistry) == address(0)) {
             revert MemberRegistryAddressZero();
@@ -104,7 +106,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, Pausable {
         Role _role,
         MemberRegistrationKeys calldata _publicKeys,
         UTXO calldata _fundingUTXO
-    ) external payable whenNotPaused {
+    ) external payable nonReentrant whenNotPaused {
         // Delegate member registration to MemberRegistry
         memberRegistry.applyToStream{value: msg.value}(msg.sender, _stream, _role, _publicKeys, _fundingUTXO);
 
