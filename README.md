@@ -24,7 +24,7 @@ A slot can have the following states:
 - `Advanced`: when the operator advanced funds.
 - `Completed`: when the peg-out is processed (happy path) or the operator receives the reimbursement after advance.
 
-!["Slots transitions"](./specs/imgs/slots_transitions.png)
+<img src="./specs/imgs/slots_transitions.png" alt="Slots transitions" width="400">
 
 ### Packet Creation Flow
 
@@ -41,16 +41,20 @@ The packet creation process follows four main phases:
 sequenceDiagram
     participant M as Member
     participant CR as CommitteeRegistry
+    participant MR as MemberRegistry
     participant ENV as Environment
 
     Note over M,ENV: Phase 1: Member Application
     Note over M,ENV: Member applies to stream with role (Operator/Watchtower)
 
-    M->>CR: applyToStream(stream, OPERATOR, publicKeys)
-    Note right of M: Sends bond amount + public keys
-    CR->>CR: _validatePublicKeys()
-    CR->>CR: _getOrRegisterMember()
-    CR->>CR: _registerCandidateToStream()
+    M->>CR: applyToStream(stream, OPERATOR, publicKeys, fundingUTXO)
+    Note right of M: Sends bond amount + public keys + funding UTXO
+    CR->>MR: applyToStream(memberAddress, stream, OPERATOR, publicKeys, fundingUTXO)
+    Note right of CR: Delegates to MemberRegistry
+    MR->>MR: _validatePublicKeys()
+    MR->>MR: _getOrRegisterMember()
+    MR->>MR: _registerCandidateToStream()
+    MR-->>CR: NewSecurityBondDeposit event
     CR->>CR: _createCommitteeAfterApplyToStream()
     CR-->>M: NewSecurityBondDeposit event
 
@@ -71,6 +75,7 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant CR as CommitteeRegistry
+    participant MR as MemberRegistry
     participant ENV as Environment
 
     Note over CR,ENV: Phase 2: Committee Creation
@@ -78,12 +83,15 @@ sequenceDiagram
     Note over CR,ENV: System creates committee by selecting members
 
     CR->>CR: _createCommittee(streamId)
-    CR->>CR: _selectCommittee()
-    Note right of CR: Check minimum requirements (3 operators + 3 watchtowers)
-    CR->>CR: Randomly select operators from candidates
-    Note right of CR: Use Fisher-Yates shuffle for selection
-    CR->>CR: Randomly select watchtowers from candidates
-    Note right of CR: Ensure at least 10 members selected
+    CR->>MR: selectCommittee(streamId, minWatchtowers, minOperators, committeeMemberCount)
+    Note right of CR: Delegates member selection to MemberRegistry
+    MR->>MR: _selectCommittee()
+    Note right of MR: Check minimum requirements (3 operators + 3 watchtowers)
+    MR->>MR: Randomly select operators from candidates
+    Note right of MR: Use Fisher-Yates shuffle for selection
+    MR->>MR: Randomly select watchtowers from candidates
+    Note right of MR: Ensure at least 10 members selected
+    MR-->>CR: (CommitteeMember[], PendingCommitteeStatus)
     CR->>CR: Create pending committee with selected members
     CR->>CR: Set missingData counter to member count
     CR-->>ENV: NewPendingCommittee event
@@ -106,14 +114,15 @@ sequenceDiagram
     Note over M,ENV: Phase 3: Committee Formation
     Note over M,ENV: Selected members deposit communication data and then aggregated keys for pending committee
 
-    M->>CR: depositCommunicationData(streamId, communicationData)
-    Note right of M: Provides communication data
+    M->>CR: depositCommunicationData(committeeId, communicationData)
+    Note right of M: Provides encrypted IP/Port data
     CR->>CR: Validate member is in pending committee
     CR->>CR: Store communication data
-    CR-->>M: CommunicationDataDeposited event
+    CR->>CR: Decrement missingCommunicationData counter
+    CR-->>M: MemberCommunicationDataDeposited event
 
-    M->>CR: depositAggregatedKey(streamId, aggregatedKey)
-    Note right of M: Provides aggregated public key
+    M->>CR: depositAggregatedKey(committeeId, aggregatedKey)
+    Note right of M: Provides aggregated public key (33 bytes)
     CR->>CR: Validate member is in pending committee
     CR->>CR: Store aggregated key
     CR->>CR: Decrement missingData counter
@@ -134,6 +143,7 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant CR as CommitteeRegistry
+    participant MR as MemberRegistry
     participant SM as StreamManager
     participant PM as PegManager
     participant ENV as Environment
@@ -142,8 +152,11 @@ sequenceDiagram
     Note over CR,ENV: Committee is registered and new packet is created
 
     CR->>CR: Generate committeeId (hash of streamId + packetNumber)
-    CR->>CR: _removeCandidatesAndUpdateBalance()
-    Note right of CR: Move pre-staked to staked for all members
+    CR->>MR: removeCandidatesAndUpdateBalance(committeeMembers, streamDenomination, packetNumber)
+    Note right of CR: Delegates balance updates to MemberRegistry
+    MR->>MR: Move pre-staked to staked for all members
+    MR->>MR: Remove members from candidates pool
+    MR-->>CR: Balance updates completed
     CR->>CR: _registerCommittee()
     CR-->>ENV: NewCommittee event
     CR->>SM: createNewPacket(streamId, committeeId, aggregatedKey)
@@ -181,7 +194,7 @@ sequenceDiagram
     U->>U: Send BTC to temporaryPeginAddress
     Note right of U: User deposits Bitcoin to the generated address
 
-    M->>PM: requestPegin(btcTransaction, btcTxSPVProof)
+    M->>PM: requestPegin(btcTxSPVProof)
     Note right of M: Committee member monitors Bitcoin network and submits transaction
     PM->>PM: Validate BTC transaction and SPV proof
     PM->>PM: Store pegin request data
@@ -208,7 +221,7 @@ sequenceDiagram
     Note over O,ENV: Operators register the operator take transaction hash before signatures
 
     loop For each operator
-        O->>SM: addOperatorTakeTxHash(operatorAddress, txHash)
+        O->>SM: addOperatorTakeTxHash(acceptPeginTxid, operatorTakeTxid)
         Note right of O: Operator registers the operator take transaction hash
         SM-->>ENV: OperatorTakeTxHashAdded event
     end
@@ -216,10 +229,10 @@ sequenceDiagram
     Note over M,ENV: Committee members sign the accept peg-in transaction
 
     loop For each committee member
-        M->>SM: addMemberNonce(memberAddress, nonce)
+        M->>SM: addMemberNonce(hashToSign, nonce)
         Note right of M: Member provides their nonce
         SM->>SM: Store member nonce
-        M->>SM: addMemberSignature(memberAddress, nonce, signature)
+        M->>SM: addMemberSignature(hashToSign, signature)
         Note right of M: Member signs the accept peg-in transaction hash
         SM->>SM: Validate and store signature
         SM-->>ENV: MemberSignatureAdded event
@@ -250,7 +263,7 @@ sequenceDiagram
     M->>M: Broadcast signed accept peg-in transaction
     Note right of M: Signed transaction is broadcast to Bitcoin network
 
-    M->>PM: acceptPegin(btcTransaction, btcTxSPVProof)
+    M->>PM: acceptPegin(btcTxSPVProof)
     Note right of M: Committee member monitors Bitcoin network and submits broadcasted transaction
     PM->>PM: Validate BTC transaction and SPV proof
     PM->>PM: Validate committee signatures
@@ -304,10 +317,10 @@ sequenceDiagram
     Note over M,ENV: Committee members sign the user take pegout
 
     loop For each committee member
-        M->>SM: addMemberNonce(memberAddress, nonce)
+        M->>SM: addMemberNonce(hashToSign, nonce)
         Note right of M: Member provides their nonce
         SM->>SM: Store member nonce
-        M->>SM: addMemberSignature(memberAddress, nonce, signature)
+        M->>SM: addMemberSignature(hashToSign, signature)
         Note right of M: Member signs user take pegout hash
         SM->>SM: Validate and store signature
         SM-->>ENV: MemberSignatureAdded event
@@ -340,7 +353,7 @@ sequenceDiagram
     M->>M: Bitcoin pegout transaction
     Note right of M: BTC sent to user's Bitcoin address when all signatures collected
 
-    M->>PM: registerUserTake(pegoutRequestId, btcTransaction, btcTxSPVProof)
+    M->>PM: registerUserTake(btcTxSPVProof)
     Note right of M: Member calls `registerUserTake()` with the Bitcoin transaction and SPV proof
     PM->>PM: Validate BTC transaction and SPV proof
     PM->>PM: Validate committee signatures
@@ -370,7 +383,7 @@ sequenceDiagram
     Note over M,ENV: Alternative: Operator Take (Take1) - not all members signed
     Note over M,ENV: When not all members sign within timeout
 
-    M->>PM: triggerOperatorTake(pegoutSignatureHash)
+    M->>PM: triggerOperatorTake(pegoutTxid)
     Note right of M: Member triggers operator take after timeout
     PM->>PM: Validate timeout and signatures status
     PM-->>ENV: OperatorTakeTriggered event
@@ -387,7 +400,7 @@ sequenceDiagram
     M->>M: Bitcoin Operator Take (Take1)
     Note right of M: Operator broadcasts the final Operator Take Bitcoin transaction
 
-    M->>PM: registerOperatorTake(btcTransaction, btcTxSPVProof)
+    M->>PM: registerOperatorTake(btcTxSPVProof)
     Note right of M: Operator calls `registerOperatorTake()` with the Bitcoin transaction and SPV proof
     PM->>PM: Validate BTC transaction and SPV proof
     PM-->>ENV: PegoutRegistered event
@@ -419,7 +432,7 @@ We are following [Foundry introduction](https://getfoundry.sh/introduction/overv
 
 ### NatSpec
 
-We use solidity[NatSpec format](https://docs.soliditylang.org/en/latest/natspec-format.html) in all interfaces, libraries, structs, events, errors, and both external and public, functions and variables.
+We use solidity [NatSpec format](https://docs.soliditylang.org/en/latest/natspec-format.html) in all interfaces, libraries, structs, events, errors, and both external and public, functions and variables.
 
 ### Precompiled Bridge contract (aka PowPeg or Legacy Bridge)git
 
