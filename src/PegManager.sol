@@ -20,6 +20,7 @@ import {Slot, Stream, Packet, IStreamManager} from "./interfaces/IStreamManager.
 import {ProofValidator} from "./ProofValidator.sol";
 import {BtcHelper} from "./libraries/BtcHelper.sol";
 import {Constants} from "./libraries/Constants.sol";
+import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 /// @title PegManager
 /// @notice Manages peg-in and peg-out operations between Bitcoin and Rootstock
@@ -30,7 +31,7 @@ import {Constants} from "./libraries/Constants.sol";
 /// - Managing temporary Bitcoin deposit addresses
 /// - Coordinating with StreamManager for slot allocation
 /// - Integrating with CommitteeRegistry for committee management
-contract PegManager is IPegManager, BaseProxy, ProofValidator, Pausable {
+contract PegManager is IPegManager, BaseProxy, ProofValidator, ReentrancyGuardUpgradeable, Pausable {
     /// @notice Bitcoin manager contract for Bitcoin transaction validation and address generation
     IBitcoinManager public bitcoinManager;
 
@@ -92,6 +93,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator, Pausable {
 
         __BaseProxy_init(_initialOwner);
         __ProofValidator_init(_bridgeAddress);
+        __ReentrancyGuard_init();
 
         __Pauser_init();
         pauser = _initialOwner;
@@ -197,7 +199,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator, Pausable {
     /// @dev The transaction must have at least 2 outputs: one P2TR output and one OP_RETURN output
     /// @dev Emits the PeginRequested event
     /// @dev Only callable when contract is unpaused
-    function requestPegin(BtcTxSPVProof calldata _peginRequestTxSPVProof) external whenNotPaused {
+    function requestPegin(BtcTxSPVProof calldata _peginRequestTxSPVProof) external nonReentrant whenNotPaused {
         bytes32 requestPeginTxid = _validatePeginRequestProof(_peginRequestTxSPVProof);
 
         (
@@ -358,7 +360,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator, Pausable {
     /// @dev Updates the stream position to ACCEPTED and stores the peg-in transaction in the stream
     /// @dev Emits the PeginAccepted event
     /// @dev Only callable when contract is unpaused
-    function acceptPegin(BtcTxSPVProof calldata _peginAcceptedTxSPVProof) external whenNotPaused {
+    function acceptPegin(BtcTxSPVProof calldata _peginAcceptedTxSPVProof) external nonReentrant whenNotPaused {
         // The first input consumes the the peg in request utxo
         bytes32 requestPeginTxid = _peginAcceptedTxSPVProof.btcTx.inputs[Constants.VOUT_INDEX_TAPTREE].txId;
 
@@ -459,7 +461,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator, Pausable {
     /// @dev The user must send the exact amount of RBTC they want to peg-out
     /// @dev Emits the PegoutRequested event
     /// @dev Only callable when contract is unpaused
-    function tryPegout(bytes calldata _userPubKey) external payable whenNotPaused {
+    function tryPegout(bytes calldata _userPubKey) external payable nonReentrant whenNotPaused {
         _validatePegoutRequest(_userPubKey, msg.value);
 
         Stream memory stream = streamManager.getStream(uint64(BtcHelper.weiToSatoshi(msg.value)));
@@ -521,7 +523,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator, Pausable {
     /// @dev The transaction must spend the accept peg-in output and pay to the user's address
     /// @dev Emits the PegoutRegistered event
     /// @dev Only callable when contract is unpaused
-    function registerUserTake(BtcTxSPVProof calldata _pegoutTxSPVProof) external whenNotPaused {
+    function registerUserTake(BtcTxSPVProof calldata _pegoutTxSPVProof) external nonReentrant whenNotPaused {
         // Get the accept peg-in tx id from the first input (this is what gets spent)
         bytes32 acceptPeginTxid = _pegoutTxSPVProof.btcTx.inputs[0].txId;
         uint32 vout = _pegoutTxSPVProof.btcTx.inputs[0].vout;
@@ -628,7 +630,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator, Pausable {
     /// @dev Emits OperatorTakeTriggered event upon successful triggering
     /// @dev Only callable when contract is unpaused
     /// @param _pegoutTxid The transaction id of the peg-out request
-    function triggerOperatorTake(bytes32 _pegoutTxid) external whenNotPaused {
+    function triggerOperatorTake(bytes32 _pegoutTxid) external nonReentrant whenNotPaused {
         bytes32 acceptPeginTxid = pegoutToPeginTxid[_pegoutTxid];
         if (acceptPeginTxid == bytes32(0)) {
             revert PegoutTxidNotFound(_pegoutTxid);

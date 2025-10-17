@@ -22,11 +22,12 @@ import {
 import {StreamDenomination, IStreamManager} from "./interfaces/IStreamManager.sol";
 import {IMemberRegistry} from "./interfaces/IMemberRegistry.sol";
 import {Constants} from "./libraries/Constants.sol";
+import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 /// @title MemberRegistry
 /// @notice Manages member registration, applications, and balance tracking for the union bridge system
 /// @dev Handles member lifecycle operations including registration, candidacy, and balance management
-contract MemberRegistry is IMemberRegistry, BaseProxy, Pausable {
+contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeable, Pausable {
     /// @notice Mapping of member addresses to their member data
     mapping(address => Member) internal members;
 
@@ -44,6 +45,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, Pausable {
     /// @param _initialOwner The initial owner of the contract
     function initialize(address _initialOwner) public virtual initializer {
         __BaseProxy_init(_initialOwner);
+        __ReentrancyGuard_init();
         __Pauser_init();
     }
 
@@ -169,7 +171,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, Pausable {
     /// @notice Withdraws available balance to the caller's address
     /// @dev Can only withdraw balance that is not pre-staked or staked
     /// @dev Only callable when contract is unpaused
-    function withdrawAvailableBalance() external whenNotPaused {
+    function withdrawAvailableBalance() external nonReentrant whenNotPaused {
         Member storage member = _getMember(msg.sender);
         uint256 amount = member.balance.available;
         if (amount == 0) {
