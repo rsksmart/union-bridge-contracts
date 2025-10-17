@@ -11,6 +11,7 @@ import {
     IBitcoinManager,
     BitcoinSignatureData
 } from "./interfaces/IBitcoinManager.sol";
+import {IPegManager} from "./interfaces/IPegManager.sol";
 import {BytesHelper} from "./libraries/BytesHelper.sol";
 import {BtcHelper} from "./libraries/BtcHelper.sol";
 import {BtcTxEncoder} from "./libraries/BtcTxEncoder.sol";
@@ -30,6 +31,9 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
     /// @dev Determines the address format and network-specific parameters
     BtcNetwork public network;
 
+    /// @notice Peg manager contract for peg-in/peg-out coordination
+    IPegManager pegManager;
+
     /// @notice Initializes the BitcoinManager contract
     /// @dev Sets up the Bitcoin network and initial owner
     /// @dev Can only be called once during contract deployment
@@ -38,6 +42,17 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
     function initialize(address _initialOwner, BtcNetwork _network) public initializer {
         network = _network;
         __BaseProxy_init(_initialOwner);
+    }
+
+    /// @notice Sets the Peg Manager contract address
+    /// @dev Only callable by the contract owner
+    /// @param _pegManager The address of the Peg Manager contract
+    function setPegManager(IPegManager _pegManager) external onlyOwner {
+        if (address(_pegManager) == address(0)) {
+            revert InvalidZeroAddress();
+        }
+        pegManager = _pegManager;
+        emit PegManagerUpdated(address(_pegManager));
     }
 
     /// @notice Converts a Bitcoin transaction to raw hex format and calculates its hash
@@ -259,7 +274,7 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         bytes32 _userXOnlyPubKey,
         bytes32 _registerPeginTx,
         PrevoutData memory _prevoutData
-    ) external pure returns (BitcoinSignatureData memory) {
+    ) external view onlyPegManager returns (BitcoinSignatureData memory) {
         // Prepare the inputs
         BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
         btcInputs[0] = BtcTxIn({
@@ -325,29 +340,10 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         return tweakedPublicKey;
     }
 
-    /// @notice Validates output against a Taproot script with both key spend and script spend paths
-    /// @param _committeePubKey The committee's public key (x-only)
-    /// @param _inputAmount The input amount in satoshis
-    /// @param _p2trOut The P2TR output to validate
-    function validateAcceptPeginP2TROutput(
-        bytes memory _committeePubKey,
-        uint64 _inputAmount,
-        BtcTxOut calldata _p2trOut
-    ) external pure {
-        // Validate that the amount is enough to cover the fees
-        // TODO: Check if this is correct
-        uint64 inputMinusFees = _inputAmount - (Constants.P2TR_FEE + Constants.SPEED_UP_AMOUNT);
-        if (_p2trOut.amount < inputMinusFees) {
-            revert InvalidOutputAmount(_p2trOut.amount, inputMinusFees);
-        }
-        bytes memory p2trScriptPubKey = getAcceptPeginP2TRScriptPub(_committeePubKey);
-        _compareOutputPubKey(_p2trOut.scriptPubKey, p2trScriptPubKey);
-    }
-
     /// @notice Generates the Accept Pegin Taproot output script pub key with both key spend and script spend paths
     /// @param _committeePubKey The committee's public key (x-only)
     /// @return The P2TR script pub key bytes
-    function getAcceptPeginP2TRScriptPub(bytes memory _committeePubKey) public pure returns (bytes memory) {
+    function getAcceptPeginP2TRScriptPub(bytes memory _committeePubKey) internal pure returns (bytes memory) {
         bytes32 tweakedPublicKey = getAcceptPeginTweakedPublicKey(_committeePubKey);
         return BtcTaproot.getP2TRScriptPubKey(tweakedPublicKey);
     }
@@ -444,5 +440,19 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
 
         // Return the tagged hash and the encoded data before hashing
         return (BtcTaproot.getSighash(encodedData), encodedData);
+    }
+
+    // ===================== Modifiers =====================
+
+    /// @notice Modifier to restrict access to the PegManager contract
+    modifier onlyPegManager() {
+        _onlyPegManager(msg.sender);
+        _;
+    }
+
+    function _onlyPegManager(address _account) internal view {
+        if (address(pegManager) != _account) {
+            revert UnauthorizedAccount(_account);
+        }
     }
 }
