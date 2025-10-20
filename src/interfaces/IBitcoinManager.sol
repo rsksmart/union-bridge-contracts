@@ -138,7 +138,7 @@ interface IBitcoinManager {
         bytes32 _btcReimbursementPubKey,
         bytes memory _committeePubKey,
         BtcTxOut calldata _p2trOut
-    ) external pure;
+    ) external view;
 
     /// @notice Calculates the Bitcoin transaction id (txid) for a given transaction
     /// @dev Encodes the transaction into Bitcoin's raw format and performs double SHA256 hash
@@ -146,20 +146,6 @@ interface IBitcoinManager {
     /// @param _btcTx The Bitcoin transaction to hash
     /// @return txid The transaction id in big-endian format (standard hex representation)
     function getBtcTxid(BtcTransaction calldata _btcTx) external pure returns (bytes32);
-
-    /// @notice Generates a Taproot script pub key for peg-in request transactions
-    /// @dev Creates a P2TR script with both key spend and script spend paths for committee and user keys
-    /// @param _rskDestinationAddress The RSK address that will receive the RBTC
-    /// @param _value The amount in satoshis (must match stream denomination)
-    /// @param _btcReimbursementPubKey The user's public key (x-coordinate only, 32 bytes)
-    /// @param _committeePubKey The committee's public key (x-coordinate only, 32 bytes)
-    /// @return The generated Taproot script pub key
-    function getPeginRequestP2TRScriptPub(
-        address _rskDestinationAddress,
-        uint64 _value,
-        bytes32 _btcReimbursementPubKey,
-        bytes memory _committeePubKey
-    ) external pure returns (bytes memory);
 
     /// @notice Calculates the signature hash for Bitcoin accept peg-in transactions
     /// @dev Generates the hash that committee members must sign to accept a peg-in

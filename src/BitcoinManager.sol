@@ -208,7 +208,7 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         bytes32 _btcReimbursementPubKey,
         bytes memory _committeePubKey,
         BtcTxOut calldata _p2trOut
-    ) external pure {
+    ) external view onlyPegManager {
         // Validate that the amount is enough for the stream
         if (_p2trOut.amount < _streamDenomination) {
             revert InvalidOutputAmount(_p2trOut.amount, _streamDenomination);
@@ -233,7 +233,7 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         uint64 _value,
         bytes32 _btcReimbursementPubKey,
         bytes memory _committeePubKey
-    ) public pure returns (bytes memory) {
+    ) internal pure returns (bytes memory) {
         bytes32 tweakedPublicKey =
             getRequestPeginTweakedPublicKey(_rskDestinationAddress, _value, _btcReimbursementPubKey, _committeePubKey);
         return BtcTaproot.getP2TRScriptPubKey(tweakedPublicKey);

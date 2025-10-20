@@ -11,7 +11,6 @@ import {
     PrevoutData,
     BitcoinSignatureData
 } from "src/interfaces/IBitcoinManager.sol";
-import {OpCodes} from "src/libraries/OpCodes.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {BtcTaproot} from "src/libraries/BtcTaproot.sol";
 import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
@@ -121,29 +120,6 @@ contract TestBtcHelper is Test, HelperContract {
     }
 
     // ========================== REGISTER PEG IN REQUEST ==========================
-    function test_getPeginRequestP2TRScriptPub_Success() external view {
-        // Arrange
-        address rskDestinationAddress = 0x7Ac5496aee77c1bA1F0854206A26DdA82A81d6d8;
-        uint64 value = 100_000;
-        bytes32 btcReimbursementPubKey = 0x7d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f;
-        bytes memory committeePubKey =
-            abi.encodePacked(bytes1(0x02), bytes32(0xd1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d));
-        // Act
-        bytes memory scriptPubKey = bitcoinManager.getPeginRequestP2TRScriptPub(
-            rskDestinationAddress, value, btcReimbursementPubKey, committeePubKey
-        );
-        // Assert
-        assertEq(
-            scriptPubKey,
-            abi.encodePacked(
-                OpCodes.OP_1,
-                OpCodes.OP_PUSHBYTES_32,
-                bytes32(0x4a6b01630c990be5ce8da00a64d2ce8bc259c8d3637407af613a7cbb1fad0df8)
-            ),
-            "The script pub key should be correct at BitcoinManager"
-        );
-    }
-
     function test_getPeginOpReturnData_Success() external view {
         // Arrange
         uint64 packetNumber = 1; //using 1 because 0 would not test for endianess
@@ -176,6 +152,7 @@ contract TestBtcHelper is Test, HelperContract {
         bytes32 btcReimbursementPubKey = getPeginBtcReimbursementPubKey();
         bytes memory committeePubKey = COMMITTEE_PUB_KEY();
         // Act
+        vm.prank(address(pm));
         bitcoinManager.validateRequestPeginP2TROutput(
             rskDestinationAddress, value, btcReimbursementPubKey, committeePubKey, btcTxOut
         );
@@ -193,6 +170,7 @@ contract TestBtcHelper is Test, HelperContract {
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IBitcoinManager.InvalidOutputAmount.selector, btcTxOut.amount, value));
         // Act
+        vm.prank(address(pm));
         bitcoinManager.validateRequestPeginP2TROutput(
             rskDestinationAddress, value, btcReimbursementPubKey, committeePubKey, btcTxOut
         );
