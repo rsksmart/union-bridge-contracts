@@ -53,7 +53,7 @@ contract AcceptPeginScript is ScriptUtils, ContractAddressManager {
         Stream memory stream = streamManager.getStreamById(streamPosition.streamId);
         btcTransaction.outputs[0] = BtcTxOut({
             amount: stream.denomination - Constants.P2TR_FEE - Constants.SPEED_UP_AMOUNT,
-            scriptPubKey: bitcoinManager.getAcceptPeginP2TRScriptPub(committeePubKey)
+            scriptPubKey: getAcceptPeginP2TRScriptPub(committeePubKey)
         });
 
         // Speed up output (child pays for parent)

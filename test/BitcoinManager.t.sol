@@ -11,7 +11,6 @@ import {
     PrevoutData,
     BitcoinSignatureData
 } from "src/interfaces/IBitcoinManager.sol";
-import {OpCodes} from "src/libraries/OpCodes.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {BtcTaproot} from "src/libraries/BtcTaproot.sol";
 import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
@@ -121,29 +120,6 @@ contract TestBtcHelper is Test, HelperContract {
     }
 
     // ========================== REGISTER PEG IN REQUEST ==========================
-    function test_getPeginRequestP2TRScriptPub_Success() external view {
-        // Arrange
-        address rskDestinationAddress = 0x7Ac5496aee77c1bA1F0854206A26DdA82A81d6d8;
-        uint64 value = 100_000;
-        bytes32 btcReimbursementPubKey = 0x7d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f;
-        bytes memory committeePubKey =
-            abi.encodePacked(bytes1(0x02), bytes32(0xd1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d));
-        // Act
-        bytes memory scriptPubKey = bitcoinManager.getPeginRequestP2TRScriptPub(
-            rskDestinationAddress, value, btcReimbursementPubKey, committeePubKey
-        );
-        // Assert
-        assertEq(
-            scriptPubKey,
-            abi.encodePacked(
-                OpCodes.OP_1,
-                OpCodes.OP_PUSHBYTES_32,
-                bytes32(0x4a6b01630c990be5ce8da00a64d2ce8bc259c8d3637407af613a7cbb1fad0df8)
-            ),
-            "The script pub key should be correct at BitcoinManager"
-        );
-    }
-
     function test_getPeginOpReturnData_Success() external view {
         // Arrange
         uint64 packetNumber = 1; //using 1 because 0 would not test for endianess
@@ -176,6 +152,7 @@ contract TestBtcHelper is Test, HelperContract {
         bytes32 btcReimbursementPubKey = getPeginBtcReimbursementPubKey();
         bytes memory committeePubKey = COMMITTEE_PUB_KEY();
         // Act
+        vm.prank(address(pm));
         bitcoinManager.validateRequestPeginP2TROutput(
             rskDestinationAddress, value, btcReimbursementPubKey, committeePubKey, btcTxOut
         );
@@ -193,79 +170,13 @@ contract TestBtcHelper is Test, HelperContract {
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IBitcoinManager.InvalidOutputAmount.selector, btcTxOut.amount, value));
         // Act
+        vm.prank(address(pm));
         bitcoinManager.validateRequestPeginP2TROutput(
             rskDestinationAddress, value, btcReimbursementPubKey, committeePubKey, btcTxOut
         );
     }
 
     // ========================== REGISTER ACCEPT PEG IN ==========================
-    function test_getAcceptPeginP2TRScriptPub_Success() external view {
-        // Arrange
-        bytes memory committeePubKey =
-            abi.encodePacked(bytes1(0x02), bytes32(0xd1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d));
-        // Act
-        bytes memory scriptPubKey = bitcoinManager.getAcceptPeginP2TRScriptPub(committeePubKey);
-        // Assert
-        assertEq(
-            scriptPubKey,
-            abi.encodePacked(
-                OpCodes.OP_1,
-                OpCodes.OP_PUSHBYTES_32,
-                bytes32(0x9687ca13c4fb3fa3ba05c2f9119dda026bfe66f0098dcf9b896a98ecb2e96702)
-            ),
-            "The P2TR script pub key should be correct at BitcoinManager"
-        );
-    }
-
-    function test_validateAcceptPeginP2TROutput_Success() external {
-        BtcTransaction memory btcTx = HelperContract.getBtcPeginRequestTx();
-
-        // Arrange
-        BtcTxOut memory btcTxOut = getBtcAcceptPeginTx(btcTx).outputs[0];
-        uint64 value = VALUE;
-        bytes memory committeePubKey = COMMITTEE_PUB_KEY();
-        // Act
-        bitcoinManager.validateAcceptPeginP2TROutput(committeePubKey, value, btcTxOut);
-        // Assert if not reverts everything is ok
-    }
-
-    function test_validateAcceptPeginP2TROutput_Revert_InvalidOutputAmount() external {
-        BtcTransaction memory btcTx = HelperContract.getBtcPeginRequestTx();
-
-        // Arrange
-        BtcTxOut memory btcTxOut = getBtcAcceptPeginTx(btcTx).outputs[0];
-        btcTxOut.amount = VALUE - (Constants.P2TR_FEE + Constants.SPEED_UP_AMOUNT + 1);
-        bytes memory committeePubKey = COMMITTEE_PUB_KEY();
-        // Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IBitcoinManager.InvalidOutputAmount.selector,
-                btcTxOut.amount,
-                VALUE - (Constants.P2TR_FEE + Constants.SPEED_UP_AMOUNT)
-            )
-        );
-        // Act
-        bitcoinManager.validateAcceptPeginP2TROutput(committeePubKey, VALUE, btcTxOut);
-    }
-
-    function test_validateAcceptPeginP2TROutput_Revert_IncorrectOutputScript() external {
-        BtcTransaction memory btcTx = HelperContract.getBtcPeginRequestTx();
-
-        // Arrange
-        BtcTxOut memory btcTxOut = getBtcAcceptPeginTx(btcTx).outputs[0];
-        bytes memory expectedScriptPubKey = btcTxOut.scriptPubKey;
-        btcTxOut.scriptPubKey = hex"0014d3b4045c40a133ee361f766ceae4d82398fc5058";
-        bytes memory committeePubKey = COMMITTEE_PUB_KEY();
-        // Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IBitcoinManager.IncorrectOutputScript.selector, btcTxOut.scriptPubKey, expectedScriptPubKey
-            )
-        );
-        // Act
-        bitcoinManager.validateAcceptPeginP2TROutput(committeePubKey, VALUE, btcTxOut);
-    }
-
     function test_getSpeedUpScriptPub_Success() external {
         // Arrange
         bytes32 pubKey = generatePubKey(1);

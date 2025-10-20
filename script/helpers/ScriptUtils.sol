@@ -13,6 +13,8 @@ import {
 import {BtcTxSPVProof} from "src/PegManager.sol";
 import {BtcTransaction, BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
 import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
+import {BtcTaproot} from "src/libraries/BtcTaproot.sol";
+import {OpCodes} from "src/libraries/OpCodes.sol";
 import {Constants} from "src/libraries/Constants.sol";
 
 abstract contract ScriptUtils is Script {
@@ -74,6 +76,71 @@ abstract contract ScriptUtils is Script {
         registrationKeys.takeKey = generateECDSAPublicKey(_privateKey, PublicKeyType.TAKE);
         registrationKeys.covenantKey = generateECDSAPublicKey(_privateKey, PublicKeyType.COVENANT);
         registrationKeys.communicationKey = generateRSAPublicKey(_privateKey, PublicKeyType.COMMUNICATION);
+    }
+
+    // ========================== Peg in ==========================
+    function getAcceptPeginP2TRScriptPub(bytes memory _committeePubKey) internal pure returns (bytes memory) {
+        bytes32 tweakedPublicKey = getAcceptPeginTweakedPublicKey(_committeePubKey);
+        return BtcTaproot.getP2TRScriptPubKey(tweakedPublicKey);
+    }
+
+    function getAcceptPeginTweakedPublicKey(bytes memory _committeePubKey) internal pure returns (bytes32) {
+        // Extract x-coordinate from compressed public key (skip first byte which is prefix)
+        // Assembly is required here for BIP340 X-only public key extraction from the 33-byte compressed format.
+        // BIP340 specifies Schnorr signatures use only the x-coordinate, stored at bytes 1-32 (skipping the prefix byte).
+        bytes32 committeePubKeyX;
+        // slither-disable-next-line assembly
+        assembly {
+            committeePubKeyX := mload(add(_committeePubKey, 33))
+        }
+
+        // Currently we only consider the key spend path (user take)
+        bytes32 tweak = BtcTaproot.getTweak(abi.encodePacked(committeePubKeyX));
+        bytes32 tweakedPublicKey = BtcTaproot.getTweakedPublicKey(committeePubKeyX, tweak);
+
+        return tweakedPublicKey;
+    }
+
+    function getPeginRequestP2TRScriptPub(
+        address _rskDestinationAddress,
+        uint64 _value,
+        bytes32 _btcReimbursementPubKey,
+        bytes memory _committeePubKey
+    ) internal pure returns (bytes memory) {
+        bytes32 tweakedPublicKey =
+            getRequestPeginTweakedPublicKey(_rskDestinationAddress, _value, _btcReimbursementPubKey, _committeePubKey);
+        return BtcTaproot.getP2TRScriptPubKey(tweakedPublicKey);
+    }
+
+    function getRequestPeginTweakedPublicKey(
+        address _rskDestinationAddress,
+        uint64 _value,
+        bytes32 _btcReimbursementPubKey,
+        bytes memory _committeePubKey
+    ) internal pure returns (bytes32) {
+        bytes memory timelockScript =
+            BtcScriptParser.getTimelockScript(Constants.TIMELOCK_BLOCKS, _btcReimbursementPubKey);
+        bytes32 timelockLeaf = BtcTaproot.getLeaf(timelockScript);
+
+        bytes memory extraDataScript =
+            abi.encodePacked(OpCodes.OP_RETURN, OpCodes.OP_PUSHBYTES_28, _rskDestinationAddress, _value);
+        bytes32 extraDataLeaf = BtcTaproot.getLeaf(extraDataScript);
+
+        bytes32 merkleRoot = BtcTaproot.getBranch(timelockLeaf, extraDataLeaf);
+
+        // Extract x-coordinate from compressed public key (skip first byte which is prefix)
+        // Assembly is required here for BIP340 X-only public key extraction from the 33-byte compressed format.
+        // BIP340 specifies Schnorr signatures use only the x-coordinate, stored at bytes 1-32 (skipping the prefix byte).
+        bytes32 committeePubKeyX;
+        // slither-disable-next-line assembly
+        assembly {
+            committeePubKeyX := mload(add(_committeePubKey, 33))
+        }
+
+        bytes32 tweak = BtcTaproot.getTweak(abi.encodePacked(committeePubKeyX, merkleRoot));
+        bytes32 tweakedPublicKey = BtcTaproot.getTweakedPublicKey(committeePubKeyX, tweak);
+
+        return tweakedPublicKey;
     }
 
     // ========================== Peg out ==========================

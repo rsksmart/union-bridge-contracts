@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNKNOWN
 pragma solidity ^0.8.20;
 
+import {IPegManager} from "./IPegManager.sol";
+
 /// @notice Represents a Bitcoin transaction input that references a previous UTXO
 /// @dev This struct follows Bitcoin's transaction input format as defined in BIP-141
 /// @dev All multi-byte fields are stored in little-endian format (Bitcoin's native format)
@@ -95,6 +97,11 @@ struct BitcoinSignatureData {
 /// @dev This interface provides functions for generating addresses, validating transactions,
 /// @dev and calculating signature hashes for Bitcoin operations in the RSK union bridge
 interface IBitcoinManager {
+    /// @notice Sets the Peg Manager contract address
+    /// @dev Only callable by the contract owner
+    /// @param _pegManager The address of the Peg Manager contract
+    function setPegManager(IPegManager _pegManager) external;
+
     /// @notice Obtains a temporary Bitcoin address for request peg-in operations
     /// @dev Creates a Taproot address with committee and user key paths for secure peg-in
     /// @param _rskDestinationAddress The RSK address that will receive the RBTC
@@ -131,7 +138,7 @@ interface IBitcoinManager {
         bytes32 _btcReimbursementPubKey,
         bytes memory _committeePubKey,
         BtcTxOut calldata _p2trOut
-    ) external pure;
+    ) external view;
 
     /// @notice Calculates the Bitcoin transaction id (txid) for a given transaction
     /// @dev Encodes the transaction into Bitcoin's raw format and performs double SHA256 hash
@@ -139,20 +146,6 @@ interface IBitcoinManager {
     /// @param _btcTx The Bitcoin transaction to hash
     /// @return txid The transaction id in big-endian format (standard hex representation)
     function getBtcTxid(BtcTransaction calldata _btcTx) external pure returns (bytes32);
-
-    /// @notice Generates a Taproot script pub key for peg-in request transactions
-    /// @dev Creates a P2TR script with both key spend and script spend paths for committee and user keys
-    /// @param _rskDestinationAddress The RSK address that will receive the RBTC
-    /// @param _value The amount in satoshis (must match stream denomination)
-    /// @param _btcReimbursementPubKey The user's public key (x-coordinate only, 32 bytes)
-    /// @param _committeePubKey The committee's public key (x-coordinate only, 32 bytes)
-    /// @return The generated Taproot script pub key
-    function getPeginRequestP2TRScriptPub(
-        address _rskDestinationAddress,
-        uint64 _value,
-        bytes32 _btcReimbursementPubKey,
-        bytes memory _committeePubKey
-    ) external pure returns (bytes memory);
 
     /// @notice Calculates the signature hash for Bitcoin accept peg-in transactions
     /// @dev Generates the hash that committee members must sign to accept a peg-in
@@ -166,24 +159,7 @@ interface IBitcoinManager {
         bytes32 _userXOnlyPubKey,
         bytes32 _registerPeginTx,
         PrevoutData memory _prevoutData
-    ) external pure returns (BitcoinSignatureData memory);
-
-    /// @notice Generates a Taproot script pub key for accept peg-in transactions
-    /// @dev Creates a P2TR script with committee key path for accepting peg-ins
-    /// @param _committeePubKey The committee's public key (x-coordinate only, 32 bytes)
-    /// @return bytes The Taproot script pub key for the accept peg-in output
-    function getAcceptPeginP2TRScriptPub(bytes memory _committeePubKey) external pure returns (bytes memory);
-
-    /// @notice Validates a P2TR output for accept peg-in transactions
-    /// @dev Ensures the Taproot output has the correct committee key structure
-    /// @param _committeePubKey The committee's public key (x-coordinate only, 32 bytes)
-    /// @param _inputAmount The amount of the input being spent
-    /// @param _p2trOut The Bitcoin transaction output containing the P2TR output
-    function validateAcceptPeginP2TROutput(
-        bytes memory _committeePubKey,
-        uint64 _inputAmount,
-        BtcTxOut calldata _p2trOut
-    ) external pure;
+    ) external view returns (BitcoinSignatureData memory);
 
     /// @notice Generates a P2WPKH script pub key for speed-up outputs
     /// @dev Creates a P2WPKH script for Child Pays for Parent (CPFP) transactions to speed up the original transaction
@@ -268,4 +244,15 @@ interface IBitcoinManager {
     /// @param actual The actual output amount
     /// @param expected The expected output amount
     error InvalidOutputAmount(uint64 actual, uint64 expected);
+
+    /// @notice Error thrown when an account is not authorized
+    /// @param account The unauthorized account
+    error UnauthorizedAccount(address account);
+
+    /// @notice Thrown when an address is zero
+    error InvalidZeroAddress();
+
+    /// @notice Event emitted when peg manager address is updated
+    /// @param pegManager The new peg manager address
+    event PegManagerUpdated(address pegManager);
 }
