@@ -1,5 +1,5 @@
 # IBridge
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/0b531d846dee21847f46b6304e71a6006a2ef7c3/src/interfaces/IBridge.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/d1d7e57632b0c5f559c5c50994a17b0f4b09c742/src/interfaces/IBridge.sol)
 
 Interface for interacting with the RSK pow-peg Bridge contract
 
@@ -86,45 +86,17 @@ function getStateForDebugging() external view returns (bytes memory);
 |`<none>`|`bytes`|The debug state data|
 
 
-### getBtcBlockchainInitialBlockHeight
+### getBtcTxHashProcessedHeight
 
 Gets the initial block height of the Bitcoin blockchain
 
-
-```solidity
-function getBtcBlockchainInitialBlockHeight() external view returns (int256);
-```
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`<none>`|`int256`|The initial block height|
-
-
-### getBtcBlockchainBlockHashAtDepth
-
 Gets the Bitcoin blockchain block hash at a specific depth
 
-
-```solidity
-function getBtcBlockchainBlockHashAtDepth(int256 depth) external view returns (bytes memory);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`depth`|`int256`|The depth from the current best chain|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`<none>`|`bytes`|The block hash at the specified depth|
-
-
-### getBtcTxHashProcessedHeight
-
 Gets the processed height for a Bitcoin transaction hash
+
+*This method throws an OOG because cannot be called inside the blockchain https://ips.rootstock.io/IPs/RSKIP89.html*
+
+*This method throws an OOG because cannot be called inside the blockchain https://ips.rootstock.io/IPs/RSKIP89.html*
 
 
 ```solidity
@@ -140,7 +112,7 @@ function getBtcTxHashProcessedHeight(string calldata hash) external view returns
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`int64`|The processed height for the transaction|
+|`<none>`|`int64`|The initial block height function getBtcBlockchainInitialBlockHeight() external view returns (int256);|
 
 
 ### isBtcTxHashAlreadyProcessed
