@@ -55,14 +55,16 @@ interface IBridge {
     /// @return The debug state data
     function getStateForDebugging() external view returns (bytes memory);
 
+    /// @dev This method throws an OOG because cannot be called inside the blockchain https://ips.rootstock.io/IPs/RSKIP89.html
     /// @notice Gets the initial block height of the Bitcoin blockchain
     /// @return The initial block height
-    function getBtcBlockchainInitialBlockHeight() external view returns (int256);
+    /// function getBtcBlockchainInitialBlockHeight() external view returns (int256);
 
+    /// @dev This method throws an OOG because cannot be called inside the blockchain https://ips.rootstock.io/IPs/RSKIP89.html
     /// @notice Gets the Bitcoin blockchain block hash at a specific depth
     /// @param depth The depth from the current best chain
     /// @return The block hash at the specified depth
-    function getBtcBlockchainBlockHashAtDepth(int256 depth) external view returns (bytes memory);
+    /// function getBtcBlockchainBlockHashAtDepth(int256 depth) external view returns (bytes memory);
 
     /// @notice Gets the processed height for a Bitcoin transaction hash
     /// @param hash The Bitcoin transaction hash
