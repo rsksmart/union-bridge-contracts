@@ -418,8 +418,8 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             }
         }
 
-        // TODO mint the peg in tokens
-        //requestRbtc(rskDestinationAddress, rbtcAmount);
+        // Mint and Transfer the RBTC to the RSK destination address
+        _mintRbtc(payable(address(requestTempInfo.rskDestinationAddress)), rbtcAmount);
     }
 
     function _validatePegoutRequest(bytes calldata _userPubKey, uint256 amountInWei) internal pure {
@@ -468,8 +468,6 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         // Store the pegout to pegin tx hash mapping
         pegoutToPeginTxHash[pegoutSignatureHash] = slot.acceptPeginTx;
 
-        // TODO: return RBTC to the RSK Legacy Bridge following https://github.com/rsksmart/RSKIPs/pull/502
-
         // Compute pegout ID
         bytes32 pegoutId = keccak256(
             abi.encode(
@@ -493,6 +491,9 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             stream.denomination,
             pegoutId
         );
+
+        // Return RBTC to the RSK Legacy Bridge following RSKIP502
+        _releaseRbtc(msg.value);
     }
 
     /// @notice Register a peg-out transaction from Bitcoin

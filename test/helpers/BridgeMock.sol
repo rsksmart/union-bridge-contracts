@@ -9,12 +9,61 @@ contract BridgeMock is IBridge {
     mapping(bytes32 => bytes) private headersByHash;
     int256 private bestBlock;
     int256 private confirmations;
+    uint256 private lockingCap = 400 ether;
+    uint256 private weisTransferredToUnionBridge = 0;
+    uint256 private weisReceived = 0;
+    bool private transfersDisabled = false;
+    address payable private unionBridgeContractAddress = payable(address(0));
 
-    receive() external payable override {}
+    receive() external payable override {
+        if (msg.sender == unionBridgeContractAddress) {
+            weisReceived += msg.value;
+        }
+    }
 
-    function requestUnionRBTC(uint256 amount) external pure override returns (int256) {
-        // TODO: set up union bridge address and send funds to it
-        return int256(amount);
+    function requestUnionBridgeRbtc(uint256 amount) external override returns (int256) {
+        if (amount > lockingCap) {
+            return int256(-2);
+        }
+        if (transfersDisabled) {
+            return int256(-3);
+        }
+        weisTransferredToUnionBridge += amount;
+        lockingCap -= amount;
+        (bool success,) = unionBridgeContractAddress.call{value: amount}("");
+        require(success, "BridgeMock: Sending funds failed");
+        return int256(0);
+    }
+
+    function releaseUnionBridgeRbtc() external override returns (int256) {
+        if (weisReceived > weisTransferredToUnionBridge) {
+            return int256(-2);
+        }
+        weisTransferredToUnionBridge -= weisReceived;
+        lockingCap += weisReceived;
+        weisReceived = 0;
+        return int256(0);
+    }
+
+    function getUnionBridgeLockingCap() external view override returns (uint256) {
+        return lockingCap;
+    }
+
+    function increaseUnionBridgeLockingCap(uint256 newCap) external override returns (int256) {
+        if (newCap > lockingCap) {
+            return int256(-2);
+        }
+        lockingCap = newCap;
+        return int256(0);
+    }
+
+    function setUnionBridgeContractAddressForTestnet(address newAddress) external override returns (int256) {
+        unionBridgeContractAddress = payable(newAddress);
+        return int256(0);
+    }
+
+    function getUnionBridgeContractAddress() external view override returns (address) {
+        return unionBridgeContractAddress;
     }
 
     function registerFastBridgeBtcTransaction(
