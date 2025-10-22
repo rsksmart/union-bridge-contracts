@@ -53,15 +53,27 @@ abstract contract ProofValidator is Initializable {
     /// @param expected The minimum number of confirmations required
     error NotEnoughConfirmations(int256 actual, uint256 expected);
 
+    /// @notice Error thrown when unable to transfer RBTC
+    /// @param to The address to transfer the RBTC to
+    /// @param amount The amount of RBTC to transfer
+    error FailedToSendRBTC(address to, uint256 amount);
+
     /// @notice Error thrown when the bridge address is set to zero
     error BridgeAddressZero();
 
     /// @notice Error thrown when an unauthorized caller attempts to access bridge functionality
     error BridgeUnauthorizedCaller();
 
+    /// @notice Error thrown when RBTC transfers from the PowPeg to the Union Bridge are currently disabled
+    error BridgeTransfersDisabled();
+
     /// @notice Error thrown when the locking cap is exceeded
     /// @param amount The amount that would exceed the locking cap
     error BridgeExceededLockingCap(uint256 amount);
+
+    /// @notice Error thrown when the amount being returned exceeds the previously transferred amount.
+    /// @param amount The amount that would exceed previously transferred amount
+    error BridgeReleaseInvalidValue(uint256 amount);
 
     /// @notice Initializes the ProofValidator contract
     /// @dev Sets up the RSK Bridge address for Bitcoin transaction verification
@@ -122,6 +134,78 @@ abstract contract ProofValidator is Initializable {
         // Validate block has enough Confirmations
         if (uint256(confirmations) < _minConfirmations) {
             revert NotEnoughConfirmations(confirmations, _minConfirmations);
+        }
+    }
+
+    /// @notice Mints RBTC to the Union Bridge contract address
+    /// @param _to The address to transfer the RBTC to
+    /// @param _amount The amount of RBTC to mint
+    /// @dev Uses RSK bridge precompiled contract to mint the RBTC via requestUnionBridgeRbtc
+    /// @dev following RSKIP502: https://github.com/rsksmart/RSKIPs/blob/master/IPs/RSKIP502.md
+    /// @dev Will revert if:
+    ///      - Unauthorized caller
+    ///      - Exceeded locking cap
+    ///      - Transfers disabled
+    ///      - Unknown error
+    function _mintRbtc(address payable _to, uint256 _amount) internal {
+        // Request the RBTC from the Union Bridge
+        int256 result = bridge.requestUnionBridgeRbtc(_amount);
+        if (result == -1) {
+            revert BridgeUnauthorizedCaller();
+        }
+        if (result == -2) {
+            revert BridgeExceededLockingCap(_amount);
+        }
+        if (result == -3) {
+            revert BridgeTransfersDisabled();
+        }
+        if (result != 0) {
+            revert BridgeBtcUnknownError(result);
+        }
+        // Transfer the RBTC
+        _sendRbtc(_to, _amount);
+    }
+
+    /// @notice Sends RBTC to the specified address using a low gas limit
+    /// @dev Limit is set to 100_000 to avoid DDoS attacks and stealing gas while allowing to perform some smart contract operations for DEFI.
+    /// @param _to The address to send the RBTC to
+    /// @param _amount The amount of RBTC to send
+    /// @dev Will revert if:
+    ///      - Unable to send RBTC
+    ///      - Exceeded gas limit
+    function _sendRbtc(address payable _to, uint256 _amount) internal {
+        (bool sent,) = _to.call{value: _amount, gas: 100_000}("");
+        if (!sent) {
+            revert FailedToSendRBTC(_to, _amount);
+        }
+    }
+
+    /// @notice Releases RBTC from the Union Bridge contract address
+    /// @param _returnedAmount The amount of RBTC to release
+    /// @dev Uses RSK bridge precompiled contract to release the RBTC via releaseUnionBridgeRbtc
+    /// @dev following RSKIP502: https://github.com/rsksmart/RSKIPs/blob/master/IPs/RSKIP502.md
+    /// @dev Will revert if:
+    ///      - Unauthorized caller
+    ///      - Invalid value
+    ///      - Transfers disabled
+    ///      - Unknown error
+    function _releaseRbtc(uint256 _returnedAmount) internal {
+        // Transfer the RBTC to the PowPeg
+        _sendRbtc(payable(address(bridge)), _returnedAmount);
+
+        // Release the RBTC from the Union Bridge
+        int256 result = bridge.releaseUnionBridgeRbtc();
+        if (result == -1) {
+            revert BridgeUnauthorizedCaller();
+        }
+        if (result == -2) {
+            revert BridgeReleaseInvalidValue(_returnedAmount);
+        }
+        if (result == -3) {
+            revert BridgeTransfersDisabled();
+        }
+        if (result != 0) {
+            revert BridgeBtcUnknownError(result);
         }
     }
 }
