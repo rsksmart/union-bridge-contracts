@@ -17,8 +17,8 @@ library StreamManagerSettingsConfig {
             });
         } else if (chainId == ChainIds.RSK_TESTNET) {
             return StreamManagerSettings({
-                peginConfirmations: 6,
-                pegoutConfirmations: 6,
+                peginConfirmations: 1,
+                pegoutConfirmations: 1,
                 securityBondPercentageOperator: 800,
                 securityBondPercentageWatchtower: 100,
                 minimumSecurityDeposit: 22500000 gwei, // 2250 USD
