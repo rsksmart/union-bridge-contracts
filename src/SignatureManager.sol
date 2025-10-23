@@ -64,6 +64,7 @@ contract SignatureManager is ISignatureManager, AccessControl {
     /// @param _nonce The 66-byte nonce for the Musig2 protocol
     /// @return true if all nonces are now present, false otherwise
     function addMemberNonce(bytes32 _hashToSign, bytes memory _nonce) external returns (bool) {
+        address sender = _msgSender();
         // Check that nonce is 66 bytes
         if (_nonce.length != Constants.SIGNATURE_NONCE_LENGTH) {
             revert InvalidNonceLength(_nonce.length, Constants.SIGNATURE_NONCE_LENGTH);
@@ -71,18 +72,18 @@ contract SignatureManager is ISignatureManager, AccessControl {
 
         Signatures storage signatures = _getSignatures(_hashToSign);
         // Check if the member is in the committee
-        if (!_isMemberInCommittee(signatures.committeeId, msg.sender)) {
-            revert MemberNotFoundInCommittee(signatures.committeeId, msg.sender);
+        if (!_isMemberInCommittee(signatures.committeeId, sender)) {
+            revert MemberNotFoundInCommittee(signatures.committeeId, sender);
         }
 
-        SignatureData storage memberSignatureData = signatures.partialSignaturesData[msg.sender];
+        SignatureData storage memberSignatureData = signatures.partialSignaturesData[sender];
         // Check if the member has already added a nonce
         if (memberSignatureData.nonce.length != 0) {
-            revert MemberAlreadyAddedNonce(msg.sender, _nonce);
+            revert MemberAlreadyAddedNonce(sender, _nonce);
         }
         // Store the  nonce for the member
         memberSignatureData.nonce = _nonce;
-        emit NonceAdded(_hashToSign, msg.sender, _nonce);
+        emit NonceAdded(_hashToSign, sender, _nonce);
 
         // Check if all nonces are present
         signatures.missingNonces -= 1;
@@ -99,6 +100,7 @@ contract SignatureManager is ISignatureManager, AccessControl {
     /// @param _signature The signature for the hash
     /// @return true if all signatures are now present, false otherwise
     function addMemberSignature(bytes32 _txid, bytes32 _signature) external returns (bool) {
+        address sender = _msgSender();
         // Check if all nonces are present
         Signatures storage signatures = _getSignatures(_txid);
         if (signatures.missingNonces != 0) {
@@ -110,18 +112,18 @@ contract SignatureManager is ISignatureManager, AccessControl {
         }
 
         // Check if the member is in the committee
-        if (!_isMemberInCommittee(signatures.committeeId, msg.sender)) {
-            revert MemberNotFoundInCommittee(signatures.committeeId, msg.sender);
+        if (!_isMemberInCommittee(signatures.committeeId, sender)) {
+            revert MemberNotFoundInCommittee(signatures.committeeId, sender);
         }
 
-        SignatureData storage memberSignatureData = signatures.partialSignaturesData[msg.sender];
+        SignatureData storage memberSignatureData = signatures.partialSignaturesData[sender];
         // Check if the member has already added a signature
         if (memberSignatureData.signature != "") {
-            revert MemberHasAlreadySigned(msg.sender, _txid);
+            revert MemberHasAlreadySigned(sender, _txid);
         }
         // Store the signature for the member
         memberSignatureData.signature = _signature;
-        emit SignatureAdded(_txid, msg.sender, _signature);
+        emit SignatureAdded(_txid, sender, _signature);
 
         // Check if all signatures are present
         signatures.missingSignatures -= 1;
@@ -243,6 +245,7 @@ contract SignatureManager is ISignatureManager, AccessControl {
     /// @param _acceptPeginTxid The accept peg-in transaction id
     /// @param _takeTxid The OperatorTake transaction id to add
     function addOperatorTakeTxid(bytes32 _acceptPeginTxid, bytes32 _takeTxid) external {
+        address sender = _msgSender();
         OperatorTakeTxids storage operatorTakeTxids = _getOperatorTakeTxids(_acceptPeginTxid);
 
         if (operatorTakeTxids.missingHashes == 0) {
@@ -253,24 +256,24 @@ contract SignatureManager is ISignatureManager, AccessControl {
             revert InvalidHash(_takeTxid);
         }
 
-        Role role = _getMemberRole(operatorTakeTxids.committeeId, msg.sender);
+        Role role = _getMemberRole(operatorTakeTxids.committeeId, sender);
 
         // Check if the member is in the committee
         if (role == Role.NONE) {
-            revert MemberNotFoundInCommittee(operatorTakeTxids.committeeId, msg.sender);
+            revert MemberNotFoundInCommittee(operatorTakeTxids.committeeId, sender);
         }
 
         // Only operators should add take 1 tx id's
         if (role != Role.OPERATOR) {
-            revert MemberIsNotOperator(operatorTakeTxids.committeeId, msg.sender);
+            revert MemberIsNotOperator(operatorTakeTxids.committeeId, sender);
         }
 
-        if (operatorTakeTxids.txids[msg.sender] != bytes32(0)) {
-            revert MemberAlreadyAddedOperatorTakeTxid(_acceptPeginTxid, msg.sender, _takeTxid);
+        if (operatorTakeTxids.txids[sender] != bytes32(0)) {
+            revert MemberAlreadyAddedOperatorTakeTxid(_acceptPeginTxid, sender, _takeTxid);
         }
 
-        operatorTakeTxids.txids[msg.sender] = _takeTxid;
-        emit OperatorTakeTxidAdded(_acceptPeginTxid, msg.sender, _takeTxid);
+        operatorTakeTxids.txids[sender] = _takeTxid;
+        emit OperatorTakeTxidAdded(_acceptPeginTxid, sender, _takeTxid);
 
         operatorTakeTxids.missingHashes -= 1;
         if (operatorTakeTxids.missingHashes == 0) {

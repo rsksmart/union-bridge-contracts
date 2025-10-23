@@ -108,7 +108,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         UTXO calldata _fundingUTXO
     ) external payable nonReentrant whenNotPaused {
         // Delegate member registration to MemberRegistry
-        memberRegistry.applyToStream{value: msg.value}(msg.sender, _stream, _role, _publicKeys, _fundingUTXO);
+        memberRegistry.applyToStream{value: msg.value}(_msgSender(), _stream, _role, _publicKeys, _fundingUTXO);
 
         // Check if committee creation is needed after successful application
         _createCommitteeAfterApplyToStream(_stream);
@@ -118,12 +118,13 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
     /// @dev Only callable when contract is unpaused
     /// @param _denomination The stream denomination to unsubscribe from
     function unsubscribeFromStream(StreamDenomination _denomination) external whenNotPaused {
-        if (_isInPendingCommittee(msg.sender, uint64(_denomination))) {
-            revert MemberIsInPendingCommittee(msg.sender, _denomination);
+        address sender = _msgSender();
+        if (_isInPendingCommittee(sender, uint64(_denomination))) {
+            revert MemberIsInPendingCommittee(sender, _denomination);
         }
 
         // Delegate to MemberRegistry for the actual unsubscription logic
-        memberRegistry.unsubscribeFromStream(msg.sender, _denomination);
+        memberRegistry.unsubscribeFromStream(sender, _denomination);
     }
 
     function _isInPendingCommittee(address _memberAddress, uint64 _streamId) internal view returns (bool) {
@@ -284,6 +285,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
     /// @param _committeeId The ID of the pending committee
     /// @param _aggregatedKey The aggregated public key provided by the member
     function depositAggregatedKey(uint128 _committeeId, bytes memory _aggregatedKey) external whenNotPaused {
+        address sender = _msgSender();
         Committee storage pendingCommittee = _getPendingCommitteeById(_committeeId);
 
         if (_aggregatedKey.length != 33) {
@@ -294,13 +296,13 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
             revert InvalidAggregatedKeyZero();
         }
 
-        _isInCommitteeOrRevert(_committeeId, msg.sender);
+        _isInCommitteeOrRevert(_committeeId, sender);
 
-        if (committeesData[_committeeId][msg.sender].aggregatedKey.length != 0) {
-            revert MemberInfoAlreadyDeposited(_committeeId, msg.sender);
+        if (committeesData[_committeeId][sender].aggregatedKey.length != 0) {
+            revert MemberInfoAlreadyDeposited(_committeeId, sender);
         }
 
-        committeesData[_committeeId][msg.sender].aggregatedKey = _aggregatedKey;
+        committeesData[_committeeId][sender].aggregatedKey = _aggregatedKey;
 
         if (pendingCommittee.aggregatedKey.length == 0) {
             // Save the aggregated key for the committee
@@ -314,7 +316,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         }
 
         pendingCommittee.missingData--;
-        emit MemberInfoDeposited(_committeeId, msg.sender, _aggregatedKey);
+        emit MemberInfoDeposited(_committeeId, sender, _aggregatedKey);
         if (pendingCommittee.missingData != 0) {
             // Committee is not completed yet
             return;
@@ -342,16 +344,16 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         external
         whenNotPaused
     {
+        address sender = _msgSender();
         Committee storage pendingCommittee = _getPendingCommitteeById(_committeeId);
 
-        CommunicationData[] storage communicationDataStorage =
-            committeesData[_committeeId][msg.sender].communicationData;
+        CommunicationData[] storage communicationDataStorage = committeesData[_committeeId][sender].communicationData;
         CommitteeMember[] storage committeeMembers = pendingCommittee.members;
 
-        _isInCommitteeOrRevert(_committeeId, msg.sender);
+        _isInCommitteeOrRevert(_committeeId, sender);
 
         if (communicationDataStorage.length != 0) {
-            revert MemberAlreadyDepositedCommunicationData(_committeeId, msg.sender, communicationDataStorage.length);
+            revert MemberAlreadyDepositedCommunicationData(_committeeId, sender, communicationDataStorage.length);
         }
 
         if (_communicationData.length != committeeMembers.length) {
@@ -361,7 +363,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         for (uint256 i = 0; i < _communicationData.length; i++) {
             bool isEmpty = BytesHelper.isArrayEmpty(_communicationData[i].data);
 
-            if (msg.sender == committeeMembers[i].memberAddress) {
+            if (sender == committeeMembers[i].memberAddress) {
                 if (!isEmpty) {
                     revert InvalidNonZeroCommunicationData(i, _communicationData[i]);
                 }
@@ -375,7 +377,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         }
 
         pendingCommittee.missingCommunicationData--;
-        emit MemberCommunicationDataDeposited(_committeeId, msg.sender, _communicationData);
+        emit MemberCommunicationDataDeposited(_committeeId, sender, _communicationData);
 
         if (pendingCommittee.missingCommunicationData == 0) {
             emit AllCommunicationDataReady(_committeeId);
@@ -393,7 +395,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         view
         returns (CommunicationData[] memory communicationData)
     {
-        _isInCommitteeOrRevert(_committeeId, msg.sender);
+        _isInCommitteeOrRevert(_committeeId, _msgSender());
 
         CommitteeMember[] storage committeeMembers = committeesById[_committeeId].members;
 
@@ -608,7 +610,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
 
     /// @notice Modifier to restrict access to the PegManager contract
     modifier onlyPegManager() {
-        _onlyPegManager(msg.sender);
+        _onlyPegManager(_msgSender());
         _;
     }
 

@@ -172,17 +172,18 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
     /// @dev Can only withdraw balance that is not pre-staked or staked
     /// @dev Only callable when contract is unpaused
     function withdrawAvailableBalance() external nonReentrant whenNotPaused {
-        Member storage member = _getMember(msg.sender);
+        address sender = _msgSender();
+        Member storage member = _getMember(sender);
         uint256 amount = member.balance.available;
         if (amount == 0) {
-            revert NoAvailableBalanceToWithdraw(msg.sender);
+            revert NoAvailableBalanceToWithdraw(sender);
         }
         member.balance.available = 0;
-        emit AvailableBalanceRetrieved(msg.sender, amount);
+        emit AvailableBalanceRetrieved(sender, amount);
 
-        (bool sent,) = msg.sender.call{value: amount}("");
+        (bool sent,) = payable(sender).call{value: amount}("");
         if (!sent) {
-            revert FailedToSendRSK(msg.sender, amount);
+            revert FailedToSendRSK(sender, amount);
         }
     }
 
@@ -502,17 +503,18 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
     /// @param _denomination The stream denomination to set the flag for
     /// @param _reApply True to automatically reapply, false to receive balance as available
     function setReApplyForStream(StreamDenomination _denomination, bool _reApply) external override whenNotPaused {
-        ApplicationData storage applicationData = _getMemberApplicationData(msg.sender, _denomination);
+        address sender = _msgSender();
+        ApplicationData storage applicationData = _getMemberApplicationData(sender, _denomination);
         applicationData.reApply = _reApply;
 
-        emit MemberReApplyUpdated(msg.sender, _denomination, _reApply);
+        emit MemberReApplyUpdated(sender, _denomination, _reApply);
     }
 
     /// @notice Gets the reapply flag for a member in a specific stream
     /// @param _denomination The stream denomination to check
     /// @return True if the member will automatically reapply, false otherwise
     function getReApplyForStream(StreamDenomination _denomination) external view override returns (bool) {
-        return _getMemberApplicationData(msg.sender, _denomination).reApply;
+        return _getMemberApplicationData(_msgSender(), _denomination).reApply;
     }
 
     // ===================== Committee Integration Functions =====================
@@ -660,8 +662,9 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
     /// @notice Modifier to restrict access to the CommitteeRegistry contract
     /// @dev Reverts if the caller is not the CommitteeRegistry
     modifier onlyCommitteeRegistry() {
-        if (committeeRegistry != msg.sender) {
-            revert UnauthorizedAccount(msg.sender);
+        address sender = _msgSender();
+        if (committeeRegistry != sender) {
+            revert UnauthorizedAccount(sender);
         }
         _;
     }
