@@ -173,7 +173,8 @@ contract MemberRegistry is IMemberRegistry, BaseProxy {
         member.balance.available = 0;
         emit AvailableBalanceRetrieved(msg.sender, amount);
 
-        (bool sent,) = msg.sender.call{value: amount}("");
+        // Committee members are expected to be EOA
+        (bool sent,) = msg.sender.call{value: amount, gas: 2300}("");
         if (!sent) {
             revert FailedToSendRSK(msg.sender, amount);
         }

@@ -34,10 +34,6 @@ int256 constant BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE = 
 /// @dev This interface provides functions for pow-peg bridge operations and Bitcoin transaction validation
 /// @dev Used for compatibility with the existing RSK Bridge system
 interface IBridge {
-    /// @notice Allows the contract to receive RBTC
-    /// @dev Enables the contract to receive RBTC transfers
-    receive() external payable;
-
     /// @notice Gets the current best chain height of the Bitcoin blockchain
     /// @return The current best chain height
     function getBtcBlockchainBestChainHeight() external view returns (int256);
@@ -394,5 +390,5 @@ interface IBridge {
     /// @notice When this happens, the tracking entry for the amount transferred will need to be updated to reflect the returned RBTC
     /// @dev This method is new in RSKIP502
     /// @return The result code of the operation 0 is success, otherwise error code
-    function releaseUnionBridgeRbtc() external returns (int256);
+    function releaseUnionBridgeRbtc() external payable returns (int256);
 }

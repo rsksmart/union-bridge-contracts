@@ -180,26 +180,21 @@ abstract contract ProofValidator is Initializable {
         }
     }
 
-    /// @notice Releases RBTC from the Union Bridge contract address
-    /// @param _returnedAmount The amount of RBTC to release
-    /// @dev Uses RSK bridge precompiled contract to release the RBTC via releaseUnionBridgeRbtc
-    /// @dev following RSKIP502: https://github.com/rsksmart/RSKIPs/blob/master/IPs/RSKIP502.md
+    /// @notice Releases RBTC to the powpeg bridge following RSKIP502 https://github.com/rsksmart/RSKIPs/blob/master/IPs/RSKIP502.md
+    /// @param _amountToReturn The amount of RBTC to release
     /// @dev Will revert if:
     ///      - Unauthorized caller
-    ///      - Invalid value
+    ///      - Invalid Value: Amount to return exceeds the previously transferred amount
     ///      - Transfers disabled
     ///      - Unknown error
-    function _releaseRbtc(uint256 _returnedAmount) internal {
-        // Transfer the RBTC to the PowPeg
-        _sendRbtc(payable(address(bridge)), _returnedAmount);
-
-        // Release the RBTC from the Union Bridge
-        int256 result = bridge.releaseUnionBridgeRbtc();
+    function _releaseRbtc(uint256 _amountToReturn) internal {
+        // Transfer RBTC and Release it from the powpeg bridge
+        int256 result = bridge.releaseUnionBridgeRbtc{value: _amountToReturn}();
         if (result == -1) {
             revert BridgeUnauthorizedCaller();
         }
         if (result == -2) {
-            revert BridgeReleaseInvalidValue(_returnedAmount);
+            revert BridgeReleaseInvalidValue(_amountToReturn);
         }
         if (result == -3) {
             revert BridgeTransfersDisabled();

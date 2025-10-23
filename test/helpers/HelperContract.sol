@@ -79,8 +79,6 @@ abstract contract HelperContract is Test, TestUtils {
 
         // Set up bridge mock at bridge precompiled address
         bridgeMock = BridgeMock(deployScript.bridgeAddress());
-        bridgeMock.setUnionBridgeContractAddressForTestnet(address(pm));
-        deal(address(bridgeMock), bridgeMock.getUnionBridgeLockingCap());
 
         // Set up the MemberRegistryHarness in the CommitteeRegistryHarness
         registry.setMemberRegistryHarness(memberRegistry);

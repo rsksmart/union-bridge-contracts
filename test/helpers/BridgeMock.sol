@@ -11,17 +11,17 @@ contract BridgeMock is IBridge {
     int256 private confirmations;
     uint256 private lockingCap = 400 ether;
     uint256 private weisTransferredToUnionBridge = 0;
-    uint256 private weisReceived = 0;
     bool private transfersDisabled = false;
     address payable private unionBridgeContractAddress = payable(address(0));
 
-    receive() external payable override {
-        if (msg.sender == unionBridgeContractAddress) {
-            weisReceived += msg.value;
-        }
+    // accept rbtc from blockchain and commit it to the union bridge contract
+    receive() external payable {}
+
+    function requestUnionBridgeRbtcHarness() external payable returns (int256) {
+        return _requestUnionBridgeRbtc(msg.value);
     }
 
-    function requestUnionBridgeRbtc(uint256 amount) external override returns (int256) {
+    function _requestUnionBridgeRbtc(uint256 amount) internal returns (int256) {
         if (amount > lockingCap) {
             return int256(-2);
         }
@@ -35,14 +35,31 @@ contract BridgeMock is IBridge {
         return int256(0);
     }
 
-    function releaseUnionBridgeRbtc() external override returns (int256) {
-        if (weisReceived > weisTransferredToUnionBridge) {
+    function requestUnionBridgeRbtc(uint256 amount) external override returns (int256) {
+        if (msg.sender != unionBridgeContractAddress) {
+            return int256(-1);
+        }
+        return _requestUnionBridgeRbtc(amount);
+    }
+
+    function releaseUnionBridgeRbtcHarness() external payable returns (int256) {
+        return _releaseUnionBridgeRbtc();
+    }
+
+    function _releaseUnionBridgeRbtc() internal returns (int256) {
+        if (msg.value > weisTransferredToUnionBridge) {
             return int256(-2);
         }
-        weisTransferredToUnionBridge -= weisReceived;
-        lockingCap += weisReceived;
-        weisReceived = 0;
+        weisTransferredToUnionBridge -= msg.value;
+        lockingCap += msg.value;
         return int256(0);
+    }
+
+    function releaseUnionBridgeRbtc() external payable override returns (int256) {
+        if (msg.sender != unionBridgeContractAddress) {
+            return int256(-1);
+        }
+        return _releaseUnionBridgeRbtc();
     }
 
     function getUnionBridgeLockingCap() external view override returns (uint256) {

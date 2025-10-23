@@ -2,7 +2,6 @@
 pragma solidity ^0.8.20;
 
 import {console} from "forge-std/console.sol";
-import {Script} from "forge-std/Script.sol";
 import {PegManager} from "src/PegManager.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 

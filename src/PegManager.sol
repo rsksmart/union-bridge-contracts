@@ -96,6 +96,12 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         operatorTakeTimeout = _settings.operatorTakeTimeout;
     }
 
+    /// @notice Receive function to allow receiving RBTC from the PowPeg Bridge
+    /// @dev This function is used to receive RBTC from the PowPeg Bridge
+    receive() external payable {
+        // Do nothing once we receive RBTC from the PowPeg Bridge
+    }
+
     /// @notice Sets the stream manager contract address
     /// @param _streamManager The stream manager contract address
     /// @dev Only callable by the contract owner
@@ -493,7 +499,8 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         );
 
         // Return RBTC to the RSK Legacy Bridge following RSKIP502
-        _releaseRbtc(msg.value);
+        // We burn the RBTC for the same amount that was requested from the bridge, the rest will be kept by the contract as fees
+        _releaseRbtc(BtcHelper.satoshiToWei(slot.acceptPeginAmount));
     }
 
     /// @notice Register a peg-out transaction from Bitcoin
