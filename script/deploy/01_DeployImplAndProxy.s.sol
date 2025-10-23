@@ -214,6 +214,15 @@ contract DeployImplAndProxy is ScriptUtils {
             // Fund BridgeMock with RBTC so it can mint
             vm.deal(bridgeAddress, 400 ether);
             vm.stopBroadcast();
+
+            // Transfer enough RBTC to the bridge to cover the locking cap (400 RBTC)
+            if (vm.isContext(VmSafe.ForgeContext.TestGroup)) {
+                vm.deal(bridgeAddress, BridgeMock(bridgeAddress).getUnionBridgeLockingCap());
+            } else {
+                vm.startBroadcast(getDeployerKey());
+                payable(bridgeAddress).transfer(BridgeMock(bridgeAddress).getUnionBridgeLockingCap());
+                vm.stopBroadcast();
+            }
         }
 
         uint256 streamLen = streamManager.getStreamsLength();
