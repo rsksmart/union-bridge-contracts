@@ -22,9 +22,9 @@ contract RegisterOperatorTakeScript is ScriptUtils {
     uint64 expectedSlotId;
 
     function setUp(bytes32 _acceptPeginTxHash) internal {
-        pegManager = PegManager(0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6);
+        pegManager = getPegManagerAddress();
 
-        ICommitteeRegistry registry = ICommitteeRegistry(pegManager.committeeRegistry());
+        ICommitteeRegistry registry = pegManager.committeeRegistry();
         IMemberRegistry memberRegistry = registry.memberRegistry();
         bytes32 operatorXOnlyPubKey = memberRegistry.getMemberTakePubKey(getDeployerAddress());
         operatorPubKey = abi.encodePacked(bytes1(0x02), operatorXOnlyPubKey);

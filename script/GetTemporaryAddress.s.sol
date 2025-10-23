@@ -4,8 +4,9 @@ pragma solidity ^0.8.20;
 import {console} from "forge-std/console.sol";
 import {Script} from "forge-std/Script.sol";
 import {PegManager} from "src/PegManager.sol";
+import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 
-contract GetTemporaryAddressScript is Script {
+contract GetTemporaryAddressScript is ScriptUtils {
     PegManager pegManager;
     address rootstock_deposit_address;
     uint64 value;
@@ -16,7 +17,7 @@ contract GetTemporaryAddressScript is Script {
         rootstock_deposit_address = 0x7Ac5496aee77c1bA1F0854206A26DdA82A81d6d8;
         value = 100_000;
         btc_reimbursement_pub_key = 0x7d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f;
-        pegManager = PegManager(0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6);
+        pegManager = getPegManagerAddress();
     }
 
     function run() public {

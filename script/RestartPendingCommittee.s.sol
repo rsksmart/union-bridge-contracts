@@ -4,18 +4,18 @@ pragma solidity ^0.8.20;
 import {console} from "forge-std/console.sol";
 import {PegManager} from "src/PegManager.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
-import {CommitteeRegistry} from "src/CommitteeRegistry.sol";
+import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {Vm} from "forge-std/Vm.sol";
 
 contract RestartPendingCommitteeScript is ScriptUtils {
     PegManager pegManager;
-    CommitteeRegistry committeeRegistry;
+    ICommitteeRegistry committeeRegistry;
     uint64 streamId;
 
     function setUp() internal {
         // ====== Arguments ======
-        pegManager = PegManager(0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6);
-        committeeRegistry = CommitteeRegistry(0xA1B3C2D4f5e6F7a8B9C0d1E2f3a4b5c6D7e8f9A0);
+        pegManager = getPegManagerAddress();
+        committeeRegistry = pegManager.committeeRegistry();
         streamId = 1;
     }
 

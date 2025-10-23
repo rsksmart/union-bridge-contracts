@@ -200,7 +200,7 @@ contract DeployImplAndProxy is ScriptUtils {
             contractName = "PegManagerHarness.sol";
         }
 
-        (, address proxyAdddress) = deployContractAndUUPSProxy(
+        (, address payable proxyAdddress) = deployContractAndUUPSProxy(
             contractName,
             abi.encodeCall(
                 PegManager.initialize,
@@ -252,7 +252,7 @@ contract DeployImplAndProxy is ScriptUtils {
      */
     function deployContractAndUUPSProxy(string memory _contractName, bytes memory _initialCall)
         internal
-        returns (address, address)
+        returns (address, address payable)
     {
         // Open zeppelin upgrades plugin currecntly does not support external libraries
         // See https://docs.openzeppelin.com/upgrades-plugins/faq#why-cant-i-use-external-libraries
@@ -260,10 +260,12 @@ contract DeployImplAndProxy is ScriptUtils {
         // opts.unsafeAllow = "unsafeAllowLinkedLibraries";
         vm.startBroadcast(getDeployerKey());
         // Deploy the upgradeable contract
-        address proxyAddress = Upgrades.deployUUPSProxy(
-            _contractName, //"MyUpgradeableToken.sol",
-            _initialCall // abi.encodeCall(MyUpgradeableToken.initialize, (msg.sender))
-                //opts
+        address payable proxyAddress = payable(
+            Upgrades.deployUUPSProxy(
+                _contractName, //"MyUpgradeableToken.sol",
+                _initialCall // abi.encodeCall(MyUpgradeableToken.initialize, (msg.sender))
+                    //opts
+            )
         );
         vm.stopBroadcast();
         // Get the implementation address

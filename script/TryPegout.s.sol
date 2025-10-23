@@ -16,8 +16,8 @@ contract TryPegoutScript is ScriptUtils {
 
     function setUp() internal {
         // ====== Arguments ======
-        pegManager = PegManager(0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6);
-        streamManager = IStreamManager(pegManager.streamManager());
+        pegManager = getPegManagerAddress();
+        streamManager = pegManager.streamManager();
         amount = 100_000; // 0.001 BTC
         amountInWei = BtcHelper.satoshiToWei(amount);
         userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";

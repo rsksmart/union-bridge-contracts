@@ -32,7 +32,7 @@ contract ApplyToStreamScript is ScriptUtils {
         uint32 _outputIndex,
         uint64 _amount
     ) internal {
-        pegManager = PegManager(0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6);
+        pegManager = getPegManagerAddress();
         committeeRegistry = pegManager.committeeRegistry();
         memberRegistry = committeeRegistry.memberRegistry();
         streamManager = IStreamManager(pegManager.streamManager());

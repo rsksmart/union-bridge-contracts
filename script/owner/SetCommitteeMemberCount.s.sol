@@ -2,17 +2,19 @@
 pragma solidity ^0.8.20;
 
 import {console} from "forge-std/console.sol";
-import {CommitteeRegistry} from "src/CommitteeRegistry.sol";
+import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
+import {PegManager} from "src/PegManager.sol";
 
 contract SetcommitteeMemberCountScript is ScriptUtils {
-    CommitteeRegistry committeeRegistry;
+    ICommitteeRegistry committeeRegistry;
     uint256 committeeMemberCount;
 
     function setUp() internal {
         // ====== Arguments ======
+        PegManager pegManager = getPegManagerAddress();
+        committeeRegistry = pegManager.committeeRegistry();
         committeeMemberCount = 10;
-        committeeRegistry = CommitteeRegistry(payable(0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0));
     }
 
     function run() public {

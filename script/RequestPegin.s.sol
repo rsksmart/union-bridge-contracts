@@ -17,7 +17,7 @@ contract RequestPeginScript is ScriptUtils {
         // ====== Arguments ======
         uint64 value = 100_000;
         bytes32 btcReimbursementPubKey = 0x7d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f;
-        pegManager = PegManager(0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6);
+        pegManager = getPegManagerAddress();
         // =======================
         // Smart contract addresses
         streamManager = IStreamManager(pegManager.streamManager());
