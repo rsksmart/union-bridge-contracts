@@ -11,6 +11,7 @@ import {
     PrevoutData,
     BitcoinSignatureData
 } from "src/interfaces/IBitcoinManager.sol";
+import {IPegManager} from "src/interfaces/IPegManager.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {BtcTaproot} from "src/libraries/BtcTaproot.sol";
 import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
@@ -265,5 +266,30 @@ contract TestBtcHelper is Test, HelperContract {
 
         // Assert
         assertEq(result, expectedHash, "Encoded data does not match expectedHash value");
+    }
+
+    // ========================== PEG MANAGER SETTER ==========================
+    function test_setPegManager_EmitsPegManagerUpdatedEvent() external {
+        // Arrange
+        address newPegManager = address(0x1234567890123456789012345678901234567890);
+
+        // Act & Assert
+        vm.expectEmit(address(bitcoinManager));
+        emit IBitcoinManager.PegManagerUpdated(newPegManager);
+        vm.prank(bitcoinManager.owner());
+        bitcoinManager.setPegManager(IPegManager(newPegManager));
+    }
+
+    function test_setPegManager_Revert_InvalidZeroAddress() external {
+        // Arrange
+        IPegManager zeroPegManager = IPegManager(address(0));
+
+        vm.prank(bitcoinManager.owner());
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IBitcoinManager.InvalidZeroAddress.selector));
+
+        // Act
+        bitcoinManager.setPegManager(zeroPegManager);
     }
 }
