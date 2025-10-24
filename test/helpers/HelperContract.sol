@@ -73,11 +73,12 @@ abstract contract HelperContract is Test, TestUtils {
         bitcoinManager = deployScript.bitcoinManager();
         registry = CommitteeRegistryHarness(address(deployScript.committeeRegistry()));
         memberRegistry = MemberRegistryHarness(address(deployScript.memberRegistry()));
-        pm = PegManagerHarness(address(deployScript.pegManager()));
+        pm = PegManagerHarness(payable(address(deployScript.pegManager())));
         streamManager = StreamManagerHarness(address(deployScript.streamManager()));
+        signatureManager = SignatureManager(deployScript.signatureManager());
+
         // Set up bridge mock at bridge precompiled address
         bridgeMock = BridgeMock(deployScript.bridgeAddress());
-        signatureManager = SignatureManager(deployScript.signatureManager());
 
         // Set up the MemberRegistryHarness in the CommitteeRegistryHarness
         registry.setMemberRegistryHarness(memberRegistry);

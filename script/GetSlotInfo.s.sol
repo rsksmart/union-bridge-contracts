@@ -11,8 +11,8 @@ contract GetSlotInfoScript is ScriptUtils {
     IStreamManager streamManager;
 
     function setUp() internal {
-        pegManager = PegManager(0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6);
-        streamManager = IStreamManager(pegManager.streamManager());
+        pegManager = getPegManagerAddress();
+        streamManager = pegManager.streamManager();
     }
 
     function run(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) public {

@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import {console} from "forge-std/console.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ICommitteeRegistry, CommunicationData} from "src/interfaces/ICommitteeRegistry.sol";
+import {PegManager} from "src/PegManager.sol";
 
 contract GetCommunicationDataForOneMemberScript is ScriptUtils {
     ICommitteeRegistry committeeRegistry;
@@ -16,7 +17,8 @@ contract GetCommunicationDataForOneMemberScript is ScriptUtils {
     bytes32 comPubKey;
 
     function setUp(uint16 _mnemonicIndex, uint64 _streamIndex) internal {
-        committeeRegistry = ICommitteeRegistry(0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9);
+        PegManager pegManager = getPegManagerAddress();
+        committeeRegistry = pegManager.committeeRegistry();
 
         // Read args from command line / env
         mnemonicIndex = _mnemonicIndex;

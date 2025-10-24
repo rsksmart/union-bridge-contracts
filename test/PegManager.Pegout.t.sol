@@ -64,6 +64,7 @@ contract TestPegManager is Test, HelperContract {
         uint64 slotId = 0;
 
         streamManager.setSlotHarness(stream.streamId, packetNumber, scriptPubKey, txId, amount, SlotState.FILLED);
+        bridgeMock.requestUnionBridgeRbtcHarness{value: amountInWei}();
 
         // Calculate expected PegoutId using mock block hash
         bytes32 mockBlockHash = 0x0000000000000000000049b460f18614380a01b8709d2c3a8ddf451d08d862b8;
@@ -993,6 +994,7 @@ contract TestPegManager is Test, HelperContract {
             streamManager.setSlotHarness(stream.streamId, 0, scriptPubKey, txId, amount, SlotState.RESERVED);
         streamManager.setSlotStateHarness(stream.streamId, 0, blockedSlotId, SlotState.BLOCKED);
         streamManager.setSlotHarness(stream.streamId, 0, scriptPubKey, txId, amount, SlotState.FILLED);
+        bridgeMock.requestUnionBridgeRbtcHarness{value: amountInWei}();
 
         // 2. Call tryPegout should skip blocked slot and lock filled slot
         pm.tryPegout{value: amountInWei}(userPubKey);
@@ -1032,6 +1034,7 @@ contract TestPegManager is Test, HelperContract {
 
         // 1. Fill first packet with all BLOCKED slots
         streamManager.pushSlotsHarness(stream.streamId, 0, Constants.SLOTS_PER_PACKET, SlotState.BLOCKED);
+        bridgeMock.requestUnionBridgeRbtcHarness{value: amountInWei}();
 
         // 2. Create second packet with the existing committee setup
         vm.prank(address(registry));

@@ -16,9 +16,9 @@ contract DepositAggregatedKeyScript is ScriptUtils {
     address user;
 
     function setUp(uint16 _mnemonicIndex, uint64 _streamIndex, bytes memory _committeePubKey) internal {
-        pegManager = PegManager(0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6);
+        pegManager = getPegManagerAddress();
         committeeRegistry = pegManager.committeeRegistry();
-        streamManager = IStreamManager(pegManager.streamManager());
+        streamManager = pegManager.streamManager();
 
         // Read args from command line / env
         if (_mnemonicIndex > 9) {

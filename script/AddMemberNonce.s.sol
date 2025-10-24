@@ -15,7 +15,7 @@ contract AddMemberNonce is ScriptUtils {
     address user;
 
     function setUp(uint16 _mnemonicIndex, bytes32 _signatureHash, bytes memory _nonce) internal {
-        pegManager = PegManager(0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6);
+        pegManager = getPegManagerAddress();
         signatureManager = pegManager.signatureManager();
 
         // Read args from command line / env

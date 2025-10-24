@@ -10,7 +10,7 @@ import {
     MemberRegistrationKeys,
     RSA_PUBLIC_KEY_CHUNKS
 } from "src/interfaces/ICommitteeRegistry.sol";
-import {BtcTxSPVProof} from "src/PegManager.sol";
+import {PegManager, BtcTxSPVProof} from "src/PegManager.sol";
 import {BtcTransaction, BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
 import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
 import {Constants} from "src/libraries/Constants.sol";
@@ -18,6 +18,10 @@ import {Constants} from "src/libraries/Constants.sol";
 abstract contract ScriptUtils is Script {
     function getDeployerKey() public view returns (uint256) {
         return getMemberKey(uint32(vm.envUint("DEPLOYER_INDEX")));
+    }
+
+    function getPegManagerAddress() public pure returns (PegManager) {
+        return PegManager(payable(0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6));
     }
 
     function getDeployerAddress() public returns (address) {

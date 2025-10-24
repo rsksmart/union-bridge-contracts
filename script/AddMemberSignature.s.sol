@@ -15,7 +15,7 @@ contract AddMemberSignature is ScriptUtils {
 
     function setUp(uint16 _mnemonicIndex, bytes32 _signatureHash, bytes32 _signature) internal {
         // ====== Arguments ======
-        pegManager = PegManager(0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6);
+        pegManager = getPegManagerAddress();
         signatureManager = pegManager.signatureManager();
 
         // Read args from command line / env

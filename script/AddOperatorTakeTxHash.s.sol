@@ -14,8 +14,8 @@ contract AddOperatorTakeTxHashScript is ScriptUtils {
     address user;
 
     function setUp(uint16 _mnemonicIndex, bytes32 _acceptPeginTxHash, bytes32 _takeTxhash) internal {
-        pegManager = PegManager(0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6);
-        signatureManager = ISignatureManager(pegManager.signatureManager());
+        pegManager = getPegManagerAddress();
+        signatureManager = pegManager.signatureManager();
         // Read args from command line / env
         if (_acceptPeginTxHash == bytes32(0)) {
             revert("ACCEPT_PEGIN_TX_HASH must be provided");

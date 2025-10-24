@@ -16,7 +16,7 @@ contract RegisterOperatorTakeScript is ScriptUtils {
     uint64 expectedSlotId;
 
     function setUp() internal {
-        pegManager = PegManager(0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6);
+        pegManager = getPegManagerAddress();
         amount = 100_000; // 0.001 BTC
 
         // Calculate expected slot and packet numbers

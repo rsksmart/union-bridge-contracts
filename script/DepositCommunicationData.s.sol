@@ -10,6 +10,7 @@ import {
     RSAPublicKey
 } from "src/interfaces/ICommitteeRegistry.sol";
 import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
+import {PegManager} from "src/PegManager.sol";
 
 contract DepositCommunicationDataScript is ScriptUtils {
     ICommitteeRegistry committeeRegistry;
@@ -23,8 +24,9 @@ contract DepositCommunicationDataScript is ScriptUtils {
     RSAPublicKey comPubKey;
 
     function setUp(uint16 _mnemonicIndex, uint64 _streamIndex) internal {
-        committeeRegistry = ICommitteeRegistry(0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9);
-        memberRegistry = committeeRegistry.memberRegistry();
+        PegManager pegManager = getPegManagerAddress();
+        committeeRegistry = pegManager.committeeRegistry();
+        memberRegistry = pegManager.memberRegistry();
 
         // Read args from command line / env
         mnemonicIndex = _mnemonicIndex;

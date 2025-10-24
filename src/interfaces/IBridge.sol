@@ -34,15 +34,6 @@ int256 constant BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE = 
 /// @dev This interface provides functions for pow-peg bridge operations and Bitcoin transaction validation
 /// @dev Used for compatibility with the existing RSK Bridge system
 interface IBridge {
-    /// @notice Allows the contract to receive RBTC
-    /// @dev Enables the contract to receive RBTC transfers
-    receive() external payable;
-
-    /// @notice Requests Union RBTC from the bridge
-    /// @param amount The amount of Union RBTC to request
-    /// @return The result code of the operation
-    function requestUnionRBTC(uint256 amount) external returns (int256);
-
     /// @notice Gets the current best chain height of the Bitcoin blockchain
     /// @return The current best chain height
     function getBtcBlockchainBestChainHeight() external view returns (int256);
@@ -358,4 +349,46 @@ interface IBridge {
     /// @param btcBlockHash The Bitcoin block hash
     /// @return The serialized parent block header
     function getBtcBlockchainParentBlockHeaderByHash(bytes32 btcBlockHash) external view returns (bytes memory);
+
+    /// New Methods from RSKIP502
+    /// https://github.com/rsksmart/RSKIPs/blob/master/IPs/RSKIP502.md#references
+
+    /// @notice Gets the Union Bridge contract address
+    /// @dev This method is new in RSKIP502
+    /// @dev This method will be only enabled for testnet and regtest environments. It will be disabled on mainnet to prevent unauthorized updates.
+    /// @return The Union Bridge contract address
+    function getUnionBridgeContractAddress() external view returns (address);
+
+    /// @notice Sets the Union Bridge contract address for testnet
+    /// @notice This method will allow authorized accounts to set the Union Bridge contract address for testnet.
+    /// @dev This method is new in RSKIP502
+    /// @dev This method will be only enabled for testnet and regtest environments. It will be disabled on mainnet to prevent unauthorized updates.
+    /// @param unionBridgeContractAddress The Union Bridge contract address
+    /// @return The result code of the operation 0 is success, otherwise error code
+    function setUnionBridgeContractAddressForTestnet(address unionBridgeContractAddress) external returns (int256);
+
+    /// @notice Gets the Union Bridge locking cap
+    /// @dev This method is new in RSKIP502
+    /// @return The Union Bridge locking cap
+    function getUnionBridgeLockingCap() external view returns (uint256);
+
+    /// @dev This method is new in RSKIP502
+    /// @notice Increases the Union Bridge locking cap
+    /// @notice This method will allow authorized accounts to adjust the locking cap.
+    /// @param newCap The new locking cap value
+    /// @return The result code of the operation 0 is success, otherwise error code
+    function increaseUnionBridgeLockingCap(uint256 newCap) external returns (int256);
+
+    /// @notice Requests minting of RBTC to the Union Bridge contract address
+    /// @notice The max amount of RBTC to mint is determined by the Union Bridge locking cap
+    /// @dev This method is new in RSKIP502
+    /// @param amountInWeis The amount in weis to request
+    /// @return The result code of the operation 0 is success, otherwise error code
+    function requestUnionBridgeRbtc(uint256 amountInWeis) external returns (int256);
+
+    /// @notice The Union Bridge contract will have the capability to send funds back to the PowPeg.
+    /// @notice When this happens, the tracking entry for the amount transferred will need to be updated to reflect the returned RBTC
+    /// @dev This method is new in RSKIP502
+    /// @return The result code of the operation 0 is success, otherwise error code
+    function releaseUnionBridgeRbtc() external payable returns (int256);
 }
