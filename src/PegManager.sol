@@ -499,7 +499,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator, ReentrancyGuardUp
                 stream.streamId,
                 packetNumber,
                 slot.slotId,
-                msg.sender,
+                _msgSender(),
                 bytes32(bridge.getBtcBlockchainBlockHashAtDepth(1))
             )
         );
@@ -713,9 +713,10 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator, ReentrancyGuardUp
         }
 
         PegoutTempInfo memory pegoutInfo = pegoutTempInfo[acceptPeginTxid];
+        address sender = _msgSender();
         // slither-disable-next-line timestamp
-        if (pegoutInfo.takeOperatorAddress != msg.sender) {
-            revert OperatorTakeAddressNotMatch(pegoutInfo.takeOperatorAddress, msg.sender);
+        if (pegoutInfo.takeOperatorAddress != sender) {
+            revert OperatorTakeAddressNotMatch(pegoutInfo.takeOperatorAddress, sender);
         }
 
         // Calculate the transaction id for verification
