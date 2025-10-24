@@ -500,8 +500,9 @@ contract StreamManager is IStreamManager, AccessControl {
     }
 
     modifier onlyCommitteeRegistry() {
-        if (address(committeeRegistry) != msg.sender) {
-            revert UnauthorizedAccount(msg.sender);
+        address sender = _msgSender();
+        if (address(committeeRegistry) != sender) {
+            revert UnauthorizedAccount(sender);
         }
         _;
     }

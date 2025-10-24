@@ -446,7 +446,7 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
 
     /// @notice Modifier to restrict access to the PegManager contract
     modifier onlyPegManager() {
-        _onlyPegManager(msg.sender);
+        _onlyPegManager(_msgSender());
         _;
     }
 

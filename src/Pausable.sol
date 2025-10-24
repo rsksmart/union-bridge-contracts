@@ -26,7 +26,7 @@ contract Pausable is IPausable, PausableUpgradeable {
     /// @notice Modifier to restrict access to the Pausable
     /// @dev Reverts if the caller is not the Pauser
     modifier onlyPauser() {
-        _onlyPauser(msg.sender);
+        _onlyPauser(_msgSender());
         _;
     }
 
