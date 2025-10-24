@@ -149,6 +149,17 @@ function initialize(
 |`_settings`|`PegManagerSettings`|The peg manager settings including timeouts|
 
 
+### receive
+
+Receive function to allow receiving RBTC from the PowPeg Bridge
+
+*This function is used to receive RBTC from the PowPeg Bridge*
+
+
+```solidity
+receive() external payable;
+```
+
 ### setStreamManager
 
 Sets the stream manager contract address
