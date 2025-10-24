@@ -1,5 +1,5 @@
 # PegManager
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/d1d7e57632b0c5f559c5c50994a17b0f4b09c742/src/PegManager.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/3db9056f26f2b3b61c05819d9eb725e59c32f233/src/PegManager.sol)
 
 **Inherits:**
 [IPegManager](/src/interfaces/IPegManager.sol/interface.IPegManager.md), [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md), [ProofValidator](/src/ProofValidator.sol/abstract.ProofValidator.md)
@@ -148,6 +148,17 @@ function initialize(
 |`_bitcoinManager`|`IBitcoinManager`|The Bitcoin manager contract address|
 |`_settings`|`PegManagerSettings`|The peg manager settings including timeouts|
 
+
+### receive
+
+Receive function to allow receiving RBTC from the PowPeg Bridge
+
+*This function is used to receive RBTC from the PowPeg Bridge*
+
+
+```solidity
+receive() external payable;
+```
 
 ### setStreamManager
 

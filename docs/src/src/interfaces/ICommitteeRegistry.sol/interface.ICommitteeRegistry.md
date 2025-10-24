@@ -1,5 +1,5 @@
 # ICommitteeRegistry
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/d1d7e57632b0c5f559c5c50994a17b0f4b09c742/src/interfaces/ICommitteeRegistry.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/3db9056f26f2b3b61c05819d9eb725e59c32f233/src/interfaces/ICommitteeRegistry.sol)
 
 Interface for managing committee registration and formation in the union bridge
 
@@ -411,6 +411,83 @@ Release the committee members from a packet (return or reapply staked money)
 ```solidity
 function releaseCommittee(uint64 _streamId, uint64 _packetNumber) external;
 ```
+
+### restartPendingCommittee
+
+Restarts a pending committee if it has expired
+
+
+```solidity
+function restartPendingCommittee(uint64 _streamId) external;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_streamId`|`uint64`|The stream ID to restart the pending committee for|
+
+
+### committeeMemberCount
+
+===================== Getters =====================
+
+Gets the committee member count
+
+
+```solidity
+function committeeMemberCount() external view returns (uint256);
+```
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`uint256`|The committee member count|
+
+
+### minCommitteeWatchtowers
+
+Gets the minimum watchtowers required for a committee
+
+
+```solidity
+function minCommitteeWatchtowers() external view returns (uint256);
+```
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`uint256`|The minimum watchtowers required for a committee|
+
+
+### minCommitteeOperators
+
+Gets the minimum operators required for a committee
+
+
+```solidity
+function minCommitteeOperators() external view returns (uint256);
+```
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`uint256`|The minimum operators required for a committee|
+
+
+### pendingCommitteeTimeout
+
+Gets the pending committee timeout
+
+
+```solidity
+function pendingCommitteeTimeout() external view returns (uint256);
+```
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`uint256`|The pending committee timeout|
+
 
 ## Events
 ### NewCommittee

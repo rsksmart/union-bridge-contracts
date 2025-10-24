@@ -1,5 +1,5 @@
 # Constants
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/d1d7e57632b0c5f559c5c50994a17b0f4b09c742/src/libraries/Constants.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/3db9056f26f2b3b61c05819d9eb725e59c32f233/src/libraries/Constants.sol)
 
 Library containing all constants used throughout the union bridge contracts
 

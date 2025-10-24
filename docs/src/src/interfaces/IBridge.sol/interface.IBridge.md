@@ -1,5 +1,5 @@
 # IBridge
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/d1d7e57632b0c5f559c5c50994a17b0f4b09c742/src/interfaces/IBridge.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/3db9056f26f2b3b61c05819d9eb725e59c32f233/src/interfaces/IBridge.sol)
 
 Interface for interacting with the RSK pow-peg Bridge contract
 
@@ -9,38 +9,6 @@ Interface for interacting with the RSK pow-peg Bridge contract
 
 
 ## Functions
-### receive
-
-Allows the contract to receive RBTC
-
-*Enables the contract to receive RBTC transfers*
-
-
-```solidity
-receive() external payable;
-```
-
-### requestUnionRBTC
-
-Requests Union RBTC from the bridge
-
-
-```solidity
-function requestUnionRBTC(uint256 amount) external returns (int256);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`amount`|`uint256`|The amount of Union RBTC to request|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`<none>`|`int256`|The result code of the operation|
-
-
 ### getBtcBlockchainBestChainHeight
 
 Gets the current best chain height of the Bitcoin blockchain
@@ -1093,5 +1061,140 @@ function getBtcBlockchainParentBlockHeaderByHash(bytes32 btcBlockHash) external 
 |Name|Type|Description|
 |----|----|-----------|
 |`<none>`|`bytes`|The serialized parent block header|
+
+
+### getUnionBridgeContractAddress
+
+New Methods from RSKIP502
+https://github.com/rsksmart/RSKIPs/blob/master/IPs/RSKIP502.md#references
+
+Gets the Union Bridge contract address
+
+*This method is new in RSKIP502*
+
+*This method will be only enabled for testnet and regtest environments. It will be disabled on mainnet to prevent unauthorized updates.*
+
+
+```solidity
+function getUnionBridgeContractAddress() external view returns (address);
+```
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`address`|The Union Bridge contract address|
+
+
+### setUnionBridgeContractAddressForTestnet
+
+Sets the Union Bridge contract address for testnet
+
+This method will allow authorized accounts to set the Union Bridge contract address for testnet.
+
+*This method is new in RSKIP502*
+
+*This method will be only enabled for testnet and regtest environments. It will be disabled on mainnet to prevent unauthorized updates.*
+
+
+```solidity
+function setUnionBridgeContractAddressForTestnet(address unionBridgeContractAddress) external returns (int256);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`unionBridgeContractAddress`|`address`|The Union Bridge contract address|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`int256`|The result code of the operation 0 is success, otherwise error code|
+
+
+### getUnionBridgeLockingCap
+
+Gets the Union Bridge locking cap
+
+*This method is new in RSKIP502*
+
+
+```solidity
+function getUnionBridgeLockingCap() external view returns (uint256);
+```
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`uint256`|The Union Bridge locking cap|
+
+
+### increaseUnionBridgeLockingCap
+
+Increases the Union Bridge locking cap
+
+This method will allow authorized accounts to adjust the locking cap.
+
+*This method is new in RSKIP502*
+
+
+```solidity
+function increaseUnionBridgeLockingCap(uint256 newCap) external returns (int256);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`newCap`|`uint256`|The new locking cap value|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`int256`|The result code of the operation 0 is success, otherwise error code|
+
+
+### requestUnionBridgeRbtc
+
+Requests minting of RBTC to the Union Bridge contract address
+
+The max amount of RBTC to mint is determined by the Union Bridge locking cap
+
+*This method is new in RSKIP502*
+
+
+```solidity
+function requestUnionBridgeRbtc(uint256 amountInWeis) external returns (int256);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`amountInWeis`|`uint256`|The amount in weis to request|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`int256`|The result code of the operation 0 is success, otherwise error code|
+
+
+### releaseUnionBridgeRbtc
+
+The Union Bridge contract will have the capability to send funds back to the PowPeg.
+
+When this happens, the tracking entry for the amount transferred will need to be updated to reflect the returned RBTC
+
+*This method is new in RSKIP502*
+
+
+```solidity
+function releaseUnionBridgeRbtc() external payable returns (int256);
+```
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`int256`|The result code of the operation 0 is success, otherwise error code|
 
 
