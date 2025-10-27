@@ -148,6 +148,18 @@ contract TestMemberRegistry is Test, HelperContract {
         assertEq(memberRegistry.pauser(), newCommitteeRegistryAddress);
     }
 
+    function test_setCommitteeRegistry_EmitsCommitteeRegistryUpdatedEvent() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        address newCommitteeRegistryAddress = vm.addr(privKey);
+
+        // Act & Assert
+        vm.expectEmit(address(memberRegistry));
+        emit IMemberRegistry.CommitteeRegistryUpdated(newCommitteeRegistryAddress);
+        vm.prank(memberRegistry.owner());
+        memberRegistry.setCommitteeRegistry(newCommitteeRegistryAddress);
+    }
+
     function test_setStreamManager_Success_PausedContract() external {
         // Arrange
         uint256 privKey = uint256(1);
@@ -359,6 +371,29 @@ contract TestMemberRegistry is Test, HelperContract {
         address registryAddress = memberRegistry.committeeRegistry();
 
         // Act
+        vm.prank(registryAddress);
+        memberRegistry.selectCommittee(streamId, minWatchtowers, minOperators, totalMemberCount);
+    }
+
+    function test_selectCommittee_EmitsMissingWatchtowersEvent() external {
+        // Arrange
+        StreamDenomination denomination = StreamDenomination._0_01BTC;
+        uint64 streamId = uint64(denomination);
+
+        // Set a high minimum watchtowers requirement that exceeds available candidates
+        uint256 minWatchtowers = 100; // Much higher than available watchtowers
+        uint256 minOperators = registry.minCommitteeOperators();
+        uint256 totalMemberCount = registry.committeeMemberCount();
+
+        address registryAddress = memberRegistry.committeeRegistry();
+
+        // Calculate expected missing watchtowers
+        uint256 availableWatchtowers = 0; // No watchtowers registered for this denomination
+        uint256 expectedMissing = minWatchtowers - availableWatchtowers;
+
+        // Act & Assert
+        vm.expectEmit(true, true, true, true);
+        emit IMemberRegistry.MissingWatchtowers(denomination, minWatchtowers, expectedMissing);
         vm.prank(registryAddress);
         memberRegistry.selectCommittee(streamId, minWatchtowers, minOperators, totalMemberCount);
     }
