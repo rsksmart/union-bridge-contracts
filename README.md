@@ -14,6 +14,7 @@ This repository contains the specifications and Solidity code for the Union Brid
 
 - [How it Works](#how-it-works)
 - [Smart Contracts Architecture](#smart-contracts-architecture)
+- [Bitcoin Transactions](./bitcoin-transactions.md)
 - [Security](#security)
 - [Troubleshooting](#troubleshooting)
 
@@ -315,7 +316,7 @@ sequenceDiagram
 ### Phase 1: Request Peg-In
 
 1. **User generates temporary address**: User calls `getTemporaryPeginAddress()` to get a Bitcoin committee address for deposit
-2. **User deposits BTC**: User sends Bitcoin to the generated temporary address, including an OP_RETURN output with the RSK address where they want to receive the funds
+2. **User deposits BTC**: User sends Bitcoin to the generated temporary address, including an OP_RETURN output with the RSK address where they want to receive the funds. For detailed information about the [REQUEST_PEGIN_TX](./bitcoin-transactions.md#1-request_pegin_tx-request-pegin-transaction) transaction structure, inputs/outputs, and Taproot script details.
 3. **Member submits request**: A committee member who monitors the Bitcoin network calls `requestPegin()` with the Bitcoin transaction and SPV proof
 4. **System validates**: System validates the transaction and stores the request
 5. **Generate accept transaction**: System generates the Bitcoin accept peg-in transaction and emits an event with the signature hash for committee members to sign
@@ -347,10 +348,11 @@ sequenceDiagram
 
 ### Phase 2: Committee Signatures for Peg-In
 
-1. **Operators register take tx hash**: Committee members with the operator role call `addOperatorTakeTxHash()` to register the operator take transaction hash before signatures are collected.
-2. **Committee members sign**: Each committee member signs the accept peg-in transaction using `addMemberNonce()` and `addMemberSignature()` from SignatureManager
-3. **Signature collection**: Signatures are collected and validated by the SignatureManager
-4. **Ready for broadcast**: Once all committee members have signed, the signed transaction is ready to be broadcast to the Bitcoin network
+1. **Operators register take tx hash**: Committee members with the operator role call `addOperatorTakeTxHash()` to register the operator take transaction hash before signatures are collected. For detailed information about the [OPERATOR_TAKE_TX](./bitcoin-transactions.md#2-operator_take_tx-operator-take-transaction) transaction structure, inputs/outputs, and spending conditions.
+2. **Create accept pegin transaction**: System creates the ACCEPT_PEGIN_TX transaction that will spend the REQUEST_PEGIN_TX output. For detailed information about the [ACCEPT_PEGIN_TX](./bitcoin-transactions.md#1-accept_pegin_tx-accept-pegin-transaction) transaction structure, inputs/outputs, and committee signature requirements.
+3. **Committee members sign**: Each committee member signs the accept peg-in transaction using `addMemberNonce()` and `addMemberSignature()` from SignatureManager
+4. **Signature collection**: Signatures are collected and validated by the SignatureManager
+5. **Ready for broadcast**: Once all committee members have signed, the signed transaction is ready to be broadcast to the Bitcoin network
 
 ```mermaid
 sequenceDiagram
@@ -475,7 +477,7 @@ sequenceDiagram
 
 #### Normal Case: UserTake (Take0) - All Members Signed
 
-1. **Execute pegout**: Member executes the Bitcoin transaction sending BTC to the user's Bitcoin address when all signatures are collected
+1. **Execute pegout**: Member executes the Bitcoin transaction sending BTC to the user's Bitcoin address when all signatures are collected. For detailed information about the [USER_TAKE_TX](./bitcoin-transactions.md#1-user_take_tx-user-take-transaction) transaction structure, inputs/outputs, and spending conditions.
 2. **Submit BTC transaction**: Member calls `registerUserTake()` with the Bitcoin transaction and SPV proof
 3. **Validate transaction**: System validates the BTC transaction and proof
 4. **Validate signatures**: Committee signatures are validated
@@ -506,10 +508,10 @@ sequenceDiagram
 If not all committee members sign within the timeout period:
 
 1. **Trigger operator take**: A member calls `triggerOperatorTake()` to start the operator take process, which emits an event indicating which operator needs to do the funds advancement
-2. **Operator advances funds**: An operator advances BTC to the user's Bitcoin address
+2. **Operator advances funds**: An operator advances BTC to the user's Bitcoin address. For detailed information about the [ADVANCE_FUNDS_TX](./bitcoin-transactions.md#1-advance_funds_tx-advance-funds-transaction) transaction structure, inputs/outputs, and spending conditions.
 3. **Broadcast Reimbursement Kickoff**: The operator broadcasts a Reimbursement Kickoff Bitcoin transaction
 4. **Challenge period**: If no one challenges within the timeout period, the member proceeds
-5. **Broadcast Operator Take transaction**: The operator broadcasts the Operator Take (Take1) Bitcoin transaction
+5. **Broadcast Operator Take transaction**: The operator broadcasts the Operator Take (Take1) Bitcoin transaction. For detailed information about the [OPERATOR_TAKE_TX](./bitcoin-transactions.md#2-operator_take_tx-operator-take-transaction) transaction structure, inputs/outputs, and spending conditions.
 6. **Submit BTC transaction**: Operator calls `registerOperatorTake()` with the Bitcoin transaction and SPV proof
 7. **Validate transaction**: System validates the BTC transaction and proof
 8. **Peg-out Registered**: System emits an event PegoutRegistered informing that RBTC is now linked to Bitcoin via operator take
