@@ -14,7 +14,7 @@ import {AccessControl} from "./AccessControl.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {ICommitteeRegistry, Role} from "src/interfaces/ICommitteeRegistry.sol";
-import {IPegManager, StreamPosition} from "src/interfaces/IPegManager.sol";
+import {IPegManager, StreamPosition, PegStatus} from "src/interfaces/IPegManager.sol";
 
 /// @title Stream Manager
 /// @notice Manages streams for the union bridge system
@@ -26,6 +26,9 @@ contract StreamManager is IStreamManager, AccessControl {
     /// @dev Each packet contains committee information for processing transactions
     mapping(uint64 streamId => Packet[]) public packets;
     mapping(uint64 streamId => mapping(uint64 packerNumber => Slot[])) internal slots;
+    /// @notice Mapping from accept peg-in transaction ID to stream position
+    /// @dev Tracks the position and status of each peg operation
+    mapping(bytes32 acceptPeginTxid => StreamPosition) internal streamPositions;
     /// @notice The committee registry contract that manages committee membership
     /// @dev Used to create new packets when committees are formed
     ICommitteeRegistry public committeeRegistry;
@@ -490,6 +493,31 @@ contract StreamManager is IStreamManager, AccessControl {
         }
         disablementPaymentsPerChallenge = _cost;
         emit DisablementPaymentsPerChallengeUpdated(_cost);
+    }
+
+    /// @notice Stores the stream position for a given accept peg-in transaction ID
+    /// @param _acceptPeginTxid The accept peg-in transaction ID
+    /// @param _position The stream position to store
+    /// @dev Only callable by the PegManager contract
+    function setStreamPosition(bytes32 _acceptPeginTxid, StreamPosition memory _position) external onlyPegManager {
+        streamPositions[_acceptPeginTxid] = _position;
+        emit StreamPositionSet(_acceptPeginTxid, _position);
+    }
+
+    /// @notice Retrieves the stream position for a given accept peg-in transaction ID
+    /// @param _acceptPeginTxid The accept peg-in transaction ID
+    /// @return The stream position associated with the transaction ID
+    function getStreamPosition(bytes32 _acceptPeginTxid) external view returns (StreamPosition memory) {
+        return streamPositions[_acceptPeginTxid];
+    }
+
+    /// @notice Updates only the peg status of an existing stream position
+    /// @param _acceptPeginTxid The accept peg-in transaction ID
+    /// @param _newStatus The new peg status to set
+    /// @dev Only callable by the PegManager contract
+    function setPegStatus(bytes32 _acceptPeginTxid, PegStatus _newStatus) external onlyPegManager {
+        streamPositions[_acceptPeginTxid].pegStatus = _newStatus;
+        emit PegStatusUpdated(_acceptPeginTxid, _newStatus);
     }
 
     modifier streamExists(uint64 _streamId) {

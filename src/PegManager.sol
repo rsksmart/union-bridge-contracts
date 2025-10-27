@@ -55,8 +55,6 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator, ReentrancyGuardUp
 
     mapping(bytes32 requestPeginTxid => bytes32 acceptPeginTxid) internal acceptPegins;
 
-    mapping(bytes32 acceptPeginTxid => StreamPosition streamPosition) internal streamPosition;
-
     mapping(bytes32 requestPeginTxid => RequestPeginTempInfo tempInfo) internal peginTempInfo;
 
     mapping(bytes32 acceptPeginTxid => PegoutTempInfo tempInfo) internal pegoutTempInfo;
@@ -255,7 +253,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator, ReentrancyGuardUp
             pegStatus: PegStatus.REGISTERED
         });
 
-        streamPosition[acceptPeginSignatureData.txid] = streamPos;
+        streamManager.setStreamPosition(acceptPeginSignatureData.txid, streamPos);
 
         // slither-disable-next-line reentrancy-events
         emit PeginRequested(
@@ -406,9 +404,9 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator, ReentrancyGuardUp
         bytes32 _acceptPegintxid,
         BtcTxOut memory _acceptPeginTxOutput
     ) internal {
-        StreamPosition storage stream = streamPosition[_acceptPegintxid];
         // Update the peg in request status to ACCEPTED to avoid processing it again
-        stream.pegStatus = PegStatus.ACCEPTED;
+        streamManager.setPegStatus(_acceptPegintxid, PegStatus.ACCEPTED);
+        StreamPosition memory stream = streamManager.getStreamPosition(_acceptPegintxid);
 
         // Fill the reserved slot with accept peg-in transaction details
         streamManager.fillSlot(stream, _acceptPeginTxOutput.amount, _acceptPegintxid, _acceptPeginTxOutput.scriptPubKey);
@@ -486,7 +484,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator, ReentrancyGuardUp
             takeOperatorAddress: address(0),
             takeOperatorPubKey: bytes32(0)
         });
-        streamPosition[slot.acceptPeginTx].pegStatus = PegStatus.USER_TAKE;
+        streamManager.setPegStatus(slot.acceptPeginTx, PegStatus.USER_TAKE);
 
         // Store the pegout to pegin tx id mapping
         pegoutToPeginTxid[pegoutSignatureData.txid] = slot.acceptPeginTx;
@@ -529,7 +527,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator, ReentrancyGuardUp
         uint32 vout = _pegoutTxSPVProof.btcTx.inputs[0].vout;
 
         // get the stream data for this pegout
-        StreamPosition memory streamInfo = streamPosition[acceptPeginTxid];
+        StreamPosition memory streamInfo = streamManager.getStreamPosition(acceptPeginTxid);
 
         if (streamInfo.pegStatus == PegStatus.NOT_REGISTERED) {
             revert PeginNotRequested(acceptPeginTxid);
@@ -560,7 +558,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator, ReentrancyGuardUp
         bitcoinManager.validatePegoutUserOutput(_pegoutTxSPVProof.btcTx.outputs[0], userPubKey);
 
         // update the peg status to COMPLETED
-        streamPosition[acceptPeginTxid].pegStatus = PegStatus.COMPLETED;
+        streamManager.setPegStatus(acceptPeginTxid, PegStatus.COMPLETED);
 
         emit PegoutRegistered(
             _pegoutTxSPVProof.blockHash,
@@ -602,7 +600,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator, ReentrancyGuardUp
     }
 
     function _getStreamPosition(bytes32 _acceptPeginTxid) internal view returns (StreamPosition memory) {
-        return streamPosition[acceptPegins[_acceptPeginTxid]];
+        return streamManager.getStreamPosition(acceptPegins[_acceptPeginTxid]);
     }
 
     function _storePegoutAndInitSignatures(bytes32 _pegoutTxid, uint64 _streamId, uint64 _packetNumber, uint64 _slotId)
@@ -637,7 +635,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator, ReentrancyGuardUp
         }
 
         PegoutTempInfo storage pegoutInfo = pegoutTempInfo[acceptPeginTxid];
-        StreamPosition storage streamInfo = streamPosition[acceptPeginTxid];
+        StreamPosition memory streamInfo = streamManager.getStreamPosition(acceptPeginTxid);
         bool advanceSlot = false;
         uint256 operatorTakeUpdatedAt = pegoutInfo.operatorTakeUpdatedAt;
         pegoutInfo.operatorTakeUpdatedAt = block.timestamp;
@@ -654,7 +652,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator, ReentrancyGuardUp
                 revert UserTakeTimeoutNotExpired(pegoutInfo.createdAt, pegoutInfo.createdAt + userTakeTimeout);
             }
 
-            streamInfo.pegStatus = PegStatus.OPERATOR_TAKE;
+            streamManager.setPegStatus(acceptPeginTxid, PegStatus.OPERATOR_TAKE);
             advanceSlot = true;
         } else if (streamInfo.pegStatus == PegStatus.OPERATOR_TAKE) {
             // slither-disable-next-line timestamp
@@ -675,13 +673,18 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator, ReentrancyGuardUp
         pegoutInfo.takeOperatorAddress = takeOperatorAddress;
         pegoutInfo.takeOperatorPubKey = takeOperatorPubKey;
 
+        // Fetch updated streamInfo after potential status change
+        StreamPosition memory updatedStreamInfo = streamManager.getStreamPosition(acceptPeginTxid);
+
         // slither-disable-next-line reentrancy-events
         emit OperatorTakeTriggered(
-            _pegoutTxid, pegoutInfo, streamInfo, block.timestamp, block.timestamp + operatorTakeTimeout
+            _pegoutTxid, pegoutInfo, updatedStreamInfo, block.timestamp, block.timestamp + operatorTakeTimeout
         );
 
         if (advanceSlot) {
-            streamManager.advanceSlot(streamInfo.streamId, streamInfo.packetNumber, streamInfo.slotId);
+            streamManager.advanceSlot(
+                updatedStreamInfo.streamId, updatedStreamInfo.packetNumber, updatedStreamInfo.slotId
+            );
         }
     }
 
@@ -697,7 +700,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator, ReentrancyGuardUp
         uint32 vout = _pegoutTxSPVProof.btcTx.inputs[0].vout;
 
         // get the stream data for this pegout
-        StreamPosition memory streamInfo = streamPosition[acceptPeginTxid];
+        StreamPosition memory streamInfo = streamManager.getStreamPosition(acceptPeginTxid);
 
         if (streamInfo.pegStatus == PegStatus.NOT_REGISTERED) {
             revert PeginNotRequested(acceptPeginTxid);
@@ -739,7 +742,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator, ReentrancyGuardUp
         bitcoinManager.validatePegoutMemberOutput(_pegoutTxSPVProof.btcTx.outputs[0], takeOperatorPubKey);
 
         // update the peg status to COMPLETED
-        streamPosition[acceptPeginTxid].pegStatus = PegStatus.COMPLETED;
+        streamManager.setPegStatus(acceptPeginTxid, PegStatus.COMPLETED);
 
         emit PegoutRegistered(
             _pegoutTxSPVProof.blockHash,

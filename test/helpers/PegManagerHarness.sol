@@ -36,7 +36,9 @@ contract PegManagerHarness is PegManager {
         uint64 _slotId,
         PegStatus _pegStatus
     ) external {
-        streamPosition[_acceptPeginTxid] =
-            StreamPosition({streamId: _streamId, packetNumber: _packetNumber, slotId: _slotId, pegStatus: _pegStatus});
+        streamManager.setStreamPosition(
+            _acceptPeginTxid,
+            StreamPosition({streamId: _streamId, packetNumber: _packetNumber, slotId: _slotId, pegStatus: _pegStatus})
+        );
     }
 }

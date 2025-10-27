@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import {IAccessControl} from "./IAccessControl.sol";
 import {ICommitteeRegistry, Role} from "./ICommitteeRegistry.sol";
-import {StreamPosition} from "./IPegManager.sol";
+import {StreamPosition, PegStatus} from "./IPegManager.sol";
 
 /// @notice Represents different Bitcoin denominations supported by the union bridge
 /// @dev Each denomination corresponds to a specific stream for efficient fund management
@@ -275,6 +275,23 @@ interface IStreamManager is IAccessControl {
     /// @dev Emits a DisablementPaymentsPerChallengeUpdated event on success
     function setDisablementPaymentsPerChallenge(uint256 _cost) external;
 
+    /// @notice Stores the stream position for a given accept peg-in transaction ID
+    /// @param _acceptPeginTxid The accept peg-in transaction ID
+    /// @param _position The stream position to store
+    /// @dev Only callable by the PegManager contract
+    function setStreamPosition(bytes32 _acceptPeginTxid, StreamPosition memory _position) external;
+
+    /// @notice Retrieves the stream position for a given accept peg-in transaction ID
+    /// @param _acceptPeginTxid The accept peg-in transaction ID
+    /// @return The stream position associated with the transaction ID
+    function getStreamPosition(bytes32 _acceptPeginTxid) external view returns (StreamPosition memory);
+
+    /// @notice Updates only the peg status of an existing stream position
+    /// @param _acceptPeginTxid The accept peg-in transaction ID
+    /// @param _newStatus The new peg status to set
+    /// @dev Only callable by the PegManager contract
+    function setPegStatus(bytes32 _acceptPeginTxid, PegStatus _newStatus) external;
+
     // Events
     /// @notice Event emitted when a new stream is created
     /// @param streamId The ID of the newly created stream
@@ -316,6 +333,16 @@ interface IStreamManager is IAccessControl {
     /// @notice Event emitted when disablement payments per challenge are updated
     /// @param newCost The new disablement payments per challenge in wei
     event DisablementPaymentsPerChallengeUpdated(uint256 newCost);
+
+    /// @notice Event emitted when a stream position is set
+    /// @param acceptPeginTxid The accept peg-in transaction ID
+    /// @param position The stream position that was set
+    event StreamPositionSet(bytes32 indexed acceptPeginTxid, StreamPosition position);
+
+    /// @notice Event emitted when a peg status is updated
+    /// @param acceptPeginTxid The accept peg-in transaction ID
+    /// @param newStatus The new peg status
+    event PegStatusUpdated(bytes32 indexed acceptPeginTxid, PegStatus newStatus);
 
     /// @notice Event emitted when the committee registry contract address  is updated
     /// @param _committeeRegistry The new committee registry contract address
