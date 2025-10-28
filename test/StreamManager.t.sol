@@ -166,6 +166,10 @@ contract TestStreamManager is Test, HelperContract {
         uint64 streamId = 0;
         uint8 pegoutConfirmations = 5;
 
+        // Assert
+        vm.expectEmit(address(streamManager));
+        emit IStreamManager.PegoutConfirmationsUpdated(streamId, pegoutConfirmations);
+
         // Act
         vm.prank(streamManager.owner());
         streamManager.setPegoutConfirmations(streamId, pegoutConfirmations);
@@ -176,18 +180,6 @@ contract TestStreamManager is Test, HelperContract {
             pegoutConfirmations,
             "pegoutConfirmations was not set correctly"
         );
-    }
-
-    function test_setPegoutConfirmations_EmitsPegoutConfirmationsUpdatedEvent() external {
-        // Arrange
-        uint64 streamId = 0;
-        uint8 pegoutConfirmations = 5;
-
-        // Act & Assert
-        vm.expectEmit(address(streamManager));
-        emit IStreamManager.PegoutConfirmationsUpdated(streamId, pegoutConfirmations);
-        vm.prank(streamManager.owner());
-        streamManager.setPegoutConfirmations(streamId, pegoutConfirmations);
     }
 
     function test_setCommitteeRegistry_Success() external {

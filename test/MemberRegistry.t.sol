@@ -153,9 +153,11 @@ contract TestMemberRegistry is Test, HelperContract {
         uint256 privKey = uint256(1);
         address newCommitteeRegistryAddress = vm.addr(privKey);
 
-        // Act & Assert
+        // Assert
         vm.expectEmit(address(memberRegistry));
         emit IMemberRegistry.CommitteeRegistryUpdated(newCommitteeRegistryAddress);
+
+        // Act
         vm.prank(memberRegistry.owner());
         memberRegistry.setCommitteeRegistry(newCommitteeRegistryAddress);
     }
@@ -391,9 +393,11 @@ contract TestMemberRegistry is Test, HelperContract {
         uint256 availableWatchtowers = 0; // No watchtowers registered for this denomination
         uint256 expectedMissing = minWatchtowers - availableWatchtowers;
 
-        // Act & Assert
+        // Assert
         vm.expectEmit(true, true, true, true);
         emit IMemberRegistry.MissingWatchtowers(denomination, minWatchtowers, expectedMissing);
+
+        // Act
         vm.prank(registryAddress);
         memberRegistry.selectCommittee(streamId, minWatchtowers, minOperators, totalMemberCount);
     }

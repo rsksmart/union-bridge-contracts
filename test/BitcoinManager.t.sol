@@ -273,9 +273,11 @@ contract TestBtcHelper is Test, HelperContract {
         // Arrange
         address newPegManager = address(0x1234567890123456789012345678901234567890);
 
-        // Act & Assert
+        // Assert
         vm.expectEmit(address(bitcoinManager));
         emit IBitcoinManager.PegManagerUpdated(newPegManager);
+
+        // Act
         vm.prank(bitcoinManager.owner());
         bitcoinManager.setPegManager(IPegManager(newPegManager));
     }
