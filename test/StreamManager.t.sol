@@ -122,7 +122,7 @@ contract TestStreamManager is Test, HelperContract {
         // Act & Assert
         vm.expectEmit(address(streamManager));
         emit IStreamManager.PeginConfirmationsUpdated(streamId, peginConfirmations);
-        vm.prank(address(streamManager.owner()));
+        vm.prank(streamManager.owner());
         streamManager.setPeginConfirmations(streamId, peginConfirmations);
     }
 
@@ -167,7 +167,7 @@ contract TestStreamManager is Test, HelperContract {
         uint8 pegoutConfirmations = 5;
 
         // Act
-        vm.prank(address(streamManager.owner()));
+        vm.prank(streamManager.owner());
         streamManager.setPegoutConfirmations(streamId, pegoutConfirmations);
 
         // Assert
@@ -186,7 +186,7 @@ contract TestStreamManager is Test, HelperContract {
         // Act & Assert
         vm.expectEmit(address(streamManager));
         emit IStreamManager.PegoutConfirmationsUpdated(streamId, pegoutConfirmations);
-        vm.prank(address(streamManager.owner()));
+        vm.prank(streamManager.owner());
         streamManager.setPegoutConfirmations(streamId, pegoutConfirmations);
     }
 
@@ -196,8 +196,10 @@ contract TestStreamManager is Test, HelperContract {
         address newCommitteeRegistryAddress = vm.addr(privKey);
         ICommitteeRegistry newCommitteeRegistry = ICommitteeRegistry(newCommitteeRegistryAddress);
 
-        // Act
-        vm.prank(address(streamManager.owner()));
+        // Act & Assert
+        vm.expectEmit(address(streamManager));
+        emit IStreamManager.CommitteeRegistryUpdated(newCommitteeRegistry);
+        vm.prank(streamManager.owner());
         streamManager.setCommitteeRegistry(newCommitteeRegistry);
 
         // Assert
@@ -206,19 +208,6 @@ contract TestStreamManager is Test, HelperContract {
             newCommitteeRegistryAddress,
             "Committee registry was not set correctly"
         );
-    }
-
-    function test_setCommitteeRegistry_EmitsCommitteeRegistryUpdatedEvent() external {
-        // Arrange
-        uint256 privKey = uint256(1);
-        address newCommitteeRegistryAddress = vm.addr(privKey);
-        ICommitteeRegistry newCommitteeRegistry = ICommitteeRegistry(newCommitteeRegistryAddress);
-
-        // Act & Assert
-        vm.expectEmit(address(streamManager));
-        emit IStreamManager.CommitteeRegistryUpdated(newCommitteeRegistry);
-        vm.prank(address(streamManager.owner()));
-        streamManager.setCommitteeRegistry(newCommitteeRegistry);
     }
 
     function test_StreamCreated_EventEmittedDuringInitialization() external view {
