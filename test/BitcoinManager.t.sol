@@ -282,14 +282,11 @@ contract TestBtcHelper is Test, HelperContract {
 
     function test_setPegManager_Revert_InvalidZeroAddress() external {
         // Arrange
-        IPegManager zeroPegManager = IPegManager(address(0));
-
+        address zeroAddress = address(0);
         vm.prank(bitcoinManager.owner());
-
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IBitcoinManager.InvalidZeroAddress.selector));
-
         // Act
-        bitcoinManager.setPegManager(zeroPegManager);
+        bitcoinManager.setPegManager(IPegManager(zeroAddress));
     }
 }
