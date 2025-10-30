@@ -4,19 +4,19 @@ pragma solidity ^0.8.20;
 import {console} from "forge-std/console.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
-import {PegManager} from "src/PegManager.sol";
+import {PegoutManager} from "src/PegoutManager.sol";
 import {ISignatureManager, OperatorTakeData} from "src/interfaces/ISignatureManager.sol";
 
 contract AddOperatorTakeTxidScript is ScriptUtils, ContractAddressManager {
-    PegManager pegManager;
+    PegoutManager pegoutManager;
     ISignatureManager signatureManager;
     uint256 privKey;
     uint16 mnemonicIndex;
     address user;
 
     function setUp(uint16 _mnemonicIndex, bytes32 _acceptPeginTxid, bytes32 _takeTxid) internal {
-        pegManager = PegManager(getPegManager());
-        signatureManager = ISignatureManager(pegManager.signatureManager());
+        pegoutManager = PegoutManager(getPegoutManager());
+        signatureManager = ISignatureManager(pegoutManager.signatureManager());
         // Read args from command line / env
         if (_acceptPeginTxid == bytes32(0)) {
             revert("ACCEPT_PEGIN_TXID must be provided");

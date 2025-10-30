@@ -2,13 +2,13 @@
 pragma solidity ^0.8.20;
 
 import {console} from "forge-std/console.sol";
-import {PegManager} from "src/PegManager.sol";
+import {PegoutManager} from "src/PegoutManager.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
 import {Slot, Stream, SlotState, IStreamManager} from "src/interfaces/IStreamManager.sol";
 
 contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
-    PegManager pegManager;
+    PegoutManager pegoutManager;
 
     uint64 amount;
     Stream stream;
@@ -17,11 +17,11 @@ contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
     uint64 expectedSlotId;
 
     function setUp() internal {
-        pegManager = PegManager(getPegManager());
+        pegoutManager = PegoutManager(getPegoutManager());
         amount = 100_000; // 0.001 BTC
 
         // Calculate expected slot and packet numbers
-        streamManager = pegManager.streamManager();
+        streamManager = pegoutManager.streamManager();
         stream = streamManager.getStream(amount);
         expectedPacketNumber = stream.pegoutPacketPointer;
         expectedSlotId = stream.pegoutSlotPointer - 1; // At this point we already executed the peg out so we need to grab the previous slot
@@ -37,7 +37,7 @@ contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
 
         // Register operator take
         vm.startBroadcast(getDeployerKey());
-        pegManager.triggerOperatorTake(_pegoutSignatureHash);
+        pegoutManager.triggerOperatorTake(_pegoutSignatureHash);
         vm.stopBroadcast();
 
         slot = streamManager.getSlot(stream.streamId, expectedPacketNumber, expectedSlotId);

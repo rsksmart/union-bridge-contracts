@@ -9,7 +9,6 @@ import {IMemberRegistry} from "./interfaces/IMemberRegistry.sol";
 import {ISignatureManager, SignatureData} from "./interfaces/ISignatureManager.sol";
 import {IStreamManager, Stream, Slot} from "./interfaces/IStreamManager.sol";
 import {IBitcoinManager, PrevoutData, BitcoinSignatureData} from "./interfaces/IBitcoinManager.sol";
-import {IBridge} from "./interfaces/IBridge.sol";
 import {
     BtcTxSPVProof,
     StreamPosition,

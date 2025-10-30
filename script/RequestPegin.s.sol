@@ -2,7 +2,9 @@
 pragma solidity ^0.8.20;
 
 import {console} from "forge-std/console.sol";
-import {PegManager, StreamPosition, BtcTxSPVProof, PegStatus, RequestPeginTempInfo} from "src/PegManager.sol";
+import {PeginManager} from "src/PeginManager.sol";
+import {RequestPeginTempInfo} from "src/interfaces/IPeginManager.sol";
+import {BtcTxSPVProof, StreamPosition, PegStatus} from "src/interfaces/IPegCommonTypes.sol";
 import {IBitcoinManager, BtcTransaction, BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
 import {Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {OpCodes} from "src/libraries/OpCodes.sol";
@@ -10,7 +12,7 @@ import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
 
 contract RequestPeginScript is ScriptUtils, ContractAddressManager {
-    PegManager pegManager;
+    PeginManager peginManager;
     IStreamManager streamManager;
     IBitcoinManager bitcoinManager;
 
@@ -18,11 +20,11 @@ contract RequestPeginScript is ScriptUtils, ContractAddressManager {
         // ====== Arguments ======
         uint64 value = 100_000;
         bytes32 btcReimbursementPubKey = 0x7d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f;
-        pegManager = PegManager(getPegManager());
+        peginManager = PeginManager(getPeginManager());
         // =======================
         // Smart contract addresses
-        streamManager = IStreamManager(pegManager.streamManager());
-        bitcoinManager = IBitcoinManager(pegManager.bitcoinManager());
+        streamManager = IStreamManager(peginManager.streamManager());
+        bitcoinManager = IBitcoinManager(peginManager.bitcoinManager());
         // Committee public key
         Stream memory stream = streamManager.getStream(value);
         uint64 packetNumber = stream.peginPacketPointer;
@@ -74,14 +76,14 @@ contract RequestPeginScript is ScriptUtils, ContractAddressManager {
         console.log("peginRequestTxid");
         console.logBytes32(peginRequestTxid);
         // check if peginRequest is already registered
-        StreamPosition memory streamPosition = pegManager.getStreamPosition(peginRequestTxid);
+        StreamPosition memory streamPosition = peginManager.getStreamPosition(peginRequestTxid);
         if (streamPosition.pegStatus != PegStatus.NOT_REGISTERED) {
             revert("PeginRequest already registered");
         }
         // register peginRequest
         vm.recordLogs();
         vm.startBroadcast(getDeployerKey());
-        pegManager.requestPegin(peginRequestTxSPVProof);
+        peginManager.requestPegin(peginRequestTxSPVProof);
         vm.stopBroadcast();
 
         // NOTE: the following code is needed if we want to test the requestPegin on alphanet with the real RSK Bridge
@@ -118,7 +120,7 @@ contract RequestPeginScript is ScriptUtils, ContractAddressManager {
         // }
 
         // check if peginRequest is registered
-        streamPosition = pegManager.getStreamPosition(peginRequestTxid);
+        streamPosition = peginManager.getStreamPosition(peginRequestTxid);
         if (streamPosition.pegStatus != PegStatus.REGISTERED) {
             revert("PeginRequest not registered");
         }
@@ -128,8 +130,8 @@ contract RequestPeginScript is ScriptUtils, ContractAddressManager {
         console.log("packetNumber");
         console.log(streamPosition.packetNumber);
         console.log("accept pegin Tx id");
-        console.logBytes32(pegManager.getAcceptPegin(peginRequestTxid));
-        RequestPeginTempInfo memory requestPeginTempInfo = pegManager.getRequestPeginTempInfo(peginRequestTxid);
+        console.logBytes32(peginManager.getAcceptPegin(peginRequestTxid));
+        RequestPeginTempInfo memory requestPeginTempInfo = peginManager.getRequestPeginTempInfo(peginRequestTxid);
         console.log("accept pegin Signature Hash");
         console.logBytes32(requestPeginTempInfo.acceptPeginSignatureHash);
     }

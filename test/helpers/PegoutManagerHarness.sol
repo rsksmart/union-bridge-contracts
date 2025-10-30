@@ -4,7 +4,6 @@ pragma solidity ^0.8.20;
 import {PegoutManager} from "src/PegoutManager.sol";
 import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {IBitcoinManager} from "src/interfaces/IBitcoinManager.sol";
-import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
 import {StreamPosition, PegStatus, PegManagerSettings, PegoutTempInfo} from "src/interfaces/IPegCommonTypes.sol";
 
 /// @title PegoutManagerHarness
@@ -16,11 +15,10 @@ contract PegoutManagerHarness is PegoutManager {
         address payable _bridgeAddress,
         ICommitteeRegistry _committeeRegistry,
         IBitcoinManager _bitcoinManager,
-        IMemberRegistry _memberRegistry,
         PegManagerSettings memory _settings
     ) public override initializer {
         PegoutManager.initialize(
-            _initialOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager, _memberRegistry, _settings
+            _initialOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager, _settings
         );
     }
 

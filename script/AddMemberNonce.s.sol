@@ -2,13 +2,13 @@
 pragma solidity ^0.8.20;
 
 import {console} from "forge-std/console.sol";
-import {PegManager} from "src/PegManager.sol";
+import {PegoutManager} from "src/PegoutManager.sol";
 import {ISignatureManager} from "src/interfaces/ISignatureManager.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
 
 contract AddMemberNonce is ScriptUtils, ContractAddressManager {
-    PegManager pegManager;
+    PegoutManager pegoutManager;
     ISignatureManager signatureManager;
     bytes nonce;
     bytes32 txid;
@@ -16,8 +16,8 @@ contract AddMemberNonce is ScriptUtils, ContractAddressManager {
     address user;
 
     function setUp(uint16 _mnemonicIndex, bytes32 _txid, bytes memory _nonce) internal {
-        pegManager = PegManager(getPegManager());
-        signatureManager = pegManager.signatureManager();
+        pegoutManager = PegoutManager(getPegoutManager());
+        signatureManager = pegoutManager.signatureManager();
 
         // Read args from command line / env
         if (_mnemonicIndex > 9) {

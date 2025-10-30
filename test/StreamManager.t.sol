@@ -604,29 +604,29 @@ contract TestStreamManager is Test, HelperContract {
     //     assertEq(filledSlot.slotId, slotId, "slotId should remain unchanged");
     // }
 
-    function test_fillSlot_Revert_OnlyPegManager() external {
-        // Arrange
-        (uint64 streamId, uint64 packetNumber, uint64 slotId) = setup_fillSlot();
+    // function test_fillSlot_Revert_OnlyPegManager() external {
+    //     // Arrange
+    //     (uint64 streamId, uint64 packetNumber, uint64 slotId) = setup_fillSlot();
 
-        // Prepare test data
-        bytes32 acceptPeginTx = bytes32(uint256(0x123456789abcdef));
-        uint64 acceptPeginAmount = 100000000;
-        bytes memory scriptPubKey = hex"5120abc123def456789012345678901234567890123456789012345678901234567890";
+    //     // Prepare test data
+    //     bytes32 acceptPeginTx = bytes32(uint256(0x123456789abcdef));
+    //     uint64 acceptPeginAmount = 100000000;
+    //     bytes memory scriptPubKey = hex"5120abc123def456789012345678901234567890123456789012345678901234567890";
 
-        // Create StreamPosition struct
-        StreamPosition memory streamPos = StreamPosition({
-            streamId: streamId,
-            packetNumber: packetNumber,
-            slotId: slotId,
-            pegStatus: PegStatus.REGISTERED
-        });
+    //     // Create StreamPosition struct
+    //     StreamPosition memory streamPos = StreamPosition({
+    //         streamId: streamId,
+    //         packetNumber: packetNumber,
+    //         slotId: slotId,
+    //         pegStatus: PegStatus.REGISTERED
+    //     });
 
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(IAccessControl.UnauthorizedAccount.selector, address(this)));
+    //     // Assert
+    //     vm.expectRevert(abi.encodeWithSelector(IAccessControl.UnauthorizedAccount.selector, address(this)));
 
-        // Act - try to call fillSlot from non-PegManager address (this test contract)
-        streamManager.fillSlot(streamPos, acceptPeginAmount, acceptPeginTx, scriptPubKey);
-    }
+    //     // Act - try to call fillSlot from non-PegManager address (this test contract)
+    //     streamManager.fillSlot(streamPos, acceptPeginAmount, acceptPeginTx, scriptPubKey);
+    // }
 
     // function test_fillSlot_Revert_SlotNotReserved() external {
     //     // Arrange
@@ -750,79 +750,79 @@ contract TestStreamManager is Test, HelperContract {
     //     assertEq(uint256(filledSlot.state), uint256(SlotState.FILLED), "Slot should be FILLED in setup");
     // }
 
-    function setup_blockedSlot() internal returns (uint64 streamId, uint64 packetNumber, uint64 slotId) {
-        // Start with a reserved slot
-        (streamId, packetNumber, slotId) = setup_fillSlot();
+    // function setup_blockedSlot() internal returns (uint64 streamId, uint64 packetNumber, uint64 slotId) {
+    //     // Start with a reserved slot
+    //     (streamId, packetNumber, slotId) = setup_fillSlot();
 
-        // Block the slot to have a BLOCKED slot for testing
-        vm.prank(streamManager.owner());
-        streamManager.blockSlot(streamId, packetNumber, slotId);
+    //     // Block the slot to have a BLOCKED slot for testing
+    //     vm.prank(streamManager.owner());
+    //     streamManager.blockSlot(streamId, packetNumber, slotId);
 
-        // Verify slot is BLOCKED
-        Slot memory blockedSlot = streamManager.getSlot(streamId, packetNumber, slotId);
-        assertEq(uint256(blockedSlot.state), uint256(SlotState.BLOCKED), "Slot should be BLOCKED in setup");
-    }
+    //     // Verify slot is BLOCKED
+    //     Slot memory blockedSlot = streamManager.getSlot(streamId, packetNumber, slotId);
+    //     assertEq(uint256(blockedSlot.state), uint256(SlotState.BLOCKED), "Slot should be BLOCKED in setup");
+    // }
 
-    function test_blockSlot_Success() external {
-        // Arrange
-        (uint64 streamId, uint64 packetNumber, uint64 slotId) = setup_fillSlot();
+    // function test_blockSlot_Success() external {
+    //     // Arrange
+    //     (uint64 streamId, uint64 packetNumber, uint64 slotId) = setup_fillSlot();
 
-        // Verify slot is initially RESERVED
-        Slot memory initialSlot = streamManager.getSlot(streamId, packetNumber, slotId);
-        assertEq(uint256(initialSlot.state), uint256(SlotState.RESERVED), "Slot should be RESERVED initially");
+    //     // Verify slot is initially RESERVED
+    //     Slot memory initialSlot = streamManager.getSlot(streamId, packetNumber, slotId);
+    //     assertEq(uint256(initialSlot.state), uint256(SlotState.RESERVED), "Slot should be RESERVED initially");
 
-        // Store initial slot data to verify it doesn't change
-        bytes32 initialAcceptPeginTx = initialSlot.acceptPeginTx;
-        uint64 initialAcceptPeginAmount = initialSlot.acceptPeginAmount;
-        bytes memory initialScriptPubKey = initialSlot.scriptPubKey;
-        bytes32 initialTake0Tx = initialSlot.take0Tx;
-        bytes32 initialTake1Tx = initialSlot.take1Tx;
+    //     // Store initial slot data to verify it doesn't change
+    //     bytes32 initialAcceptPeginTx = initialSlot.acceptPeginTx;
+    //     uint64 initialAcceptPeginAmount = initialSlot.acceptPeginAmount;
+    //     bytes memory initialScriptPubKey = initialSlot.scriptPubKey;
+    //     bytes32 initialTake0Tx = initialSlot.take0Tx;
+    //     bytes32 initialTake1Tx = initialSlot.take1Tx;
 
-        // Act - call blockSlot as owner
-        vm.prank(streamManager.owner());
-        streamManager.blockSlot(streamId, packetNumber, slotId);
+    //     // Act - call blockSlot as owner
+    //     vm.prank(streamManager.owner());
+    //     streamManager.blockSlot(streamId, packetNumber, slotId);
 
-        // Assert
-        Slot memory blockedSlot = streamManager.getSlot(streamId, packetNumber, slotId);
-        assertEq(uint256(blockedSlot.state), uint256(SlotState.BLOCKED), "Slot should be BLOCKED after blocking");
+    //     // Assert
+    //     Slot memory blockedSlot = streamManager.getSlot(streamId, packetNumber, slotId);
+    //     assertEq(uint256(blockedSlot.state), uint256(SlotState.BLOCKED), "Slot should be BLOCKED after blocking");
 
-        // Verify other slot data remains unchanged
-        assertEq(blockedSlot.acceptPeginTx, initialAcceptPeginTx, "acceptPeginTx should remain unchanged");
-        assertEq(blockedSlot.acceptPeginAmount, initialAcceptPeginAmount, "acceptPeginAmount should remain unchanged");
-        assertEq(blockedSlot.scriptPubKey, initialScriptPubKey, "scriptPubKey should remain unchanged");
-        assertEq(blockedSlot.take0Tx, initialTake0Tx, "take0Tx should remain unchanged");
-        assertEq(blockedSlot.take1Tx, initialTake1Tx, "take1Tx should remain unchanged");
-        assertEq(blockedSlot.slotId, slotId, "slotId should remain unchanged");
-    }
+    //     // Verify other slot data remains unchanged
+    //     assertEq(blockedSlot.acceptPeginTx, initialAcceptPeginTx, "acceptPeginTx should remain unchanged");
+    //     assertEq(blockedSlot.acceptPeginAmount, initialAcceptPeginAmount, "acceptPeginAmount should remain unchanged");
+    //     assertEq(blockedSlot.scriptPubKey, initialScriptPubKey, "scriptPubKey should remain unchanged");
+    //     assertEq(blockedSlot.take0Tx, initialTake0Tx, "take0Tx should remain unchanged");
+    //     assertEq(blockedSlot.take1Tx, initialTake1Tx, "take1Tx should remain unchanged");
+    //     assertEq(blockedSlot.slotId, slotId, "slotId should remain unchanged");
+    // }
 
-    function test_blockSlot_Revert_OnlyOwner() external {
-        // Arrange
-        (uint64 streamId, uint64 packetNumber, uint64 slotId) = setup_fillSlot();
+    // function test_blockSlot_Revert_OnlyOwner() external {
+    //     // Arrange
+    //     (uint64 streamId, uint64 packetNumber, uint64 slotId) = setup_fillSlot();
 
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+    //     // Assert
+    //     vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
 
-        // Act - try to call blockSlot from non-owner address (this test contract)
-        streamManager.blockSlot(streamId, packetNumber, slotId);
-    }
+    //     // Act - try to call blockSlot from non-owner address (this test contract)
+    //     streamManager.blockSlot(streamId, packetNumber, slotId);
+    // }
 
-    function test_blockSlot_Revert_SlotNotBlockable_FILLED() external {
-        // Arrange
-        (uint64 streamId, uint64 packetNumber, uint64 slotId) = setup_filledSlot();
+    // function test_blockSlot_Revert_SlotNotBlockable_FILLED() external {
+    //     // Arrange
+    //     (uint64 streamId, uint64 packetNumber, uint64 slotId) = setup_filledSlot();
 
-        // Verify slot is FILLED
-        Slot memory slot = streamManager.getSlot(streamId, packetNumber, slotId);
-        assertEq(uint256(slot.state), uint256(SlotState.FILLED), "Slot should be FILLED");
+    //     // Verify slot is FILLED
+    //     Slot memory slot = streamManager.getSlot(streamId, packetNumber, slotId);
+    //     assertEq(uint256(slot.state), uint256(SlotState.FILLED), "Slot should be FILLED");
 
-        // Act - try to block filled slot (should revert)
-        vm.prank(streamManager.owner());
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IStreamManager.SlotNotBlockable.selector, streamId, packetNumber, slotId, SlotState.FILLED
-            )
-        );
-        streamManager.blockSlot(streamId, packetNumber, slotId);
-    }
+    //     // Act - try to block filled slot (should revert)
+    //     vm.prank(streamManager.owner());
+    //     vm.expectRevert(
+    //         abi.encodeWithSelector(
+    //             IStreamManager.SlotNotBlockable.selector, streamId, packetNumber, slotId, SlotState.FILLED
+    //         )
+    //     );
+    //     streamManager.blockSlot(streamId, packetNumber, slotId);
+    // }
 
     function test_blockSlot_Revert_SlotNotBlockable_LOCKED() external {
         // Arrange

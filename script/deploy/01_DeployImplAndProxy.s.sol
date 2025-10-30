@@ -19,8 +19,6 @@ import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
 import {PegManagerSettings} from "src/interfaces/IPegCommonTypes.sol";
-import {IPeginManager} from "src/interfaces/IPeginManager.sol";
-import {IPegoutManager} from "src/interfaces/IPegoutManager.sol";
 import {StreamManagerSettings} from "src/interfaces/IStreamManager.sol";
 import {StreamManagerSettingsConfig} from "script/helpers/StreamManagerSettingsConfig.sol";
 import {PegManagerSettingsConfig} from "script/helpers/PegManagerSettingsConfig.sol";
@@ -154,6 +152,8 @@ contract DeployImplAndProxy is ScriptUtils {
         bitcoinManager.setPegManager(pegManager);
         // committeeRegistry.setPegManager(pegManager);
         committeeRegistry.setStreamManager(streamManager);
+        committeeRegistry.setPeginManager(peginManager);
+        committeeRegistry.setPegoutManager(pegoutManager);
         memberRegistry.setStreamManager(streamManager);
         memberRegistry.setCommitteeRegistry(address(committeeRegistry));
         vm.stopBroadcast();

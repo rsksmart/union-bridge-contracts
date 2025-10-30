@@ -2,7 +2,8 @@
 pragma solidity ^0.8.20;
 
 import {console} from "forge-std/console.sol";
-import {PegManager, BtcTxSPVProof, StreamPosition} from "src/PegManager.sol";
+import {PegoutManager} from "src/PegoutManager.sol";
+import {BtcTxSPVProof, StreamPosition} from "src/interfaces/IPegCommonTypes.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
 import {Slot, SlotState, IStreamManager} from "src/interfaces/IStreamManager.sol";
@@ -11,7 +12,7 @@ import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
 
 contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
-    PegManager pegManager;
+    PegoutManager pegoutManager;
 
     uint64 amount;
     bytes operatorPubKey;
@@ -23,7 +24,7 @@ contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
     uint64 expectedSlotId;
 
     function setUp(bytes32 _acceptPeginTxid) internal {
-        pegManager = PegManager(getPegManager());
+        pegoutManager = PegoutManager(getPegoutManager());
 
         ICommitteeRegistry registry = ICommitteeRegistry(getCommitteeRegistry());
         IMemberRegistry memberRegistry = registry.memberRegistry();
@@ -33,7 +34,7 @@ contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
 
         // Calculate expected slot and packet numbers
         streamManager = IStreamManager(getStreamManager());
-        StreamPosition memory streamPosition = pegManager.getStreamPosition(_acceptPeginTxid);
+        StreamPosition memory streamPosition = streamManager.getStreamPosition(_acceptPeginTxid);
         expectedStreamId = streamPosition.streamId;
         expectedPacketNumber = streamPosition.packetNumber;
         expectedSlotId = streamPosition.slotId;
@@ -47,7 +48,7 @@ contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
 
         // Register operator take
         vm.startBroadcast(getDeployerKey());
-        pegManager.registerOperatorTake(pegoutTxSPVProof);
+        pegoutManager.registerOperatorTake(pegoutTxSPVProof);
         vm.stopBroadcast();
 
         Slot memory slot = streamManager.getSlot(expectedStreamId, expectedPacketNumber, expectedSlotId);

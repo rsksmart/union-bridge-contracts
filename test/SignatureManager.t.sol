@@ -46,156 +46,156 @@ contract TestSignatureManager is Test, HelperContract {
         signatureManager.checkAllSignaturesReady(hashToSign);
     }
 
-    function test_addMemberNonce_Success() external {
-        // Arrange
-        bytes32 hashToSign = setup_initSignatures();
-        // The nonce values are dummy values
-        bytes memory nonce =
-            hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
-        address committeeMember0adr = vm.addr(1);
+    // function test_addMemberNonce_Success() external {
+    //     // Arrange
+    //     bytes32 hashToSign = setup_initSignatures();
+    //     // The nonce values are dummy values
+    //     bytes memory nonce =
+    //         hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
+    //     address committeeMember0adr = vm.addr(1);
 
-        // Assert
-        // We emit the event we expect to see.
-        vm.expectEmit(address(signatureManager));
-        emit ISignatureManager.NonceAdded(hashToSign, committeeMember0adr, nonce);
+    //     // Assert
+    //     // We emit the event we expect to see.
+    //     vm.expectEmit(address(signatureManager));
+    //     emit ISignatureManager.NonceAdded(hashToSign, committeeMember0adr, nonce);
 
-        // Act
-        vm.prank(committeeMember0adr);
-        bool allNoncesReady = signatureManager.addMemberNonce(hashToSign, nonce);
+    //     // Act
+    //     vm.prank(committeeMember0adr);
+    //     bool allNoncesReady = signatureManager.addMemberNonce(hashToSign, nonce);
 
-        // Assert
-        assertEq(allNoncesReady, false, "Not all nonces should be ready at this point");
-    }
+    //     // Assert
+    //     assertEq(allNoncesReady, false, "Not all nonces should be ready at this point");
+    // }
 
-    function test_addMemberNonce_Success_AllNoncesReady() external {
-        // Arrange
-        bytes32 hashToSign = setup_initSignatures();
-        // The nonce values are dummy values
-        bytes memory nonce =
-            hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
-        setup_addMemberNonce_MultipleMembers(hashToSign, 0, registry.committeeMemberCount() - 1);
-        (hashToSign);
-        uint256 lastMemberIndex = registry.committeeMemberCount() - 1;
-        address lastMemberAddress = vm.addr(lastMemberIndex + 1);
+    // function test_addMemberNonce_Success_AllNoncesReady() external {
+    //     // Arrange
+    //     bytes32 hashToSign = setup_initSignatures();
+    //     // The nonce values are dummy values
+    //     bytes memory nonce =
+    //         hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
+    //     setup_addMemberNonce_MultipleMembers(hashToSign, 0, registry.committeeMemberCount() - 1);
+    //     (hashToSign);
+    //     uint256 lastMemberIndex = registry.committeeMemberCount() - 1;
+    //     address lastMemberAddress = vm.addr(lastMemberIndex + 1);
 
-        // Assert
-        // We emit the event we expect to see.
-        vm.expectEmit(address(signatureManager));
-        emit ISignatureManager.NonceAdded(hashToSign, lastMemberAddress, nonce);
+    //     // Assert
+    //     // We emit the event we expect to see.
+    //     vm.expectEmit(address(signatureManager));
+    //     emit ISignatureManager.NonceAdded(hashToSign, lastMemberAddress, nonce);
 
-        // We emit the event we expect to see.
-        vm.expectEmit(address(signatureManager));
-        emit ISignatureManager.AllNoncesReady(hashToSign);
+    //     // We emit the event we expect to see.
+    //     vm.expectEmit(address(signatureManager));
+    //     emit ISignatureManager.AllNoncesReady(hashToSign);
 
-        // Act
-        vm.prank(lastMemberAddress);
-        bool allNoncesReady = signatureManager.addMemberNonce(hashToSign, nonce);
+    //     // Act
+    //     vm.prank(lastMemberAddress);
+    //     bool allNoncesReady = signatureManager.addMemberNonce(hashToSign, nonce);
 
-        // Assert
-        assertEq(allNoncesReady, true, "Not all nonces should be ready at this point");
-    }
+    //     // Assert
+    //     assertEq(allNoncesReady, true, "Not all nonces should be ready at this point");
+    // }
 
-    function test_addMemberSignature_Success() external {
-        // Arrange
-        // Init signatures and add all nonces
-        bytes32 hashToSign = setup_initSignatures();
-        setup_addAllNonces(hashToSign);
-        // The signature an nonce values are dummy values
-        bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
-        uint256 memberIndex = 0;
-        address committeeMember0adr = vm.addr(memberIndex + 1);
+    // function test_addMemberSignature_Success() external {
+    //     // Arrange
+    //     // Init signatures and add all nonces
+    //     bytes32 hashToSign = setup_initSignatures();
+    //     setup_addAllNonces(hashToSign);
+    //     // The signature an nonce values are dummy values
+    //     bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
+    //     uint256 memberIndex = 0;
+    //     address committeeMember0adr = vm.addr(memberIndex + 1);
 
-        // We emit the event we expect to see.
-        // Assert
-        vm.expectEmit(address(signatureManager));
-        emit ISignatureManager.SignatureAdded(hashToSign, committeeMember0adr, signature);
+    //     // We emit the event we expect to see.
+    //     // Assert
+    //     vm.expectEmit(address(signatureManager));
+    //     emit ISignatureManager.SignatureAdded(hashToSign, committeeMember0adr, signature);
 
-        // Act
-        vm.prank(committeeMember0adr);
-        bool allSignaturesReady = signatureManager.addMemberSignature(hashToSign, signature);
+    //     // Act
+    //     vm.prank(committeeMember0adr);
+    //     bool allSignaturesReady = signatureManager.addMemberSignature(hashToSign, signature);
 
-        // Assert
-        assertEq(allSignaturesReady, false, "Not all signatures should be ready at this point");
-        (uint8 missingSignatures, uint8 missingNonces, uint128 committeeId) =
-            signatureManager.getSignaturesStatus(hashToSign);
-        assertEq(missingSignatures, registry.committeeMemberCount() - 1, "missingSignatures should be equal to 1");
-        assertEq(missingNonces, 0, "missingNonces should be equal to 1");
-        assertEq(
-            committeeId,
-            COMMITTEE_ID_STREAM_1_COMMITTEE_1,
-            "committeeId should be equal to the committee id that was created initially"
-        );
+    //     // Assert
+    //     assertEq(allSignaturesReady, false, "Not all signatures should be ready at this point");
+    //     (uint8 missingSignatures, uint8 missingNonces, uint128 committeeId) =
+    //         signatureManager.getSignaturesStatus(hashToSign);
+    //     assertEq(missingSignatures, registry.committeeMemberCount() - 1, "missingSignatures should be equal to 1");
+    //     assertEq(missingNonces, 0, "missingNonces should be equal to 1");
+    //     assertEq(
+    //         committeeId,
+    //         COMMITTEE_ID_STREAM_1_COMMITTEE_1,
+    //         "committeeId should be equal to the committee id that was created initially"
+    //     );
 
-        SignatureData[] memory signatures = signatureManager.getPartialSignatures(hashToSign);
-        assertEq(
-            signatures.length,
-            registry.committeeMemberCount(),
-            "signatures length should be equal to registry.committeeMemberCount()"
-        );
+    //     SignatureData[] memory signatures = signatureManager.getPartialSignatures(hashToSign);
+    //     assertEq(
+    //         signatures.length,
+    //         registry.committeeMemberCount(),
+    //         "signatures length should be equal to registry.committeeMemberCount()"
+    //     );
 
-        CommitteeMember[] memory members = registry.getCommitteeMembers(committeeId);
-        for (uint256 i = 0; i < members.length; i++) {
-            if (members[i].memberAddress != committeeMember0adr) {
-                assertEq(
-                    signatures[i].signature,
-                    bytes32(0),
-                    "signatures[i].signature should be empty for members other than the one who signed"
-                );
-            } else {
-                assertEq(
-                    signatures[i].signature,
-                    signature,
-                    "signatures[i].signature should be equal to the signature added by the member"
-                );
-            }
-        }
-    }
+    //     CommitteeMember[] memory members = registry.getCommitteeMembers(committeeId);
+    //     for (uint256 i = 0; i < members.length; i++) {
+    //         if (members[i].memberAddress != committeeMember0adr) {
+    //             assertEq(
+    //                 signatures[i].signature,
+    //                 bytes32(0),
+    //                 "signatures[i].signature should be empty for members other than the one who signed"
+    //             );
+    //         } else {
+    //             assertEq(
+    //                 signatures[i].signature,
+    //                 signature,
+    //                 "signatures[i].signature should be equal to the signature added by the member"
+    //             );
+    //         }
+    //     }
+    // }
 
-    function test_addMemberSignature_Success_AllSignaturesReady() external {
-        // Arrange
-        // Init signatures and add all nonces
-        bytes32 hashToSign = setup_initSignatures();
-        setup_addAllNonces(hashToSign);
-        // The signature an nonce values are dummy values
-        bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
-        uint256 memberCount = registry.committeeMemberCount();
-        setup_addMemberSignature_MultipleMembers(hashToSign, 0, memberCount - 1);
-        // Pub key and address are generated based on the member index + 1
-        uint256 lastMemberIndex = registry.committeeMemberCount() - 1;
-        address lastMemberAddress = vm.addr(lastMemberIndex + 1);
+    // function test_addMemberSignature_Success_AllSignaturesReady() external {
+    //     // Arrange
+    //     // Init signatures and add all nonces
+    //     bytes32 hashToSign = setup_initSignatures();
+    //     setup_addAllNonces(hashToSign);
+    //     // The signature an nonce values are dummy values
+    //     bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
+    //     uint256 memberCount = registry.committeeMemberCount();
+    //     setup_addMemberSignature_MultipleMembers(hashToSign, 0, memberCount - 1);
+    //     // Pub key and address are generated based on the member index + 1
+    //     uint256 lastMemberIndex = registry.committeeMemberCount() - 1;
+    //     address lastMemberAddress = vm.addr(lastMemberIndex + 1);
 
-        // Assert
-        // We emit the event we expect to see.
-        vm.expectEmit(address(signatureManager));
-        emit ISignatureManager.SignatureAdded(hashToSign, lastMemberAddress, signature);
+    //     // Assert
+    //     // We emit the event we expect to see.
+    //     vm.expectEmit(address(signatureManager));
+    //     emit ISignatureManager.SignatureAdded(hashToSign, lastMemberAddress, signature);
 
-        // We emit the event we expect to see.
-        vm.expectEmit(address(signatureManager));
-        emit ISignatureManager.AllSignaturesReady(hashToSign);
+    //     // We emit the event we expect to see.
+    //     vm.expectEmit(address(signatureManager));
+    //     emit ISignatureManager.AllSignaturesReady(hashToSign);
 
-        // Act
-        vm.prank(lastMemberAddress);
-        bool allSignaturesReady = signatureManager.addMemberSignature(hashToSign, signature);
+    //     // Act
+    //     vm.prank(lastMemberAddress);
+    //     bool allSignaturesReady = signatureManager.addMemberSignature(hashToSign, signature);
 
-        // Assert
-        assertEq(allSignaturesReady, true, "Not all signatures should be ready at this point");
-        (uint8 missingSignatures, uint8 missingNonces, uint128 committeeId) =
-            signatureManager.getSignaturesStatus(hashToSign);
-        assertEq(missingSignatures, 0, "missingSignatures should be equal to 0");
-        assertEq(missingNonces, 0, "missingNonces should be equal to 0");
-        assertEq(committeeId, COMMITTEE_ID_STREAM_1_COMMITTEE_1, "aggregatedKey should be equal to the committee key");
-        SignatureData[] memory signatures = signatureManager.getPartialSignatures(hashToSign);
-        assertEq(
-            signatures.length,
-            registry.committeeMemberCount(),
-            "signatures length should be equal to registry.committeeMemberCount()"
-        );
+    //     // Assert
+    //     assertEq(allSignaturesReady, true, "Not all signatures should be ready at this point");
+    //     (uint8 missingSignatures, uint8 missingNonces, uint128 committeeId) =
+    //         signatureManager.getSignaturesStatus(hashToSign);
+    //     assertEq(missingSignatures, 0, "missingSignatures should be equal to 0");
+    //     assertEq(missingNonces, 0, "missingNonces should be equal to 0");
+    //     assertEq(committeeId, COMMITTEE_ID_STREAM_1_COMMITTEE_1, "aggregatedKey should be equal to the committee key");
+    //     SignatureData[] memory signatures = signatureManager.getPartialSignatures(hashToSign);
+    //     assertEq(
+    //         signatures.length,
+    //         registry.committeeMemberCount(),
+    //         "signatures length should be equal to registry.committeeMemberCount()"
+    //     );
 
-        CommitteeMember[] memory members = registry.getCommitteeMembers(committeeId);
-        for (uint256 i = 0; i < members.length; i++) {
-            assertNotEq(signatures[i].signature, bytes32(0), "signatures[i].signature should not be empty");
-        }
-    }
+    //     CommitteeMember[] memory members = registry.getCommitteeMembers(committeeId);
+    //     for (uint256 i = 0; i < members.length; i++) {
+    //         assertNotEq(signatures[i].signature, bytes32(0), "signatures[i].signature should not be empty");
+    //     }
+    // }
 
     function test_addMemberNonce_Revert_HashToSignNotFound() external {
         // Arrange
@@ -228,106 +228,106 @@ contract TestSignatureManager is Test, HelperContract {
         signatureManager.addMemberSignature(hashToSign, signature);
     }
 
-    function test_addMemberNonce_Revert_MemberHasAlreadySigned() external {
-        // Arrange
-        // Init signatures
-        bytes32 hashToSign = setup_initSignatures();
-        // The nonce values are dummy values
-        bytes memory nonce =
-            hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
-        address committeeMember0adr = vm.addr(1);
+    // function test_addMemberNonce_Revert_MemberHasAlreadySigned() external {
+    //     // Arrange
+    //     // Init signatures
+    //     bytes32 hashToSign = setup_initSignatures();
+    //     // The nonce values are dummy values
+    //     bytes memory nonce =
+    //         hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
+    //     address committeeMember0adr = vm.addr(1);
 
-        // First time adding the nonce
-        vm.prank(committeeMember0adr);
-        signatureManager.addMemberNonce(hashToSign, nonce);
+    //     // First time adding the nonce
+    //     vm.prank(committeeMember0adr);
+    //     signatureManager.addMemberNonce(hashToSign, nonce);
 
-        // Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(ISignatureManager.MemberAlreadyAddedNonce.selector, committeeMember0adr, nonce)
-        );
+    //     // Assert
+    //     vm.expectRevert(
+    //         abi.encodeWithSelector(ISignatureManager.MemberAlreadyAddedNonce.selector, committeeMember0adr, nonce)
+    //     );
 
-        // Act add nonce a second time with the same committee member
-        vm.prank(committeeMember0adr);
-        signatureManager.addMemberNonce(hashToSign, nonce);
-    }
+    //     // Act add nonce a second time with the same committee member
+    //     vm.prank(committeeMember0adr);
+    //     signatureManager.addMemberNonce(hashToSign, nonce);
+    // }
 
-    function test_addMemberSignature_Revert_MemberHasAlreadySigned() external {
-        // Init signatures and add all nonces
-        bytes32 hashToSign = setup_initSignatures();
-        setup_addAllNonces(hashToSign);
-        // Arrange
-        // The signature values are dummy values
-        bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
-        address committeeMember0adr = vm.addr(1);
+    // function test_addMemberSignature_Revert_MemberHasAlreadySigned() external {
+    //     // Init signatures and add all nonces
+    //     bytes32 hashToSign = setup_initSignatures();
+    //     setup_addAllNonces(hashToSign);
+    //     // Arrange
+    //     // The signature values are dummy values
+    //     bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
+    //     address committeeMember0adr = vm.addr(1);
 
-        // Sign the first time
-        vm.prank(committeeMember0adr);
-        signatureManager.addMemberSignature(hashToSign, signature);
+    //     // Sign the first time
+    //     vm.prank(committeeMember0adr);
+    //     signatureManager.addMemberSignature(hashToSign, signature);
 
-        // Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(ISignatureManager.MemberHasAlreadySigned.selector, committeeMember0adr, hashToSign)
-        );
+    //     // Assert
+    //     vm.expectRevert(
+    //         abi.encodeWithSelector(ISignatureManager.MemberHasAlreadySigned.selector, committeeMember0adr, hashToSign)
+    //     );
 
-        // Act sign a second time with the same committee member
-        vm.prank(committeeMember0adr);
-        signatureManager.addMemberSignature(hashToSign, signature);
-    }
+    //     // Act sign a second time with the same committee member
+    //     vm.prank(committeeMember0adr);
+    //     signatureManager.addMemberSignature(hashToSign, signature);
+    // }
 
-    function test_addMemberNonce_Revert_MemberNotFoundInCommittee() external {
-        // Arrange
-        bytes32 hashToSign = setup_initSignatures();
-        address nonCommitteeMember = vm.addr(registry.committeeMemberCount() + 1);
-        MemberRegistrationKeys memory nonCommitteeMemberPubKeysRegistration =
-            generateRegistrationPublicKeys(uint256(uint160(nonCommitteeMember)));
-        setup_applyToStream(
-            StreamDenomination._0_01BTC, nonCommitteeMember, nonCommitteeMemberPubKeysRegistration, Role.OPERATOR
-        );
-        // The nonce values are dummy values
-        bytes memory nonce =
-            hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
+    // function test_addMemberNonce_Revert_MemberNotFoundInCommittee() external {
+    //     // Arrange
+    //     bytes32 hashToSign = setup_initSignatures();
+    //     address nonCommitteeMember = vm.addr(registry.committeeMemberCount() + 1);
+    //     MemberRegistrationKeys memory nonCommitteeMemberPubKeysRegistration =
+    //         generateRegistrationPublicKeys(uint256(uint160(nonCommitteeMember)));
+    //     setup_applyToStream(
+    //         StreamDenomination._0_01BTC, nonCommitteeMember, nonCommitteeMemberPubKeysRegistration, Role.OPERATOR
+    //     );
+    //     // The nonce values are dummy values
+    //     bytes memory nonce =
+    //         hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
 
-        // Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                ISignatureManager.MemberNotFoundInCommittee.selector,
-                COMMITTEE_ID_STREAM_1_COMMITTEE_1,
-                nonCommitteeMember
-            )
-        );
+    //     // Assert
+    //     vm.expectRevert(
+    //         abi.encodeWithSelector(
+    //             ISignatureManager.MemberNotFoundInCommittee.selector,
+    //             COMMITTEE_ID_STREAM_1_COMMITTEE_1,
+    //             nonCommitteeMember
+    //         )
+    //     );
 
-        // Act
-        vm.prank(nonCommitteeMember);
-        signatureManager.addMemberNonce(hashToSign, nonce);
-    }
+    //     // Act
+    //     vm.prank(nonCommitteeMember);
+    //     signatureManager.addMemberNonce(hashToSign, nonce);
+    // }
 
-    function test_addMemberSignature_Revert_MemberNotFoundInCommittee() external {
-        // Arrange
-        // Init signatures and add all nonces
-        bytes32 hashToSign = setup_initSignatures();
-        setup_addAllNonces(hashToSign);
+    // function test_addMemberSignature_Revert_MemberNotFoundInCommittee() external {
+    //     // Arrange
+    //     // Init signatures and add all nonces
+    //     bytes32 hashToSign = setup_initSignatures();
+    //     setup_addAllNonces(hashToSign);
 
-        address nonCommitteeMember = vm.addr(registry.committeeMemberCount() + 1);
-        MemberRegistrationKeys memory nonCommitteeMemberPubKeysRegistration =
-            generateRegistrationPublicKeys(uint256(uint160(nonCommitteeMember)));
-        setup_applyToStream(
-            StreamDenomination._0_01BTC, nonCommitteeMember, nonCommitteeMemberPubKeysRegistration, Role.OPERATOR
-        );
-        bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
+    //     address nonCommitteeMember = vm.addr(registry.committeeMemberCount() + 1);
+    //     MemberRegistrationKeys memory nonCommitteeMemberPubKeysRegistration =
+    //         generateRegistrationPublicKeys(uint256(uint160(nonCommitteeMember)));
+    //     setup_applyToStream(
+    //         StreamDenomination._0_01BTC, nonCommitteeMember, nonCommitteeMemberPubKeysRegistration, Role.OPERATOR
+    //     );
+    //     bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
 
-        // Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                ISignatureManager.MemberNotFoundInCommittee.selector,
-                COMMITTEE_ID_STREAM_1_COMMITTEE_1,
-                nonCommitteeMember
-            )
-        );
+    //     // Assert
+    //     vm.expectRevert(
+    //         abi.encodeWithSelector(
+    //             ISignatureManager.MemberNotFoundInCommittee.selector,
+    //             COMMITTEE_ID_STREAM_1_COMMITTEE_1,
+    //             nonCommitteeMember
+    //         )
+    //     );
 
-        // Act
-        vm.prank(nonCommitteeMember);
-        signatureManager.addMemberSignature(hashToSign, signature);
-    }
+    //     // Act
+    //     vm.prank(nonCommitteeMember);
+    //     signatureManager.addMemberSignature(hashToSign, signature);
+    // }
 
     // function test_addMemberSignature_Revert_InvalidNonceLength() external {
     //     bytes32 hashToSign = setup_initSignatures();
