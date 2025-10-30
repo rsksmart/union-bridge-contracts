@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import {IAccessControl} from "./IAccessControl.sol";
 import {ICommitteeRegistry, Role} from "./ICommitteeRegistry.sol";
-import {StreamPosition, PegStatus} from "./IPegManager.sol";
+import {StreamPosition, PegStatus} from "./IPegCommonTypes.sol";
 
 /// @notice Represents different Bitcoin denominations supported by the union bridge
 /// @dev Each denomination corresponds to a specific stream for efficient fund management

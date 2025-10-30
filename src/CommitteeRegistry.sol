@@ -15,7 +15,8 @@ import {
     UTXO
 } from "./interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination, IStreamManager} from "./interfaces/IStreamManager.sol";
-import {IPegManager} from "./interfaces/IPegManager.sol";
+import {IPeginManager} from "./interfaces/IPeginManager.sol";
+import {IPegoutManager} from "./interfaces/IPegoutManager.sol";
 import {SignatureData} from "./interfaces/ISignatureManager.sol";
 import {IMemberRegistry} from "./interfaces/IMemberRegistry.sol";
 import {BytesHelper} from "./libraries/BytesHelper.sol";
@@ -45,8 +46,10 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
 
     /// @notice Stream manager contract for managing streams and packets
     IStreamManager streamManager;
-    /// @notice Peg manager contract for peg-in/peg-out coordination
-    IPegManager pegManager;
+    /// @notice Pegin manager contract for peg-in coordination
+    IPeginManager peginManager;
+    /// @notice Pegout manager contract for peg-out coordination
+    IPegoutManager pegoutManager;
     /// @notice Member registry contract for member management
     IMemberRegistry public memberRegistry;
 
@@ -523,16 +526,27 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         emit StreamManagerUpdated(address(_streamManager));
     }
 
-    /// @notice Sets the Peg Manager contract address
+    /// @notice Sets the Pegin Manager contract address
     /// @dev Only callable by the contract owner
-    /// @param _pegManager The address of the Peg Manager contract
-    function setPegManager(IPegManager _pegManager) external onlyOwner {
-        if (address(_pegManager) == address(0)) {
+    /// @param _peginManager The address of the Pegin Manager contract
+    function setPeginManager(IPeginManager _peginManager) external onlyOwner {
+        if (address(_peginManager) == address(0)) {
             revert InvalidZeroAddress();
         }
-        pegManager = _pegManager;
-        pauser = address(_pegManager);
-        emit PegManagerUpdated(address(_pegManager));
+        peginManager = _peginManager;
+        pauser = address(_peginManager); // PeginManager is the pauser
+        emit PeginManagerUpdated(address(_peginManager));
+    }
+
+    /// @notice Sets the Pegout Manager contract address
+    /// @dev Only callable by the contract owner
+    /// @param _pegoutManager The address of the Pegout Manager contract
+    function setPegoutManager(IPegoutManager _pegoutManager) external onlyOwner {
+        if (address(_pegoutManager) == address(0)) {
+            revert InvalidZeroAddress();
+        }
+        pegoutManager = _pegoutManager;
+        emit PegoutManagerUpdated(address(_pegoutManager));
     }
 
     /// @notice Sets the Member Registry contract address
@@ -608,14 +622,14 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
 
     // ===================== Modifiers =====================
 
-    /// @notice Modifier to restrict access to the PegManager contract
+    /// @notice Modifier to restrict access to the PeginManager and PegoutManager contracts
     modifier onlyPegManager() {
         _onlyPegManager(_msgSender());
         _;
     }
 
     function _onlyPegManager(address _account) internal view {
-        if (address(pegManager) != _account) {
+        if (address(peginManager) != _account && address(pegoutManager) != _account) {
             revert UnauthorizedAccount(_account);
         }
     }

@@ -1,13 +1,15 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import {PegManager, PegoutTempInfo, PegStatus, PegManagerSettings} from "src/PegManager.sol";
+import {PeginManager} from "src/PeginManager.sol";
 import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {IBitcoinManager} from "src/interfaces/IBitcoinManager.sol";
-import {StreamPosition} from "src/interfaces/IPegManager.sol";
+import {StreamPosition, PegStatus, PegManagerSettings} from "src/interfaces/IPegCommonTypes.sol";
 
-/// @notice Wrapper for testing PegManager
-contract PegManagerHarness is PegManager {
+/// @title PeginManagerHarness
+/// @notice Test harness for PeginManager to expose internal functions and state for testing
+/// @dev TODO: Uncomment and implement harness functions as needed when updating tests
+contract PeginManagerHarness is PeginManager {
     function initialize(
         address _initialOwner,
         address payable _bridgeAddress,
@@ -15,20 +17,13 @@ contract PegManagerHarness is PegManager {
         IBitcoinManager _bitcoinManager,
         PegManagerSettings memory _settings
     ) public override initializer {
-        PegManager.initialize(_initialOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager, _settings);
+        PeginManager.initialize(_initialOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager, _settings);
     }
 
-    function setPegoutTempInfoHarness(bytes32 _acceptPeginTxid, bytes memory _userPubKey) external {
-        pegoutTempInfo[_acceptPeginTxid] = PegoutTempInfo({
-            userPubKey: _userPubKey,
-            createdAt: block.timestamp,
-            operatorTakeUpdatedAt: 0,
-            committeeId: 0,
-            takeOperatorAddress: address(0),
-            takeOperatorPubKey: bytes32(0)
-        });
-    }
+    // TODO: Add harness functions as needed for testing
+    // Examples from old PegManagerHarness that may be useful:
 
+    /*
     function setStreamPositionHarness(
         bytes32 _acceptPeginTxid,
         uint64 _streamId,
@@ -41,4 +36,5 @@ contract PegManagerHarness is PegManager {
             StreamPosition({streamId: _streamId, packetNumber: _packetNumber, slotId: _slotId, pegStatus: _pegStatus})
         );
     }
+    */
 }

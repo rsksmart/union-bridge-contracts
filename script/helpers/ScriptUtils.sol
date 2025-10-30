@@ -10,7 +10,7 @@ import {
     MemberRegistrationKeys,
     RSA_PUBLIC_KEY_CHUNKS
 } from "src/interfaces/ICommitteeRegistry.sol";
-import {BtcTxSPVProof} from "src/PegManager.sol";
+import {BtcTxSPVProof} from "src/interfaces/IPegCommonTypes.sol";
 import {BtcTransaction, BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
 import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
 import {BtcTaproot} from "src/libraries/BtcTaproot.sol";

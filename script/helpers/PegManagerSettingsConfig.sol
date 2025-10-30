@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 // Import the PegManagerSettings struct definition from the correct interface
-import {PegManagerSettings} from "src/interfaces/IPegManager.sol";
+import {PegManagerSettings} from "src/interfaces/IPegCommonTypes.sol";
 import {ChainIds} from "src/libraries/Network.sol";
 
 library PegManagerSettingsConfig {

@@ -7,7 +7,8 @@ import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 import {CommitteeRegistry} from "src/CommitteeRegistry.sol";
 import {MemberRegistry} from "src/MemberRegistry.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
-import {PegManager} from "src/PegManager.sol";
+import {PeginManager} from "src/PeginManager.sol";
+import {PegoutManager} from "src/PegoutManager.sol";
 import {StreamManager} from "src/StreamManager.sol";
 import {SignatureManager} from "src/SignatureManager.sol";
 import {RSK_BRIDGE_ADDRESS} from "src/interfaces/IBridge.sol";
@@ -17,7 +18,9 @@ import {ChainIds} from "src/libraries/Network.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
-import {IPegManager, PegManagerSettings} from "src/interfaces/IPegManager.sol";
+import {PegManagerSettings} from "src/interfaces/IPegCommonTypes.sol";
+import {IPeginManager} from "src/interfaces/IPeginManager.sol";
+import {IPegoutManager} from "src/interfaces/IPegoutManager.sol";
 import {StreamManagerSettings} from "src/interfaces/IStreamManager.sol";
 import {StreamManagerSettingsConfig} from "script/helpers/StreamManagerSettingsConfig.sol";
 import {PegManagerSettingsConfig} from "script/helpers/PegManagerSettingsConfig.sol";
@@ -27,7 +30,8 @@ struct DeployedContracts {
     CommitteeRegistry committeeRegistry;
     MemberRegistry memberRegistry;
     BitcoinManager bitcoinManager;
-    PegManager pegManager;
+    PeginManager peginManager;
+    PegoutManager pegoutManager;
     StreamManager streamManager;
     SignatureManager signatureManager;
     address upgradableOwner;
@@ -93,32 +97,48 @@ contract DeployImplAndProxy is ScriptUtils {
         if (bitcoinManager.owner() != upgradableOwner) {
             revert("BitcoinManager owner is not the upgradable owner");
         }
-        PegManager pegManager =
-            deployPegManager(upgradableOwner, bridgeAddress, committeeRegistry, bitcoinManager, pegManagerSettings);
-        // Verify contracts are initialized
-        if (pegManager.owner() != upgradableOwner) {
-            revert("PegManager owner is not the upgradable owner");
+
+        PeginManager peginManager =
+            deployPeginManager(upgradableOwner, bridgeAddress, committeeRegistry, bitcoinManager);
+        if (peginManager.owner() != upgradableOwner) {
+            revert("PeginManager owner is not the upgradable owner");
         }
-        if (payable(address(pegManager.bridge())) != bridgeAddress) {
-            revert("PegManager bridge is not the bridge address");
+        if (payable(address(peginManager.bridge())) != bridgeAddress) {
+            revert("PeginManager bridge is not the bridge address");
         }
 
-        StreamManager streamManager =
-            deployStreamManager(upgradableOwner, pegManager, committeeRegistry, denominations, streamManagerSettings);
+        PegoutManager pegoutManager =
+            deployPegoutManager(upgradableOwner, bridgeAddress, committeeRegistry, bitcoinManager, pegManagerSettings);
+        if (pegoutManager.owner() != upgradableOwner) {
+            revert("PegoutManager owner is not the upgradable owner");
+        }
+        if (payable(address(pegoutManager.bridge())) != bridgeAddress) {
+            revert("PegoutManager bridge is not the bridge address");
+        }
+
+        StreamManager streamManager = deployStreamManager(
+            upgradableOwner, peginManager, pegoutManager, committeeRegistry, denominations, streamManagerSettings
+        );
         if (streamManager.owner() != upgradableOwner) {
             revert("StreamManager owner is not the upgradable owner");
         }
-        if (streamManager.pegManager() != address(pegManager)) {
-            revert("StreamManager pegManager is not the pegManager address");
+        if (streamManager.peginManager() != address(peginManager)) {
+            revert("StreamManager peginManager is not the peginManager address");
+        }
+        if (streamManager.pegoutManager() != address(pegoutManager)) {
+            revert("StreamManager pegoutManager is not the pegoutManager address");
         }
 
         SignatureManager signatureManager =
-            deploySignatureManager(upgradableOwner, address(pegManager), committeeRegistry);
+            deploySignatureManager(upgradableOwner, address(peginManager), address(pegoutManager), committeeRegistry);
         if (signatureManager.owner() != upgradableOwner) {
             revert("SignatureManager owner is not the upgradable owner");
         }
-        if (signatureManager.pegManager() != address(pegManager)) {
-            revert("SignatureManager pegManager is not the pegManager address");
+        if (signatureManager.peginManager() != address(peginManager)) {
+            revert("SignatureManager peginManager is not the peginManager address");
+        }
+        if (signatureManager.pegoutManager() != address(pegoutManager)) {
+            revert("SignatureManager pegoutManager is not the pegoutManager address");
         }
         if (address(signatureManager.committeeRegistry()) != address(committeeRegistry)) {
             revert("SignatureManager committeeRegistry is not the committeeRegistry address");
@@ -126,11 +146,13 @@ contract DeployImplAndProxy is ScriptUtils {
 
         // Set contracts references
         vm.startBroadcast(getDeployerKey());
-        pegManager.setStreamManager(streamManager);
-        pegManager.setSignatureManager(signatureManager);
-        pegManager.setMemberRegistry(memberRegistry);
+        peginManager.setStreamManager(streamManager);
+        peginManager.setSignatureManager(signatureManager);
+        pegoutManager.setStreamManager(streamManager);
+        pegoutManager.setSignatureManager(signatureManager);
+        pegoutManager.setMemberRegistry(memberRegistry);
         bitcoinManager.setPegManager(pegManager);
-        committeeRegistry.setPegManager(pegManager);
+        // committeeRegistry.setPegManager(pegManager);
         committeeRegistry.setStreamManager(streamManager);
         memberRegistry.setStreamManager(streamManager);
         memberRegistry.setCommitteeRegistry(address(committeeRegistry));
@@ -151,7 +173,8 @@ contract DeployImplAndProxy is ScriptUtils {
             committeeRegistry: committeeRegistry,
             memberRegistry: memberRegistry,
             bitcoinManager: bitcoinManager,
-            pegManager: pegManager,
+            peginManager: peginManager,
+            pegoutManager: pegoutManager,
             streamManager: streamManager,
             signatureManager: signatureManager,
             upgradableOwner: upgradableOwner,
@@ -193,31 +216,42 @@ contract DeployImplAndProxy is ScriptUtils {
         return BitcoinManager(proxyAdddress);
     }
 
-    function deployPegManager(
+    function deployPeginManager(
+        address _upgradableOwner,
+        address payable _bridgeAddress,
+        CommitteeRegistry _committeeRegistry,
+        BitcoinManager _bitcoinManager
+    ) public returns (PeginManager) {
+        (, address proxyAdddress) = deployContractAndUUPSProxy(
+            "PeginManager.sol",
+            abi.encodeCall(
+                PeginManager.initialize, (_upgradableOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager)
+            )
+        );
+        return PeginManager(proxyAdddress);
+    }
+
+    function deployPegoutManager(
         address _upgradableOwner,
         address payable _bridgeAddress,
         CommitteeRegistry _committeeRegistry,
         BitcoinManager _bitcoinManager,
         PegManagerSettings memory _settings
-    ) public returns (PegManager) {
-        string memory contractName = "PegManager.sol";
-        if (vm.isContext(VmSafe.ForgeContext.TestGroup)) {
-            contractName = "PegManagerHarness.sol";
-        }
-
+    ) public returns (PegoutManager) {
         (, address proxyAdddress) = deployContractAndUUPSProxy(
-            contractName,
+            "PegoutManager.sol",
             abi.encodeCall(
-                PegManager.initialize,
+                PegoutManager.initialize,
                 (_upgradableOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager, _settings)
             )
         );
-        return PegManager(proxyAdddress);
+        return PegoutManager(proxyAdddress);
     }
 
     function deployStreamManager(
         address _upgradableOwner,
-        IPegManager _pegManager,
+        PeginManager _peginManager,
+        PegoutManager _pegoutManager,
         ICommitteeRegistry _committeeRegistry,
         uint64[] memory _denominations,
         StreamManagerSettings memory _settings
@@ -230,19 +264,24 @@ contract DeployImplAndProxy is ScriptUtils {
         (, address proxyAdddress) = deployContractAndUUPSProxy(
             contractName,
             abi.encodeCall(
-                StreamManager.initialize, (_upgradableOwner, _pegManager, _committeeRegistry, _denominations, _settings)
+                StreamManager.initialize,
+                (_upgradableOwner, _peginManager, _pegoutManager, _committeeRegistry, _denominations, _settings)
             )
         );
         return StreamManager(proxyAdddress);
     }
 
-    function deploySignatureManager(address _upgradableOwner, address _pegManager, CommitteeRegistry _committeeRegistry)
-        public
-        returns (SignatureManager)
-    {
+    function deploySignatureManager(
+        address _upgradableOwner,
+        address _peginManager,
+        address _pegoutManager,
+        CommitteeRegistry _committeeRegistry
+    ) public returns (SignatureManager) {
         (, address proxyAdddress) = deployContractAndUUPSProxy(
             "SignatureManager.sol",
-            abi.encodeCall(SignatureManager.initialize, (_upgradableOwner, _pegManager, _committeeRegistry))
+            abi.encodeCall(
+                SignatureManager.initialize, (_upgradableOwner, _peginManager, _pegoutManager, _committeeRegistry)
+            )
         );
         return SignatureManager(proxyAdddress);
     }

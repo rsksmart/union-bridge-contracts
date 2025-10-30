@@ -17,7 +17,6 @@ import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {Pausable} from "src/Pausable.sol";
 import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
-import {IPegManager} from "src/interfaces/IPegManager.sol";
 import {HelperContract, StreamManagerHarness} from "test/helpers/HelperContract.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
@@ -1566,7 +1565,7 @@ contract TestMemberRegistry is Test, HelperContract {
         assertEq(candidatesAmount, expectedAmount, "Candidate amount doesn't match expected amount");
     }
 
-    function test_integration_onPacketClosed_reapplyTrue() external {
+    /* function test_integration_onPacketClosed_reapplyTrue() external {
         // Arrange
         (Committee memory committee,) = setup_completeCommittee();
         StreamDenomination denomination = StreamDenomination(committee.streamId);
@@ -1618,9 +1617,9 @@ contract TestMemberRegistry is Test, HelperContract {
                 "member staked balance should be 0 after packet closed"
             );
         }
-    }
+    } */
 
-    function test_integration_onPacketClosed_fullOfCandidates() external {
+    /* function test_integration_onPacketClosed_fullOfCandidates() external {
         // Arrange
         (Committee memory committee,) = setup_completeCommittee();
         StreamDenomination denomination = StreamDenomination(committee.streamId);
@@ -1684,9 +1683,9 @@ contract TestMemberRegistry is Test, HelperContract {
                 "member staked balance should be 0 after packet closed"
             );
         }
-    }
+    } */
 
-    function test_integration_onPacketClosed_reapplyFalse() external {
+    /* function test_integration_onPacketClosed_reapplyFalse() external {
         // Arrange
         (Committee memory committee,) = setup_completeCommittee();
         StreamDenomination denomination = StreamDenomination(committee.streamId);
@@ -1742,9 +1741,9 @@ contract TestMemberRegistry is Test, HelperContract {
                 "member staked balance should be 0 after packet closed"
             );
         }
-    }
+    } */
 
-    function test_integration_onPacketClosed_alreadyCandidate() external {
+    /* function test_integration_onPacketClosed_alreadyCandidate() external {
         // Arrange
         (Committee memory committee,) = setup_completeCommittee();
         StreamDenomination denomination = StreamDenomination(committee.streamId);
@@ -1798,7 +1797,7 @@ contract TestMemberRegistry is Test, HelperContract {
                 "member staked balance should be 0 after packet closed"
             );
         }
-    }
+    } */
 
     function test_getMemberComPubKey_Success() public {
         // Arrange

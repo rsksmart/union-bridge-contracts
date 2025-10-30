@@ -1,0 +1,168 @@
+// SPDX-License-Identifier: Unlicense
+pragma solidity ^0.8.20;
+
+import {PrevoutData} from "./IBitcoinManager.sol";
+import {IStreamManager} from "./IStreamManager.sol";
+import {ISignatureManager} from "./ISignatureManager.sol";
+import {IPausable} from "./IPausable.sol";
+import {BtcTxSPVProof, StreamPosition, RequestPeginTempInfo} from "./IPegCommonTypes.sol";
+
+/// @title IPeginManager
+/// @notice Interface for managing peg-in operations
+interface IPeginManager is IPausable {
+    /// @notice Sets the stream manager contract address
+    /// @dev Only callable by the contract owner
+    /// @param _streamManager The address of the stream manager contract
+    function setStreamManager(IStreamManager _streamManager) external;
+
+    /// @notice Sets the signature manager contract address
+    /// @dev Only callable by the contract owner
+    /// @param _signatureManager The address of the signature manager contract
+    function setSignatureManager(ISignatureManager _signatureManager) external;
+
+    // ===================== Peg-in Request =====================
+
+    /// @notice Generates a temporary Bitcoin address for peg-in operations
+    /// @dev Creates a Taproot address with committee and user reimbursment paths for secure peg-in
+    /// @param _rootstockDepositAddress The RSK address that will receive the RBTC
+    /// @param _value The amount in satoshis to peg in (must match stream denomination)
+    /// @param _btcReimbursementPubKey The user's Bitcoin public key (x-coordinate only, 32 bytes)
+    /// @return temporaryPeginAddress The generated temporary Bitcoin address for deposit
+    function getTemporaryPeginAddress(address _rootstockDepositAddress, uint64 _value, bytes32 _btcReimbursementPubKey)
+        external
+        returns (string memory temporaryPeginAddress, uint64 packetNumber);
+
+    /// @notice Retrieves the stream position information for a given Bitcoin transaction id
+    /// @param btcTxid The Bitcoin transaction id to look up
+    /// @return The stream position containing stream, packet, slot, and status information
+    function getStreamPosition(bytes32 btcTxid) external view returns (StreamPosition memory);
+
+    /// @notice Registers a peg-in request transaction from Bitcoin
+    /// @dev Validates the SPV proof and initiates the peg-in process
+    /// @dev Emits PeginRequested event upon successful registration
+    /// @param _peginRequestTxSPVProof The BTC SPV proof of the peg-in request transaction
+    function requestPegin(BtcTxSPVProof calldata _peginRequestTxSPVProof) external;
+
+    /// @notice Event emitted when a peg-in request is successfully registered
+    /// @param committeeId The ID of the committee responsible for this peg-in
+    /// @param requestPeginTxid The hash of the peg-in request transaction
+    /// @param acceptPeginTxid The hash of the accept peg-in transaction
+    /// @param vout The output index of the transaction
+    /// @param streamPosition The struct with the position information (stream, packet, slot, status)
+    /// @param requestPeginInfo Temporary information needed for the accept phase
+    /// @param prevoutData Data about the previous output being spent
+    /// @param acceptPeginSignatureMessage The signature message for committee signing
+    event PeginRequested(
+        uint128 indexed committeeId,
+        bytes32 indexed requestPeginTxid,
+        bytes32 indexed acceptPeginTxid,
+        uint64 vout,
+        StreamPosition streamPosition,
+        RequestPeginTempInfo requestPeginInfo,
+        PrevoutData prevoutData,
+        bytes acceptPeginSignatureMessage
+    );
+
+    /// @notice Gets the accept peg-in transaction id for a given request transaction id
+    /// @param _btcTxid The Bitcoin transaction id of the peg-in request
+    /// @return The accept peg-in transaction id
+    function getAcceptPegin(bytes32 _btcTxid) external view returns (bytes32);
+
+    /// @notice Gets temporary information stored during peg-in request processing
+    /// @param btcTxid The Bitcoin transaction id of the peg-in request
+    /// @return The temporary information needed for the accept phase
+    function getRequestPeginTempInfo(bytes32 btcTxid) external view returns (RequestPeginTempInfo memory);
+
+    // ===================== Accept Peg-in Request =====================
+
+    /// @notice Accepts and registers a Bitcoin peg-in transaction to the committee account
+    /// @dev Validates the SPV proof and completes the peg-in process
+    /// @dev Emits PeginAccepted event upon successful acceptance
+    /// @param _peginAcceptedTxSPVProof The BTC SPV proof of the accept peg-in transaction
+    function acceptPegin(BtcTxSPVProof calldata _peginAcceptedTxSPVProof) external;
+
+    /// @notice Event emitted when a peg-in is successfully accepted
+    /// @param blockHash The Bitcoin block hash containing the accept transaction
+    /// @param acceptPeginTxid The hash of the accept peg-in transaction
+    /// @param peginRequestTxid The hash of the original peg-in request transaction
+    /// @param vout The output index of the transaction
+    /// @param streamPosition The final position of funds in the stream system
+    /// @param speedUpPubKey The public key for speed-up transactions
+    /// @param rskDestinationAddress The RSK address that received the RBTC
+    /// @param rbtcAmount The amount of RBTC minted
+    /// @param utxoScriptPubKey The script pubkey of the UTXO
+    event PeginAccepted(
+        bytes32 indexed blockHash,
+        bytes32 indexed acceptPeginTxid,
+        bytes32 indexed peginRequestTxid,
+        uint64 vout,
+        StreamPosition streamPosition,
+        bytes32 speedUpPubKey,
+        address rskDestinationAddress,
+        uint256 rbtcAmount,
+        bytes utxoScriptPubKey
+    );
+
+    // ===================== Events =====================
+
+    /// @notice Event emitted when a packet is closed in the stream
+    /// @param streamId The ID of the stream where the packet was closed
+    /// @param packetNumber The number of the packet that was closed
+    /// @dev Indicates that all slots in the packet have been processed and pegged out
+    /// @dev This event is used to track the lifecycle of packets in the stream
+    event PacketClosed(uint64 indexed streamId, uint64 indexed packetNumber);
+
+    /// @notice Event emitted when the stream manager contract address is updated
+    /// @param _streamManager The stream manager contract address
+    event StreamManagerUpdated(IStreamManager _streamManager);
+
+    /// @notice Event emitted when the signature manager contract address is updated
+    /// @param _signatureManager The signature manager contract address
+    event SignatureManagerUpdated(ISignatureManager _signatureManager);
+
+    // ===================== Errors =====================
+
+    /// @notice Thrown when the Bitcoin manager address is set to zero
+    error BitcoinManagerAddressZero();
+
+    /// @notice Thrown when the committee registry address is set to zero
+    error CommitteeRegistryAddressZero();
+
+    /// @notice Thrown when the signature manager address is set to zero
+    error SignatureManagerAddressZero();
+
+    /// @notice Thrown when the stream manager address is set to zero
+    error StreamManagerAddressZero();
+
+    /// @notice Thrown when a peg-in has already been requested for the given transaction
+    /// @param btcTxid The Bitcoin transaction id that was already requested
+    error PeginAlreadyRequested(bytes32 btcTxid);
+
+    /// @notice Thrown when trying to process a peg-in that hasn't been requested
+    /// @param btcTxid The Bitcoin transaction id that wasn't requested
+    error PeginNotRequested(bytes32 btcTxid);
+
+    /// @notice Thrown when the accept peg-in transaction id doesn't match the expected value
+    /// @param expected The expected transaction id
+    /// @param actual The actual transaction id received
+    error InvalidAcceptPeginTxid(bytes32 expected, bytes32 actual);
+
+    /// @notice Thrown when a peg-in has already been accepted
+    /// @param btcTxid The Bitcoin transaction id that was already accepted
+    error PeginAlreadyAccepted(bytes32 btcTxid);
+
+    /// @notice Thrown when the number of outputs doesn't match the expected count
+    /// @param actual The actual number of outputs
+    /// @param expected The expected number of outputs
+    error IncorrectOutputsNumber(uint256 actual, uint256 expected);
+
+    /// @notice Thrown when the transaction locktime doesn't match the expected value
+    /// @param actual The actual locktime value
+    /// @param expected The expected locktime value
+    error InvalidLocktime(uint256 actual, uint256 expected);
+
+    /// @notice Thrown when the Bitcoin transaction version doesn't match the expected value
+    /// @param actual The actual version value
+    /// @param expected The expected version value
+    error InvalidBtcTxVersion(uint256 actual, uint256 expected);
+}

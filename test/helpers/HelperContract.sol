@@ -3,9 +3,6 @@ pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
 import {DeployScript} from "script/deploy/DeployScript.s.sol";
-import {BtcTxSPVProof, PegStatus} from "src/PegManager.sol";
-import {IPegManager, PegoutTempInfo, StreamPosition} from "src/interfaces/IPegManager.sol";
-import {PegManagerHarness} from "test/helpers/PegManagerHarness.sol";
 import {StreamManagerHarness} from "test/helpers/StreamManagerHarness.sol";
 import {MemberRegistryHarness} from "test/helpers/MemberRegistryHarness.sol";
 import {SignatureManager} from "src/SignatureManager.sol";
@@ -58,7 +55,6 @@ abstract contract HelperContract is Test, TestUtils {
     BridgeMock internal bridgeMock;
     CommitteeRegistryHarness internal registry;
     MemberRegistryHarness internal memberRegistry;
-    PegManagerHarness internal pm;
     SignatureManager internal signatureManager;
     StreamManagerHarness internal streamManager;
 
@@ -74,7 +70,6 @@ abstract contract HelperContract is Test, TestUtils {
         bitcoinManager = deployScript.bitcoinManager();
         registry = CommitteeRegistryHarness(address(deployScript.committeeRegistry()));
         memberRegistry = MemberRegistryHarness(address(deployScript.memberRegistry()));
-        pm = PegManagerHarness(address(deployScript.pegManager()));
         streamManager = StreamManagerHarness(address(deployScript.streamManager()));
         // Set up bridge mock at bridge precompiled address
         bridgeMock = BridgeMock(deployScript.bridgeAddress());
@@ -329,135 +324,135 @@ abstract contract HelperContract is Test, TestUtils {
         return _amount * 10 ** 10;
     }
 
-    function setup_multipleRequestAndAcceptPeginFlows(uint256 _numberOfPegins) internal {
-        if (_numberOfPegins > Constants.SLOTS_PER_PACKET) {
-            vm.roll(BLOCK_COMMITTEE_2);
-            vm.warp(BLOCK_COMMITTEE_2);
-        }
+    // function setup_multipleRequestAndAcceptPeginFlows(uint256 _numberOfPegins) internal {
+    //     if (_numberOfPegins > Constants.SLOTS_PER_PACKET) {
+    //         vm.roll(BLOCK_COMMITTEE_2);
+    //         vm.warp(BLOCK_COMMITTEE_2);
+    //     }
 
-        for (uint256 i = 0; i < _numberOfPegins; i++) {
-            BtcTransaction memory btcTx = setup_requestPeginFlow();
-            setup_acceptPeginFlow(btcTx);
+    //     for (uint256 i = 0; i < _numberOfPegins; i++) {
+    //         BtcTransaction memory btcTx = setup_requestPeginFlow();
+    //         setup_acceptPeginFlow(btcTx);
 
-            if (
-                _numberOfPegins > Constants.SLOTS_PER_PACKET
-                    && (i % Constants.SLOTS_PER_PACKET) == Constants.SLOT_USAGE_THRESHOLD
-            ) {
-                uint256 memberIndexStart = registry.committeeMemberCount();
-                uint256 memberCount = registry.committeeMemberCount();
-                setup_depositAggregatedKey_MultipleMembers(
-                    COMMITTEE_ID_STREAM_1_COMMITTEE_2, memberIndexStart, memberCount
-                );
-            }
-        }
-    }
+    //         if (
+    //             _numberOfPegins > Constants.SLOTS_PER_PACKET
+    //                 && (i % Constants.SLOTS_PER_PACKET) == Constants.SLOT_USAGE_THRESHOLD
+    //         ) {
+    //             uint256 memberIndexStart = registry.committeeMemberCount();
+    //             uint256 memberCount = registry.committeeMemberCount();
+    //             setup_depositAggregatedKey_MultipleMembers(
+    //                 COMMITTEE_ID_STREAM_1_COMMITTEE_2, memberIndexStart, memberCount
+    //             );
+    //         }
+    //     }
+    // }
 
-    function setup_acceptPeginFlow(BtcTransaction memory _tx) public returns (BtcTransaction memory) {
-        // Arrange
-        BtcTransaction memory btcTransaction = getBtcAcceptPeginTx(_tx);
-        // Set Mock Bridge state
-        bridgeMock.setBtcTransactionConfirmations(10);
-        // Create Pegin accepted tx struct information
-        BtcTxSPVProof memory peginAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
+    // function setup_acceptPeginFlow(BtcTransaction memory _tx) public returns (BtcTransaction memory) {
+    //     // Arrange
+    //     BtcTransaction memory btcTransaction = getBtcAcceptPeginTx(_tx);
+    //     // Set Mock Bridge state
+    //     bridgeMock.setBtcTransactionConfirmations(10);
+    //     // Create Pegin accepted tx struct information
+    //     BtcTxSPVProof memory peginAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
-        // Act
-        pm.acceptPegin(peginAcceptedTxSPVProof);
+    //     // Act
+    //     pm.acceptPegin(peginAcceptedTxSPVProof);
 
-        return btcTransaction;
-    }
+    //     return btcTransaction;
+    // }
 
-    function setup_requestPeginFlow() public returns (BtcTransaction memory) {
-        // Arrange
-        BtcTransaction memory btcTransaction = getBtcPeginRequestTx();
-        // Set Mock Bridge state
-        bridgeMock.setBtcTransactionConfirmations(10);
-        // Create Pegin struct information
-        BtcTxSPVProof memory peginRequestTxSPVProof = createBtcTxSPVProof(btcTransaction);
+    // function setup_requestPeginFlow() public returns (BtcTransaction memory) {
+    //     // Arrange
+    //     BtcTransaction memory btcTransaction = getBtcPeginRequestTx();
+    //     // Set Mock Bridge state
+    //     bridgeMock.setBtcTransactionConfirmations(10);
+    //     // Create Pegin struct information
+    //     BtcTxSPVProof memory peginRequestTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
-        // Act
-        pm.requestPegin(peginRequestTxSPVProof);
-        return btcTransaction;
-    }
+    //     // Act
+    //     pm.requestPegin(peginRequestTxSPVProof);
+    //     return btcTransaction;
+    // }
 
-    function setup_requestAndAcceptPeginFlow() public returns (BtcTransaction memory, BtcTransaction memory) {
-        BtcTransaction memory peginTx = setup_requestPeginFlow();
-        return (peginTx, setup_acceptPeginFlow(peginTx));
-    }
+    // function setup_requestAndAcceptPeginFlow() public returns (BtcTransaction memory, BtcTransaction memory) {
+    //     BtcTransaction memory peginTx = setup_requestPeginFlow();
+    //     return (peginTx, setup_acceptPeginFlow(peginTx));
+    // }
 
     // ========================== Register Pegout Setup ==========================
-    struct RegisterUserTakeSetup {
-        BtcTransaction pegoutTx;
-        BtcTxSPVProof pegoutTxSPVProof;
-        Stream stream;
-        uint64 packetNumber;
-        uint64 slotId;
-        bytes32 acceptPeginTxid;
-        bytes userPubKey;
-        bytes32 pegoutTxid;
-        bytes32 pegoutSignatureHash;
-    }
+    // struct RegisterUserTakeSetup {
+    //     BtcTransaction pegoutTx;
+    //     BtcTxSPVProof pegoutTxSPVProof;
+    //     Stream stream;
+    //     uint64 packetNumber;
+    //     uint64 slotId;
+    //     bytes32 acceptPeginTxid;
+    //     bytes userPubKey;
+    //     bytes32 pegoutTxid;
+    //     bytes32 pegoutSignatureHash;
+    // }
 
-    function setup_pegout() internal returns (RegisterUserTakeSetup memory setup) {
-        // =========== Request Peg-In & Accept Peg-In ============
-        (, BtcTransaction memory acceptPeginTx) = setup_requestAndAcceptPeginFlow();
+    // function setup_pegout() internal returns (RegisterUserTakeSetup memory setup) {
+    //     // =========== Request Peg-In & Accept Peg-In ============
+    //     (, BtcTransaction memory acceptPeginTx) = setup_requestAndAcceptPeginFlow();
 
-        // Get the accept peg-in tx id that will be spent in the peg-out
-        setup.acceptPeginTxid = bitcoinManager.getBtcTxid(acceptPeginTx);
-        setup.stream = streamManager.getStream(VALUE);
-        setup.userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+    //     // Get the accept peg-in tx id that will be spent in the peg-out
+    //     setup.acceptPeginTxid = bitcoinManager.getBtcTxid(acceptPeginTx);
+    //     setup.stream = streamManager.getStream(VALUE);
+    //     setup.userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
 
-        // =================== Request Peg-Out ===================
-        uint64 pegoutAmount = VALUE; // Same amount as peg-in
-        uint256 pegoutAmountInWei = BtcHelper.satoshiToWei(pegoutAmount);
+    //     // =================== Request Peg-Out ===================
+    //     uint64 pegoutAmount = VALUE; // Same amount as peg-in
+    //     uint256 pegoutAmountInWei = BtcHelper.satoshiToWei(pegoutAmount);
 
-        // Calculate expected values
-        Stream memory stream = streamManager.getStream(pegoutAmount);
-        setup.packetNumber = stream.pegoutPacketPointer;
-        setup.slotId = stream.pegoutSlotPointer;
+    //     // Calculate expected values
+    //     Stream memory stream = streamManager.getStream(pegoutAmount);
+    //     setup.packetNumber = stream.pegoutPacketPointer;
+    //     setup.slotId = stream.pegoutSlotPointer;
 
-        // Request peg-out
-        pm.tryPegout{value: pegoutAmountInWei}(setup.userPubKey);
+    //     // Request peg-out
+    //     pm.tryPegout{value: pegoutAmountInWei}(setup.userPubKey);
 
-        // Verify slot was locked
-        Slot memory slot = streamManager.getSlot(stream.streamId, setup.packetNumber, setup.slotId);
-        assertEq(uint256(slot.state), uint256(SlotState.LOCKED), "Slot should be locked after peg-out request");
-        assertEq(slot.acceptPeginTx, setup.acceptPeginTxid, "Slot should reference the correct accept peg-in tx");
+    //     // Verify slot was locked
+    //     Slot memory slot = streamManager.getSlot(stream.streamId, setup.packetNumber, setup.slotId);
+    //     assertEq(uint256(slot.state), uint256(SlotState.LOCKED), "Slot should be locked after peg-out request");
+    //     assertEq(slot.acceptPeginTx, setup.acceptPeginTxid, "Slot should reference the correct accept peg-in tx");
 
-        // Get the correct signature data that matches what tryPegout() will generate
-        BitcoinSignatureData memory pegoutSignatureData = bitcoinManager.getPegoutTxData(
-            setup.userPubKey,
-            setup.acceptPeginTxid,
-            PrevoutData({value: slot.acceptPeginAmount, scriptPubKey: slot.scriptPubKey})
-        );
+    //     // Get the correct signature data that matches what tryPegout() will generate
+    //     BitcoinSignatureData memory pegoutSignatureData = bitcoinManager.getPegoutTxData(
+    //         setup.userPubKey,
+    //         setup.acceptPeginTxid,
+    //         PrevoutData({value: slot.acceptPeginAmount, scriptPubKey: slot.scriptPubKey})
+    //     );
 
-        // Create a peg-out transaction that spends the accept peg-in UTXO
-        setup.pegoutTx = pegoutSignatureData.tx;
+    //     // Create a peg-out transaction that spends the accept peg-in UTXO
+    //     setup.pegoutTx = pegoutSignatureData.tx;
 
-        // Create SPV proof for the peg-out transaction
-        setup.pegoutTxSPVProof = createBtcTxSPVProof(setup.pegoutTx);
+    //     // Create SPV proof for the peg-out transaction
+    //     setup.pegoutTxSPVProof = createBtcTxSPVProof(setup.pegoutTx);
 
-        setup.pegoutSignatureHash = pegoutSignatureData.signatureHash;
-        setup.pegoutTxid = pegoutSignatureData.txid;
-    }
+    //     setup.pegoutSignatureHash = pegoutSignatureData.signatureHash;
+    //     setup.pegoutTxid = pegoutSignatureData.txid;
+    // }
 
-    function setup_pegFlow() internal returns (RegisterUserTakeSetup memory setup) {
-        setup = setup_pegout();
-        pm.registerUserTake(setup.pegoutTxSPVProof);
+    // function setup_pegFlow() internal returns (RegisterUserTakeSetup memory setup) {
+    //     setup = setup_pegout();
+    //     pm.registerUserTake(setup.pegoutTxSPVProof);
 
-        return setup;
-    }
+    //     return setup;
+    // }
 
-    function setup_multiplePegFlows(uint8 amount) internal returns (RegisterUserTakeSetup[] memory setups) {
-        setups = new RegisterUserTakeSetup[](amount);
-        for (uint8 i = 0; i < amount; i++) {
-            setups[i] = setup_pegFlow();
-        }
-    }
+    // function setup_multiplePegFlows(uint8 amount) internal returns (RegisterUserTakeSetup[] memory setups) {
+    //     setups = new RegisterUserTakeSetup[](amount);
+    //     for (uint8 i = 0; i < amount; i++) {
+    //         setups[i] = setup_pegFlow();
+    //     }
+    // }
 
-    function setup_pegoutAndMemberNonces() internal returns (RegisterUserTakeSetup memory setup) {
-        setup = setup_pegout();
-        setup_addMemberNonce_MultipleMembers(setup.pegoutTxid, 0, registry.committeeMemberCount());
-    }
+    // function setup_pegoutAndMemberNonces() internal returns (RegisterUserTakeSetup memory setup) {
+    //     setup = setup_pegout();
+    //     setup_addMemberNonce_MultipleMembers(setup.pegoutTxid, 0, registry.committeeMemberCount());
+    // }
 
     function setup_depositAggregatedKey(uint128 _committeeId, address _memberAddress) internal {
         vm.prank(_memberAddress);
@@ -669,56 +664,56 @@ abstract contract HelperContract is Test, TestUtils {
         }
     }
 
-    function setup_operatorTake() internal returns (address operatorAddress, RegisterUserTakeSetup memory setup) {
-        // Arrange
-        setup = setup_pegoutAndMemberNonces();
-        uint256 createdAt = block.timestamp;
-        // Expire TAKE_0
-        vm.warp(createdAt + TAKE_0_TIMEOUT_DEFAULT + 1);
-        // This depende on how they have been registered. First registered group are the watchtowers
-        uint256 firstHonestOpIndex = registry.committeeMemberCount() / 2 + 1;
-        operatorAddress = vm.addr(firstHonestOpIndex + 3);
+    // function setup_operatorTake() internal returns (address operatorAddress, RegisterUserTakeSetup memory setup) {
+    //     // Arrange
+    //     setup = setup_pegoutAndMemberNonces();
+    //     uint256 createdAt = block.timestamp;
+    //     // Expire TAKE_0
+    //     vm.warp(createdAt + TAKE_0_TIMEOUT_DEFAULT + 1);
+    //     // This depende on how they have been registered. First registered group are the watchtowers
+    //     uint256 firstHonestOpIndex = registry.committeeMemberCount() / 2 + 1;
+    //     operatorAddress = vm.addr(firstHonestOpIndex + 3);
 
-        // Add just 2 signatures for the first and second operators
-        setup_addMemberSignature_MultipleMembers(setup.pegoutTxid, firstHonestOpIndex, 2);
+    //     // Add just 2 signatures for the first and second operators
+    //     setup_addMemberSignature_MultipleMembers(setup.pegoutTxid, firstHonestOpIndex, 2);
 
-        // Assert
-        assertEventOperatorTakeTriggered(setup.pegoutTxid, setup, operatorAddress, createdAt);
+    //     // Assert
+    //     assertEventOperatorTakeTriggered(setup.pegoutTxid, setup, operatorAddress, createdAt);
 
-        pm.triggerOperatorTake(setup.pegoutTxid);
-    }
+    //     pm.triggerOperatorTake(setup.pegoutTxid);
+    // }
 
-    function assertEventOperatorTakeTriggered(
-        bytes32 pegoutTxid,
-        RegisterUserTakeSetup memory setup,
-        address operatorAddress,
-        uint256 createdAt
-    ) internal {
-        PegoutTempInfo memory expectedPegoutInfo = PegoutTempInfo({
-            userPubKey: setup.userPubKey,
-            createdAt: createdAt,
-            operatorTakeUpdatedAt: block.timestamp, // Updated when triggerOperatorTake is called
-            committeeId: COMMITTEE_ID_STREAM_1_COMMITTEE_1,
-            takeOperatorAddress: operatorAddress,
-            takeOperatorPubKey: memberRegistry.getMemberTakePubKey(operatorAddress)
-        });
+    // function assertEventOperatorTakeTriggered(
+    //     bytes32 pegoutTxid,
+    //     RegisterUserTakeSetup memory setup,
+    //     address operatorAddress,
+    //     uint256 createdAt
+    // ) internal {
+    //     PegoutTempInfo memory expectedPegoutInfo = PegoutTempInfo({
+    //         userPubKey: setup.userPubKey,
+    //         createdAt: createdAt,
+    //         operatorTakeUpdatedAt: block.timestamp, // Updated when triggerOperatorTake is called
+    //         committeeId: COMMITTEE_ID_STREAM_1_COMMITTEE_1,
+    //         takeOperatorAddress: operatorAddress,
+    //         takeOperatorPubKey: memberRegistry.getMemberTakePubKey(operatorAddress)
+    //     });
 
-        StreamPosition memory expectedStreamPosition = StreamPosition({
-            streamId: setup.stream.streamId,
-            packetNumber: setup.packetNumber,
-            slotId: setup.slotId,
-            pegStatus: PegStatus.OPERATOR_TAKE
-        });
+    //     StreamPosition memory expectedStreamPosition = StreamPosition({
+    //         streamId: setup.stream.streamId,
+    //         packetNumber: setup.packetNumber,
+    //         slotId: setup.slotId,
+    //         pegStatus: PegStatus.OPERATOR_TAKE
+    //     });
 
-        vm.expectEmit(address(pm));
-        emit IPegManager.OperatorTakeTriggered(
-            pegoutTxid,
-            expectedPegoutInfo,
-            expectedStreamPosition,
-            block.timestamp,
-            block.timestamp + TAKE_1_TIMEOUT_DEFAULT
-        );
-    }
+    //     vm.expectEmit(address(pm));
+    //     emit IPegManager.OperatorTakeTriggered(
+    //         pegoutTxid,
+    //         expectedPegoutInfo,
+    //         expectedStreamPosition,
+    //         block.timestamp,
+    //         block.timestamp + TAKE_1_TIMEOUT_DEFAULT
+    //     );
+    // }
 
     // ====== Communication Data Helper Functions ======
 

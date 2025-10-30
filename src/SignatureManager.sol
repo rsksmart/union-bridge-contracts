@@ -29,17 +29,20 @@ contract SignatureManager is ISignatureManager, AccessControl {
     /// @dev Sets up the committee registry and access control
     /// @dev Can only be called once during contract deployment
     /// @param _initialOwner The address that will be set as the initial owner
-    /// @param _pegManager The address of the PegManager contract
+    /// @param _peginManager The address of the PeginManager contract
+    /// @param _pegoutManager The address of the PegoutManager contract
     /// @param _committeeRegistry The address of the CommitteeRegistry contract
-    function initialize(address _initialOwner, address _pegManager, ICommitteeRegistry _committeeRegistry)
-        public
-        initializer
-    {
+    function initialize(
+        address _initialOwner,
+        address _peginManager,
+        address _pegoutManager,
+        ICommitteeRegistry _committeeRegistry
+    ) public initializer {
         if (address(_committeeRegistry) == address(0)) {
             revert CommitteeRegistryAddressZero();
         }
         committeeRegistry = _committeeRegistry;
-        __AccessControl_init(_initialOwner, _pegManager);
+        __AccessControl_init(_initialOwner, _peginManager, _pegoutManager);
     }
 
     function _isMemberInCommittee(uint128 _committeeId, address _memberAddress) internal view returns (bool) {

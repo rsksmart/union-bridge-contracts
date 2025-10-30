@@ -14,7 +14,9 @@ import {AccessControl} from "./AccessControl.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {ICommitteeRegistry, Role} from "src/interfaces/ICommitteeRegistry.sol";
-import {IPegManager, StreamPosition, PegStatus} from "src/interfaces/IPegManager.sol";
+import {StreamPosition, PegStatus} from "src/interfaces/IPegCommonTypes.sol";
+import {IPeginManager} from "src/interfaces/IPeginManager.sol";
+import {IPegoutManager} from "src/interfaces/IPegoutManager.sol";
 
 /// @title Stream Manager
 /// @notice Manages streams for the union bridge system
@@ -41,13 +43,15 @@ contract StreamManager is IStreamManager, AccessControl {
     /// @notice Initializes the streams with their denominations and parameters
     /// @dev Creates streams for each denomination with default security bond and confirmation settings
     /// @param _initialOwner The address that will be set as the initial owner
-    /// @param _pegManager The PegManager contract address
+    /// @param _peginManager The PeginManager contract address
+    /// @param _pegoutManager The PegoutManager contract address
     /// @param _committeeRegistry The CommitteeRegistry contract address
     /// @param _denominations Array of Bitcoin denominations in satoshis for each stream
     /// @param _settings The settings for the StreamManager including confirmation counts and security bond percentages
     function initialize(
         address _initialOwner,
-        IPegManager _pegManager,
+        IPeginManager _peginManager,
+        IPegoutManager _pegoutManager,
         ICommitteeRegistry _committeeRegistry,
         uint64[] memory _denominations,
         StreamManagerSettings memory _settings
@@ -70,7 +74,7 @@ contract StreamManager is IStreamManager, AccessControl {
             );
             emit StreamCreated(i, _denominations[i]);
         }
-        __AccessControl_init(_initialOwner, address(_pegManager));
+        __AccessControl_init(_initialOwner, address(_peginManager), address(_pegoutManager));
 
         if (address(_committeeRegistry) == address(0)) {
             revert InvalidZeroAddress();
