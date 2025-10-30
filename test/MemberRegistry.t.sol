@@ -394,7 +394,7 @@ contract TestMemberRegistry is Test, HelperContract {
         uint256 expectedMissing = minWatchtowers - availableWatchtowers;
 
         // Assert
-        vm.expectEmit(true, true, true, true);
+        vm.expectEmit(address(memberRegistry));
         emit IMemberRegistry.MissingWatchtowers(denomination, minWatchtowers, expectedMissing);
 
         // Act

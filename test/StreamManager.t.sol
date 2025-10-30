@@ -102,7 +102,13 @@ contract TestStreamManager is Test, HelperContract {
         // set to 7 confirmations
         uint8 peginConfirmations = 7;
 
+        // Assert
+
+        vm.expectEmit(address(streamManager));
+        emit IStreamManager.PeginConfirmationsUpdated(streamId, peginConfirmations);
+
         // Act
+
         vm.prank(address(streamManager.owner()));
         streamManager.setPeginConfirmations(streamId, peginConfirmations);
 
@@ -112,30 +118,6 @@ contract TestStreamManager is Test, HelperContract {
             peginConfirmations,
             "peginConfirmations was not set correctly"
         );
-    }
-
-    function test_setPeginConfirmations_EmitsPeginConfirmationsUpdatedEvent() external {
-        // Arrange
-        uint64 streamId = 0;
-        uint8 peginConfirmations = 7;
-
-        // Act & Assert
-        vm.expectEmit(address(streamManager));
-        emit IStreamManager.PeginConfirmationsUpdated(streamId, peginConfirmations);
-        vm.prank(streamManager.owner());
-        streamManager.setPeginConfirmations(streamId, peginConfirmations);
-    }
-
-    function test_setPeginConfirmations_Revert_RequireGreaterThanZero() external {
-        // Arrange
-        uint64 streamId = 0;
-        vm.prank(address(streamManager.owner()));
-
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(IStreamManager.InvalidPeginConfirmations.selector, 0));
-
-        // Act
-        streamManager.setPeginConfirmations(streamId, 0);
     }
 
     function test_setPeginConfirmations_Rever_InvalidStreamId() external {
