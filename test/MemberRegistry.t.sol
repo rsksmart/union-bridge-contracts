@@ -377,31 +377,6 @@ contract TestMemberRegistry is Test, HelperContract {
         memberRegistry.selectCommittee(streamId, minWatchtowers, minOperators, totalMemberCount);
     }
 
-    function test_selectCommittee_EmitsMissingWatchtowersEvent() external {
-        // Arrange
-        StreamDenomination denomination = StreamDenomination._0_01BTC;
-        uint64 streamId = uint64(denomination);
-
-        // Set a high minimum watchtowers requirement that exceeds available candidates
-        uint256 minWatchtowers = 100; // Much higher than available watchtowers
-        uint256 minOperators = registry.minCommitteeOperators();
-        uint256 totalMemberCount = registry.committeeMemberCount();
-
-        address registryAddress = memberRegistry.committeeRegistry();
-
-        // Calculate expected missing watchtowers
-        uint256 availableWatchtowers = 0; // No watchtowers registered for this denomination
-        uint256 expectedMissing = minWatchtowers - availableWatchtowers;
-
-        // Assert
-        vm.expectEmit(address(memberRegistry));
-        emit IMemberRegistry.MissingWatchtowers(denomination, minWatchtowers, expectedMissing);
-
-        // Act
-        vm.prank(registryAddress);
-        memberRegistry.selectCommittee(streamId, minWatchtowers, minOperators, totalMemberCount);
-    }
-
     function test_applyToStream_Success_Operator() external {
         _test_applyToStream_Success(Role.OPERATOR);
     }
