@@ -222,8 +222,12 @@ contract DeployImplAndProxy is ScriptUtils {
         CommitteeRegistry _committeeRegistry,
         BitcoinManager _bitcoinManager
     ) public returns (PeginManager) {
+        string memory contractName = "PeginManager.sol";
+        if (vm.isContext(VmSafe.ForgeContext.TestGroup)) {
+            contractName = "PeginManagerHarness.sol";
+        }
         (, address proxyAdddress) = deployContractAndUUPSProxy(
-            "PeginManager.sol",
+            contractName,
             abi.encodeCall(
                 PeginManager.initialize, (_upgradableOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager)
             )
@@ -238,8 +242,12 @@ contract DeployImplAndProxy is ScriptUtils {
         BitcoinManager _bitcoinManager,
         PegManagerSettings memory _settings
     ) public returns (PegoutManager) {
+        string memory contractName = "PegoutManager.sol";
+        if (vm.isContext(VmSafe.ForgeContext.TestGroup)) {
+            contractName = "PegoutManagerHarness.sol";
+        }
         (, address proxyAdddress) = deployContractAndUUPSProxy(
-            "PegoutManager.sol",
+            contractName,
             abi.encodeCall(
                 PegoutManager.initialize,
                 (_upgradableOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager, _settings)

@@ -17,15 +17,9 @@ contract PegoutManagerHarness is PegoutManager {
         IBitcoinManager _bitcoinManager,
         PegManagerSettings memory _settings
     ) public override initializer {
-        PegoutManager.initialize(
-            _initialOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager, _settings
-        );
+        PegoutManager.initialize(_initialOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager, _settings);
     }
 
-    // TODO: Add harness functions as needed for testing
-    // Examples from old PegManagerHarness that may be useful:
-
-    /*
     function setPegoutTempInfoHarness(bytes32 _acceptPeginTxid, bytes memory _userPubKey) external {
         pegoutTempInfo[_acceptPeginTxid] = PegoutTempInfo({
             userPubKey: _userPubKey,
@@ -36,18 +30,4 @@ contract PegoutManagerHarness is PegoutManager {
             takeOperatorPubKey: bytes32(0)
         });
     }
-
-    function setStreamPositionHarness(
-        bytes32 _acceptPeginTxid,
-        uint64 _streamId,
-        uint64 _packetNumber,
-        uint64 _slotId,
-        PegStatus _pegStatus
-    ) external {
-        streamManager.setStreamPosition(
-            _acceptPeginTxid,
-            StreamPosition({streamId: _streamId, packetNumber: _packetNumber, slotId: _slotId, pegStatus: _pegStatus})
-        );
-    }
-    */
 }

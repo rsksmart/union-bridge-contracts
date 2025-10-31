@@ -19,10 +19,6 @@ contract PeginManagerHarness is PeginManager {
         PeginManager.initialize(_initialOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager);
     }
 
-    // TODO: Add harness functions as needed for testing
-    // Examples from old PegManagerHarness that may be useful:
-
-    /*
     function setStreamPositionHarness(
         bytes32 _acceptPeginTxid,
         uint64 _streamId,
@@ -35,5 +31,4 @@ contract PeginManagerHarness is PeginManager {
             StreamPosition({streamId: _streamId, packetNumber: _packetNumber, slotId: _slotId, pegStatus: _pegStatus})
         );
     }
-    */
 }

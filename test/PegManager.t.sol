@@ -1,17 +1,19 @@
 // SPDX-License-Identifier: Unlicense
-/*
+
 pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
 import {HelperContract, StreamManagerHarness} from "test/helpers/HelperContract.sol";
-import {BtcTransaction, BtcTxSPVProof, IPegManager, BitcoinSignatureData} from "src/interfaces/IPegManager.sol";
+import {BtcTxSPVProof, StreamPosition, PegStatus} from "src/interfaces/IPegCommonTypes.sol";
 import {ISignatureManager} from "src/interfaces/ISignatureManager.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {Pausable} from "src/Pausable.sol";
 import {SlotState, Stream} from "src/interfaces/IStreamManager.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {Committee} from "src/interfaces/ICommitteeRegistry.sol";
-import {BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
+import {BtcTransaction, BtcTxIn, BtcTxOut, BitcoinSignatureData} from "src/interfaces/IBitcoinManager.sol";
+import {IPegoutManager} from "src/interfaces/IPegoutManager.sol";
+import {IPeginManager} from "src/interfaces/IPeginManager.sol";
 
 contract TestPegManager is Test, HelperContract {
     uint64 internal constant PACKET_NUMBER = 0;
@@ -33,115 +35,213 @@ contract TestPegManager is Test, HelperContract {
         setupCommitteeId = committeeId;
     }
 
-    function pausePegManager() internal {
-        vm.prank(pm.pauser());
-        pm.pause();
+    //TODO: replicate pause/unpause tests for PegoutManager
+    function pausePeginManager() internal {
+        vm.prank(peginManager.pauser());
+        peginManager.pause();
     }
 
-    function pauseAndUnpausePegManager() internal {
-        vm.startPrank(pm.pauser());
-        pm.pause();
-        pm.unpause();
+    function pauseAndUnpausePeginManager() internal {
+        vm.startPrank(peginManager.pauser());
+        peginManager.pause();
+        peginManager.unpause();
         vm.stopPrank();
     }
 
-    function test_Success_OwnerIsPauser() external view {
-        assertEq(pm.pauser(), pm.owner());
+    function pausePegoutManager() internal {
+        vm.prank(pegoutManager.pauser());
+        pegoutManager.pause();
     }
 
-    function test_pause_Revert_UnauthorizedAccount_CallFromNotPauser() external {
+    function pauseAndUnpausePegoutManager() internal {
+        vm.startPrank(pegoutManager.pauser());
+        pegoutManager.pause();
+        pegoutManager.unpause();
+        vm.stopPrank();
+    }
+
+    function test_Success_OwnerIsPauser_PeginManager() external view {
+        assertEq(peginManager.pauser(), peginManager.owner());
+    }
+
+    function test_Success_OwnerIsPauser_PegoutManager() external view {
+        assertEq(pegoutManager.pauser(), pegoutManager.owner());
+    }
+
+    function test_pause_Revert_UnauthorizedAccount_CallFromNotPauser_PeginManager() external {
         // Assert
         vm.expectRevert(abi.encodeWithSelector(Pausable.UnauthorizedAccount.selector, address(this)));
 
         // Act
-        pm.pause();
+        peginManager.pause();
     }
 
-    function test_pause_Success_CallFromPauser() external {
+    function test_pause_Revert_UnauthorizedAccount_CallFromNotPauser_PegoutManager() external {
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(Pausable.UnauthorizedAccount.selector, address(this)));
+
+        // Act
+        pegoutManager.pause();
+    }
+
+    function test_pause_Success_CallFromPauser_PeginManager() external {
         // Arrange
-        address pauser = pm.pauser();
+        address pauser = peginManager.pauser();
 
         // Assert
-        vm.expectEmit(address(pm));
+        vm.expectEmit(address(peginManager));
         emit PausableUpgradeable.Paused(pauser);
 
         // Act
         vm.prank(pauser);
-        pm.pause();
+        peginManager.pause();
 
         // Assert
-        assertTrue(pm.isPaused());
-        assertTrue(pm.committeeRegistry().isPaused());
-        assertTrue(pm.memberRegistry().isPaused());
+        assertTrue(peginManager.isPaused());
+        assertTrue(peginManager.committeeRegistry().isPaused());
+        // assertTrue(peginManager.memberRegistry().isPaused());
     }
 
-    function test_unpause_Revert_UnauthorizedAccount_CallFromNotPauser() external {
+    // function test_pause_Success_CallFromPauser_PegoutManager() external {
+    //     // Arrange
+    //     address pauser = pegoutManager.pauser();
+
+    //     // Assert
+    //     vm.expectEmit(address(pegoutManager));
+    //     emit PausableUpgradeable.Paused(pauser);
+
+    //     // Act
+    //     vm.prank(pauser);
+    //     pegoutManager.pause();
+
+    //     // Assert
+    //     assertTrue(pegoutManager.isPaused());
+    //     assertTrue(pegoutManager.committeeRegistry().isPaused());
+    //     assertTrue(pegoutManager.memberRegistry().isPaused());
+    // }
+
+    function test_unpause_Revert_UnauthorizedAccount_CallFromNotPauser_PeginManager() external {
         // Arrange
-        pausePegManager();
+        pausePeginManager();
 
         // Assert
         vm.expectRevert(abi.encodeWithSelector(Pausable.UnauthorizedAccount.selector, address(this)));
 
         // Act
-        pm.unpause();
+        peginManager.unpause();
     }
 
-    function test_unpause_Success_CallFromPauser() external {
+    // function test_unpause_Revert_UnauthorizedAccount_CallFromNotPauser_PegoutManager() external {
+    //     // Arrange
+    //     pausePegoutManager();
+
+    //     // Assert
+    //     vm.expectRevert(abi.encodeWithSelector(Pausable.UnauthorizedAccount.selector, address(this)));
+
+    //     // Act
+    //     pegoutManager.unpause();
+    // }
+
+    function test_unpause_Success_CallFromPauser_PeginManager() external {
         // Arrange
-        pausePegManager();
-        address pauser = pm.pauser();
+        pausePeginManager();
+        address pauser = peginManager.pauser();
 
         // Assert
-        vm.expectEmit(address(pm));
+        vm.expectEmit(address(peginManager));
         emit PausableUpgradeable.Unpaused(pauser);
 
         // Act
         vm.prank(pauser);
-        pm.unpause();
+        peginManager.unpause();
 
         // Assert
-        assertFalse(pm.isPaused());
-        assertFalse(pm.committeeRegistry().isPaused());
-        assertFalse(pm.memberRegistry().isPaused());
+        assertFalse(peginManager.isPaused());
+        assertFalse(peginManager.committeeRegistry().isPaused());
+        // assertFalse(peginManager.memberRegistry().isPaused());
     }
 
-    function test_unpause_Revert_ExpectedPause_CallFromPauser_ContractNotPaused() external {
+    // function test_unpause_Success_CallFromPauser_PegoutManager() external {
+    //     // Arrange
+    //     pausePegoutManager();
+    //     address pauser = pegoutManager.pauser();
+
+    //     // Assert
+    //     vm.expectEmit(address(pegoutManager));
+    //     emit PausableUpgradeable.Unpaused(pauser);
+
+    //     // Act
+    //     vm.prank(pauser);
+    //     pegoutManager.unpause();
+
+    //     // Assert
+    //     assertFalse(pegoutManager.isPaused());
+    //     assertFalse(pegoutManager.committeeRegistry().isPaused());
+    //     assertFalse(pegoutManager.memberRegistry().isPaused());
+    // }
+
+    function test_unpause_Revert_ExpectedPause_CallFromPauser_ContractNotPaused_PeginManager() external {
         // Arrange
-        address pauser = pm.pauser();
+        address pauser = peginManager.pauser();
 
         // Assert
         vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.ExpectedPause.selector, pauser));
 
         // Act
         vm.prank(pauser);
-        pm.unpause();
+        peginManager.unpause();
     }
 
-    function test_pause_Revert_EnforcedPause_CallFromPauser_ContractAlreadyPaused() external {
+    function test_unpause_Revert_ExpectedPause_CallFromPauser_ContractNotPaused_PegoutManager() external {
         // Arrange
-        pausePegManager();
-        address pauser = pm.pauser();
+        address pauser = pegoutManager.pauser();
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector, address(pm)));
+        vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.ExpectedPause.selector, pauser));
 
         // Act
         vm.prank(pauser);
-        pm.pause();
+        pegoutManager.unpause();
     }
+
+    function test_pause_Revert_EnforcedPause_CallFromPauser_ContractAlreadyPaused_PeginManager() external {
+        // Arrange
+        pausePeginManager();
+        address pauser = peginManager.pauser();
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector, address(peginManager)));
+
+        // Act
+        vm.prank(pauser);
+        peginManager.pause();
+    }
+
+    // function test_pause_Revert_EnforcedPause_CallFromPauser_ContractAlreadyPaused_PegoutManager() external {
+    //     // Arrange
+    //     pausePegoutManager();
+    //     address pauser = pegoutManager.pauser();
+
+    //     // Assert
+    //     vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector, address(pegoutManager)));
+
+    //     // Act
+    //     vm.prank(pauser);
+    //     pegoutManager.pause();
+    // }
 
     function test_pause_CallFromPauser_ShouldAlsoPauseCommitteeRegistry() external {
         // Arrange
-        address pauser = pm.pauser();
+        address pauser = peginManager.pauser();
         address registryAddress = address(registry);
 
         // Assert
         vm.expectEmit(registryAddress);
-        emit PausableUpgradeable.Paused(address(pm));
+        emit PausableUpgradeable.Paused(address(peginManager));
 
         // Act
         vm.prank(pauser);
-        pm.pause();
+        peginManager.pause();
     }
 
     function test_setStreamManager_Success_PausedContract() external {
@@ -149,18 +249,18 @@ contract TestPegManager is Test, HelperContract {
         uint256 privKey = uint256(1);
         address newStreamManagerAddress = vm.addr(privKey);
         StreamManagerHarness newStreamManager = StreamManagerHarness(newStreamManagerAddress);
-        pausePegManager();
+        pausePeginManager();
 
         // Assert
-        vm.prank(pm.owner());
-        vm.expectEmit(address(pm));
-        emit IPegManager.StreamManagerUpdated(newStreamManager);
+        vm.prank(peginManager.owner());
+        vm.expectEmit(address(peginManager));
+        emit IPeginManager.StreamManagerUpdated(newStreamManager);
 
         // Act
-        pm.setStreamManager(newStreamManager);
+        peginManager.setStreamManager(newStreamManager);
 
         // Assert
-        assertEq(address(pm.streamManager()), newStreamManagerAddress);
+        assertEq(address(peginManager.streamManager()), newStreamManagerAddress);
     }
 
     function test_setSignatureManager_Success_PausedContract() external {
@@ -169,18 +269,31 @@ contract TestPegManager is Test, HelperContract {
         address newStreamManagerAddress = vm.addr(privKey);
         StreamManagerHarness newStreamManager = StreamManagerHarness(newStreamManagerAddress);
 
-        pausePegManager();
+        pausePeginManager();
 
         // Assert
-        vm.prank(pm.owner());
-        vm.expectEmit(address(pm));
-        emit IPegManager.StreamManagerUpdated(newStreamManager);
+        vm.prank(peginManager.owner());
+        vm.expectEmit(address(peginManager));
+        emit IPeginManager.StreamManagerUpdated(newStreamManager);
 
         // Act
-        pm.setStreamManager(newStreamManager);
+        peginManager.setStreamManager(newStreamManager);
 
         // Assert
-        assertEq(address(pm.streamManager()), newStreamManagerAddress);
+        assertEq(address(peginManager.streamManager()), newStreamManagerAddress);
+    }
+
+    function test_setSignatureManager_EmitsSignatureManagerUpdatedEvent() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        address newSignatureManagerAddress = vm.addr(privKey);
+        ISignatureManager newSignatureManager = ISignatureManager(newSignatureManagerAddress);
+
+        // Act & Assert
+        vm.expectEmit(address(pm));
+        emit IPegManager.SignatureManagerUpdated(newSignatureManager);
+        vm.prank(pm.owner());
+        pm.setSignatureManager(newSignatureManager);
     }
 
     function test_setSignatureManager_EmitsSignatureManagerUpdatedEvent() external {
@@ -202,18 +315,18 @@ contract TestPegManager is Test, HelperContract {
         address newStreamManagerAddress = vm.addr(privKey);
         StreamManagerHarness newStreamManager = StreamManagerHarness(newStreamManagerAddress);
 
-        pausePegManager();
+        pausePeginManager();
 
         // Assert
-        vm.prank(pm.owner());
-        vm.expectEmit(address(pm));
-        emit IPegManager.StreamManagerUpdated(newStreamManager);
+        vm.prank(peginManager.owner());
+        vm.expectEmit(address(peginManager));
+        emit IPeginManager.StreamManagerUpdated(newStreamManager);
 
         // Act
-        pm.setStreamManager(newStreamManager);
+        peginManager.setStreamManager(newStreamManager);
 
         // Assert
-        assertEq(address(pm.streamManager()), newStreamManagerAddress);
+        assertEq(address(peginManager.streamManager()), newStreamManagerAddress);
     }
 
     function test_requestPegin_Revert_EnforcedPause_PausedContract() external {
@@ -221,13 +334,13 @@ contract TestPegManager is Test, HelperContract {
         BtcTransaction memory btcTransaction = getBtcPeginRequestTx();
         BtcTxSPVProof memory peginRequestTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
-        pausePegManager();
+        pausePeginManager();
 
         // Assert
         vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
 
         // Act
-        pm.requestPegin(peginRequestTxSPVProof);
+        peginManager.requestPegin(peginRequestTxSPVProof);
     }
 
     function test_requestPegin_Success_UnpausedContract() external {
@@ -235,10 +348,10 @@ contract TestPegManager is Test, HelperContract {
         BtcTransaction memory btcTransaction = getBtcPeginRequestTx();
         BtcTxSPVProof memory peginRequestTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
-        pauseAndUnpausePegManager();
+        pauseAndUnpausePeginManager();
 
         // Act & Assert
-        pm.requestPegin(peginRequestTxSPVProof);
+        peginManager.requestPegin(peginRequestTxSPVProof);
     }
 
     function test_acceptPegin_Revert_EnforcedPause_PausedContract() external {
@@ -247,13 +360,13 @@ contract TestPegManager is Test, HelperContract {
         BtcTransaction memory btcTransaction = getBtcAcceptPeginTx(peginTx);
         BtcTxSPVProof memory peginAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
-        pausePegManager();
+        pausePeginManager();
 
         // Assert
         vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
 
         // Act
-        pm.acceptPegin(peginAcceptedTxSPVProof);
+        peginManager.acceptPegin(peginAcceptedTxSPVProof);
     }
 
     function test_acceptPegin_Success_UnpausedContract() external {
@@ -262,30 +375,30 @@ contract TestPegManager is Test, HelperContract {
         BtcTransaction memory btcTransaction = getBtcAcceptPeginTx(peginTx);
         BtcTxSPVProof memory peginAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
-        pauseAndUnpausePegManager();
+        pauseAndUnpausePeginManager();
 
         // Act & Assert
-        pm.acceptPegin(peginAcceptedTxSPVProof);
+        peginManager.acceptPegin(peginAcceptedTxSPVProof);
     }
 
-    function test_tryPegout_Revert_EnforcedPause_PausedContract() external {
-        // Arrange
-        uint64 amount = 1000000; // 0.01 BTC
-        uint256 amountInWei = BtcHelper.satoshiToWei(amount);
-        bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+    // function test_tryPegout_Revert_EnforcedPause_PausedContract() external {
+    //     // Arrange
+    //     uint64 amount = 1000000; // 0.01 BTC
+    //     uint256 amountInWei = BtcHelper.satoshiToWei(amount);
+    //     bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
 
-        pausePegManager();
+    //     pausePeginManager();
 
-        // Assert
-        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
+    //     // Assert
+    //     vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
 
-        // Act
-        pm.tryPegout{value: amountInWei}(userPubKey);
-    }
+    //     // Act
+    //     pegoutManager.tryPegout{value: amountInWei}(userPubKey);
+    // }
 
     function test_tryPegout_Success_UnpausedContract() external {
         // Arrange
-        pauseAndUnpausePegManager();
+        pauseAndUnpausePeginManager();
         // Arrange
         BtcTxIn[] memory inputs = new BtcTxIn[](1);
         inputs[0] = BtcTxIn({
@@ -326,8 +439,8 @@ contract TestPegManager is Test, HelperContract {
             keccak256(abi.encode(stream.streamId, packetNumber, slotId, address(this), mockBlockHash));
 
         // Assert
-        vm.expectEmit(address(pm));
-        emit IPegManager.PegoutRequested(
+        vm.expectEmit(address(pegoutManager));
+        emit IPegoutManager.PegoutRequested(
             userPubKey,
             COMMITTEE_ID_STREAM_1_COMMITTEE_1,
             expectedSignatureData,
@@ -339,45 +452,45 @@ contract TestPegManager is Test, HelperContract {
         );
 
         // Act
-        pm.tryPegout{value: amountInWei}(userPubKey);
+        pegoutManager.tryPegout{value: amountInWei}(userPubKey);
     }
 
-    function test_registerUserTake_Revert_EnforcedPause_PausedContract() external {
-        // Arrange
-        RegisterUserTakeSetup memory pegoutSetup = setup_pegout();
-        pausePegManager();
+    // function test_registerUserTake_Revert_EnforcedPause_PausedContract() external {
+    //     // Arrange
+    //     RegisterUserTakeSetup memory pegoutSetup = setup_pegout();
+    //     pausePeginManager();
 
-        // Assert
-        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
+    //     // Assert
+    //     vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
 
-        // Act
-        pm.registerUserTake(pegoutSetup.pegoutTxSPVProof);
-    }
+    //     // Act
+    //     pegoutManager.registerUserTake(pegoutSetup.pegoutTxSPVProof);
+    // }
 
     function test_registerUserTake_Success_UnpausedContract() external {
         // Arrange
         RegisterUserTakeSetup memory pegoutSetup = setup_pegout();
-        pauseAndUnpausePegManager();
+        pauseAndUnpausePeginManager();
 
         // Act
-        pm.registerUserTake(pegoutSetup.pegoutTxSPVProof);
+        pegoutManager.registerUserTake(pegoutSetup.pegoutTxSPVProof);
     }
 
-    function test_triggerOperatorTake_Revert_EnforcedPause_PausedContract() external {
-        // Arrange
-        RegisterUserTakeSetup memory pegoutSetup = setup_pegout();
-        pausePegManager();
+    // function test_triggerOperatorTake_Revert_EnforcedPause_PausedContract() external {
+    //     // Arrange
+    //     RegisterUserTakeSetup memory pegoutSetup = setup_pegout();
+    //     pausePeginManager();
 
-        // Assert
-        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
+    //     // Assert
+    //     vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
 
-        // Act
-        pm.triggerOperatorTake(pegoutSetup.pegoutSignatureHash);
-    }
+    //     // Act
+    //     pegoutManager.triggerOperatorTake(pegoutSetup.pegoutSignatureHash);
+    // }
 
     function test_triggerOperatorTake_Success_UnpausedContract() external {
         // Arrange
-        pauseAndUnpausePegManager();
+        pauseAndUnpausePeginManager();
         RegisterUserTakeSetup memory pegoutSetup = setup_pegout();
         bytes32 pegoutTxId = pegoutSetup.pegoutTxid;
         bytes memory nonce =
@@ -396,30 +509,30 @@ contract TestPegManager is Test, HelperContract {
         assertEventOperatorTakeTriggered(pegoutTxId, pegoutSetup, secondOpAddress, createdAt);
 
         // Act
-        pm.triggerOperatorTake(pegoutTxId);
+        pegoutManager.triggerOperatorTake(pegoutTxId);
     }
 
-    function test_registerOperatorTake_Revert_EnforcedPause_PausedContract() external {
-        // Arrange
-        (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
-        bytes32 operatorPubKey = getMemberTakePubKey(operatorAddress);
-        BtcTransaction memory pegoutTx =
-            createPegoutTx(setup.acceptPeginTxid, BtcHelper.pubKeyXonlyToCompact(operatorPubKey), VALUE);
-        BtcTxSPVProof memory pegoutTxSPVProof = createBtcTxSPVProof(pegoutTx);
+    // function test_registerOperatorTake_Revert_EnforcedPause_PausedContract() external {
+    //     // Arrange
+    //     (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
+    //     bytes32 operatorPubKey = getMemberTakePubKey(operatorAddress);
+    //     BtcTransaction memory pegoutTx =
+    //         createPegoutTx(setup.acceptPeginTxid, BtcHelper.pubKeyXonlyToCompact(operatorPubKey), VALUE);
+    //     BtcTxSPVProof memory pegoutTxSPVProof = createBtcTxSPVProof(pegoutTx);
 
-        pausePegManager();
+    //     pausePeginManager();
 
-        // Assert
-        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
+    //     // Assert
+    //     vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
 
-        // Act
-        vm.prank(operatorAddress);
-        pm.registerOperatorTake(pegoutTxSPVProof);
-    }
+    //     // Act
+    //     vm.prank(operatorAddress);
+    //     pegoutManager.registerOperatorTake(pegoutTxSPVProof);
+    // }
 
     function test_registerOperatorTake_Success_UnpausedContract() external {
         // Arrange
-        pauseAndUnpausePegManager();
+        pauseAndUnpausePeginManager();
 
         (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
         bytes32 operatorPubKey = getMemberTakePubKey(operatorAddress);
@@ -429,39 +542,38 @@ contract TestPegManager is Test, HelperContract {
 
         // Act
         vm.prank(operatorAddress);
-        pm.registerOperatorTake(pegoutTxSPVProof);
+        pegoutManager.registerOperatorTake(pegoutTxSPVProof);
     }
 
     function test_setUserTakeTimeout_Success_PausedContract() external {
         // Arrange
-        pausePegManager();
+        pausePeginManager();
 
         uint256 timeout = TAKE_0_TIMEOUT_DEFAULT + 1 days;
-        address owner = pm.owner();
+        address owner = pegoutManager.owner();
 
         // Assert
-        vm.expectEmit(address(pm));
-        emit IPegManager.UserTakeTimeoutUpdated(timeout);
+        vm.expectEmit(address(pegoutManager));
+        emit IPegoutManager.UserTakeTimeoutUpdated(timeout);
 
         // Act
         vm.prank(owner);
-        pm.setUserTakeTimeout(timeout);
+        pegoutManager.setUserTakeTimeout(timeout);
     }
 
     function test_setOperatorTakeTimeout_Success_PausedContract() external {
         // Arrange
-        pausePegManager();
+        pausePeginManager();
 
         uint256 timeout = TAKE_1_TIMEOUT_DEFAULT + 1 days;
-        address owner = pm.owner();
+        address owner = pegoutManager.owner();
 
         // Assert
-        vm.expectEmit(address(pm));
-        emit IPegManager.OperatorTakeTimeoutUpdated(timeout);
+        vm.expectEmit(address(pegoutManager));
+        emit IPegoutManager.OperatorTakeTimeoutUpdated(timeout);
 
         // Act
         vm.prank(owner);
-        pm.setOperatorTakeTimeout(timeout);
+        pegoutManager.setOperatorTakeTimeout(timeout);
     }
 }
-*/
