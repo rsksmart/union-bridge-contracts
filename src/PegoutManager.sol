@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import {BaseProxy} from "./BaseProxy.sol";
-import {Pausable} from "./Pausable.sol";
+import {PegManagerBase} from "./PegManagerBase.sol";
 import {IPegoutManager} from "./interfaces/IPegoutManager.sol";
 import {ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
 import {IMemberRegistry} from "./interfaces/IMemberRegistry.sol";
-import {ISignatureManager, SignatureData} from "./interfaces/ISignatureManager.sol";
-import {IStreamManager, Stream, Slot} from "./interfaces/IStreamManager.sol";
+import {SignatureData} from "./interfaces/ISignatureManager.sol";
+import {Stream, Slot} from "./interfaces/IStreamManager.sol";
 import {IBitcoinManager, PrevoutData, BitcoinSignatureData} from "./interfaces/IBitcoinManager.sol";
 import {
     BtcTxSPVProof,
@@ -16,28 +15,14 @@ import {
     PegStatus,
     PegManagerSettings
 } from "./interfaces/IPegCommonTypes.sol";
-import {ProofValidator} from "./ProofValidator.sol";
 import {BtcHelper} from "./libraries/BtcHelper.sol";
 import {Constants} from "./libraries/Constants.sol";
-import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 /// @title PegoutManager
 /// @notice Manages peg-out operations from Rootstock to Bitcoin
-contract PegoutManager is IPegoutManager, BaseProxy, ProofValidator, ReentrancyGuardUpgradeable, Pausable {
-    /// @notice Bitcoin manager contract for Bitcoin transaction validation and address generation
-    IBitcoinManager public bitcoinManager;
-
-    /// @notice Stream manager contract for managing union bridge streams and slots
-    IStreamManager public streamManager;
-
-    /// @notice Committee registry contract for managing committee and members
-    ICommitteeRegistry public committeeRegistry;
-
+contract PegoutManager is IPegoutManager, PegManagerBase {
     /// @notice Member registry contract for managing member data
     IMemberRegistry public memberRegistry;
-
-    /// @notice Signature manager contract for handling multi-signature operations
-    ISignatureManager public signatureManager;
 
     /// @notice Timeout for user take operations
     uint256 public userTakeTimeout;
@@ -66,47 +51,10 @@ contract PegoutManager is IPegoutManager, BaseProxy, ProofValidator, ReentrancyG
         IBitcoinManager _bitcoinManager,
         PegManagerSettings memory _settings
     ) public virtual initializer {
-        // Validate that the bitcoin manager is not zero address
-        if (address(_bitcoinManager) == address(0)) {
-            revert BitcoinManagerAddressZero();
-        }
-        bitcoinManager = _bitcoinManager;
-
-        if (address(_committeeRegistry) == address(0)) {
-            revert CommitteeRegistryAddressZero();
-        }
-        committeeRegistry = _committeeRegistry;
-
-        __BaseProxy_init(_initialOwner);
-        __ProofValidator_init(_bridgeAddress);
-        __ReentrancyGuard_init();
-
-        __Pauser_init();
+        __PegManagerBase_init(_initialOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager);
 
         userTakeTimeout = _settings.userTakeTimeout;
         operatorTakeTimeout = _settings.operatorTakeTimeout;
-    }
-
-    /// @notice Sets the stream manager contract address
-    /// @param _streamManager The stream manager contract address
-    /// @dev Only callable by the contract owner
-    function setStreamManager(IStreamManager _streamManager) external onlyOwner {
-        if (address(_streamManager) == address(0)) {
-            revert StreamManagerAddressZero();
-        }
-        streamManager = _streamManager;
-        emit StreamManagerUpdated(_streamManager);
-    }
-
-    /// @notice Sets the signature manager contract address
-    /// @param _signatureManager The signature manager contract address
-    /// @dev Only callable by the contract owner
-    function setSignatureManager(ISignatureManager _signatureManager) external onlyOwner {
-        if (address(_signatureManager) == address(0)) {
-            revert SignatureManagerAddressZero();
-        }
-        signatureManager = _signatureManager;
-        emit SignatureManagerUpdated(_signatureManager);
     }
 
     /// @notice Sets the member registry contract address
@@ -117,13 +65,6 @@ contract PegoutManager is IPegoutManager, BaseProxy, ProofValidator, ReentrancyG
             revert MemberRegistryAddressZero();
         }
         memberRegistry = _memberRegistry;
-    }
-
-    /// @notice Sets a new pauser address
-    /// @param _newPauser The new pauser address
-    /// @dev Only callable by the contract owner
-    function setPauser(address _newPauser) public override onlyOwner {
-        super.setPauser(_newPauser);
     }
 
     /// @notice Gets the temporary peg-out information for a given accept peg-in transaction id

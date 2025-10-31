@@ -2,24 +2,12 @@
 pragma solidity ^0.8.20;
 
 import {PrevoutData} from "./IBitcoinManager.sol";
-import {IStreamManager} from "./IStreamManager.sol";
-import {ISignatureManager} from "./ISignatureManager.sol";
 import {IPausable} from "./IPausable.sol";
 import {BtcTxSPVProof, StreamPosition, RequestPeginTempInfo} from "./IPegCommonTypes.sol";
 
 /// @title IPeginManager
 /// @notice Interface for managing peg-in operations
 interface IPeginManager is IPausable {
-    /// @notice Sets the stream manager contract address
-    /// @dev Only callable by the contract owner
-    /// @param _streamManager The address of the stream manager contract
-    function setStreamManager(IStreamManager _streamManager) external;
-
-    /// @notice Sets the signature manager contract address
-    /// @dev Only callable by the contract owner
-    /// @param _signatureManager The address of the signature manager contract
-    function setSignatureManager(ISignatureManager _signatureManager) external;
-
     // ===================== Peg-in Request =====================
 
     /// @notice Generates a temporary Bitcoin address for peg-in operations
@@ -112,27 +100,7 @@ interface IPeginManager is IPausable {
     /// @dev This event is used to track the lifecycle of packets in the stream
     event PacketClosed(uint64 indexed streamId, uint64 indexed packetNumber);
 
-    /// @notice Event emitted when the stream manager contract address is updated
-    /// @param _streamManager The stream manager contract address
-    event StreamManagerUpdated(IStreamManager _streamManager);
-
-    /// @notice Event emitted when the signature manager contract address is updated
-    /// @param _signatureManager The signature manager contract address
-    event SignatureManagerUpdated(ISignatureManager _signatureManager);
-
     // ===================== Errors =====================
-
-    /// @notice Thrown when the Bitcoin manager address is set to zero
-    error BitcoinManagerAddressZero();
-
-    /// @notice Thrown when the committee registry address is set to zero
-    error CommitteeRegistryAddressZero();
-
-    /// @notice Thrown when the signature manager address is set to zero
-    error SignatureManagerAddressZero();
-
-    /// @notice Thrown when the stream manager address is set to zero
-    error StreamManagerAddressZero();
 
     /// @notice Thrown when a peg-in has already been requested for the given transaction
     /// @param btcTxid The Bitcoin transaction id that was already requested

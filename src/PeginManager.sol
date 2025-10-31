@@ -1,34 +1,18 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import {BaseProxy} from "./BaseProxy.sol";
-import {Pausable} from "./Pausable.sol";
+import {PegManagerBase} from "./PegManagerBase.sol";
 import {IPeginManager} from "./interfaces/IPeginManager.sol";
 import {ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
-import {ISignatureManager} from "./interfaces/ISignatureManager.sol";
-import {IStreamManager, Stream, Packet} from "./interfaces/IStreamManager.sol";
+import {Stream, Packet} from "./interfaces/IStreamManager.sol";
 import {IBitcoinManager, PrevoutData, BitcoinSignatureData, BtcTxOut} from "./interfaces/IBitcoinManager.sol";
 import {BtcTxSPVProof, StreamPosition, RequestPeginTempInfo, PegStatus} from "./interfaces/IPegCommonTypes.sol";
-import {ProofValidator} from "./ProofValidator.sol";
 import {BtcHelper} from "./libraries/BtcHelper.sol";
 import {Constants} from "./libraries/Constants.sol";
-import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 /// @title PeginManager
 /// @notice Manages peg-in operations from Bitcoin to Rootstock
-contract PeginManager is IPeginManager, BaseProxy, ProofValidator, ReentrancyGuardUpgradeable, Pausable {
-    /// @notice Bitcoin manager contract for Bitcoin transaction validation and address generation
-    IBitcoinManager public bitcoinManager;
-
-    /// @notice Stream manager contract for managing union bridge streams and slots
-    IStreamManager public streamManager;
-
-    /// @notice Committee registry contract for managing committee and members
-    ICommitteeRegistry public committeeRegistry;
-
-    /// @notice Signature manager contract for handling multi-signature operations
-    ISignatureManager public signatureManager;
-
+contract PeginManager is IPeginManager, PegManagerBase {
     mapping(bytes32 requestPeginTxid => bytes32 acceptPeginTxid) internal acceptPegins;
 
     mapping(bytes32 requestPeginTxid => RequestPeginTempInfo tempInfo) internal peginTempInfo;
@@ -45,51 +29,7 @@ contract PeginManager is IPeginManager, BaseProxy, ProofValidator, ReentrancyGua
         ICommitteeRegistry _committeeRegistry,
         IBitcoinManager _bitcoinManager
     ) public virtual initializer {
-        // Validate that the bitcoin manager is not zero address
-        if (address(_bitcoinManager) == address(0)) {
-            revert BitcoinManagerAddressZero();
-        }
-        bitcoinManager = _bitcoinManager;
-
-        if (address(_committeeRegistry) == address(0)) {
-            revert CommitteeRegistryAddressZero();
-        }
-        committeeRegistry = _committeeRegistry;
-
-        __BaseProxy_init(_initialOwner);
-        __ProofValidator_init(_bridgeAddress);
-        __ReentrancyGuard_init();
-
-        __Pauser_init();
-    }
-
-    /// @notice Sets the stream manager contract address
-    /// @param _streamManager The stream manager contract address
-    /// @dev Only callable by the contract owner
-    function setStreamManager(IStreamManager _streamManager) external onlyOwner {
-        if (address(_streamManager) == address(0)) {
-            revert StreamManagerAddressZero();
-        }
-        streamManager = _streamManager;
-        emit StreamManagerUpdated(_streamManager);
-    }
-
-    /// @notice Sets the signature manager contract address
-    /// @param _signatureManager The signature manager contract address
-    /// @dev Only callable by the contract owner
-    function setSignatureManager(ISignatureManager _signatureManager) external onlyOwner {
-        if (address(_signatureManager) == address(0)) {
-            revert SignatureManagerAddressZero();
-        }
-        signatureManager = _signatureManager;
-        emit SignatureManagerUpdated(_signatureManager);
-    }
-
-    /// @notice Sets a new pauser address
-    /// @param _newPauser The new pauser address
-    /// @dev Only callable by the contract owner
-    function setPauser(address _newPauser) public override onlyOwner {
-        super.setPauser(_newPauser);
+        __PegManagerBase_init(_initialOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager);
     }
 
     /// @notice Gets the accept peg-in transaction id for a given request peg-in transaction id

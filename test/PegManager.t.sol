@@ -12,7 +12,7 @@ import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {Committee} from "src/interfaces/ICommitteeRegistry.sol";
 import {BtcTransaction, BtcTxIn, BtcTxOut, BitcoinSignatureData} from "src/interfaces/IBitcoinManager.sol";
 import {IPegoutManager} from "src/interfaces/IPegoutManager.sol";
-import {IPeginManager} from "src/interfaces/IPeginManager.sol";
+import {IPegManagerBase} from "src/interfaces/IPegManagerBase.sol";
 
 contract TestPegManager is Test, HelperContract {
     uint64 internal constant PACKET_NUMBER = 0;
@@ -44,7 +44,7 @@ contract TestPegManager is Test, HelperContract {
         // Assert
         vm.prank(peginManager.owner());
         vm.expectEmit(address(peginManager));
-        emit IPeginManager.StreamManagerUpdated(newStreamManager);
+        emit IPegManagerBase.StreamManagerUpdated(newStreamManager);
 
         // Act
         peginManager.setStreamManager(newStreamManager);
@@ -64,7 +64,7 @@ contract TestPegManager is Test, HelperContract {
         // Assert
         vm.prank(peginManager.owner());
         vm.expectEmit(address(peginManager));
-        emit IPeginManager.StreamManagerUpdated(newStreamManager);
+        emit IPegManagerBase.StreamManagerUpdated(newStreamManager);
 
         // Act
         peginManager.setStreamManager(newStreamManager);
@@ -110,7 +110,7 @@ contract TestPegManager is Test, HelperContract {
         // Assert
         vm.prank(peginManager.owner());
         vm.expectEmit(address(peginManager));
-        emit IPeginManager.StreamManagerUpdated(newStreamManager);
+        emit IPegManagerBase.StreamManagerUpdated(newStreamManager);
 
         // Act
         peginManager.setStreamManager(newStreamManager);
