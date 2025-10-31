@@ -806,12 +806,13 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Arrange
         StreamDenomination denomination = StreamDenomination._0_01BTC;
         uint64 streamId = 1;
-        uint256 numWatchtowers = registry.minCommitteeWatchtowers() - 1;
-        uint256 numOperators = registry.committeeMemberCount() - numWatchtowers + 1;
-        setup_registerNewMembers(numWatchtowers, numOperators, denomination);
+        uint256 minWatchtowers = registry.minCommitteeWatchtowers() - 1;
+        uint256 numOperators = registry.committeeMemberCount() - minWatchtowers + 1;
+        setup_registerNewMembers(minWatchtowers, numOperators, denomination);
 
         // Assert that selectCommittee emits MissingWatchtowers event
         vm.expectEmit(address(memberRegistry));
+
         emit IMemberRegistry.MissingWatchtowers(denomination, registry.minCommitteeWatchtowers(), 1);
 
         // Act

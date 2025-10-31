@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import {Test} from "forge-std/Test.sol";
 import {HelperContract, StreamManagerHarness} from "test/helpers/HelperContract.sol";
 import {BtcTransaction, BtcTxSPVProof, IPegManager, BitcoinSignatureData} from "src/interfaces/IPegManager.sol";
+import {ISignatureManager} from "src/interfaces/ISignatureManager.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {Pausable} from "src/Pausable.sol";
 import {SlotState, Stream} from "src/interfaces/IStreamManager.sol";
@@ -179,6 +180,19 @@ contract TestPegManager is Test, HelperContract {
 
         // Assert
         assertEq(address(pm.streamManager()), newStreamManagerAddress);
+    }
+
+    function test_setSignatureManager_EmitsSignatureManagerUpdatedEvent() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        address newSignatureManagerAddress = vm.addr(privKey);
+        ISignatureManager newSignatureManager = ISignatureManager(newSignatureManagerAddress);
+
+        // Act & Assert
+        vm.expectEmit(address(pm));
+        emit IPegManager.SignatureManagerUpdated(newSignatureManager);
+        vm.prank(pm.owner());
+        pm.setSignatureManager(newSignatureManager);
     }
 
     function test_setMemberRegistry_Success_PausedContract() external {

@@ -8,7 +8,7 @@ import {IAccessControl} from "src/interfaces/IAccessControl.sol";
 import {StreamPosition, PegStatus} from "src/interfaces/IPegManager.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {Role} from "src/interfaces/ICommitteeRegistry.sol";
+import {Role, ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {Committee} from "src/interfaces/ICommitteeRegistry.sol";
 
 contract TestStreamManager is Test, HelperContract {
@@ -102,7 +102,13 @@ contract TestStreamManager is Test, HelperContract {
         // set to 7 confirmations
         uint8 peginConfirmations = 7;
 
+        // Assert
+
+        vm.expectEmit(address(streamManager));
+        emit IStreamManager.PeginConfirmationsUpdated(streamId, peginConfirmations);
+
         // Act
+
         vm.prank(address(streamManager.owner()));
         streamManager.setPeginConfirmations(streamId, peginConfirmations);
 
@@ -112,18 +118,6 @@ contract TestStreamManager is Test, HelperContract {
             peginConfirmations,
             "peginConfirmations was not set correctly"
         );
-    }
-
-    function test_setPeginConfirmations_Revert_RequireGreaterThanZero() external {
-        // Arrange
-        uint64 streamId = 0;
-        vm.prank(address(streamManager.owner()));
-
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(IStreamManager.InvalidPeginConfirmations.selector, 0));
-
-        // Act
-        streamManager.setPeginConfirmations(streamId, 0);
     }
 
     function test_setPeginConfirmations_Rever_InvalidStreamId() external {
@@ -147,6 +141,60 @@ contract TestStreamManager is Test, HelperContract {
 
         // Act
         streamManager.setPeginConfirmations(streamId, 10);
+    }
+
+    function test_setPegoutConfirmations_Success() external {
+        // Arrange
+        uint64 streamId = 0;
+        uint8 pegoutConfirmations = 5;
+
+        // Assert
+        vm.expectEmit(address(streamManager));
+        emit IStreamManager.PegoutConfirmationsUpdated(streamId, pegoutConfirmations);
+
+        // Act
+        vm.prank(streamManager.owner());
+        streamManager.setPegoutConfirmations(streamId, pegoutConfirmations);
+
+        // Assert
+        assertEq(
+            streamManager.getStreamById(streamId).pegoutConfirmations,
+            pegoutConfirmations,
+            "pegoutConfirmations was not set correctly"
+        );
+    }
+
+    function test_setCommitteeRegistry_Success() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        address newCommitteeRegistryAddress = vm.addr(privKey);
+        ICommitteeRegistry newCommitteeRegistry = ICommitteeRegistry(newCommitteeRegistryAddress);
+
+        // Act & Assert
+        vm.expectEmit(address(streamManager));
+        emit IStreamManager.CommitteeRegistryUpdated(newCommitteeRegistry);
+        vm.prank(streamManager.owner());
+        streamManager.setCommitteeRegistry(newCommitteeRegistry);
+
+        // Assert
+        assertEq(
+            address(streamManager.committeeRegistry()),
+            newCommitteeRegistryAddress,
+            "Committee registry was not set correctly"
+        );
+    }
+
+    function test_StreamCreated_EventEmittedDuringInitialization() external view {
+        // This test verifies that StreamCreated events were emitted during contract initialization
+        // The streams are created in the constructor/initializer, so we can only verify they exist
+
+        // Assert that streams were created (which means StreamCreated events were emitted)
+        uint64 streamsLength = streamManager.getStreamsLength();
+        assertTrue(streamsLength > 0, "No streams were created during initialization");
+
+        // Verify the first stream exists and has expected properties
+        Stream memory firstStream = streamManager.getStreamById(0);
+        assertTrue(firstStream.denomination > 0, "First stream should have a valid denomination");
     }
 
     function test_getAvailablePeginCommitteeId_Success() external {

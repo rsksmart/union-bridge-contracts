@@ -148,6 +148,20 @@ contract TestMemberRegistry is Test, HelperContract {
         assertEq(memberRegistry.pauser(), newCommitteeRegistryAddress);
     }
 
+    function test_setCommitteeRegistry_EmitsCommitteeRegistryUpdatedEvent() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        address newCommitteeRegistryAddress = vm.addr(privKey);
+
+        // Assert
+        vm.expectEmit(address(memberRegistry));
+        emit IMemberRegistry.CommitteeRegistryUpdated(newCommitteeRegistryAddress);
+
+        // Act
+        vm.prank(memberRegistry.owner());
+        memberRegistry.setCommitteeRegistry(newCommitteeRegistryAddress);
+    }
+
     function test_setStreamManager_Success_PausedContract() external {
         // Arrange
         uint256 privKey = uint256(1);
