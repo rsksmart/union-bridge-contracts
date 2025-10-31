@@ -18,7 +18,6 @@ import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/Pau
 import {Pausable} from "src/Pausable.sol";
 import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
 import {HelperContract, StreamManagerHarness} from "test/helpers/HelperContract.sol";
-import {Constants} from "src/libraries/Constants.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 contract TestMemberRegistry is Test, HelperContract {
@@ -33,110 +32,12 @@ contract TestMemberRegistry is Test, HelperContract {
         runTestDeployScript();
     }
 
-    function pauseMemberRegistry() internal {
-        vm.prank(memberRegistry.committeeRegistry());
-        memberRegistry.pause();
-    }
-
-    function pauseAndUnpauseMemberRegistry() internal {
-        vm.startPrank(memberRegistry.committeeRegistry());
-        memberRegistry.pause();
-        memberRegistry.unpause();
-        vm.stopPrank();
-    }
-
-    function test_Success_CommitteeRegistryIsPauser() external view {
-        assertEq(memberRegistry.pauser(), memberRegistry.committeeRegistry());
-    }
-
-    function test_pause_Revert_UnauthorizedAccount_CallFromNotPauser() external {
-        // Arrange
-        address owner = memberRegistry.owner();
-
-        // Assert
-        // since committeeRegistry is the pauser,
-        // not even the owner can pause the contract
-        vm.expectRevert(abi.encodeWithSelector(Pausable.UnauthorizedAccount.selector, owner));
-
-        // Act
-        vm.prank(owner);
-        memberRegistry.pause();
-    }
-
-    function test_pause_Success_CallFromPauser() external {
-        // Arrange
-        address registryAddress = memberRegistry.committeeRegistry();
-
-        // Assert
-        vm.expectEmit(address(memberRegistry));
-        emit PausableUpgradeable.Paused(registryAddress);
-
-        // Act
-        vm.prank(registryAddress);
-        memberRegistry.pause();
-    }
-
-    function test_unpause_Revert_UnauthorizedAccount_CallFromNotPauser() external {
-        // Arrange
-        pauseMemberRegistry();
-        address owner = memberRegistry.owner();
-
-        // Assert
-        // since committeeRegistry is the pauser,
-        // not even the owner can unpause the contract
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(Pausable.UnauthorizedAccount.selector, owner));
-
-        // Act
-        vm.prank(owner);
-        memberRegistry.unpause();
-    }
-
-    function test_unpause_Success_CallFromPauser() external {
-        // Arrange
-        pauseMemberRegistry();
-        address pauser = memberRegistry.pauser();
-
-        // Assert
-        vm.expectEmit(address(memberRegistry));
-        emit PausableUpgradeable.Unpaused(pauser);
-
-        // Act
-        vm.prank(pauser);
-        memberRegistry.unpause();
-    }
-
-    function test_unpause_Revert_ExpectedPause_CallFromPauser_ContractNotPaused() external {
-        // Arrange
-        address pauser = memberRegistry.pauser();
-
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.ExpectedPause.selector, address(this)));
-
-        // Act
-        vm.prank(pauser);
-        memberRegistry.unpause();
-    }
-
-    function test_pause_Revert_EnforcedPause_CallFromPauser_ContractAlreadyPaused() external {
-        // Arrange
-        pauseMemberRegistry();
-        address pauser = memberRegistry.pauser();
-
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector, address(this)));
-
-        // Act
-        vm.prank(pauser);
-        memberRegistry.pause();
-    }
-
     function test_setCommitteeRegistry_Success_PausedContract() external {
         // Arrange
         uint256 privKey = uint256(1);
         address newCommitteeRegistryAddress = vm.addr(privKey);
 
-        pauseMemberRegistry();
+        pauseContracts();
 
         // Act
         vm.prank(memberRegistry.owner());
@@ -144,7 +45,6 @@ contract TestMemberRegistry is Test, HelperContract {
 
         // Assert
         assertEq(memberRegistry.committeeRegistry(), newCommitteeRegistryAddress);
-        assertEq(memberRegistry.pauser(), newCommitteeRegistryAddress);
     }
 
     function test_setCommitteeRegistry_EmitsCommitteeRegistryUpdatedEvent() external {
@@ -167,7 +67,7 @@ contract TestMemberRegistry is Test, HelperContract {
         address newStreamManagerAddress = vm.addr(privKey);
         StreamManagerHarness newStreamManager = StreamManagerHarness(newStreamManagerAddress);
 
-        pauseMemberRegistry();
+        pauseContracts();
 
         // Act
         vm.prank(memberRegistry.owner());
@@ -179,7 +79,7 @@ contract TestMemberRegistry is Test, HelperContract {
 
     function test_applyToStream_Success_PausedContract() external {
         // Arrange
-        pauseMemberRegistry();
+        pauseContracts();
 
         address registryAddress = memberRegistry.committeeRegistry();
 
@@ -214,7 +114,7 @@ contract TestMemberRegistry is Test, HelperContract {
         setup_applyToStream(denomination, member, memberRegistrationKeys, role);
 
         address registryAddress = memberRegistry.committeeRegistry();
-        pauseMemberRegistry();
+        pauseContracts();
 
         // Assert
         vm.expectEmit(address(memberRegistry));
@@ -242,7 +142,7 @@ contract TestMemberRegistry is Test, HelperContract {
         memberRegistry.unsubscribeFromStream(member, denomination);
 
         //uint256 amount = memberRegistry.getMemberAvailableBalance(member);
-        pauseMemberRegistry();
+        pauseContracts();
 
         // Assert
         vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
@@ -269,7 +169,7 @@ contract TestMemberRegistry is Test, HelperContract {
         memberRegistry.unsubscribeFromStream(member, denomination);
 
         uint256 amount = memberRegistry.getMemberAvailableBalance(member);
-        pauseAndUnpauseMemberRegistry();
+        pauseAndUnpauseContracts();
 
         // Assert
         vm.expectEmit(address(memberRegistry));
@@ -294,7 +194,7 @@ contract TestMemberRegistry is Test, HelperContract {
         streamManager.createNewPacket(streamId, committeeId, committeePubKey);
         CommitteeMember[] memory members;
 
-        pauseMemberRegistry();
+        pauseContracts();
 
         // Act
         vm.prank(registryAddress);
@@ -311,7 +211,7 @@ contract TestMemberRegistry is Test, HelperContract {
         Role role = Role.OPERATOR;
         setup_applyToStream(denomination, member, memberRegistrationKeys, role);
 
-        pauseMemberRegistry();
+        pauseContracts();
         bool reApply = true;
 
         // Assert
@@ -332,7 +232,7 @@ contract TestMemberRegistry is Test, HelperContract {
         Role role = Role.OPERATOR;
         setup_applyToStream(denomination, member, memberRegistrationKeys, role);
 
-        pauseAndUnpauseMemberRegistry();
+        pauseAndUnpauseContracts();
         bool reApply = true;
 
         // Assert
@@ -352,7 +252,7 @@ contract TestMemberRegistry is Test, HelperContract {
         CommitteeMember[] memory members;
         uint64 packetNumber = 0;
 
-        pauseMemberRegistry();
+        pauseContracts();
 
         // Act
         vm.prank(registryAddress);
@@ -368,7 +268,7 @@ contract TestMemberRegistry is Test, HelperContract {
         uint256 minOperators = registry.minCommitteeOperators();
         uint256 totalMemberCount = registry.committeeMemberCount();
 
-        pauseMemberRegistry();
+        pauseContracts();
         address registryAddress = memberRegistry.committeeRegistry();
 
         // Act

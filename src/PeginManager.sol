@@ -61,19 +61,6 @@ contract PeginManager is IPeginManager, BaseProxy, ProofValidator, ReentrancyGua
         __ReentrancyGuard_init();
 
         __Pauser_init();
-        pauser = _initialOwner;
-    }
-
-    /// @notice Pauses the contract and the committee registry
-    function _pause() internal override {
-        super._pause();
-        committeeRegistry.pause();
-    }
-
-    /// @notice Unpauses the contract and the committee registry
-    function _unpause() internal override {
-        super._unpause();
-        committeeRegistry.unpause();
     }
 
     /// @notice Sets the stream manager contract address
@@ -96,6 +83,13 @@ contract PeginManager is IPeginManager, BaseProxy, ProofValidator, ReentrancyGua
         }
         signatureManager = _signatureManager;
         emit SignatureManagerUpdated(_signatureManager);
+    }
+
+    /// @notice Sets a new pauser address
+    /// @param _newPauser The new pauser address
+    /// @dev Only callable by the contract owner
+    function setPauser(address _newPauser) public override onlyOwner {
+        super.setPauser(_newPauser);
     }
 
     /// @notice Gets the accept peg-in transaction id for a given request peg-in transaction id

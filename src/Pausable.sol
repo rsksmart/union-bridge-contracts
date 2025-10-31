@@ -48,6 +48,17 @@ contract Pausable is IPausable, PausableUpgradeable {
         return paused();
     }
 
+    /// @notice Sets a new pauser address
+    /// @param _newPauser The new pauser address
+    /// @dev Should be overridden by child contracts to add access control (e.g., onlyOwner)
+    function setPauser(address _newPauser) public virtual {
+        if (_newPauser == address(0)) {
+            revert ZeroAddress();
+        }
+        pauser = _newPauser;
+        emit PauserUpdated(_newPauser);
+    }
+
     /// @notice Internal function to check if an account is the pauser
     /// @param _account The account to check
     /// @dev Reverts with UnauthorizedAccount if the account is not the pausable
@@ -57,7 +68,14 @@ contract Pausable is IPausable, PausableUpgradeable {
         }
     }
 
+    /// @notice Event emitted when the pauser is updated
+    /// @param newPauser The new pauser address
+    event PauserUpdated(address newPauser);
+
     /// @notice Error thrown when an account is not authorized
     /// @param account The unauthorized account
     error UnauthorizedAccount(address account);
+
+    /// @notice Error thrown when a zero address is provided
+    error ZeroAddress();
 }

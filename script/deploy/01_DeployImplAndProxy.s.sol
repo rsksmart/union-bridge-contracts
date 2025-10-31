@@ -11,6 +11,7 @@ import {PeginManager} from "src/PeginManager.sol";
 import {PegoutManager} from "src/PegoutManager.sol";
 import {StreamManager} from "src/StreamManager.sol";
 import {SignatureManager} from "src/SignatureManager.sol";
+import {PauseManager} from "src/PauseManager.sol";
 import {RSK_BRIDGE_ADDRESS} from "src/interfaces/IBridge.sol";
 import {BtcNetwork} from "src/libraries/Network.sol";
 import {BridgeMock} from "test/helpers/BridgeMock.sol";
@@ -32,6 +33,7 @@ struct DeployedContracts {
     PegoutManager pegoutManager;
     StreamManager streamManager;
     SignatureManager signatureManager;
+    PauseManager pauseManager;
     address upgradableOwner;
     address payable bridgeAddress;
 }
@@ -142,6 +144,29 @@ contract DeployImplAndProxy is ScriptUtils {
             revert("SignatureManager committeeRegistry is not the committeeRegistry address");
         }
 
+        PauseManager pauseManager = deployPauseManager(
+            upgradableOwner,
+            address(peginManager),
+            address(pegoutManager),
+            address(committeeRegistry),
+            address(memberRegistry)
+        );
+        if (pauseManager.owner() != upgradableOwner) {
+            revert("PauseManager owner is not the upgradable owner");
+        }
+        if (address(pauseManager.peginManager()) != address(peginManager)) {
+            revert("PauseManager peginManager is not the peginManager address");
+        }
+        if (address(pauseManager.pegoutManager()) != address(pegoutManager)) {
+            revert("PauseManager pegoutManager is not the pegoutManager address");
+        }
+        if (address(pauseManager.committeeRegistry()) != address(committeeRegistry)) {
+            revert("PauseManager committeeRegistry is not the committeeRegistry address");
+        }
+        if (address(pauseManager.memberRegistry()) != address(memberRegistry)) {
+            revert("PauseManager memberRegistry is not the memberRegistry address");
+        }
+
         // Set contracts references
         vm.startBroadcast(getDeployerKey());
         peginManager.setStreamManager(streamManager);
@@ -156,6 +181,11 @@ contract DeployImplAndProxy is ScriptUtils {
         committeeRegistry.setPegoutManager(pegoutManager);
         memberRegistry.setStreamManager(streamManager);
         memberRegistry.setCommitteeRegistry(address(committeeRegistry));
+        // Set PauseManager as the pauser for all pausable contracts
+        peginManager.setPauser(address(pauseManager));
+        pegoutManager.setPauser(address(pauseManager));
+        committeeRegistry.setPauser(address(pauseManager));
+        memberRegistry.setPauser(address(pauseManager));
         vm.stopBroadcast();
 
         if (block.chainid == ChainIds.LOCAL) {
@@ -177,6 +207,7 @@ contract DeployImplAndProxy is ScriptUtils {
             pegoutManager: pegoutManager,
             streamManager: streamManager,
             signatureManager: signatureManager,
+            pauseManager: pauseManager,
             upgradableOwner: upgradableOwner,
             bridgeAddress: bridgeAddress
         });
@@ -292,6 +323,23 @@ contract DeployImplAndProxy is ScriptUtils {
             )
         );
         return SignatureManager(proxyAdddress);
+    }
+
+    function deployPauseManager(
+        address _upgradableOwner,
+        address _peginManager,
+        address _pegoutManager,
+        address _committeeRegistry,
+        address _memberRegistry
+    ) public returns (PauseManager) {
+        (, address proxyAdddress) = deployContractAndUUPSProxy(
+            "PauseManager.sol",
+            abi.encodeCall(
+                PauseManager.initialize,
+                (_upgradableOwner, _peginManager, _pegoutManager, _committeeRegistry, _memberRegistry)
+            )
+        );
+        return PauseManager(proxyAdddress);
     }
 
     /**

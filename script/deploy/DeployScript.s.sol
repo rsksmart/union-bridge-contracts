@@ -9,6 +9,7 @@ import {PeginManager} from "src/PeginManager.sol";
 import {PegoutManager} from "src/PegoutManager.sol";
 import {StreamManager} from "src/StreamManager.sol";
 import {SignatureManager} from "src/SignatureManager.sol";
+import {PauseManager} from "src/PauseManager.sol";
 import {DeployImplAndProxy, DeployedContracts} from "./01_DeployImplAndProxy.s.sol";
 
 contract DeployScript is Script {
@@ -20,6 +21,7 @@ contract DeployScript is Script {
     BitcoinManager public bitcoinManager;
     StreamManager public streamManager;
     SignatureManager public signatureManager;
+    PauseManager public pauseManager;
     address public upgradableOwner;
     address payable public bridgeAddress;
 
@@ -38,6 +40,7 @@ contract DeployScript is Script {
         pegoutManager = deployResults.pegoutManager;
         streamManager = deployResults.streamManager;
         signatureManager = deployResults.signatureManager;
+        pauseManager = deployResults.pauseManager;
         upgradableOwner = deployResults.upgradableOwner;
         bridgeAddress = deployResults.bridgeAddress;
     }

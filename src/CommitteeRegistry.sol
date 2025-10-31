@@ -75,18 +75,6 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         committeeMemberCount = 10;
     }
 
-    /// @notice Pauses the contract and the member registry
-    function _pause() internal override {
-        super._pause();
-        memberRegistry.pause();
-    }
-
-    /// @notice Unpauses the contract and the member registry
-    function _unpause() internal override {
-        super._unpause();
-        memberRegistry.unpause();
-    }
-
     function _revertIfZero(uint256 _value) internal pure {
         if (_value == 0) {
             revert InvalidZeroValue();
@@ -534,7 +522,6 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
             revert InvalidZeroAddress();
         }
         peginManager = _peginManager;
-        pauser = address(_peginManager); // PeginManager is the pauser
         emit PeginManagerUpdated(address(_peginManager));
     }
 
@@ -558,6 +545,13 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         }
         memberRegistry = _memberRegistry;
         emit MemberRegistryUpdated(address(_memberRegistry));
+    }
+
+    /// @notice Sets a new pauser address
+    /// @param _newPauser The new pauser address
+    /// @dev Only callable by the contract owner
+    function setPauser(address _newPauser) public override onlyOwner {
+        super.setPauser(_newPauser);
     }
 
     /// @notice Sets the pending committee timeout

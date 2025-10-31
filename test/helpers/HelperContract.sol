@@ -8,6 +8,7 @@ import {MemberRegistryHarness} from "test/helpers/MemberRegistryHarness.sol";
 import {PeginManagerHarness} from "test/helpers/PeginManagerHarness.sol";
 import {PegoutManagerHarness} from "test/helpers/PegoutManagerHarness.sol";
 import {SignatureManager} from "src/SignatureManager.sol";
+import {PauseManager} from "src/PauseManager.sol";
 import {Role, CommitteeMember, Committee, MemberRegistrationKeys, UTXO} from "src/CommitteeRegistry.sol";
 import {CommunicationData, COMMUNICATION_DATA_CHUNKS} from "src/interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination, Slot} from "src/interfaces/IStreamManager.sol";
@@ -63,6 +64,7 @@ abstract contract HelperContract is Test, TestUtils {
     StreamManagerHarness internal streamManager;
     PeginManagerHarness internal peginManager;
     PegoutManagerHarness internal pegoutManager;
+    PauseManager internal pauseManager;
 
     // Arrange
     uint64 internal constant VALUE = 1_000_000; // 0.01 BTC
@@ -79,6 +81,7 @@ abstract contract HelperContract is Test, TestUtils {
         streamManager = StreamManagerHarness(address(deployScript.streamManager()));
         peginManager = PeginManagerHarness(address(deployScript.peginManager()));
         pegoutManager = PegoutManagerHarness(address(deployScript.pegoutManager()));
+        pauseManager = PauseManager(deployScript.pauseManager());
         // Set up bridge mock at bridge precompiled address
         bridgeMock = BridgeMock(deployScript.bridgeAddress());
         signatureManager = SignatureManager(deployScript.signatureManager());
@@ -835,5 +838,17 @@ abstract contract HelperContract is Test, TestUtils {
             address memberAddress = vm.addr(memberIndex + 1);
             setup_depositCommunicationData(streamId, memberAddress, memberIndex);
         }
+    }
+
+    function pauseContracts() internal {
+        vm.prank(pauseManager.owner());
+        pauseManager.pause();
+    }
+
+    function pauseAndUnpauseContracts() internal {
+        vm.startPrank(pauseManager.owner());
+        pauseManager.pause();
+        pauseManager.unpause();
+        vm.stopPrank();
     }
 }

@@ -680,7 +680,6 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         }
         committeeRegistry = _committeeRegistry;
         emit CommitteeRegistryUpdated(_committeeRegistry);
-        pauser = _committeeRegistry;
     }
 
     /// @notice Sets the Stream Manager contract address
@@ -691,5 +690,12 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
             revert InvalidZeroAddress();
         }
         streamManager = _streamManager;
+    }
+
+    /// @notice Sets a new pauser address
+    /// @param _newPauser The new pauser address
+    /// @dev Only callable by the contract owner
+    function setPauser(address _newPauser) public override onlyOwner {
+        super.setPauser(_newPauser);
     }
 }
