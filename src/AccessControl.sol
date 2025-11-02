@@ -48,7 +48,7 @@ contract AccessControl is IAccessControl, BaseProxy {
      */
     function _checkPegManager() internal view virtual {
         address sender = _msgSender();
-        if (pegManager != sender) {
+        if (peginManager != sender && pegoutManager != sender) {
             revert UnauthorizedAccount(sender);
         }
     }

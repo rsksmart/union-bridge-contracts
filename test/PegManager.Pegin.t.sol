@@ -11,12 +11,14 @@ import {
     PegStatus
 } from "src/interfaces/IPegCommonTypes.sol";
 import {IPeginManager} from "src/interfaces/IPeginManager.sol";
+import {IPegManagerBase} from "src/interfaces/IPegManagerBase.sol";
 import {PrevoutData} from "src/interfaces/IBitcoinManager.sol";
 import {Slot, SlotState, Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE} from "src/interfaces/IBridge.sol";
 import {ProofValidator} from "src/ProofValidator.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {ICommitteeRegistry, Committee} from "src/interfaces/ICommitteeRegistry.sol";
+import {ISignatureManager} from "src/interfaces/ISignatureManager.sol";
 
 contract TestPegManager is Test, HelperContract {
     // Arrange
@@ -567,5 +569,18 @@ contract TestPegManager is Test, HelperContract {
             )
         );
         peginManager.acceptPegin(acceptPeginTxSPVProof);
+    }
+
+    function test_setSignatureManager_EmitsSignatureManagerUpdatedEvent() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        address newSignatureManagerAddress = vm.addr(privKey);
+        ISignatureManager newSignatureManager = ISignatureManager(newSignatureManagerAddress);
+
+        // Act & Assert
+        vm.expectEmit(address(peginManager));
+        emit IPegManagerBase.SignatureManagerUpdated(newSignatureManager);
+        vm.prank(peginManager.owner());
+        peginManager.setSignatureManager(newSignatureManager);
     }
 }

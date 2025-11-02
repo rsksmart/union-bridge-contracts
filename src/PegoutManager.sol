@@ -315,7 +315,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
     /// @dev Only callable when the peg status is OPERATOR_TAKE
     /// @dev Emits PegoutRegistered event upon successful deposit
     /// @dev Only callable when contract is unpaused
-    function registerOperatorTake(BtcTxSPVProof calldata _pegoutTxSPVProof) external whenNotPaused {
+    function registerOperatorTake(BtcTxSPVProof calldata _pegoutTxSPVProof) external nonReentrant whenNotPaused {
         // Get the accept peg-in tx id from the first input (this is what gets spent)
         bytes32 acceptPeginTxid = _pegoutTxSPVProof.btcTx.inputs[0].txId;
         uint32 vout = _pegoutTxSPVProof.btcTx.inputs[0].vout;
@@ -365,6 +365,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         // update the peg status to COMPLETED
         streamManager.setPegStatus(acceptPeginTxid, PegStatus.COMPLETED);
 
+        // slither-disable-next-line reentrancy-events
         emit PegoutRegistered(
             _pegoutTxSPVProof.blockHash,
             txid,

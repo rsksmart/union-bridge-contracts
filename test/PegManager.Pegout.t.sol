@@ -7,6 +7,7 @@ import {BtcTransaction, BtcTxSPVProof, StreamPosition, PegStatus} from "src/inte
 import {BitcoinSignatureData} from "src/interfaces/IBitcoinManager.sol";
 import {IPegoutManager, PegoutTempInfo} from "src/interfaces/IPegoutManager.sol";
 import {IPeginManager} from "src/interfaces/IPeginManager.sol";
+import {IPegManagerBase} from "src/interfaces/IPegManagerBase.sol";
 import {Slot, SlotState, Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {ISignatureManager} from "src/interfaces/ISignatureManager.sol";
 import {ProofValidator} from "src/ProofValidator.sol";
@@ -1077,5 +1078,18 @@ contract TestPegManager is Test, HelperContract {
         Stream memory updatedStream = streamManager.getStreamById(stream.streamId);
         assertEq(updatedStream.pegoutPacketPointer, 1, "Should advance to second packet");
         assertEq(updatedStream.pegoutSlotPointer, 1, "Should advance slot pointer after locking");
+    }
+
+    function test_setSignatureManager_EmitsSignatureManagerUpdatedEvent() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        address newSignatureManagerAddress = vm.addr(privKey);
+        ISignatureManager newSignatureManager = ISignatureManager(newSignatureManagerAddress);
+
+        // Act & Assert
+        vm.expectEmit(address(pegoutManager));
+        emit IPegManagerBase.SignatureManagerUpdated(newSignatureManager);
+        vm.prank(pegoutManager.owner());
+        pegoutManager.setSignatureManager(newSignatureManager);
     }
 }
