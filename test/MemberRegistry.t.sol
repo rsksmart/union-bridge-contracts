@@ -14,9 +14,11 @@ import {
     UTXO
 } from "src/interfaces/ICommitteeRegistry.sol";
 import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
+import {IPegoutManager} from "src/interfaces/IPegoutManager.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {Pausable} from "src/Pausable.sol";
 import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
+import {Constants} from "src/libraries/Constants.sol";
 import {HelperContract, StreamManagerHarness} from "test/helpers/HelperContract.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
@@ -1465,7 +1467,7 @@ contract TestMemberRegistry is Test, HelperContract {
         assertEq(candidatesAmount, expectedAmount, "Candidate amount doesn't match expected amount");
     }
 
-    /* function test_integration_onPacketClosed_reapplyTrue() external {
+    function test_integration_onPacketClosed_reapplyTrue() external {
         // Arrange
         (Committee memory committee,) = setup_completeCommittee();
         StreamDenomination denomination = StreamDenomination(committee.streamId);
@@ -1480,11 +1482,11 @@ contract TestMemberRegistry is Test, HelperContract {
         assertCandidateAmount(denomination, 0);
 
         // Assert
-        vm.expectEmit(address(pm));
-        emit IPegManager.PacketClosed(uint8(denomination), 0);
+        vm.expectEmit(address(pegoutManager));
+        emit IPegoutManager.PacketClosed(committee.streamId, 0);
 
         // Act
-        pm.registerUserTake(setup.pegoutTxSPVProof);
+        pegoutManager.registerUserTake(setup.pegoutTxSPVProof);
 
         // Assert that the amount of candidates after the packet is closed is equal to the committee size
         assertCandidateAmount(denomination, committee.members.length);
@@ -1517,9 +1519,9 @@ contract TestMemberRegistry is Test, HelperContract {
                 "member staked balance should be 0 after packet closed"
             );
         }
-    } */
+    }
 
-    /* function test_integration_onPacketClosed_fullOfCandidates() external {
+    function test_integration_onPacketClosed_fullOfCandidates() external {
         // Arrange
         (Committee memory committee,) = setup_completeCommittee();
         StreamDenomination denomination = StreamDenomination(committee.streamId);
@@ -1543,11 +1545,11 @@ contract TestMemberRegistry is Test, HelperContract {
         );
 
         // Assert
-        vm.expectEmit(address(pm));
-        emit IPegManager.PacketClosed(uint8(denomination), 0);
+        vm.expectEmit(address(pegoutManager));
+        emit IPegoutManager.PacketClosed(committee.streamId, 0);
 
         // Act
-        pm.registerUserTake(setup.pegoutTxSPVProof);
+        pegoutManager.registerUserTake(setup.pegoutTxSPVProof);
 
         // Assert that the amount of candidates after the packet is closed is equal to the max candidates size
         assertEq(
@@ -1583,9 +1585,9 @@ contract TestMemberRegistry is Test, HelperContract {
                 "member staked balance should be 0 after packet closed"
             );
         }
-    } */
+    }
 
-    /* function test_integration_onPacketClosed_reapplyFalse() external {
+    function test_integration_onPacketClosed_reapplyFalse() external {
         // Arrange
         (Committee memory committee,) = setup_completeCommittee();
         StreamDenomination denomination = StreamDenomination(committee.streamId);
@@ -1604,11 +1606,11 @@ contract TestMemberRegistry is Test, HelperContract {
         }
 
         // Assert
-        vm.expectEmit(address(pm));
-        emit IPegManager.PacketClosed(uint8(denomination), 0);
+        vm.expectEmit(address(pegoutManager));
+        emit IPegoutManager.PacketClosed(committee.streamId, 0);
 
         // Act
-        pm.registerUserTake(setup.pegoutTxSPVProof);
+        pegoutManager.registerUserTake(setup.pegoutTxSPVProof);
 
         // Assert that the amount of candidates after the packet is closed is equal to 0
         assertCandidateAmount(denomination, 0);
@@ -1641,9 +1643,9 @@ contract TestMemberRegistry is Test, HelperContract {
                 "member staked balance should be 0 after packet closed"
             );
         }
-    } */
+    }
 
-    /* function test_integration_onPacketClosed_alreadyCandidate() external {
+    function test_integration_onPacketClosed_alreadyCandidate() external {
         // Arrange
         (Committee memory committee,) = setup_completeCommittee();
         StreamDenomination denomination = StreamDenomination(committee.streamId);
@@ -1660,11 +1662,11 @@ contract TestMemberRegistry is Test, HelperContract {
         assertCandidateAmount(denomination, committee.members.length);
 
         // Assert
-        vm.expectEmit(address(pm));
-        emit IPegManager.PacketClosed(uint8(denomination), 0);
+        vm.expectEmit(address(pegoutManager));
+        emit IPegoutManager.PacketClosed(committee.streamId, 0);
 
         // Act
-        pm.registerUserTake(setup.pegoutTxSPVProof);
+        pegoutManager.registerUserTake(setup.pegoutTxSPVProof);
 
         // Assert that the amount of candidates after the packet is closed is equal to the committee size
         assertCandidateAmount(denomination, committee.members.length);
@@ -1697,7 +1699,7 @@ contract TestMemberRegistry is Test, HelperContract {
                 "member staked balance should be 0 after packet closed"
             );
         }
-    } */
+    }
 
     function test_getMemberComPubKey_Success() public {
         // Arrange
