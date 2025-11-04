@@ -197,9 +197,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
             requestPegoutTxid,
             acceptPeginTxid,
             pegoutTempInfo[acceptPeginTxid].committeeId,
-            streamInfo.streamId,
-            streamInfo.packetNumber,
-            streamInfo.slotId
+            streamInfo
         );
 
         if (streamInfo.slotId == Constants.SLOTS_PER_PACKET - 1) {
@@ -359,22 +357,13 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         );
 
         // Validate that the first output is a P2WPKH paying the member
-        bytes32 takeOperatorPubKey = memberRegistry.getMemberTakePubKey(pegoutInfo.takeOperatorAddress);
-        bitcoinManager.validatePegoutMemberOutput(_pegoutTxSPVProof.btcTx.outputs[0], takeOperatorPubKey);
+        bitcoinManager.validatePegoutMemberOutput(_pegoutTxSPVProof.btcTx.outputs[0], pegoutInfo.takeOperatorPubKey);
 
         // update the peg status to COMPLETED
         streamManager.setPegStatus(acceptPeginTxid, PegStatus.COMPLETED);
 
         // slither-disable-next-line reentrancy-events
-        emit PegoutRegistered(
-            _pegoutTxSPVProof.blockHash,
-            txid,
-            acceptPeginTxid,
-            pegoutInfo.committeeId,
-            streamInfo.streamId,
-            streamInfo.packetNumber,
-            streamInfo.slotId
-        );
+        emit PegoutRegistered(_pegoutTxSPVProof.blockHash, txid, acceptPeginTxid, pegoutInfo.committeeId, streamInfo);
 
         // Update slot status
         streamManager.completeSlot(

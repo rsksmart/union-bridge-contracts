@@ -60,17 +60,13 @@ interface IPegoutManager is IPausable {
     /// @param txid The hash of the peg-out transaction
     /// @param acceptPeginTxid The hash of the original accept peg-in transaction
     /// @param committeeId The ID of the committee responsible for this peg-out
-    /// @param streamId The stream ID where the funds originated
-    /// @param packetNumber The packet number within the stream
-    /// @param slotId The slot ID within the packet
+    /// @param streamInfo The stream position information related to this peg-out
     event PegoutRegistered(
         bytes32 indexed blockHash,
         bytes32 indexed txid,
         bytes32 indexed acceptPeginTxid,
         uint128 committeeId,
-        uint64 streamId,
-        uint64 packetNumber,
-        uint64 slotId
+        StreamPosition streamInfo
     );
 
     /// @notice Sets User Take Timeout

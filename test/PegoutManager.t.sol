@@ -305,6 +305,12 @@ contract TestPegoutManager is Test, HelperContract {
     function test_registerUserTake_success() external {
         // Setup
         RegisterUserTakeSetup memory setup = setup_pegout();
+        StreamPosition memory streamInfo = StreamPosition({
+            streamId: setup.stream.streamId,
+            packetNumber: setup.packetNumber,
+            slotId: setup.slotId,
+            pegStatus: PegStatus.USER_TAKE
+        });
 
         // Expect the PegoutRegistered event
         vm.expectEmit(address(pegoutManager));
@@ -313,9 +319,7 @@ contract TestPegoutManager is Test, HelperContract {
             setup.pegoutTxid,
             setup.acceptPeginTxid,
             COMMITTEE_ID_STREAM_1_COMMITTEE_1,
-            setup.stream.streamId,
-            setup.packetNumber,
-            setup.slotId
+            streamInfo
         );
 
         // Register the peg-out transaction
@@ -489,9 +493,12 @@ contract TestPegoutManager is Test, HelperContract {
             expectedPegoutTxid,
             acceptPeginTxid,
             COMMITTEE_ID_STREAM_1_COMMITTEE_1,
-            stream.streamId,
-            expectedPacketNumber,
-            expectedSlotId
+            StreamPosition({
+                streamId: stream.streamId,
+                packetNumber: expectedPacketNumber,
+                slotId: expectedSlotId,
+                pegStatus: PegStatus.USER_TAKE
+            })
         );
 
         // Register peg-out transaction
@@ -749,16 +756,17 @@ contract TestPegoutManager is Test, HelperContract {
         BtcTxSPVProof memory pegoutTxSPVProof = createBtcTxSPVProof(pegoutTx);
         bytes32 pegoutTxid = bitcoinManager.getBtcTxid(pegoutTx);
 
+        StreamPosition memory streamInfo = StreamPosition({
+            streamId: setup.stream.streamId,
+            packetNumber: setup.packetNumber,
+            slotId: setup.slotId,
+            pegStatus: PegStatus.OPERATOR_TAKE
+        });
+
         // Expect the PegoutRegistered event
         vm.expectEmit(address(pegoutManager));
         emit IPegoutManager.PegoutRegistered(
-            pegoutTxSPVProof.blockHash,
-            pegoutTxid,
-            setup.acceptPeginTxid,
-            COMMITTEE_ID_STREAM_1_COMMITTEE_1,
-            setup.stream.streamId,
-            setup.packetNumber,
-            setup.slotId
+            pegoutTxSPVProof.blockHash, pegoutTxid, setup.acceptPeginTxid, COMMITTEE_ID_STREAM_1_COMMITTEE_1, streamInfo
         );
 
         // Act
