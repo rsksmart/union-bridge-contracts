@@ -2,18 +2,12 @@
 pragma solidity ^0.8.20;
 
 import {PegManagerBase} from "./PegManagerBase.sol";
-import {IPegoutManager} from "./interfaces/IPegoutManager.sol";
+import {IPegoutManager, PegoutManagerSettings} from "./interfaces/IPegoutManager.sol";
 import {ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
 import {SignatureData} from "./interfaces/ISignatureManager.sol";
 import {Stream, Slot} from "./interfaces/IStreamManager.sol";
 import {IBitcoinManager, PrevoutData, BitcoinSignatureData} from "./interfaces/IBitcoinManager.sol";
-import {
-    BtcTxSPVProof,
-    StreamPosition,
-    PegoutTempInfo,
-    PegStatus,
-    PegManagerSettings
-} from "./interfaces/IPegCommonTypes.sol";
+import {BtcTxSPVProof, StreamPosition, PegoutTempInfo, PegStatus} from "./interfaces/IPegCommonTypes.sol";
 import {BtcHelper} from "./libraries/BtcHelper.sol";
 import {Constants} from "./libraries/Constants.sol";
 
@@ -45,7 +39,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         address payable _bridgeAddress,
         ICommitteeRegistry _committeeRegistry,
         IBitcoinManager _bitcoinManager,
-        PegManagerSettings memory _settings
+        PegoutManagerSettings memory _settings
     ) public virtual initializer {
         __PegManagerBase_init(_initialOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager);
 

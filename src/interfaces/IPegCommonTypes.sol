@@ -85,12 +85,3 @@ struct PegoutTempInfo {
     /// @notice The public key of the selected operator for Bitcoin transactions (x-coordinate only)
     bytes32 takeOperatorPubKey;
 }
-
-struct PegManagerSettings {
-    /// @notice Timeout for the user to take the pegout
-    /// @dev This is the time the members has to sign the pegout transaction
-    uint256 userTakeTimeout; // Timeout for the user to take the pegout
-    /// @notice Timeout for the operator to take the pegout
-    /// @dev This is the time the operator has to advance the funds to the user and present the proof
-    uint256 operatorTakeTimeout; // Timeout for the operator to take the pegout
-}

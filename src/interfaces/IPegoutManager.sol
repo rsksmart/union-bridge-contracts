@@ -6,6 +6,17 @@ import {SlotState} from "./IStreamManager.sol";
 import {IPausable} from "./IPausable.sol";
 import {BtcTxSPVProof, StreamPosition, PegoutTempInfo, PegStatus} from "./IPegCommonTypes.sol";
 
+/// @notice Settings for the PegoutManager contract
+/// @dev Contains timeout configurations for peg-out operations
+struct PegoutManagerSettings {
+    /// @notice Timeout for the user to take the pegout
+    /// @dev This is the time the members have to sign the pegout transaction
+    uint256 userTakeTimeout; // Timeout for the user to take the pegout
+    /// @notice Timeout for the operator to take the pegout
+    /// @dev This is the time the operator has to advance the funds to the user and present the proof
+    uint256 operatorTakeTimeout; // Timeout for the operator to take the pegout
+}
+
 /// @title IPegoutManager
 /// @notice Interface for managing peg-out operations
 interface IPegoutManager is IPausable {

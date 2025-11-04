@@ -19,7 +19,7 @@ import {ChainIds} from "src/libraries/Network.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
-import {PegManagerSettings} from "src/interfaces/IPegCommonTypes.sol";
+import {PegoutManagerSettings} from "src/interfaces/IPegoutManager.sol";
 import {StreamManagerSettings} from "src/interfaces/IStreamManager.sol";
 import {StreamManagerSettingsConfig} from "script/helpers/StreamManagerSettingsConfig.sol";
 import {PegManagerSettingsConfig} from "script/helpers/PegManagerSettingsConfig.sol";
@@ -46,7 +46,7 @@ contract DeployImplAndProxy is ScriptUtils {
     uint64[] denominations;
     address payable public bridgeAddress;
     StreamManagerSettings public streamManagerSettings;
-    PegManagerSettings public pegManagerSettings;
+    PegoutManagerSettings public pegManagerSettings;
 
     function setUp() internal {
         bridgeAddress = RSK_BRIDGE_ADDRESS;
@@ -269,7 +269,7 @@ contract DeployImplAndProxy is ScriptUtils {
         address payable _bridgeAddress,
         CommitteeRegistry _committeeRegistry,
         BitcoinManager _bitcoinManager,
-        PegManagerSettings memory _settings
+        PegoutManagerSettings memory _settings
     ) public returns (PegoutManager) {
         string memory contractName = "PegoutManager.sol";
         if (vm.isContext(VmSafe.ForgeContext.TestGroup)) {
