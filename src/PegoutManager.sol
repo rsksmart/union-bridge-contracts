@@ -4,7 +4,6 @@ pragma solidity ^0.8.20;
 import {PegManagerBase} from "./PegManagerBase.sol";
 import {IPegoutManager} from "./interfaces/IPegoutManager.sol";
 import {ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
-import {IMemberRegistry} from "./interfaces/IMemberRegistry.sol";
 import {SignatureData} from "./interfaces/ISignatureManager.sol";
 import {Stream, Slot} from "./interfaces/IStreamManager.sol";
 import {IBitcoinManager, PrevoutData, BitcoinSignatureData} from "./interfaces/IBitcoinManager.sol";
@@ -21,9 +20,6 @@ import {Constants} from "./libraries/Constants.sol";
 /// @title PegoutManager
 /// @notice Manages peg-out operations from Rootstock to Bitcoin
 contract PegoutManager is IPegoutManager, PegManagerBase {
-    /// @notice Member registry contract for managing member data
-    IMemberRegistry public memberRegistry;
-
     /// @notice Timeout for user take operations
     uint256 public userTakeTimeout;
 
@@ -55,16 +51,6 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
 
         userTakeTimeout = _settings.userTakeTimeout;
         operatorTakeTimeout = _settings.operatorTakeTimeout;
-    }
-
-    /// @notice Sets the member registry contract address
-    /// @param _memberRegistry The member registry contract address
-    /// @dev Only callable by the contract owner
-    function setMemberRegistry(IMemberRegistry _memberRegistry) external onlyOwner {
-        if (address(_memberRegistry) == address(0)) {
-            revert MemberRegistryAddressZero();
-        }
-        memberRegistry = _memberRegistry;
     }
 
     /// @notice Gets the temporary peg-out information for a given accept peg-in transaction id
@@ -285,8 +271,8 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         SignatureData[] memory signatureData = signatureManager.getPartialSignatures(_pegoutTxid);
 
         // slither-disable-next-line reentrancy-no-eth reentrancy-benign
-        address takeOperatorAddress = committeeRegistry.getOperatorTakeAddress(pegoutInfo.committeeId, signatureData);
-        bytes32 takeOperatorPubKey = memberRegistry.getMemberTakePubKey(takeOperatorAddress);
+        (address takeOperatorAddress, bytes32 takeOperatorPubKey) =
+            committeeRegistry.getOperatorTakeAddress(pegoutInfo.committeeId, signatureData);
 
         // Update state variables after external calls
         pegoutInfo.takeOperatorAddress = takeOperatorAddress;

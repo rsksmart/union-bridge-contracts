@@ -12,7 +12,6 @@ import {IPeginManager} from "src/interfaces/IPeginManager.sol";
 import {IPegManagerBase} from "src/interfaces/IPegManagerBase.sol";
 import {Slot, SlotState, Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {ISignatureManager} from "src/interfaces/ISignatureManager.sol";
-import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
 import {ProofValidator} from "src/ProofValidator.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {Constants} from "src/libraries/Constants.sol";
@@ -1086,64 +1085,6 @@ contract TestPegoutManager is Test, HelperContract {
         Stream memory updatedStream = streamManager.getStreamById(stream.streamId);
         assertEq(updatedStream.pegoutPacketPointer, 1, "Should advance to second packet");
         assertEq(updatedStream.pegoutSlotPointer, 1, "Should advance slot pointer after locking");
-    }
-
-    function test_setMemberRegistry_Success() external {
-        // Arrange
-        uint256 privKey = uint256(1);
-        address newMemberRegistryAddress = vm.addr(privKey);
-        IMemberRegistry newMemberRegistry = IMemberRegistry(newMemberRegistryAddress);
-        address owner = pegoutManager.owner();
-
-        // Act
-        vm.prank(owner);
-        pegoutManager.setMemberRegistry(newMemberRegistry);
-
-        // Assert
-        assertEq(address(pegoutManager.memberRegistry()), newMemberRegistryAddress);
-    }
-
-    function test_setMemberRegistry_Success_PausedContract() external {
-        // Arrange
-        pauseContracts();
-
-        uint256 privKey = uint256(1);
-        address newMemberRegistryAddress = vm.addr(privKey);
-        IMemberRegistry newMemberRegistry = IMemberRegistry(newMemberRegistryAddress);
-        address owner = pegoutManager.owner();
-
-        // Act
-        vm.prank(owner);
-        pegoutManager.setMemberRegistry(newMemberRegistry);
-
-        // Assert
-        assertEq(address(pegoutManager.memberRegistry()), newMemberRegistryAddress);
-    }
-
-    function test_setMemberRegistry_Revert_AddressZero() external {
-        // Arrange
-        address owner = pegoutManager.owner();
-        IMemberRegistry zeroMemberRegistry = IMemberRegistry(address(0));
-
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegoutManager.MemberRegistryAddressZero.selector));
-
-        // Act
-        vm.prank(owner);
-        pegoutManager.setMemberRegistry(zeroMemberRegistry);
-    }
-
-    function test_setMemberRegistry_Revert_OwnableUnauthorizedAccount() external {
-        // Arrange
-        uint256 privKey = uint256(1);
-        address newMemberRegistryAddress = vm.addr(privKey);
-        IMemberRegistry newMemberRegistry = IMemberRegistry(newMemberRegistryAddress);
-
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
-
-        // Act
-        pegoutManager.setMemberRegistry(newMemberRegistry);
     }
 
     function test_setStreamManager_Success() external {

@@ -323,13 +323,14 @@ interface ICommitteeRegistry is IPausable {
     /// @param _committeeMemberCount The exact number of members required for a committee
     function setCommitteeMemberCount(uint256 _committeeMemberCount) external;
 
-    /// @notice Gets the operator take address for a specific committee
+    /// @notice Gets the operator take address and public key for a specific committee
     /// @param committeeId The ID of the committee
     /// @param signatureData The signature data for the committee members
-    /// @return The operator take address
+    /// @return operatorAddress The operator take address
+    /// @return takePubKey The operator's take public key
     function getOperatorTakeAddress(uint128 committeeId, SignatureData[] calldata signatureData)
         external
-        returns (address);
+        returns (address operatorAddress, bytes32 takePubKey);
 
     /// @notice Release the committee members from a packet (return or reapply staked money)
     function releaseCommittee(uint64 _streamId, uint64 _packetNumber) external;

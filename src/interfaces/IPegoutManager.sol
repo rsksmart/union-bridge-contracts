@@ -140,9 +140,6 @@ interface IPegoutManager is IPausable {
 
     // ===================== Errors =====================
 
-    /// @notice Thrown when the member registry address is set to zero
-    error MemberRegistryAddressZero();
-
     /// @notice Thrown when trying to process a peg-out for a peg-in that hasn't been requested
     /// @param btcTxid The Bitcoin transaction id that wasn't requested
     error PeginNotRequested(bytes32 btcTxid);
