@@ -19,7 +19,7 @@ extra_output = ["storageLayout"]
 # Fix  call didn't revert at a lower depth than cheatcode call depth https://github.com/PaulRBerg/prb-math/issues/248
 allow_internal_expect_revert = true
 
-# Ignore gas reports for Test contract
+# Ignore gas reports for Test contracts and test infrastructure
 gas_reports_ignore = [
     "ERC1967Proxy",
     "DeployScript",
@@ -27,7 +27,8 @@ gas_reports_ignore = [
     "HelperContract",
     "ProofValidatorHarness",
     "TestUtils",
-    "TestPegManager",
+    "TestPeginManager",
+    "TestPegoutManager",
     "TestSignatureManager",
 ]
 
