@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import {BaseProxy} from "./BaseProxy.sol";
+import {AccessControl} from "./AccessControl.sol";
 import {Pausable} from "./Pausable.sol";
 import {
     Role,
@@ -25,7 +25,7 @@ import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/ut
 /// @title CommitteeRegistry
 /// @notice Manages committee formation, selection, and lifecycle for the union bridge system
 /// @dev Handles committee creation, pending committee management, and coordination with MemberRegistry
-contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgradeable, Pausable {
+contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuardUpgradeable, Pausable {
     /// @notice Minimum number of watchtowers required for a committee
     uint256 public minCommitteeWatchtowers;
     /// @notice Minimum number of operators required for a committee
@@ -46,10 +46,6 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
 
     /// @notice Stream manager contract for managing streams and packets
     IStreamManager streamManager;
-    /// @notice Pegin manager contract for peg-in coordination
-    IPeginManager peginManager;
-    /// @notice Pegout manager contract for peg-out coordination
-    IPegoutManager pegoutManager;
     /// @notice Member registry contract for member management
     IMemberRegistry public memberRegistry;
 
@@ -58,8 +54,10 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
 
     /// @notice Initializes the CommitteeRegistry contract
     /// @param _initialOwner The initial owner of the contract
+    /// @param _memberRegistry The member registry contract address
+    /// @dev PeginManager and PegoutManager addresses can be set later via setPeginManager/setPegoutManager
     function initialize(address _initialOwner, IMemberRegistry _memberRegistry) public virtual initializer {
-        __BaseProxy_init(_initialOwner);
+        __AccessControl_init_without_peg_managers(_initialOwner);
         __ReentrancyGuard_init();
         __Pauser_init();
         if (address(_memberRegistry) == address(0)) {
@@ -521,7 +519,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         if (address(_peginManager) == address(0)) {
             revert InvalidZeroAddress();
         }
-        peginManager = _peginManager;
+        peginManager = address(_peginManager);
         emit PeginManagerUpdated(address(_peginManager));
     }
 
@@ -532,7 +530,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         if (address(_pegoutManager) == address(0)) {
             revert InvalidZeroAddress();
         }
-        pegoutManager = _pegoutManager;
+        pegoutManager = address(_pegoutManager);
         emit PegoutManagerUpdated(address(_pegoutManager));
     }
 
@@ -612,19 +610,5 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         emit CommitteeMembersReleased(_streamId, _packetNumber);
         // Delegate member release operations to MemberRegistry
         memberRegistry.releaseCommitteeMembers(committeeMembers, _streamId, _packetNumber);
-    }
-
-    // ===================== Modifiers =====================
-
-    /// @notice Modifier to restrict access to the PeginManager and PegoutManager contracts
-    modifier onlyPegManager() {
-        _onlyPegManager(_msgSender());
-        _;
-    }
-
-    function _onlyPegManager(address _account) internal view {
-        if (address(peginManager) != _account && address(pegoutManager) != _account) {
-            revert UnauthorizedAccount(_account);
-        }
     }
 }

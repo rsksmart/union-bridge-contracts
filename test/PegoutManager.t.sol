@@ -21,7 +21,7 @@ import {Committee} from "src/interfaces/ICommitteeRegistry.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
 
-contract TestPegManager is Test, HelperContract {
+contract TestPegoutManager is Test, HelperContract {
     // Arrange
     // https://www.blockchain.com/explorer/blocks/btc/879500
     uint64 internal constant PACKET_NUMBER = 0;

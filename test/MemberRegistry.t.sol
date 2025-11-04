@@ -15,8 +15,8 @@ import {
 } from "src/interfaces/ICommitteeRegistry.sol";
 import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
 import {IPegoutManager} from "src/interfaces/IPegoutManager.sol";
+import {IAccessControl} from "src/interfaces/IAccessControl.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
-import {Pausable} from "src/Pausable.sol";
 import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {HelperContract, StreamManagerHarness} from "test/helpers/HelperContract.sol";
@@ -1743,7 +1743,7 @@ contract TestMemberRegistry is Test, HelperContract {
         vm.deal(user, minimumDeposit);
 
         // Assert unauthorized account error when calling applyToStream directly on MemberRegistry
-        vm.expectRevert(abi.encodeWithSelector(Pausable.UnauthorizedAccount.selector, user));
+        vm.expectRevert(abi.encodeWithSelector(IAccessControl.UnauthorizedAccount.selector, user));
 
         // Act - call applyToStream directly on MemberRegistry instead of through CommitteeRegistry
         vm.prank(user);
@@ -1766,7 +1766,7 @@ contract TestMemberRegistry is Test, HelperContract {
         );
 
         // Assert unauthorized account error when calling unsubscribeFromStream directly on MemberRegistry
-        vm.expectRevert(abi.encodeWithSelector(Pausable.UnauthorizedAccount.selector, user));
+        vm.expectRevert(abi.encodeWithSelector(IAccessControl.UnauthorizedAccount.selector, user));
 
         // Act - call unsubscribeFromStream directly on MemberRegistry instead of through CommitteeRegistry
         vm.prank(user);

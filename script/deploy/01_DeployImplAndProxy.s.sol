@@ -175,7 +175,6 @@ contract DeployImplAndProxy is ScriptUtils {
         pegoutManager.setSignatureManager(signatureManager);
         pegoutManager.setMemberRegistry(memberRegistry);
         bitcoinManager.setPeginManager(peginManager);
-        // committeeRegistry.setPegManager(pegManager);
         committeeRegistry.setStreamManager(streamManager);
         committeeRegistry.setPeginManager(peginManager);
         committeeRegistry.setPegoutManager(pegoutManager);

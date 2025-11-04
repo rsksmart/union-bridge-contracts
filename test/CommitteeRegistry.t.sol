@@ -19,6 +19,7 @@ import {IPegoutManager} from "src/interfaces/IPegoutManager.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {Pausable} from "src/Pausable.sol";
 import {StreamDenomination, IStreamManager, Stream} from "src/interfaces/IStreamManager.sol";
+import {IAccessControl} from "src/interfaces/IAccessControl.sol";
 import {HelperContract, StreamManagerHarness, MemberRegistryHarness} from "test/helpers/HelperContract.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Constants} from "src/libraries/Constants.sol";
@@ -1402,7 +1403,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_createCommittee_UnauthorizedAccount() external {
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(Pausable.UnauthorizedAccount.selector, address(this)));
+        vm.expectRevert(abi.encodeWithSelector(IAccessControl.UnauthorizedAccount.selector, address(this)));
 
         // Act
         registry.createCommittee(0);

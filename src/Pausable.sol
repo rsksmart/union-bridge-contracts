@@ -61,10 +61,10 @@ contract Pausable is IPausable, PausableUpgradeable {
 
     /// @notice Internal function to check if an account is the pauser
     /// @param _account The account to check
-    /// @dev Reverts with UnauthorizedAccount if the account is not the pausable
+    /// @dev Reverts with UnauthorizedPauser if the account is not the pauser
     function _onlyPauser(address _account) internal view virtual {
         if (pauser != _account) {
-            revert UnauthorizedAccount(_account);
+            revert UnauthorizedPauser(_account);
         }
     }
 
@@ -72,9 +72,9 @@ contract Pausable is IPausable, PausableUpgradeable {
     /// @param newPauser The new pauser address
     event PauserUpdated(address newPauser);
 
-    /// @notice Error thrown when an account is not authorized
+    /// @notice Error thrown when an account is not authorized as pauser
     /// @param account The unauthorized account
-    error UnauthorizedAccount(address account);
+    error UnauthorizedPauser(address account);
 
     /// @notice Error thrown when a zero address is provided
     error ZeroAddress();

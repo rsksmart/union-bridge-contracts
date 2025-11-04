@@ -23,7 +23,7 @@ import {ICommitteeRegistry, Committee} from "src/interfaces/ICommitteeRegistry.s
 import {ISignatureManager} from "src/interfaces/ISignatureManager.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract TestPegManager is Test, HelperContract {
+contract TestPeginManager is Test, HelperContract {
     // Arrange
     // https://www.blockchain.com/explorer/blocks/btc/879500
     uint64 internal constant PACKET_NUMBER = 0;

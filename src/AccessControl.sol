@@ -43,6 +43,14 @@ contract AccessControl is IAccessControl, BaseProxy {
         __BaseProxy_init(_initialOwner);
     }
 
+    /// @notice Initializes the AccessControl contract with delayed peg manager setup
+    /// @dev Used when peg managers need to be set after deployment via setters
+    /// @dev Can only be called once during contract deployment
+    /// @param _initialOwner The address that will be set as the initial owner
+    function __AccessControl_init_without_peg_managers(address _initialOwner) internal initializer {
+        __BaseProxy_init(_initialOwner);
+    }
+
     /**
      * @dev Throws if the sender is not the peginManager or pegoutManager.
      */

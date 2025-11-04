@@ -699,4 +699,8 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
     function setPauser(address _newPauser) public override onlyOwner {
         super.setPauser(_newPauser);
     }
+
+    /// @notice Error thrown when an account is not authorized
+    /// @param account The unauthorized account
+    error UnauthorizedAccount(address account);
 }
