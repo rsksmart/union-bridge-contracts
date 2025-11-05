@@ -26,6 +26,16 @@ abstract contract ScriptUtils is Script {
         return vm.rememberKey(getDeployerKey());
     }
 
+    function getPauserAddress() public returns (address) {
+        // Try to get PAUSER_ADDRESS from environment
+        // If not set, default to deployer address
+        try vm.envAddress("PAUSER_ADDRESS") returns (address pauserAddr) {
+            return pauserAddr;
+        } catch {
+            return getDeployerAddress();
+        }
+    }
+
     function getMemberKey(uint32 index) public view returns (uint256) {
         // The deploy contracts scripts use members from 1 to 10 we map them to 0 to 9
         return vm.deriveKey(vm.envString("MNEMONIC"), index);

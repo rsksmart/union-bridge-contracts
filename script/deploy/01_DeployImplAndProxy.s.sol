@@ -35,6 +35,7 @@ struct DeployedContracts {
     SignatureManager signatureManager;
     PauseManager pauseManager;
     address upgradableOwner;
+    address pauser;
     address payable bridgeAddress;
 }
 
@@ -42,6 +43,7 @@ struct DeployedContracts {
 contract DeployImplAndProxy is ScriptUtils {
     // Contracts to be deployed
     address public upgradableOwner;
+    address public pauser;
     BtcNetwork public btcBtcNetwork;
     uint64[] denominations;
     address payable public bridgeAddress;
@@ -58,6 +60,7 @@ contract DeployImplAndProxy is ScriptUtils {
             uint64(1_000_000_000) // 10 BTC
         ];
         upgradableOwner = getDeployerAddress();
+        pauser = getPauserAddress();
         streamManagerSettings = StreamManagerSettingsConfig.getSettings(block.chainid);
         pegManagerSettings = PegManagerSettingsConfig.getSettings(block.chainid);
         // RSK Mainnet
@@ -82,6 +85,7 @@ contract DeployImplAndProxy is ScriptUtils {
     function run() public returns (DeployedContracts memory) {
         setUp();
         printAddress(upgradableOwner, "upgradableOwner");
+        printAddress(pauser, "pauser");
         printAddress(bridgeAddress, "Bridge");
 
         // Deploy contracts
@@ -145,14 +149,10 @@ contract DeployImplAndProxy is ScriptUtils {
         }
 
         PauseManager pauseManager = deployPauseManager(
-            upgradableOwner,
-            address(peginManager),
-            address(pegoutManager),
-            address(committeeRegistry),
-            address(memberRegistry)
+            pauser, address(peginManager), address(pegoutManager), address(committeeRegistry), address(memberRegistry)
         );
-        if (pauseManager.owner() != upgradableOwner) {
-            revert("PauseManager owner is not the upgradable owner");
+        if (pauseManager.owner() != pauser) {
+            revert("PauseManager owner is not the pauser owner");
         }
         if (address(pauseManager.peginManager()) != address(peginManager)) {
             revert("PauseManager peginManager is not the peginManager address");
@@ -207,6 +207,7 @@ contract DeployImplAndProxy is ScriptUtils {
             signatureManager: signatureManager,
             pauseManager: pauseManager,
             upgradableOwner: upgradableOwner,
+            pauser: pauser,
             bridgeAddress: bridgeAddress
         });
     }
