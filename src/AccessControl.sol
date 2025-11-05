@@ -33,10 +33,10 @@ contract AccessControl is IAccessControl, BaseProxy {
         initializer
     {
         if (_peginManager == address(0)) {
-            revert PegManagerAddressZero();
+            revert PeginManagerAddressZero();
         }
         if (_pegoutManager == address(0)) {
-            revert PegManagerAddressZero();
+            revert PegoutManagerAddressZero();
         }
         peginManager = _peginManager;
         pegoutManager = _pegoutManager;
