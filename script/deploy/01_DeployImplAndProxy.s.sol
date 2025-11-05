@@ -122,7 +122,12 @@ contract DeployImplAndProxy is ScriptUtils {
         }
 
         StreamManager streamManager = deployStreamManager(
-            upgradableOwner, peginManager, pegoutManager, committeeRegistry, denominations, streamManagerSettings
+            upgradableOwner,
+            address(peginManager),
+            address(pegoutManager),
+            committeeRegistry,
+            denominations,
+            streamManagerSettings
         );
         if (streamManager.owner() != upgradableOwner) {
             revert("StreamManager owner is not the upgradable owner");
@@ -289,8 +294,8 @@ contract DeployImplAndProxy is ScriptUtils {
 
     function deployStreamManager(
         address _upgradableOwner,
-        PeginManager _peginManager,
-        PegoutManager _pegoutManager,
+        address _peginManager,
+        address _pegoutManager,
         ICommitteeRegistry _committeeRegistry,
         uint64[] memory _denominations,
         StreamManagerSettings memory _settings
