@@ -27,7 +27,7 @@ contract AcceptPeginScript is ScriptUtils, ContractAddressManager {
         bitcoinManager = IBitcoinManager(peginManager.bitcoinManager());
 
         // Check if the peg-in request exists and is in REGISTERED status
-        StreamPosition memory streamPosition = peginManager.getStreamPosition(_requestPeginTxid);
+        StreamPosition memory streamPosition = peginManager.getStreamPositionByRequestPegin(_requestPeginTxid);
         if (streamPosition.pegStatus != PegStatus.REGISTERED) {
             revert("PeginRequest not registered or already accepted");
         }
@@ -88,7 +88,7 @@ contract AcceptPeginScript is ScriptUtils, ContractAddressManager {
         vm.stopBroadcast();
 
         // check if peginRequest is accepted
-        StreamPosition memory streamPosition = peginManager.getStreamPosition(_requestPeginTxid);
+        StreamPosition memory streamPosition = peginManager.getStreamPositionByRequestPegin(_requestPeginTxid);
         if (streamPosition.pegStatus != PegStatus.ACCEPTED) {
             revert("PeginRequest not accepted");
         }

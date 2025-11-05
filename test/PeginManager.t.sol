@@ -102,7 +102,7 @@ contract TestPeginManager is Test, HelperContract {
         // Assert
         bytes32 txid = getBtcTxid(btcTransaction);
         // Registered Peg In
-        StreamPosition memory streamPosition = peginManager.getStreamPosition(txid);
+        StreamPosition memory streamPosition = peginManager.getStreamPositionByRequestPegin(txid);
         assertEq(streamPosition.streamId, 1, "Incorrect streamId registered");
         assertEq(streamPosition.packetNumber, 0, "Incorrect packetNumber registered");
         assertEq(streamPosition.slotId, 0, "Should reserve first slot in packet");
@@ -383,7 +383,7 @@ contract TestPeginManager is Test, HelperContract {
 
         // Assert
         // Registered Peg In Stream Position
-        StreamPosition memory streamPosition = peginManager.getStreamPosition(peginRequestTxid);
+        StreamPosition memory streamPosition = peginManager.getStreamPositionByRequestPegin(peginRequestTxid);
         assertEq(streamPosition.streamId, streamId, "Incorrect streamId registered");
         assertEq(streamPosition.packetNumber, PACKET_NUMBER, "Incorrect packetNumber registered");
         assertEq(streamPosition.slotId, slotId, "Incorrect slotId registered");
@@ -481,7 +481,7 @@ contract TestPeginManager is Test, HelperContract {
 
             // Verify each request gets correct slotId
             bytes32 requestPeginTxid = getBtcTxid(btcTransaction);
-            StreamPosition memory streamPosition = peginManager.getStreamPosition(requestPeginTxid);
+            StreamPosition memory streamPosition = peginManager.getStreamPositionByRequestPegin(requestPeginTxid);
             assertEq(streamPosition.slotId, i, "SlotId should increment for each request");
             assertEq(streamPosition.packetNumber, 0, "Should stay in same packet");
 
@@ -531,14 +531,14 @@ contract TestPeginManager is Test, HelperContract {
         peginManager.acceptPegin(acceptPeginTxSPVProof2);
 
         // 3. Verify correct slot is filled (slot 1, not slot 0)
-        StreamPosition memory streamPosition2 = peginManager.getStreamPosition(requestPeginTxid2);
+        StreamPosition memory streamPosition2 = peginManager.getStreamPositionByRequestPegin(requestPeginTxid2);
         Slot memory filledSlot =
             streamManager.getSlot(streamPosition2.streamId, streamPosition2.packetNumber, streamPosition2.slotId);
         assertEq(uint256(filledSlot.state), uint256(SlotState.FILLED), "Slot 1 should be FILLED");
         assertEq(streamPosition2.slotId, 1, "Should be slot 1");
 
         // 4. Verify first slot remains in RESERVED state
-        StreamPosition memory streamPosition1 = peginManager.getStreamPosition(requestPeginTxid1);
+        StreamPosition memory streamPosition1 = peginManager.getStreamPositionByRequestPegin(requestPeginTxid1);
         Slot memory reservedSlot =
             streamManager.getSlot(streamPosition1.streamId, streamPosition1.packetNumber, streamPosition1.slotId);
         assertEq(uint256(reservedSlot.state), uint256(SlotState.RESERVED), "Slot 0 should remain RESERVED");
@@ -549,7 +549,7 @@ contract TestPeginManager is Test, HelperContract {
         // 1. Request pegin to reserve slot
         BtcTransaction memory peginTx = setup_requestPeginFlow();
         bytes32 requestPeginTxid = getBtcTxid(peginTx);
-        StreamPosition memory streamPosition = peginManager.getStreamPosition(requestPeginTxid);
+        StreamPosition memory streamPosition = peginManager.getStreamPositionByRequestPegin(requestPeginTxid);
 
         // 2. Block the slot externally
         vm.prank(streamManager.owner());

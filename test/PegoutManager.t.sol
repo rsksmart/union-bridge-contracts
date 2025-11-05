@@ -527,7 +527,7 @@ contract TestPegoutManager is Test, HelperContract {
 
         bytes32 requestPeginTxid = bitcoinManager.getBtcTxid(requestPeginTx);
         PegoutTempInfo memory pegoutInfo = pegoutManager.getPegoutTempInfo(acceptPeginTxid);
-        StreamPosition memory streamPosition = peginManager.getStreamPosition(requestPeginTxid);
+        StreamPosition memory streamPosition = peginManager.getStreamPositionByRequestPegin(requestPeginTxid);
 
         // internal state should be consistent
         assertEq(uint256(streamPosition.pegStatus), uint256(PegStatus.COMPLETED), "Peg status should be COMPLETED");

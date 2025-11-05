@@ -170,7 +170,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
 
         // Calculate requestPeginTxid from BtcTransaction
         requestPeginTxid = bitcoinManager.getBtcTxid(_peginRequestTxSPVProof.btcTx);
-        if (_getStreamPosition(requestPeginTxid).pegStatus != PegStatus.NOT_REGISTERED) {
+        if (_getStreamPositionByRequestPegin(requestPeginTxid).pegStatus != PegStatus.NOT_REGISTERED) {
             revert PeginAlreadyRequested(requestPeginTxid);
         }
 
@@ -244,7 +244,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
         bytes32 requestPeginTxid = _peginAcceptedTxSPVProof.btcTx.inputs[Constants.VOUT_INDEX_TAPTREE].txId;
 
         // Validate the peg in request tx exists and the status
-        StreamPosition memory streamInfo = _getStreamPosition(requestPeginTxid);
+        StreamPosition memory streamInfo = _getStreamPositionByRequestPegin(requestPeginTxid);
         if (streamInfo.pegStatus == PegStatus.NOT_REGISTERED) {
             revert PeginNotRequested(requestPeginTxid);
         }
@@ -323,17 +323,23 @@ contract PeginManager is IPeginManager, PegManagerBase {
         //requestRbtc(rskDestinationAddress, rbtcAmount);
     }
 
-    /// @notice Gets the stream position information for a given Bitcoin transaction id
-    /// @param _btcTxid The Bitcoin transaction id to look up
+    /// @notice Gets the stream position information for a given request peg-in transaction id
+    /// @dev Looks up the corresponding accept peg-in txid and queries the StreamManager
+    /// @param _requestPeginTxid The request peg-in Bitcoin transaction id to look up
     /// @return The stream position information
-    function getStreamPosition(bytes32 _btcTxid) external view returns (StreamPosition memory) {
-        return _getStreamPosition(_btcTxid);
+    function getStreamPositionByRequestPegin(bytes32 _requestPeginTxid) external view returns (StreamPosition memory) {
+        return _getStreamPositionByRequestPegin(_requestPeginTxid);
     }
 
-    /// @notice Gets the stream position information for a given request peg-in transaction id
+    /// @dev Internal helper to get stream position from request peg-in txid
     /// @param _requestPeginTxid The request peg-in transaction id
     /// @return The stream position information
-    function _getStreamPosition(bytes32 _requestPeginTxid) internal view returns (StreamPosition memory) {
-        return streamManager.getStreamPosition(acceptPegins[_requestPeginTxid]);
+    function _getStreamPositionByRequestPegin(bytes32 _requestPeginTxid)
+        internal
+        view
+        returns (StreamPosition memory)
+    {
+        bytes32 acceptPeginTxid = acceptPegins[_requestPeginTxid];
+        return streamManager.getStreamPosition(acceptPeginTxid);
     }
 }

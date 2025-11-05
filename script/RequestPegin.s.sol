@@ -76,7 +76,7 @@ contract RequestPeginScript is ScriptUtils, ContractAddressManager {
         console.log("peginRequestTxid");
         console.logBytes32(peginRequestTxid);
         // check if peginRequest is already registered
-        StreamPosition memory streamPosition = peginManager.getStreamPosition(peginRequestTxid);
+        StreamPosition memory streamPosition = peginManager.getStreamPositionByRequestPegin(peginRequestTxid);
         if (streamPosition.pegStatus != PegStatus.NOT_REGISTERED) {
             revert("PeginRequest already registered");
         }
@@ -120,7 +120,7 @@ contract RequestPeginScript is ScriptUtils, ContractAddressManager {
         // }
 
         // check if peginRequest is registered
-        streamPosition = peginManager.getStreamPosition(peginRequestTxid);
+        streamPosition = peginManager.getStreamPositionByRequestPegin(peginRequestTxid);
         if (streamPosition.pegStatus != PegStatus.REGISTERED) {
             revert("PeginRequest not registered");
         }

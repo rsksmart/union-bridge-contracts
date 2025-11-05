@@ -20,10 +20,11 @@ interface IPeginManager is IPausable {
         external
         returns (string memory temporaryPeginAddress, uint64 packetNumber);
 
-    /// @notice Retrieves the stream position information for a given Bitcoin transaction id
-    /// @param btcTxid The Bitcoin transaction id to look up
+    /// @notice Retrieves the stream position information for a given request peg-in transaction id
+    /// @dev Looks up the corresponding accept peg-in txid and queries the StreamManager
+    /// @param requestPeginTxid The request peg-in Bitcoin transaction id to look up
     /// @return The stream position containing stream, packet, slot, and status information
-    function getStreamPosition(bytes32 btcTxid) external view returns (StreamPosition memory);
+    function getStreamPositionByRequestPegin(bytes32 requestPeginTxid) external view returns (StreamPosition memory);
 
     /// @notice Registers a peg-in request transaction from Bitcoin
     /// @dev Validates the SPV proof and initiates the peg-in process
