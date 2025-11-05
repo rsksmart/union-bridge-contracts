@@ -51,9 +51,7 @@ contract AccessControl is IAccessControl, BaseProxy {
         __BaseProxy_init(_initialOwner);
     }
 
-    /**
-     * @dev Throws if the sender is not the peginManager or pegoutManager.
-     */
+    /// @dev Reverts if the sender is neither the peginManager nor the pegoutManager
     function _checkPegManager() internal view virtual {
         address sender = _msgSender();
         if (peginManager != sender && pegoutManager != sender) {

@@ -46,7 +46,7 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
 
     /// @notice Sets the Peg Manager contract address
     /// @dev Only callable by the contract owner
-    /// @param _peginManager The address of the Peg Manager contract
+    /// @param _peginManager The address of the Pegin Manager contract
     function setPeginManager(IPeginManager _peginManager) external onlyOwner {
         if (address(_peginManager) == address(0)) {
             revert InvalidZeroAddress();

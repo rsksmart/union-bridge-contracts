@@ -111,8 +111,9 @@ contract DeployImplAndProxy is ScriptUtils {
             revert("PeginManager bridge is not the bridge address");
         }
 
-        PegoutManager pegoutManager =
-            deployPegoutManager(upgradableOwner, bridgeAddress, committeeRegistry, bitcoinManager, pegoutManagerSettings);
+        PegoutManager pegoutManager = deployPegoutManager(
+            upgradableOwner, bridgeAddress, committeeRegistry, bitcoinManager, pegoutManagerSettings
+        );
         if (pegoutManager.owner() != upgradableOwner) {
             revert("PegoutManager owner is not the upgradable owner");
         }
