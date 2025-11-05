@@ -334,4 +334,8 @@ interface IMemberRegistry is IPausable {
     error _inconsistentPreStakedBalanceAndRole(
         address memberAddress, StreamDenomination denomination, uint256 preStakedBalance, Role requestedRole
     );
+
+    /// @notice Thrown when an account is not authorized to perform an operation
+    /// @param account The unauthorized account address
+    error UnauthorizedAccount(address account);
 }
