@@ -48,7 +48,7 @@ contract DeployImplAndProxy is ScriptUtils {
     uint64[] denominations;
     address payable public bridgeAddress;
     StreamManagerSettings public streamManagerSettings;
-    PegoutManagerSettings public pegManagerSettings;
+    PegoutManagerSettings public pegoutManagerSettings;
 
     function setUp() internal {
         bridgeAddress = RSK_BRIDGE_ADDRESS;
@@ -62,7 +62,7 @@ contract DeployImplAndProxy is ScriptUtils {
         upgradableOwner = getDeployerAddress();
         pauser = getPauserAddress();
         streamManagerSettings = StreamManagerSettingsConfig.getSettings(block.chainid);
-        pegManagerSettings = PegManagerSettingsConfig.getSettings(block.chainid);
+        pegoutManagerSettings = PegManagerSettingsConfig.getSettings(block.chainid);
         // RSK Mainnet
         if (block.chainid == ChainIds.RSK_MAINNET) {
             btcBtcNetwork = BtcNetwork.MAINNET;
@@ -112,7 +112,7 @@ contract DeployImplAndProxy is ScriptUtils {
         }
 
         PegoutManager pegoutManager =
-            deployPegoutManager(upgradableOwner, bridgeAddress, committeeRegistry, bitcoinManager, pegManagerSettings);
+            deployPegoutManager(upgradableOwner, bridgeAddress, committeeRegistry, bitcoinManager, pegoutManagerSettings);
         if (pegoutManager.owner() != upgradableOwner) {
             revert("PegoutManager owner is not the upgradable owner");
         }
