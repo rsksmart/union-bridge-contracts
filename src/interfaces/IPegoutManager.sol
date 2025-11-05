@@ -4,7 +4,24 @@ pragma solidity ^0.8.20;
 import {BitcoinSignatureData} from "./IBitcoinManager.sol";
 import {SlotState} from "./IStreamManager.sol";
 import {IPausable} from "./IPausable.sol";
-import {BtcTxSPVProof, StreamPosition, PegoutTempInfo, PegStatus} from "./IPegCommonTypes.sol";
+import {BtcTxSPVProof, StreamPosition, PegStatus} from "./IPegCommonTypes.sol";
+
+/// @notice Temporary information stored during peg-out processing
+/// @dev Contains data needed for peg-out transaction validation
+struct PegoutTempInfo {
+    /// @notice The user's public key that will receive the Bitcoin funds
+    bytes userPubKey;
+    /// @notice Timestamp when the peg-out was initially created
+    uint256 createdAt;
+    /// @notice Timestamp when the operator take was last updated/triggered
+    uint256 operatorTakeUpdatedAt;
+    /// @notice The committee ID responsible for signing this peg-out
+    uint128 committeeId;
+    /// @notice The operator address that will advance the funds to the user
+    address takeOperatorAddress;
+    /// @notice The public key of the selected operator for Bitcoin transactions (x-coordinate only)
+    bytes32 takeOperatorPubKey;
+}
 
 /// @notice Settings for the PegoutManager contract
 /// @dev Contains timeout configurations for peg-out operations

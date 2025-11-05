@@ -5,14 +5,8 @@ import {Test} from "forge-std/Test.sol";
 import {HelperContract, StreamManagerHarness} from "test/helpers/HelperContract.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {Pausable} from "src/Pausable.sol";
-import {
-    BtcTransaction,
-    BtcTxSPVProof,
-    StreamPosition,
-    RequestPeginTempInfo,
-    PegStatus
-} from "src/interfaces/IPegCommonTypes.sol";
-import {IPeginManager} from "src/interfaces/IPeginManager.sol";
+import {BtcTransaction, BtcTxSPVProof, StreamPosition, PegStatus} from "src/interfaces/IPegCommonTypes.sol";
+import {IPeginManager, RequestPeginTempInfo} from "src/interfaces/IPeginManager.sol";
 import {IPegManagerBase} from "src/interfaces/IPegManagerBase.sol";
 import {PrevoutData} from "src/interfaces/IBitcoinManager.sol";
 import {Slot, SlotState, Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";

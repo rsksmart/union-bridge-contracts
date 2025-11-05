@@ -15,7 +15,8 @@ import {StreamDenomination, Slot} from "src/interfaces/IStreamManager.sol";
 import {
     BtcTxIn, BtcTxOut, BtcTransaction, BitcoinSignatureData, PrevoutData
 } from "src/interfaces/IBitcoinManager.sol";
-import {BtcTxSPVProof, StreamPosition, PegStatus, PegoutTempInfo} from "src/interfaces/IPegCommonTypes.sol";
+import {BtcTxSPVProof, StreamPosition, PegStatus} from "src/interfaces/IPegCommonTypes.sol";
+import {PegoutTempInfo} from "src/interfaces/IPegoutManager.sol";
 import {IPegoutManager} from "src/interfaces/IPegoutManager.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
 import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";

@@ -3,7 +3,18 @@ pragma solidity ^0.8.20;
 
 import {PrevoutData} from "./IBitcoinManager.sol";
 import {IPausable} from "./IPausable.sol";
-import {BtcTxSPVProof, StreamPosition, RequestPeginTempInfo} from "./IPegCommonTypes.sol";
+import {BtcTxSPVProof, StreamPosition} from "./IPegCommonTypes.sol";
+
+/// @notice Temporary information stored during peg-in request processing
+/// @dev Contains data needed for the accept peg-in phase
+struct RequestPeginTempInfo {
+    /// @notice The RSK address that will receive the RBTC
+    address rskDestinationAddress;
+    /// @notice The user's Bitcoin public key for reimbursement (x-coordinate only)
+    bytes32 btcReimbursementPubKey;
+    /// @notice The signature hash that committee members need to sign
+    bytes32 acceptPeginSignatureHash;
+}
 
 /// @title IPeginManager
 /// @notice Interface for managing peg-in operations

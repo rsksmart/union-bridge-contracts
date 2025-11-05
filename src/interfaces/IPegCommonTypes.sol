@@ -57,31 +57,3 @@ struct StreamPosition {
     /// @notice The current status of the peg operation
     PegStatus pegStatus;
 }
-
-/// @notice Temporary information stored during peg-in request processing
-/// @dev Contains data needed for the accept peg-in phase
-struct RequestPeginTempInfo {
-    /// @notice The RSK address that will receive the RBTC
-    address rskDestinationAddress;
-    /// @notice The user's Bitcoin public key for reimbursement (x-coordinate only)
-    bytes32 btcReimbursementPubKey;
-    /// @notice The signature hash that committee members need to sign
-    bytes32 acceptPeginSignatureHash;
-}
-
-/// @notice Temporary information stored during peg-out processing
-/// @dev Contains data needed for peg-out transaction validation
-struct PegoutTempInfo {
-    /// @notice The user's public key that will receive the Bitcoin funds
-    bytes userPubKey;
-    /// @notice Timestamp when the peg-out was initially created
-    uint256 createdAt;
-    /// @notice Timestamp when the operator take was last updated/triggered
-    uint256 operatorTakeUpdatedAt;
-    /// @notice The committee ID responsible for signing this peg-out
-    uint128 committeeId;
-    /// @notice The operator address that will advance the funds to the user
-    address takeOperatorAddress;
-    /// @notice The public key of the selected operator for Bitcoin transactions (x-coordinate only)
-    bytes32 takeOperatorPubKey;
-}

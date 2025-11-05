@@ -2,12 +2,12 @@
 pragma solidity ^0.8.20;
 
 import {PegManagerBase} from "./PegManagerBase.sol";
-import {IPegoutManager, PegoutManagerSettings} from "./interfaces/IPegoutManager.sol";
+import {IPegoutManager, PegoutManagerSettings, PegoutTempInfo} from "./interfaces/IPegoutManager.sol";
 import {ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
 import {SignatureData} from "./interfaces/ISignatureManager.sol";
 import {Stream, Slot} from "./interfaces/IStreamManager.sol";
 import {IBitcoinManager, PrevoutData, BitcoinSignatureData} from "./interfaces/IBitcoinManager.sol";
-import {BtcTxSPVProof, StreamPosition, PegoutTempInfo, PegStatus} from "./interfaces/IPegCommonTypes.sol";
+import {BtcTxSPVProof, StreamPosition, PegStatus} from "./interfaces/IPegCommonTypes.sol";
 import {BtcHelper} from "./libraries/BtcHelper.sol";
 import {Constants} from "./libraries/Constants.sol";
 
