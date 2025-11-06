@@ -2,16 +2,14 @@
 pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
-import {HelperContract} from "test/helpers/HelperContract.sol";
-import {
-    BtcTransaction,
-    BtcTxSPVProof,
-    StreamPosition,
-    PegStatus,
-    IPegManager,
-    BitcoinSignatureData
-} from "src/interfaces/IPegManager.sol";
-import {PegoutTempInfo} from "src/PegManager.sol";
+import {HelperContract, StreamManagerHarness} from "test/helpers/HelperContract.sol";
+import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import {Pausable} from "src/Pausable.sol";
+import {BtcTransaction, BtcTxSPVProof, StreamPosition, PegStatus} from "src/interfaces/IPegCommonTypes.sol";
+import {BitcoinSignatureData} from "src/interfaces/IBitcoinManager.sol";
+import {IPegoutManager, PegoutTempInfo} from "src/interfaces/IPegoutManager.sol";
+import {IPeginManager} from "src/interfaces/IPeginManager.sol";
+import {IPegManagerBase} from "src/interfaces/IPegManagerBase.sol";
 import {Slot, SlotState, Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {ISignatureManager} from "src/interfaces/ISignatureManager.sol";
 import {ProofValidator} from "src/ProofValidator.sol";
@@ -22,7 +20,7 @@ import {Committee} from "src/interfaces/ICommitteeRegistry.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
 
-contract TestPegManager is Test, HelperContract {
+contract TestPegoutManager is Test, HelperContract {
     // Arrange
     // https://www.blockchain.com/explorer/blocks/btc/879500
     uint64 internal constant PACKET_NUMBER = 0;
@@ -44,7 +42,6 @@ contract TestPegManager is Test, HelperContract {
         setupCommitteeId = committeeId;
     }
 
-    // ================= Request Pegout =================
     function test_tryPegout_Success() external {
         // Arrange
         BtcTxIn[] memory inputs = new BtcTxIn[](1);
@@ -86,8 +83,8 @@ contract TestPegManager is Test, HelperContract {
             keccak256(abi.encode(stream.streamId, packetNumber, slotId, address(this), mockBlockHash));
 
         // Assert
-        vm.expectEmit(address(pm));
-        emit IPegManager.PegoutRequested(
+        vm.expectEmit(address(pegoutManager));
+        emit IPegoutManager.PegoutRequested(
             userPubKey,
             COMMITTEE_ID_STREAM_1_COMMITTEE_1,
             expectedSignatureData,
@@ -99,11 +96,11 @@ contract TestPegManager is Test, HelperContract {
         );
 
         // Act
-        pm.tryPegout{value: amountInWei}(userPubKey);
+        pegoutManager.tryPegout{value: amountInWei}(userPubKey);
 
         // Assert pegout signature hash matches expected
         assertEq(
-            pm.getPegoutTxid(stream.streamId, packetNumber, slotId),
+            pegoutManager.getPegoutTxid(stream.streamId, packetNumber, slotId),
             expectedSignatureData.txid,
             "expected hash doesn't match the pegout computed one"
         );
@@ -164,8 +161,8 @@ contract TestPegManager is Test, HelperContract {
             keccak256(abi.encode(stream.streamId, packetNumber, slotId, address(this), mockBlockHash));
 
         // Assert
-        vm.expectEmit(address(pm));
-        emit IPegManager.PegoutRequested(
+        vm.expectEmit(address(pegoutManager));
+        emit IPegoutManager.PegoutRequested(
             userPubKey,
             COMMITTEE_ID_STREAM_1_COMMITTEE_1,
             expectedSignatureData,
@@ -177,11 +174,11 @@ contract TestPegManager is Test, HelperContract {
         );
 
         // Act
-        pm.tryPegout{value: amountInWei}(userPubKey);
+        pegoutManager.tryPegout{value: amountInWei}(userPubKey);
 
         // Assert pegout signature hash matches expected
         assertEq(
-            pm.getPegoutTxid(stream.streamId, packetNumber, slotId),
+            pegoutManager.getPegoutTxid(stream.streamId, packetNumber, slotId),
             expectedSignatureData.txid,
             "expected hash doesn't match the pegout computed one"
         );
@@ -227,7 +224,7 @@ contract TestPegManager is Test, HelperContract {
             assertEq(slotIdExpected, slotId);
 
             // Act
-            pm.tryPegout{value: amountInWei}(userPubKey);
+            pegoutManager.tryPegout{value: amountInWei}(userPubKey);
 
             // Assert
             Slot memory slot = streamManager.getSlot(stream.streamId, packetNumber, slotId);
@@ -247,10 +244,10 @@ contract TestPegManager is Test, HelperContract {
         bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b00";
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegManager.InvalidCompressedPubKey.selector, userPubKey));
+        vm.expectRevert(abi.encodeWithSelector(IPegoutManager.InvalidCompressedPubKey.selector, userPubKey));
 
         // Act
-        pm.tryPegout(userPubKey);
+        pegoutManager.tryPegout(userPubKey);
     }
 
     function test_tryPegout_Revert_InvalidPublicKeyFirstByte() external {
@@ -258,10 +255,10 @@ contract TestPegManager is Test, HelperContract {
         bytes memory userPubKey = hex"04d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegManager.InvalidCompressedPubKey.selector, userPubKey));
+        vm.expectRevert(abi.encodeWithSelector(IPegoutManager.InvalidCompressedPubKey.selector, userPubKey));
 
         // Act
-        pm.tryPegout(userPubKey);
+        pegoutManager.tryPegout(userPubKey);
     }
 
     function test_tryPegout_Revert_StreamNotFoundByDenomination() external {
@@ -274,7 +271,7 @@ contract TestPegManager is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(IStreamManager.StreamNotFoundByDenomination.selector, amount));
 
         // Act
-        pm.tryPegout{value: amountInWei}(userPubKey);
+        pegoutManager.tryPegout{value: amountInWei}(userPubKey);
     }
 
     function test_tryPegout_Revert_NoFilledSlot() external {
@@ -289,7 +286,7 @@ contract TestPegManager is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(IStreamManager.NoFilledSlot.selector, stream.streamId));
 
         // Act
-        pm.tryPegout{value: amountInWei}(userPubKey);
+        pegoutManager.tryPegout{value: amountInWei}(userPubKey);
     }
 
     // we only check the revert case since the success cases are being checked in the _addMemberSignaturePegout tests
@@ -307,21 +304,25 @@ contract TestPegManager is Test, HelperContract {
     function test_registerUserTake_success() external {
         // Setup
         RegisterUserTakeSetup memory setup = setup_pegout();
+        StreamPosition memory streamInfo = StreamPosition({
+            streamId: setup.stream.streamId,
+            packetNumber: setup.packetNumber,
+            slotId: setup.slotId,
+            pegStatus: PegStatus.USER_TAKE
+        });
 
         // Expect the PegoutRegistered event
-        vm.expectEmit(address(pm));
-        emit IPegManager.PegoutRegistered(
+        vm.expectEmit(address(pegoutManager));
+        emit IPegoutManager.PegoutRegistered(
             setup.pegoutTxSPVProof.blockHash,
             setup.pegoutTxid,
             setup.acceptPeginTxid,
             COMMITTEE_ID_STREAM_1_COMMITTEE_1,
-            setup.stream.streamId,
-            setup.packetNumber,
-            setup.slotId
+            streamInfo
         );
 
         // Register the peg-out transaction
-        pm.registerUserTake(setup.pegoutTxSPVProof);
+        pegoutManager.registerUserTake(setup.pegoutTxSPVProof);
 
         // Verify the slot was marked as COMPLETED
         Slot memory updatedSlot = streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId);
@@ -335,10 +336,10 @@ contract TestPegManager is Test, HelperContract {
         streamManager.setSlotStateHarness(setup.stream.streamId, setup.packetNumber, setup.slotId, SlotState.FILLED);
 
         vm.expectRevert(
-            abi.encodeWithSelector(IPegManager.InvalidSlotState.selector, SlotState.FILLED, SlotState.LOCKED)
+            abi.encodeWithSelector(IPegoutManager.InvalidSlotState.selector, SlotState.FILLED, SlotState.LOCKED)
         );
 
-        pm.registerUserTake(setup.pegoutTxSPVProof);
+        pegoutManager.registerUserTake(setup.pegoutTxSPVProof);
     }
 
     function test_registerUserTake_Revert_InvalidAcceptPeginTxid() external {
@@ -365,8 +366,10 @@ contract TestPegManager is Test, HelperContract {
         streamManager.setSlotStateHarness(stream.streamId, packetNumber, slotId, SlotState.LOCKED);
 
         // Set up the pegoutTxs mapping
-        pm.setPegoutTempInfoHarness(acceptPeginTxid, userPubKey);
-        pm.setStreamPositionHarness(acceptPeginTxid, stream.streamId, packetNumber, slotId, PegStatus.ACCEPTED);
+        pegoutManager.setPegoutTempInfoHarness(acceptPeginTxid, userPubKey);
+        peginManager.setStreamPositionHarness(
+            acceptPeginTxid, stream.streamId, packetNumber, slotId, PegStatus.ACCEPTED
+        );
 
         // Create SPV proof for the peg-out transaction
         BtcTxSPVProof memory pegoutTxSPVProof = createBtcTxSPVProof(pegoutTx);
@@ -376,11 +379,11 @@ contract TestPegManager is Test, HelperContract {
 
         // Expect revert for invalid accept peg-in tx id
         vm.expectRevert(
-            abi.encodeWithSelector(IPegManager.InvalidAcceptPeginTxid.selector, differentTxid, acceptPeginTxid)
+            abi.encodeWithSelector(IPeginManager.InvalidAcceptPeginTxid.selector, differentTxid, acceptPeginTxid)
         );
 
         // Register the peg-out transaction
-        pm.registerUserTake(pegoutTxSPVProof);
+        pegoutManager.registerUserTake(pegoutTxSPVProof);
     }
 
     function test_registerUserTake_Revert_IncorrectVout() external {
@@ -392,10 +395,10 @@ contract TestPegManager is Test, HelperContract {
         setup.pegoutTxSPVProof = createBtcTxSPVProof(setup.pegoutTx);
 
         vm.expectRevert(
-            abi.encodeWithSelector(IPegManager.IncorrectVout.selector, uint32(1), Constants.VOUT_INDEX_TAPTREE)
+            abi.encodeWithSelector(IPegoutManager.IncorrectVout.selector, uint32(1), Constants.VOUT_INDEX_TAPTREE)
         );
 
-        pm.registerUserTake(setup.pegoutTxSPVProof);
+        pegoutManager.registerUserTake(setup.pegoutTxSPVProof);
     }
 
     function test_registerUserTake_Revert_NotEnoughConfirmations() external {
@@ -411,7 +414,7 @@ contract TestPegManager is Test, HelperContract {
             )
         );
 
-        pm.registerUserTake(setup.pegoutTxSPVProof);
+        pegoutManager.registerUserTake(setup.pegoutTxSPVProof);
     }
 
     function test_registerUserTake_Revert_IncorrectOutputScript() external {
@@ -427,12 +430,12 @@ contract TestPegManager is Test, HelperContract {
         // Expect revert for incorrect output script
         vm.expectRevert(
             abi.encodeWithSelector(
-                IPegManager.IncorrectOutputScript.selector, setup.pegoutTx.outputs[0].scriptPubKey, expectedScript
+                IPegoutManager.IncorrectOutputScript.selector, setup.pegoutTx.outputs[0].scriptPubKey, expectedScript
             )
         );
 
         // Register the peg-out transaction
-        pm.registerUserTake(setup.pegoutTxSPVProof);
+        pegoutManager.registerUserTake(setup.pegoutTxSPVProof);
     }
 
     function test_registerUserTake_Revert_AlreadyPaid() external {
@@ -443,11 +446,11 @@ contract TestPegManager is Test, HelperContract {
 
         // Assert
         vm.expectRevert(
-            abi.encodeWithSelector(IPegManager.InvalidSlotState.selector, SlotState.COMPLETED, SlotState.LOCKED)
+            abi.encodeWithSelector(IPegoutManager.InvalidSlotState.selector, SlotState.COMPLETED, SlotState.LOCKED)
         );
 
         // Act
-        pm.registerUserTake(setup.pegoutTxSPVProof);
+        pegoutManager.registerUserTake(setup.pegoutTxSPVProof);
     }
 
     function test_pegoutUserTake_Success() external {
@@ -468,7 +471,7 @@ contract TestPegManager is Test, HelperContract {
         uint64 expectedSlotId = stream.pegoutSlotPointer;
 
         // Request peg-out
-        pm.tryPegout{value: pegoutAmountInWei}(userPubKey);
+        pegoutManager.tryPegout{value: pegoutAmountInWei}(userPubKey);
 
         // Verify slot was locked
         Slot memory slot = streamManager.getSlot(stream.streamId, expectedPacketNumber, expectedSlotId);
@@ -483,19 +486,22 @@ contract TestPegManager is Test, HelperContract {
         bytes32 expectedPegoutTxid = bitcoinManager.getBtcTxid(pegoutTx);
 
         // Expect the PegoutRegistered event
-        vm.expectEmit(address(pm));
-        emit IPegManager.PegoutRegistered(
+        vm.expectEmit(address(pegoutManager));
+        emit IPegoutManager.PegoutRegistered(
             pegoutTxSPVProof.blockHash,
             expectedPegoutTxid,
             acceptPeginTxid,
             COMMITTEE_ID_STREAM_1_COMMITTEE_1,
-            stream.streamId,
-            expectedPacketNumber,
-            expectedSlotId
+            StreamPosition({
+                streamId: stream.streamId,
+                packetNumber: expectedPacketNumber,
+                slotId: expectedSlotId,
+                pegStatus: PegStatus.USER_TAKE
+            })
         );
 
         // Register peg-out transaction
-        pm.registerUserTake(pegoutTxSPVProof);
+        pegoutManager.registerUserTake(pegoutTxSPVProof);
 
         // Validate the full peg-out flow, avoiding stack too deep error
         _validateFullPegoutFlow(
@@ -520,8 +526,8 @@ contract TestPegManager is Test, HelperContract {
         );
 
         bytes32 requestPeginTxid = bitcoinManager.getBtcTxid(requestPeginTx);
-        PegoutTempInfo memory pegoutInfo = pm.getPegoutTempInfo(acceptPeginTxid);
-        StreamPosition memory streamPosition = pm.getStreamPosition(requestPeginTxid);
+        PegoutTempInfo memory pegoutInfo = pegoutManager.getPegoutTempInfo(acceptPeginTxid);
+        StreamPosition memory streamPosition = peginManager.getStreamPositionByRequestPegin(requestPeginTxid);
 
         // internal state should be consistent
         assertEq(uint256(streamPosition.pegStatus), uint256(PegStatus.COMPLETED), "Peg status should be COMPLETED");
@@ -529,7 +535,7 @@ contract TestPegManager is Test, HelperContract {
         assertEq(streamPosition.streamId, stream.streamId, "Stream ID should match");
         assertEq(streamPosition.packetNumber, expectedPacketNumber, "Packet number should match");
         assertEq(streamPosition.slotId, expectedSlotId, "Slot ID should match");
-        assertEq(pm.getAcceptPegin(requestPeginTxid), acceptPeginTxid, "Accept peg-in tx id should match");
+        assertEq(peginManager.getAcceptPegin(requestPeginTxid), acceptPeginTxid, "Accept peg-in tx id should match");
         assertTrue(
             streamManager.getSlot(stream.streamId, expectedPacketNumber, expectedSlotId).state == SlotState.COMPLETED,
             "Slot state should be COMPLETED"
@@ -542,10 +548,10 @@ contract TestPegManager is Test, HelperContract {
         setup_addMemberSignature_MultipleMembers(setup.pegoutTxid, 0, registry.committeeMemberCount());
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegManager.UserTakeAlreadySigned.selector, setup.pegoutTxid));
+        vm.expectRevert(abi.encodeWithSelector(IPegoutManager.UserTakeAlreadySigned.selector, setup.pegoutTxid));
 
         // Act
-        pm.triggerOperatorTake(setup.pegoutTxid);
+        pegoutManager.triggerOperatorTake(setup.pegoutTxid);
     }
 
     function test_triggerOperatorTake_Revert_PegoutTxidNotFound() external {
@@ -553,10 +559,10 @@ contract TestPegManager is Test, HelperContract {
         bytes32 pegoutTxid = hex"0001";
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegManager.PegoutTxidNotFound.selector, pegoutTxid));
+        vm.expectRevert(abi.encodeWithSelector(IPegoutManager.PegoutTxidNotFound.selector, pegoutTxid));
 
         // Act
-        pm.triggerOperatorTake(pegoutTxid);
+        pegoutManager.triggerOperatorTake(pegoutTxid);
     }
 
     function test_triggerOperatorTake_Revert_UserTakeTimeoutNotExpired() external {
@@ -567,10 +573,10 @@ contract TestPegManager is Test, HelperContract {
         setup_addMemberSignature_MultipleMembers(setup.pegoutTxid, 0, registry.committeeMemberCount() - 1);
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegManager.UserTakeTimeoutNotExpired.selector, createdAt, expireAt));
+        vm.expectRevert(abi.encodeWithSelector(IPegoutManager.UserTakeTimeoutNotExpired.selector, createdAt, expireAt));
 
         // Act
-        pm.triggerOperatorTake(setup.pegoutTxid);
+        pegoutManager.triggerOperatorTake(setup.pegoutTxid);
 
         assertTrue(
             streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId).state == SlotState.LOCKED
@@ -599,7 +605,7 @@ contract TestPegManager is Test, HelperContract {
         assertEventOperatorTakeTriggered(setup.pegoutTxid, setup, expectedOperator, createdAt);
 
         // Act
-        pm.triggerOperatorTake(setup.pegoutTxid);
+        pegoutManager.triggerOperatorTake(setup.pegoutTxid);
 
         assertTrue(
             streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId).state == SlotState.ADVANCED
@@ -626,7 +632,7 @@ contract TestPegManager is Test, HelperContract {
         assertEventOperatorTakeTriggered(setup.pegoutTxid, setup, secondOpAddress, createdAt);
 
         // Act
-        pm.triggerOperatorTake(setup.pegoutTxid);
+        pegoutManager.triggerOperatorTake(setup.pegoutTxid);
 
         assertTrue(
             streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId).state == SlotState.ADVANCED
@@ -639,19 +645,19 @@ contract TestPegManager is Test, HelperContract {
         setup_addMemberSignature_MultipleMembers(setup.pegoutTxid, 0, registry.committeeMemberCount() - 1);
         vm.warp(block.timestamp + TAKE_0_TIMEOUT_DEFAULT + 1);
         // First call to triggerOperatorTake should set the status to TAKE_1
-        pm.triggerOperatorTake(setup.pegoutTxid);
+        pegoutManager.triggerOperatorTake(setup.pegoutTxid);
 
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(
-                IPegManager.OperatorTakeTimeoutNotExpired.selector,
+                IPegoutManager.OperatorTakeTimeoutNotExpired.selector,
                 block.timestamp,
                 block.timestamp + TAKE_1_TIMEOUT_DEFAULT
             )
         );
 
         // Act
-        pm.triggerOperatorTake(setup.pegoutTxid);
+        pegoutManager.triggerOperatorTake(setup.pegoutTxid);
 
         assertTrue(
             streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId).state == SlotState.ADVANCED
@@ -668,7 +674,7 @@ contract TestPegManager is Test, HelperContract {
         vm.warp(createdAt + TAKE_0_TIMEOUT_DEFAULT + 1);
         // Add just 2 signatures for the fisrt and second operators
         setup_addMemberSignature_MultipleMembers(setup.pegoutTxid, firstHonestOpIndex, 2);
-        pm.triggerOperatorTake(setup.pegoutTxid);
+        pegoutManager.triggerOperatorTake(setup.pegoutTxid);
         // Expire TAKE_1
         vm.warp(block.timestamp + TAKE_1_TIMEOUT_DEFAULT + 1);
         // Get the last operator take index
@@ -681,7 +687,7 @@ contract TestPegManager is Test, HelperContract {
         assertEventOperatorTakeTriggered(setup.pegoutTxid, setup, expectedOperator, createdAt);
 
         // Act
-        pm.triggerOperatorTake(setup.pegoutTxid);
+        pegoutManager.triggerOperatorTake(setup.pegoutTxid);
 
         assertTrue(
             streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId).state == SlotState.ADVANCED
@@ -706,7 +712,7 @@ contract TestPegManager is Test, HelperContract {
         setup_addMemberNonce(thirdOpAddress, setup.pegoutTxid, nonce);
 
         // First operator is skipped. This call will select the second operator as in test_triggerOperatorTake_Success_NotAllNoncesAdded
-        pm.triggerOperatorTake(setup.pegoutTxid);
+        pegoutManager.triggerOperatorTake(setup.pegoutTxid);
         // Expire TAKE_1
         vm.warp(block.timestamp + TAKE_1_TIMEOUT_DEFAULT + 1);
 
@@ -715,7 +721,7 @@ contract TestPegManager is Test, HelperContract {
         assertEventOperatorTakeTriggered(setup.pegoutTxid, setup, thirdOpAddress, createdAt);
 
         // Act
-        pm.triggerOperatorTake(setup.pegoutTxid);
+        pegoutManager.triggerOperatorTake(setup.pegoutTxid);
 
         assertTrue(
             streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId).state == SlotState.ADVANCED
@@ -729,11 +735,11 @@ contract TestPegManager is Test, HelperContract {
         uint256 operatorsCount = registry.committeeMemberCount() * 2; // To be sure that we choose operatores multiples times
         setup_addMemberSignature_MultipleMembers(setup.pegoutTxid, firstHonestOpIndex, operatorsCount);
         vm.warp(block.timestamp + TAKE_0_TIMEOUT_DEFAULT + 1);
-        pm.triggerOperatorTake(setup.pegoutTxid);
+        pegoutManager.triggerOperatorTake(setup.pegoutTxid);
 
         for (uint256 i = 0; i < operatorsCount - 1; i++) {
             vm.warp(block.timestamp + TAKE_1_TIMEOUT_DEFAULT + 1);
-            pm.triggerOperatorTake(setup.pegoutTxid);
+            pegoutManager.triggerOperatorTake(setup.pegoutTxid);
         }
 
         vm.warp(block.timestamp + TAKE_1_TIMEOUT_DEFAULT + 1);
@@ -749,21 +755,22 @@ contract TestPegManager is Test, HelperContract {
         BtcTxSPVProof memory pegoutTxSPVProof = createBtcTxSPVProof(pegoutTx);
         bytes32 pegoutTxid = bitcoinManager.getBtcTxid(pegoutTx);
 
+        StreamPosition memory streamInfo = StreamPosition({
+            streamId: setup.stream.streamId,
+            packetNumber: setup.packetNumber,
+            slotId: setup.slotId,
+            pegStatus: PegStatus.OPERATOR_TAKE
+        });
+
         // Expect the PegoutRegistered event
-        vm.expectEmit(address(pm));
-        emit IPegManager.PegoutRegistered(
-            pegoutTxSPVProof.blockHash,
-            pegoutTxid,
-            setup.acceptPeginTxid,
-            COMMITTEE_ID_STREAM_1_COMMITTEE_1,
-            setup.stream.streamId,
-            setup.packetNumber,
-            setup.slotId
+        vm.expectEmit(address(pegoutManager));
+        emit IPegoutManager.PegoutRegistered(
+            pegoutTxSPVProof.blockHash, pegoutTxid, setup.acceptPeginTxid, COMMITTEE_ID_STREAM_1_COMMITTEE_1, streamInfo
         );
 
         // Act
         vm.prank(operatorAddress);
-        pm.registerOperatorTake(pegoutTxSPVProof);
+        pegoutManager.registerOperatorTake(pegoutTxSPVProof);
 
         assertTrue(
             streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId).state == SlotState.COMPLETED
@@ -780,11 +787,11 @@ contract TestPegManager is Test, HelperContract {
         BtcTxSPVProof memory pegoutTxSPVProof = createBtcTxSPVProof(pegoutTx);
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegManager.PeginNotRequested.selector, wrongAcceptPeginTxid));
+        vm.expectRevert(abi.encodeWithSelector(IPegoutManager.PeginNotRequested.selector, wrongAcceptPeginTxid));
 
         // Act
         vm.prank(operatorAddress);
-        pm.registerOperatorTake(pegoutTxSPVProof);
+        pegoutManager.registerOperatorTake(pegoutTxSPVProof);
 
         assertTrue(
             streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId).state == SlotState.ADVANCED
@@ -799,14 +806,14 @@ contract TestPegManager is Test, HelperContract {
             createPegoutTx(setup.acceptPeginTxid, BtcHelper.pubKeyXonlyToCompact(operatorPubKey), VALUE);
         BtcTxSPVProof memory pegoutTxSPVProof = createBtcTxSPVProof(pegoutTx);
         // Register Pegout as Take 0
-        pm.registerUserTake(setup.pegoutTxSPVProof);
+        pegoutManager.registerUserTake(setup.pegoutTxSPVProof);
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegManager.InvalidPegStatus.selector, PegStatus.COMPLETED));
+        vm.expectRevert(abi.encodeWithSelector(IPegoutManager.InvalidPegStatus.selector, PegStatus.COMPLETED));
 
         // Act
         vm.prank(operatorAddress);
-        pm.registerOperatorTake(pegoutTxSPVProof);
+        pegoutManager.registerOperatorTake(pegoutTxSPVProof);
 
         assertTrue(
             streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId).state == SlotState.COMPLETED
@@ -825,13 +832,13 @@ contract TestPegManager is Test, HelperContract {
         // Expect the PegoutRegistered event
         vm.expectRevert(
             abi.encodeWithSelector(
-                IPegManager.IncorrectVout.selector, Constants.VOUT_INDEX_TAPTREE + 1, Constants.VOUT_INDEX_TAPTREE
+                IPegoutManager.IncorrectVout.selector, Constants.VOUT_INDEX_TAPTREE + 1, Constants.VOUT_INDEX_TAPTREE
             )
         );
 
         // Act
         vm.prank(operatorAddress);
-        pm.registerOperatorTake(pegoutTxSPVProof);
+        pegoutManager.registerOperatorTake(pegoutTxSPVProof);
 
         assertTrue(
             streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId).state == SlotState.ADVANCED
@@ -852,7 +859,7 @@ contract TestPegManager is Test, HelperContract {
         // Expect the PegoutRegistered event
         vm.expectRevert(
             abi.encodeWithSelector(
-                IPegManager.IncorrectOutputScript.selector,
+                IPegoutManager.IncorrectOutputScript.selector,
                 BtcScriptParser.getP2WPKHScript(BtcHelper.pubKeyXonlyToCompact(wrongOperatorPubKey)),
                 BtcScriptParser.getP2WPKHScript(BtcHelper.pubKeyXonlyToCompact(operatorPubKey))
             )
@@ -860,7 +867,7 @@ contract TestPegManager is Test, HelperContract {
 
         // Act
         vm.prank(operatorAddress);
-        pm.registerOperatorTake(pegoutTxSPVProof);
+        pegoutManager.registerOperatorTake(pegoutTxSPVProof);
 
         // Assert
         assertTrue(
@@ -880,12 +887,12 @@ contract TestPegManager is Test, HelperContract {
 
         // Expect the PegoutRegistered event
         vm.expectRevert(
-            abi.encodeWithSelector(IPegManager.OperatorTakeAddressNotMatch.selector, operatorAddress, wrongOperator)
+            abi.encodeWithSelector(IPegoutManager.OperatorTakeAddressNotMatch.selector, operatorAddress, wrongOperator)
         );
 
         // Act
         vm.prank(wrongOperator);
-        pm.registerOperatorTake(pegoutTxSPVProof);
+        pegoutManager.registerOperatorTake(pegoutTxSPVProof);
 
         assertTrue(
             streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId).state == SlotState.ADVANCED
@@ -909,7 +916,7 @@ contract TestPegManager is Test, HelperContract {
 
         // Act
         vm.prank(operatorAddress);
-        pm.registerOperatorTake(pegoutTxSPVProof);
+        pegoutManager.registerOperatorTake(pegoutTxSPVProof);
 
         assertTrue(
             streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId).state == SlotState.COMPLETED
@@ -918,7 +925,7 @@ contract TestPegManager is Test, HelperContract {
 
     function test_userTakeTimeout_Success() external view {
         // Act
-        uint256 timeout = pm.userTakeTimeout();
+        uint256 timeout = pegoutManager.userTakeTimeout();
 
         // Assert
         assertEq(timeout, TAKE_0_TIMEOUT_DEFAULT);
@@ -926,7 +933,7 @@ contract TestPegManager is Test, HelperContract {
 
     function test_operatorTakeTimeout_Success() external view {
         // Act
-        uint256 timeout = pm.operatorTakeTimeout();
+        uint256 timeout = pegoutManager.operatorTakeTimeout();
 
         // Assert
         assertEq(timeout, TAKE_1_TIMEOUT_DEFAULT);
@@ -937,15 +944,15 @@ contract TestPegManager is Test, HelperContract {
         uint256 timeout = TAKE_0_TIMEOUT_DEFAULT + 1 days;
 
         // Assert
-        vm.expectEmit(address(pm));
-        emit IPegManager.UserTakeTimeoutUpdated(timeout);
+        vm.expectEmit(address(pegoutManager));
+        emit IPegoutManager.UserTakeTimeoutUpdated(timeout);
 
         // Act
-        vm.prank(address(pm.owner()));
-        pm.setUserTakeTimeout(timeout);
+        vm.prank(address(pegoutManager.owner()));
+        pegoutManager.setUserTakeTimeout(timeout);
 
         // Assert
-        uint256 newTimeout = pm.userTakeTimeout();
+        uint256 newTimeout = pegoutManager.userTakeTimeout();
         assertEq(newTimeout, timeout);
     }
 
@@ -954,40 +961,40 @@ contract TestPegManager is Test, HelperContract {
         uint256 timeout = TAKE_1_TIMEOUT_DEFAULT + 1 days;
 
         // Assert
-        vm.expectEmit(address(pm));
-        emit IPegManager.OperatorTakeTimeoutUpdated(timeout);
+        vm.expectEmit(address(pegoutManager));
+        emit IPegoutManager.OperatorTakeTimeoutUpdated(timeout);
 
         // Act
-        vm.prank(address(pm.owner()));
-        pm.setOperatorTakeTimeout(timeout);
+        vm.prank(address(pegoutManager.owner()));
+        pegoutManager.setOperatorTakeTimeout(timeout);
 
         // Assert
-        uint256 newTimeout = pm.operatorTakeTimeout();
+        uint256 newTimeout = pegoutManager.operatorTakeTimeout();
         assertEq(newTimeout, timeout);
     }
 
     function test_setUserTakeTimeout_Revert_InvalidTimeout() external {
         // Arrange
-        address owner = pm.owner();
+        address owner = pegoutManager.owner();
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegManager.InvalidTimeout.selector, 0));
+        vm.expectRevert(abi.encodeWithSelector(IPegoutManager.InvalidTimeout.selector, 0));
 
         // Act
         vm.prank(address(owner));
-        pm.setUserTakeTimeout(0);
+        pegoutManager.setUserTakeTimeout(0);
     }
 
     function test_setOperatorTakeTimeout_Revert_InvalidTimeout() external {
         // Arrange
-        address owner = pm.owner();
+        address owner = pegoutManager.owner();
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegManager.InvalidTimeout.selector, 0));
+        vm.expectRevert(abi.encodeWithSelector(IPegoutManager.InvalidTimeout.selector, 0));
 
         // Act
         vm.prank(address(owner));
-        pm.setOperatorTakeTimeout(0);
+        pegoutManager.setOperatorTakeTimeout(0);
     }
 
     function test_setUserTakeTimeout_Revert_OwnableUnauthorizedAccount() external {
@@ -995,7 +1002,7 @@ contract TestPegManager is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
 
         // Act
-        pm.setUserTakeTimeout(1 days);
+        pegoutManager.setUserTakeTimeout(1 days);
     }
 
     function test_setOperatorTakeTimeout_Revert_OwnableUnauthorizedAccount() external {
@@ -1003,10 +1010,8 @@ contract TestPegManager is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
 
         // Act
-        pm.setOperatorTakeTimeout(1 days);
+        pegoutManager.setOperatorTakeTimeout(1 days);
     }
-
-    // ==================== ENHANCED PEGOUT FLOW WITH BLOCKED SLOTS ====================
 
     function test_tryPegout_SkipBlockedSlot() external {
         bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
@@ -1024,7 +1029,7 @@ contract TestPegManager is Test, HelperContract {
         streamManager.setSlotHarness(stream.streamId, 0, scriptPubKey, txId, amount, SlotState.FILLED);
 
         // 2. Call tryPegout should skip blocked slot and lock filled slot
-        pm.tryPegout{value: amountInWei}(userPubKey);
+        pegoutManager.tryPegout{value: amountInWei}(userPubKey);
 
         // 3. Verify FILLED slot is locked and BLOCKED slot remains unchanged
         Slot memory blockedSlot = streamManager.getSlot(stream.streamId, 0, blockedSlotId);
@@ -1047,7 +1052,7 @@ contract TestPegManager is Test, HelperContract {
         // 2. Try to call tryPegout
         // 3. Expect NoFilledSlot revert
         vm.expectRevert(abi.encodeWithSelector(IStreamManager.NoFilledSlot.selector, stream.streamId));
-        pm.tryPegout{value: amountInWei}(userPubKey);
+        pegoutManager.tryPegout{value: amountInWei}(userPubKey);
     }
 
     function test_tryPegout_CrossPacketBlocking() external {
@@ -1070,7 +1075,7 @@ contract TestPegManager is Test, HelperContract {
         streamManager.setSlotHarness(stream.streamId, 1, scriptPubKey, txId, amount, SlotState.FILLED);
 
         // 3. Call tryPegout
-        pm.tryPegout{value: amountInWei}(userPubKey);
+        pegoutManager.tryPegout{value: amountInWei}(userPubKey);
 
         // 4. Verify it skips entire first packet and locks slot in second packet
         Slot memory lockedSlot = streamManager.getSlot(stream.streamId, 1, 0);
@@ -1080,5 +1085,380 @@ contract TestPegManager is Test, HelperContract {
         Stream memory updatedStream = streamManager.getStreamById(stream.streamId);
         assertEq(updatedStream.pegoutPacketPointer, 1, "Should advance to second packet");
         assertEq(updatedStream.pegoutSlotPointer, 1, "Should advance slot pointer after locking");
+    }
+
+    function test_setStreamManager_Success() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        address newStreamManagerAddress = vm.addr(privKey);
+        IStreamManager newStreamManager = IStreamManager(newStreamManagerAddress);
+        address owner = pegoutManager.owner();
+
+        // Assert
+        vm.expectEmit(address(pegoutManager));
+        emit IPegManagerBase.StreamManagerUpdated(newStreamManager);
+
+        // Act
+        vm.prank(owner);
+        pegoutManager.setStreamManager(newStreamManager);
+
+        // Assert
+        assertEq(address(pegoutManager.streamManager()), newStreamManagerAddress);
+    }
+
+    function test_setStreamManager_Success_PausedContract() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        address newStreamManagerAddress = vm.addr(privKey);
+        StreamManagerHarness newStreamManager = StreamManagerHarness(newStreamManagerAddress);
+        pauseContracts();
+
+        // Assert
+        vm.prank(pegoutManager.owner());
+        vm.expectEmit(address(pegoutManager));
+        emit IPegManagerBase.StreamManagerUpdated(newStreamManager);
+
+        // Act
+        pegoutManager.setStreamManager(newStreamManager);
+
+        // Assert
+        assertEq(address(pegoutManager.streamManager()), newStreamManagerAddress);
+    }
+
+    function test_setStreamManager_Revert_AddressZero() external {
+        // Arrange
+        address owner = pegoutManager.owner();
+        IStreamManager zeroStreamManager = IStreamManager(address(0));
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IPegManagerBase.StreamManagerAddressZero.selector));
+
+        // Act
+        vm.prank(owner);
+        pegoutManager.setStreamManager(zeroStreamManager);
+    }
+
+    function test_setStreamManager_Revert_OwnableUnauthorizedAccount() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        address newStreamManagerAddress = vm.addr(privKey);
+        IStreamManager newStreamManager = IStreamManager(newStreamManagerAddress);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+
+        // Act
+        pegoutManager.setStreamManager(newStreamManager);
+    }
+
+    function test_setSignatureManager_Success() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        address newSignatureManagerAddress = vm.addr(privKey);
+        ISignatureManager newSignatureManager = ISignatureManager(newSignatureManagerAddress);
+        address owner = pegoutManager.owner();
+
+        // Assert
+        vm.expectEmit(address(pegoutManager));
+        emit IPegManagerBase.SignatureManagerUpdated(newSignatureManager);
+
+        // Act
+        vm.prank(owner);
+        pegoutManager.setSignatureManager(newSignatureManager);
+
+        // Assert
+        assertEq(address(pegoutManager.signatureManager()), newSignatureManagerAddress);
+    }
+
+    function test_setSignatureManager_Success_PausedContract() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        address newSignatureManagerAddress = vm.addr(privKey);
+        ISignatureManager newSignatureManager = ISignatureManager(newSignatureManagerAddress);
+
+        pauseContracts();
+
+        // Assert
+        vm.prank(pegoutManager.owner());
+        vm.expectEmit(address(pegoutManager));
+        emit IPegManagerBase.SignatureManagerUpdated(newSignatureManager);
+
+        // Act
+        pegoutManager.setSignatureManager(newSignatureManager);
+
+        // Assert
+        assertEq(address(pegoutManager.signatureManager()), newSignatureManagerAddress);
+    }
+
+    function test_setSignatureManager_Revert_AddressZero() external {
+        // Arrange
+        address owner = pegoutManager.owner();
+        ISignatureManager zeroSignatureManager = ISignatureManager(address(0));
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IPegManagerBase.SignatureManagerAddressZero.selector));
+
+        // Act
+        vm.prank(owner);
+        pegoutManager.setSignatureManager(zeroSignatureManager);
+    }
+
+    function test_setSignatureManager_Revert_OwnableUnauthorizedAccount() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        address newSignatureManagerAddress = vm.addr(privKey);
+        ISignatureManager newSignatureManager = ISignatureManager(newSignatureManagerAddress);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+
+        // Act
+        pegoutManager.setSignatureManager(newSignatureManager);
+    }
+
+    function test_setPauser_Success() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        address newPauser = vm.addr(privKey);
+        address owner = pegoutManager.owner();
+
+        // Assert
+        vm.expectEmit(address(pegoutManager));
+        emit Pausable.PauserUpdated(newPauser);
+
+        // Act
+        vm.prank(owner);
+        pegoutManager.setPauser(newPauser);
+
+        // Assert
+        assertEq(pegoutManager.pauser(), newPauser);
+    }
+
+    function test_setPauser_Success_PausedContract() external {
+        // Arrange
+        pauseContracts();
+
+        uint256 privKey = uint256(1);
+        address newPauser = vm.addr(privKey);
+        address owner = pegoutManager.owner();
+
+        // Assert
+        vm.expectEmit(address(pegoutManager));
+        emit Pausable.PauserUpdated(newPauser);
+
+        // Act
+        vm.prank(owner);
+        pegoutManager.setPauser(newPauser);
+
+        // Assert
+        assertEq(pegoutManager.pauser(), newPauser);
+    }
+
+    function test_setPauser_Revert_OwnableUnauthorizedAccount() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        address newPauser = vm.addr(privKey);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+
+        // Act
+        pegoutManager.setPauser(newPauser);
+    }
+
+    function test_tryPegout_Revert_EnforcedPause_PausedContract() external {
+        // Arrange
+        uint64 amount = 1000000; // 0.01 BTC
+        uint256 amountInWei = BtcHelper.satoshiToWei(amount);
+        bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+
+        pauseContracts();
+
+        // Assert
+        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
+
+        // Act
+        pegoutManager.tryPegout{value: amountInWei}(userPubKey);
+    }
+
+    function test_tryPegout_Success_UnpausedContract() external {
+        // Arrange
+        pauseAndUnpauseContracts();
+        // Arrange
+        BtcTxIn[] memory inputs = new BtcTxIn[](1);
+        inputs[0] = BtcTxIn({
+            txId: 0xb24858ade3e5be49ae63facb93524ddf460d0771f093525dae328b6c435516a2,
+            vout: 0,
+            sequence: 4294967293,
+            scriptSig: hex""
+        });
+
+        BtcTxOut[] memory outputs = new BtcTxOut[](2);
+        outputs[0] = BtcTxOut({amount: 999125, scriptPubKey: hex"00143fd2e14f4b448a071e074e1e1879318447f2a266"});
+        outputs[1] = BtcTxOut({amount: 540, scriptPubKey: hex"00143fd2e14f4b448a071e074e1e1879318447f2a266"});
+
+        BitcoinSignatureData memory expectedSignatureData = BitcoinSignatureData({
+            tx: BtcTransaction({version: 2, inputs: inputs, outputs: outputs, locktime: 0}),
+            txid: 0x797853a318220995510a2cfd90f40ee81ca9931896fd9f86e4681ac925e2c1fc,
+            signatureHash: 0xfb6d69787860ef13b81041a168cb1f530eb5d87973d34430fc9eb8cef62eb7ad,
+            signatureMessage: hex"00010200000000000000234337e863e00e6ff45f167a14f3963bea912bc0d739c2b402d04f376e814ae24f973621fe8403b6facae9abab80d863a847d3fb007ba2f9830f8e16e6e9b4d4a0c6dbc3091625a23fd870bf8d09182484c12fa63a5c29045a431cf445f153e523e9829bfb4e23fbd3c4848baa035af15d73bcb83e510f7f097f90a21a4280d2bfd84e32f90f61452c95235739095ef9347def223e2b2a49d799abe42099e5850000000000"
+        });
+
+        bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+
+        bytes32 txId = 0xb24858ade3e5be49ae63facb93524ddf460d0771f093525dae328b6c435516a2;
+        bytes memory scriptPubKey = hex"02f519f51e435c20d38af683ea86862f4591ce8cda248077c2d9a72a76b62f32";
+
+        uint64 amount = 1000000; // 0.01 BTC
+        uint256 amountInWei = BtcHelper.satoshiToWei(amount);
+
+        Stream memory stream = streamManager.getStream(uint64(amount));
+        uint64 packetNumber = 0;
+        uint64 slotId = 0;
+
+        streamManager.setSlotHarness(stream.streamId, packetNumber, scriptPubKey, txId, amount, SlotState.FILLED);
+
+        // Calculate expected PegoutId using mock block hash
+        bytes32 mockBlockHash = 0x0000000000000000000049b460f18614380a01b8709d2c3a8ddf451d08d862b8;
+        bytes32 expectedPegoutId =
+            keccak256(abi.encode(stream.streamId, packetNumber, slotId, address(this), mockBlockHash));
+
+        // Assert
+        vm.expectEmit(address(pegoutManager));
+        emit IPegoutManager.PegoutRequested(
+            userPubKey,
+            COMMITTEE_ID_STREAM_1_COMMITTEE_1,
+            expectedSignatureData,
+            stream.streamId,
+            packetNumber,
+            slotId,
+            amount,
+            expectedPegoutId
+        );
+
+        // Act
+        pegoutManager.tryPegout{value: amountInWei}(userPubKey);
+    }
+
+    function test_registerUserTake_Revert_EnforcedPause_PausedContract() external {
+        // Arrange
+        RegisterUserTakeSetup memory pegoutSetup = setup_pegout();
+        pauseContracts();
+
+        // Assert
+        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
+
+        // Act
+        pegoutManager.registerUserTake(pegoutSetup.pegoutTxSPVProof);
+    }
+
+    function test_registerUserTake_Success_UnpausedContract() external {
+        // Arrange
+        RegisterUserTakeSetup memory pegoutSetup = setup_pegout();
+        pauseAndUnpauseContracts();
+
+        // Act
+        pegoutManager.registerUserTake(pegoutSetup.pegoutTxSPVProof);
+    }
+
+    function test_triggerOperatorTake_Revert_EnforcedPause_PausedContract() external {
+        // Arrange
+        RegisterUserTakeSetup memory pegoutSetup = setup_pegout();
+        pauseContracts();
+
+        // Assert
+        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
+
+        // Act
+        pegoutManager.triggerOperatorTake(pegoutSetup.pegoutSignatureHash);
+    }
+
+    function test_triggerOperatorTake_Success_UnpausedContract() external {
+        // Arrange
+        pauseAndUnpauseContracts();
+        RegisterUserTakeSetup memory pegoutSetup = setup_pegout();
+        bytes32 pegoutTxId = pegoutSetup.pegoutTxid;
+        bytes memory nonce =
+            hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
+        uint256 createdAt = block.timestamp;
+        // Expire TAKE_0
+        vm.warp(createdAt + TAKE_0_TIMEOUT_DEFAULT + 1);
+
+        Committee memory committee = registry.getCommittee(COMMITTEE_ID_STREAM_1_COMMITTEE_1);
+        address firstOpAddress = committee.members[0].memberAddress;
+        address secondOpAddress = committee.members[1].memberAddress;
+        setup_addMemberNonce(firstOpAddress, pegoutTxId, nonce);
+        setup_addMemberNonce(secondOpAddress, pegoutTxId, nonce);
+
+        // Assert
+        assertEventOperatorTakeTriggered(pegoutTxId, pegoutSetup, secondOpAddress, createdAt);
+
+        // Act
+        pegoutManager.triggerOperatorTake(pegoutTxId);
+    }
+
+    function test_registerOperatorTake_Revert_EnforcedPause_PausedContract() external {
+        // Arrange
+        (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
+        bytes32 operatorPubKey = getMemberTakePubKey(operatorAddress);
+        BtcTransaction memory pegoutTx =
+            createPegoutTx(setup.acceptPeginTxid, BtcHelper.pubKeyXonlyToCompact(operatorPubKey), VALUE);
+        BtcTxSPVProof memory pegoutTxSPVProof = createBtcTxSPVProof(pegoutTx);
+
+        pauseContracts();
+
+        // Assert
+        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
+
+        // Act
+        vm.prank(operatorAddress);
+        pegoutManager.registerOperatorTake(pegoutTxSPVProof);
+    }
+
+    function test_registerOperatorTake_Success_UnpausedContract() external {
+        // Arrange
+        pauseAndUnpauseContracts();
+
+        (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
+        bytes32 operatorPubKey = getMemberTakePubKey(operatorAddress);
+        BtcTransaction memory pegoutTx =
+            createPegoutTx(setup.acceptPeginTxid, BtcHelper.pubKeyXonlyToCompact(operatorPubKey), VALUE);
+        BtcTxSPVProof memory pegoutTxSPVProof = createBtcTxSPVProof(pegoutTx);
+
+        // Act
+        vm.prank(operatorAddress);
+        pegoutManager.registerOperatorTake(pegoutTxSPVProof);
+    }
+
+    function test_setUserTakeTimeout_Success_PausedContract() external {
+        // Arrange
+        pauseContracts();
+
+        uint256 timeout = TAKE_0_TIMEOUT_DEFAULT + 1 days;
+        address owner = pegoutManager.owner();
+
+        // Assert
+        vm.expectEmit(address(pegoutManager));
+        emit IPegoutManager.UserTakeTimeoutUpdated(timeout);
+
+        // Act
+        vm.prank(owner);
+        pegoutManager.setUserTakeTimeout(timeout);
+    }
+
+    function test_setOperatorTakeTimeout_Success_PausedContract() external {
+        // Arrange
+        pauseContracts();
+
+        uint256 timeout = TAKE_1_TIMEOUT_DEFAULT + 1 days;
+        address owner = pegoutManager.owner();
+
+        // Assert
+        vm.expectEmit(address(pegoutManager));
+        emit IPegoutManager.OperatorTakeTimeoutUpdated(timeout);
+
+        // Act
+        vm.prank(owner);
+        pegoutManager.setOperatorTakeTimeout(timeout);
     }
 }

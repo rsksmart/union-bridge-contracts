@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import {BaseProxy} from "./BaseProxy.sol";
+import {AccessControl} from "./AccessControl.sol";
 import {Pausable} from "./Pausable.sol";
 import {
     Role,
@@ -15,7 +15,8 @@ import {
     UTXO
 } from "./interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination, IStreamManager} from "./interfaces/IStreamManager.sol";
-import {IPegManager} from "./interfaces/IPegManager.sol";
+import {IPeginManager} from "./interfaces/IPeginManager.sol";
+import {IPegoutManager} from "./interfaces/IPegoutManager.sol";
 import {SignatureData} from "./interfaces/ISignatureManager.sol";
 import {IMemberRegistry} from "./interfaces/IMemberRegistry.sol";
 import {BytesHelper} from "./libraries/BytesHelper.sol";
@@ -24,7 +25,7 @@ import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/ut
 /// @title CommitteeRegistry
 /// @notice Manages committee formation, selection, and lifecycle for the union bridge system
 /// @dev Handles committee creation, pending committee management, and coordination with MemberRegistry
-contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgradeable, Pausable {
+contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuardUpgradeable, Pausable {
     /// @notice Minimum number of watchtowers required for a committee
     uint256 public minCommitteeWatchtowers;
     /// @notice Minimum number of operators required for a committee
@@ -45,8 +46,6 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
 
     /// @notice Stream manager contract for managing streams and packets
     IStreamManager streamManager;
-    /// @notice Peg manager contract for peg-in/peg-out coordination
-    IPegManager pegManager;
     /// @notice Member registry contract for member management
     IMemberRegistry public memberRegistry;
 
@@ -55,8 +54,10 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
 
     /// @notice Initializes the CommitteeRegistry contract
     /// @param _initialOwner The initial owner of the contract
+    /// @param _memberRegistry The member registry contract address
+    /// @dev PeginManager and PegoutManager addresses can be set later via setPeginManager/setPegoutManager
     function initialize(address _initialOwner, IMemberRegistry _memberRegistry) public virtual initializer {
-        __BaseProxy_init(_initialOwner);
+        __AccessControl_init_without_peg_managers(_initialOwner);
         __ReentrancyGuard_init();
         __Pauser_init();
         if (address(_memberRegistry) == address(0)) {
@@ -70,18 +71,6 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         minCommitteeWatchtowers = 3;
         minCommitteeOperators = 3;
         committeeMemberCount = 10;
-    }
-
-    /// @notice Pauses the contract and the member registry
-    function _pause() internal override {
-        super._pause();
-        memberRegistry.pause();
-    }
-
-    /// @notice Unpauses the contract and the member registry
-    function _unpause() internal override {
-        super._unpause();
-        memberRegistry.unpause();
     }
 
     function _revertIfZero(uint256 _value) internal pure {
@@ -482,17 +471,18 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         pendingCommittees[_streamId] = 0; // Reset the pending committee ID
     }
 
-    /// @notice Gets the next available operator address for take operations
+    /// @notice Gets the next available operator address and take public key for take operations
     /// @dev Rotates through committee operators to distribute take responsibilities
     /// @dev Only operators who have deposited their signatures nonces are eligible for take operations
     /// @param _committeeId The committee ID to get the operator from
     /// @param _signatureData Array of signature data for committee members
-    /// @return The address of the next available operator for take operations
+    /// @return operatorAddress The address of the next available operator for take operations
+    /// @return takePubKey The operator's take public key
     /// @dev Reverts with TakeOperatorNotFound if no eligible operator is found
     function getOperatorTakeAddress(uint128 _committeeId, SignatureData[] calldata _signatureData)
         external
         onlyPegManager
-        returns (address)
+        returns (address operatorAddress, bytes32 takePubKey)
     {
         Committee storage committee = _getCommittee(_committeeId);
         uint256 membersLength = committee.members.length;
@@ -505,7 +495,9 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
                     && _signatureData[operatorTakeIndex].nonce.length > 0
             ) {
                 committee.operatorTakeIndex = operatorTakeIndex;
-                return committee.members[operatorTakeIndex].memberAddress;
+                operatorAddress = committee.members[operatorTakeIndex].memberAddress;
+                takePubKey = memberRegistry.getMemberTakePubKey(operatorAddress);
+                return (operatorAddress, takePubKey);
             }
         }
 
@@ -523,16 +515,26 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         emit StreamManagerUpdated(address(_streamManager));
     }
 
-    /// @notice Sets the Peg Manager contract address
+    /// @notice Sets the Pegin Manager contract address
     /// @dev Only callable by the contract owner
-    /// @param _pegManager The address of the Peg Manager contract
-    function setPegManager(IPegManager _pegManager) external onlyOwner {
-        if (address(_pegManager) == address(0)) {
+    /// @param _peginManager The address of the Pegin Manager contract
+    function setPeginManager(IPeginManager _peginManager) external onlyOwner {
+        if (address(_peginManager) == address(0)) {
             revert InvalidZeroAddress();
         }
-        pegManager = _pegManager;
-        pauser = address(_pegManager);
-        emit PegManagerUpdated(address(_pegManager));
+        peginManager = address(_peginManager);
+        emit PeginManagerUpdated(address(_peginManager));
+    }
+
+    /// @notice Sets the Pegout Manager contract address
+    /// @dev Only callable by the contract owner
+    /// @param _pegoutManager The address of the Pegout Manager contract
+    function setPegoutManager(IPegoutManager _pegoutManager) external onlyOwner {
+        if (address(_pegoutManager) == address(0)) {
+            revert InvalidZeroAddress();
+        }
+        pegoutManager = address(_pegoutManager);
+        emit PegoutManagerUpdated(address(_pegoutManager));
     }
 
     /// @notice Sets the Member Registry contract address
@@ -544,6 +546,13 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         }
         memberRegistry = _memberRegistry;
         emit MemberRegistryUpdated(address(_memberRegistry));
+    }
+
+    /// @notice Sets a new pauser address
+    /// @param _newPauser The new pauser address
+    /// @dev Only callable by the contract owner
+    function setPauser(address _newPauser) public override onlyOwner {
+        super.setPauser(_newPauser);
     }
 
     /// @notice Sets the pending committee timeout
@@ -604,19 +613,5 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         emit CommitteeMembersReleased(_streamId, _packetNumber);
         // Delegate member release operations to MemberRegistry
         memberRegistry.releaseCommitteeMembers(committeeMembers, _streamId, _packetNumber);
-    }
-
-    // ===================== Modifiers =====================
-
-    /// @notice Modifier to restrict access to the PegManager contract
-    modifier onlyPegManager() {
-        _onlyPegManager(_msgSender());
-        _;
-    }
-
-    function _onlyPegManager(address _account) internal view {
-        if (address(pegManager) != _account) {
-            revert UnauthorizedAccount(_account);
-        }
     }
 }

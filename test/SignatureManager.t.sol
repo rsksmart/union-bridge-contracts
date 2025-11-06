@@ -74,7 +74,6 @@ contract TestSignatureManager is Test, HelperContract {
         bytes memory nonce =
             hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
         setup_addMemberNonce_MultipleMembers(hashToSign, 0, registry.committeeMemberCount() - 1);
-        (hashToSign);
         uint256 lastMemberIndex = registry.committeeMemberCount() - 1;
         address lastMemberAddress = vm.addr(lastMemberIndex + 1);
 
@@ -357,7 +356,7 @@ contract TestSignatureManager is Test, HelperContract {
         bytes32 hashToSign = 0x1000000000000000000000000000000000000000000000000000000000000001;
 
         // Act
-        vm.prank(address(pm));
+        vm.prank(address(pegoutManager));
         signatureManager.initSignatures(hashToSign, COMMITTEE_ID_STREAM_1_COMMITTEE_1);
 
         // Assert
@@ -387,7 +386,7 @@ contract TestSignatureManager is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(ISignatureManager.InvalidHashToSign.selector, hashToSign));
 
         // Act
-        vm.prank(address(pm));
+        vm.prank(address(pegoutManager));
         signatureManager.initSignatures(hashToSign, COMMITTEE_ID_STREAM_1_COMMITTEE_1);
     }
 
@@ -397,14 +396,14 @@ contract TestSignatureManager is Test, HelperContract {
         bytes32 hashToSign = 0x1000000000000000000000000000000000000000000000000000000000000001;
 
         // First time initializing the signatures
-        vm.prank(address(pm));
+        vm.prank(address(pegoutManager));
         signatureManager.initSignatures(hashToSign, committeeId);
 
         // Assert
         vm.expectRevert(abi.encodeWithSelector(ISignatureManager.SignaturesAlreadyInitialized.selector, hashToSign));
 
         // Act second time initializing the signatures
-        vm.prank(address(pm));
+        vm.prank(address(pegoutManager));
         signatureManager.initSignatures(hashToSign, committeeId);
     }
 
@@ -417,7 +416,7 @@ contract TestSignatureManager is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.CommitteeNotFound.selector, committeeId));
 
         // Act
-        vm.prank(address(pm));
+        vm.prank(address(pegoutManager));
         signatureManager.initSignatures(hashToSign, committeeId);
     }
 
@@ -436,7 +435,7 @@ contract TestSignatureManager is Test, HelperContract {
         bytes32 hashToSign = 0x1200000000000000000000000000000000000000000000000000000000000001;
 
         // Act
-        vm.prank(address(pm));
+        vm.prank(address(pegoutManager));
         signatureManager.initSignatures(hashToSign, COMMITTEE_ID_STREAM_1_COMMITTEE_1);
 
         return hashToSign;
@@ -495,7 +494,7 @@ contract TestSignatureManager is Test, HelperContract {
         bytes32 acceptPeginTxid = ACCEPT_PEGIN_TXID;
 
         // Act
-        vm.prank(address(pm));
+        vm.prank(address(pegoutManager));
         signatureManager.initOperatorTakeTxids(acceptPeginTxid, COMMITTEE_ID_STREAM_1_COMMITTEE_1);
 
         // Assert

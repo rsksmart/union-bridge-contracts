@@ -5,6 +5,7 @@ dry-run/
 31337/
 cache/
 out/
+broadcast/**/run-latest.json
 # macOS
 .DS_Store
 # vscode

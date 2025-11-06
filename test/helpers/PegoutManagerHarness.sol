@@ -1,21 +1,23 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import {PegManager, PegoutTempInfo, PegStatus, PegManagerSettings} from "src/PegManager.sol";
+import {PegoutManager} from "src/PegoutManager.sol";
 import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {IBitcoinManager} from "src/interfaces/IBitcoinManager.sol";
-import {StreamPosition} from "src/interfaces/IPegManager.sol";
+import {PegoutManagerSettings, PegoutTempInfo} from "src/interfaces/IPegoutManager.sol";
 
-/// @notice Wrapper for testing PegManager
-contract PegManagerHarness is PegManager {
+/// @title PegoutManagerHarness
+/// @notice Test harness for PegoutManager to expose internal functions and state for testing
+/// @dev TODO: Uncomment and implement harness functions as needed when updating tests
+contract PegoutManagerHarness is PegoutManager {
     function initialize(
         address _initialOwner,
         address payable _bridgeAddress,
         ICommitteeRegistry _committeeRegistry,
         IBitcoinManager _bitcoinManager,
-        PegManagerSettings memory _settings
+        PegoutManagerSettings memory _settings
     ) public override initializer {
-        PegManager.initialize(_initialOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager, _settings);
+        PegoutManager.initialize(_initialOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager, _settings);
     }
 
     function setPegoutTempInfoHarness(bytes32 _acceptPeginTxid, bytes memory _userPubKey) external {
@@ -27,16 +29,5 @@ contract PegManagerHarness is PegManager {
             takeOperatorAddress: address(0),
             takeOperatorPubKey: bytes32(0)
         });
-    }
-
-    function setStreamPositionHarness(
-        bytes32 _acceptPeginTxid,
-        uint64 _streamId,
-        uint64 _packetNumber,
-        uint64 _slotId,
-        PegStatus _pegStatus
-    ) external {
-        streamPosition[_acceptPeginTxid] =
-            StreamPosition({streamId: _streamId, packetNumber: _packetNumber, slotId: _slotId, pegStatus: _pegStatus});
     }
 }

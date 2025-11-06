@@ -11,7 +11,7 @@ import {
     PrevoutData,
     BitcoinSignatureData
 } from "src/interfaces/IBitcoinManager.sol";
-import {IPegManager} from "src/interfaces/IPegManager.sol";
+import {IPeginManager} from "src/interfaces/IPeginManager.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {BtcTaproot} from "src/libraries/BtcTaproot.sol";
 import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
@@ -153,7 +153,7 @@ contract TestBtcHelper is Test, HelperContract {
         bytes32 btcReimbursementPubKey = getPeginBtcReimbursementPubKey();
         bytes memory committeePubKey = COMMITTEE_PUB_KEY();
         // Act
-        vm.prank(address(pm));
+        vm.prank(address(peginManager));
         bitcoinManager.validateRequestPeginP2TROutput(
             rskDestinationAddress, value, btcReimbursementPubKey, committeePubKey, btcTxOut
         );
@@ -171,7 +171,7 @@ contract TestBtcHelper is Test, HelperContract {
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IBitcoinManager.InvalidOutputAmount.selector, btcTxOut.amount, value));
         // Act
-        vm.prank(address(pm));
+        vm.prank(address(peginManager));
         bitcoinManager.validateRequestPeginP2TROutput(
             rskDestinationAddress, value, btcReimbursementPubKey, committeePubKey, btcTxOut
         );
@@ -269,26 +269,26 @@ contract TestBtcHelper is Test, HelperContract {
     }
 
     // ========================== PEG MANAGER SETTER ==========================
-    function test_setPegManager_EmitsPegManagerUpdatedEvent() external {
+    function test_setPeginManager_EmitsPeginManagerUpdatedEvent() external {
         // Arrange
-        address newPegManager = address(0x1234567890123456789012345678901234567890);
+        address newPeginManager = address(0x1234567890123456789012345678901234567890);
 
         // Assert
         vm.expectEmit(address(bitcoinManager));
-        emit IBitcoinManager.PegManagerUpdated(newPegManager);
+        emit IBitcoinManager.PeginManagerUpdated(newPeginManager);
 
         // Act
         vm.prank(bitcoinManager.owner());
-        bitcoinManager.setPegManager(IPegManager(newPegManager));
+        bitcoinManager.setPeginManager(IPeginManager(newPeginManager));
     }
 
-    function test_setPegManager_Revert_InvalidZeroAddress() external {
+    function test_setPeginManager_Revert_InvalidZeroAddress() external {
         // Arrange
         address zeroAddress = address(0);
         vm.prank(bitcoinManager.owner());
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IBitcoinManager.InvalidZeroAddress.selector));
         // Act
-        bitcoinManager.setPegManager(IPegManager(zeroAddress));
+        bitcoinManager.setPeginManager(IPeginManager(zeroAddress));
     }
 }

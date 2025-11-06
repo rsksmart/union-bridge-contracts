@@ -27,3 +27,4 @@ forge script \
     --legacy \
     --broadcast \
     -v \
+    --slow \

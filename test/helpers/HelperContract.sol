@@ -3,18 +3,21 @@ pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
 import {DeployScript} from "script/deploy/DeployScript.s.sol";
-import {BtcTxSPVProof, PegStatus} from "src/PegManager.sol";
-import {IPegManager, PegoutTempInfo, StreamPosition} from "src/interfaces/IPegManager.sol";
-import {PegManagerHarness} from "test/helpers/PegManagerHarness.sol";
 import {StreamManagerHarness} from "test/helpers/StreamManagerHarness.sol";
 import {MemberRegistryHarness} from "test/helpers/MemberRegistryHarness.sol";
+import {PeginManagerHarness} from "test/helpers/PeginManagerHarness.sol";
+import {PegoutManagerHarness} from "test/helpers/PegoutManagerHarness.sol";
 import {SignatureManager} from "src/SignatureManager.sol";
+import {PauseManager} from "src/PauseManager.sol";
 import {Role, CommitteeMember, Committee, MemberRegistrationKeys, UTXO} from "src/CommitteeRegistry.sol";
 import {CommunicationData, COMMUNICATION_DATA_CHUNKS} from "src/interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination, Slot} from "src/interfaces/IStreamManager.sol";
 import {
     BtcTxIn, BtcTxOut, BtcTransaction, BitcoinSignatureData, PrevoutData
 } from "src/interfaces/IBitcoinManager.sol";
+import {BtcTxSPVProof, StreamPosition, PegStatus} from "src/interfaces/IPegCommonTypes.sol";
+import {PegoutTempInfo} from "src/interfaces/IPegoutManager.sol";
+import {IPegoutManager} from "src/interfaces/IPegoutManager.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
 import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
@@ -58,9 +61,11 @@ abstract contract HelperContract is Test, TestUtils {
     BridgeMock internal bridgeMock;
     CommitteeRegistryHarness internal registry;
     MemberRegistryHarness internal memberRegistry;
-    PegManagerHarness internal pm;
     SignatureManager internal signatureManager;
     StreamManagerHarness internal streamManager;
+    PeginManagerHarness internal peginManager;
+    PegoutManagerHarness internal pegoutManager;
+    PauseManager internal pauseManager;
 
     // Arrange
     uint64 internal constant VALUE = 1_000_000; // 0.01 BTC
@@ -74,8 +79,10 @@ abstract contract HelperContract is Test, TestUtils {
         bitcoinManager = deployScript.bitcoinManager();
         registry = CommitteeRegistryHarness(address(deployScript.committeeRegistry()));
         memberRegistry = MemberRegistryHarness(address(deployScript.memberRegistry()));
-        pm = PegManagerHarness(address(deployScript.pegManager()));
         streamManager = StreamManagerHarness(address(deployScript.streamManager()));
+        peginManager = PeginManagerHarness(address(deployScript.peginManager()));
+        pegoutManager = PegoutManagerHarness(address(deployScript.pegoutManager()));
+        pauseManager = PauseManager(deployScript.pauseManager());
         // Set up bridge mock at bridge precompiled address
         bridgeMock = BridgeMock(deployScript.bridgeAddress());
         signatureManager = SignatureManager(deployScript.signatureManager());
@@ -361,7 +368,7 @@ abstract contract HelperContract is Test, TestUtils {
         BtcTxSPVProof memory peginAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
         // Act
-        pm.acceptPegin(peginAcceptedTxSPVProof);
+        peginManager.acceptPegin(peginAcceptedTxSPVProof);
 
         return btcTransaction;
     }
@@ -375,7 +382,7 @@ abstract contract HelperContract is Test, TestUtils {
         BtcTxSPVProof memory peginRequestTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
         // Act
-        pm.requestPegin(peginRequestTxSPVProof);
+        peginManager.requestPegin(peginRequestTxSPVProof);
         return btcTransaction;
     }
 
@@ -416,7 +423,7 @@ abstract contract HelperContract is Test, TestUtils {
         setup.slotId = stream.pegoutSlotPointer;
 
         // Request peg-out
-        pm.tryPegout{value: pegoutAmountInWei}(setup.userPubKey);
+        pegoutManager.tryPegout{value: pegoutAmountInWei}(setup.userPubKey);
 
         // Verify slot was locked
         Slot memory slot = streamManager.getSlot(stream.streamId, setup.packetNumber, setup.slotId);
@@ -442,7 +449,7 @@ abstract contract HelperContract is Test, TestUtils {
 
     function setup_pegFlow() internal returns (RegisterUserTakeSetup memory setup) {
         setup = setup_pegout();
-        pm.registerUserTake(setup.pegoutTxSPVProof);
+        pegoutManager.registerUserTake(setup.pegoutTxSPVProof);
 
         return setup;
     }
@@ -685,7 +692,7 @@ abstract contract HelperContract is Test, TestUtils {
         // Assert
         assertEventOperatorTakeTriggered(setup.pegoutTxid, setup, operatorAddress, createdAt);
 
-        pm.triggerOperatorTake(setup.pegoutTxid);
+        pegoutManager.triggerOperatorTake(setup.pegoutTxid);
     }
 
     function assertEventOperatorTakeTriggered(
@@ -710,8 +717,8 @@ abstract contract HelperContract is Test, TestUtils {
             pegStatus: PegStatus.OPERATOR_TAKE
         });
 
-        vm.expectEmit(address(pm));
-        emit IPegManager.OperatorTakeTriggered(
+        vm.expectEmit(address(pegoutManager));
+        emit IPegoutManager.OperatorTakeTriggered(
             pegoutTxid,
             expectedPegoutInfo,
             expectedStreamPosition,
@@ -832,5 +839,17 @@ abstract contract HelperContract is Test, TestUtils {
             address memberAddress = vm.addr(memberIndex + 1);
             setup_depositCommunicationData(streamId, memberAddress, memberIndex);
         }
+    }
+
+    function pauseContracts() internal {
+        vm.prank(pauseManager.owner());
+        pauseManager.pause();
+    }
+
+    function pauseAndUnpauseContracts() internal {
+        vm.startPrank(pauseManager.owner());
+        pauseManager.pause();
+        pauseManager.unpause();
+        vm.stopPrank();
     }
 }

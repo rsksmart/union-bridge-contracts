@@ -5,7 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
 import {SlotState, Slot, Packet, Stream, IStreamManager, StreamDenomination} from "src/interfaces/IStreamManager.sol";
 import {IAccessControl} from "src/interfaces/IAccessControl.sol";
-import {StreamPosition, PegStatus} from "src/interfaces/IPegManager.sol";
+import {StreamPosition, PegStatus} from "src/interfaces/IPegCommonTypes.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Role, ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
@@ -26,7 +26,7 @@ contract TestStreamManager is Test, HelperContract {
         streamManager.setSlotHarness(setupStreamId, 0, hex"00", 0, 0, SlotState.FILLED);
 
         // Act
-        vm.prank(address(pm));
+        vm.prank(address(pegoutManager));
         (Slot memory slot,) = streamManager.lockSlot(setupStreamId);
 
         // Assert
@@ -38,7 +38,7 @@ contract TestStreamManager is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(IStreamManager.NoFilledSlot.selector, setupStreamId));
 
         // Act
-        vm.prank(address(pm));
+        vm.prank(address(pegoutManager));
         streamManager.lockSlot(setupStreamId);
     }
 
@@ -52,7 +52,7 @@ contract TestStreamManager is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(IStreamManager.NoFilledSlot.selector, setupStreamId));
 
         // Act
-        vm.prank(address(pm));
+        vm.prank(address(pegoutManager));
         streamManager.lockSlot(setupStreamId);
     }
 
@@ -68,7 +68,7 @@ contract TestStreamManager is Test, HelperContract {
         );
 
         // Act
-        vm.prank(address(pm));
+        vm.prank(address(peginManager));
         streamManager.reserveSlot(setupStreamId, 0);
     }
 
@@ -447,7 +447,7 @@ contract TestStreamManager is Test, HelperContract {
         emit IStreamManager.SlotReserved(streamId, packetNumber, 0);
 
         // Act
-        vm.prank(address(pm));
+        vm.prank(address(peginManager));
         uint64 slotId = streamManager.reserveSlot(streamId, packetNumber);
 
         // Assert
@@ -496,7 +496,7 @@ contract TestStreamManager is Test, HelperContract {
         );
 
         // Act - try to reserve slot in wrong packet (1 instead of 0)
-        vm.prank(address(pm));
+        vm.prank(address(peginManager));
         streamManager.reserveSlot(streamId, wrongPacketNumber);
     }
 
@@ -523,7 +523,7 @@ contract TestStreamManager is Test, HelperContract {
         );
 
         // Act - try to reserve one more slot in the same packet
-        vm.prank(address(pm));
+        vm.prank(address(peginManager));
         streamManager.reserveSlot(streamId, packetNumber);
     }
 
@@ -538,7 +538,7 @@ contract TestStreamManager is Test, HelperContract {
 
         // Reserve Constants.SLOTS_PER_PACKET - 1 slots
         for (uint64 i = 0; i < Constants.SLOTS_PER_PACKET - 1; i++) {
-            vm.prank(address(pm));
+            vm.prank(address(peginManager));
             streamManager.reserveSlot(streamId, packetNumber);
         }
 
@@ -547,7 +547,7 @@ contract TestStreamManager is Test, HelperContract {
         assertEq(midStream.peginPacketPointer, 0, "peginPacketPointer should still be 0 before packet is full");
 
         // Reserve one more slot to fill the packet
-        vm.prank(address(pm));
+        vm.prank(address(peginManager));
         streamManager.reserveSlot(streamId, packetNumber);
 
         // Verify peginPacketPointer has advanced by 1
@@ -566,7 +566,7 @@ contract TestStreamManager is Test, HelperContract {
         packetNumber = 0;
 
         // Reserve a slot for filling
-        vm.prank(address(pm));
+        vm.prank(address(peginManager));
         slotId = streamManager.reserveSlot(streamId, packetNumber);
     }
 
@@ -592,7 +592,7 @@ contract TestStreamManager is Test, HelperContract {
         emit IStreamManager.SlotFilled(streamId, packetNumber, slotId, acceptPeginTx, acceptPeginAmount);
 
         // Act
-        vm.prank(address(pm));
+        vm.prank(address(peginManager));
         streamManager.fillSlot(streamPos, acceptPeginAmount, acceptPeginTx, scriptPubKey);
 
         // Assert
@@ -658,7 +658,7 @@ contract TestStreamManager is Test, HelperContract {
         );
 
         // Act - try to fill slot that's not in RESERVED state
-        vm.prank(address(pm));
+        vm.prank(address(peginManager));
         streamManager.fillSlot(streamPos, acceptPeginAmount, acceptPeginTx, scriptPubKey);
     }
 
@@ -695,7 +695,7 @@ contract TestStreamManager is Test, HelperContract {
         );
 
         // Act - try to fill blocked slot
-        vm.prank(address(pm));
+        vm.prank(address(peginManager));
         streamManager.fillSlot(streamPos, acceptPeginAmount, acceptPeginTx, scriptPubKey);
     }
 
@@ -724,7 +724,7 @@ contract TestStreamManager is Test, HelperContract {
         );
 
         // Act - try to fill non-existent slot
-        vm.prank(address(pm));
+        vm.prank(address(peginManager));
         streamManager.fillSlot(streamPos, acceptPeginAmount, acceptPeginTx, scriptPubKey);
     }
 
@@ -742,7 +742,7 @@ contract TestStreamManager is Test, HelperContract {
             pegStatus: PegStatus.REGISTERED
         });
 
-        vm.prank(address(pm));
+        vm.prank(address(peginManager));
         streamManager.fillSlot(streamPos, 100000000, bytes32(uint256(0x123)), hex"5120abc123");
 
         // Verify slot is FILLED
@@ -915,7 +915,7 @@ contract TestStreamManager is Test, HelperContract {
         (,, uint64 slotId1) = setup_filledSlot();
 
         // Act - First lockSlot call should lock slot 1
-        vm.prank(address(pm));
+        vm.prank(address(pegoutManager));
         (Slot memory lockedSlot, uint64 returnedPacketNumber) = streamManager.lockSlot(streamId);
 
         // Assert first call
@@ -940,7 +940,7 @@ contract TestStreamManager is Test, HelperContract {
         (,, uint64 slotId2) = setup_filledSlot();
 
         // Act - First lockSlot call should lock slot 2
-        vm.prank(address(pm));
+        vm.prank(address(pegoutManager));
         (Slot memory lockedSlot, uint64 returnedPacketNumber) = streamManager.lockSlot(streamId);
 
         // Assert first call
@@ -977,7 +977,7 @@ contract TestStreamManager is Test, HelperContract {
         streamManager.pushSlotsHarness(streamId, secondPacketNumber, 1, SlotState.FILLED);
 
         // Act - lockSlot should skip to second packet
-        vm.prank(address(pm));
+        vm.prank(address(pegoutManager));
         (Slot memory lockedSlot, uint64 returnedPacketNumber) = streamManager.lockSlot(streamId);
 
         // Assert
@@ -998,7 +998,7 @@ contract TestStreamManager is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(IStreamManager.NoFilledSlot.selector, streamId));
 
         // Act
-        vm.prank(address(pm));
+        vm.prank(address(pegoutManager));
         streamManager.lockSlot(streamId);
     }
 
@@ -1034,7 +1034,7 @@ contract TestStreamManager is Test, HelperContract {
         bytes32 userTakeTx = bytes32(uint256(0x456));
 
         // 1. Reserve slot
-        vm.prank(address(pm));
+        vm.prank(address(peginManager));
         uint64 slotId = streamManager.reserveSlot(streamId, packetNumber);
 
         // 2. Fill slot
@@ -1044,19 +1044,19 @@ contract TestStreamManager is Test, HelperContract {
             slotId: slotId,
             pegStatus: PegStatus.REGISTERED
         });
-        vm.prank(address(pm));
+        vm.prank(address(peginManager));
         streamManager.fillSlot(streamPos, acceptPeginAmount, acceptPeginTx, scriptPubKey);
 
         // 3. Lock slot
-        vm.prank(address(pm));
+        vm.prank(address(pegoutManager));
         streamManager.lockSlot(streamId);
 
         // 4. Advance slot
-        vm.prank(address(pm));
+        vm.prank(address(pegoutManager));
         streamManager.advanceSlot(streamId, packetNumber, slotId);
 
         // 5. Complete slot
-        vm.prank(address(pm));
+        vm.prank(address(pegoutManager));
         streamManager.completeSlot(streamId, packetNumber, slotId, acceptPeginTx, userTakeTx);
 
         // Verify final state

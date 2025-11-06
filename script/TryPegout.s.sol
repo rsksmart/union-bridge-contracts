@@ -2,14 +2,14 @@
 pragma solidity ^0.8.20;
 
 import {console} from "forge-std/console.sol";
-import {PegManager} from "src/PegManager.sol";
+import {PegoutManager} from "src/PegoutManager.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
 import {Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
 
 contract TryPegoutScript is ScriptUtils, ContractAddressManager {
-    PegManager pegManager;
+    PegoutManager pegoutManager;
     IStreamManager streamManager;
     uint64 amount;
     uint256 amountInWei;
@@ -17,8 +17,8 @@ contract TryPegoutScript is ScriptUtils, ContractAddressManager {
 
     function setUp() internal {
         // ====== Arguments ======
-        pegManager = PegManager(getPegManager());
-        streamManager = IStreamManager(pegManager.streamManager());
+        pegoutManager = PegoutManager(getPegoutManager());
+        streamManager = IStreamManager(pegoutManager.streamManager());
         amount = 100_000; // 0.001 BTC
         amountInWei = BtcHelper.satoshiToWei(amount);
         userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
@@ -34,10 +34,10 @@ contract TryPegoutScript is ScriptUtils, ContractAddressManager {
 
         console.log("=== Try Pegout ===");
         vm.startBroadcast(getDeployerKey());
-        pegManager.tryPegout{value: amountInWei}(userPubKey);
+        pegoutManager.tryPegout{value: amountInWei}(userPubKey);
         vm.stopBroadcast();
 
-        bytes32 pegoutSignatureHash = pegManager.getPegoutTxid(stream.streamId, packetNumber, slotId);
+        bytes32 pegoutSignatureHash = pegoutManager.getPegoutTxid(stream.streamId, packetNumber, slotId);
         if (pegoutSignatureHash == bytes32(0)) {
             revert("Pegout not accepted");
         }

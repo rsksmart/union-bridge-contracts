@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNKNOWN
 pragma solidity ^0.8.20;
 
-import {IPegManager} from "./IPegManager.sol";
+import {IPeginManager} from "./IPeginManager.sol";
 
 /// @notice Represents a Bitcoin transaction input that references a previous UTXO
 /// @dev This struct follows Bitcoin's transaction input format as defined in BIP-141
@@ -97,10 +97,10 @@ struct BitcoinSignatureData {
 /// @dev This interface provides functions for generating addresses, validating transactions,
 /// @dev and calculating signature hashes for Bitcoin operations in the RSK union bridge
 interface IBitcoinManager {
-    /// @notice Sets the Peg Manager contract address
+    /// @notice Sets the Pegin Manager contract address
     /// @dev Only callable by the contract owner
-    /// @param _pegManager The address of the Peg Manager contract
-    function setPegManager(IPegManager _pegManager) external;
+    /// @param _peginManager The address of the Pegin Manager contract
+    function setPeginManager(IPeginManager _peginManager) external;
 
     /// @notice Obtains a temporary Bitcoin address for request peg-in operations
     /// @dev Creates a Taproot address with committee and user key paths for secure peg-in
@@ -252,7 +252,7 @@ interface IBitcoinManager {
     /// @notice Thrown when an address is zero
     error InvalidZeroAddress();
 
-    /// @notice Event emitted when peg manager address is updated
-    /// @param pegManager The new peg manager address
-    event PegManagerUpdated(address pegManager);
+    /// @notice Event emitted when pegin manager address is updated
+    /// @param peginManager The new peg manager address
+    event PeginManagerUpdated(address peginManager);
 }

@@ -2,7 +2,9 @@
 pragma solidity ^0.8.20;
 
 import {console} from "forge-std/console.sol";
-import {PegManager, StreamPosition, BtcTxSPVProof, PegStatus, RequestPeginTempInfo} from "src/PegManager.sol";
+import {PeginManager} from "src/PeginManager.sol";
+import {RequestPeginTempInfo} from "src/interfaces/IPeginManager.sol";
+import {BtcTxSPVProof, StreamPosition, PegStatus} from "src/interfaces/IPegCommonTypes.sol";
 import {IBitcoinManager, BtcTransaction, BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
 import {Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {Constants} from "src/libraries/Constants.sol";
@@ -10,7 +12,7 @@ import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
 
 contract AcceptPeginScript is ScriptUtils, ContractAddressManager {
-    PegManager pegManager;
+    PeginManager peginManager;
     IStreamManager streamManager;
     IBitcoinManager bitcoinManager;
 
@@ -18,20 +20,20 @@ contract AcceptPeginScript is ScriptUtils, ContractAddressManager {
         // This is the peg-in request transaction id that was previously registered
         // ====== Arguments ======
         // The other data is obtained from the peg-in request transaction
-        pegManager = PegManager(getPegManager());
+        peginManager = PeginManager(getPeginManager());
         // =======================
         // Smart contract addresses
-        streamManager = IStreamManager(pegManager.streamManager());
-        bitcoinManager = IBitcoinManager(pegManager.bitcoinManager());
+        streamManager = IStreamManager(peginManager.streamManager());
+        bitcoinManager = IBitcoinManager(peginManager.bitcoinManager());
 
         // Check if the peg-in request exists and is in REGISTERED status
-        StreamPosition memory streamPosition = pegManager.getStreamPosition(_requestPeginTxid);
+        StreamPosition memory streamPosition = peginManager.getStreamPositionByRequestPegin(_requestPeginTxid);
         if (streamPosition.pegStatus != PegStatus.REGISTERED) {
             revert("PeginRequest not registered or already accepted");
         }
 
         // Get the peg-in request temporary info
-        RequestPeginTempInfo memory requestPeginTempInfo = pegManager.getRequestPeginTempInfo(_requestPeginTxid);
+        RequestPeginTempInfo memory requestPeginTempInfo = peginManager.getRequestPeginTempInfo(_requestPeginTxid);
 
         // Get the committee public key
         bytes memory committeePubKey =
@@ -82,11 +84,11 @@ contract AcceptPeginScript is ScriptUtils, ContractAddressManager {
 
         // accept peginRequest
         vm.startBroadcast(getDeployerKey());
-        pegManager.acceptPegin(peginAcceptedTxSPVProof);
+        peginManager.acceptPegin(peginAcceptedTxSPVProof);
         vm.stopBroadcast();
 
         // check if peginRequest is accepted
-        StreamPosition memory streamPosition = pegManager.getStreamPosition(_requestPeginTxid);
+        StreamPosition memory streamPosition = peginManager.getStreamPositionByRequestPegin(_requestPeginTxid);
         if (streamPosition.pegStatus != PegStatus.ACCEPTED) {
             revert("PeginRequest not accepted");
         }

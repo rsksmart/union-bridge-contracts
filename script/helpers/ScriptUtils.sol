@@ -10,7 +10,7 @@ import {
     MemberRegistrationKeys,
     RSA_PUBLIC_KEY_CHUNKS
 } from "src/interfaces/ICommitteeRegistry.sol";
-import {BtcTxSPVProof} from "src/PegManager.sol";
+import {BtcTxSPVProof} from "src/interfaces/IPegCommonTypes.sol";
 import {BtcTransaction, BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
 import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
 import {BtcTaproot} from "src/libraries/BtcTaproot.sol";
@@ -24,6 +24,16 @@ abstract contract ScriptUtils is Script {
 
     function getDeployerAddress() public returns (address) {
         return vm.rememberKey(getDeployerKey());
+    }
+
+    function getPauserAddress() public returns (address) {
+        // Try to get PAUSER_ADDRESS from environment
+        // If not set, default to deployer address
+        try vm.envAddress("PAUSER_ADDRESS") returns (address pauserAddr) {
+            return pauserAddr;
+        } catch {
+            return getDeployerAddress();
+        }
     }
 
     function getMemberKey(uint32 index) public view returns (uint256) {

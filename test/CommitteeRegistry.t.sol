@@ -14,15 +14,13 @@ import {
     MemberRegistrationKeys
 } from "src/interfaces/ICommitteeRegistry.sol";
 import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
+import {IPeginManager} from "src/interfaces/IPeginManager.sol";
+import {IPegoutManager} from "src/interfaces/IPegoutManager.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {Pausable} from "src/Pausable.sol";
 import {StreamDenomination, IStreamManager, Stream} from "src/interfaces/IStreamManager.sol";
-import {
-    HelperContract,
-    StreamManagerHarness,
-    PegManagerHarness,
-    MemberRegistryHarness
-} from "test/helpers/HelperContract.sol";
+import {IAccessControl} from "src/interfaces/IAccessControl.sol";
+import {HelperContract, StreamManagerHarness, MemberRegistryHarness} from "test/helpers/HelperContract.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Constants} from "src/libraries/Constants.sol";
 
@@ -34,113 +32,9 @@ contract TestCommitteeRegistry is Test, HelperContract {
         vm.roll(1000);
     }
 
-    function pauseRegistry() internal {
-        address pauser = registry.pauser();
-        vm.prank(pauser);
-        registry.pause();
-    }
-
-    function pauseAndUnpauseRegistry() internal {
-        address pauser = registry.pauser();
-        vm.startPrank(pauser);
-        registry.pause();
-        registry.unpause();
-        vm.stopPrank();
-    }
-
-    function test_Success_PauserIsPegManager() external view {
-        assertEq(registry.pauser(), address(pm));
-    }
-
-    function test_pause_Revert_UnauthorizedAccount_CallFromNotPauser() external {
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(Pausable.UnauthorizedAccount.selector, address(this)));
-
-        // Act
-        registry.pause();
-    }
-
-    function test_pause_Success_CallFromPauser() external {
-        // Arrange
-        address pauser = registry.pauser();
-
-        // Assert
-        vm.expectEmit(address(registry));
-        emit PausableUpgradeable.Paused(pauser);
-
-        // Act
-        vm.prank(pauser);
-        registry.pause();
-    }
-
-    function test_unpause_Revert_UnauthorizedAccount_CallFromNotPauser() external {
-        // Arrange
-        pauseRegistry();
-
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(Pausable.UnauthorizedAccount.selector, address(this)));
-
-        // Act
-        registry.unpause();
-    }
-
-    function test_unpause_Success_CallFromPauser() external {
-        // Arrange
-        pauseRegistry();
-        address pauser = registry.pauser();
-
-        // Assert
-        vm.expectEmit(address(registry));
-        emit PausableUpgradeable.Unpaused(pauser);
-
-        // Act
-        vm.prank(pauser);
-        registry.unpause();
-    }
-
-    function test_unpause_Revert_ExpectedPause_CallFromPauser_ContractNotPaused() external {
-        // Arrange
-        address pauser = registry.pauser();
-
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.ExpectedPause.selector, address(this)));
-
-        // Act
-        vm.prank(pauser);
-        registry.unpause();
-    }
-
-    function test_pause_Revert_EnforcedPause_CallFromPauser_ContractAlreadyPaused() external {
-        // Arrange
-        pauseRegistry();
-        address pauser = registry.pauser();
-
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector, address(this)));
-
-        // Act
-        vm.prank(pauser);
-        registry.pause();
-    }
-
-    function test_pause_CallFromPauser_ShouldAlsoPauseMemberRegistry() external {
-        // Arrange
-        address pauser = registry.pauser();
-        address registryAddress = address(registry);
-        address memberRegistryAddress = address(memberRegistry);
-
-        // Assert
-        vm.expectEmit(memberRegistryAddress);
-        emit PausableUpgradeable.Paused(registryAddress);
-
-        // Act
-        vm.prank(pauser);
-        registry.pause();
-    }
-
     function test_applyToStream_Revert_EnforcedPause_PausedContract() external {
         // Arrange
-        pauseRegistry();
+        pauseContracts();
 
         uint256 privKey = uint256(1);
         address member = vm.addr(privKey);
@@ -161,7 +55,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_applyToStream_Success_UnpausedContract() external {
         // Arrange
-        pauseAndUnpauseRegistry();
+        pauseAndUnpauseContracts();
 
         uint256 privKey = uint256(1);
         address member = vm.addr(privKey);
@@ -186,7 +80,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         Role role = Role.OPERATOR;
         setup_applyToStream(denomination, member, memberRegistrationKeys, role);
 
-        pauseRegistry();
+        pauseContracts();
 
         // Assert
         vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
@@ -206,7 +100,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         Role role = Role.OPERATOR;
         setup_applyToStream(denomination, member, memberRegistrationKeys, role);
 
-        pauseAndUnpauseRegistry();
+        pauseAndUnpauseContracts();
 
         // Assert
         vm.expectEmit(address(memberRegistry));
@@ -221,7 +115,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Arrange
         (Committee memory expectedCommittee,) = setup_pendingCommitteeAndExpire();
 
-        pauseRegistry();
+        pauseContracts();
 
         // Assert
         vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
@@ -232,7 +126,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_restartPendingCommittee_Success_UnpausedContract() external {
         // Arrange
-        pauseAndUnpauseRegistry();
+        pauseAndUnpauseContracts();
 
         (Committee memory expectedCommittee,) = setup_pendingCommitteeAndExpire();
 
@@ -249,7 +143,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         (, Committee memory expectedCommittee, uint128 committeeId) = setup_completeCommitteeAndNewMembers();
         expectedCommittee.aggregatedKey = new bytes(0);
 
-        pauseRegistry();
+        pauseContracts();
 
         // Assert
         vm.expectEmit(address(registry));
@@ -257,7 +151,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Act
         // This should create a committee as pending
-        vm.prank(address(pm));
+        vm.prank(address(peginManager));
         registry.createCommittee(expectedCommittee.streamId);
     }
 
@@ -269,7 +163,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         CommitteeMember memory member = registry.getCommitteeMembers(committeeId)[0];
         address memberAddress = member.memberAddress;
 
-        pauseRegistry();
+        pauseContracts();
 
         // Assert
         vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
@@ -281,7 +175,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_depositAggregatedKey_Success_UnpausedContract() external {
         // Arrange
-        pauseAndUnpauseRegistry();
+        pauseAndUnpauseContracts();
 
         (Committee memory expectedCommittee, uint128 committeeId) = setup_pendingCommittee();
         bytes memory aggregatedKey = COMMITTEE_PUB_KEY();
@@ -300,7 +194,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_depositCommunicationData_Revert_EnforcedPause_PausedContract() external {
         // Arrange
-        pauseRegistry();
+        pauseContracts();
 
         uint256 privKey = uint256(2);
         address member = vm.addr(privKey);
@@ -319,7 +213,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_depositCommunicationData_Success_UnpausedContract() external {
         // Arrange
-        pauseAndUnpauseRegistry();
+        pauseAndUnpauseContracts();
 
         (Committee memory expectedCommittee, uint128 committeeId) = setup_pendingCommittee();
         uint256 memberIndex = 0;
@@ -339,7 +233,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_setStreamManager_Success_PausedContract() external {
         // Arrange
-        pauseRegistry();
+        pauseContracts();
 
         uint256 privKey = uint256(2);
         address newStreamManagerAddress = vm.addr(privKey);
@@ -355,27 +249,45 @@ contract TestCommitteeRegistry is Test, HelperContract {
         registry.setStreamManager(newStreamManager);
     }
 
-    function test_setPegManager_Success_PausedContract() external {
+    function test_setPeginManager_Success_PausedContract() external {
         // Arrange
-        pauseRegistry();
+        pauseContracts();
 
         uint256 privKey = uint256(2);
-        address newPegManagerAddress = vm.addr(privKey);
-        PegManagerHarness newPegManager = PegManagerHarness(newPegManagerAddress);
+        address newPeginManagerAddress = vm.addr(privKey);
+        IPeginManager newPeginManager = IPeginManager(newPeginManagerAddress);
         address owner = registry.owner();
 
         // Assert
         vm.expectEmit(address(registry));
-        emit ICommitteeRegistry.PegManagerUpdated(newPegManagerAddress);
+        emit ICommitteeRegistry.PeginManagerUpdated(newPeginManagerAddress);
 
         // Act
         vm.prank(owner);
-        registry.setPegManager(newPegManager);
+        registry.setPeginManager(newPeginManager);
+    }
+
+    function test_setPegoutManager_Success_PausedContract() external {
+        // Arrange
+        pauseContracts();
+
+        uint256 privKey = uint256(2);
+        address newPegoutManagerAddress = vm.addr(privKey);
+        IPegoutManager newPegoutManager = IPegoutManager(newPegoutManagerAddress);
+        address owner = registry.owner();
+
+        // Assert
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.PegoutManagerUpdated(newPegoutManagerAddress);
+
+        // Act
+        vm.prank(owner);
+        registry.setPegoutManager(newPegoutManager);
     }
 
     function test_setMemberRegistry_Success_PausedContract() external {
         // Arrange
-        pauseRegistry();
+        pauseContracts();
 
         uint256 privKey = uint256(2);
         address newMemberAddress = vm.addr(privKey);
@@ -393,7 +305,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_setPendingCommitteeTimeout_Success_PausedContract() external {
         // Arrange
-        pauseRegistry();
+        pauseContracts();
 
         uint256 newCommitteeTimeout = uint256(5);
         address owner = registry.owner();
@@ -409,7 +321,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_setCommitteeMinWatchtowers_Success_PausedContract() external {
         // Arrange
-        pauseRegistry();
+        pauseContracts();
 
         uint256 newMinWatchtowers = registry.committeeMemberCount() - registry.minCommitteeOperators(); // to be sure committeeMemberCount >= newMin + minCommitteeOperators
         address owner = registry.owner();
@@ -425,7 +337,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_setCommitteeMinOperators_Success_PausedContract() external {
         // Arrange
-        pauseRegistry();
+        pauseContracts();
 
         uint256 newMinOperators = registry.committeeMemberCount() - registry.minCommitteeWatchtowers(); // to be sure committeeMemberCount >= minCommitteeWatchtowers + newMin
         address owner = registry.owner();
@@ -441,7 +353,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_setCommitteeMemberCount_Success_PausedContract() external {
         // Arrange
-        pauseRegistry();
+        pauseContracts();
 
         uint256 memberCount = registry.minCommitteeWatchtowers() + registry.minCommitteeOperators(); // to be sure memberCount >= minCommitteeWatchtowers + minCommitteeOperators
         address owner = registry.owner();
@@ -467,14 +379,14 @@ contract TestCommitteeRegistry is Test, HelperContract {
         vm.prank(address(registry));
         streamManager.createNewPacket(streamId, committeeId, committeePubKey);
 
-        pauseRegistry();
+        pauseContracts();
 
         // Assert
         vm.expectEmit(address(registry));
         emit ICommitteeRegistry.CommitteeMembersReleased(streamId, packetNumber);
 
         // Act
-        vm.prank(address(pm));
+        vm.prank(address(pegoutManager));
         registry.releaseCommittee(streamId, packetNumber);
     }
 
@@ -652,6 +564,140 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Act
         vm.prank(address(owner));
         registry.setCommitteeMemberCount(invalidMinMembers);
+    }
+
+    function test_setPeginManager_Success() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        address newPeginManagerAddress = vm.addr(privKey);
+        IPeginManager newPeginManager = IPeginManager(newPeginManagerAddress);
+        address owner = registry.owner();
+
+        // Assert
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.PeginManagerUpdated(newPeginManagerAddress);
+
+        // Act
+        vm.prank(owner);
+        registry.setPeginManager(newPeginManager);
+    }
+
+    function test_setPeginManager_Revert_AddressZero() external {
+        // Arrange
+        address owner = registry.owner();
+        IPeginManager zeroPeginManager = IPeginManager(address(0));
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.InvalidZeroAddress.selector));
+
+        // Act
+        vm.prank(owner);
+        registry.setPeginManager(zeroPeginManager);
+    }
+
+    function test_setPeginManager_Revert_OwnableUnauthorizedAccount() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        address newPeginManagerAddress = vm.addr(privKey);
+        IPeginManager newPeginManager = IPeginManager(newPeginManagerAddress);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+
+        // Act
+        registry.setPeginManager(newPeginManager);
+    }
+
+    function test_setPegoutManager_Success() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        address newPegoutManagerAddress = vm.addr(privKey);
+        IPegoutManager newPegoutManager = IPegoutManager(newPegoutManagerAddress);
+        address owner = registry.owner();
+
+        // Assert
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.PegoutManagerUpdated(newPegoutManagerAddress);
+
+        // Act
+        vm.prank(owner);
+        registry.setPegoutManager(newPegoutManager);
+    }
+
+    function test_setPegoutManager_Revert_AddressZero() external {
+        // Arrange
+        address owner = registry.owner();
+        IPegoutManager zeroPegoutManager = IPegoutManager(address(0));
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.InvalidZeroAddress.selector));
+
+        // Act
+        vm.prank(owner);
+        registry.setPegoutManager(zeroPegoutManager);
+    }
+
+    function test_setPegoutManager_Revert_OwnableUnauthorizedAccount() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        address newPegoutManagerAddress = vm.addr(privKey);
+        IPegoutManager newPegoutManager = IPegoutManager(newPegoutManagerAddress);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+
+        // Act
+        registry.setPegoutManager(newPegoutManager);
+    }
+
+    function test_setPauser_Success() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        address newPauser = vm.addr(privKey);
+        address owner = registry.owner();
+
+        // Assert
+        vm.expectEmit(address(registry));
+        emit Pausable.PauserUpdated(newPauser);
+
+        // Act
+        vm.prank(owner);
+        registry.setPauser(newPauser);
+
+        // Assert
+        assertEq(registry.pauser(), newPauser);
+    }
+
+    function test_setPauser_Success_PausedContract() external {
+        // Arrange
+        pauseContracts();
+
+        uint256 privKey = uint256(1);
+        address newPauser = vm.addr(privKey);
+        address owner = registry.owner();
+
+        // Assert
+        vm.expectEmit(address(registry));
+        emit Pausable.PauserUpdated(newPauser);
+
+        // Act
+        vm.prank(owner);
+        registry.setPauser(newPauser);
+
+        // Assert
+        assertEq(registry.pauser(), newPauser);
+    }
+
+    function test_setPauser_Revert_OwnableUnauthorizedAccount() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        address newPauser = vm.addr(privKey);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+
+        // Act
+        registry.setPauser(newPauser);
     }
 
     function test_getCommittee_Success() external {
@@ -909,7 +955,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Act
         // This should create a committee as pending
-        vm.prank(address(pm));
+        vm.prank(address(peginManager));
         registry.createCommittee(expectedCommittee.streamId);
 
         Committee memory committee = registry.getPendingCommittee(expectedCommittee.streamId);
@@ -955,7 +1001,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // Act
         // This should create a committee as pending
-        vm.prank(address(pm));
+        vm.prank(address(peginManager));
         registry.createCommittee(committee.streamId);
 
         Committee memory pendingCommittee = registry.getPendingCommittee(committee.streamId);
@@ -987,7 +1033,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
         // createCommittee called by pegManager should do nothing if pending committee is not expired
         // Act
-        vm.prank(address(pm));
+        vm.prank(address(peginManager));
         registry.createCommittee(expectedCommittee.streamId);
 
         Vm.Log[] memory logs = vm.getRecordedLogs();
@@ -1267,7 +1313,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         emit ICommitteeRegistry.NewPendingCommittee(COMMITTEE_ID_STREAM_1_COMMITTEE_3, expectedCommittee);
 
         // Act
-        vm.prank(address(pm));
+        vm.prank(address(peginManager));
         registry.createCommittee(expectedCommittee.streamId);
 
         // Assert
@@ -1357,7 +1403,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
 
     function test_createCommittee_UnauthorizedAccount() external {
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(Pausable.UnauthorizedAccount.selector, address(this)));
+        vm.expectRevert(abi.encodeWithSelector(IAccessControl.UnauthorizedAccount.selector, address(this)));
 
         // Act
         registry.createCommittee(0);
@@ -1409,57 +1455,6 @@ contract TestCommitteeRegistry is Test, HelperContract {
             committee.missingData,
             registry.committeeMemberCount(),
             "missing data should be equal to min committee members"
-        );
-        assertFalse(
-            registry.shouldCreateCommitteeHarness(expectedCommittee.streamId),
-            "Should not create committee after committee created"
-        );
-    }
-
-    function test_setup_pendingCommitteeAndExpire() internal {
-        // Test helper function to setup a pending committee and then expire it
-
-        // Arrange
-        // This function sets up a pending committee and then expires it
-        (Committee memory expectedCommittee,) = setup_pendingCommitteeAndExpire();
-        // We ask for current pending committee
-        Committee memory currentPendingCommittee = registry.getPendingCommittee(expectedCommittee.streamId);
-
-        assertEq(
-            expectedCommittee.members.length,
-            currentPendingCommittee.members.length,
-            "Pending committee length should match. They are always the MIN_MEMBERS_COMMITTEE"
-        );
-        for (uint256 i = 0; i < expectedCommittee.members.length; i++) {
-            assertNotEq(
-                expectedCommittee.members[i].memberAddress,
-                currentPendingCommittee.members[i].memberAddress,
-                "Pending committee member should not match"
-            );
-        }
-        assertFalse(
-            registry.shouldCreateCommitteeHarness(expectedCommittee.streamId),
-            "Flag shouldCreateCommittee should be false before it's called by PegManager"
-        );
-
-        // Act
-        vm.prank(address(pm));
-        registry.createCommitteeHarness(expectedCommittee.streamId);
-
-        Committee memory pendingCommitteeAfterCall = registry.getPendingCommittee(expectedCommittee.streamId);
-        assertNotEq(
-            currentPendingCommittee.createdAt, pendingCommitteeAfterCall.createdAt, "Pending committee should change"
-        );
-        assertEq(pendingCommitteeAfterCall.missingData, 0, "Missing data should be 0 after committee creation");
-        assertEq(
-            new bytes(0),
-            pendingCommitteeAfterCall.aggregatedKey,
-            "Pending committee aggregated key should be empty after committee creation"
-        );
-        assertEqCommittee(
-            expectedCommittee,
-            pendingCommitteeAfterCall,
-            "New pending committee should match that one returned by setup_pendingCommitteeAndExpire"
         );
         assertFalse(
             registry.shouldCreateCommitteeHarness(expectedCommittee.streamId),

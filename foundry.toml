@@ -1,10 +1,11 @@
 [profile.default]
 solc_version = "0.8.30"
-# Use emv version previous to Paris in RSK to avoid prevrandao error 
+# Use emv version previous to Paris in RSK to avoid prevrandao error
 # https://book.getfoundry.sh/cheatcodes/prevrandao
 evm_version = "london"
 optimizer = true
 optimizer_runs = 100
+block_gas_limit = 1350000000
 # TODO Create2 is not compatible with OpenZeppelin upgrades
 # Create2, In order to reliably deploy to deterministic addresses we will need to make sure our bytecode stays the same
 # bytecode_hash = "none"
@@ -18,7 +19,7 @@ extra_output = ["storageLayout"]
 # Fix  call didn't revert at a lower depth than cheatcode call depth https://github.com/PaulRBerg/prb-math/issues/248
 allow_internal_expect_revert = true
 
-# Ignore gas reports for Test contract
+# Ignore gas reports for Test contracts and test infrastructure
 gas_reports_ignore = [
     "ERC1967Proxy",
     "DeployScript",
@@ -26,7 +27,8 @@ gas_reports_ignore = [
     "HelperContract",
     "ProofValidatorHarness",
     "TestUtils",
-    "TestPegManager",
+    "TestPeginManager",
+    "TestPegoutManager",
     "TestSignatureManager",
 ]
 

@@ -325,25 +325,25 @@ sequenceDiagram
 sequenceDiagram
     participant U as User
     participant M as Member
-    participant PM as PegManager
+    participant PIM as PeginManager
     participant ENV as Environment
 
     Note over U,ENV: Phase 1: Request Peg-In
     Note over U,ENV: User requests to peg-in Bitcoin to RSK
 
-    U->>+PM: getTemporaryPeginAddress(rootstockAddress, value, btcReimbursementPubKey)
-    PM-->>-U: temporaryPeginAddress
+    U->>+PIM: getTemporaryPeginAddress(rootstockAddress, value, btcReimbursementPubKey)
+    PIM-->>-U: temporaryPeginAddress
 
     U->>U: Send BTC to temporaryPeginAddress
     Note right of U: User deposits Bitcoin to the generated address
 
-    M->>+PM: requestPegin(btcTxSPVProof)
+    M->>+PIM: requestPegin(btcTxSPVProof)
     Note right of M: Committee member monitors Bitcoin network and submits transaction
-    PM->>PM: Validate BTC transaction and SPV proof
-    PM->>PM: Store pegin request data
-    PM->>PM: Generate accept peg-in transaction
-    PM-->>-M: PeginRequested event
-    Note right of PM: Event includes signature hash for committee members
+    PIM->>PIM: Validate BTC transaction and SPV proof
+    PIM->>PIM: Store pegin request data
+    PIM->>PIM: Generate accept peg-in transaction
+    PIM-->>-M: PeginRequested event
+    Note right of PIM: Event includes signature hash for committee members
 ```
 
 ### Phase 2: Committee Signatures for Peg-In
@@ -398,19 +398,19 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant M as Member
-    participant PM as PegManager
+    participant PIM as PeginManager
     participant ENV as Environment
 
     Note over M,ENV: Phase 3: Accept Peg-In
     Note over M,ENV: Member submits the broadcasted accept peg-in transaction
 
-    M->>+PM: acceptPegin(btcTxSPVProof)
+    M->>+PIM: acceptPegin(btcTxSPVProof)
     Note right of M: Committee member monitors Bitcoin network and submits broadcasted transaction
-    PM->>PM: Validate BTC transaction and SPV proof
-    PM->>PM: Validate committee signatures
-    PM->>PM: Process pegin acceptance
-    PM-->>-ENV: PeginAccepted event
-    Note right of PM: BTC is now pegged-in to RSK
+    PIM->>PIM: Validate BTC transaction and SPV proof
+    PIM->>PIM: Validate committee signatures
+    PIM->>PIM: Process pegin acceptance
+    PIM-->>-ENV: PeginAccepted event
+    Note right of PIM: BTC is now pegged-in to RSK
 ```
 
 ## Peg-Out Process (RSK → Bitcoin)
@@ -426,20 +426,20 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant U as User
-    participant PM as PegManager
+    participant POM as PegoutManager
     participant ENV as Environment
 
     Note over U,ENV: Phase 1: Peg-Out Request
     Note over U,ENV: User requests to peg-out RBTC to Bitcoin
 
-    U->>+PM: tryPegout(userPubKey)
+    U->>+POM: tryPegout(userPubKey)
     Note right of U: Provides Bitcoin public key and sends RBTC
-    PM->>PM: Validate request
-    PM->>PM: Store pegout request data
-    PM->>PM: Generate user take transaction
-    PM-->>-ENV: PegoutRequested event
-    Note right of PM: Event includes signature hash for committee members
-    Note right of PM: Burn RBTC: User's RBTC is burned in preparation for peg-out
+    POM->>POM: Validate request
+    POM->>POM: Store pegout request data
+    POM->>POM: Generate user take transaction
+    POM-->>-ENV: PegoutRequested event
+    Note right of POM: Event includes signature hash for committee members
+    Note right of POM: Burn RBTC: User's RBTC is burned in preparation for peg-out
 ```
 
 ### Phase 2: Committee Signatures for Peg-Out
@@ -486,7 +486,7 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant M as Member
-    participant PM as PegManager
+    participant POM as PegoutManager
     participant ENV as Environment
 
     Note over M,ENV: Normal Case: UserTake (Take0) - All Members Signed
@@ -495,12 +495,12 @@ sequenceDiagram
     M->>M: Bitcoin pegout transaction
     Note right of M: BTC sent to user's Bitcoin address when all signatures collected
 
-    M->>+PM: registerUserTake(btcTxSPVProof)
+    M->>+POM: registerUserTake(btcTxSPVProof)
     Note right of M: Member calls `registerUserTake()` with the Bitcoin transaction and SPV proof
-    PM->>PM: Validate BTC transaction and SPV proof
-    PM->>PM: Validate committee signatures
-    PM-->>-ENV: PegoutRegistered event
-    Note right of PM: RBTC is now pegged-out to Bitcoin
+    POM->>POM: Validate BTC transaction and SPV proof
+    POM->>POM: Validate committee signatures
+    POM-->>-ENV: PegoutRegistered event
+    Note right of POM: RBTC is now pegged-out to Bitcoin
 ```
 
 #### Alternative Case: Operator Take (Take1) - Not all members signed
@@ -519,16 +519,16 @@ If not all committee members sign within the timeout period:
 ```mermaid
 sequenceDiagram
     participant M as Member
-    participant PM as PegManager
+    participant POM as PegoutManager
     participant ENV as Environment
 
     Note over M,ENV: Alternative: Operator Take (Take1) - not all members signed
     Note over M,ENV: When not all members sign within timeout
 
-    M->>+PM: triggerOperatorTake(pegoutTxid)
+    M->>+POM: triggerOperatorTake(pegoutTxid)
     Note right of M: Member triggers operator take after timeout
-    PM->>PM: Validate timeout and signatures status
-    PM-->>-ENV: OperatorTakeTriggered event
+    POM->>POM: Validate timeout and signatures status
+    POM-->>-ENV: OperatorTakeTriggered event
 
     M->>M: Bitcoin user funds advancement
     Note right of M: Operator advances BTC to user's Bitcoin address
@@ -542,11 +542,11 @@ sequenceDiagram
     M->>M: Bitcoin Operator Take (Take1)
     Note right of M: Operator broadcasts the final Operator Take Bitcoin transaction
 
-    M->>+PM: registerOperatorTake(btcTxSPVProof)
+    M->>+POM: registerOperatorTake(btcTxSPVProof)
     Note right of M: Operator calls `registerOperatorTake()` with the Bitcoin transaction and SPV proof
-    PM->>PM: Validate BTC transaction and SPV proof
-    PM-->>-ENV: PegoutRegistered event
-    Note right of PM: RBTC is now pegged-out to Bitcoin via operator take
+    POM->>POM: Validate BTC transaction and SPV proof
+    POM-->>-ENV: PegoutRegistered event
+    Note right of POM: RBTC is now pegged-out to Bitcoin via operator take
 ```
 
 ---
@@ -562,7 +562,10 @@ The BitVMX Union Bridge is a sophisticated smart contract system that enables se
 ```mermaid
 graph TB
     %% Core Contracts
-    PM[PegManager<br/>Central coordinator for peg operations]
+    PIM[PeginManager<br/>Handles Bitcoin → RSK operations]
+    POM[PegoutManager<br/>Handles RSK → Bitcoin operations]
+    PMB[PegManagerBase<br/>Shared abstract base contract]
+    PAM[PauseManager<br/>Centralized pause controller]
     BM[BitcoinManager<br/>Bitcoin address generation and validation]
     CR[CommitteeRegistry<br/>Committee formation and management]
     MR[MemberRegistry<br/>Member registration and balance tracking]
@@ -572,49 +575,95 @@ graph TB
     %% External Dependencies
     Bridge[RSK Bridge<br/>External Contract]
 
-    %% Relationships
-    PM --> BM
-    PM --> CR
-    PM --> SM
-    PM --> SigM
-    PM --> MR
-    PM --> Bridge
-    
+    %% Inheritance
+    PIM -.inherits.-> PMB
+    POM -.inherits.-> PMB
+
+    %% PeginManager Relationships
+    PIM --> BM
+    PIM --> CR
+    PIM --> SM
+    PIM --> SigM
+    PIM --> Bridge
+
+    %% PegoutManager Relationships
+    POM --> BM
+    POM --> CR
+    POM --> SM
+    POM --> SigM
+    POM --> MR
+    POM --> Bridge
+
+    %% PauseManager Relationships
+    PAM -.controls pause.-> PIM
+    PAM -.controls pause.-> POM
+    PAM -.controls pause.-> CR
+    PAM -.controls pause.-> MR
+
+    %% Other Relationships
     CR --> MR
     CR --> SM
-    CR --> PM
-    
+    CR --> PIM
+    CR --> POM
+
     MR --> SM
     MR --> CR
-    
+
     SigM --> CR
-    SigM --> PM
-    
-    SM --> PM
+    SigM --> PIM
+    SigM --> POM
+
+    SM --> PIM
+    SM --> POM
     SM --> CR
 
     %% Styling
     classDef coreContract fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef baseContract fill:#c5e1a5,stroke:#33691e,stroke-width:2px
+    classDef pauseContract fill:#f8bbd0,stroke:#880e4f,stroke-width:2px
     classDef external fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    
-    class PM,BM,CR,MR,SM,SigM coreContract
+
+    class PIM,POM,BM,CR,MR,SM,SigM coreContract
+    class PMB baseContract
+    class PAM pauseContract
     class Bridge external
 ```
 
 ### Core Smart Contracts
 
-#### 1. **PegManager**
+#### 1. **PeginManager**
 
-- **Purpose**: Central coordinator for all peg-in and peg-out operations
+- **Purpose**: Manages peg-in operations from Bitcoin to Rootstock
 - **Key Features**:
-  - Manages Bitcoin peg-in requests with SPV proofs
-  - Handles peg-in acceptance with committee signatures
-  - Processes peg-out operations and committee signatures
+  - Handles Bitcoin peg-in requests with SPV proofs
+  - Processes peg-in acceptance with committee signatures
+  - Generates temporary Bitcoin addresses for deposits
   - Coordinates with StreamManager for slot allocation
   - Integrates with CommitteeRegistry for committee management
-- **Security Features**: Pausable, UUPS upgradeable, non-reentrant
+  - Inherits shared functionality from PegManagerBase
+- **Security Features**: Pausable (via PauseManager), UUPS upgradeable, non-reentrant
 
-#### 2. **BitcoinManager**
+#### 2. **PegoutManager**
+
+- **Purpose**: Manages peg-out operations from Rootstock to Bitcoin
+- **Key Features**:
+  - Processes peg-out requests and RBTC burning
+  - Manages user take and operator take flows
+  - Handles timeout-based operator advancement
+  - Coordinates committee signatures for peg-outs
+  - Integrates with MemberRegistry for operator management
+  - Inherits shared functionality from PegManagerBase
+- **Security Features**: Pausable (via PauseManager), UUPS upgradeable, non-reentrant
+
+#### 3. **PegManagerBase**
+
+- **Purpose**: Abstract base contract providing shared functionality for PeginManager and PegoutManager
+- **Key Features**:
+  - Centralizes common state variables (bitcoinManager, streamManager, committeeRegistry, signatureManager)
+  - Provides shared initialization logic
+  - Implements common setter functions (setStreamManager, setSignatureManager, setPauser)
+
+#### 4. **BitcoinManager**
 
 - **Purpose**: Handles Bitcoin address generation and transaction validation
 - **Key Features**:
@@ -624,7 +673,7 @@ graph TB
   - Manages Taproot addresses with key spend and script spend paths
 - **Security Features**: UUPS upgradeable
 
-#### 3. **CommitteeRegistry**
+#### 5. **CommitteeRegistry**
 
 - **Purpose**: Manages committee formation, selection, and lifecycle
 - **Key Features**:
@@ -632,9 +681,9 @@ graph TB
   - Handles committee member selection and rotation
   - Manages pending committee formation with timeouts
   - Coordinates with MemberRegistry for member management
-- **Security Features**: Pausable, UUPS upgradeable, non-reentrant
+- **Security Features**: Pausable (via PauseManager), UUPS upgradeable, non-reentrant
 
-#### 4. **MemberRegistry**
+#### 6. **MemberRegistry**
 
 - **Purpose**: Manages member registration, applications, and balance tracking
 - **Key Features**:
@@ -642,9 +691,9 @@ graph TB
   - Manages security bond deposits and withdrawals
   - Tracks member balances (available, pre-staked, staked)
   - Supports member applications to different streams
-- **Security Features**: Pausable, UUPS upgradeable, non-reentrant
+- **Security Features**: Pausable (via PauseManager), UUPS upgradeable, non-reentrant
 
-#### 5. **StreamManager**
+#### 7. **StreamManager**
 
 - **Purpose**: Manages streams and packet allocation for different Bitcoin denominations
 - **Key Features**:
@@ -654,7 +703,7 @@ graph TB
   - Tracks stream usage and committee rotation
 - **Security Features**: UUPS upgradeable
 
-#### 6. **SignatureManager**
+#### 8. **SignatureManager**
 
 - **Purpose**: Manages multi-signature operations for committee members
 - **Key Features**:
@@ -663,6 +712,16 @@ graph TB
   - Tracks operator take transaction IDs
   - Coordinates with CommitteeRegistry for member verification
 - **Security Features**: UUPS upgradeable
+
+#### 9. **PauseManager**
+
+- **Purpose**: Centralized pause controller for emergency stops
+- **Key Features**:
+  - Single control point for pausing all contracts
+  - Coordinates pause/unpause across PeginManager, PegoutManager, CommitteeRegistry, and MemberRegistry
+  - Owner-controlled with single transaction emergency stop
+  - Provides system-wide pause status checking
+- **Security Features**: UUPS upgradeable, owner access control
 
 ### Key Features and Security
 
@@ -674,9 +733,11 @@ graph TB
 
 #### Pausability
 
-- **PegManager**, **CommitteeRegistry**, and **MemberRegistry** are pausable
-- Pause functionality allows emergency stops of critical operations
-- Pauser role is managed by the PegManager contract
+- **PeginManager**, **PegoutManager**, **CommitteeRegistry**, and **MemberRegistry** are pausable
+- **PauseManager** provides centralized pause control for all contracts
+- Pause functionality allows emergency stops of critical operations with a single transaction
+- Only PauseManager owner can pause/unpause the system
+- All pausable contracts delegate pause authority to PauseManager
 
 #### Access Control
 
@@ -699,12 +760,14 @@ graph TB
 
 ### Contract Interactions
 
-1. **PegManager** acts as the central coordinator, calling other contracts for specific operations
-2. **CommitteeRegistry** manages committee lifecycle and coordinates with **MemberRegistry**
-3. **StreamManager** handles stream and packet management, working with **CommitteeRegistry**
-4. **SignatureManager** processes multi-signature operations for committees
-5. **BitcoinManager** provides Bitcoin-specific functionality as a utility contract
-6. **MemberRegistry** manages member data and balances across all other contracts
+1. **PeginManager** manages peg-in operations, coordinating with BitcoinManager, CommitteeRegistry, StreamManager, and SignatureManager
+2. **PegoutManager** manages peg-out operations, coordinating with BitcoinManager, CommitteeRegistry, StreamManager, SignatureManager, and MemberRegistry
+3. **PauseManager** controls pause state for PeginManager, PegoutManager, CommitteeRegistry, and MemberRegistry
+4. **CommitteeRegistry** manages committee lifecycle and coordinates with MemberRegistry and StreamManager
+5. **StreamManager** handles stream and packet management, working with CommitteeRegistry
+6. **SignatureManager** processes multi-signature operations for committees
+7. **BitcoinManager** provides Bitcoin-specific functionality as a utility contract
+8. **MemberRegistry** manages member data and balances across all other contracts
 
 ### Deployment Architecture
 

@@ -2,7 +2,8 @@
 pragma solidity ^0.8.20;
 
 import {StreamDenomination, IStreamManager} from "./IStreamManager.sol";
-import {IPegManager} from "./IPegManager.sol";
+import {IPeginManager} from "./IPeginManager.sol";
+import {IPegoutManager} from "./IPegoutManager.sol";
 import {SignatureData} from "./ISignatureManager.sol";
 import {IMemberRegistry} from "./IMemberRegistry.sol";
 import {IPausable} from "./IPausable.sol";
@@ -287,10 +288,15 @@ interface ICommitteeRegistry is IPausable {
         view
         returns (CommunicationData[] memory communicationData);
 
-    /// @notice Sets the Peg Manager contract address
+    /// @notice Sets the Pegin Manager contract address
     /// @dev Only callable by the contract owner
-    /// @param _pegManager The address of the Peg Manager contract
-    function setPegManager(IPegManager _pegManager) external;
+    /// @param _peginManager The address of the Pegin Manager contract
+    function setPeginManager(IPeginManager _peginManager) external;
+
+    /// @notice Sets the Pegout Manager contract address
+    /// @dev Only callable by the contract owner
+    /// @param _pegoutManager The address of the Pegout Manager contract
+    function setPegoutManager(IPegoutManager _pegoutManager) external;
 
     /// @notice Sets the Stream Manager contract address
     /// @dev Only callable by the contract owner
@@ -317,13 +323,14 @@ interface ICommitteeRegistry is IPausable {
     /// @param _committeeMemberCount The exact number of members required for a committee
     function setCommitteeMemberCount(uint256 _committeeMemberCount) external;
 
-    /// @notice Gets the operator take address for a specific committee
+    /// @notice Gets the operator take address and public key for a specific committee
     /// @param committeeId The ID of the committee
     /// @param signatureData The signature data for the committee members
-    /// @return The operator take address
+    /// @return operatorAddress The operator take address
+    /// @return takePubKey The operator's take public key
     function getOperatorTakeAddress(uint128 committeeId, SignatureData[] calldata signatureData)
         external
-        returns (address);
+        returns (address operatorAddress, bytes32 takePubKey);
 
     /// @notice Release the committee members from a packet (return or reapply staked money)
     function releaseCommittee(uint64 _streamId, uint64 _packetNumber) external;
@@ -347,9 +354,13 @@ interface ICommitteeRegistry is IPausable {
     /// @param streamManager The new stream manager address
     event StreamManagerUpdated(address streamManager);
 
-    /// @notice Event emitted when peg manager address is updated
-    /// @param pegManager The new peg manager address
-    event PegManagerUpdated(address pegManager);
+    /// @notice Event emitted when pegin manager address is updated
+    /// @param peginManager The new pegin manager address
+    event PeginManagerUpdated(address peginManager);
+
+    /// @notice Event emitted when pegout manager address is updated
+    /// @param pegoutManager The new pegout manager address
+    event PegoutManagerUpdated(address pegoutManager);
 
     /// @notice Event emitted when minimum watchtowers requirement is updated
     /// @param minWatchtowers The new minimum watchtowers requirement

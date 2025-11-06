@@ -11,7 +11,7 @@ import {
     IBitcoinManager,
     BitcoinSignatureData
 } from "./interfaces/IBitcoinManager.sol";
-import {IPegManager} from "./interfaces/IPegManager.sol";
+import {IPeginManager} from "./interfaces/IPeginManager.sol";
 import {BytesHelper} from "./libraries/BytesHelper.sol";
 import {BtcHelper} from "./libraries/BtcHelper.sol";
 import {BtcTxEncoder} from "./libraries/BtcTxEncoder.sol";
@@ -32,7 +32,7 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
     BtcNetwork public network;
 
     /// @notice Peg manager contract for peg-in/peg-out coordination
-    IPegManager pegManager;
+    IPeginManager peginManager;
 
     /// @notice Initializes the BitcoinManager contract
     /// @dev Sets up the Bitcoin network and initial owner
@@ -46,13 +46,13 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
 
     /// @notice Sets the Peg Manager contract address
     /// @dev Only callable by the contract owner
-    /// @param _pegManager The address of the Peg Manager contract
-    function setPegManager(IPegManager _pegManager) external onlyOwner {
-        if (address(_pegManager) == address(0)) {
+    /// @param _peginManager The address of the Pegin Manager contract
+    function setPeginManager(IPeginManager _peginManager) external onlyOwner {
+        if (address(_peginManager) == address(0)) {
             revert InvalidZeroAddress();
         }
-        pegManager = _pegManager;
-        emit PegManagerUpdated(address(_pegManager));
+        peginManager = _peginManager;
+        emit PeginManagerUpdated(address(_peginManager));
     }
 
     /// @notice Converts a Bitcoin transaction to raw hex format and calculates its hash
@@ -208,7 +208,7 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         bytes32 _btcReimbursementPubKey,
         bytes memory _committeePubKey,
         BtcTxOut calldata _p2trOut
-    ) external view onlyPegManager {
+    ) external view onlyPeginManager {
         // Validate that the amount is enough for the stream
         if (_p2trOut.amount < _streamDenomination) {
             revert InvalidOutputAmount(_p2trOut.amount, _streamDenomination);
@@ -274,7 +274,7 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         bytes32 _userXOnlyPubKey,
         bytes32 _registerPeginTx,
         PrevoutData memory _prevoutData
-    ) external view onlyPegManager returns (BitcoinSignatureData memory) {
+    ) external view onlyPeginManager returns (BitcoinSignatureData memory) {
         // Prepare the inputs
         BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
         btcInputs[0] = BtcTxIn({
@@ -444,14 +444,14 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
 
     // ===================== Modifiers =====================
 
-    /// @notice Modifier to restrict access to the PegManager contract
-    modifier onlyPegManager() {
-        _onlyPegManager(_msgSender());
+    /// @notice Modifier to restrict access to the PeginManager contract
+    modifier onlyPeginManager() {
+        _onlyPeginManager(_msgSender());
         _;
     }
 
-    function _onlyPegManager(address _account) internal view {
-        if (address(pegManager) != _account) {
+    function _onlyPeginManager(address _account) internal view {
+        if (address(peginManager) != _account) {
             revert UnauthorizedAccount(_account);
         }
     }
