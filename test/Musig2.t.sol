@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
-import {Point} from "src/Musig2.sol";
+import {Point, Nonce} from "src/interfaces/IMusig2.sol";
 import {Musig2Harness} from "test/helpers/Musig2Harness.sol";
 
 contract TestMusig2 is Test {
@@ -12,7 +12,7 @@ contract TestMusig2 is Test {
         musig2 = new Musig2Harness();
     }
 
-    function test_compressPubKey_even_Success() external view {
+    function test_toCompressPubKey_even_Success() external view {
         // Arrange
         Point memory point = Point({
             x: 0xba5734d8f7091719471e7f7ed6b9df170dc70cc661ca05e688601ad984f068b0,
@@ -20,7 +20,7 @@ contract TestMusig2 is Test {
         });
 
         // Act
-        bytes memory compressedPubKey = musig2.compressPubKey(point);
+        bytes memory compressedPubKey = musig2.toCompressPubKey(point);
 
         // Assert
         assertEq(
@@ -30,7 +30,7 @@ contract TestMusig2 is Test {
         );
     }
 
-    function test_compressPubKey_odd_Success() external view {
+    function test_toCompressPubKey_odd_Success() external view {
         // Arrange
         Point memory point = Point({
             x: 0x8318535b54105d4a7aae60c08fc45f9687181b4fdfc625bd1a753fa7397fed75,
@@ -38,7 +38,7 @@ contract TestMusig2 is Test {
         });
 
         // Act
-        bytes memory compressedPubKey = musig2.compressPubKey(point);
+        bytes memory compressedPubKey = musig2.toCompressPubKey(point);
 
         // Assert
         assertEq(
@@ -58,8 +58,8 @@ contract TestMusig2 is Test {
         (uint256 rx, uint256 ry) = musig2.ecMul(x, y, scalar);
 
         // Assert
-        assertEq(rx, 0x8318535b54105d4a7aae60c08fc45f9687181b4fdfc625bd1a753fa7397fed75);
-        assertEq(ry, 0x3547f11ca8696646f2f3acb08e31016afac23e630c5d11f59f61fef57b0d2aa5);
+        assertEq(rx, 0x8318535b54105d4a7aae60c08fc45f9687181b4fdfc625bd1a753fa7397fed75, "ecMul x 1 is incorrect");
+        assertEq(ry, 0x3547f11ca8696646f2f3acb08e31016afac23e630c5d11f59f61fef57b0d2aa5, "ecMul y 1 is incorrect");
     }
 
     function test_ecMul_scalar_Success() external view {
@@ -73,8 +73,8 @@ contract TestMusig2 is Test {
         (uint256 rx, uint256 ry) = musig2.ecMul(x, y, scalar);
 
         // Assert
-        assertEq(rx, 0x976e4507187b0c74aa258f5e545a7b5aae452b55caad5c3b6c9fbe8b7caee58c);
-        assertEq(ry, 0x6b78bcdbe4c4d5b7837db35a8d517fb67c1aaae664ca41af9bb4b1b6d110d603);
+        assertEq(rx, 0x976e4507187b0c74aa258f5e545a7b5aae452b55caad5c3b6c9fbe8b7caee58c, "ecMul x scalar is incorrect");
+        assertEq(ry, 0x6b78bcdbe4c4d5b7837db35a8d517fb67c1aaae664ca41af9bb4b1b6d110d603, "ecMul y scalar is incorrect");
     }
 
     function test_createAggregatedPubKey_2Keys_Success() external {
@@ -158,5 +158,56 @@ contract TestMusig2 is Test {
         // We convert it to bytes32 for human readability
         assertEq(bytes32(aggregatedPubKey.x), bytes32(expectedAggregatedPubKey.x), "aggregated x pubkey is incorrect");
         assertEq(bytes32(aggregatedPubKey.y), bytes32(expectedAggregatedPubKey.y), "aggregated y pubkey is incorrect");
+    }
+
+    function test_calculateAggregatedNonce_2Keys_Success() external {
+        // Arrange
+        Point memory aggregatedPubKey = Point({
+            x: 0x3abe801a953476c13344faf951ce01821236abe92535d1fa0189788056498590,
+            y: 0x90582cb79ccc123949a0698119870d136086b4a90e394f12a12b97ef5d6be6b5
+        });
+
+        Nonce[] memory nonces = new Nonce[](2);
+        nonces[0] = Nonce({
+            R1: Point({
+                x: 0x82a69d1f52710195f6b2c87a16613650910624d8738210c782fad41d5a5964b2,
+                y: 0x16cbfd6421e92d0fc4ad04c95615c937b55fa6489d48c6d8eefce8d390f87620
+            }),
+            R2: Point({
+                x: 0x61b06b4b058806c901dd6279cf3e73d5f48c96b0b93e73b8e5f0da23aaa4c4cd,
+                y: 0x7b883afc953d09741ac863bf618768ee1c30fda9276d88ff3215a6bd5dc14601
+            })
+        });
+        nonces[1] = Nonce({
+            R1: Point({
+                x: 0x6dfe3fb94651600f1a25cb7c247b29bda7a4de9eddf72055f7f1ebfe08c19f15,
+                y: 0xceeb2800ba505464aff0a39c1cf31ba3246f7bcedeecdf346963fde9dcf4bccf
+            }),
+            R2: Point({
+                x: 0xb91ea55f94ad105fde44de06cb11923249e72bf21c23bbde39232e39351ae308,
+                y: 0x8e076b4f56efe73dd033ba5d2c15ebfe72b9074295b17fe430a66fd3811917da
+            })
+        });
+
+        bytes memory message = bytes("message_1");
+
+        // Act
+        Point memory adaptedAggregatedNonce = musig2.calculateAggregatedNonce(aggregatedPubKey.x, nonces, message);
+
+        // Assert
+        Point memory expectedAdaptedAggregatedNonce = Point({
+            x: 0x724d3c05a4570ef8787779667373dbe7658a65c53a6144cc6abf6856280ea4f4,
+            y: 0x52b8fa2ab5670b161f77443af97f0f927c3fe228726b01f8981d8e7959f8e3da
+        });
+        assertEq(
+            bytes32(adaptedAggregatedNonce.x),
+            bytes32(expectedAdaptedAggregatedNonce.x),
+            "aggregated nonce x is incorrect"
+        );
+        assertEq(
+            bytes32(adaptedAggregatedNonce.y),
+            bytes32(expectedAdaptedAggregatedNonce.y),
+            "aggregated nonce y is incorrect"
+        );
     }
 }

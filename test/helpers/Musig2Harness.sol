@@ -32,7 +32,7 @@ contract Musig2Harness is Musig2 {
         return _insertionSort(points);
     }
 
-    function compressPubKey(Point memory point) public pure returns (bytes memory) {
-        return _compressPubKey(point);
+    function toCompressPubKey(Point memory point) public pure returns (bytes memory) {
+        return _toCompressPubKey(point);
     }
 }
