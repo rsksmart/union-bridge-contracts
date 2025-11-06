@@ -21,15 +21,19 @@ struct RequestPeginTempInfo {
 interface IPeginManager is IPausable {
     // ===================== Peg-in Request =====================
 
-    /// @notice Generates a temporary Bitcoin address for peg-in operations
+    /// @notice Generates request peg-in data including temporary Bitcoin address and member dispute keys
     /// @dev Creates a Taproot address with committee and user reimbursment paths for secure peg-in
+    /// @dev Returns an array of dispute keys (covenant keys) for each committee member in order
     /// @param _rootstockDepositAddress The RSK address that will receive the RBTC
     /// @param _value The amount in satoshis to peg in (must match stream denomination)
     /// @param _btcReimbursementPubKey The user's Bitcoin public key (x-coordinate only, 32 bytes)
     /// @return temporaryPeginAddress The generated temporary Bitcoin address for deposit
-    function getTemporaryPeginAddress(address _rootstockDepositAddress, uint64 _value, bytes32 _btcReimbursementPubKey)
+    /// @return packetNumber The packet number for this peg-in request
+    /// @return memberDisputeKeys Array of dispute keys (covenant keys) for each committee member in order
+    function getRequestPeginData(address _rootstockDepositAddress, uint64 _value, bytes32 _btcReimbursementPubKey)
         external
-        returns (string memory temporaryPeginAddress, uint64 packetNumber);
+        view
+        returns (string memory temporaryPeginAddress, uint64 packetNumber, bytes32[] memory memberDisputeKeys);
 
     /// @notice Retrieves the stream position information for a given request peg-in transaction id
     /// @dev Looks up the corresponding accept peg-in txid and queries the StreamManager

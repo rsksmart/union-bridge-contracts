@@ -3,8 +3,9 @@ pragma solidity ^0.8.20;
 
 import {PegManagerBase} from "./PegManagerBase.sol";
 import {IPeginManager, RequestPeginTempInfo} from "./interfaces/IPeginManager.sol";
-import {ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
-import {Stream, Packet} from "./interfaces/IStreamManager.sol";
+import {ICommitteeRegistry, CommitteeMember} from "./interfaces/ICommitteeRegistry.sol";
+import {IMemberRegistry, MemberKeys} from "./interfaces/IMemberRegistry.sol";
+import {Stream} from "./interfaces/IStreamManager.sol";
 import {IBitcoinManager, PrevoutData, BitcoinSignatureData, BtcTxOut} from "./interfaces/IBitcoinManager.sol";
 import {BtcTxSPVProof, StreamPosition, PegStatus} from "./interfaces/IPegCommonTypes.sol";
 import {BtcHelper} from "./libraries/BtcHelper.sol";
@@ -46,29 +47,44 @@ contract PeginManager is IPeginManager, PegManagerBase {
         return peginTempInfo[_btcTxid];
     }
 
-    /// @notice Generates a temporary Bitcoin deposit address for peg-in operations
+    /// @notice Generates request peg-in data including temporary Bitcoin address and member dispute keys
     /// @param _rootstockDepositAddress The Rootstock address where RBTC will be minted
     /// @param _value The amount in satoshis for determining the appropriate stream
     /// @param _btcReimbursementPubKey The Bitcoin public key for reimbursement transactions
     /// @return bitcoinDepositAddress The generated Bitcoin deposit address
+    /// @return packetNumber The packet number for this peg-in request
+    /// @return memberDisputeKeys Array of dispute keys (covenant keys) for each committee member in order
     /// @dev This address is used for the initial peg-in request transaction
-    function getTemporaryPeginAddress(address _rootstockDepositAddress, uint64 _value, bytes32 _btcReimbursementPubKey)
+    /// @dev The dispute keys are returned in the same order as committee members
+    function getRequestPeginData(address _rootstockDepositAddress, uint64 _value, bytes32 _btcReimbursementPubKey)
         external
         view
-        returns (string memory bitcoinDepositAddress, uint64 packetNumber)
+        returns (string memory bitcoinDepositAddress, uint64 packetNumber, bytes32[] memory memberDisputeKeys)
     {
         // Get the stream for this value
         Stream memory stream = streamManager.getStream(_value);
 
-        // Get the current packet's committee key
-        Packet memory currentPacket = streamManager.getPacket(stream.streamId, stream.peginPacketPointer);
-        bytes memory committeeKey = currentPacket.committeePubKey;
+        // Get the current packet's committee ID and key
+        uint128 committeeId = streamManager.getCommitteeId(stream.streamId, stream.peginPacketPointer);
+        bytes memory committeeKey = streamManager.getCommitteePubKey(stream.streamId, stream.peginPacketPointer);
+
+        // Get the committee members
+        CommitteeMember[] memory committeeMembers = committeeRegistry.getCommitteeMembers(committeeId);
+
+        // Extract dispute keys (covenant keys) from each member
+        memberDisputeKeys = new bytes32[](committeeMembers.length);
+        IMemberRegistry memberRegistry = committeeRegistry.memberRegistry();
+        for (uint256 i = 0; i < committeeMembers.length; i++) {
+            MemberKeys memory keys = memberRegistry.getMemberPublicKeys(committeeMembers[i].memberAddress);
+            memberDisputeKeys[i] = keys.covenantPubKey;
+        }
 
         return (
             bitcoinManager.getTemporaryPeginAddress(
                 _rootstockDepositAddress, _value, _btcReimbursementPubKey, committeeKey
             ),
-            currentPacket.packetNumber
+            stream.peginPacketPointer,
+            memberDisputeKeys
         );
     }
 

@@ -13,7 +13,8 @@ import {Slot, SlotState, Stream, IStreamManager} from "src/interfaces/IStreamMan
 import {BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE} from "src/interfaces/IBridge.sol";
 import {ProofValidator} from "src/ProofValidator.sol";
 import {Constants} from "src/libraries/Constants.sol";
-import {ICommitteeRegistry, Committee} from "src/interfaces/ICommitteeRegistry.sol";
+import {ICommitteeRegistry, Committee, CommitteeMember} from "src/interfaces/ICommitteeRegistry.sol";
+import {IMemberRegistry, MemberKeys} from "src/interfaces/IMemberRegistry.sol";
 import {ISignatureManager} from "src/interfaces/ISignatureManager.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -39,15 +40,29 @@ contract TestPeginManager is Test, HelperContract {
         setupCommitteeId = committeeId;
     }
 
-    function test_getTemporaryPeginAddress_Success() external view {
+    function test_getRequestPeginData_Success() external view {
         address dummyRskAddress = 0x7Ac5496aee77c1bA1F0854206A26DdA82A81d6d8;
         // Address is different according to amount and destination address
         string memory tempAddress = "bcrt1p9hdr74xdg69a7w6r4pfsrrnj3l7ku54x5jdmtwf4thnjyhkmeuhs79pnrw";
 
-        (string memory result, uint64 packetNumber) =
-            peginManager.getTemporaryPeginAddress(dummyRskAddress, VALUE, BTC_REIMBURSEMENT_PUBKEY);
+        (string memory result, uint64 packetNumber, bytes32[] memory memberDisputeKeys) =
+            peginManager.getRequestPeginData(dummyRskAddress, VALUE, BTC_REIMBURSEMENT_PUBKEY);
         assertEq(result, tempAddress, "Incorrect temporary peg in address at PegManager");
         assertEq(packetNumber, PACKET_NUMBER, "Incorrect packet number at PegManager");
+
+        // Get the committee ID for the current packet
+        uint128 currentCommitteeId = streamManager.getCommitteeId(setupStreamId, PACKET_NUMBER);
+
+        // Get the actual committee members from the contract
+        CommitteeMember[] memory committeeMembers = registry.getCommitteeMembers(currentCommitteeId);
+        assertEq(memberDisputeKeys.length, committeeMembers.length, "Incorrect number of dispute keys");
+
+        // Verify each dispute key matches the expected covenant key for that committee member
+        IMemberRegistry memberRegistry = registry.memberRegistry();
+        for (uint256 i = 0; i < committeeMembers.length; i++) {
+            MemberKeys memory keys = memberRegistry.getMemberPublicKeys(committeeMembers[i].memberAddress);
+            assertEq(memberDisputeKeys[i], keys.covenantPubKey, "Incorrect dispute key for committee member");
+        }
     }
 
     function test_requestPegin_Success() external {
