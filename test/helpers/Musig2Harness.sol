@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {Musig2, Point} from "src/Musig2.sol";
+import {Musig2, Point, Nonce} from "src/Musig2.sol";
 import {Secp256k1} from "src/libraries/Secp256k1.sol";
 
 /// @title SPVHarness
@@ -34,5 +34,21 @@ contract Musig2Harness is Musig2 {
 
     function toCompressPubKey(Point memory point) public pure returns (bytes memory) {
         return _toCompressPubKey(point);
+    }
+
+    function aggregatedNonce(uint256 xOnlyAggregatedPubKey, Nonce[] memory _nonces, bytes memory _message)
+        external
+        view
+        returns (Point memory adaptedAggregatedNonce, uint256 nonceCoef)
+    {
+        return _aggregatedNonce(xOnlyAggregatedPubKey, _nonces, _message);
+    }
+
+    function aggregatedAndEffectivePubKeys(Point[] memory _participantsPubKeys, uint256 _pubKeyIndex)
+        public
+        view
+        returns (Point memory aggregatedPubKey, Point memory individualEffectivePubkey)
+    {
+        return _aggregatedAndEffectivePubKey(_participantsPubKeys, _pubKeyIndex);
     }
 }
