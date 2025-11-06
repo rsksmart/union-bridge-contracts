@@ -80,8 +80,15 @@ contract PauseManager is IPauseManager, BaseProxy {
 
     /// @notice Returns true if any of the contracts is paused
     /// @dev Returns true if at least one contract is paused
-    function isPaused() external view returns (bool) {
-        return peginManager.isPaused() || pegoutManager.isPaused() || committeeRegistry.isPaused()
-            || memberRegistry.isPaused();
+    function areContractsPaused() external view returns (bool) {
+        bool pimState = peginManager.isPaused();
+        bool pomState = pegoutManager.isPaused();
+        bool crState = committeeRegistry.isPaused();
+        bool mrState = memberRegistry.isPaused();
+
+        if (pimState != pomState || pimState != crState || pimState != mrState) {
+            revert _InconsistentPauseState();
+        }
+        return pimState;
     }
 }

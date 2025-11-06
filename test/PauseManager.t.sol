@@ -34,7 +34,7 @@ contract PauseManagerTest is HelperContract {
         assertTrue(pegoutManager.isPaused());
         assertTrue(registry.isPaused());
         assertTrue(memberRegistry.isPaused());
-        assertTrue(pauseManager.isPaused());
+        assertTrue(pauseManager.areContractsPaused());
     }
 
     function test_pause_Revert_UnauthorizedAccount_CallFromNotOwner() external {
@@ -90,7 +90,7 @@ contract PauseManagerTest is HelperContract {
         assertFalse(pegoutManager.isPaused());
         assertFalse(registry.isPaused());
         assertFalse(memberRegistry.isPaused());
-        assertFalse(pauseManager.isPaused());
+        assertFalse(pauseManager.areContractsPaused());
     }
 
     function test_unpause_Revert_UnauthorizedAccount_CallFromNotOwner() external {
@@ -120,29 +120,29 @@ contract PauseManagerTest is HelperContract {
         pauseManager.unpause();
     }
 
-    // ============ isPaused Tests ============
+    // ============ areContractsPaused Tests ============
 
-    function test_isPaused_ReturnsFalse_WhenNonePaused() external view {
+    function test_areContractsPaused_ReturnsFalse_WhenNonePaused() external view {
         // Assert
-        assertFalse(pauseManager.isPaused());
+        assertFalse(pauseManager.areContractsPaused());
     }
 
-    function test_isPaused_ReturnsTrue_WhenPeginManagerPaused() external {
+    function test_areContractsPaused_ReturnsTrue_WhenPeginManagerPaused() external {
         // Arrange
         vm.prank(pauseManager.owner());
         pauseManager.pause();
 
         // Assert
-        assertTrue(pauseManager.isPaused());
+        assertTrue(pauseManager.areContractsPaused());
     }
 
-    function test_isPaused_ReturnsTrue_WhenAllPaused() external {
+    function test_areContractsPaused_ReturnsTrue_WhenAllPaused() external {
         // Arrange
         vm.prank(pauseManager.owner());
         pauseManager.pause();
 
         // Assert
-        assertTrue(pauseManager.isPaused());
+        assertTrue(pauseManager.areContractsPaused());
         assertTrue(peginManager.isPaused());
         assertTrue(pegoutManager.isPaused());
         assertTrue(registry.isPaused());

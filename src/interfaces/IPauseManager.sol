@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import {IPausable} from "./IPausable.sol";
-
 /// @title IPauseManager
 /// @notice Interface for the centralized pause manager contract
 /// @dev This contract is responsible for pausing/unpausing all pausable contracts in the system
-interface IPauseManager is IPausable {
+interface IPauseManager {
     /// @notice Initializes the PauseManager contract
     /// @param _initialOwner The initial owner of the contract who can pause/unpause
     /// @param _peginManager The address of the PeginManager contract
@@ -28,4 +26,8 @@ interface IPauseManager is IPausable {
 
     /// @notice Error thrown when a zero address is provided
     error ZeroAddress();
+
+    /// @notice Error thrown when the pause states of contracts are inconsistent
+    /// @dev This error is thrown when not all pausable contracts have the same pause state
+    error _InconsistentPauseState();
 }
