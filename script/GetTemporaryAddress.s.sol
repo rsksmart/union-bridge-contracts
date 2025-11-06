@@ -23,11 +23,16 @@ contract GetTemporaryAddressScript is Script, ContractAddressManager {
     function run() public {
         setUp();
 
-        (string memory result, uint64 packetNumber) =
-            peginManager.getTemporaryPeginAddress(rootstock_deposit_address, value, btc_reimbursement_pub_key);
-        console.log("=== getTemporaryPeginAddress ==");
+        (string memory result, uint64 packetNumber, bytes32[] memory memberDisputeKeys) =
+            peginManager.getRequestPeginData(rootstock_deposit_address, value, btc_reimbursement_pub_key);
+        console.log("=== getRequestPeginData ===");
         console.log(result);
         console.log("=== Packet Number ===");
         console.log(packetNumber);
+        console.log("=== Member Dispute Keys ===");
+        for (uint256 i = 0; i < memberDisputeKeys.length; i++) {
+            console.log("Member", i, ":");
+            console.logBytes32(memberDisputeKeys[i]);
+        }
     }
 }
