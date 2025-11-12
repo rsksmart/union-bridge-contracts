@@ -335,6 +335,27 @@ interface ICommitteeRegistry is IPausable {
     /// @notice Release the committee members from a packet (return or reapply staked money)
     function releaseCommittee(uint64 _streamId, uint64 _packetNumber) external;
 
+    /// @notice Restarts a pending committee if it has expired
+    /// @param _streamId The stream ID to restart the pending committee for
+    function restartPendingCommittee(uint64 _streamId) external;
+
+    // ===================== Getters =====================
+    /// @notice Gets the committee member count
+    /// @return The committee member count
+    function committeeMemberCount() external view returns (uint256);
+
+    /// @notice Gets the minimum watchtowers required for a committee
+    /// @return The minimum watchtowers required for a committee
+    function minCommitteeWatchtowers() external view returns (uint256);
+
+    /// @notice Gets the minimum operators required for a committee
+    /// @return The minimum operators required for a committee
+    function minCommitteeOperators() external view returns (uint256);
+
+    /// @notice Gets the pending committee timeout
+    /// @return The pending committee timeout
+    function pendingCommitteeTimeout() external view returns (uint256);
+
     // ===================== Events =====================
     /// @notice Event emitted when a new committee is created
     /// @param committeeId The ID of the newly created committee

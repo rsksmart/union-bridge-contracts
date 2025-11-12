@@ -10,6 +10,7 @@ import {IBitcoinManager, PrevoutData, BitcoinSignatureData} from "./interfaces/I
 import {BtcTxSPVProof, StreamPosition, PegStatus} from "./interfaces/IPegCommonTypes.sol";
 import {BtcHelper} from "./libraries/BtcHelper.sol";
 import {Constants} from "./libraries/Constants.sol";
+import {IRbtcBridge} from "./interfaces/IRbtcBridge.sol";
 
 /// @title PegoutManager
 /// @notice Manages peg-out operations from Rootstock to Bitcoin
@@ -33,15 +34,17 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
     /// @param _committeeRegistry The committee registry contract address
     /// @param _bitcoinManager The Bitcoin manager contract address
     /// @param _settings The peg manager settings including timeouts
+    /// @param _rbtcBridge The RbtcBridge contract for burning RBTC
     /// @dev This function can only be called once during contract deployment
     function initialize(
         address _initialOwner,
         address payable _bridgeAddress,
         ICommitteeRegistry _committeeRegistry,
         IBitcoinManager _bitcoinManager,
-        PegoutManagerSettings memory _settings
+        PegoutManagerSettings memory _settings,
+        IRbtcBridge _rbtcBridge
     ) public virtual initializer {
-        __PegManagerBase_init(_initialOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager);
+        __PegManagerBase_init(_initialOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager, _rbtcBridge);
 
         userTakeTimeout = _settings.userTakeTimeout;
         operatorTakeTimeout = _settings.operatorTakeTimeout;
@@ -101,7 +104,11 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         // Store the pegout to pegin tx id mapping
         pegoutToPeginTxid[pegoutSignatureData.txid] = slot.acceptPeginTx;
 
-        // TODO: return RBTC to the RSK Legacy Bridge following https://github.com/rsksmart/RSKIPs/pull/502
+        // Burn RBTC back to PowPeg bridge via RbtcBridge
+        // We burn the amount that was actually minted (acceptPeginAmount), not msg.value
+        // The difference (fees) remains in the contract for future operator fee distribution
+        uint256 amountToBurn = BtcHelper.satoshiToWei(slot.acceptPeginAmount);
+        rbtcBridge.burnRbtc{value: amountToBurn}();
 
         // Compute pegout ID
         bytes32 pegoutId = keccak256(
@@ -110,7 +117,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
                 packetNumber,
                 slot.slotId,
                 _msgSender(),
-                bytes32(bridge.getBtcBlockchainBlockHashAtDepth(1))
+                BtcHelper.hash256(bridge.getBtcBlockchainBestBlockHeader())
             )
         );
 

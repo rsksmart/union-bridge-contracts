@@ -23,12 +23,15 @@ import {PegoutManagerSettings} from "src/interfaces/IPegoutManager.sol";
 import {StreamManagerSettings} from "src/interfaces/IStreamManager.sol";
 import {StreamManagerSettingsConfig} from "script/helpers/StreamManagerSettingsConfig.sol";
 import {PegManagerSettingsConfig} from "script/helpers/PegManagerSettingsConfig.sol";
+import {IRbtcBridge} from "src/interfaces/IRbtcBridge.sol";
+import {RbtcBridge} from "src/RbtcBridge.sol";
 
 /// @notice Struct to return deployed contracts and avoid stack too deep error
 struct DeployedContracts {
     CommitteeRegistry committeeRegistry;
     MemberRegistry memberRegistry;
     BitcoinManager bitcoinManager;
+    IRbtcBridge rbtcBridge;
     PeginManager peginManager;
     PegoutManager pegoutManager;
     StreamManager streamManager;
@@ -102,8 +105,16 @@ contract DeployImplAndProxy is ScriptUtils {
             revert("BitcoinManager owner is not the upgradable owner");
         }
 
+        RbtcBridge rbtcBridge = deployRbtcBridge(upgradableOwner, bridgeAddress);
+        if (rbtcBridge.owner() != upgradableOwner) {
+            revert("RbtcBridge owner is not the upgradable owner");
+        }
+        if (address(rbtcBridge.bridge()) != bridgeAddress) {
+            revert("RbtcBridge bridge is not the bridge address");
+        }
+
         PeginManager peginManager =
-            deployPeginManager(upgradableOwner, bridgeAddress, committeeRegistry, bitcoinManager);
+            deployPeginManager(upgradableOwner, bridgeAddress, committeeRegistry, bitcoinManager, rbtcBridge);
         if (peginManager.owner() != upgradableOwner) {
             revert("PeginManager owner is not the upgradable owner");
         }
@@ -112,7 +123,7 @@ contract DeployImplAndProxy is ScriptUtils {
         }
 
         PegoutManager pegoutManager = deployPegoutManager(
-            upgradableOwner, bridgeAddress, committeeRegistry, bitcoinManager, pegoutManagerSettings
+            upgradableOwner, bridgeAddress, committeeRegistry, bitcoinManager, pegoutManagerSettings, rbtcBridge
         );
         if (pegoutManager.owner() != upgradableOwner) {
             revert("PegoutManager owner is not the upgradable owner");
@@ -175,6 +186,8 @@ contract DeployImplAndProxy is ScriptUtils {
 
         // Set contracts references
         vm.startBroadcast(getDeployerKey());
+        rbtcBridge.setPeginManager(address(peginManager));
+        rbtcBridge.setPegoutManager(address(pegoutManager));
         peginManager.setStreamManager(streamManager);
         peginManager.setSignatureManager(signatureManager);
         pegoutManager.setStreamManager(streamManager);
@@ -195,6 +208,10 @@ contract DeployImplAndProxy is ScriptUtils {
         if (block.chainid == ChainIds.LOCAL) {
             vm.startBroadcast(getDeployerKey());
             BridgeMock(bridgeAddress).setBtcTransactionConfirmations(10);
+            // Set RbtcBridge as the authorized union bridge contract for testing
+            BridgeMock(bridgeAddress).setUnionBridgeContractAddressForTestnet(address(rbtcBridge));
+            // Fund BridgeMock with RBTC so it can mint
+            vm.deal(bridgeAddress, 400 ether);
             vm.stopBroadcast();
         }
 
@@ -207,6 +224,7 @@ contract DeployImplAndProxy is ScriptUtils {
             committeeRegistry: committeeRegistry,
             memberRegistry: memberRegistry,
             bitcoinManager: bitcoinManager,
+            rbtcBridge: rbtcBridge,
             peginManager: peginManager,
             pegoutManager: pegoutManager,
             streamManager: streamManager,
@@ -252,11 +270,19 @@ contract DeployImplAndProxy is ScriptUtils {
         return BitcoinManager(proxyAdddress);
     }
 
+    function deployRbtcBridge(address _upgradableOwner, address payable _bridgeAddress) public returns (RbtcBridge) {
+        (, address proxyAdddress) = deployContractAndUUPSProxy(
+            "RbtcBridge.sol", abi.encodeCall(RbtcBridge.initialize, (_upgradableOwner, _bridgeAddress))
+        );
+        return RbtcBridge(payable(proxyAdddress));
+    }
+
     function deployPeginManager(
         address _upgradableOwner,
         address payable _bridgeAddress,
         CommitteeRegistry _committeeRegistry,
-        BitcoinManager _bitcoinManager
+        BitcoinManager _bitcoinManager,
+        IRbtcBridge _rbtcBridge
     ) public returns (PeginManager) {
         string memory contractName = "PeginManager.sol";
         if (vm.isContext(VmSafe.ForgeContext.TestGroup)) {
@@ -265,7 +291,8 @@ contract DeployImplAndProxy is ScriptUtils {
         (, address proxyAdddress) = deployContractAndUUPSProxy(
             contractName,
             abi.encodeCall(
-                PeginManager.initialize, (_upgradableOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager)
+                PeginManager.initialize,
+                (_upgradableOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager, _rbtcBridge)
             )
         );
         return PeginManager(proxyAdddress);
@@ -276,7 +303,8 @@ contract DeployImplAndProxy is ScriptUtils {
         address payable _bridgeAddress,
         CommitteeRegistry _committeeRegistry,
         BitcoinManager _bitcoinManager,
-        PegoutManagerSettings memory _settings
+        PegoutManagerSettings memory _settings,
+        IRbtcBridge _rbtcBridge
     ) public returns (PegoutManager) {
         string memory contractName = "PegoutManager.sol";
         if (vm.isContext(VmSafe.ForgeContext.TestGroup)) {
@@ -286,7 +314,7 @@ contract DeployImplAndProxy is ScriptUtils {
             contractName,
             abi.encodeCall(
                 PegoutManager.initialize,
-                (_upgradableOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager, _settings)
+                (_upgradableOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager, _settings, _rbtcBridge)
             )
         );
         return PegoutManager(proxyAdddress);

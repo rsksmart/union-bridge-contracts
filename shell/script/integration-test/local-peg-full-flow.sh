@@ -36,6 +36,11 @@ bash "$SCRIPT_DIR/deploy/deploy-local.sh"
 
 echo "================ CONTRACTS DEPLOYED ================"
 
+# Fund the bridge mock with RBTC for pegin operations
+bash "$SCRIPT_DIR/fund-bridge.sh"
+
+echo "================ BRIDGE FUNDED ================"
+
 # This script runs the pegin/pegout flow, including:
 # 1. Register 10 members and deposit their aggregated key to create a committee and packet
 # 2. Registering a pegin request

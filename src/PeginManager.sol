@@ -10,6 +10,7 @@ import {IBitcoinManager, PrevoutData, BitcoinSignatureData, BtcTxOut} from "./in
 import {BtcTxSPVProof, StreamPosition, PegStatus} from "./interfaces/IPegCommonTypes.sol";
 import {BtcHelper} from "./libraries/BtcHelper.sol";
 import {Constants} from "./libraries/Constants.sol";
+import {IRbtcBridge} from "./interfaces/IRbtcBridge.sol";
 
 /// @title PeginManager
 /// @notice Manages peg-in operations from Bitcoin to Rootstock
@@ -23,14 +24,16 @@ contract PeginManager is IPeginManager, PegManagerBase {
     /// @param _bridgeAddress The address of the pow-peg bridge contract
     /// @param _committeeRegistry The committee registry contract address
     /// @param _bitcoinManager The Bitcoin manager contract address
+    /// @param _rbtcBridge The RbtcBridge contract for minting RBTC
     /// @dev This function can only be called once during contract deployment
     function initialize(
         address _initialOwner,
         address payable _bridgeAddress,
         ICommitteeRegistry _committeeRegistry,
-        IBitcoinManager _bitcoinManager
+        IBitcoinManager _bitcoinManager,
+        IRbtcBridge _rbtcBridge
     ) public virtual initializer {
-        __PegManagerBase_init(_initialOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager);
+        __PegManagerBase_init(_initialOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager, _rbtcBridge);
     }
 
     /// @notice Gets the accept peg-in transaction id for a given request peg-in transaction id
@@ -335,8 +338,8 @@ contract PeginManager is IPeginManager, PegManagerBase {
             }
         }
 
-        // TODO mint the peg in tokens
-        //requestRbtc(rskDestinationAddress, rbtcAmount);
+        // Mint RBTC to the destination address via RbtcBridge
+        rbtcBridge.mintRbtc(payable(requestTempInfo.rskDestinationAddress), rbtcAmount);
     }
 
     /// @notice Gets the stream position information for a given request peg-in transaction id

@@ -5,6 +5,7 @@ import {PegoutManager} from "src/PegoutManager.sol";
 import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {IBitcoinManager} from "src/interfaces/IBitcoinManager.sol";
 import {PegoutManagerSettings, PegoutTempInfo} from "src/interfaces/IPegoutManager.sol";
+import {IRbtcBridge} from "src/interfaces/IRbtcBridge.sol";
 
 /// @title PegoutManagerHarness
 /// @notice Test harness for PegoutManager to expose internal functions and state for testing
@@ -15,9 +16,12 @@ contract PegoutManagerHarness is PegoutManager {
         address payable _bridgeAddress,
         ICommitteeRegistry _committeeRegistry,
         IBitcoinManager _bitcoinManager,
-        PegoutManagerSettings memory _settings
+        PegoutManagerSettings memory _settings,
+        IRbtcBridge _rbtcBridge
     ) public override initializer {
-        PegoutManager.initialize(_initialOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager, _settings);
+        PegoutManager.initialize(
+            _initialOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager, _settings, _rbtcBridge
+        );
     }
 
     function setPegoutTempInfoHarness(bytes32 _acceptPeginTxid, bytes memory _userPubKey) external {

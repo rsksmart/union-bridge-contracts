@@ -29,6 +29,9 @@ interface IPegManagerBase {
     /// @notice Error thrown when stream manager address is zero
     error StreamManagerAddressZero();
 
+    /// @notice Error thrown when RbtcBridge address is zero
+    error RbtcBridgeAddressZero();
+
     /// @notice Returns the bitcoin manager contract
     /// @return The bitcoin manager contract
     function bitcoinManager() external view returns (IBitcoinManager);

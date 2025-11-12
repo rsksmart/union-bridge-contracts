@@ -17,8 +17,8 @@ library StreamManagerSettingsConfig {
             });
         } else if (chainId == ChainIds.RSK_TESTNET) {
             return StreamManagerSettings({
-                peginConfirmations: 6,
-                pegoutConfirmations: 6,
+                peginConfirmations: 1, // we use 1 for testnet to speed up testing TODO: this should be changed before mainnet deployment
+                pegoutConfirmations: 1, // we use 1 for testnet to speed up testing TODO: this should be changed before mainnet deployment
                 securityBondPercentageOperator: 800,
                 securityBondPercentageWatchtower: 100,
                 minimumSecurityDeposit: 22500000 gwei, // 2250 USD

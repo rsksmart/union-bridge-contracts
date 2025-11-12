@@ -10,6 +10,7 @@ import {IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
 import {IStreamManager} from "./interfaces/IStreamManager.sol";
 import {ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
 import {ISignatureManager} from "./interfaces/ISignatureManager.sol";
+import {IRbtcBridge} from "./interfaces/IRbtcBridge.sol";
 
 /// @title PegManagerBase
 /// @notice Abstract base contract for shared functionality between PeginManager and PegoutManager
@@ -27,6 +28,9 @@ abstract contract PegManagerBase is IPegManagerBase, BaseProxy, ProofValidator, 
     /// @notice Signature manager contract for handling multi-signature operations
     ISignatureManager public signatureManager;
 
+    /// @notice The RbtcBridge contract for minting RBTC
+    IRbtcBridge public rbtcBridge;
+
     /// @notice Initializes the base PegManager contract
     /// @param _initialOwner The initial owner of the contract
     /// @param _bridgeAddress The address of the pow-peg bridge contract
@@ -37,7 +41,8 @@ abstract contract PegManagerBase is IPegManagerBase, BaseProxy, ProofValidator, 
         address _initialOwner,
         address payable _bridgeAddress,
         ICommitteeRegistry _committeeRegistry,
-        IBitcoinManager _bitcoinManager
+        IBitcoinManager _bitcoinManager,
+        IRbtcBridge _rbtcBridge
     ) internal onlyInitializing {
         // Validate that the bitcoin manager is not zero address
         if (address(_bitcoinManager) == address(0)) {
@@ -49,6 +54,11 @@ abstract contract PegManagerBase is IPegManagerBase, BaseProxy, ProofValidator, 
             revert CommitteeRegistryAddressZero();
         }
         committeeRegistry = _committeeRegistry;
+
+        if (address(_rbtcBridge) == address(0)) {
+            revert RbtcBridgeAddressZero();
+        }
+        rbtcBridge = _rbtcBridge;
 
         __BaseProxy_init(_initialOwner);
         __ProofValidator_init(_bridgeAddress);

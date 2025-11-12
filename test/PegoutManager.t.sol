@@ -82,6 +82,9 @@ contract TestPegoutManager is Test, HelperContract {
         bytes32 expectedPegoutId =
             keccak256(abi.encode(stream.streamId, packetNumber, slotId, address(this), mockBlockHash));
 
+        // Set up mock to allow burning this amount
+        bridgeMock.setWeisTransferredToUnionBridge(amountInWei);
+
         // Assert
         vm.expectEmit(address(pegoutManager));
         emit IPegoutManager.PegoutRequested(
@@ -160,6 +163,9 @@ contract TestPegoutManager is Test, HelperContract {
         bytes32 expectedPegoutId =
             keccak256(abi.encode(stream.streamId, packetNumber, slotId, address(this), mockBlockHash));
 
+        // Set up mock to allow burning this amount
+        bridgeMock.setWeisTransferredToUnionBridge(amountInWei);
+
         // Assert
         vm.expectEmit(address(pegoutManager));
         emit IPegoutManager.PegoutRequested(
@@ -209,6 +215,9 @@ contract TestPegoutManager is Test, HelperContract {
         uint64 packetNumberExpected = 0;
         uint64 slotIdExpected = 0;
         Stream memory stream;
+
+        // Set up mock to allow burning for all pegouts in this test
+        bridgeMock.setWeisTransferredToUnionBridge(amountInWei * pegoutAmount);
 
         for (uint256 i = 0; i < pegoutAmount; i++) {
             if (i % Constants.SLOTS_PER_PACKET == 0 && i != 0) {
@@ -469,6 +478,9 @@ contract TestPegoutManager is Test, HelperContract {
         Stream memory stream = streamManager.getStream(pegoutAmount);
         uint64 expectedPacketNumber = stream.pegoutPacketPointer;
         uint64 expectedSlotId = stream.pegoutSlotPointer;
+
+        // Set up BridgeMock to allow burning this amount
+        bridgeMock.setWeisTransferredToUnionBridge(pegoutAmountInWei);
 
         // Request peg-out
         pegoutManager.tryPegout{value: pegoutAmountInWei}(userPubKey);
@@ -1028,6 +1040,9 @@ contract TestPegoutManager is Test, HelperContract {
         streamManager.setSlotStateHarness(stream.streamId, 0, blockedSlotId, SlotState.BLOCKED);
         streamManager.setSlotHarness(stream.streamId, 0, scriptPubKey, txId, amount, SlotState.FILLED);
 
+        // Set up mock to allow burning this amount
+        bridgeMock.setWeisTransferredToUnionBridge(amountInWei);
+
         // 2. Call tryPegout should skip blocked slot and lock filled slot
         pegoutManager.tryPegout{value: amountInWei}(userPubKey);
 
@@ -1073,6 +1088,9 @@ contract TestPegoutManager is Test, HelperContract {
             stream.streamId, COMMITTEE_ID_STREAM_1_COMMITTEE_1, setupExpectedCommittee.aggregatedKey
         );
         streamManager.setSlotHarness(stream.streamId, 1, scriptPubKey, txId, amount, SlotState.FILLED);
+
+        // Set up mock to allow burning this amount
+        bridgeMock.setWeisTransferredToUnionBridge(amountInWei);
 
         // 3. Call tryPegout
         pegoutManager.tryPegout{value: amountInWei}(userPubKey);
@@ -1322,6 +1340,9 @@ contract TestPegoutManager is Test, HelperContract {
         bytes32 mockBlockHash = 0x0000000000000000000049b460f18614380a01b8709d2c3a8ddf451d08d862b8;
         bytes32 expectedPegoutId =
             keccak256(abi.encode(stream.streamId, packetNumber, slotId, address(this), mockBlockHash));
+
+        // Set up mock to allow burning this amount
+        bridgeMock.setWeisTransferredToUnionBridge(amountInWei);
 
         // Assert
         vm.expectEmit(address(pegoutManager));
