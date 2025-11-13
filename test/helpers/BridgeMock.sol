@@ -346,6 +346,9 @@ contract BridgeMock is IBridge {
     }
 
     function _releaseUnionBridgeRbtc() internal returns (int256) {
+        if (transfersDisabled) {
+            return int256(-3);
+        }
         if (msg.value > weisTransferredToUnionBridge) {
             return int256(-2);
         }
@@ -400,6 +403,8 @@ contract BridgeMock is IBridge {
     }
 
     function setWeisTransferredToUnionBridge(uint256 _amount) external {
+        uint256 totalCap = lockingCap + weisTransferredToUnionBridge;
         weisTransferredToUnionBridge = _amount;
+        lockingCap = totalCap - _amount;
     }
 }

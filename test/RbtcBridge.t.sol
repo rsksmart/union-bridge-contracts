@@ -5,6 +5,24 @@ import {HelperContract} from "test/helpers/HelperContract.sol";
 import {IRbtcBridge} from "src/interfaces/IRbtcBridge.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
+// Helper contract that rejects RBTC (no receive/fallback function)
+contract RejectRBTC {
+// No receive() or fallback() - will reject any RBTC sent
+}
+
+// Helper contract that consumes excessive gas
+contract GasConsumer {
+    uint256 public counter;
+
+    receive() external payable {
+        // Consume a lot of gas by doing expensive operations
+        // This will exceed the 100k gas limit
+        for (uint256 i = 0; i < 10000; i++) {
+            counter = i * i; // Expensive operation
+        }
+    }
+}
+
 contract RbtcBridgeTest is HelperContract {
     address payable testRecipient;
 
@@ -163,6 +181,59 @@ contract RbtcBridgeTest is HelperContract {
         rbtcBridge.mintRbtc(testRecipient, amount);
     }
 
+    function test_mintRbtc_Revert_BridgeUnauthorizedCaller() external {
+        // Arrange
+        uint256 amount = 1 ether;
+
+        // Temporarily change the union bridge address so the bridge returns -1 (unauthorized)
+        bridgeMock.setUnionBridgeContractAddressForTestnet(address(0x9999));
+
+        // Assert
+        vm.expectRevert(IRbtcBridge.BridgeUnauthorizedCaller.selector);
+
+        // Act
+        vm.prank(address(peginManager));
+        rbtcBridge.mintRbtc(testRecipient, amount);
+    }
+
+    function test_mintRbtc_Revert_FailedToSendRBTC_ReceiverCannotAcceptRBTC() external {
+        // Arrange
+        uint256 amount = 1 ether;
+
+        // Deploy a contract that cannot receive RBTC
+        RejectRBTC rejectContract = new RejectRBTC();
+        address payable rejectRecipient = payable(address(rejectContract));
+
+        // Ensure bridge mock has enough RBTC to mint
+        vm.deal(address(bridgeMock), amount);
+
+        // Assert - should revert with FailedToSendRBTC
+        vm.expectRevert(abi.encodeWithSelector(IRbtcBridge.FailedToSendRBTC.selector, rejectRecipient, amount));
+
+        // Act
+        vm.prank(address(peginManager));
+        rbtcBridge.mintRbtc(rejectRecipient, amount);
+    }
+
+    function test_mintRbtc_Revert_FailedToSendRBTC_GasLimitEnforcement() external {
+        // Arrange
+        uint256 amount = 1 ether;
+
+        // Deploy a contract that consumes excessive gas (more than 100k)
+        GasConsumer gasConsumer = new GasConsumer();
+        address payable gasConsumerAddress = payable(address(gasConsumer));
+
+        // Ensure bridge mock has enough RBTC to mint
+        vm.deal(address(bridgeMock), amount);
+
+        // Assert - should revert with FailedToSendRBTC due to gas limit
+        vm.expectRevert(abi.encodeWithSelector(IRbtcBridge.FailedToSendRBTC.selector, gasConsumerAddress, amount));
+
+        // Act
+        vm.prank(address(peginManager));
+        rbtcBridge.mintRbtc(gasConsumerAddress, amount);
+    }
+
     // ============ burnRbtc Tests ============
 
     function test_burnRbtc_Success_CallFromPegoutManager() external {
@@ -225,6 +296,58 @@ contract RbtcBridgeTest is HelperContract {
 
         // Assert - trying to burn more than was minted should fail
         vm.expectRevert(abi.encodeWithSelector(IRbtcBridge.BridgeReleaseInvalidValue.selector, amount));
+
+        // Act
+        vm.prank(address(pegoutManager));
+        rbtcBridge.burnRbtc{value: amount}();
+    }
+
+    function test_burnRbtc_Revert_BridgeTransfersDisabled() external {
+        // Arrange
+        uint256 amount = 1 ether;
+
+        // First mint some RBTC so we have capacity to burn
+        vm.deal(address(bridgeMock), amount);
+        vm.prank(address(peginManager));
+        rbtcBridge.mintRbtc(testRecipient, amount);
+
+        // Set up mock to allow burning this amount
+        bridgeMock.setWeisTransferredToUnionBridge(amount);
+
+        // Disable transfers
+        bridgeMock.setTransfersDisabled(true);
+
+        // Fund pegoutManager to send RBTC
+        vm.deal(address(pegoutManager), amount);
+
+        // Assert
+        vm.expectRevert(IRbtcBridge.BridgeTransfersDisabled.selector);
+
+        // Act
+        vm.prank(address(pegoutManager));
+        rbtcBridge.burnRbtc{value: amount}();
+    }
+
+    function test_burnRbtc_Revert_BridgeUnauthorizedCaller() external {
+        // Arrange
+        uint256 amount = 1 ether;
+
+        // First mint some RBTC so we have capacity to burn
+        vm.deal(address(bridgeMock), amount);
+        vm.prank(address(peginManager));
+        rbtcBridge.mintRbtc(testRecipient, amount);
+
+        // Set up mock to allow burning this amount
+        bridgeMock.setWeisTransferredToUnionBridge(amount);
+
+        // Fund pegoutManager to send RBTC
+        vm.deal(address(pegoutManager), amount);
+
+        // Temporarily change the union bridge address so the bridge returns -1 (unauthorized)
+        bridgeMock.setUnionBridgeContractAddressForTestnet(address(0x9999));
+
+        // Assert
+        vm.expectRevert(IRbtcBridge.BridgeUnauthorizedCaller.selector);
 
         // Act
         vm.prank(address(pegoutManager));
