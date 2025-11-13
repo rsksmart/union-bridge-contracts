@@ -78,6 +78,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
         memberDisputeKeys = new bytes32[](committeeMembers.length);
         IMemberRegistry memberRegistry = committeeRegistry.memberRegistry();
         for (uint256 i = 0; i < committeeMembers.length; i++) {
+            // slither-disable-next-line calls-loop
             MemberKeys memory keys = memberRegistry.getMemberPublicKeys(committeeMembers[i].memberAddress);
             memberDisputeKeys[i] = keys.covenantPubKey;
         }

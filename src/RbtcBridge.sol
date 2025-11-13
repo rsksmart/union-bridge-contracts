@@ -129,6 +129,7 @@ contract RbtcBridge is IRbtcBridge, BaseProxy, ReentrancyGuardUpgradeable {
     /// @param _amount The amount of RBTC to send in wei
     /// @dev Uses a 100k gas limit to prevent DoS attacks while allowing some DeFi operations
     /// @dev Gas limit prevents malicious receive() functions from consuming all gas
+    // slither-disable-next-line arbitrary-send-eth,return-bomb
     function _sendRbtc(address payable _to, uint256 _amount) internal {
         (bool sent,) = _to.call{value: _amount, gas: 100_000}("");
         if (!sent) {
