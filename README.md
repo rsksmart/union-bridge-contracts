@@ -52,6 +52,43 @@ We use solidity [NatSpec format](https://docs.soliditylang.org/en/latest/natspec
 We use a soldity interface called [IBridge.sol](./src/interfaces/IBridge.sol) to interact with the pre compiled contract, this information was obtained from the [FastBtc bridge contracts](https://github.com/rsksmart/liquidity-bridge-contract/tree/master).
 Since the pow peg bridge is not available locally, we use [BridgeMock.sol](./test/helpers/BridgeMock.sol)
 
+### RbtcBridge - RSKIP-502 Intermediary Contract
+
+The **RbtcBridge** is a critical intermediary contract that enables RBTC minting and burning operations through the RSK PowPeg Bridge, implementing [RSKIP-502](https://github.com/rsksmart/RSKIPs/blob/master/IPs/RSKIP502.md).
+
+**Why RbtcBridge is needed:**
+
+RSKIP-502 requires that the PowPeg Bridge authorize **only ONE contract address** for minting and burning RBTC. Since the Union Bridge architecture splits responsibilities between `PeginManager` (handles peg-ins) and `PegoutManager` (handles peg-outs), we need a single intermediary contract that both managers can use.
+
+**Architecture:**
+
+```
+┌─────────────────┐
+│  PowPeg Bridge  │ (authorizes only ONE address)
+└────────┬────────┘
+         │ authorizes
+         ▼
+┌─────────────────┐
+│   RbtcBridge    │ (single authorized intermediary)
+│  - mintRbtc()   │ ← Called by PeginManager during pegin acceptance
+│  - burnRbtc()   │ ← Called by PegoutManager during pegout request
+└────────┬────────┘
+         │ authorized callers
+    ┌────┴────┐
+    ▼         ▼
+┌──────────────┐  ┌──────────────┐
+│ PeginManager │  │PegoutManager │
+└──────────────┘  └──────────────┘
+```
+
+**Key Features:**
+- **Access Control**: Only `PeginManager` can call `mintRbtc()`, only `PegoutManager` can call `burnRbtc()`
+- **Gas Limit Protection**: RBTC transfers use a 100k gas limit to prevent DoS attacks
+- **Upgradeable**: Uses UUPS pattern for future improvements
+- **Reentrancy Protection**: Implements OpenZeppelin's `nonReentrant` modifier
+
+See [RbtcBridge.sol](./src/RbtcBridge.sol) for implementation details.
+
 ## Tests and Reporting
 
 ### Unit test
@@ -117,6 +154,93 @@ bash shell/script/deploy/deploy.sh
 
 It will ask for a private key interactively in order to perform the deployment. The address associated with that private key must have sufficient funds to complete the deployment.
 If you want to deploy to a local network (regtest) use `deploy-local.sh`.
+
+### RSKIP-502 PowPeg Bridge Configuration
+
+After deploying the contracts to testnet or alphanet, you must configure the PowPeg Bridge to authorize the RbtcBridge contract for RBTC minting and burning operations.
+
+#### Prerequisites
+
+- Deployed contracts (see Deployment section above)
+- RbtcBridge contract address from deployment
+- Private key with authorization to configure the PowPeg Bridge
+- `cast` CLI tool from Foundry
+
+#### Step 1: Register RbtcBridge as Authorized Union Bridge Contract
+
+The RbtcBridge must be registered as the single authorized union bridge contract:
+
+```bash
+# Replace placeholders with actual values:
+# - <BRIDGE_ADDRESS>: RSK PowPeg Bridge address (0x0000000000000000000000000000000001000006)
+# - <RBTC_BRIDGE_ADDRESS>: Your deployed RbtcBridge contract address
+# - <RPC_URL>: Your RSK testnet/alphanet/mainnet RPC endpoint
+# - <PRIVATE_KEY>: Private key with authorization rights
+
+cast send 0x0000000000000000000000000000000001000006 \
+  "setUnionBridgeContractAddressForTestnet(address)" \
+  <RBTC_BRIDGE_ADDRESS> \
+  --rpc-url <RPC_URL> \
+  --private-key <PRIVATE_KEY> \
+  --legacy
+```
+
+#### Step 2: Verify Initial Locking Cap
+
+Check the current locking cap:
+
+```bash
+cast call 0x0000000000000000000000000000000001000006 \
+  "getUnionBridgeLockingCap()" \
+  --rpc-url <RPC_URL>
+
+# Expected output on alphanet: 400000000000000000000 (400 RBTC in wei)
+```
+
+**Note:** Alphanet already has an initial locking cap of 400 RBTC configured. If you need a higher cap, use `increaseUnionBridgeLockingCap()` (see "Increasing the Locking Cap" section below).
+
+#### Step 3: Verify RbtcBridge Registration
+
+Verify that the RbtcBridge was registered successfully:
+
+```bash
+# Verify RbtcBridge is registered as union bridge contract
+cast call 0x0000000000000000000000000000000001000006 \
+  "getUnionBridgeContractAddress()" \
+  --rpc-url <RPC_URL>
+
+# Expected output: Your RbtcBridge address (should match deployed address)
+```
+
+#### Increasing the Locking Cap
+
+As bridge usage grows, you may need to increase the locking cap:
+
+```bash
+# RSKIP-502 allows cap increases up to 2x the current total cap
+# Current total cap = current lockingCap + already minted amount
+
+cast send 0x0000000000000000000000000000000001000006 \
+  "increaseUnionBridgeLockingCap(uint256)" \
+  <NEW_CAP_IN_WEI> \
+  --rpc-url <RPC_URL> \
+  --private-key <PRIVATE_KEY> \
+  --legacy
+```
+
+**Important:** RSKIP-502 enforces that cap increases:
+- Must be greater than the current total cap (available + locked)
+- Cannot exceed 2x the current total cap (security measure)
+
+#### Local Testing (Anvil/Regtest)
+
+For local testing with Anvil or Regtest, the deployment script automatically:
+- Configures BridgeMock with RbtcBridge as the authorized union bridge
+- Funds BridgeMock with 400 RBTC for testing
+- Sets appropriate confirmations for fast testing
+- **Note:** BridgeMock has a default `lockingCap = 400 ether` hardcoded, so Step 2 above is not needed locally
+
+No manual configuration is required for local development. See `script/deploy/01_DeployImplAndProxy.s.sol` for implementation details.
 
 ### Rust crate with Bindings
 
@@ -393,7 +517,7 @@ sequenceDiagram
 1. **Member submits accept**: A committee member who monitors the Bitcoin network calls `acceptPegin()` with the broadcasted transaction and SPV proof
 2. **System validates**: System validates the accept transaction and proof
 3. **Store UTXO in slot**: The accept peg-in UTXO is stored in a slot for future use in peg-out operations
-4. **Process peg-in**: RBTC is minted to the user's RSK address
+4. **Mint RBTC**: PeginManager calls `RbtcBridge.mintRbtc()` which requests RBTC from the PowPeg Bridge and sends it to the user's RSK address
 
 ```mermaid
 sequenceDiagram
@@ -409,8 +533,9 @@ sequenceDiagram
     PIM->>PIM: Validate BTC transaction and SPV proof
     PIM->>PIM: Validate committee signatures
     PIM->>PIM: Process pegin acceptance
+    PIM->>PIM: Mint RBTC to user via RbtcBridge
     PIM-->>-ENV: PeginAccepted event
-    Note right of PIM: BTC is now pegged-in to RSK
+    Note right of PIM: BTC is now pegged-in to RSK, RBTC minted to user's address
 ```
 
 ## Peg-Out Process (RSK → Bitcoin)
@@ -421,7 +546,7 @@ sequenceDiagram
 2. **Validate request**: System validates the Bitcoin compressed public key format and amount limits
 3. **Store request**: Peg-out request is stored with all the necessary data
 4. **Generate user take transaction**: System generates the Bitcoin user take transaction using the stored UTXO from the previous accept peg-in and emits an event with the signature hash for committee members to sign
-5. **Burn RBTC**: User's RBTC is burned in preparation for peg-out
+5. **Burn RBTC**: PegoutManager calls `RbtcBridge.burnRbtc()` which releases RBTC back to the PowPeg Bridge, preparing for the Bitcoin peg-out
 
 ```mermaid
 sequenceDiagram
@@ -437,9 +562,10 @@ sequenceDiagram
     POM->>POM: Validate request
     POM->>POM: Store pegout request data
     POM->>POM: Generate user take transaction
+    POM->>POM: Burn RBTC via RbtcBridge
     POM-->>-ENV: PegoutRequested event
     Note right of POM: Event includes signature hash for committee members
-    Note right of POM: Burn RBTC: User's RBTC is burned in preparation for peg-out
+    Note right of POM: RBTC burned and returned to PowPeg Bridge via RbtcBridge
 ```
 
 ### Phase 2: Committee Signatures for Peg-Out
@@ -551,6 +677,82 @@ sequenceDiagram
 
 ---
 
+## Fee Mechanism
+
+The Union Bridge employs a fee mechanism to cover Bitcoin network transaction costs. Here's how fees work in the current implementation:
+
+### Pegin Flow (Bitcoin → RSK)
+
+1. **User sends BTC**: User sends the full stream denomination (e.g., 100,000 satoshis) to the temporary pegin address
+2. **BTC transaction fees deducted**: The accept pegin transaction deducts fees for Bitcoin network operations:
+   - `P2TR_FEE`: 335 satoshis (Taproot transaction fee)
+   - `SPEED_UP_AMOUNT`: 540 satoshis (fee for speed-up output)
+   - **Total deducted**: 875 satoshis
+3. **RBTC minted**: User receives RBTC equivalent to `acceptPeginAmount = denomination - fees`
+   - Example: 100,000 - 875 = **99,125 satoshis worth of RBTC**
+
+### Pegout Flow (RSK → Bitcoin)
+
+1. **User sends RBTC**: User must send the **full stream denomination** in RBTC (e.g., 100,000 satoshis worth)
+2. **RBTC burned**: Contract burns only what was originally minted during pegin:
+   - Burned amount: `acceptPeginAmount` (e.g., 99,125 satoshis worth)
+   - See `PegoutManager.sol:110`
+3. **Fee accumulation**: The difference between what the user sent and what was burned remains in the contract:
+   - Accumulated fees: `msg.value - acceptPeginAmount` (e.g., 875 satoshis worth of RBTC)
+   - These fees accumulate in `PegoutManager`
+
+### Why This Design?
+
+Users effectively pay BTC transaction fees twice:
+- **Once in BTC** during the pegin (deducted from their Bitcoin deposit)
+- **Once in RBTC** during the pegout (paid as part of the full denomination requirement)
+
+This ensures the bridge system has funds to cover Bitcoin network fees for both pegin and pegout operations.
+
+### Current Fee Distribution
+
+**Status: Not yet implemented**
+
+Currently, accumulated fees remain in the `PegoutManager` contract and can only be withdrawn by the contract owner.
+
+**Future implementation:** Fees will be distributed to operators and watchtowers as compensation for their services in running the bridge, including:
+- Operating committee members who sign transactions
+- Watchtowers who monitor for disputes
+- Operators who advance funds in timeout scenarios
+
+### Fee Constants
+
+Fee amounts are defined in `src/libraries/Constants.sol`:
+- `P2TR_FEE = 335` satoshis
+- `SPEED_UP_AMOUNT = 540` satoshis
+
+**Note:** This is the initial implementation. Fee structure and distribution mechanisms may be refined in future versions based on operational requirements and economic analysis.
+
+### TL;DR - Complete Example
+
+Using the 0.001 BTC (100,000 satoshis) stream denomination:
+
+**Pegin:**
+- User sends: **100,000 sats** in BTC
+- Pegin BTC tx fees deducted: **875 sats** (335 P2TR + 540 speed-up)
+- User receives: **99,125 sats worth of RBTC**
+
+**Pegout:**
+- User sends: **100,000 sats worth of RBTC** (full denomination required)
+- RBTC burned: **99,125 sats worth** (only what was minted)
+- Fees kept in contract: **875 sats worth of RBTC**
+- Pegout starts with the already-reduced amount: **99,125 sats BTC UTXO**
+- Pegout BTC tx fees deducted: **~875 sats** (assuming similar network conditions)
+- User receives: **~98,250 sats in BTC** (99,125 - 875)
+
+**Total User Cost:**
+- Lost to pegin fees: **875 sats** (paid in BTC during pegin)
+- Lost to pegout RBTC fees: **875 sats** (paid in RBTC, kept by contract)
+- Lost to pegout BTC network fees: **~875 sats** (deducted from the 99,125 sat UTXO)
+- **Total: ~2,625 satoshis** for a complete round-trip (pegin + pegout)
+
+---
+
 ## Smart Contracts Architecture
 
 ### Overview
@@ -571,20 +773,26 @@ graph TB
     MR[MemberRegistry<br/>Member registration and balance tracking]
     SM[StreamManager<br/>Stream and packet management]
     SigM[SignatureManager<br/>Multi-signature operations]
+    RB[RbtcBridge<br/>RSKIP-502 RBTC mint/burn intermediary]
 
     %% External Dependencies
-    Bridge[RSK Bridge<br/>External Contract]
+    Bridge[RSK PowPeg Bridge<br/>External Precompiled Contract]
 
     %% Inheritance
     PIM -.inherits.-> PMB
     POM -.inherits.-> PMB
+
+    %% RbtcBridge - RSKIP-502 Single Authorized Address
+    Bridge -->|authorizes<br/>single address| RB
+    RB -->|mintRbtc| PIM
+    RB -->|burnRbtc| POM
 
     %% PeginManager Relationships
     PIM --> BM
     PIM --> CR
     PIM --> SM
     PIM --> SigM
-    PIM --> Bridge
+    PIM -->|calls mintRbtc| RB
 
     %% PegoutManager Relationships
     POM --> BM
@@ -592,7 +800,7 @@ graph TB
     POM --> SM
     POM --> SigM
     POM --> MR
-    POM --> Bridge
+    POM -->|calls burnRbtc| RB
 
     %% PauseManager Relationships
     PAM -.controls pause.-> PIM
@@ -621,11 +829,13 @@ graph TB
     classDef coreContract fill:#e1f5fe,stroke:#01579b,stroke-width:2px
     classDef baseContract fill:#c5e1a5,stroke:#33691e,stroke-width:2px
     classDef pauseContract fill:#f8bbd0,stroke:#880e4f,stroke-width:2px
+    classDef bridgeContract fill:#ffe0b2,stroke:#e65100,stroke-width:3px
     classDef external fill:#fff3e0,stroke:#e65100,stroke-width:2px
 
     class PIM,POM,BM,CR,MR,SM,SigM coreContract
     class PMB baseContract
     class PAM pauseContract
+    class RB bridgeContract
     class Bridge external
 ```
 
@@ -638,6 +848,7 @@ graph TB
   - Handles Bitcoin peg-in requests with SPV proofs
   - Processes peg-in acceptance with committee signatures
   - Generates temporary Bitcoin addresses for deposits
+  - Mints RBTC to users via RbtcBridge after successful peg-in
   - Coordinates with StreamManager for slot allocation
   - Integrates with CommitteeRegistry for committee management
   - Inherits shared functionality from PegManagerBase
@@ -647,7 +858,7 @@ graph TB
 
 - **Purpose**: Manages peg-out operations from Rootstock to Bitcoin
 - **Key Features**:
-  - Processes peg-out requests and RBTC burning
+  - Processes peg-out requests and burns RBTC via RbtcBridge
   - Manages user take and operator take flows
   - Handles timeout-based operator advancement
   - Coordinates committee signatures for peg-outs
@@ -659,11 +870,24 @@ graph TB
 
 - **Purpose**: Abstract base contract providing shared functionality for PeginManager and PegoutManager
 - **Key Features**:
-  - Centralizes common state variables (bitcoinManager, streamManager, committeeRegistry, signatureManager)
+  - Centralizes common state variables (bitcoinManager, streamManager, committeeRegistry, signatureManager, rbtcBridge)
   - Provides shared initialization logic
   - Implements common setter functions (setStreamManager, setSignatureManager, setPauser)
 
-#### 4. **BitcoinManager**
+#### 4. **RbtcBridge**
+
+- **Purpose**: RSKIP-502 intermediary contract that serves as the single authorized address for RBTC minting and burning with the PowPeg Bridge
+- **Key Features**:
+  - Acts as the single authorized contract registered with the PowPeg Bridge (RSKIP-502 requirement)
+  - Provides `mintRbtc()` function exclusively for PeginManager to mint RBTC during peg-in acceptance
+  - Provides `burnRbtc()` function exclusively for PegoutManager to burn RBTC during peg-out requests
+  - Implements strict access control: only authorized managers can call mint/burn functions
+  - Enforces 100k gas limit on RBTC transfers to prevent DoS attacks
+  - Handles all PowPeg Bridge error codes (cap exceeded, transfers disabled, unauthorized caller)
+- **Security Features**: UUPS upgradeable, non-reentrant, owner-controlled manager address updates
+- **Critical Role**: Without RbtcBridge, both managers cannot interact with PowPeg Bridge due to single-address constraint
+
+#### 5. **BitcoinManager**
 
 - **Purpose**: Handles Bitcoin address generation and transaction validation
 - **Key Features**:
@@ -673,7 +897,7 @@ graph TB
   - Manages Taproot addresses with key spend and script spend paths
 - **Security Features**: UUPS upgradeable
 
-#### 5. **CommitteeRegistry**
+#### 6. **CommitteeRegistry**
 
 - **Purpose**: Manages committee formation, selection, and lifecycle
 - **Key Features**:
@@ -683,7 +907,7 @@ graph TB
   - Coordinates with MemberRegistry for member management
 - **Security Features**: Pausable (via PauseManager), UUPS upgradeable, non-reentrant
 
-#### 6. **MemberRegistry**
+#### 7. **MemberRegistry**
 
 - **Purpose**: Manages member registration, applications, and balance tracking
 - **Key Features**:
@@ -693,7 +917,7 @@ graph TB
   - Supports member applications to different streams
 - **Security Features**: Pausable (via PauseManager), UUPS upgradeable, non-reentrant
 
-#### 7. **StreamManager**
+#### 8. **StreamManager**
 
 - **Purpose**: Manages streams and packet allocation for different Bitcoin denominations
 - **Key Features**:
@@ -703,7 +927,7 @@ graph TB
   - Tracks stream usage and committee rotation
 - **Security Features**: UUPS upgradeable
 
-#### 8. **SignatureManager**
+#### 9. **SignatureManager**
 
 - **Purpose**: Manages multi-signature operations for committee members
 - **Key Features**:
@@ -713,7 +937,7 @@ graph TB
   - Coordinates with CommitteeRegistry for member verification
 - **Security Features**: UUPS upgradeable
 
-#### 9. **PauseManager**
+#### 10. **PauseManager**
 
 - **Purpose**: Centralized pause controller for emergency stops
 - **Key Features**:
@@ -760,14 +984,15 @@ graph TB
 
 ### Contract Interactions
 
-1. **PeginManager** manages peg-in operations, coordinating with BitcoinManager, CommitteeRegistry, StreamManager, and SignatureManager
-2. **PegoutManager** manages peg-out operations, coordinating with BitcoinManager, CommitteeRegistry, StreamManager, SignatureManager, and MemberRegistry
-3. **PauseManager** controls pause state for PeginManager, PegoutManager, CommitteeRegistry, and MemberRegistry
-4. **CommitteeRegistry** manages committee lifecycle and coordinates with MemberRegistry and StreamManager
-5. **StreamManager** handles stream and packet management, working with CommitteeRegistry
-6. **SignatureManager** processes multi-signature operations for committees
-7. **BitcoinManager** provides Bitcoin-specific functionality as a utility contract
-8. **MemberRegistry** manages member data and balances across all other contracts
+1. **PeginManager** manages peg-in operations, coordinating with BitcoinManager, CommitteeRegistry, StreamManager, SignatureManager, and RbtcBridge for minting RBTC
+2. **PegoutManager** manages peg-out operations, coordinating with BitcoinManager, CommitteeRegistry, StreamManager, SignatureManager, MemberRegistry, and RbtcBridge for burning RBTC
+3. **RbtcBridge** serves as the single authorized intermediary between both managers and the PowPeg Bridge (RSKIP-502), handling all RBTC minting and burning operations
+4. **PauseManager** controls pause state for PeginManager, PegoutManager, CommitteeRegistry, and MemberRegistry
+5. **CommitteeRegistry** manages committee lifecycle and coordinates with MemberRegistry and StreamManager
+6. **StreamManager** handles stream and packet management, working with CommitteeRegistry
+7. **SignatureManager** processes multi-signature operations for committees
+8. **BitcoinManager** provides Bitcoin-specific functionality as a utility contract
+9. **MemberRegistry** manages member data and balances across all other contracts
 
 ### Deployment Architecture
 
