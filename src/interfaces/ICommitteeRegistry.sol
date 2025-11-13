@@ -496,4 +496,11 @@ interface ICommitteeRegistry is IPausable {
     error MemberAlreadyDepositedCommunicationData(
         uint128 committeeId, address memberAddress, uint256 communicationDataLenght
     );
+
+    /// @notice Error when attempting to deposit data in a committee that has already expired
+    /// @param committeeId The ID of the committee
+    /// @param currentTime Timestamp actual
+    /// @param createdAt Timestamp committee creation
+    /// @param expireAt Timestamp committee expiration
+    error PendingCommitteeExpired(uint128 committeeId, uint256 currentTime, uint256 createdAt, uint256 expireAt);
 }
