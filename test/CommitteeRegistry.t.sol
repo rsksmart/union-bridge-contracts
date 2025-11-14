@@ -1328,11 +1328,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Arrange
         (Committee memory expectedCommittee, uint128 committeeId) = setup_pendingCommittee();
         uint256 timeout = registry.pendingCommitteeTimeout();
-
-        // Get the creation timestamp of the pending committee
-        Committee memory pendingCommittee = registry.getPendingCommittee(expectedCommittee.streamId);
-        uint256 expirationTime = pendingCommittee.createdAt + timeout;
-        vm.warp(expirationTime - 1); // Proceed UNTIL JUST BEFORE it expires
+        vm.warp(block.timestamp + timeout + 1 seconds); // warp time to make committee expired
         expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY();
         expectedCommittee.missingData = 0;
         expectedCommittee.isPending = false;
