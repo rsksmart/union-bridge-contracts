@@ -16,6 +16,7 @@ import {Constants} from "src/libraries/Constants.sol";
 import {ICommitteeRegistry, Committee, CommitteeMember} from "src/interfaces/ICommitteeRegistry.sol";
 import {IMemberRegistry, MemberKeys} from "src/interfaces/IMemberRegistry.sol";
 import {ISignatureManager} from "src/interfaces/ISignatureManager.sol";
+import {IRbtcBridge} from "src/interfaces/IRbtcBridge.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract TestPeginManager is Test, HelperContract {
@@ -809,6 +810,69 @@ contract TestPeginManager is Test, HelperContract {
         pauseAndUnpauseContracts();
 
         // Act & Assert
+        peginManager.acceptPegin(peginAcceptedTxSPVProof);
+    }
+
+    // ============ RbtcBridge Integration Tests ============
+
+    function test_acceptPegin_RbtcBridgeIntegration() external {
+        // Arrange
+        BtcTransaction memory peginTx = setup_requestPeginFlow();
+        BtcTransaction memory btcTransaction = getBtcAcceptPeginTx(peginTx);
+        BtcTxSPVProof memory peginAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
+
+        bytes32 peginRequestTxid = peginAcceptedTxSPVProof.btcTx.inputs[0].txId;
+        uint256 recipientBalanceBefore = RSK_DESTINATION_ADDRESS.balance;
+
+        // Act
+        peginManager.acceptPegin(peginAcceptedTxSPVProof);
+
+        // Assert - verify the amount minted equals acceptPeginAmount (after fees)
+        StreamPosition memory streamPosition = peginManager.getStreamPositionByRequestPegin(peginRequestTxid);
+        Slot memory slot =
+            streamManager.getSlot(streamPosition.streamId, streamPosition.packetNumber, streamPosition.slotId);
+
+        uint256 acceptPeginAmountInWei = satoshiToWei(slot.acceptPeginAmount);
+
+        // Verify RBTC was sent to correct recipient with correct amount
+        assertEq(
+            RSK_DESTINATION_ADDRESS.balance,
+            recipientBalanceBefore + acceptPeginAmountInWei,
+            "RBTC not sent to correct recipient or wrong amount"
+        );
+    }
+
+    function test_acceptPegin_Revert_BridgeExceededLockingCap() external {
+        // Arrange
+        BtcTransaction memory peginTx = setup_requestPeginFlow();
+        BtcTransaction memory btcTransaction = getBtcAcceptPeginTx(peginTx);
+        BtcTxSPVProof memory peginAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
+
+        uint256 amount = satoshiToWei(btcTransaction.outputs[0].amount);
+
+        // Simulate that all capacity has been used (lockingCap will be 0)
+        bridgeMock.setWeisTransferredToUnionBridge(400 ether);
+
+        // Assert - expect revert with specific error
+        vm.expectRevert(abi.encodeWithSelector(IRbtcBridge.BridgeExceededLockingCap.selector, amount));
+
+        // Act
+        peginManager.acceptPegin(peginAcceptedTxSPVProof);
+    }
+
+    function test_acceptPegin_Revert_BridgeTransfersDisabled() external {
+        // Arrange
+        BtcTransaction memory peginTx = setup_requestPeginFlow();
+        BtcTransaction memory btcTransaction = getBtcAcceptPeginTx(peginTx);
+        BtcTxSPVProof memory peginAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
+
+        // Disable transfers on the bridge
+        bridgeMock.setTransfersDisabled(true);
+
+        // Assert - expect revert with specific error
+        vm.expectRevert(IRbtcBridge.BridgeTransfersDisabled.selector);
+
+        // Act
         peginManager.acceptPegin(peginAcceptedTxSPVProof);
     }
 }

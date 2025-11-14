@@ -496,6 +496,7 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
             ) {
                 committee.operatorTakeIndex = operatorTakeIndex;
                 operatorAddress = committee.members[operatorTakeIndex].memberAddress;
+                // slither-disable-next-line calls-loop
                 takePubKey = memberRegistry.getMemberTakePubKey(operatorAddress);
                 return (operatorAddress, takePubKey);
             }

@@ -10,12 +10,15 @@ contract BridgeMock is IBridge {
     int256 private bestBlock;
     int256 private confirmations;
 
-    receive() external payable override {}
+    // RSKIP-502 state variables
+    uint256 private lockingCap = 400 ether;
+    uint256 private weisTransferredToUnionBridge = 0;
+    bool private transfersDisabled = false;
+    address payable private unionBridgeContractAddress = payable(address(0));
+    uint256 private maxIncreaseMultiplier = 2; // Maximum allowed increase (e.g., 2 = doubling)
 
-    function requestUnionRBTC(uint256 amount) external pure override returns (int256) {
-        // TODO: set up union bridge address and send funds to it
-        return int256(amount);
-    }
+    // accept rbtc from blockchain and send it to the union bridge contract
+    receive() external payable {}
 
     function registerFastBridgeBtcTransaction(
         bytes memory,
@@ -73,17 +76,6 @@ contract BridgeMock is IBridge {
     function getStateForDebugging() external pure override returns (bytes memory) {
         bytes memory b;
         return b;
-    }
-
-    function getBtcBlockchainInitialBlockHeight() external pure override returns (int256) {
-        return int256(0);
-    }
-
-    function getBtcBlockchainBlockHashAtDepth(int256) external pure override returns (bytes memory) {
-        // Return a mock Bitcoin block hash for testing purposes
-        // This simulates a Bitcoin depth(1) block hash
-        bytes32 mockBlockHash = 0x0000000000000000000049b460f18614380a01b8709d2c3a8ddf451d08d862b8;
-        return abi.encodePacked(mockBlockHash);
     }
 
     function getBtcTxHashProcessedHeight(string calldata) external pure override returns (int64) {
@@ -305,7 +297,11 @@ contract BridgeMock is IBridge {
     }
 
     function getBtcBlockchainBestBlockHeader() external pure override returns (bytes memory) {
-        bytes memory b;
+        // Return a mock Bitcoin block hash for testing purposes
+        // bytes corresponding to block 904463 hash 0000000000000000000049b460f18614380a01b8709d2c3a8ddf451d08d862b8
+        // This simulates a Bitcoin best block header
+        bytes memory b =
+            hex"0000003c9d087b22bc8c482ad398dcfed27a115490cfbc144b3801000000000000000000a923a1461ac1dd2b222f3525f071bec2026acee9038ee440d6915488894a1452e7d66b6816680217f35754aa";
         return b;
     }
 
@@ -316,5 +312,99 @@ contract BridgeMock is IBridge {
     function getBtcBlockchainParentBlockHeaderByHash(bytes32) external pure override returns (bytes memory) {
         bytes memory b;
         return b;
+    }
+
+    // ===================== RSKIP-502: Union Bridge RBTC Methods =====================
+
+    function requestUnionBridgeRbtcHarness() external payable returns (int256) {
+        return _requestUnionBridgeRbtc(msg.value);
+    }
+
+    function _requestUnionBridgeRbtc(uint256 amount) internal returns (int256) {
+        if (amount > lockingCap) {
+            return int256(-2);
+        }
+        if (transfersDisabled) {
+            return int256(-3);
+        }
+        weisTransferredToUnionBridge += amount;
+        lockingCap -= amount;
+        (bool success,) = unionBridgeContractAddress.call{value: amount}("");
+        require(success, "BridgeMock: Sending funds failed");
+        return int256(0);
+    }
+
+    function requestUnionBridgeRbtc(uint256 amount) external override returns (int256) {
+        if (msg.sender != unionBridgeContractAddress) {
+            return int256(-1);
+        }
+        return _requestUnionBridgeRbtc(amount);
+    }
+
+    function releaseUnionBridgeRbtcHarness() external payable returns (int256) {
+        return _releaseUnionBridgeRbtc();
+    }
+
+    function _releaseUnionBridgeRbtc() internal returns (int256) {
+        if (transfersDisabled) {
+            return int256(-3);
+        }
+        if (msg.value > weisTransferredToUnionBridge) {
+            return int256(-2);
+        }
+        weisTransferredToUnionBridge -= msg.value;
+        lockingCap += msg.value;
+        return int256(0);
+    }
+
+    function releaseUnionBridgeRbtc() external payable override returns (int256) {
+        if (msg.sender != unionBridgeContractAddress) {
+            return int256(-1);
+        }
+        return _releaseUnionBridgeRbtc();
+    }
+
+    function getUnionBridgeLockingCap() external view override returns (uint256) {
+        return lockingCap;
+    }
+
+    function increaseUnionBridgeLockingCap(uint256 newCap) external override returns (int256) {
+        uint256 currentTotalCap = lockingCap + weisTransferredToUnionBridge;
+
+        // Check that newCap is actually an increase (RSKIP-502: cap can only be increased)
+        if (newCap <= currentTotalCap) {
+            return int256(-2); // Invalid value - less than current cap
+        }
+
+        // Check that increase is not excessive (RSKIP-502: increase should be controlled)
+        uint256 maxAllowedCap = currentTotalCap * maxIncreaseMultiplier;
+        if (newCap > maxAllowedCap) {
+            return int256(-2); // Invalid value - excessive increase
+        }
+
+        // Update the available capacity
+        lockingCap = newCap - weisTransferredToUnionBridge;
+        return int256(0);
+    }
+
+    function setUnionBridgeContractAddressForTestnet(address newAddress) external override returns (int256) {
+        unionBridgeContractAddress = payable(newAddress);
+        return int256(0);
+    }
+
+    function getUnionBridgeContractAddress() external view override returns (address) {
+        return unionBridgeContractAddress;
+    }
+
+    //-------------------------------- Test Helpers ------------------------------------
+
+    function setTransfersDisabled(bool _disabled) external {
+        transfersDisabled = _disabled;
+    }
+
+    function setWeisTransferredToUnionBridge(uint256 _amount) external {
+        uint256 totalCap = lockingCap + weisTransferredToUnionBridge;
+        weisTransferredToUnionBridge = _amount;
+        lockingCap = totalCap - _amount;
     }
 }

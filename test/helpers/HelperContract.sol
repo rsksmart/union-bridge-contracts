@@ -29,6 +29,7 @@ import {OpCodes} from "src/libraries/OpCodes.sol";
 import {Stream, SlotState} from "src/interfaces/IStreamManager.sol";
 import {CommitteeRegistryHarness} from "./CommitteeRegistryHarness.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+import {RbtcBridge} from "src/RbtcBridge.sol";
 
 abstract contract HelperContract is Test, TestUtils {
     bytes32 internal constant BTC_REIMBURSEMENT_PUBKEY =
@@ -63,6 +64,7 @@ abstract contract HelperContract is Test, TestUtils {
     MemberRegistryHarness internal memberRegistry;
     SignatureManager internal signatureManager;
     StreamManagerHarness internal streamManager;
+    RbtcBridge internal rbtcBridge;
     PeginManagerHarness internal peginManager;
     PegoutManagerHarness internal pegoutManager;
     PauseManager internal pauseManager;
@@ -80,6 +82,7 @@ abstract contract HelperContract is Test, TestUtils {
         registry = CommitteeRegistryHarness(address(deployScript.committeeRegistry()));
         memberRegistry = MemberRegistryHarness(address(deployScript.memberRegistry()));
         streamManager = StreamManagerHarness(address(deployScript.streamManager()));
+        rbtcBridge = RbtcBridge(payable(address(deployScript.rbtcBridge())));
         peginManager = PeginManagerHarness(address(deployScript.peginManager()));
         pegoutManager = PegoutManagerHarness(address(deployScript.pegoutManager()));
         pauseManager = PauseManager(deployScript.pauseManager());
@@ -421,6 +424,10 @@ abstract contract HelperContract is Test, TestUtils {
         Stream memory stream = streamManager.getStream(pegoutAmount);
         setup.packetNumber = stream.pegoutPacketPointer;
         setup.slotId = stream.pegoutSlotPointer;
+
+        // Set up mock to allow burning this amount
+        // Add capacity to support multiple pegout calls in sequence
+        bridgeMock.setWeisTransferredToUnionBridge(pegoutAmountInWei);
 
         // Request peg-out
         pegoutManager.tryPegout{value: pegoutAmountInWei}(setup.userPubKey);

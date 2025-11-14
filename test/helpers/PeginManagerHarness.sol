@@ -5,6 +5,7 @@ import {PeginManager} from "src/PeginManager.sol";
 import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {IBitcoinManager} from "src/interfaces/IBitcoinManager.sol";
 import {StreamPosition, PegStatus} from "src/interfaces/IPegCommonTypes.sol";
+import {IRbtcBridge} from "src/interfaces/IRbtcBridge.sol";
 
 /// @title PeginManagerHarness
 /// @notice Test harness for PeginManager to expose internal functions and state for testing
@@ -14,9 +15,10 @@ contract PeginManagerHarness is PeginManager {
         address _initialOwner,
         address payable _bridgeAddress,
         ICommitteeRegistry _committeeRegistry,
-        IBitcoinManager _bitcoinManager
+        IBitcoinManager _bitcoinManager,
+        IRbtcBridge _rbtcBridge
     ) public override initializer {
-        PeginManager.initialize(_initialOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager);
+        PeginManager.initialize(_initialOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager, _rbtcBridge);
     }
 
     function setStreamPositionHarness(

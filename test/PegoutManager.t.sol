@@ -19,6 +19,7 @@ import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
 import {Committee} from "src/interfaces/ICommitteeRegistry.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
+import {IRbtcBridge} from "src/interfaces/IRbtcBridge.sol";
 
 contract TestPegoutManager is Test, HelperContract {
     // Arrange
@@ -81,6 +82,9 @@ contract TestPegoutManager is Test, HelperContract {
         bytes32 mockBlockHash = 0x0000000000000000000049b460f18614380a01b8709d2c3a8ddf451d08d862b8;
         bytes32 expectedPegoutId =
             keccak256(abi.encode(stream.streamId, packetNumber, slotId, address(this), mockBlockHash));
+
+        // Set up mock to allow burning this amount
+        bridgeMock.setWeisTransferredToUnionBridge(amountInWei);
 
         // Assert
         vm.expectEmit(address(pegoutManager));
@@ -160,6 +164,9 @@ contract TestPegoutManager is Test, HelperContract {
         bytes32 expectedPegoutId =
             keccak256(abi.encode(stream.streamId, packetNumber, slotId, address(this), mockBlockHash));
 
+        // Set up mock to allow burning this amount
+        bridgeMock.setWeisTransferredToUnionBridge(amountInWei);
+
         // Assert
         vm.expectEmit(address(pegoutManager));
         emit IPegoutManager.PegoutRequested(
@@ -209,6 +216,9 @@ contract TestPegoutManager is Test, HelperContract {
         uint64 packetNumberExpected = 0;
         uint64 slotIdExpected = 0;
         Stream memory stream;
+
+        // Set up mock to allow burning for all pegouts in this test
+        bridgeMock.setWeisTransferredToUnionBridge(amountInWei * pegoutAmount);
 
         for (uint256 i = 0; i < pegoutAmount; i++) {
             if (i % Constants.SLOTS_PER_PACKET == 0 && i != 0) {
@@ -469,6 +479,9 @@ contract TestPegoutManager is Test, HelperContract {
         Stream memory stream = streamManager.getStream(pegoutAmount);
         uint64 expectedPacketNumber = stream.pegoutPacketPointer;
         uint64 expectedSlotId = stream.pegoutSlotPointer;
+
+        // Set up BridgeMock to allow burning this amount
+        bridgeMock.setWeisTransferredToUnionBridge(pegoutAmountInWei);
 
         // Request peg-out
         pegoutManager.tryPegout{value: pegoutAmountInWei}(userPubKey);
@@ -1028,6 +1041,9 @@ contract TestPegoutManager is Test, HelperContract {
         streamManager.setSlotStateHarness(stream.streamId, 0, blockedSlotId, SlotState.BLOCKED);
         streamManager.setSlotHarness(stream.streamId, 0, scriptPubKey, txId, amount, SlotState.FILLED);
 
+        // Set up mock to allow burning this amount
+        bridgeMock.setWeisTransferredToUnionBridge(amountInWei);
+
         // 2. Call tryPegout should skip blocked slot and lock filled slot
         pegoutManager.tryPegout{value: amountInWei}(userPubKey);
 
@@ -1073,6 +1089,9 @@ contract TestPegoutManager is Test, HelperContract {
             stream.streamId, COMMITTEE_ID_STREAM_1_COMMITTEE_1, setupExpectedCommittee.aggregatedKey
         );
         streamManager.setSlotHarness(stream.streamId, 1, scriptPubKey, txId, amount, SlotState.FILLED);
+
+        // Set up mock to allow burning this amount
+        bridgeMock.setWeisTransferredToUnionBridge(amountInWei);
 
         // 3. Call tryPegout
         pegoutManager.tryPegout{value: amountInWei}(userPubKey);
@@ -1323,6 +1342,9 @@ contract TestPegoutManager is Test, HelperContract {
         bytes32 expectedPegoutId =
             keccak256(abi.encode(stream.streamId, packetNumber, slotId, address(this), mockBlockHash));
 
+        // Set up mock to allow burning this amount
+        bridgeMock.setWeisTransferredToUnionBridge(amountInWei);
+
         // Assert
         vm.expectEmit(address(pegoutManager));
         emit IPegoutManager.PegoutRequested(
@@ -1460,5 +1482,124 @@ contract TestPegoutManager is Test, HelperContract {
         // Act
         vm.prank(owner);
         pegoutManager.setOperatorTakeTimeout(timeout);
+    }
+
+    // ============ RbtcBridge Integration Tests ============
+
+    function test_tryPegout_RbtcBridgeIntegration() external {
+        // Arrange - Setup pegin flow first so we have acceptPeginAmount to burn
+        setup_requestAndAcceptPeginFlow();
+
+        bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+        uint64 amount = VALUE;
+        uint256 amountInWei = BtcHelper.satoshiToWei(amount);
+
+        Stream memory stream = streamManager.getStream(amount);
+        uint64 slotId = stream.pegoutSlotPointer;
+        uint64 packetNumber = stream.pegoutPacketPointer;
+        Slot memory slot = streamManager.getSlot(stream.streamId, packetNumber, slotId);
+
+        // Calculate expected burn amount (acceptPeginAmount, not msg.value)
+        uint256 expectedBurnAmount = BtcHelper.satoshiToWei(slot.acceptPeginAmount);
+        uint256 expectedFeeAmount = amountInWei - expectedBurnAmount;
+
+        // Set up mock to allow burning this amount
+        bridgeMock.setWeisTransferredToUnionBridge(expectedBurnAmount);
+
+        uint256 pegoutManagerBalanceBefore = address(pegoutManager).balance;
+
+        // Act
+        pegoutManager.tryPegout{value: amountInWei}(userPubKey);
+
+        // Assert - verify correct amount was burned (acceptPeginAmount)
+        assertEq(bridgeMock.getUnionBridgeLockingCap(), 400 ether, "Locking cap should be restored after burn");
+
+        // Assert - verify fees stayed in PegoutManager (msg.value - amountToBurn)
+        assertEq(
+            address(pegoutManager).balance,
+            pegoutManagerBalanceBefore + expectedFeeAmount,
+            "Fees should remain in PegoutManager"
+        );
+    }
+
+    function test_tryPegout_Revert_BridgeReleaseInvalidValue() external {
+        // Arrange - Setup pegin flow
+        setup_requestAndAcceptPeginFlow();
+
+        bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+        uint64 amount = VALUE;
+        uint256 amountInWei = BtcHelper.satoshiToWei(amount);
+
+        Stream memory stream = streamManager.getStream(amount);
+        uint64 slotId = stream.pegoutSlotPointer;
+        uint64 packetNumber = stream.pegoutPacketPointer;
+        Slot memory slot = streamManager.getSlot(stream.streamId, packetNumber, slotId);
+
+        uint256 burnAmount = BtcHelper.satoshiToWei(slot.acceptPeginAmount);
+
+        // Set weisTransferred to 0 (nothing has been minted) to trigger error
+        bridgeMock.setWeisTransferredToUnionBridge(0);
+
+        // Assert - expect revert with specific error
+        vm.expectRevert(abi.encodeWithSelector(IRbtcBridge.BridgeReleaseInvalidValue.selector, burnAmount));
+
+        // Act
+        pegoutManager.tryPegout{value: amountInWei}(userPubKey);
+    }
+
+    function test_tryPegout_Revert_BridgeTransfersDisabled() external {
+        // Arrange - Setup pegin flow
+        setup_requestAndAcceptPeginFlow();
+
+        bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+        uint64 amount = VALUE;
+        uint256 amountInWei = BtcHelper.satoshiToWei(amount);
+
+        Stream memory stream = streamManager.getStream(amount);
+        uint64 slotId = stream.pegoutSlotPointer;
+        uint64 packetNumber = stream.pegoutPacketPointer;
+        Slot memory slot = streamManager.getSlot(stream.streamId, packetNumber, slotId);
+
+        uint256 burnAmount = BtcHelper.satoshiToWei(slot.acceptPeginAmount);
+
+        // Set up mock to allow burning this amount
+        bridgeMock.setWeisTransferredToUnionBridge(burnAmount);
+
+        // Disable transfers on the bridge
+        bridgeMock.setTransfersDisabled(true);
+
+        // Assert - expect revert with specific error
+        vm.expectRevert(IRbtcBridge.BridgeTransfersDisabled.selector);
+
+        // Act
+        pegoutManager.tryPegout{value: amountInWei}(userPubKey);
+    }
+
+    function test_tryPegout_Revert_BridgeUnauthorizedCaller() external {
+        // Arrange - Setup pegin flow
+        setup_requestAndAcceptPeginFlow();
+
+        bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+        uint64 amount = VALUE;
+        uint256 amountInWei = BtcHelper.satoshiToWei(amount);
+
+        Stream memory stream = streamManager.getStream(amount);
+        uint64 slotId = stream.pegoutSlotPointer;
+        uint64 packetNumber = stream.pegoutPacketPointer;
+        Slot memory slot = streamManager.getSlot(stream.streamId, packetNumber, slotId);
+
+        uint256 burnAmount = BtcHelper.satoshiToWei(slot.acceptPeginAmount);
+
+        // Set up mock to allow burning this amount
+        bridgeMock.setWeisTransferredToUnionBridge(burnAmount);
+
+        // Change union bridge address to trigger unauthorized caller error
+        bridgeMock.setUnionBridgeContractAddressForTestnet(address(0x9999));
+
+        // Assert - expect revert with specific error
+        vm.expectRevert(IRbtcBridge.BridgeUnauthorizedCaller.selector);
+
+        // Act
+        pegoutManager.tryPegout{value: amountInWei}(userPubKey);
     }
 }

@@ -21,6 +21,9 @@ jobs:
         with:
           version: v1.3.1
 
+      - name: Run tests
+        run: forge test -vvv
+
       - name: Start Anvil
         run: anvil --port 8545 --silent &
 
@@ -30,8 +33,8 @@ jobs:
       - name: Deploy contracts
         run: bash shell/script/deploy/deploy-local.sh
 
+      - name: Fund BridgeMock
+        run: bash shell/script/fund-bridge.sh
+
       - name: Run peg-flow
         run: bash shell/script/integration-test/peg-flow.sh
-
-      - name: Run tests
-        run: forge test -vvv
