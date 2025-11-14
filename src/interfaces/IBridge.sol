@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
 /// @dev The RSK Bridge contract address for pow-peg bridge operations

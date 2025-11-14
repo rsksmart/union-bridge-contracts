@@ -33,6 +33,10 @@ library Secp256k1 {
     /// @dev Defines the finite field over which the curve is defined
     uint256 public constant PP = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F;
 
+    /// @dev Order of the secp256k1 curve
+    /// @dev When doing elliptic curve math (signatures, scalar multiplication, etc.), all private keys and scalars are reduced mod n, not mod p.
+    uint256 public constant N = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;
+
     /// @notice Derives the y coordinate from a compressed-format point x
     /// @dev Implements the algorithm from [SEC-1](https://www.secg.org/SEC1-Ver-1.0.pdf)
     /// @param _prefix Parity byte (0x02 for even y, 0x03 for odd y)

@@ -8,6 +8,8 @@ out/
 broadcast/**/run-latest.json
 # macOS
 .DS_Store
+#rust
+target/
 # vscode
 .vscode/*
 !.vscode/settings.json

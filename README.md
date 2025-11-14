@@ -15,6 +15,7 @@ This repository contains the specifications and Solidity code for the Union Brid
 - [How it Works](#how-it-works)
 - [Smart Contracts Architecture](#smart-contracts-architecture)
 - [Bitcoin Transactions](./bitcoin-transactions.md)
+- [Musig2](#musig2---multi-signatures-on-bitcoin)
 - [Security](#security)
 - [Troubleshooting](#troubleshooting)
 
@@ -1006,6 +1007,28 @@ The system is deployed using a proxy pattern where:
 The deployment is created using the [deployment scripts](script/deploy/) and information about deployed contracts can be found in the [broadcast folder](broadcast/).
 
 This architecture ensures security, upgradeability, and maintainability while providing a robust foundation for Bitcoin-RSK bridge operations.
+
+---
+
+## Musig2 - Multi-Signatures on Bitcoin
+
+MuSig2 allows groups of mutually distrusting parties to cooperatively sign data and aggregate their signatures into a single aggregated signature which is indistinguishable from a signature made by a single private key. The group collectively controls an aggregated public key which can only create signatures if everyone in the group cooperates (AKA an *N-of-N multisignature scheme*). MuSig2 is optimized to support secure signature aggregation with only *two round-trips of network communication*.
+
+Specifically we use the [smart contracts to verify Musig2](./src/Musig2.sol) partial signatures, in order to slash dishonest committee participants. We followed [rust musgi2 library](https://docs.rs/musig2/latest/musig2/) implementation that uses [BIP-0327: MuSig2 for BIP340-compatible Multi-Signatures](https://github.com/bitcoin/bips/blob/master/bip-0327.mediawiki), for creating and verifying signatures which validate under Bitcoin consensus rules.
+
+### Musig2 Overview
+
+If you’re not already familiar with MuSig2, the process of cooperative signing runs like so:
+
+1. All signers share their public keys with one-another. The group computes an `aggregated public` key which they collectively control.
+
+2. In the *first signing round*, signers generate and share nonces (random numbers) with one-another. These nonces have both secret and public versions. Only the public nonce (AKA PubNonce) should be shared, while the corresponding secret nonce (AKA SecNonce) must be kept secret.
+
+3. Once every signer has received the public nonces of every other signer, each signer makes a partial signature for a message using their secret key and secret nonce.
+
+4. In the *second signing round*, signers share their partial signatures with one-another. Partial signatures can be verified to place blame on misbehaving signers (but are not themselves unforgeable).
+
+5. A valid set of partial signatures can be aggregated into a final signature, which is just a normal Schnorr signature, valid under the aggregated public key.
 
 ---
 

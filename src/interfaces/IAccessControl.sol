@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNKNOWN
+// SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
 /// @notice Interface for access control in the union bridge
