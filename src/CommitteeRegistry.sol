@@ -304,17 +304,6 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
             }
         }
 
-        // Verify that the status of the pending committee has not changed to expired.
-        // slither-disable-next-line timestamp
-        if (block.timestamp >= pendingCommittee.createdAt + pendingCommitteeTimeout) {
-            revert PendingCommitteeExpired(
-                _committeeId,
-                block.timestamp,
-                pendingCommittee.createdAt,
-                pendingCommittee.createdAt + pendingCommitteeTimeout
-            );
-        }
-
         pendingCommittee.missingData--;
         emit MemberInfoDeposited(_committeeId, sender, _aggregatedKey);
         if (pendingCommittee.missingData != 0) {
