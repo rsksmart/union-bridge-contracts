@@ -1999,6 +1999,39 @@ contract TestCommitteeRegistry is Test, HelperContract {
         assertEq(finalMissingCount, 0, "Should have 0 missing communication data after all deposits");
     }
 
+    function test_depositCommunicationData_Revert_PendingCommitteeExpired() public {
+        // Arrange
+        (Committee memory expectedCommittee, uint128 committeeId) = setup_pendingCommittee();
+        uint256 memberIndex = 0;
+        address memberAddress = expectedCommittee.members[memberIndex].memberAddress;
+
+        CommunicationData[] memory communicationData =
+            createValidCommunicationData(expectedCommittee.members.length, memberIndex);
+
+        // Obtain the time of the committee's creation
+        uint256 createdAt = expectedCommittee.createdAt;
+        uint256 pendingCommitteeTimeout = registry.pendingCommitteeTimeout();
+        uint256 expirationTime = createdAt + pendingCommitteeTimeout;
+
+        // Advance the time until the committee expires
+        vm.warp(expirationTime);
+
+        // Assert - depositing in an expired committee must be reversed
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ICommitteeRegistry.PendingCommitteeExpired.selector,
+                committeeId,
+                block.timestamp,
+                createdAt,
+                expirationTime
+            )
+        );
+
+        // Act - attempt to deposit after expiration
+        vm.prank(memberAddress);
+        registry.depositCommunicationData(committeeId, communicationData);
+    }
+
     function test_getMemberCommunicationData_Success() public {
         // Arrange
         (Committee memory expectedCommittee, uint128 committeeId) = setup_pendingCommittee();

@@ -349,6 +349,17 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
             revert InvalidCommunicationDataLength(_communicationData.length, committeeMembers.length);
         }
 
+        // Verify that the status of the pending committee has not changed to expired.
+        // slither-disable-next-line timestamp
+        if (block.timestamp >= pendingCommittee.createdAt + pendingCommitteeTimeout) {
+            revert PendingCommitteeExpired(
+                _committeeId,
+                block.timestamp,
+                pendingCommittee.createdAt,
+                pendingCommittee.createdAt + pendingCommitteeTimeout
+            );
+        }
+
         for (uint256 i = 0; i < _communicationData.length; i++) {
             bool isEmpty = BytesHelper.isArrayEmpty(_communicationData[i].data);
 
