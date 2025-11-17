@@ -1,5 +1,5 @@
 # SignatureManager
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/5935b1ba9b5693ff58c693caac2763a4b158c822/src/SignatureManager.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b656e8c68a46e57c80c7029f9deb9e4b65b60046/src/SignatureManager.sol)
 
 **Inherits:**
 [ISignatureManager](/src/interfaces/ISignatureManager.sol/interface.ISignatureManager.md), [AccessControl](/src/AccessControl.sol/contract.AccessControl.md)
@@ -48,16 +48,20 @@ Initializes the SignatureManager contract
 
 
 ```solidity
-function initialize(address _initialOwner, address _pegManager, ICommitteeRegistry _committeeRegistry)
-    public
-    initializer;
+function initialize(
+    address _initialOwner,
+    address _peginManager,
+    address _pegoutManager,
+    ICommitteeRegistry _committeeRegistry
+) public initializer;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
 |`_initialOwner`|`address`|The address that will be set as the initial owner|
-|`_pegManager`|`address`|The address of the PegManager contract|
+|`_peginManager`|`address`|The address of the PeginManager contract|
+|`_pegoutManager`|`address`|The address of the PegoutManager contract|
 |`_committeeRegistry`|`ICommitteeRegistry`|The address of the CommitteeRegistry contract|
 
 

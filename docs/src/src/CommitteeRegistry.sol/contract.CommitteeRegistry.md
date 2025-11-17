@@ -1,8 +1,8 @@
 # CommitteeRegistry
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/5935b1ba9b5693ff58c693caac2763a4b158c822/src/CommitteeRegistry.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b656e8c68a46e57c80c7029f9deb9e4b65b60046/src/CommitteeRegistry.sol)
 
 **Inherits:**
-[ICommitteeRegistry](/src/interfaces/ICommitteeRegistry.sol/interface.ICommitteeRegistry.md), [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md)
+[ICommitteeRegistry](/src/interfaces/ICommitteeRegistry.sol/interface.ICommitteeRegistry.md), [AccessControl](/src/AccessControl.sol/contract.AccessControl.md), ReentrancyGuardUpgradeable, [Pausable](/src/Pausable.sol/contract.Pausable.md)
 
 Manages committee formation, selection, and lifecycle for the union bridge system
 
@@ -82,15 +82,6 @@ IStreamManager streamManager;
 ```
 
 
-### pegManager
-Peg manager contract for peg-in/peg-out coordination
-
-
-```solidity
-IPegManager pegManager;
-```
-
-
 ### memberRegistry
 Member registry contract for member management
 
@@ -114,15 +105,18 @@ uint256 public pendingCommitteeTimeout;
 
 Initializes the CommitteeRegistry contract
 
+*PeginManager and PegoutManager addresses can be set later via setPeginManager/setPegoutManager*
+
 
 ```solidity
-function initialize(address _initialOwner) public virtual initializer;
+function initialize(address _initialOwner, IMemberRegistry _memberRegistry) public virtual initializer;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
 |`_initialOwner`|`address`|The initial owner of the contract|
+|`_memberRegistry`|`IMemberRegistry`|The member registry contract address|
 
 
 ### _revertIfZero
@@ -138,6 +132,8 @@ Applies to participate in a stream with a specific role
 
 *Registers public keys, deposits required bond, and provides funding UTXO for the requested role*
 
+*Only callable when contract is unpaused*
+
 
 ```solidity
 function applyToStream(
@@ -145,7 +141,7 @@ function applyToStream(
     Role _role,
     MemberRegistrationKeys calldata _publicKeys,
     UTXO calldata _fundingUTXO
-) external payable;
+) external payable nonReentrant whenNotPaused;
 ```
 **Parameters**
 
@@ -161,9 +157,11 @@ function applyToStream(
 
 Unsubscribes from a stream and sets the pre-staked balance as available
 
+*Only callable when contract is unpaused*
+
 
 ```solidity
-function unsubscribeFromStream(StreamDenomination _denomination) external;
+function unsubscribeFromStream(StreamDenomination _denomination) external whenNotPaused;
 ```
 **Parameters**
 
@@ -237,14 +235,18 @@ function _getCommitteeMembers(uint128 _committeeId) internal view returns (Commi
 
 ### restartPendingCommittee
 
+*Only callable when contract is unpaused*
+
 
 ```solidity
-function restartPendingCommittee(uint64 _streamId) external;
+function restartPendingCommittee(uint64 _streamId) external whenNotPaused;
 ```
 
 ### createCommittee
 
 Triggers the creation of a new committee for a stream if the timeout has expired
+
+*Only callable by PegManager contract*
 
 *This function is called when the slot usage threshold is reached*
 
@@ -293,9 +295,11 @@ Allows a member to deposit information for committee formation
 
 *Called by members to provide their aggregated key for a pending committee*
 
+*Only callable when contract is unpaused*
+
 
 ```solidity
-function depositAggregatedKey(uint128 _committeeId, bytes memory _aggregatedKey) external;
+function depositAggregatedKey(uint128 _committeeId, bytes memory _aggregatedKey) external whenNotPaused;
 ```
 **Parameters**
 
@@ -307,10 +311,25 @@ function depositAggregatedKey(uint128 _committeeId, bytes memory _aggregatedKey)
 
 ### depositCommunicationData
 
+Allows a member to deposit communication data for its respective pending committee
+
+*Called by members to provide their communication data for a pending committee*
+
+*Only callable when contract is unpaused*
+
 
 ```solidity
-function depositCommunicationData(uint128 _committeeId, CommunicationData[] memory _communicationData) external;
+function depositCommunicationData(uint128 _committeeId, CommunicationData[] memory _communicationData)
+    external
+    whenNotPaused;
 ```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_committeeId`|`uint128`|The ID of the pending committee|
+|`_communicationData`|`CommunicationData[]`|The communication data to be added|
+
 
 ### getMemberCommunicationData
 
@@ -460,7 +479,7 @@ function _deletePendingCommittee(uint64 _streamId) internal;
 
 ### getOperatorTakeAddress
 
-Gets the next available operator address for take operations
+Gets the next available operator address and take public key for take operations
 
 *Rotates through committee operators to distribute take responsibilities*
 
@@ -473,7 +492,7 @@ Gets the next available operator address for take operations
 function getOperatorTakeAddress(uint128 _committeeId, SignatureData[] calldata _signatureData)
     external
     onlyPegManager
-    returns (address);
+    returns (address operatorAddress, bytes32 takePubKey);
 ```
 **Parameters**
 
@@ -486,7 +505,8 @@ function getOperatorTakeAddress(uint128 _committeeId, SignatureData[] calldata _
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`address`|The address of the next available operator for take operations|
+|`operatorAddress`|`address`|The address of the next available operator for take operations|
+|`takePubKey`|`bytes32`|The operator's take public key|
 
 
 ### setStreamManager
@@ -506,21 +526,38 @@ function setStreamManager(IStreamManager _streamManager) external onlyOwner;
 |`_streamManager`|`IStreamManager`|The address of the Stream Manager contract|
 
 
-### setPegManager
+### setPeginManager
 
-Sets the Peg Manager contract address
+Sets the Pegin Manager contract address
 
 *Only callable by the contract owner*
 
 
 ```solidity
-function setPegManager(IPegManager _pegManager) external onlyOwner;
+function setPeginManager(IPeginManager _peginManager) external onlyOwner;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_pegManager`|`IPegManager`|The address of the Peg Manager contract|
+|`_peginManager`|`IPeginManager`|The address of the Pegin Manager contract|
+
+
+### setPegoutManager
+
+Sets the Pegout Manager contract address
+
+*Only callable by the contract owner*
+
+
+```solidity
+function setPegoutManager(IPegoutManager _pegoutManager) external onlyOwner;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_pegoutManager`|`IPegoutManager`|The address of the Pegout Manager contract|
 
 
 ### setMemberRegistry
@@ -538,6 +575,23 @@ function setMemberRegistry(IMemberRegistry _memberRegistry) external onlyOwner;
 |Name|Type|Description|
 |----|----|-----------|
 |`_memberRegistry`|`IMemberRegistry`|The address of the Member Registry contract|
+
+
+### setPauser
+
+Sets a new pauser address
+
+*Only callable by the contract owner*
+
+
+```solidity
+function setPauser(address _newPauser) public override onlyOwner;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_newPauser`|`address`|The new pauser address|
 
 
 ### setPendingCommitteeTimeout
@@ -614,6 +668,8 @@ Releases committee members from a packet and handles their staked balance
 
 *Called by PegManager to release committee members after packet completion*
 
+*Only callable by PegManager contract*
+
 *Members with reApply=true will be re-added as candidates, others get their balance as available*
 
 
@@ -627,20 +683,4 @@ function releaseCommittee(uint64 _streamId, uint64 _packetNumber) external onlyP
 |`_streamId`|`uint64`|The stream ID for the committee|
 |`_packetNumber`|`uint64`|The packet number where the committee was active|
 
-
-### onlyPegManager
-
-Modifier to restrict access to the PegManager contract
-
-
-```solidity
-modifier onlyPegManager();
-```
-
-### _onlyPegManager
-
-
-```solidity
-function _onlyPegManager(address _account) internal view;
-```
 

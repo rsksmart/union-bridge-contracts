@@ -1,5 +1,5 @@
 # BtcTxEncoder
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/5935b1ba9b5693ff58c693caac2763a4b158c822/src/libraries/BtcTxEncoder.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b656e8c68a46e57c80c7029f9deb9e4b65b60046/src/libraries/BtcTxEncoder.sol)
 
 **Author:**
 Fairgate

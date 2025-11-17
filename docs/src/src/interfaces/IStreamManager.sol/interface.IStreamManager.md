@@ -1,5 +1,5 @@
 # IStreamManager
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/5935b1ba9b5693ff58c693caac2763a4b158c822/src/interfaces/IStreamManager.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b656e8c68a46e57c80c7029f9deb9e4b65b60046/src/interfaces/IStreamManager.sol)
 
 **Inherits:**
 [IAccessControl](/src/interfaces/IAccessControl.sol/interface.IAccessControl.md)
@@ -479,6 +479,63 @@ function setDisablementPaymentsPerChallenge(uint256 _cost) external;
 |`_cost`|`uint256`|The new disablement payments per challenge in wei|
 
 
+### setStreamPosition
+
+Stores the stream position for a given accept peg-in transaction ID
+
+*Only callable by the PegManager contract*
+
+
+```solidity
+function setStreamPosition(bytes32 _acceptPeginTxid, StreamPosition memory _position) external;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction ID|
+|`_position`|`StreamPosition`|The stream position to store|
+
+
+### getStreamPosition
+
+Retrieves the stream position for a given accept peg-in transaction ID
+
+
+```solidity
+function getStreamPosition(bytes32 _acceptPeginTxid) external view returns (StreamPosition memory);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction ID|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`StreamPosition`|The stream position associated with the transaction ID|
+
+
+### setPegStatus
+
+Updates only the peg status of an existing stream position
+
+*Only callable by the PegManager contract*
+
+
+```solidity
+function setPegStatus(bytes32 _acceptPeginTxid, PegStatus _newStatus) external;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction ID|
+|`_newStatus`|`PegStatus`|The new peg status to set|
+
+
 ## Events
 ### StreamCreated
 Event emitted when a new stream is created
@@ -589,6 +646,36 @@ event DisablementPaymentsPerChallengeUpdated(uint256 newCost);
 |Name|Type|Description|
 |----|----|-----------|
 |`newCost`|`uint256`|The new disablement payments per challenge in wei|
+
+### StreamPositionSet
+Event emitted when a stream position is set
+
+
+```solidity
+event StreamPositionSet(bytes32 indexed acceptPeginTxid, StreamPosition position);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`acceptPeginTxid`|`bytes32`|The accept peg-in transaction ID|
+|`position`|`StreamPosition`|The stream position that was set|
+
+### PegStatusUpdated
+Event emitted when a peg status is updated
+
+
+```solidity
+event PegStatusUpdated(bytes32 indexed acceptPeginTxid, PegStatus newStatus);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`acceptPeginTxid`|`bytes32`|The accept peg-in transaction ID|
+|`newStatus`|`PegStatus`|The new peg status|
 
 ### CommitteeRegistryUpdated
 Event emitted when the committee registry contract address  is updated

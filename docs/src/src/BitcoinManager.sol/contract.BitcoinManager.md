@@ -1,5 +1,5 @@
 # BitcoinManager
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/5935b1ba9b5693ff58c693caac2763a4b158c822/src/BitcoinManager.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b656e8c68a46e57c80c7029f9deb9e4b65b60046/src/BitcoinManager.sol)
 
 **Inherits:**
 [IBitcoinManager](/src/interfaces/IBitcoinManager.sol/interface.IBitcoinManager.md), Initializable, [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md)
@@ -23,6 +23,15 @@ BtcNetwork public network;
 ```
 
 
+### peginManager
+Peg manager contract for peg-in/peg-out coordination
+
+
+```solidity
+IPeginManager peginManager;
+```
+
+
 ## Functions
 ### initialize
 
@@ -42,6 +51,23 @@ function initialize(address _initialOwner, BtcNetwork _network) public initializ
 |----|----|-----------|
 |`_initialOwner`|`address`|The address that will be set as the initial owner|
 |`_network`|`BtcNetwork`|The Bitcoin network to operate on|
+
+
+### setPeginManager
+
+Sets the Peg Manager contract address
+
+*Only callable by the contract owner*
+
+
+```solidity
+function setPeginManager(IPeginManager _peginManager) external onlyOwner;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_peginManager`|`IPeginManager`|The address of the Pegin Manager contract|
 
 
 ### getBtcTxid
@@ -184,7 +210,7 @@ function validateRequestPeginP2TROutput(
     bytes32 _btcReimbursementPubKey,
     bytes memory _committeePubKey,
     BtcTxOut calldata _p2trOut
-) external pure;
+) external view onlyPeginManager;
 ```
 **Parameters**
 
@@ -208,7 +234,7 @@ function getPeginRequestP2TRScriptPub(
     uint64 _value,
     bytes32 _btcReimbursementPubKey,
     bytes memory _committeePubKey
-) public pure returns (bytes memory);
+) internal pure returns (bytes memory);
 ```
 **Parameters**
 
@@ -267,7 +293,7 @@ function getAcceptPeginSignatureHash(
     bytes32 _userXOnlyPubKey,
     bytes32 _registerPeginTx,
     PrevoutData memory _prevoutData
-) external pure returns (BitcoinSignatureData memory);
+) external view onlyPeginManager returns (BitcoinSignatureData memory);
 ```
 **Parameters**
 
@@ -294,32 +320,13 @@ function getAcceptPeginSignatureHash(
 function getAcceptPeginTweakedPublicKey(bytes memory _committeePubKey) internal pure returns (bytes32);
 ```
 
-### validateAcceptPeginP2TROutput
-
-Validates output against a Taproot script with both key spend and script spend paths
-
-
-```solidity
-function validateAcceptPeginP2TROutput(bytes memory _committeePubKey, uint64 _inputAmount, BtcTxOut calldata _p2trOut)
-    external
-    pure;
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_committeePubKey`|`bytes`|The committee's public key (x-only)|
-|`_inputAmount`|`uint64`|The input amount in satoshis|
-|`_p2trOut`|`BtcTxOut`|The P2TR output to validate|
-
-
 ### getAcceptPeginP2TRScriptPub
 
 Generates the Accept Pegin Taproot output script pub key with both key spend and script spend paths
 
 
 ```solidity
-function getAcceptPeginP2TRScriptPub(bytes memory _committeePubKey) public pure returns (bytes memory);
+function getAcceptPeginP2TRScriptPub(bytes memory _committeePubKey) internal pure returns (bytes memory);
 ```
 **Parameters**
 
@@ -411,5 +418,21 @@ function taprootSignatureHash(uint8 _hashType, PrevoutData[] memory _prevoutData
     internal
     pure
     returns (bytes32, bytes memory);
+```
+
+### onlyPeginManager
+
+Modifier to restrict access to the PeginManager contract
+
+
+```solidity
+modifier onlyPeginManager();
+```
+
+### _onlyPeginManager
+
+
+```solidity
+function _onlyPeginManager(address _account) internal view;
 ```
 

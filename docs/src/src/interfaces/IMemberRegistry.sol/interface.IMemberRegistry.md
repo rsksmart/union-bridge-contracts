@@ -1,5 +1,8 @@
 # IMemberRegistry
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/5935b1ba9b5693ff58c693caac2763a4b158c822/src/interfaces/IMemberRegistry.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b656e8c68a46e57c80c7029f9deb9e4b65b60046/src/interfaces/IMemberRegistry.sol)
+
+**Inherits:**
+[IPausable](/src/interfaces/IPausable.sol/interface.IPausable.md)
 
 Interface for managing committee member registration, applications, and balance tracking
 
@@ -751,20 +754,6 @@ error TooManyCandidatesForStream(StreamDenomination denomination, Role role);
 |`denomination`|`StreamDenomination`|The stream denomination|
 |`role`|`Role`|The role for which there are too many candidates|
 
-### UnauthorizedAccount
-Thrown when an account is not authorized
-
-
-```solidity
-error UnauthorizedAccount(address account);
-```
-
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`account`|`address`|The unauthorized account|
-
 ### InvalidZeroAddress
 Thrown when an address is zero
 
@@ -871,4 +860,18 @@ error _inconsistentPreStakedBalanceAndRole(
 |`denomination`|`StreamDenomination`|The stream denomination|
 |`preStakedBalance`|`uint256`|The member's pre-staked balance|
 |`requestedRole`|`Role`|The role requested by the member|
+
+### UnauthorizedAccount
+Thrown when an account is not authorized to perform an operation
+
+
+```solidity
+error UnauthorizedAccount(address account);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`account`|`address`|The unauthorized account address|
 

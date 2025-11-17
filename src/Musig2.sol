@@ -4,7 +4,6 @@ pragma solidity ^0.8.20;
 import {BtcTaproot} from "./libraries/BtcTaproot.sol";
 import {Secp256k1} from "./libraries/Secp256k1.sol";
 import {IMusig2, Point, Nonce} from "./interfaces/IMusig2.sol";
-import {BytesHelper} from "./libraries/BytesHelper.sol";
 import {Constants} from "./libraries/Constants.sol";
 
 /// @title Musig2 Contract
