@@ -1,5 +1,5 @@
 # IAccessControl
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/5935b1ba9b5693ff58c693caac2763a4b158c822/src/interfaces/IAccessControl.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b656e8c68a46e57c80c7029f9deb9e4b65b60046/src/interfaces/IAccessControl.sol)
 
 Interface for access control in the union bridge
 
@@ -9,12 +9,20 @@ Interface for access control in the union bridge
 
 
 ## Errors
-### PegManagerAddressZero
-Thrown when the Peg Manager address is set to zero
+### PeginManagerAddressZero
+Thrown when the Pegin Manager address is set to zero
 
 
 ```solidity
-error PegManagerAddressZero();
+error PeginManagerAddressZero();
+```
+
+### PegoutManagerAddressZero
+Thrown when the Pegout Manager address is set to zero
+
+
+```solidity
+error PegoutManagerAddressZero();
 ```
 
 ### UnauthorizedAccount

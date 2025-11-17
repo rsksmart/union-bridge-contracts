@@ -1,5 +1,5 @@
 # StreamManager
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/5935b1ba9b5693ff58c693caac2763a4b158c822/src/StreamManager.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b656e8c68a46e57c80c7029f9deb9e4b65b60046/src/StreamManager.sol)
 
 **Inherits:**
 [IStreamManager](/src/interfaces/IStreamManager.sol/interface.IStreamManager.md), [AccessControl](/src/AccessControl.sol/contract.AccessControl.md)
@@ -34,6 +34,17 @@ mapping(uint64 streamId => Packet[]) public packets;
 
 ```solidity
 mapping(uint64 streamId => mapping(uint64 packerNumber => Slot[])) internal slots;
+```
+
+
+### streamPositions
+Mapping from accept peg-in transaction ID to stream position
+
+*Tracks the position and status of each peg operation*
+
+
+```solidity
+mapping(bytes32 acceptPeginTxid => StreamPosition) internal streamPositions;
 ```
 
 
@@ -80,7 +91,8 @@ Initializes the streams with their denominations and parameters
 ```solidity
 function initialize(
     address _initialOwner,
-    IPegManager _pegManager,
+    address _peginManager,
+    address _pegoutManager,
     ICommitteeRegistry _committeeRegistry,
     uint64[] memory _denominations,
     StreamManagerSettings memory _settings
@@ -91,7 +103,8 @@ function initialize(
 |Name|Type|Description|
 |----|----|-----------|
 |`_initialOwner`|`address`|The address that will be set as the initial owner|
-|`_pegManager`|`IPegManager`|The PegManager contract address|
+|`_peginManager`|`address`|The address of the PeginManager contract|
+|`_pegoutManager`|`address`|The address of the PegoutManager contract|
 |`_committeeRegistry`|`ICommitteeRegistry`|The CommitteeRegistry contract address|
 |`_denominations`|`uint64[]`|Array of Bitcoin denominations in satoshis for each stream|
 |`_settings`|`StreamManagerSettings`|The settings for the StreamManager including confirmation counts and security bond percentages|
@@ -551,6 +564,63 @@ function setMinimumSecurityDeposit(uint256 _cost) external onlyOwner;
 ```solidity
 function setDisablementPaymentsPerChallenge(uint256 _cost) external onlyOwner;
 ```
+
+### setStreamPosition
+
+Stores the stream position for a given accept peg-in transaction ID
+
+*Only callable by the PegManager contract*
+
+
+```solidity
+function setStreamPosition(bytes32 _acceptPeginTxid, StreamPosition memory _position) external onlyPegManager;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction ID|
+|`_position`|`StreamPosition`|The stream position to store|
+
+
+### getStreamPosition
+
+Retrieves the stream position for a given accept peg-in transaction ID
+
+
+```solidity
+function getStreamPosition(bytes32 _acceptPeginTxid) external view returns (StreamPosition memory);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction ID|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`StreamPosition`|The stream position associated with the transaction ID|
+
+
+### setPegStatus
+
+Updates only the peg status of an existing stream position
+
+*Only callable by the PegManager contract*
+
+
+```solidity
+function setPegStatus(bytes32 _acceptPeginTxid, PegStatus _newStatus) external onlyPegManager;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction ID|
+|`_newStatus`|`PegStatus`|The new peg status to set|
+
 
 ### streamExists
 

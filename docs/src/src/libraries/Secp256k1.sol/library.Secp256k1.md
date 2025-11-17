@@ -1,5 +1,5 @@
 # Secp256k1
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/5935b1ba9b5693ff58c693caac2763a4b158c822/src/libraries/Secp256k1.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b656e8c68a46e57c80c7029f9deb9e4b65b60046/src/libraries/Secp256k1.sol)
 
 **Author:**
 Witnet Foundation
@@ -64,6 +64,17 @@ uint256 public constant BB = 7;
 
 ```solidity
 uint256 public constant PP = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F;
+```
+
+
+### N
+*Order of the secp256k1 curve*
+
+*When doing elliptic curve math (signatures, scalar multiplication, etc.), all private keys and scalars are reduced mod n, not mod p.*
+
+
+```solidity
+uint256 public constant N = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;
 ```
 
 

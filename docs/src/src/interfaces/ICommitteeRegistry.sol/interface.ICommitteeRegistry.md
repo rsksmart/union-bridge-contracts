@@ -1,5 +1,8 @@
 # ICommitteeRegistry
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/5935b1ba9b5693ff58c693caac2763a4b158c822/src/interfaces/ICommitteeRegistry.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b656e8c68a46e57c80c7029f9deb9e4b65b60046/src/interfaces/ICommitteeRegistry.sol)
+
+**Inherits:**
+[IPausable](/src/interfaces/IPausable.sol/interface.IPausable.md)
 
 Interface for managing committee registration and formation in the union bridge
 
@@ -277,21 +280,38 @@ function getMemberCommunicationData(uint128 _committeeId, address _memberAddress
 |`communicationData`|`CommunicationData[]`|encrypted communication data (IP and Port) from the committee members|
 
 
-### setPegManager
+### setPeginManager
 
-Sets the Peg Manager contract address
+Sets the Pegin Manager contract address
 
 *Only callable by the contract owner*
 
 
 ```solidity
-function setPegManager(IPegManager _pegManager) external;
+function setPeginManager(IPeginManager _peginManager) external;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_pegManager`|`IPegManager`|The address of the Peg Manager contract|
+|`_peginManager`|`IPeginManager`|The address of the Pegin Manager contract|
+
+
+### setPegoutManager
+
+Sets the Pegout Manager contract address
+
+*Only callable by the contract owner*
+
+
+```solidity
+function setPegoutManager(IPegoutManager _pegoutManager) external;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_pegoutManager`|`IPegoutManager`|The address of the Pegout Manager contract|
 
 
 ### setStreamManager
@@ -381,13 +401,13 @@ function setCommitteeMemberCount(uint256 _committeeMemberCount) external;
 
 ### getOperatorTakeAddress
 
-Gets the operator take address for a specific committee
+Gets the operator take address and public key for a specific committee
 
 
 ```solidity
 function getOperatorTakeAddress(uint128 committeeId, SignatureData[] calldata signatureData)
     external
-    returns (address);
+    returns (address operatorAddress, bytes32 takePubKey);
 ```
 **Parameters**
 
@@ -400,7 +420,8 @@ function getOperatorTakeAddress(uint128 committeeId, SignatureData[] calldata si
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`address`|The operator take address|
+|`operatorAddress`|`address`|The operator take address|
+|`takePubKey`|`bytes32`|The operator's take public key|
 
 
 ### releaseCommittee
@@ -411,6 +432,81 @@ Release the committee members from a packet (return or reapply staked money)
 ```solidity
 function releaseCommittee(uint64 _streamId, uint64 _packetNumber) external;
 ```
+
+### restartPendingCommittee
+
+Restarts a pending committee if it has expired
+
+
+```solidity
+function restartPendingCommittee(uint64 _streamId) external;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_streamId`|`uint64`|The stream ID to restart the pending committee for|
+
+
+### committeeMemberCount
+
+Gets the committee member count
+
+
+```solidity
+function committeeMemberCount() external view returns (uint256);
+```
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`uint256`|The committee member count|
+
+
+### minCommitteeWatchtowers
+
+Gets the minimum watchtowers required for a committee
+
+
+```solidity
+function minCommitteeWatchtowers() external view returns (uint256);
+```
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`uint256`|The minimum watchtowers required for a committee|
+
+
+### minCommitteeOperators
+
+Gets the minimum operators required for a committee
+
+
+```solidity
+function minCommitteeOperators() external view returns (uint256);
+```
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`uint256`|The minimum operators required for a committee|
+
+
+### pendingCommitteeTimeout
+
+Gets the pending committee timeout
+
+
+```solidity
+function pendingCommitteeTimeout() external view returns (uint256);
+```
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`uint256`|The pending committee timeout|
+
 
 ## Events
 ### NewCommittee
@@ -471,19 +567,33 @@ event StreamManagerUpdated(address streamManager);
 |----|----|-----------|
 |`streamManager`|`address`|The new stream manager address|
 
-### PegManagerUpdated
-Event emitted when peg manager address is updated
+### PeginManagerUpdated
+Event emitted when pegin manager address is updated
 
 
 ```solidity
-event PegManagerUpdated(address pegManager);
+event PeginManagerUpdated(address peginManager);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`pegManager`|`address`|The new peg manager address|
+|`peginManager`|`address`|The new pegin manager address|
+
+### PegoutManagerUpdated
+Event emitted when pegout manager address is updated
+
+
+```solidity
+event PegoutManagerUpdated(address pegoutManager);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`pegoutManager`|`address`|The new pegout manager address|
 
 ### CommitteeMinWatchtowersUpdated
 Event emitted when minimum watchtowers requirement is updated
@@ -718,20 +828,6 @@ error CommitteeNotFound(uint128 committeeId);
 |----|----|-----------|
 |`committeeId`|`uint128`|The committee ID|
 
-### UnauthorizedAccount
-Thrown when an account is not authorized
-
-
-```solidity
-error UnauthorizedAccount(address account);
-```
-
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`account`|`address`|The unauthorized account|
-
 ### InvalidZeroAddress
 Thrown when an address is zero
 
@@ -746,6 +842,14 @@ Thrown when a value is zero
 
 ```solidity
 error InvalidZeroValue();
+```
+
+### MemberRegistryAddressZero
+Thrown when the member registry address is zero
+
+
+```solidity
+error MemberRegistryAddressZero();
 ```
 
 ### InvalidMinMembers
@@ -887,4 +991,21 @@ error MemberAlreadyDepositedCommunicationData(
 |`committeeId`|`uint128`|The ID of the committee|
 |`memberAddress`|`address`|The address of the member attempting a second deposit|
 |`communicationDataLenght`|`uint256`|The number of communication data entries already stored|
+
+### PendingCommitteeExpired
+Error when attempting to deposit data in a committee that has already expired
+
+
+```solidity
+error PendingCommitteeExpired(uint128 committeeId, uint256 currentTime, uint256 createdAt, uint256 expireAt);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`committeeId`|`uint128`|The ID of the committee|
+|`currentTime`|`uint256`|Timestamp actual|
+|`createdAt`|`uint256`|Timestamp committee creation|
+|`expireAt`|`uint256`|Timestamp committee expiration|
 

@@ -1,8 +1,8 @@
 # MemberRegistry
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/5935b1ba9b5693ff58c693caac2763a4b158c822/src/MemberRegistry.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b656e8c68a46e57c80c7029f9deb9e4b65b60046/src/MemberRegistry.sol)
 
 **Inherits:**
-[IMemberRegistry](/src/interfaces/IMemberRegistry.sol/interface.IMemberRegistry.md), [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md)
+[IMemberRegistry](/src/interfaces/IMemberRegistry.sol/interface.IMemberRegistry.md), [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md), ReentrancyGuardUpgradeable, [Pausable](/src/Pausable.sol/contract.Pausable.md)
 
 Manages member registration, applications, and balance tracking for the union bridge system
 
@@ -91,6 +91,8 @@ Internal function to handle member application to stream
 
 *Called by CommitteeRegistry to handle member registration and candidacy*
 
+*Only callable by CommitteeRegistry contract*
+
 
 ```solidity
 function applyToStream(
@@ -138,6 +140,8 @@ Internal function to handle member unsubscription from stream
 
 *Called by CommitteeRegistry after pending committee checks*
 
+*Only callable by CommitteeRegistry contract*
+
 
 ```solidity
 function unsubscribeFromStream(address _memberAddress, StreamDenomination _denomination)
@@ -158,9 +162,11 @@ Withdraws available balance to the caller's address
 
 *Can only withdraw balance that is not pre-staked or staked*
 
+*Only callable when contract is unpaused*
+
 
 ```solidity
-function withdrawAvailableBalance() external;
+function withdrawAvailableBalance() external nonReentrant whenNotPaused;
 ```
 
 ### releaseCommitteeMembers
@@ -168,6 +174,8 @@ function withdrawAvailableBalance() external;
 Internal function to handle committee member release operations
 
 *Called by CommitteeRegistry after committee completion*
+
+*Only callable by CommitteeRegistry contract*
 
 
 ```solidity
@@ -506,9 +514,11 @@ Sets the reapply flag for a member in a specific stream
 
 *Controls whether the member will automatically reapply after committee release*
 
+*Only callable when contract is unpaused*
+
 
 ```solidity
-function setReApplyForStream(StreamDenomination _denomination, bool _reApply) external override;
+function setReApplyForStream(StreamDenomination _denomination, bool _reApply) external override whenNotPaused;
 ```
 **Parameters**
 
@@ -544,6 +554,8 @@ function getReApplyForStream(StreamDenomination _denomination) external view ove
 Removes candidates from pool and updates their balances
 
 *Called by CommitteeRegistry during committee formation*
+
+*Only callable by Committee Registry contract*
 
 
 ```solidity
@@ -588,6 +600,8 @@ Randomly selects members to form a new committee for a given stream
 *reverts with notEnoughWatchtowers if there are fewer than minCommitteeWatchtowers watchtower candidates*
 
 *reverts with notEnoughOperators if there are fewer than minCommitteeOperators operator candidates*
+
+*Only callable by CommitteeRegistry contract*
 
 
 ```solidity
@@ -665,5 +679,22 @@ function setStreamManager(IStreamManager _streamManager) external override onlyO
 |Name|Type|Description|
 |----|----|-----------|
 |`_streamManager`|`IStreamManager`|The address of the Stream Manager contract|
+
+
+### setPauser
+
+Sets a new pauser address
+
+*Only callable by the contract owner*
+
+
+```solidity
+function setPauser(address _newPauser) public override onlyOwner;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_newPauser`|`address`|The new pauser address|
 
 
