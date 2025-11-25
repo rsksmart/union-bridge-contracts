@@ -1,0 +1,20 @@
+# virtual environment
+venv/
+# foundry
+dry-run/
+31337/
+cache/
+out/
+broadcast/**/run-latest.json
+# macOS
+.DS_Store
+#rust
+target/
+# vscode
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+# node (installed to supress openzeppelin-foundry-upgrades warnings)
+package-lock.json
+package.json
+node_modules/
