@@ -633,8 +633,12 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
 
         // Select random operators
         for (uint256 length = operatorsLength; length > operatorsLength - operatorsCommitteeAmount; length--) {
+            // Using blockhash(block.number - 1) provides better security than a constant or timestamp.
+            // The previous block hash is unpredictable until mined, giving attackers less time to
+            // precompute outcomes (they need information from the last block, which is only revealed
+            // minutes before under normal conditions).
             // slither-disable-next-line weak-prng
-            uint256 randomPos = uint256(keccak256(abi.encode(block.timestamp, length))) % length;
+            uint256 randomPos = uint256(keccak256(abi.encode(blockhash(block.number - 1), length))) % length;
 
             selectedMembers[committeeMembersCounter++] =
                 CommitteeMember({memberAddress: operators[randomPos], role: Role.OPERATOR});
@@ -645,8 +649,12 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
 
         // Select random watchtowers
         for (uint256 length = watchtowersLength; length > watchtowersLength - watchtowerCommitteeAmount; length--) {
+            // Using blockhash(block.number - 1) provides better security than a constant or timestamp.
+            // The previous block hash is unpredictable until mined, giving attackers less time to
+            // precompute outcomes (they need information from the last block, which is only revealed
+            // minutes before under normal conditions).
             // slither-disable-next-line weak-prng
-            uint256 randomPos = uint256(keccak256(abi.encode(block.timestamp, length))) % length;
+            uint256 randomPos = uint256(keccak256(abi.encode(blockhash(block.number - 1), length))) % length;
 
             selectedMembers[committeeMembersCounter++] =
                 CommitteeMember({memberAddress: watchtowers[randomPos], role: Role.WATCHTOWER});
