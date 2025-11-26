@@ -821,14 +821,14 @@ contract TestCommitteeRegistry is Test, HelperContract {
         uint256 numOperators = registry.committeeMemberCount();
         setup_registerNewMembers(numWachtowers, numOperators, denomination);
 
-        // First selection with timestamp 1
-        vm.warp(1);
+        // First selection with block 1001
+        vm.roll(1001);
         (CommitteeMember[] memory selectedMembers1, PendingCommitteeStatus status1) = registry.selectCommittee(streamId);
         assertTrue(status1 == PendingCommitteeStatus.SUCCESS, "Committee selection should be successful");
         assertUniqueMembers(selectedMembers1);
 
-        // Second selection with different timestamp
-        vm.warp(1000);
+        // Second selection with different block number
+        vm.roll(2000);
         (CommitteeMember[] memory selectedMembers2, PendingCommitteeStatus status2) = registry.selectCommittee(streamId);
         assertTrue(status2 == PendingCommitteeStatus.SUCCESS, "Committee selection should be successful");
         assertUniqueMembers(selectedMembers2);
