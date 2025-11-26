@@ -187,11 +187,8 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
             streamInfo
         );
 
-        if (streamInfo.slotId == Constants.SLOTS_PER_PACKET - 1) {
-            // if the last slot of the packet was paid, we can release the members of the committee
-            emit PacketClosed(streamInfo.streamId, streamInfo.packetNumber);
-            committeeRegistry.releaseCommittee(streamInfo.streamId, streamInfo.packetNumber);
-        }
+        // If it's the last slot in the package, close and release the committee
+        _closePacketIfLastSlot(streamInfo);
 
         // Update slot status
         streamManager.completeSlot(
@@ -316,6 +313,9 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
             revert InvalidPegStatus(streamInfo.pegStatus);
         }
 
+        // If it's the last slot in the package, close and release the committee
+        _closePacketIfLastSlot(streamInfo);
+
         // Validate that the vout is correct
         if (vout != Constants.VOUT_INDEX_TAPTREE) {
             revert IncorrectVout(vout, Constants.VOUT_INDEX_TAPTREE);
@@ -380,5 +380,13 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         }
         operatorTakeTimeout = _timeout;
         emit OperatorTakeTimeoutUpdated(operatorTakeTimeout);
+    }
+
+    function _closePacketIfLastSlot(StreamPosition memory streamInfo) internal {
+        // If it's the last slot in the package, close and release the committee
+        if (streamInfo.slotId == Constants.SLOTS_PER_PACKET - 1) {
+            emit PacketClosed(streamInfo.streamId, streamInfo.packetNumber);
+            committeeRegistry.releaseCommittee(streamInfo.streamId, streamInfo.packetNumber);
+        }
     }
 }
