@@ -18,8 +18,7 @@ interface StreamManager {
         bytes scriptPubKey;
         bytes32 acceptPeginTx;
         uint64 acceptPeginAmount;
-        bytes32 take0Tx;
-        bytes32 take1Tx;
+        bytes32 takeTx;
     }
     struct Stream {
         uint64 streamId;
@@ -589,15 +588,10 @@ interface StreamManager {
             "internalType": "uint64"
           },
           {
-            "name": "take0Tx",
+            "name": "takeTx",
             "type": "bytes32",
             "internalType": "bytes32"
           },
-          {
-            "name": "take1Tx",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          }
         ]
       }
     ],
@@ -881,15 +875,10 @@ interface StreamManager {
             "internalType": "uint64"
           },
           {
-            "name": "take0Tx",
+            "name": "takeTx",
             "type": "bytes32",
             "internalType": "bytes32"
           },
-          {
-            "name": "take1Tx",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          }
         ]
       },
       {
@@ -2778,7 +2767,7 @@ struct Packet { uint64 packetNumber; uint128 committeeId; bytes committeePubKey;
     #[derive(serde::Serialize, serde::Deserialize)]
     #[derive(Default, Debug, PartialEq, Eq, Hash)]
     /**```solidity
-struct Slot { uint64 slotId; SlotState state; bytes scriptPubKey; bytes32 acceptPeginTx; uint64 acceptPeginAmount; bytes32 take0Tx; bytes32 take1Tx; }
+struct Slot { uint64 slotId; SlotState state; bytes scriptPubKey; bytes32 acceptPeginTx; uint64 acceptPeginAmount; bytes32 takeTx; }
 ```*/
     #[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
@@ -2794,9 +2783,7 @@ struct Slot { uint64 slotId; SlotState state; bytes scriptPubKey; bytes32 accept
         #[allow(missing_docs)]
         pub acceptPeginAmount: u64,
         #[allow(missing_docs)]
-        pub take0Tx: alloy::sol_types::private::FixedBytes<32>,
-        #[allow(missing_docs)]
-        pub take1Tx: alloy::sol_types::private::FixedBytes<32>,
+        pub takeTx: alloy::sol_types::private::FixedBytes<32>,
     }
     #[allow(
         non_camel_case_types,
@@ -2847,8 +2834,7 @@ struct Slot { uint64 slotId; SlotState state; bytes scriptPubKey; bytes32 accept
                     value.scriptPubKey,
                     value.acceptPeginTx,
                     value.acceptPeginAmount,
-                    value.take0Tx,
-                    value.take1Tx,
+                    value.takeTx,
                 )
             }
         }
@@ -2862,8 +2848,7 @@ struct Slot { uint64 slotId; SlotState state; bytes scriptPubKey; bytes32 accept
                     scriptPubKey: tuple.2,
                     acceptPeginTx: tuple.3,
                     acceptPeginAmount: tuple.4,
-                    take0Tx: tuple.5,
-                    take1Tx: tuple.6,
+                    takeTx: tuple.5,
                 }
             }
         }
@@ -2891,10 +2876,7 @@ struct Slot { uint64 slotId; SlotState state; bytes scriptPubKey; bytes32 accept
                     > as alloy_sol_types::SolType>::tokenize(&self.acceptPeginAmount),
                     <alloy::sol_types::sol_data::FixedBytes<
                         32,
-                    > as alloy_sol_types::SolType>::tokenize(&self.take0Tx),
-                    <alloy::sol_types::sol_data::FixedBytes<
-                        32,
-                    > as alloy_sol_types::SolType>::tokenize(&self.take1Tx),
+                    > as alloy_sol_types::SolType>::tokenize(&self.takeTx),
                 )
             }
             #[inline]
@@ -2969,7 +2951,7 @@ struct Slot { uint64 slotId; SlotState state; bytes scriptPubKey; bytes32 accept
             #[inline]
             fn eip712_root_type() -> alloy_sol_types::private::Cow<'static, str> {
                 alloy_sol_types::private::Cow::Borrowed(
-                    "Slot(uint64 slotId,uint8 state,bytes scriptPubKey,bytes32 acceptPeginTx,uint64 acceptPeginAmount,bytes32 take0Tx,bytes32 take1Tx)",
+                    "Slot(uint64 slotId,uint8 state,bytes scriptPubKey,bytes32 acceptPeginTx,uint64 acceptPeginAmount,bytes32 takeTx)",
                 )
             }
             #[inline]
@@ -3009,11 +2991,7 @@ struct Slot { uint64 slotId; SlotState state; bytes scriptPubKey; bytes32 accept
                         .0,
                     <alloy::sol_types::sol_data::FixedBytes<
                         32,
-                    > as alloy_sol_types::SolType>::eip712_data_word(&self.take0Tx)
-                        .0,
-                    <alloy::sol_types::sol_data::FixedBytes<
-                        32,
-                    > as alloy_sol_types::SolType>::eip712_data_word(&self.take1Tx)
+                    > as alloy_sol_types::SolType>::eip712_data_word(&self.takeTx)
                         .0,
                 ]
                     .concat()
@@ -3048,12 +3026,7 @@ struct Slot { uint64 slotId; SlotState state; bytes scriptPubKey; bytes32 accept
                     + <alloy::sol_types::sol_data::FixedBytes<
                         32,
                     > as alloy_sol_types::EventTopic>::topic_preimage_length(
-                        &rust.take0Tx,
-                    )
-                    + <alloy::sol_types::sol_data::FixedBytes<
-                        32,
-                    > as alloy_sol_types::EventTopic>::topic_preimage_length(
-                        &rust.take1Tx,
+                        &rust.takeTx,
                     )
             }
             #[inline]
@@ -3093,13 +3066,7 @@ struct Slot { uint64 slotId; SlotState state; bytes scriptPubKey; bytes32 accept
                 <alloy::sol_types::sol_data::FixedBytes<
                     32,
                 > as alloy_sol_types::EventTopic>::encode_topic_preimage(
-                    &rust.take0Tx,
-                    out,
-                );
-                <alloy::sol_types::sol_data::FixedBytes<
-                    32,
-                > as alloy_sol_types::EventTopic>::encode_topic_preimage(
-                    &rust.take1Tx,
+                    &rust.takeTx,
                     out,
                 );
             }

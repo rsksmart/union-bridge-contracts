@@ -60,10 +60,7 @@ struct Slot {
     uint64 acceptPeginAmount;
     /// @notice Transaction ID of the peg-out transaction to the user account
     /// @dev Used for normal peg-out operations
-    bytes32 take0Tx;
-    /// @notice Transaction ID of the transaction to the operator account as the operator advanced funds to the user
-    /// @dev Used when the operator advances funds to the user because not all members of the committee signed the peg-out transaction
-    bytes32 take1Tx;
+    bytes32 takeTx;
 }
 
 /// @notice Represents a packet within a stream that contains multiple slots
