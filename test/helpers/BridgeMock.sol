@@ -296,7 +296,13 @@ contract BridgeMock is IBridge {
         return uint256(0);
     }
 
-    function getBtcBlockchainBestBlockHeader() external pure override returns (bytes memory) {
+    function getBtcBlockchainBestBlockHeader() external view override returns (bytes memory) {
+        // Check if there's a header set for the current RSK block number
+        // This allows tests to return different BTC headers for different RSK blocks
+        if (headers[block.number].length > 0) {
+            return headers[block.number];
+        }
+
         // Return a mock Bitcoin block hash for testing purposes
         // bytes corresponding to block 904463 hash 0000000000000000000049b460f18614380a01b8709d2c3a8ddf451d08d862b8
         // This simulates a Bitcoin best block header

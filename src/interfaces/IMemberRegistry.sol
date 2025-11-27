@@ -14,6 +14,7 @@ import {
     PendingCommitteeStatus
 } from "./ICommitteeRegistry.sol";
 import {IPausable} from "./IPausable.sol";
+import {IBridge} from "./IBridge.sol";
 
 /// @title IMemberRegistry
 /// @notice Interface for managing committee member registration, applications, and balance tracking
@@ -170,6 +171,11 @@ interface IMemberRegistry is IPausable {
     /// @param _streamManager The address of the Stream Manager contract
     function setStreamManager(IStreamManager _streamManager) external;
 
+    /// @notice Sets the Bridge contract address
+    /// @dev Only callable by the contract owner
+    /// @param _bridge The address of the Bridge contract
+    function setBridge(IBridge _bridge) external;
+
     // ===================== Events =====================
 
     /// @notice Event emitted when a new member is registered
@@ -238,6 +244,10 @@ interface IMemberRegistry is IPausable {
     /// @notice Event emitted when the committee registry address is updated
     /// @param newCommitteeRegistry The new committee registry address
     event CommitteeRegistryUpdated(address indexed newCommitteeRegistry);
+
+    /// @notice Event emitted when the bridge address is updated
+    /// @param newBridge The new bridge address
+    event BridgeUpdated(address indexed newBridge);
 
     // ===================== Errors =====================
 

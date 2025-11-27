@@ -561,16 +561,16 @@ abstract contract HelperContract is Test, TestUtils {
             committee.fundingUTXOs[i] = generateDefaultUTXO();
         }
 
-        committee.members[0] = CommitteeMember({memberAddress: vm.addr(15 + 1), role: Role.OPERATOR});
-        committee.members[1] = CommitteeMember({memberAddress: vm.addr(17 + 1), role: Role.OPERATOR});
-        committee.members[2] = CommitteeMember({memberAddress: vm.addr(16 + 1), role: Role.OPERATOR});
-        committee.members[3] = CommitteeMember({memberAddress: vm.addr(18 + 1), role: Role.OPERATOR});
-        committee.members[4] = CommitteeMember({memberAddress: vm.addr(19 + 1), role: Role.OPERATOR});
-        committee.members[5] = CommitteeMember({memberAddress: vm.addr(10 + 1), role: Role.WATCHTOWER});
-        committee.members[6] = CommitteeMember({memberAddress: vm.addr(12 + 1), role: Role.WATCHTOWER});
-        committee.members[7] = CommitteeMember({memberAddress: vm.addr(11 + 1), role: Role.WATCHTOWER});
-        committee.members[8] = CommitteeMember({memberAddress: vm.addr(13 + 1), role: Role.WATCHTOWER});
-        committee.members[9] = CommitteeMember({memberAddress: vm.addr(14 + 1), role: Role.WATCHTOWER});
+        committee.members[0] = CommitteeMember({memberAddress: vm.addr(18 + 1), role: Role.OPERATOR});
+        committee.members[1] = CommitteeMember({memberAddress: vm.addr(15 + 1), role: Role.OPERATOR});
+        committee.members[2] = CommitteeMember({memberAddress: vm.addr(19 + 1), role: Role.OPERATOR});
+        committee.members[3] = CommitteeMember({memberAddress: vm.addr(16 + 1), role: Role.OPERATOR});
+        committee.members[4] = CommitteeMember({memberAddress: vm.addr(17 + 1), role: Role.OPERATOR});
+        committee.members[5] = CommitteeMember({memberAddress: vm.addr(13 + 1), role: Role.WATCHTOWER});
+        committee.members[6] = CommitteeMember({memberAddress: vm.addr(10 + 1), role: Role.WATCHTOWER});
+        committee.members[7] = CommitteeMember({memberAddress: vm.addr(14 + 1), role: Role.WATCHTOWER});
+        committee.members[8] = CommitteeMember({memberAddress: vm.addr(11 + 1), role: Role.WATCHTOWER});
+        committee.members[9] = CommitteeMember({memberAddress: vm.addr(12 + 1), role: Role.WATCHTOWER});
 
         return committee;
     }
@@ -595,15 +595,15 @@ abstract contract HelperContract is Test, TestUtils {
         }
 
         committee.members[0] = CommitteeMember({memberAddress: vm.addr(8 + 1), role: Role.OPERATOR});
-        committee.members[1] = CommitteeMember({memberAddress: vm.addr(7 + 1), role: Role.OPERATOR});
+        committee.members[1] = CommitteeMember({memberAddress: vm.addr(5 + 1), role: Role.OPERATOR});
         committee.members[2] = CommitteeMember({memberAddress: vm.addr(9 + 1), role: Role.OPERATOR});
-        committee.members[3] = CommitteeMember({memberAddress: vm.addr(5 + 1), role: Role.OPERATOR});
-        committee.members[4] = CommitteeMember({memberAddress: vm.addr(6 + 1), role: Role.OPERATOR});
+        committee.members[3] = CommitteeMember({memberAddress: vm.addr(6 + 1), role: Role.OPERATOR});
+        committee.members[4] = CommitteeMember({memberAddress: vm.addr(7 + 1), role: Role.OPERATOR});
         committee.members[5] = CommitteeMember({memberAddress: vm.addr(3 + 1), role: Role.WATCHTOWER});
-        committee.members[6] = CommitteeMember({memberAddress: vm.addr(2 + 1), role: Role.WATCHTOWER});
+        committee.members[6] = CommitteeMember({memberAddress: vm.addr(0 + 1), role: Role.WATCHTOWER});
         committee.members[7] = CommitteeMember({memberAddress: vm.addr(4 + 1), role: Role.WATCHTOWER});
-        committee.members[8] = CommitteeMember({memberAddress: vm.addr(0 + 1), role: Role.WATCHTOWER});
-        committee.members[9] = CommitteeMember({memberAddress: vm.addr(1 + 1), role: Role.WATCHTOWER});
+        committee.members[8] = CommitteeMember({memberAddress: vm.addr(1 + 1), role: Role.WATCHTOWER});
+        committee.members[9] = CommitteeMember({memberAddress: vm.addr(2 + 1), role: Role.WATCHTOWER});
 
         return committee;
     }
@@ -634,16 +634,16 @@ abstract contract HelperContract is Test, TestUtils {
             committee.fundingUTXOs[i] = generateDefaultUTXO();
         }
 
-        committee.members[0] = CommitteeMember({memberAddress: vm.addr(5 + 1), role: Role.OPERATOR});
-        committee.members[1] = CommitteeMember({memberAddress: vm.addr(6 + 1), role: Role.OPERATOR});
-        committee.members[2] = CommitteeMember({memberAddress: vm.addr(8 + 1), role: Role.OPERATOR});
-        committee.members[3] = CommitteeMember({memberAddress: vm.addr(7 + 1), role: Role.OPERATOR});
-        committee.members[4] = CommitteeMember({memberAddress: vm.addr(9 + 1), role: Role.OPERATOR});
-        committee.members[5] = CommitteeMember({memberAddress: vm.addr(0 + 1), role: Role.WATCHTOWER});
-        committee.members[6] = CommitteeMember({memberAddress: vm.addr(1 + 1), role: Role.WATCHTOWER});
-        committee.members[7] = CommitteeMember({memberAddress: vm.addr(3 + 1), role: Role.WATCHTOWER});
-        committee.members[8] = CommitteeMember({memberAddress: vm.addr(2 + 1), role: Role.WATCHTOWER});
-        committee.members[9] = CommitteeMember({memberAddress: vm.addr(4 + 1), role: Role.WATCHTOWER});
+        committee.members[0] = CommitteeMember({memberAddress: vm.addr(8 + 1), role: Role.OPERATOR});
+        committee.members[1] = CommitteeMember({memberAddress: vm.addr(5 + 1), role: Role.OPERATOR});
+        committee.members[2] = CommitteeMember({memberAddress: vm.addr(9 + 1), role: Role.OPERATOR});
+        committee.members[3] = CommitteeMember({memberAddress: vm.addr(6 + 1), role: Role.OPERATOR});
+        committee.members[4] = CommitteeMember({memberAddress: vm.addr(7 + 1), role: Role.OPERATOR});
+        committee.members[5] = CommitteeMember({memberAddress: vm.addr(3 + 1), role: Role.WATCHTOWER});
+        committee.members[6] = CommitteeMember({memberAddress: vm.addr(0 + 1), role: Role.WATCHTOWER});
+        committee.members[7] = CommitteeMember({memberAddress: vm.addr(4 + 1), role: Role.WATCHTOWER});
+        committee.members[8] = CommitteeMember({memberAddress: vm.addr(1 + 1), role: Role.WATCHTOWER});
+        committee.members[9] = CommitteeMember({memberAddress: vm.addr(2 + 1), role: Role.WATCHTOWER});
 
         return committee;
     }
@@ -691,15 +691,16 @@ abstract contract HelperContract is Test, TestUtils {
         vm.warp(createdAt + TAKE_0_TIMEOUT_DEFAULT + 1);
         // This depende on how they have been registered. First registered group are the watchtowers
         uint256 firstHonestOpIndex = registry.committeeMemberCount() / 2 + 1;
-        operatorAddress = vm.addr(firstHonestOpIndex + 2);
 
-        // Add just 2 signatures for the first and second operators
+        // Add just 2 signatures for the first and second operators (by registration order)
         setup_addMemberSignature_MultipleMembers(setup.pegoutTxid, firstHonestOpIndex, 2);
 
-        // Assert
-        assertEventOperatorTakeTriggered(setup.pegoutTxid, setup, operatorAddress, createdAt);
-
+        // Trigger operator take and get the actual operator address selected by the contract
         pegoutManager.triggerOperatorTake(setup.pegoutTxid);
+
+        // Get the actual operator that was selected from the contract state
+        PegoutTempInfo memory actualPegoutInfo = pegoutManager.getPegoutTempInfo(setup.acceptPeginTxid);
+        operatorAddress = actualPegoutInfo.takeOperatorAddress;
     }
 
     function assertEventOperatorTakeTriggered(

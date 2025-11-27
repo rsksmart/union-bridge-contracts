@@ -821,6 +821,18 @@ contract TestCommitteeRegistry is Test, HelperContract {
         uint256 numOperators = registry.committeeMemberCount();
         setup_registerNewMembers(numWachtowers, numOperators, denomination);
 
+        // Set different BTC block headers for different RSK block numbers to ensure different entropy
+        // BTC block header for RSK block 1001
+        bridgeMock.setHeader(
+            1001,
+            hex"0000003c9d087b22bc8c482ad398dcfed27a115490cfbc144b3801000000000000000000a923a1461ac1dd2b222f3525f071bec2026acee9038ee440d6915488894a1452e7d66b6816680217f35754aa"
+        );
+        // Different BTC block header for RSK block 2000
+        bridgeMock.setHeader(
+            2000,
+            hex"00000020f3b5e8e3a8d4c2b1a0908f7e6d5c4b3a291817060504030201000000000000009f8e7d6c5b4a39281716050403020100ffeeddccbbaa99887766554433221100aaaabbbb1d00ffff00000000"
+        );
+
         // First selection with block 1001
         vm.roll(1001);
         (CommitteeMember[] memory selectedMembers1, PendingCommitteeStatus status1) = registry.selectCommittee(streamId);
