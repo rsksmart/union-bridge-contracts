@@ -147,8 +147,8 @@ abstract contract HelperContract is Test, TestUtils {
         }
     }
 
-    function getMemberTakePubKey(address _memberAddress) internal returns (bytes32) {
-        return generateRegistrationPublicKeys(uint256(uint160(_memberAddress))).takeKey.publicKeyX;
+    function getMemberDisputePubKey(address _memberAddress) internal returns (bytes32) {
+        return generateRegistrationPublicKeys(uint256(uint160(_memberAddress))).covenantKey.publicKeyX;
     }
 
     /**
@@ -714,7 +714,7 @@ abstract contract HelperContract is Test, TestUtils {
             operatorTakeUpdatedAt: block.timestamp, // Updated when triggerOperatorTake is called
             committeeId: COMMITTEE_ID_STREAM_1_COMMITTEE_1,
             takeOperatorAddress: operatorAddress,
-            takeOperatorPubKey: memberRegistry.getMemberTakePubKey(operatorAddress)
+            operatorDisputePubKey: getMemberDisputePubKey(operatorAddress)
         });
 
         StreamPosition memory expectedStreamPosition = StreamPosition({

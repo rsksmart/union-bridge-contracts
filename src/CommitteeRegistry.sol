@@ -488,12 +488,12 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
     /// @param _committeeId The committee ID to get the operator from
     /// @param _signatureData Array of signature data for committee members
     /// @return operatorAddress The address of the next available operator for take operations
-    /// @return takePubKey The operator's take public key
+    /// @return disputePubKey The operator's dispute public key
     /// @dev Reverts with TakeOperatorNotFound if no eligible operator is found
-    function getOperatorTakeAddress(uint128 _committeeId, SignatureData[] calldata _signatureData)
+    function getOperatorTakeData(uint128 _committeeId, SignatureData[] calldata _signatureData)
         external
         onlyPegManager
-        returns (address operatorAddress, bytes32 takePubKey)
+        returns (address operatorAddress, bytes32 disputePubKey)
     {
         Committee storage committee = _getCommittee(_committeeId);
         uint256 membersLength = committee.members.length;
@@ -508,8 +508,8 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
                 committee.operatorTakeIndex = operatorTakeIndex;
                 operatorAddress = committee.members[operatorTakeIndex].memberAddress;
                 // slither-disable-next-line calls-loop
-                takePubKey = memberRegistry.getMemberTakePubKey(operatorAddress);
-                return (operatorAddress, takePubKey);
+                disputePubKey = memberRegistry.getMemberPublicKeys(operatorAddress).covenantPubKey;
+                return (operatorAddress, disputePubKey);
             }
         }
 

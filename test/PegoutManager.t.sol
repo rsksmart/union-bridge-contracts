@@ -762,7 +762,7 @@ contract TestPegoutManager is Test, HelperContract {
     function test_registerOperatorTake_Success() external {
         // Arrange
         (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
-        bytes32 operatorPubKey = getMemberTakePubKey(operatorAddress);
+        bytes32 operatorPubKey = getMemberDisputePubKey(operatorAddress);
         BtcTransaction memory pegoutTx =
             createPegoutTx(setup.acceptPeginTxid, BtcHelper.pubKeyXonlyToCompact(operatorPubKey), VALUE);
         BtcTxSPVProof memory pegoutTxSPVProof = createBtcTxSPVProof(pegoutTx);
@@ -793,7 +793,7 @@ contract TestPegoutManager is Test, HelperContract {
     function test_registerOperatorTake_Revert_PeginNotRequested() external {
         // Arrange
         (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
-        bytes32 operatorPubKey = getMemberTakePubKey(operatorAddress);
+        bytes32 operatorPubKey = getMemberDisputePubKey(operatorAddress);
         bytes32 wrongAcceptPeginTxid = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
         BtcTransaction memory pegoutTx =
             createPegoutTx(wrongAcceptPeginTxid, BtcHelper.pubKeyXonlyToCompact(operatorPubKey), VALUE);
@@ -814,7 +814,7 @@ contract TestPegoutManager is Test, HelperContract {
     function test_registerOperatorTake_Revert_InvalidPegStatus() external {
         // Arrange
         (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
-        bytes32 operatorPubKey = getMemberTakePubKey(operatorAddress);
+        bytes32 operatorPubKey = getMemberDisputePubKey(operatorAddress);
         BtcTransaction memory pegoutTx =
             createPegoutTx(setup.acceptPeginTxid, BtcHelper.pubKeyXonlyToCompact(operatorPubKey), VALUE);
         BtcTxSPVProof memory pegoutTxSPVProof = createBtcTxSPVProof(pegoutTx);
@@ -836,7 +836,7 @@ contract TestPegoutManager is Test, HelperContract {
     function test_registerOperatorTake_Revert_IncorrectVout() external {
         // Arrange
         (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
-        bytes32 operatorPubKey = getMemberTakePubKey(operatorAddress);
+        bytes32 operatorPubKey = getMemberDisputePubKey(operatorAddress);
         BtcTransaction memory pegoutTx =
             createPegoutTx(setup.acceptPeginTxid, BtcHelper.pubKeyXonlyToCompact(operatorPubKey), VALUE);
         BtcTxSPVProof memory pegoutTxSPVProof = createBtcTxSPVProof(pegoutTx);
@@ -861,9 +861,9 @@ contract TestPegoutManager is Test, HelperContract {
     function test_registerOperatorTake_Revert_IncorrectOutputScript() external {
         // Arrange
         (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
-        bytes32 operatorPubKey = getMemberTakePubKey(operatorAddress);
+        bytes32 operatorPubKey = getMemberDisputePubKey(operatorAddress);
         address wrongOperator = vm.addr(1);
-        bytes32 wrongOperatorPubKey = getMemberTakePubKey(wrongOperator);
+        bytes32 wrongOperatorPubKey = getMemberDisputePubKey(wrongOperator);
 
         BtcTransaction memory pegoutTx =
             createPegoutTx(setup.acceptPeginTxid, BtcHelper.pubKeyXonlyToCompact(wrongOperatorPubKey), VALUE);
@@ -891,7 +891,7 @@ contract TestPegoutManager is Test, HelperContract {
     function test_registerOperatorTake_Revert_OperatorTakeAddressNotMatch() external {
         // Arrange
         (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
-        bytes32 operatorPubKey = getMemberTakePubKey(operatorAddress);
+        bytes32 operatorPubKey = getMemberDisputePubKey(operatorAddress);
         address wrongOperator = vm.addr(1);
 
         BtcTransaction memory pegoutTx =
@@ -915,7 +915,7 @@ contract TestPegoutManager is Test, HelperContract {
     function test_registerOperatorTake_Revert_InvalidSlotState() external {
         // Arrange
         (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
-        bytes32 operatorPubKey = getMemberTakePubKey(operatorAddress);
+        bytes32 operatorPubKey = getMemberDisputePubKey(operatorAddress);
         BtcTransaction memory pegoutTx =
             createPegoutTx(setup.acceptPeginTxid, BtcHelper.pubKeyXonlyToCompact(operatorPubKey), VALUE);
         BtcTxSPVProof memory pegoutTxSPVProof = createBtcTxSPVProof(pegoutTx);
@@ -1422,7 +1422,7 @@ contract TestPegoutManager is Test, HelperContract {
     function test_registerOperatorTake_Revert_EnforcedPause_PausedContract() external {
         // Arrange
         (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
-        bytes32 operatorPubKey = getMemberTakePubKey(operatorAddress);
+        bytes32 operatorPubKey = getMemberDisputePubKey(operatorAddress);
         BtcTransaction memory pegoutTx =
             createPegoutTx(setup.acceptPeginTxid, BtcHelper.pubKeyXonlyToCompact(operatorPubKey), VALUE);
         BtcTxSPVProof memory pegoutTxSPVProof = createBtcTxSPVProof(pegoutTx);
@@ -1442,7 +1442,7 @@ contract TestPegoutManager is Test, HelperContract {
         pauseAndUnpauseContracts();
 
         (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
-        bytes32 operatorPubKey = getMemberTakePubKey(operatorAddress);
+        bytes32 operatorPubKey = getMemberDisputePubKey(operatorAddress);
         BtcTransaction memory pegoutTx =
             createPegoutTx(setup.acceptPeginTxid, BtcHelper.pubKeyXonlyToCompact(operatorPubKey), VALUE);
         BtcTxSPVProof memory pegoutTxSPVProof = createBtcTxSPVProof(pegoutTx);

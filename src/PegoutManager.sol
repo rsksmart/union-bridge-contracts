@@ -97,7 +97,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
             operatorTakeUpdatedAt: 0,
             committeeId: committeeId,
             takeOperatorAddress: address(0),
-            takeOperatorPubKey: bytes32(0)
+            operatorDisputePubKey: bytes32(0)
         });
         streamManager.setPegStatus(slot.acceptPeginTx, PegStatus.USER_TAKE);
 
@@ -269,12 +269,12 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         SignatureData[] memory signatureData = signatureManager.getPartialSignatures(_pegoutTxid);
 
         // slither-disable-next-line reentrancy-no-eth reentrancy-benign
-        (address takeOperatorAddress, bytes32 takeOperatorPubKey) =
-            committeeRegistry.getOperatorTakeAddress(pegoutInfo.committeeId, signatureData);
+        (address takeOperatorAddress, bytes32 operatorDisputePubKey) =
+            committeeRegistry.getOperatorTakeData(pegoutInfo.committeeId, signatureData);
 
         // Update state variables after external calls
         pegoutInfo.takeOperatorAddress = takeOperatorAddress;
-        pegoutInfo.takeOperatorPubKey = takeOperatorPubKey;
+        pegoutInfo.operatorDisputePubKey = operatorDisputePubKey;
 
         // Fetch updated streamInfo after potential status change
         StreamPosition memory updatedStreamInfo = streamManager.getStreamPosition(acceptPeginTxid);
@@ -343,8 +343,8 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
             _pegoutTxSPVProof.merkleBranchHashes
         );
 
-        // Validate that the first output is a P2WPKH paying the member
-        bitcoinManager.validatePegoutMemberOutput(_pegoutTxSPVProof.btcTx.outputs[0], pegoutInfo.takeOperatorPubKey);
+        // Validate that the first output pays to the operator's dispute key
+        bitcoinManager.validatePegoutMemberOutput(_pegoutTxSPVProof.btcTx.outputs[0], pegoutInfo.operatorDisputePubKey);
 
         // update the peg status to COMPLETED
         streamManager.setPegStatus(acceptPeginTxid, PegStatus.COMPLETED);
