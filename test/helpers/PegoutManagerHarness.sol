@@ -31,7 +31,7 @@ contract PegoutManagerHarness is PegoutManager {
             operatorTakeUpdatedAt: 0,
             committeeId: 0,
             takeOperatorAddress: address(0),
-            takeOperatorPubKey: bytes32(0)
+            operatorDisputePubKey: bytes32(0)
         });
     }
 }

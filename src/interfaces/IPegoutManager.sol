@@ -19,8 +19,8 @@ struct PegoutTempInfo {
     uint128 committeeId;
     /// @notice The operator address that will advance the funds to the user
     address takeOperatorAddress;
-    /// @notice The public key of the selected operator for Bitcoin transactions (x-coordinate only)
-    bytes32 takeOperatorPubKey;
+    /// @notice The dispute public key (covenantPubKey) of the selected operator for operator-take transactions (x-coordinate only)
+    bytes32 operatorDisputePubKey;
 }
 
 /// @notice Settings for the PegoutManager contract
