@@ -26,7 +26,7 @@ contract RegisterOperatorTakeScript is ScriptUtils {
 
         ICommitteeRegistry registry = ICommitteeRegistry(pegManager.committeeRegistry());
         IMemberRegistry memberRegistry = registry.memberRegistry();
-        bytes32 operatorXOnlyPubKey = memberRegistry.getMemberTakePubKey(getDeployerAddress());
+        bytes32 operatorXOnlyPubKey = memberRegistry.getMemberPublicKeys(getDeployerAddress()).covenantPubKey;
         operatorPubKey = abi.encodePacked(bytes1(0x02), operatorXOnlyPubKey);
         amount = 100_000; // 0.001 BTC
 
