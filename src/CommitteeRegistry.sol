@@ -436,17 +436,18 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
         pendingCommittees[_streamId] = 0; // Reset the pending committee ID
     }
 
-    /// @notice Gets the next available operator address for take operations
+    /// @notice Gets the operator dispute data (address and dispute public key) for operator-take operations
     /// @dev Rotates through committee operators to distribute take responsibilities
     /// @dev Only operators who have deposited their signatures nonces are eligible for take operations
     /// @param _committeeId The committee ID to get the operator from
     /// @param _signatureData Array of signature data for committee members
-    /// @return The address of the next available operator for take operations
+    /// @return operatorAddress The address of the next available operator for take operations
+    /// @return disputePubKey The operator's dispute public key (covenantPubKey)
     /// @dev Reverts with TakeOperatorNotFound if no eligible operator is found
-    function getOperatorTakeAddress(uint128 _committeeId, SignatureData[] calldata _signatureData)
+    function getOperatorDisputeData(uint128 _committeeId, SignatureData[] calldata _signatureData)
         external
         onlyPegManager
-        returns (address)
+        returns (address operatorAddress, bytes32 disputePubKey)
     {
         Committee storage committee = _getCommittee(_committeeId);
         uint256 membersLength = committee.members.length;
@@ -459,7 +460,9 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
                     && _signatureData[operatorTakeIndex].nonce.length > 0
             ) {
                 committee.operatorTakeIndex = operatorTakeIndex;
-                return committee.members[operatorTakeIndex].memberAddress;
+                operatorAddress = committee.members[operatorTakeIndex].memberAddress;
+                disputePubKey = memberRegistry.getMemberPublicKeys(operatorAddress).covenantPubKey;
+                return (operatorAddress, disputePubKey);
             }
         }
 

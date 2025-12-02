@@ -467,7 +467,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             operatorTakeUpdatedAt: 0,
             committeeId: committeeId,
             takeOperatorAddress: address(0),
-            takeOperatorPubKey: bytes32(0)
+            operatorDisputePubKey: bytes32(0)
         });
         streamPosition[slot.acceptPeginTx].pegStatus = PegStatus.USER_TAKE;
 
@@ -658,12 +658,12 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         SignatureData[] memory signatureData = signatureManager.getPartialSignatures(_pegoutSignatureHash);
 
         // slither-disable-next-line reentrancy-no-eth reentrancy-benign
-        address takeOperatorAddress = committeeRegistry.getOperatorTakeAddress(pegoutInfo.committeeId, signatureData);
-        bytes32 takeOperatorPubKey = memberRegistry.getMemberTakePubKey(takeOperatorAddress);
+        (address takeOperatorAddress, bytes32 operatorDisputePubKey) =
+            committeeRegistry.getOperatorDisputeData(pegoutInfo.committeeId, signatureData);
 
         // Update state variables after external calls
         pegoutInfo.takeOperatorAddress = takeOperatorAddress;
-        pegoutInfo.takeOperatorPubKey = takeOperatorPubKey;
+        pegoutInfo.operatorDisputePubKey = operatorDisputePubKey;
 
         // slither-disable-next-line reentrancy-events
         emit OperatorTakeTriggered(
@@ -722,9 +722,8 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             _pegoutTxSPVProof.merkleBranchHashes
         );
 
-        // Validate that the first output is a P2WPKH paying the member
-        bytes32 takeOperatorPubKey = memberRegistry.getMemberTakePubKey(pegoutInfo.takeOperatorAddress);
-        bitcoinManager.validatePegoutMemberOutput(_pegoutTxSPVProof.btcTx.outputs[0], takeOperatorPubKey);
+        // Validate that the first output pays to the operator's dispute key
+        bitcoinManager.validatePegoutMemberOutput(_pegoutTxSPVProof.btcTx.outputs[0], pegoutInfo.operatorDisputePubKey);
 
         // update the peg status to COMPLETED
         streamPosition[acceptPeginTxHash].pegStatus = PegStatus.COMPLETED;
