@@ -323,12 +323,12 @@ interface ICommitteeRegistry is IPausable {
     /// @param _committeeMemberCount The exact number of members required for a committee
     function setCommitteeMemberCount(uint256 _committeeMemberCount) external;
 
-    /// @notice Gets the operator take data including address and dispute public key for a specific committee
+    /// @notice Gets the operator dispute data (address and dispute public key) for operator-take operations
     /// @param committeeId The ID of the committee
     /// @param signatureData The signature data for the committee members
     /// @return operatorAddress The operator take address
     /// @return disputePubKey The operator's dispute public key (covenantPubKey) used for operator-take transactions
-    function getOperatorTakeData(uint128 committeeId, SignatureData[] calldata signatureData)
+    function getOperatorDisputeData(uint128 committeeId, SignatureData[] calldata signatureData)
         external
         returns (address operatorAddress, bytes32 disputePubKey);
 

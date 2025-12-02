@@ -270,7 +270,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
 
         // slither-disable-next-line reentrancy-no-eth reentrancy-benign
         (address takeOperatorAddress, bytes32 operatorDisputePubKey) =
-            committeeRegistry.getOperatorTakeData(pegoutInfo.committeeId, signatureData);
+            committeeRegistry.getOperatorDisputeData(pegoutInfo.committeeId, signatureData);
 
         // Update state variables after external calls
         pegoutInfo.takeOperatorAddress = takeOperatorAddress;

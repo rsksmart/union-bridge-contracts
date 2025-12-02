@@ -482,7 +482,7 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
         pendingCommittees[_streamId] = 0; // Reset the pending committee ID
     }
 
-    /// @notice Gets the next available operator address and take public key for take operations
+    /// @notice Gets the operator dispute data (address and dispute public key) for operator-take operations
     /// @dev Rotates through committee operators to distribute take responsibilities
     /// @dev Only operators who have deposited their signatures nonces are eligible for take operations
     /// @param _committeeId The committee ID to get the operator from
@@ -490,7 +490,7 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
     /// @return operatorAddress The address of the next available operator for take operations
     /// @return disputePubKey The operator's dispute public key
     /// @dev Reverts with TakeOperatorNotFound if no eligible operator is found
-    function getOperatorTakeData(uint128 _committeeId, SignatureData[] calldata _signatureData)
+    function getOperatorDisputeData(uint128 _committeeId, SignatureData[] calldata _signatureData)
         external
         onlyPegManager
         returns (address operatorAddress, bytes32 disputePubKey)
