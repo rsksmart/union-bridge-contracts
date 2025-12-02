@@ -642,8 +642,8 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
         SignatureData[] memory signatureData = signatureManager.getPartialSignatures(_pegoutTxid);
 
         // slither-disable-next-line reentrancy-no-eth reentrancy-benign
-        address takeOperatorAddress = committeeRegistry.getOperatorTakeAddress(pegoutInfo.committeeId, signatureData);
-        bytes32 operatorDisputePubKey = memberRegistry.getMemberTakePubKey(takeOperatorAddress);
+        (address takeOperatorAddress, bytes32 operatorDisputePubKey) =
+            committeeRegistry.getOperatorDisputeData(pegoutInfo.committeeId, signatureData);
 
         // Update state variables after external calls
         pegoutInfo.takeOperatorAddress = takeOperatorAddress;
