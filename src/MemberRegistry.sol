@@ -571,6 +571,16 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         emit NewAvailableBalance(_memberAddress, balance.available, stakedAmount);
     }
 
+    /// @notice Calculates a pseudo-random position within an array
+    /// @dev Uses Bitcoin block hash as entropy source combined with array length
+    /// @param _btcBlockHash The Bitcoin block hash used for entropy
+    /// @param _arrayLength The length of the array to select from
+    /// @return The pseudo-random position within the array (0 to _arrayLength - 1)
+    function _getRandomPosition(bytes32 _btcBlockHash, uint256 _arrayLength) private pure returns (uint256) {
+        // slither-disable-next-line weak-prng
+        return uint256(keccak256(abi.encode(_btcBlockHash, _arrayLength))) % _arrayLength;
+    }
+
     /// @notice Randomly selects members to form a new committee for a given stream
     /// @dev Pseudo-randomly select at least minCommitteeWatchtowers watchtowers and minCommitteeOperators operators.
     /// @dev reverts with notEnoughWatchtowers if there are fewer than minCommitteeWatchtowers watchtower candidates
@@ -644,8 +654,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
 
         // Select random operators
         for (uint256 length = operatorsLength; length > operatorsLength - operatorsCommitteeAmount; length--) {
-            // slither-disable-next-line weak-prng
-            uint256 randomPos = uint256(keccak256(abi.encode(btcBlockHash, length))) % length;
+            uint256 randomPos = _getRandomPosition(btcBlockHash, length);
 
             selectedMembers[committeeMembersCounter++] =
                 CommitteeMember({memberAddress: operators[randomPos], role: Role.OPERATOR});
@@ -656,8 +665,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
 
         // Select random watchtowers
         for (uint256 length = watchtowersLength; length > watchtowersLength - watchtowerCommitteeAmount; length--) {
-            // slither-disable-next-line weak-prng
-            uint256 randomPos = uint256(keccak256(abi.encode(btcBlockHash, length))) % length;
+            uint256 randomPos = _getRandomPosition(btcBlockHash, length);
 
             selectedMembers[committeeMembersCounter++] =
                 CommitteeMember({memberAddress: watchtowers[randomPos], role: Role.WATCHTOWER});
