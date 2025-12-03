@@ -23,6 +23,8 @@ import {StreamDenomination, IStreamManager} from "./interfaces/IStreamManager.so
 import {IMemberRegistry} from "./interfaces/IMemberRegistry.sol";
 import {Constants} from "./libraries/Constants.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import {IBridge} from "./interfaces/IBridge.sol";
+import {BtcHelper} from "./libraries/BtcHelper.sol";
 
 /// @title MemberRegistry
 /// @notice Manages member registration, applications, and balance tracking for the union bridge system
@@ -40,6 +42,9 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
 
     /// @notice Committee registry contract for committee operations
     address public committeeRegistry;
+
+    /// @notice RSK Bridge contract for Bitcoin block hash entropy
+    IBridge public bridge;
 
     /// @notice Initializes the MemberRegistry contract
     /// @param _initialOwner The initial owner of the contract
@@ -566,6 +571,16 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         emit NewAvailableBalance(_memberAddress, balance.available, stakedAmount);
     }
 
+    /// @notice Calculates a pseudo-random position within an array
+    /// @dev Uses Bitcoin block hash as entropy source combined with array length
+    /// @param _btcBlockHash The Bitcoin block hash used for entropy
+    /// @param _arrayLength The length of the array to select from
+    /// @return The pseudo-random position within the array (0 to _arrayLength - 1)
+    function _getRandomPosition(bytes32 _btcBlockHash, uint256 _arrayLength) private pure returns (uint256) {
+        // slither-disable-next-line weak-prng
+        return uint256(keccak256(abi.encode(_btcBlockHash, _arrayLength))) % _arrayLength;
+    }
+
     /// @notice Randomly selects members to form a new committee for a given stream
     /// @dev Pseudo-randomly select at least minCommitteeWatchtowers watchtowers and minCommitteeOperators operators.
     /// @dev reverts with notEnoughWatchtowers if there are fewer than minCommitteeWatchtowers watchtower candidates
@@ -626,6 +641,12 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         // Create the final committee with _totalMemberCount members
         CommitteeMember[] memory selectedMembers = new CommitteeMember[](_totalMemberCount);
 
+        // Get Bitcoin block hash for entropy source
+        // Using the Bitcoin blockchain's best block hash provides better security than RSK block hash
+        // because Bitcoin miners cannot manipulate the selection of RSK committee members.
+        // The BTC block hash is unpredictable from the RSK network's perspective.
+        bytes32 btcBlockHash = BtcHelper.hash256(bridge.getBtcBlockchainBestBlockHeader());
+
         // True randomness is not required here. We only need enough unpredictability to ensure
         // different committee members get selected across multiple runs.
         // We use Fisher-Yates shuffle because it guarantees each index is selected exactly once.
@@ -633,12 +654,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
 
         // Select random operators
         for (uint256 length = operatorsLength; length > operatorsLength - operatorsCommitteeAmount; length--) {
-            // Using blockhash(block.number - 1) provides better security than a constant or timestamp.
-            // The previous block hash is unpredictable until mined, giving attackers less time to
-            // precompute outcomes (they need information from the last block, which is only revealed
-            // minutes before under normal conditions).
-            // slither-disable-next-line weak-prng
-            uint256 randomPos = uint256(keccak256(abi.encode(blockhash(block.number - 1), length))) % length;
+            uint256 randomPos = _getRandomPosition(btcBlockHash, length);
 
             selectedMembers[committeeMembersCounter++] =
                 CommitteeMember({memberAddress: operators[randomPos], role: Role.OPERATOR});
@@ -649,12 +665,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
 
         // Select random watchtowers
         for (uint256 length = watchtowersLength; length > watchtowersLength - watchtowerCommitteeAmount; length--) {
-            // Using blockhash(block.number - 1) provides better security than a constant or timestamp.
-            // The previous block hash is unpredictable until mined, giving attackers less time to
-            // precompute outcomes (they need information from the last block, which is only revealed
-            // minutes before under normal conditions).
-            // slither-disable-next-line weak-prng
-            uint256 randomPos = uint256(keccak256(abi.encode(blockhash(block.number - 1), length))) % length;
+            uint256 randomPos = _getRandomPosition(btcBlockHash, length);
 
             selectedMembers[committeeMembersCounter++] =
                 CommitteeMember({memberAddress: watchtowers[randomPos], role: Role.WATCHTOWER});
@@ -699,6 +710,17 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
             revert InvalidZeroAddress();
         }
         streamManager = _streamManager;
+    }
+
+    /// @notice Sets the Bridge contract address
+    /// @dev Only callable by the contract owner
+    /// @param _bridge The address of the Bridge contract
+    function setBridge(IBridge _bridge) external override onlyOwner {
+        if (address(_bridge) == address(0)) {
+            revert InvalidZeroAddress();
+        }
+        bridge = _bridge;
+        emit BridgeUpdated(address(_bridge));
     }
 
     /// @notice Sets a new pauser address

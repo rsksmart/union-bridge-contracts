@@ -12,7 +12,7 @@ import {PegoutManager} from "src/PegoutManager.sol";
 import {StreamManager} from "src/StreamManager.sol";
 import {SignatureManager} from "src/SignatureManager.sol";
 import {PauseManager} from "src/PauseManager.sol";
-import {RSK_BRIDGE_ADDRESS} from "src/interfaces/IBridge.sol";
+import {RSK_BRIDGE_ADDRESS, IBridge} from "src/interfaces/IBridge.sol";
 import {BtcNetwork} from "src/libraries/Network.sol";
 import {BridgeMock} from "test/helpers/BridgeMock.sol";
 import {ChainIds} from "src/libraries/Network.sol";
@@ -198,6 +198,7 @@ contract DeployImplAndProxy is ScriptUtils {
         committeeRegistry.setPegoutManager(pegoutManager);
         memberRegistry.setStreamManager(streamManager);
         memberRegistry.setCommitteeRegistry(address(committeeRegistry));
+        memberRegistry.setBridge(IBridge(bridgeAddress));
         // Set PauseManager as the pauser for all pausable contracts
         peginManager.setPauser(address(pauseManager));
         pegoutManager.setPauser(address(pauseManager));
