@@ -81,7 +81,7 @@ contract TestBtcHelper is Test, HelperContract {
 
     function test_getBtcTxid_Success() external {
         // Arrange
-        BtcTransaction memory btcTx = getBtcPeginRequestTx();
+        BtcTransaction memory btcTx = getBtcRequestPeginTx();
         // Act
         bytes32 txid = bitcoinManager.getBtcTxid(btcTx);
         // Assert
@@ -92,7 +92,7 @@ contract TestBtcHelper is Test, HelperContract {
         );
     }
 
-    function test_getBtcTxid_peginRequest_Success() external view {
+    function test_getBtcTxid_requestPegin_Success() external view {
         // Arrange
         BtcTransaction memory btcTx =
             BtcTransaction({version: 2, inputs: new BtcTxIn[](1), outputs: new BtcTxOut[](2), locktime: 0});
@@ -127,7 +127,7 @@ contract TestBtcHelper is Test, HelperContract {
         address rskDestinationAddress = getPeginRskDestinationAddress();
         bytes32 btcReimbursementPubKey = getPeginBtcReimbursementPubKey();
         BtcTxOut memory btcTxOut =
-            getPeginRequestOpReturnOut(packetNumber, rskDestinationAddress, btcReimbursementPubKey);
+            getRequestPeginOpReturnOut(packetNumber, rskDestinationAddress, btcReimbursementPubKey);
         // Act
         (uint64 resPacketNumber, address resRskDestinationAddress, bytes32 resBtcReimbursementPubKey) =
             bitcoinManager.getPeginOpReturnData(btcTxOut);
@@ -147,7 +147,7 @@ contract TestBtcHelper is Test, HelperContract {
 
     function test_validateRequestPeginP2TROutput_Success() external {
         // Arrange
-        BtcTxOut memory btcTxOut = getBtcPeginRequestTx().outputs[0];
+        BtcTxOut memory btcTxOut = getBtcRequestPeginTx().outputs[0];
         uint64 value = VALUE;
         address rskDestinationAddress = getPeginRskDestinationAddress();
         bytes32 btcReimbursementPubKey = getPeginBtcReimbursementPubKey();
@@ -162,7 +162,7 @@ contract TestBtcHelper is Test, HelperContract {
 
     function test_validateRequestPeginP2TROutput_Revert_InvalidOutputAmount() external {
         // Arrange
-        BtcTxOut memory btcTxOut = getBtcPeginRequestTx().outputs[0];
+        BtcTxOut memory btcTxOut = getBtcRequestPeginTx().outputs[0];
         btcTxOut.amount = VALUE - Constants.P2TR_FEE;
         uint64 value = VALUE;
         address rskDestinationAddress = getPeginRskDestinationAddress();

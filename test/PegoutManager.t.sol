@@ -129,7 +129,7 @@ contract TestPegoutManager is Test, HelperContract {
         setup_requestAndAcceptPeginFlow();
 
         // Arrange
-        // These values are attached to txIdCounter value in HelperContract.getPeginRequestTxIn().
+        // These values are attached to txIdCounter value in HelperContract.getRequestPeginTxIn().
         // Counter should start in 0, otherwise the test will fail or expectedDigest and userPubKey should be updated.
         BtcTxIn[] memory inputs = new BtcTxIn[](1);
         inputs[0] = BtcTxIn({

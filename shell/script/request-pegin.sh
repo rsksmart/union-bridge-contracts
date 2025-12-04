@@ -33,7 +33,7 @@ while getopts ":a:-:" opt; do
       ;;
   esac
 done
-echo "================ REGISTER PEGIN REQUEST TO $RPC ================"
+echo "================ REGISTER REQUEST PEGIN TO $RPC ================"
 forge script \
     script/RequestPegin.s.sol \
     --sig "run(address)" \

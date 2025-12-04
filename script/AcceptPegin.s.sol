@@ -29,7 +29,7 @@ contract AcceptPeginScript is ScriptUtils, ContractAddressManager {
         // Check if the peg-in request exists and is in REGISTERED status
         StreamPosition memory streamPosition = peginManager.getStreamPositionByRequestPegin(_requestPeginTxid);
         if (streamPosition.pegStatus != PegStatus.REGISTERED) {
-            revert("PeginRequest not registered or already accepted");
+            revert("RequestPegin not registered or already accepted");
         }
 
         // Get the peg-in request temporary info
@@ -82,18 +82,18 @@ contract AcceptPeginScript is ScriptUtils, ContractAddressManager {
         console.log("peginAcceptedTxid");
         console.logBytes32(peginAcceptedTxid);
 
-        // accept peginRequest
+        // accept requestPegin
         vm.startBroadcast(getDeployerKey());
         peginManager.acceptPegin(peginAcceptedTxSPVProof);
         vm.stopBroadcast();
 
-        // check if peginRequest is accepted
+        // check if RequestPegin is accepted
         StreamPosition memory streamPosition = peginManager.getStreamPositionByRequestPegin(_requestPeginTxid);
         if (streamPosition.pegStatus != PegStatus.ACCEPTED) {
-            revert("PeginRequest not accepted");
+            revert("RequestPegin not accepted");
         }
 
-        console.log("=== PeginRequest accepted successfully ===");
+        console.log("=== RequestPegin accepted successfully ===");
         console.log("streamId");
         console.log(streamPosition.streamId);
         console.log("packetNumber");

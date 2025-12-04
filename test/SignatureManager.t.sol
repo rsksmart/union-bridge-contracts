@@ -446,7 +446,7 @@ contract TestSignatureManager is Test, HelperContract {
     }
 
     function setup_initOperatorTakeTxids() internal returns (bytes32) {
-        // initOperatorTakeTxids is executed when a new pegin request is created
+        // initOperatorTakeTxids is executed when a new request pegin is created
         setup_multipleRequestAndAcceptPeginFlows(1);
         // Real acceptPeginTxid value for first request
         bytes32 acceptPeginTxid = ACCEPT_PEGIN_TXID;
@@ -549,7 +549,7 @@ contract TestSignatureManager is Test, HelperContract {
         uint256 operatorIndex = registry.committeeMemberCount() / 2;
         address memberAddress = vm.addr(operatorIndex + 1);
         bytes32 operatorTakeTxid = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
-        // It wont exists because there was no pegin request yet
+        // It wont exists because there was no request pegin yet
         bytes32 acceptPeginTxid = ACCEPT_PEGIN_TXID;
 
         // Assert
