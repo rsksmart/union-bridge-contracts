@@ -166,6 +166,10 @@ contract TestMusig2 is Test {
             musig2.aggregatedAndEffectivePubKeys(participantsPubKeys, pubKeyIndex);
 
         // Assert
+        // Values are obtained by key manager test test_verify_signatures:
+        // https://github.com/FairgateLabs/rust-bitvmx-key-manager/pull/48
+
+        // Compressed aggregated pubkey: 022424ffdb5f1a9f53836a65135adc04e6573eb3b9db1b5ae6dc3e67036ee5ad6c
         Point memory expectedAggregatedPubKey = Point({
             x: 0x2424ffdb5f1a9f53836a65135adc04e6573eb3b9db1b5ae6dc3e67036ee5ad6c,
             y: 0xcff398a75d30c0ac665da8bebd4fe6040a382af51a6e950032d90c3c28d80dcd
@@ -183,17 +187,52 @@ contract TestMusig2 is Test {
         assertEq(bytes32(effectivePubKey.y), bytes32(expectedEffectivePubKey.y), "effective y pubkey is incorrect");
     }
 
+    /// @notice Test the aggregated and effective pubkeys used later on with a tweaked nonce
+    /// @dev The data is obtained by running the bitvmx-client example union accept_pegin: https://github.com/FairgateLabs/rust-bitvmx-client/blob/main/examples/union/main.rs#L224
+    /// @dev RUST_BACKTRACE=1 cargo run --release --example union accept_pegin
+    function test_aggregatedAndEffectivePubKeys_4Keys_Tweaked_Success() external view {
+        // Arrange
+        Point[] memory participantsPubKeys = setup_participantsPubKeys_4Keys();
+        uint256 pubKeyIndex = 0; // index of the pubkey to test we could use any index
+
+        // Act
+        (Point memory aggregatedPubKey, Point memory effectivePubKey) =
+            musig2.aggregatedAndEffectivePubKeys(participantsPubKeys, pubKeyIndex);
+
+        // Assert
+        // Values are obtained by key manager test test_verify_signatures:
+        // https://github.com/FairgateLabs/rust-bitvmx-key-manager/pull/48
+
+        // Compressed aggregated pubkey: 02cdc6b4ed2e0a57d05f0702f6a32cf11da5d54e3642e01545b36d361aa83cea6a
+        Point memory expectedAggregatedPubKey = expected_aggregatedKey_4Keys();
+        // We convert it to bytes32 for human readability
+        assertEq(bytes32(aggregatedPubKey.x), bytes32(expectedAggregatedPubKey.x), "aggregated x pubkey is incorrect");
+        assertEq(bytes32(aggregatedPubKey.y), bytes32(expectedAggregatedPubKey.y), "aggregated y pubkey is incorrect");
+
+        // Expected effective pubkey
+        // Compressed effective pubkey: 0204cb44495c2abc544f2f7d10b6987b9360ec8eba93d87ff5ce9b557714d1a2fb
+        Point memory expectedEffectivePubKey = Point({
+            x: 0x04cb44495c2abc544f2f7d10b6987b9360ec8eba93d87ff5ce9b557714d1a2fb,
+            y: 0x115b28d9620ad25158d88b1c4f77b3618023d506a7c39d658ad9c80105b8a5b0
+        });
+        assertEq(bytes32(effectivePubKey.x), bytes32(expectedEffectivePubKey.x), "effective x pubkey is incorrect");
+        assertEq(bytes32(effectivePubKey.y), bytes32(expectedEffectivePubKey.y), "effective y pubkey is incorrect");
+    }
+
     function test_aggregatedNonce_2Keys_Success() external view {
         // Arrange
         Point memory aggregatedPubKey = expected_aggregatedKey_2Keys();
         Nonce[] memory nonces = setup_nonces_2();
-        bytes memory message = bytes("message_1");
+        bytes memory message = setup_message_2Keys();
 
         // Act
         (Point memory adaptedAggregatedNonce, uint256 nonceCoef) =
             musig2.aggregatedNonce(aggregatedPubKey.x, nonces, message);
 
         // Assert
+        // Values are obtained by key manager test test_verify_signatures:
+        // https://github.com/FairgateLabs/rust-bitvmx-key-manager/pull/48
+
         // Expected adapted aggregated nonce
         Point memory expectedAdaptedAggregatedNonce = Point({
             x: 0x724d3c05a4570ef8787779667373dbe7658a65c53a6144cc6abf6856280ea4f4,
@@ -218,14 +257,60 @@ contract TestMusig2 is Test {
         );
     }
 
+    function test_aggregatedNonce_4Keys_Tweaked_Success() external view {
+        // Arrange
+        Point memory aggregatedPubKey = expected_aggregatedKey_4Keys();
+        Nonce[] memory nonces = setup_nonces_4_tweaked();
+        bytes memory message = setup_message_4Keys_Tweaked();
+
+        // Act
+        (Point memory adaptedAggregatedNonce, uint256 nonceCoef) =
+            musig2.aggregatedNonce(aggregatedPubKey.x, nonces, message);
+
+        // Assert
+        // Values are obtained by running the bitvmx-client example union accept_pegin:
+        // https://github.com/FairgateLabs/rust-bitvmx-client/blob/main/examples/union/main.rs#L224
+        // And adding custom logs for the nonces
+
+        // Expected adapted aggregated nonce
+        //
+        Point memory expectedAdaptedAggregatedNonce = Point({
+            x: 0x07ffd268025e865a9cc41874cc57b1813c888a6c72db265b54bdfd3369584468,
+            y: 0x1947c175794eafdb3be418973fbf1242b86285e29090570c100f6067c075adeb
+        });
+        assertEq(
+            bytes32(adaptedAggregatedNonce.x),
+            bytes32(expectedAdaptedAggregatedNonce.x),
+            "aggregated nonce x is incorrect"
+        );
+        assertEq(
+            bytes32(adaptedAggregatedNonce.y),
+            bytes32(expectedAdaptedAggregatedNonce.y),
+            "aggregated nonce y is incorrect"
+        );
+
+        // Expected nonce coefficient
+        assertEq(
+            bytes32(nonceCoef),
+            bytes32(0x668ca4e2734f176bb4e650cf519d0940c07c483c9303015a6fc8af9f54d232bc),
+            "nonce coef is incorrect"
+        );
+
+        // get_my_partial_signature sec_nonce: SecNonce { k1: Scalar(#bd2a2feb897c3fe3), k2: Scalar(#c04a0fb4d816a325) }
+        // get_my_partial_signature tweak: Some(Scalar(55f74f9672f67bbf54edb0afa7963a844c49a13ef9ccd693a346f2a005fcaedc))
+        // get_my_partial_signature aggregated_nonce: AggNonce { R1: Valid(Point(0307ffd268025e865a9cc41874cc57b1813c888a6c72db265b54bdfd3369584468)), R2: Valid(Point(03de66ebc2102f20f8909b498f8554a9eeb09b6e6dbd59818404c0068175e40251)) }
+    }
+
     function test_verifyPartialSignature_2Keys_Success() external view {
         // Arrange
         Point[] memory participantsPubKeys = setup_participantsPubKeys_2Keys();
         Nonce[] memory nonces = setup_nonces_2();
 
-        bytes memory message = bytes("message_1");
+        bytes memory message = setup_message_2Keys();
 
         uint256 pubKeyIndex = 0;
+        // Values are obtained by key manager test test_verify_signatures:
+        // https://github.com/FairgateLabs/rust-bitvmx-key-manager/pull/48
         uint256 partialSignature = 0x451b38a20d0517986de2f2f4542c2757da62624697871dce626df08bf5b52ba4;
 
         // Act
@@ -241,7 +326,7 @@ contract TestMusig2 is Test {
         Point[] memory participantsPubKeys = setup_participantsPubKeys_2Keys();
         Nonce[] memory nonces = setup_nonces_2();
 
-        bytes memory message = bytes("message_1");
+        bytes memory message = setup_message_2Keys();
 
         uint256 pubKeyIndex = 0;
         uint256 partialSignature = 1;
@@ -259,9 +344,11 @@ contract TestMusig2 is Test {
         Point[] memory participantsPubKeys = setup_participantsPubKeys_2Keys();
         Nonce[] memory nonces = setup_nonces_2();
 
-        bytes memory message = bytes("message_1");
+        bytes memory message = setup_message_2Keys();
 
         uint256 pubKeyIndex = 0;
+        // Values are obtained by key manager test test_verify_signatures:
+        // https://github.com/FairgateLabs/rust-bitvmx-key-manager/pull/48
         uint256 partialSignature = 0x551b38a20d0517986de2f2f4542c2757da62624697871dce626df08bf5b52ba4;
 
         // Act
@@ -279,9 +366,11 @@ contract TestMusig2 is Test {
         Nonce[] memory nonces = new Nonce[](1);
         nonces[0] = setup_nonces_2()[0];
 
-        bytes memory message = bytes("message_1");
+        bytes memory message = setup_message_2Keys();
 
         uint256 pubKeyIndex = 0;
+        // Values are obtained by key manager test test_verify_signatures:
+        // https://github.com/FairgateLabs/rust-bitvmx-key-manager/pull/48
         uint256 partialSignature = 0x451b38a20d0517986de2f2f4542c2757da62624697871dce626df08bf5b52ba4;
 
         // Assert
@@ -299,9 +388,11 @@ contract TestMusig2 is Test {
         Nonce[] memory nonces = new Nonce[](1);
         nonces[0] = setup_nonces_2()[0];
 
-        bytes memory message = bytes("message_1");
+        bytes memory message = setup_message_2Keys();
 
         uint256 pubKeyIndex = 0;
+        // Values are obtained by key manager test test_verify_signatures:
+        // https://github.com/FairgateLabs/rust-bitvmx-key-manager/pull/48
         uint256 partialSignature = 0x451b38a20d0517986de2f2f4542c2757da62624697871dce626df08bf5b52ba4;
 
         // Assert
@@ -318,9 +409,11 @@ contract TestMusig2 is Test {
         Point[] memory participantsPubKeys = setup_participantsPubKeys_2Keys();
         Nonce[] memory nonces = setup_nonces_2();
 
-        bytes memory message = bytes("message_1");
+        bytes memory message = setup_message_2Keys();
 
         uint256 pubKeyIndex = 2;
+        // Values are obtained by key manager test test_verify_signatures:
+        // https://github.com/FairgateLabs/rust-bitvmx-key-manager/pull/48
         uint256 partialSignature = 0x451b38a20d0517986de2f2f4542c2757da62624697871dce626df08bf5b52ba4;
 
         // Assert
@@ -337,7 +430,7 @@ contract TestMusig2 is Test {
         Point[] memory participantsPubKeys = setup_participantsPubKeys_2Keys();
         Nonce[] memory nonces = setup_nonces_2();
 
-        bytes memory message = bytes("message_1");
+        bytes memory message = setup_message_2Keys();
 
         uint256 pubKeyIndex = 0;
         uint256 partialSignature = 0x0000000000000000000000000000000000000000000000000000000000000000;
@@ -356,9 +449,11 @@ contract TestMusig2 is Test {
         participantsPubKeys[1].y = participantsPubKeys[0].y;
         Nonce[] memory nonces = setup_nonces_2();
 
-        bytes memory message = bytes("message_1");
+        bytes memory message = setup_message_2Keys();
 
         uint256 pubKeyIndex = 0;
+        // Values are obtained by key manager test test_verify_signatures:
+        // https://github.com/FairgateLabs/rust-bitvmx-key-manager/pull/48
         uint256 partialSignature = 0x451b38a20d0517986de2f2f4542c2757da62624697871dce626df08bf5b52ba4;
 
         // Assert
@@ -376,6 +471,8 @@ contract TestMusig2 is Test {
         bytes memory message = bytes("");
 
         uint256 pubKeyIndex = 0;
+        // Values are obtained by key manager test test_verify_signatures:
+        // https://github.com/FairgateLabs/rust-bitvmx-key-manager/pull/48
         uint256 partialSignature = 0x451b38a20d0517986de2f2f4542c2757da62624697871dce626df08bf5b52ba4;
 
         // Assert
@@ -390,9 +487,11 @@ contract TestMusig2 is Test {
         Point[] memory participantsPubKeys = setup_participantsPubKeys_10Keys();
         Nonce[] memory nonces = setup_nonces_10();
 
-        bytes memory message = bytes("message_1");
+        bytes memory message = setup_message_10Keys();
 
         uint256 pubKeyIndex = 0;
+        // Values are obtained by key manager test test_verify_signatures:
+        // https://github.com/FairgateLabs/rust-bitvmx-key-manager/pull/48
         uint256 partialSignature = 0x0de1e5b1db27ec285129bd4092785355a4e3967f075e419aceef77581f790f58;
 
         // Act
@@ -403,8 +502,28 @@ contract TestMusig2 is Test {
         assertTrue(isValid, "partial signature is not valid");
     }
 
+    function test_verifyPartialSignature_4Keys_Tweaked_Success() external view {
+        // Arrange
+        Point[] memory participantsPubKeys = setup_participantsPubKeys_4Keys();
+        Nonce[] memory nonces = setup_nonces_4_tweaked();
+
+        bytes memory message = setup_message_4Keys_Tweaked();
+
+        uint256 pubKeyIndex = 0;
+        // Values are obtained by
+        uint256 partialSignature = 0x0de1e5b1db27ec285129bd4092785355a4e3967f075e419aceef77581f790f58;
+
+        // Act
+        bool isValid =
+            musig2.verifyPartialSignature(partialSignature, pubKeyIndex, participantsPubKeys, nonces, message);
+
+        // Assert
+        assertTrue(isValid, "partial signature is not valid");
+    }
+
+    /// @notice The data is obtained by key manager test test_verify_signatures:
+    /// @dev https://github.com/FairgateLabs/rust-bitvmx-key-manager/pull/48
     function expected_aggregatedKey_2Keys() internal pure returns (Point memory resultAggregatedKey) {
-        // values are obtained from https://github.com/FairgateLabs/rust-bitvmx-key-manager/pull/48
         resultAggregatedKey = Point({
             x: 0x3abe801a953476c13344faf951ce01821236abe92535d1fa0189788056498590,
             y: 0x90582cb79ccc123949a0698119870d136086b4a90e394f12a12b97ef5d6be6b5
@@ -412,8 +531,9 @@ contract TestMusig2 is Test {
         return resultAggregatedKey;
     }
 
+    /// @notice The data is obtained by key manager test test_verify_signatures:
+    /// @dev https://github.com/FairgateLabs/rust-bitvmx-key-manager/pull/48
     function expected_effectiveKey_2Keys() internal pure returns (Point[] memory resultEffectiveKeys) {
-        // values are obtained from https://github.com/FairgateLabs/rust-bitvmx-key-manager/pull/48
         resultEffectiveKeys = new Point[](2);
         resultEffectiveKeys[0] = Point({
             x: 0x976e4507187b0c74aa258f5e545a7b5aae452b55caad5c3b6c9fbe8b7caee58c,
@@ -426,6 +546,18 @@ contract TestMusig2 is Test {
         return resultEffectiveKeys;
     }
 
+    /// @notice The data is obtained by key manager test test_verify_signatures:
+    /// @dev https://github.com/FairgateLabs/rust-bitvmx-key-manager/pull/48
+    function expected_aggregatedKey_4Keys() internal pure returns (Point memory resultAggregatedKey) {
+        resultAggregatedKey = Point({
+            x: 0xcdc6b4ed2e0a57d05f0702f6a32cf11da5d54e3642e01545b36d361aa83cea6a,
+            y: 0xa3acfbb0a0407c2c5ec524d6bbaec32d06d1806983059752a75d5bf9aa3a173c
+        });
+        return resultAggregatedKey;
+    }
+
+    /// @notice The data is obtained by key manager test test_verify_signatures:
+    /// @dev Obtained from https://github.com/FairgateLabs/rust-bitvmx-key-manager/pull/48/files#diff-da35d3b654d6bdc960c0b4e4724a605d564caf7ff4b5ad1468e0a79932e1a1b1R123
     function setup_participantsPubKeys_2Keys() internal pure returns (Point[] memory participantsPubKeys) {
         participantsPubKeys = new Point[](2);
         participantsPubKeys[0] = Point({
@@ -440,6 +572,8 @@ contract TestMusig2 is Test {
         return participantsPubKeys;
     }
 
+    /// @notice The data is obtained by key manager test test_verify_signatures:
+    /// @dev https://github.com/FairgateLabs/rust-bitvmx-key-manager/pull/48
     function setup_participantsPubKeys_10Keys() internal pure returns (Point[] memory participantsPubKeys) {
         participantsPubKeys = new Point[](10);
         participantsPubKeys[0] = Point({
@@ -486,6 +620,66 @@ contract TestMusig2 is Test {
         return participantsPubKeys;
     }
 
+    /// @notice The data is obtained by running the bitvmx-client example union accept_pegin:
+    /// @dev RUST_BACKTRACE=1 cargo run --release --example union accept_pegin
+    /// @dev https://github.com/FairgateLabs/rust-bitvmx-client/blob/main/examples/union/main.rs#L224
+    /// @dev And adding custom logs for the public keys
+    function setup_participantsPubKeys_4Keys() internal pure returns (Point[] memory participantsPubKeys) {
+        participantsPubKeys = new Point[](4);
+
+        // Compressed pub key 0232dfefc702386c0c580d82238c5f365295fd6fa8bd62ca7813b28c2a88dae16a
+        // index 0
+        participantsPubKeys[0] = Point({
+            x: 0x32dfefc702386c0c580d82238c5f365295fd6fa8bd62ca7813b28c2a88dae16a,
+            y: 0x1f9b7920d8292ede5fcd8cb033215b64f0ca1631303b610b5e6f3d5245fe328e
+        });
+        // Compressed pub key 02a1d105494bcaf38c355450c44d0ecdb6acef72a18480803b29069b08e2835a5e
+        // index 2
+        participantsPubKeys[1] = Point({
+            x: 0xa1d105494bcaf38c355450c44d0ecdb6acef72a18480803b29069b08e2835a5e,
+            y: 0x2efd683120bc1def62f18a5e006a5db8024667285345e5070f00b1220d8ec11a
+        });
+        // Compressed pub key 02d874c66f7cf953ee00e4d952d580b6b4ee7ef696f98f5f359f6aa2d4b2b4218b
+        // index 3
+        participantsPubKeys[2] = Point({
+            x: 0xd874c66f7cf953ee00e4d952d580b6b4ee7ef696f98f5f359f6aa2d4b2b4218b,
+            y: 0x42cdc31cfb323e14ad14ee887ca318a793eeabae68e144833ec727f08570002e
+        });
+        // Compressed pub key 02a1468aca1b5dd974ce6837d6e0cf5a0d4181f4ebc14f98a9cb378d650d8f8935
+        // index 1
+        participantsPubKeys[3] = Point({
+            x: 0xa1468aca1b5dd974ce6837d6e0cf5a0d4181f4ebc14f98a9cb378d650d8f8935,
+            y: 0x17e57a8b0641b725f7c756cc69d6a289c6388a542c909353ba77cb39f4fd4866
+        });
+        // sign_partial_message key_aggregation_context: KeyAggContext { pubkey: Point(03d0b0a875133accc7194b636d20d859a31b4c640315470778e237c76606ecf3ab), ordered_pubkeys: [Point(0232dfefc702386c0c580d82238c5f365295fd6fa8bd62ca7813b28c2a88dae16a), Point(02a1468aca1b5dd974ce6837d6e0cf5a0d4181f4ebc14f98a9cb378d650d8f8935), Point(02a1d105494bcaf38c355450c44d0ecdb6acef72a18480803b29069b08e2835a5e), Point(02d874c66f7cf953ee00e4d952d580b6b4ee7ef696f98f5f359f6aa2d4b2b4218b)], pubkey_indexes: {Point(0232dfefc702386c0c580d82238c5f365295fd6fa8bd62ca7813b28c2a88dae16a): 0, Point(02a1d105494bcaf38c355450c44d0ecdb6acef72a18480803b29069b08e2835a5e): 2, Point(02d874c66f7cf953ee00e4d952d580b6b4ee7ef696f98f5f359f6aa2d4b2b4218b): 3, Point(02a1468aca1b5dd974ce6837d6e0cf5a0d4181f4ebc14f98a9cb378d650d8f8935): 1}, key_coefficients: [Valid(Scalar(#f1da0a272e2d318e)), Valid(Scalar(#2518682f7819fb2d)), Valid(Scalar(#d43e96e7ddd1913a)), Valid(Scalar(#a448803f5d8800d8))], effective_pubkeys: [Valid(Point(0204cb44495c2abc544f2f7d10b6987b9360ec8eba93d87ff5ce9b557714d1a2fb)), Valid(Point(02a1468aca1b5dd974ce6837d6e0cf5a0d4181f4ebc14f98a9cb378d650d8f8935)), Valid(Point(028fda443a3974bf998d37f4fe695d12235dafd56762279d50c9ed2955f11126c1)), Valid(Point(025707ffdeaefcf01ad9c99cdd8a986a4080054466d65bf791201e72fdcffa8bbf))], parity_acc: Choice(0), tweak_acc: Valid(Scalar(#11c6b9cf4bab4fb1)) }
+        return participantsPubKeys;
+    }
+
+    function setup_message_2Keys() internal pure returns (bytes memory message) {
+        message = bytes("message_1");
+    }
+
+    function setup_message_4Keys_Tweaked() internal pure returns (bytes memory message) {
+        //generate_nonce id: "accept_pegin_74db3ee2-06a0-e40a-bab5-08ae4fec8b0b"
+        // generate_nonce message_id: "tx:ACCEPT_PEGIN_TX_ix:0_sx:2"
+        // generate_nonce message: "53725553c757cd8a8606a6bf9b3001f6286c8e8812a353727fd2936ca6b8004b"
+        // generate_nonce tweak: Some(Scalar(9090c5cb2893517e4664c7d153d6ff3d448289e97b4b2b476e3513e739ccaceb))
+        // generate_nonce aggregated_pubkey: "02df98af63332bbded5fa23d2f6f3ba4cc0138556bec558bc63d09f9041b110430"
+        // generate_nonce my_public_key: compressed "02da80cff650d0fda99bc94c5bcb4c85e439508aeb1d5f753991a32c007aefa825", uncompressed "04da80cff650d0fda99bc94c5bcb4c85e439508aeb1d5f753991a32c007aefa8258e5bc9c869b5d84a6b3f711a5dc9b5453d0adf5a1b8349e1d5075a0d929837b6"
+        // generate_nonce nonce_seed: "5b64a6871cbea1985bf5729e060831fb95c504d5fe7081436ed8a32a96498a0d"
+        message = bytes("53725553c757cd8a8606a6bf9b3001f6286c8e8812a353727fd2936ca6b8004b");
+    }
+
+    function setup_message_10Keys() internal pure returns (bytes memory message) {
+        message = bytes("message_1");
+    }
+
+    function setup_tweak_4Keys() internal pure returns (bytes32 tweak) {
+        tweak = bytes32(0x55f74f9672f67bbf54edb0afa7963a844c49a13ef9ccd693a346f2a005fcaedc);
+    }
+
+    /// @notice The data is obtained by key manager test test_verify_signatures:
+    /// @dev https://github.com/FairgateLabs/rust-bitvmx-key-manager/pull/48
     function setup_nonces_2() internal pure returns (Nonce[] memory nonces) {
         nonces = new Nonce[](2);
         nonces[0] = Nonce({
@@ -510,6 +704,9 @@ contract TestMusig2 is Test {
         });
     }
 
+    /// @notice The data is obtained by key manager test test_verify_signatures:
+    /// @dev https://github.com/FairgateLabs/rust-bitvmx-key-manager/pull/48
+    /// @dev And uncommenting the public kets
     function setup_nonces_10() internal pure returns (Nonce[] memory nonces) {
         nonces = new Nonce[](10);
         nonces[0] = Nonce({
@@ -610,6 +807,66 @@ contract TestMusig2 is Test {
             R2: Point({
                 x: 0x554c09f1457e0cf5cfd07103826c06a08789b6879003fd2b5797ac4ab5977d95,
                 y: 0x2e969d7e71a3cae88e4d991944b5b76609316cf1e997163b143197f2d332fe41
+            })
+        });
+    }
+
+    /// @notice Get the tweaked nonces created by 4 keys using musig2 for message "40bb65b7323cd1ceeda01a5e87d9224c057968caa088d2499d8e434419a48d68" and tweak "55f74f9672f67bbf54edb0afa7963a844c49a13ef9ccd693a346f2a005fcaedc"
+    /// @dev The data is obtained by running the bitvmx-client example union accept_pegin:
+    /// @dev RUST_BACKTRACE=1 cargo run --release --example union accept_pegin
+    /// @dev https://github.com/FairgateLabs/rust-bitvmx-client/blob/main/examples/union/main.rs#L224
+    /// @dev And adding custom logs for the nonces
+    /// @dev Compressed public keys from comments are decompressed to get x and y coordinates
+    function setup_nonces_4_tweaked() internal pure returns (Nonce[] memory nonces) {
+        nonces = new Nonce[](4);
+        // Ordered by public key: [02788044fb6efa6b2cbb4a9e992959e062ccd4ec7b2d3b751cc4b53e9e46e5575f, 02d7a9540a8876f9b5b63c03afa4e1bc77a674461c5485bb5d90c3b211fbabe0a1, 02da80cff650d0fda99bc94c5bcb4c85e439508aeb1d5f753991a32c007aefa825, 02fc1e25763291a697e3b38e7c03d310159631f6c92b400a6b57f94d37923f3448]
+
+        // aggregate_nonces public_key: "02788044fb6efa6b2cbb4a9e992959e062ccd4ec7b2d3b751cc4b53e9e46e5575f"
+        // aggregate_nonces pub_nonce: PubNonce { R1: Point(03b9623937e83e3cdebba6d6afd4aef12ee1193e43a0a74f585dd34e21adde183e), R2: Point(032b9dd11f34fd2939c42f8219815f927f89d9390b517e128082b96902c9ab692b) }
+        nonces[0] = Nonce({
+            R1: Point({
+                x: 0xb9623937e83e3cdebba6d6afd4aef12ee1193e43a0a74f585dd34e21adde183e,
+                y: 0xe4333057de29852409d5d9b9c9e48c77954187142fecd411df79cc7a3d7018a1
+            }),
+            R2: Point({
+                x: 0x2b9dd11f34fd2939c42f8219815f927f89d9390b517e128082b96902c9ab692b,
+                y: 0xcb6a2050d231f7db8a6baa4f021d047a9fec7070d9812902ea4c75d6b47cbd2d
+            })
+        });
+        // aggregate_nonces public_key: "02d7a9540a8876f9b5b63c03afa4e1bc77a674461c5485bb5d90c3b211fbabe0a1"
+        // aggregate_nonces pub_nonce: PubNonce { R1: Point(0294093d3edbf0e135f00aade59c38583a45a1651e8c1fec5b731665e0f98fa9e2), R2: Point(0216837865b2942d6497a41147128e1bfef8239a1cb5230d36ed2b1c99d975377a) }
+        nonces[1] = Nonce({
+            R1: Point({
+                x: 0x94093d3edbf0e135f00aade59c38583a45a1651e8c1fec5b731665e0f98fa9e2,
+                y: 0x17b9e903728bc31a5c5bc278a15be87b1cde3e30bebf68d59a5396d765ad43ae
+            }),
+            R2: Point({
+                x: 0x16837865b2942d6497a41147128e1bfef8239a1cb5230d36ed2b1c99d975377a,
+                y: 0x5213fab2b889d0142cbb65858f2f4136a0108764a5d20a84412cba13c34fbba6
+            })
+        });
+        // aggregate_nonces my_pub_key: "02da80cff650d0fda99bc94c5bcb4c85e439508aeb1d5f753991a32c007aefa825"
+        // aggregate_nonces my_pub_nonces: PubNonce { R1: Point(03e80d736db0f2a2c45bd6c595e001e440d521db549e5d52a70b63723a77c3cd29), R2: Point(0271d4afe197b64e794458ac504816599e7cc0632d254d3efb0891f88f85c5beb4) }
+        nonces[2] = Nonce({
+            R1: Point({
+                x: 0xe80d736db0f2a2c45bd6c595e001e440d521db549e5d52a70b63723a77c3cd29,
+                y: 0x13fab73fcd285507ceaf662e65afc31e6722c76ff4bd3799ec3a19a4827bcbc5
+            }),
+            R2: Point({
+                x: 0x71d4afe197b64e794458ac504816599e7cc0632d254d3efb0891f88f85c5beb4,
+                y: 0xe29541027ce66bbf21646fed3b10c41617dbf694c2b8940f50e9763188353d38
+            })
+        });
+        // aggregate_nonces public_key: "02fc1e25763291a697e3b38e7c03d310159631f6c92b400a6b57f94d37923f3448"
+        // aggregate_nonces pub_nonce: PubNonce { R1: Point(03c66535dcb24f2ab122935d917c1af5042e1135d05fa15c8f78b70364aadc5d0d), R2: Point(03ce331a32972c73a4fd1b399f918bf9fa30b3b79b2d37345ac93be53eb4a36d16) }
+        nonces[3] = Nonce({
+            R1: Point({
+                x: 0xc66535dcb24f2ab122935d917c1af5042e1135d05fa15c8f78b70364aadc5d0d,
+                y: 0x985c038b156e451a322672060af6d7388e74a081b069438660c26c8f296bd8e1
+            }),
+            R2: Point({
+                x: 0xce331a32972c73a4fd1b399f918bf9fa30b3b79b2d37345ac93be53eb4a36d16,
+                y: 0x2068746b86527ecbb931226a504d57ffad8367d0461bd43da6f0968c2d726d49
             })
         });
     }
