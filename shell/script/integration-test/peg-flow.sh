@@ -2,9 +2,9 @@
 
 # This script runs the pegin/pegout flow, including:
 # 1. Register 10 members and deposit their aggregated key to create a committee and packet
-# 2. Registering a pegin request
+# 2. Registering a request pegin
 # 3. Adding every member signature
-# 4. Accepting the pegin request
+# 4. Accepting the request pegin
 # 5. Registering a pegout request
 # 6. Adding every member signature
 # 7. Registering the user take pegout

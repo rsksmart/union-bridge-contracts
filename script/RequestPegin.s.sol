@@ -16,7 +16,7 @@ contract RequestPeginScript is ScriptUtils, ContractAddressManager {
     IStreamManager streamManager;
     IBitcoinManager bitcoinManager;
 
-    function setUp(address _rskDestinationAddress) internal returns (BtcTxSPVProof memory peginRequestTxSPVProof) {
+    function setUp(address _rskDestinationAddress) internal returns (BtcTxSPVProof memory requestPeginTxSPVProof) {
         // ====== Arguments ======
         uint64 value = 100_000;
         bytes32 btcReimbursementPubKey = 0x7d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f;
@@ -42,7 +42,7 @@ contract RequestPeginScript is ScriptUtils, ContractAddressManager {
         // Pegin P2TR output
         btcTransaction.outputs[0] = BtcTxOut({
             amount: value,
-            scriptPubKey: getPeginRequestP2TRScriptPub(
+            scriptPubKey: getRequestPeginP2TRScriptPub(
                 _rskDestinationAddress, value, btcReimbursementPubKey, committeePubKey
             )
         });
@@ -59,45 +59,45 @@ contract RequestPeginScript is ScriptUtils, ContractAddressManager {
             )
         });
         // SPV proof to verify with the bridge.getBtcTransactionConfirmations
-        peginRequestTxSPVProof = BtcTxSPVProof({
+        requestPeginTxSPVProof = BtcTxSPVProof({
             blockHash: 0x0000000000000000000282fa21665766e58eb6cb94e458c3ef6d4af1121e38d9,
             btcTx: btcTransaction,
             merkleBranchPath: 4285202432,
             merkleBranchHashes: new bytes32[](1)
         });
-        peginRequestTxSPVProof.merkleBranchHashes[0] =
+        requestPeginTxSPVProof.merkleBranchHashes[0] =
             0x3fcef4a1ddf759a858190b89ecbd1ff3dffb49704e110b68baf5b5de7021910f;
     }
 
     function run(address _rskDestinationAddress) public {
-        BtcTxSPVProof memory peginRequestTxSPVProof = setUp(_rskDestinationAddress);
+        BtcTxSPVProof memory requestPeginTxSPVProof = setUp(_rskDestinationAddress);
         // get Tx id
-        bytes32 peginRequestTxid = bitcoinManager.getBtcTxid(peginRequestTxSPVProof.btcTx);
-        console.log("peginRequestTxid");
-        console.logBytes32(peginRequestTxid);
-        // check if peginRequest is already registered
-        StreamPosition memory streamPosition = peginManager.getStreamPositionByRequestPegin(peginRequestTxid);
+        bytes32 requestPeginTxid = bitcoinManager.getBtcTxid(requestPeginTxSPVProof.btcTx);
+        console.log("requestPeginTxid");
+        console.logBytes32(requestPeginTxid);
+        // check if RequestPegin is already registered
+        StreamPosition memory streamPosition = peginManager.getStreamPositionByRequestPegin(requestPeginTxid);
         if (streamPosition.pegStatus != PegStatus.NOT_REGISTERED) {
-            revert("PeginRequest already registered");
+            revert("RequestPegin already registered");
         }
-        // register peginRequest
+        // register requestPegin
         vm.recordLogs();
         vm.startBroadcast(getDeployerKey());
-        peginManager.requestPegin(peginRequestTxSPVProof);
+        peginManager.requestPegin(requestPeginTxSPVProof);
         vm.stopBroadcast();
 
-        // NOTE: the following code is needed if we want to test the requestPegin on alphanet with the real RSK Bridge
+        // NOTE: the following code is needed if we want to test the RequestPegin on alphanet with the real RSK Bridge
 
         // // Output encoded calldata for manual cast call
         // bytes memory callData = abi.encodeWithSignature(
         //     "requestPegin((bytes32,(uint32,(bytes32,uint32,uint32,bytes)[],(uint64,bytes)[],uint32),uint256,bytes32[]))",
-        //     peginRequestTxSPVProof
+        //     requestPeginTxSPVProof
         // );
         // console.log("=== ENCODED CALLDATA FOR CAST ===");
         // console.logBytes(callData);
         // console.log("=== END ENCODED CALLDATA ===");
 
-        // // Try calling requestPegin via vm.rpc
+        // // Try calling RequestPegin via vm.rpc
         // console.log("=== TRYING REQUEST PEGIN VIA VM.RPC ===");
         // string memory callDataHex = vm.toString(callData);
         // string memory pegManagerAddr = vm.toString(address(pegManager));
@@ -119,19 +119,19 @@ contract RequestPeginScript is ScriptUtils, ContractAddressManager {
         //     return;
         // }
 
-        // check if peginRequest is registered
-        streamPosition = peginManager.getStreamPositionByRequestPegin(peginRequestTxid);
+        // check if RequestPegin is registered
+        streamPosition = peginManager.getStreamPositionByRequestPegin(requestPeginTxid);
         if (streamPosition.pegStatus != PegStatus.REGISTERED) {
-            revert("PeginRequest not registered");
+            revert("RequestPegin not registered");
         }
-        console.log("=== PeginRequest registered successfully ===");
+        console.log("=== RequestPegin registered successfully ===");
         console.log("streamId");
         console.log(streamPosition.streamId);
         console.log("packetNumber");
         console.log(streamPosition.packetNumber);
         console.log("accept pegin Tx id");
-        console.logBytes32(peginManager.getAcceptPegin(peginRequestTxid));
-        RequestPeginTempInfo memory requestPeginTempInfo = peginManager.getRequestPeginTempInfo(peginRequestTxid);
+        console.logBytes32(peginManager.getAcceptPegin(requestPeginTxid));
+        RequestPeginTempInfo memory requestPeginTempInfo = peginManager.getRequestPeginTempInfo(requestPeginTxid);
         console.log("accept pegin Signature Hash");
         console.logBytes32(requestPeginTempInfo.acceptPeginSignatureHash);
     }

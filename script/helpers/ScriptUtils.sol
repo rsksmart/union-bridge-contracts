@@ -111,7 +111,7 @@ abstract contract ScriptUtils is Script {
         return tweakedPublicKey;
     }
 
-    function getPeginRequestP2TRScriptPub(
+    function getRequestPeginP2TRScriptPub(
         address _rskDestinationAddress,
         uint64 _value,
         bytes32 _btcReimbursementPubKey,

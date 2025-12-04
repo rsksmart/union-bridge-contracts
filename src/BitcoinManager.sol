@@ -89,7 +89,7 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         return Bech32m.encodeTaprootAddress(abi.encodePacked(tweakedPublicKey), network);
     }
 
-    /// @dev Generates the PeginRequest Taproot output script pub key with both key spend and script spend paths
+    /// @dev Generates the RequestPegin Taproot output script pub key with both key spend and script spend paths
     function getRequestPeginTweakedPublicKey(
         address _rskDestinationAddress,
         uint64 _value,
@@ -216,19 +216,19 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         _validateRequestPeginInputs(
             _btcReimbursementPubKey, _committeePubKey, _rskDestinationAddress, _streamDenomination
         );
-        bytes memory p2trScriptPubKey = getPeginRequestP2TRScriptPub(
+        bytes memory p2trScriptPubKey = getRequestPeginP2TRScriptPub(
             _rskDestinationAddress, _streamDenomination, _btcReimbursementPubKey, _committeePubKey
         );
         _compareOutputPubKey(_p2trOut.scriptPubKey, p2trScriptPubKey);
     }
 
-    /// @notice Generates the PeginRequest Taproot output script pub key with both key spend and script spend paths
+    /// @notice Generates the RequestPegin Taproot output script pub key with both key spend and script spend paths
     /// @param _rskDestinationAddress The RSK address that will receive the RBTC
     /// @param _value The amount in satoshis for the peg-in request
     /// @param _btcReimbursementPubKey The user's Bitcoin public key for reimbursement (x-only)
     /// @param _committeePubKey The committee's public key for the Taproot address (x-only)
     /// @return The P2TR script pub key bytes
-    function getPeginRequestP2TRScriptPub(
+    function getRequestPeginP2TRScriptPub(
         address _rskDestinationAddress,
         uint64 _value,
         bytes32 _btcReimbursementPubKey,

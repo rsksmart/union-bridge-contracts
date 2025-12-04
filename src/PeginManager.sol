@@ -93,13 +93,13 @@ contract PeginManager is IPeginManager, PegManagerBase {
     }
 
     /// @notice Requests a peg-in operation by providing an SPV proof of the Bitcoin transaction
-    /// @param _peginRequestTxSPVProof The SPV proof containing the Bitcoin transaction and merkle proof
+    /// @param _requestPeginTxSPVProof The SPV proof containing the Bitcoin transaction and merkle proof
     /// @dev This function validates the peg-in request transaction and initiates the peg-in process
     /// @dev The transaction must have at least 2 outputs: one P2TR output and one OP_RETURN output
     /// @dev Emits the PeginRequested event
     /// @dev Only callable when contract is unpaused
-    function requestPegin(BtcTxSPVProof calldata _peginRequestTxSPVProof) external nonReentrant whenNotPaused {
-        bytes32 requestPeginTxid = _validatePeginRequestProof(_peginRequestTxSPVProof);
+    function requestPegin(BtcTxSPVProof calldata _requestPeginTxSPVProof) external nonReentrant whenNotPaused {
+        bytes32 requestPeginTxid = _validateRequestPeginProof(_requestPeginTxSPVProof);
 
         (
             uint64 packetNumber,
@@ -107,10 +107,10 @@ contract PeginManager is IPeginManager, PegManagerBase {
             bytes32 btcReimbursementPubKey,
             Stream memory stream,
             bytes memory committeePubKey
-        ) = _extractPeginData(_peginRequestTxSPVProof);
+        ) = _extractPeginData(_requestPeginTxSPVProof);
 
         _validatePeginTransaction(
-            _peginRequestTxSPVProof,
+            _requestPeginTxSPVProof,
             rskDestinationAddress,
             btcReimbursementPubKey,
             committeePubKey,
@@ -120,8 +120,8 @@ contract PeginManager is IPeginManager, PegManagerBase {
 
         // Pre-compute signature data before external calls to follow checks-effects-interactions
         PrevoutData memory prevoutData = PrevoutData({
-            value: _peginRequestTxSPVProof.btcTx.outputs[Constants.VOUT_INDEX_TAPTREE].amount,
-            scriptPubKey: _peginRequestTxSPVProof.btcTx.outputs[Constants.VOUT_INDEX_TAPTREE].scriptPubKey
+            value: _requestPeginTxSPVProof.btcTx.outputs[Constants.VOUT_INDEX_TAPTREE].amount,
+            scriptPubKey: _requestPeginTxSPVProof.btcTx.outputs[Constants.VOUT_INDEX_TAPTREE].scriptPubKey
         });
 
         BitcoinSignatureData memory acceptPeginSignatureData = bitcoinManager.getAcceptPeginSignatureHash(
@@ -175,32 +175,32 @@ contract PeginManager is IPeginManager, PegManagerBase {
         signatureManager.initOperatorTakeTxids(acceptPeginSignatureData.txid, committeeId);
     }
 
-    function _validatePeginRequestProof(BtcTxSPVProof calldata _peginRequestTxSPVProof)
+    function _validateRequestPeginProof(BtcTxSPVProof calldata _requestPeginTxSPVProof)
         internal
         view
         returns (bytes32 requestPeginTxid)
     {
-        if (_peginRequestTxSPVProof.btcTx.version != Constants.BTC_TX_VERSION) {
-            revert InvalidBtcTxVersion(_peginRequestTxSPVProof.btcTx.version, Constants.BTC_TX_VERSION);
+        if (_requestPeginTxSPVProof.btcTx.version != Constants.BTC_TX_VERSION) {
+            revert InvalidBtcTxVersion(_requestPeginTxSPVProof.btcTx.version, Constants.BTC_TX_VERSION);
         }
 
-        if (_peginRequestTxSPVProof.btcTx.locktime != Constants.LOCKTIME) {
-            revert InvalidLocktime(_peginRequestTxSPVProof.btcTx.locktime, Constants.LOCKTIME);
+        if (_requestPeginTxSPVProof.btcTx.locktime != Constants.LOCKTIME) {
+            revert InvalidLocktime(_requestPeginTxSPVProof.btcTx.locktime, Constants.LOCKTIME);
         }
 
         // Calculate requestPeginTxid from BtcTransaction
-        requestPeginTxid = bitcoinManager.getBtcTxid(_peginRequestTxSPVProof.btcTx);
+        requestPeginTxid = bitcoinManager.getBtcTxid(_requestPeginTxSPVProof.btcTx);
         if (_getStreamPositionByRequestPegin(requestPeginTxid).pegStatus != PegStatus.NOT_REGISTERED) {
             revert PeginAlreadyRequested(requestPeginTxid);
         }
 
         // Validate transaction has at least 2 outputs
-        if (_peginRequestTxSPVProof.btcTx.outputs.length < 2) {
-            revert IncorrectOutputsNumber(uint64(_peginRequestTxSPVProof.btcTx.outputs.length), 2);
+        if (_requestPeginTxSPVProof.btcTx.outputs.length < 2) {
+            revert IncorrectOutputsNumber(uint64(_requestPeginTxSPVProof.btcTx.outputs.length), 2);
         }
     }
 
-    function _extractPeginData(BtcTxSPVProof calldata _peginRequestTxSPVProof)
+    function _extractPeginData(BtcTxSPVProof calldata _requestPeginTxSPVProof)
         internal
         view
         returns (
@@ -213,18 +213,18 @@ contract PeginManager is IPeginManager, PegManagerBase {
     {
         // Second transaction should be OP_RETURN with data
         (packetNumber, rskDestinationAddress, btcReimbursementPubKey) =
-            bitcoinManager.getPeginOpReturnData(_peginRequestTxSPVProof.btcTx.outputs[Constants.VOUT_INDEX_SPEED_UP]);
+            bitcoinManager.getPeginOpReturnData(_requestPeginTxSPVProof.btcTx.outputs[Constants.VOUT_INDEX_SPEED_UP]);
 
-        // First transaction is the Pegin P2TR _peginRequestTxSPVProof.btcTx.outputs[0]
+        // First transaction is the Pegin P2TR _requestPeginTxSPVProof.btcTx.outputs[0]
         // Get corresponding stream for the amount if non found reverts
-        stream = streamManager.getStream(_peginRequestTxSPVProof.btcTx.outputs[Constants.VOUT_INDEX_TAPTREE].amount);
+        stream = streamManager.getStream(_requestPeginTxSPVProof.btcTx.outputs[Constants.VOUT_INDEX_TAPTREE].amount);
 
         // getCommitteePubKey reverts if packet does not exist
         committeePubKey = streamManager.getCommitteePubKey(stream.streamId, packetNumber);
     }
 
     function _validatePeginTransaction(
-        BtcTxSPVProof calldata _peginRequestTxSPVProof,
+        BtcTxSPVProof calldata _requestPeginTxSPVProof,
         address rskDestinationAddress,
         bytes32 btcReimbursementPubKey,
         bytes memory committeePubKey,
@@ -238,7 +238,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
             stream.denomination,
             btcReimbursementPubKey,
             committeePubKey,
-            _peginRequestTxSPVProof.btcTx.outputs[Constants.VOUT_INDEX_TAPTREE]
+            _requestPeginTxSPVProof.btcTx.outputs[Constants.VOUT_INDEX_TAPTREE]
         );
 
         // Verifies the requestPeginTxid part of the Merkle Root of Tx of a Block
@@ -247,9 +247,9 @@ contract PeginManager is IPeginManager, PegManagerBase {
         _verifyTxConfirmations(
             stream.peginConfirmations,
             requestPeginTxid,
-            _peginRequestTxSPVProof.blockHash,
-            _peginRequestTxSPVProof.merkleBranchPath,
-            _peginRequestTxSPVProof.merkleBranchHashes
+            _requestPeginTxSPVProof.blockHash,
+            _requestPeginTxSPVProof.merkleBranchPath,
+            _requestPeginTxSPVProof.merkleBranchHashes
         );
     }
 

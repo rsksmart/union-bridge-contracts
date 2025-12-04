@@ -224,10 +224,10 @@ abstract contract HelperContract is Test, TestUtils {
     }
 
     // ========================== Peg In Request ==========================
-    // This counter is added to the txId from getPeginRequestTxIn to avoid collisions when doing multiple pegin's
+    // This counter is added to the txId from getRequestPeginTxIn to avoid collisions when doing multiple pegin's
     uint256 internal txIdCounter = 0;
 
-    function getPeginRequestTxIn() internal returns (BtcTxIn memory) {
+    function getRequestPeginTxIn() internal returns (BtcTxIn memory) {
         return BtcTxIn({
             txId: bytes32(uint256(0x360b81785dc7c2f40627fea364676dbb73e6276683caffd9f906b0e0bd36b3d2) + txIdCounter++),
             vout: 1694,
@@ -236,14 +236,14 @@ abstract contract HelperContract is Test, TestUtils {
         });
     }
 
-    function getPeginRequestP2TROut() internal pure returns (BtcTxOut memory) {
+    function getRequestPeginP2TROut() internal pure returns (BtcTxOut memory) {
         return BtcTxOut({
             amount: VALUE,
             scriptPubKey: hex"51202dda3f54cd468bdf3b43a853018e728ffd6e52a6a49bb5b9355de7225edbcf2f"
         });
     }
 
-    function getPeginRequestPacket() internal pure returns (uint64) {
+    function getRequestPeginPacket() internal pure returns (uint64) {
         return 0;
     }
 
@@ -255,7 +255,7 @@ abstract contract HelperContract is Test, TestUtils {
         return 0x7d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f;
     }
 
-    function getPeginRequestOpReturnOut(
+    function getRequestPeginOpReturnOut(
         uint64 _packetNumber,
         address _rskDestinationAddress,
         bytes32 _btcReimbursementPubKey
@@ -273,19 +273,19 @@ abstract contract HelperContract is Test, TestUtils {
         return BtcTxOut({amount: 0, scriptPubKey: script});
     }
 
-    function getBtcPeginRequestTx() internal returns (BtcTransaction memory) {
+    function getBtcRequestPeginTx() internal returns (BtcTransaction memory) {
         BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
-        btcInputs[0] = getPeginRequestTxIn();
+        btcInputs[0] = getRequestPeginTxIn();
         // Output
         BtcTxOut[] memory btcOutputs = new BtcTxOut[](2);
-        btcOutputs[0] = getPeginRequestP2TROut();
+        btcOutputs[0] = getRequestPeginP2TROut();
 
         Stream memory stream = streamManager.getStream(VALUE);
         uint64 packetNumber = stream.peginPacketPointer;
 
         address rskDestinationAddress = getPeginRskDestinationAddress();
         bytes32 btcReimbursementPubKey = getPeginBtcReimbursementPubKey();
-        btcOutputs[1] = getPeginRequestOpReturnOut(packetNumber, rskDestinationAddress, btcReimbursementPubKey);
+        btcOutputs[1] = getRequestPeginOpReturnOut(packetNumber, rskDestinationAddress, btcReimbursementPubKey);
         return BtcTransaction({
             version: Constants.BTC_TX_VERSION,
             inputs: btcInputs,
@@ -378,14 +378,14 @@ abstract contract HelperContract is Test, TestUtils {
 
     function setup_requestPeginFlow() public returns (BtcTransaction memory) {
         // Arrange
-        BtcTransaction memory btcTransaction = getBtcPeginRequestTx();
+        BtcTransaction memory btcTransaction = getBtcRequestPeginTx();
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(10);
         // Create Pegin struct information
-        BtcTxSPVProof memory peginRequestTxSPVProof = createBtcTxSPVProof(btcTransaction);
+        BtcTxSPVProof memory requestPeginTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
         // Act
-        peginManager.requestPegin(peginRequestTxSPVProof);
+        peginManager.requestPegin(requestPeginTxSPVProof);
         return btcTransaction;
     }
 

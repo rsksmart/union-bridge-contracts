@@ -44,8 +44,8 @@ interface IPeginManager is IPausable {
     /// @notice Registers a peg-in request transaction from Bitcoin
     /// @dev Validates the SPV proof and initiates the peg-in process
     /// @dev Emits PeginRequested event upon successful registration
-    /// @param _peginRequestTxSPVProof The BTC SPV proof of the peg-in request transaction
-    function requestPegin(BtcTxSPVProof calldata _peginRequestTxSPVProof) external;
+    /// @param _requestPeginTxSPVProof The BTC SPV proof of the peg-in request transaction
+    function requestPegin(BtcTxSPVProof calldata _requestPeginTxSPVProof) external;
 
     /// @notice Event emitted when a peg-in request is successfully registered
     /// @param committeeId The ID of the committee responsible for this peg-in
@@ -88,7 +88,7 @@ interface IPeginManager is IPausable {
     /// @notice Event emitted when a peg-in is successfully accepted
     /// @param blockHash The Bitcoin block hash containing the accept transaction
     /// @param acceptPeginTxid The hash of the accept peg-in transaction
-    /// @param peginRequestTxid The hash of the original peg-in request transaction
+    /// @param requestPeginTxid The hash of the original peg-in request transaction
     /// @param vout The output index of the transaction
     /// @param streamPosition The final position of funds in the stream system
     /// @param speedUpPubKey The public key for speed-up transactions
@@ -98,7 +98,7 @@ interface IPeginManager is IPausable {
     event PeginAccepted(
         bytes32 indexed blockHash,
         bytes32 indexed acceptPeginTxid,
-        bytes32 indexed peginRequestTxid,
+        bytes32 indexed requestPeginTxid,
         uint64 vout,
         StreamPosition streamPosition,
         bytes32 speedUpPubKey,

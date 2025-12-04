@@ -68,11 +68,11 @@ contract TestPeginManager is Test, HelperContract {
 
     function test_requestPegin_Success() external {
         // Arrange
-        BtcTransaction memory btcTransaction = getBtcPeginRequestTx();
+        BtcTransaction memory btcTransaction = getBtcRequestPeginTx();
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(10);
         // Create Pegin struct information
-        BtcTxSPVProof memory peginRequestTxSPVProof = createBtcTxSPVProof(btcTransaction);
+        BtcTxSPVProof memory requestPeginTxSPVProof = createBtcTxSPVProof(btcTransaction);
         bytes32 expectedRequestPeginTxid = getBtcTxid(btcTransaction);
         bytes32 expectedAcceptPeginTxid = getBtcTxid(getBtcAcceptPeginTx(btcTransaction));
         bytes32 expectedAcceptPeginSignatureHash = hex"80ad6ee31d49f3021483e3212fc64c9a20139f6ea38b0bfedc2af0480fca166a";
@@ -107,7 +107,7 @@ contract TestPeginManager is Test, HelperContract {
         );
 
         // Act
-        peginManager.requestPegin(peginRequestTxSPVProof);
+        peginManager.requestPegin(requestPeginTxSPVProof);
 
         // Assert
         bytes32 txid = getBtcTxid(btcTransaction);
@@ -116,7 +116,7 @@ contract TestPeginManager is Test, HelperContract {
         assertEq(streamPosition.streamId, 1, "Incorrect streamId registered");
         assertEq(streamPosition.packetNumber, 0, "Incorrect packetNumber registered");
         assertEq(streamPosition.slotId, 0, "Should reserve first slot in packet");
-        assertEq(uint256(streamPosition.pegStatus), uint256(PegStatus.REGISTERED), "Pegin Request was not registered");
+        assertEq(uint256(streamPosition.pegStatus), uint256(PegStatus.REGISTERED), "Request Pegin was not registered");
 
         // Verify slot is properly reserved
         Slot memory reservedSlot =
@@ -129,9 +129,9 @@ contract TestPeginManager is Test, HelperContract {
         assertEq(stream.peginPacketPointer, 0, "Packet pointer should not advance for single request");
 
         BtcTransaction memory expectedAcceptPeginTx = getBtcAcceptPeginTx(btcTransaction);
-        // Registered Pegin Request
+        // Registered Request Pegin
         bytes32 acceptPeginTxid = peginManager.getAcceptPegin(txid);
-        assertEq(acceptPeginTxid, getBtcTxid(expectedAcceptPeginTx), "Incorrect pegin request acceptPeginTxid");
+        assertEq(acceptPeginTxid, getBtcTxid(expectedAcceptPeginTx), "Incorrect request pegin acceptPeginTxid");
         // Registered Peg In Temp info
         RequestPeginTempInfo memory peginTempInfo = peginManager.getRequestPeginTempInfo(txid);
         assertEq(
@@ -153,14 +153,14 @@ contract TestPeginManager is Test, HelperContract {
 
     function test_requestPegin_Revert_PeginAlreadyRequested() external {
         // Arrange
-        BtcTransaction memory btcTransaction = getBtcPeginRequestTx();
+        BtcTransaction memory btcTransaction = getBtcRequestPeginTx();
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(10);
         // Create Pegin struct information
-        BtcTxSPVProof memory peginRequestTxSPVProof = createBtcTxSPVProof(btcTransaction);
+        BtcTxSPVProof memory requestPeginTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
         // Register First Peg In Request
-        peginManager.requestPegin(peginRequestTxSPVProof);
+        peginManager.requestPegin(requestPeginTxSPVProof);
 
         // Assert
         vm.expectRevert(
@@ -168,17 +168,17 @@ contract TestPeginManager is Test, HelperContract {
         );
 
         // Act Register Second Peg In Request
-        peginManager.requestPegin(peginRequestTxSPVProof);
+        peginManager.requestPegin(requestPeginTxSPVProof);
     }
 
     function test_requestPegin_Revert_NotEnoughConfirmations() external {
         // Arrange
         int256 actualConfirmations = 0;
-        BtcTransaction memory btcTransaction = getBtcPeginRequestTx();
+        BtcTransaction memory btcTransaction = getBtcRequestPeginTx();
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(actualConfirmations);
         // Create Pegin struct information
-        BtcTxSPVProof memory peginRequestTxSPVProof = createBtcTxSPVProof(btcTransaction);
+        BtcTxSPVProof memory requestPeginTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
         // Assert
         Stream memory stream = streamManager.getStream(VALUE);
@@ -188,39 +188,39 @@ contract TestPeginManager is Test, HelperContract {
             )
         );
         // Act
-        peginManager.requestPegin(peginRequestTxSPVProof);
+        peginManager.requestPegin(requestPeginTxSPVProof);
     }
 
     function test_requestPegin_Revert_BridgeBtcTxInvalidMerkleBranch() external {
         // Arrange
-        BtcTransaction memory btcTransaction = getBtcPeginRequestTx();
+        BtcTransaction memory btcTransaction = getBtcRequestPeginTx();
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE);
         // Create Pegin struct information
-        BtcTxSPVProof memory peginRequestTxSPVProof = createBtcTxSPVProof(btcTransaction);
+        BtcTxSPVProof memory requestPeginTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(
                 ProofValidator.BridgeBtcTxInvalidMerkleBranch.selector,
                 getBtcTxid(btcTransaction),
-                peginRequestTxSPVProof.merkleBranchPath,
-                peginRequestTxSPVProof.merkleBranchHashes
+                requestPeginTxSPVProof.merkleBranchPath,
+                requestPeginTxSPVProof.merkleBranchHashes
             )
         );
         // Act
-        peginManager.requestPegin(peginRequestTxSPVProof);
+        peginManager.requestPegin(requestPeginTxSPVProof);
     }
 
     function test_requestPegin_Revert_IncorrectBtcTxVersion() external {
         // ===  Before test setup  is run for this  test ===
         // Arrange
-        BtcTransaction memory btcTransaction = getBtcPeginRequestTx();
+        BtcTransaction memory btcTransaction = getBtcRequestPeginTx();
         btcTransaction.version = 1;
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(10);
         // Create Pegin struct information
-        BtcTxSPVProof memory peginRequestTxSPVProof = createBtcTxSPVProof(btcTransaction);
+        BtcTxSPVProof memory requestPeginTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
         // Assert
         vm.expectRevert(
@@ -230,19 +230,19 @@ contract TestPeginManager is Test, HelperContract {
         );
 
         // Act
-        peginManager.requestPegin(peginRequestTxSPVProof);
+        peginManager.requestPegin(requestPeginTxSPVProof);
     }
 
     function test_requestPegin_Revert_IncorrectLocktime() external {
         // ===  Before test setup  is run for this  test ===
         // Arrange
-        BtcTransaction memory btcTransaction = getBtcPeginRequestTx();
+        BtcTransaction memory btcTransaction = getBtcRequestPeginTx();
         btcTransaction.locktime = 1;
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(10);
         // Create Pegin struct information
-        BtcTxSPVProof memory peginRequestTxSPVProof = createBtcTxSPVProof(btcTransaction);
-        peginRequestTxSPVProof.merkleBranchHashes[0] =
+        BtcTxSPVProof memory requestPeginTxSPVProof = createBtcTxSPVProof(btcTransaction);
+        requestPeginTxSPVProof.merkleBranchHashes[0] =
             0x3fcef4a1ddf759a858190b89ecbd1ff3dffb49704e110b68baf5b5de7021910f;
 
         // Assert
@@ -251,11 +251,11 @@ contract TestPeginManager is Test, HelperContract {
         );
 
         // Act
-        peginManager.requestPegin(peginRequestTxSPVProof);
+        peginManager.requestPegin(requestPeginTxSPVProof);
     }
 
     function test_acceptPegin_Revert_PeginNotRequested() external {
-        BtcTransaction memory btcTx = HelperContract.getBtcPeginRequestTx();
+        BtcTransaction memory btcTx = HelperContract.getBtcRequestPeginTx();
 
         // Arrange
         BtcTransaction memory btcTransaction = getBtcAcceptPeginTx(btcTx);
@@ -329,14 +329,14 @@ contract TestPeginManager is Test, HelperContract {
         // Assert
         vm.expectEmit(address(peginManager));
         // We emit the event we expect to see.
-        bytes32 peginRequestTxid = peginAcceptedTxSPVProof.btcTx.inputs[0].txId;
+        bytes32 requestPeginTxid = peginAcceptedTxSPVProof.btcTx.inputs[0].txId;
         bytes32 acceptPeginTxid = HelperContract.getBtcTxid(btcTransaction);
         uint64 packetId = 1;
         uint64 slotId = 0;
         emit IPeginManager.PeginAccepted(
             peginAcceptedTxSPVProof.blockHash,
             acceptPeginTxid,
-            peginRequestTxid,
+            requestPeginTxid,
             0, //vout
             StreamPosition({
                 streamId: setupStreamId,
@@ -367,14 +367,14 @@ contract TestPeginManager is Test, HelperContract {
         vm.expectEmit(address(peginManager));
 
         // We emit the event we expect to see.
-        bytes32 peginRequestTxid = peginAcceptedTxSPVProof.btcTx.inputs[0].txId;
+        bytes32 requestPeginTxid = peginAcceptedTxSPVProof.btcTx.inputs[0].txId;
         bytes32 acceptPeginTxid = getBtcTxid(btcTransaction);
         uint64 streamId = 1;
         uint64 slotId = 0;
         emit IPeginManager.PeginAccepted(
             peginAcceptedTxSPVProof.blockHash,
             acceptPeginTxid,
-            peginRequestTxid,
+            requestPeginTxid,
             0, //vout
             StreamPosition({
                 streamId: streamId,
@@ -393,11 +393,11 @@ contract TestPeginManager is Test, HelperContract {
 
         // Assert
         // Registered Peg In Stream Position
-        StreamPosition memory streamPosition = peginManager.getStreamPositionByRequestPegin(peginRequestTxid);
+        StreamPosition memory streamPosition = peginManager.getStreamPositionByRequestPegin(requestPeginTxid);
         assertEq(streamPosition.streamId, streamId, "Incorrect streamId registered");
         assertEq(streamPosition.packetNumber, PACKET_NUMBER, "Incorrect packetNumber registered");
         assertEq(streamPosition.slotId, slotId, "Incorrect slotId registered");
-        assertEq(uint256(streamPosition.pegStatus), uint256(PegStatus.ACCEPTED), "Pegin Request was not accepted");
+        assertEq(uint256(streamPosition.pegStatus), uint256(PegStatus.ACCEPTED), "Request Pegin was not accepted");
         // Registered Peg In Slot
         Slot memory slot = streamManager.getSlot(streamId, PACKET_NUMBER, slotId);
         assertEq(uint256(slot.state), uint256(SlotState.FILLED), "Slot should be filled");
@@ -482,12 +482,12 @@ contract TestPeginManager is Test, HelperContract {
     function test_requestPegin_MultipleSlots_SamePacket() external {
         // Make Constants.SLOTS_PER_PACKET - 1 requests
         for (uint64 i = 0; i < Constants.SLOTS_PER_PACKET - 1; i++) {
-            BtcTransaction memory btcTransaction = getBtcPeginRequestTx();
+            BtcTransaction memory btcTransaction = getBtcRequestPeginTx();
             // Modify tx to make each unique
             btcTransaction.inputs[0].scriptSig = abi.encodePacked(bytes32(uint256(i + 1)));
-            BtcTxSPVProof memory peginRequestTxSPVProof = createBtcTxSPVProof(btcTransaction);
+            BtcTxSPVProof memory requestPeginTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
-            peginManager.requestPegin(peginRequestTxSPVProof);
+            peginManager.requestPegin(requestPeginTxSPVProof);
 
             // Verify each request gets correct slotId
             bytes32 requestPeginTxid = getBtcTxid(btcTransaction);
@@ -509,11 +509,11 @@ contract TestPeginManager is Test, HelperContract {
     function test_requestPegin_PacketAdvancement() external {
         // Fill up the packet
         for (uint64 i = 0; i < Constants.SLOTS_PER_PACKET; i++) {
-            BtcTransaction memory btcTransaction = getBtcPeginRequestTx();
+            BtcTransaction memory btcTransaction = getBtcRequestPeginTx();
             btcTransaction.inputs[0].scriptSig = abi.encodePacked(bytes32(uint256(i + 1)));
-            BtcTxSPVProof memory peginRequestTxSPVProof = createBtcTxSPVProof(btcTransaction);
+            BtcTxSPVProof memory requestPeginTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
-            peginManager.requestPegin(peginRequestTxSPVProof);
+            peginManager.requestPegin(requestPeginTxSPVProof);
         }
 
         // Verify packet pointer has advanced
@@ -522,17 +522,17 @@ contract TestPeginManager is Test, HelperContract {
     }
 
     function test_acceptPegin_UsesSpecificSlotId() external {
-        // 1. Make multiple pegin requests
-        BtcTransaction memory peginTx1 = getBtcPeginRequestTx();
+        // 1. Make multiple request pegins
+        BtcTransaction memory peginTx1 = getBtcRequestPeginTx();
         peginTx1.inputs[0].scriptSig = abi.encodePacked(bytes32(uint256(1)));
-        BtcTxSPVProof memory peginRequestTxSPVProof1 = createBtcTxSPVProof(peginTx1);
-        peginManager.requestPegin(peginRequestTxSPVProof1);
+        BtcTxSPVProof memory requestPeginTxSPVProof1 = createBtcTxSPVProof(peginTx1);
+        peginManager.requestPegin(requestPeginTxSPVProof1);
         bytes32 requestPeginTxid1 = getBtcTxid(peginTx1);
 
-        BtcTransaction memory peginTx2 = getBtcPeginRequestTx();
+        BtcTransaction memory peginTx2 = getBtcRequestPeginTx();
         peginTx2.inputs[0].scriptSig = abi.encodePacked(bytes32(uint256(2)));
-        BtcTxSPVProof memory peginRequestTxSPVProof2 = createBtcTxSPVProof(peginTx2);
-        peginManager.requestPegin(peginRequestTxSPVProof2);
+        BtcTxSPVProof memory requestPeginTxSPVProof2 = createBtcTxSPVProof(peginTx2);
+        peginManager.requestPegin(requestPeginTxSPVProof2);
         bytes32 requestPeginTxid2 = getBtcTxid(peginTx2);
 
         // 2. Accept only the second pegin transaction
@@ -763,8 +763,8 @@ contract TestPeginManager is Test, HelperContract {
 
     function test_requestPegin_Revert_EnforcedPause_PausedContract() external {
         // Arrange
-        BtcTransaction memory btcTransaction = getBtcPeginRequestTx();
-        BtcTxSPVProof memory peginRequestTxSPVProof = createBtcTxSPVProof(btcTransaction);
+        BtcTransaction memory btcTransaction = getBtcRequestPeginTx();
+        BtcTxSPVProof memory requestPeginTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
         pauseContracts();
 
@@ -772,18 +772,18 @@ contract TestPeginManager is Test, HelperContract {
         vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
 
         // Act
-        peginManager.requestPegin(peginRequestTxSPVProof);
+        peginManager.requestPegin(requestPeginTxSPVProof);
     }
 
     function test_requestPegin_Success_UnpausedContract() external {
         // Arrange
-        BtcTransaction memory btcTransaction = getBtcPeginRequestTx();
-        BtcTxSPVProof memory peginRequestTxSPVProof = createBtcTxSPVProof(btcTransaction);
+        BtcTransaction memory btcTransaction = getBtcRequestPeginTx();
+        BtcTxSPVProof memory requestPeginTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
         pauseAndUnpauseContracts();
 
         // Act & Assert
-        peginManager.requestPegin(peginRequestTxSPVProof);
+        peginManager.requestPegin(requestPeginTxSPVProof);
     }
 
     function test_acceptPegin_Revert_EnforcedPause_PausedContract() external {
@@ -821,14 +821,14 @@ contract TestPeginManager is Test, HelperContract {
         BtcTransaction memory btcTransaction = getBtcAcceptPeginTx(peginTx);
         BtcTxSPVProof memory peginAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
-        bytes32 peginRequestTxid = peginAcceptedTxSPVProof.btcTx.inputs[0].txId;
+        bytes32 requestPeginTxid = peginAcceptedTxSPVProof.btcTx.inputs[0].txId;
         uint256 recipientBalanceBefore = RSK_DESTINATION_ADDRESS.balance;
 
         // Act
         peginManager.acceptPegin(peginAcceptedTxSPVProof);
 
         // Assert - verify the amount minted equals acceptPeginAmount (after fees)
-        StreamPosition memory streamPosition = peginManager.getStreamPositionByRequestPegin(peginRequestTxid);
+        StreamPosition memory streamPosition = peginManager.getStreamPositionByRequestPegin(requestPeginTxid);
         Slot memory slot =
             streamManager.getSlot(streamPosition.streamId, streamPosition.packetNumber, streamPosition.slotId);
 
