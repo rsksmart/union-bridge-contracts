@@ -46,7 +46,7 @@ contract GetSlotInfoScript is ScriptUtils, ContractAddressManager {
         console.logBytes32(slot.acceptPeginTx);
         console.log("Accept Pegin Amount:", slot.acceptPeginAmount);
         console.log("Script Pub Key Length:", slot.scriptPubKey.length);
-        console.log("Take0 Tx:");
+        console.log("Take Tx:");
         console.logBytes32(slot.takeTx);
     }
 }
