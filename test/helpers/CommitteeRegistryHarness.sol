@@ -17,6 +17,8 @@ contract CommitteeRegistryHarness is CommitteeRegistry {
 
     function initialize(address _initialOwner, IMemberRegistry _memberRegistryHarness) public override initializer {
         CommitteeRegistry.initialize(_initialOwner, _memberRegistryHarness);
+
+        memberRegistryHarness = MemberRegistryHarness(address(_memberRegistryHarness));
     }
 
     function selectCommittee(uint64 _denomination) public returns (CommitteeMember[] memory, PendingCommitteeStatus) {
@@ -47,7 +49,7 @@ contract CommitteeRegistryHarness is CommitteeRegistry {
         returns (CommitteeMember[] memory committeeMembers, uint128 committeeId)
     {
         // Delete any pending committee for the stream before creating a new one.
-        _deletePendingCommittee(_streamId);
+        _discardPendingCommittee(_streamId);
 
         // NOTE: This method is called from the pegManager, so we should not revert.
         (committeeMembers,) = _selectCommitteeLastMembersHarness(_streamId, numWatchtowers, numOperators);
@@ -120,7 +122,6 @@ contract CommitteeRegistryHarness is CommitteeRegistry {
 
     function _selectCommitteeLastMembersHarness(uint64 _streamId, uint256 numWatchtowers, uint256 numOperators)
         internal
-        view
         returns (CommitteeMember[] memory, PendingCommitteeStatus)
     {
         StreamDenomination denomination = StreamDenomination(_streamId);
@@ -139,26 +140,30 @@ contract CommitteeRegistryHarness is CommitteeRegistry {
         uint256 committeeMembersCounter = 0;
         CommitteeMember[] memory selectedMembers = new CommitteeMember[](committeeMembersTotal);
 
+        // Select last operators
         for (uint256 i = 0; i < numOperators; i++) {
-            // Select last operators
+            Role role = Role.OPERATOR;
             selectedMembers[committeeMembersCounter++] =
-                CommitteeMember({memberAddress: operators[operators.length - 1 - i], role: Role.OPERATOR});
+                CommitteeMember({memberAddress: operators[operators.length - 1 - i], role: role});
+            memberRegistryHarness.removeLastCandidateHarness(denomination, role);
         }
 
         // Select last watchtowers
         for (uint256 i = 0; i < numWatchtowers; i++) {
+            Role role = Role.WATCHTOWER;
             selectedMembers[committeeMembersCounter++] =
-                CommitteeMember({memberAddress: watchtowers[watchtowers.length - 1 - i], role: Role.WATCHTOWER});
+                CommitteeMember({memberAddress: watchtowers[watchtowers.length - 1 - i], role: role});
+            memberRegistryHarness.removeLastCandidateHarness(denomination, role);
         }
 
         return (selectedMembers, PendingCommitteeStatus.SUCCESS);
     }
 
-    function removeCandidatesAndUpdateBalanceHarness(
+    function stakePreStakedCandidatesBalanceHarness(
         CommitteeMember[] memory _members,
         StreamDenomination _denomination,
         uint64 _packetNumber
     ) public {
-        memberRegistry.removeCandidatesAndUpdateBalance(_members, _denomination, _packetNumber);
+        memberRegistry.stakePreStakedCandidatesBalance(_members, _denomination, _packetNumber);
     }
 }

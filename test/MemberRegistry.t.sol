@@ -203,6 +203,28 @@ contract TestMemberRegistry is Test, HelperContract {
         memberRegistry.releaseCommitteeMembers(members, streamId, packetNumber);
     }
 
+    function test_reAddCommitteeMembers() external {
+        // arrange
+        setup_pendingCommittee();
+        Committee memory pendingCommittee = registry.getPendingCommittee(SETUP_PENDING_COMMITTEE_STREAM_ID);
+
+        // act
+        vm.startPrank(address(registry));
+        memberRegistry.reAddCommitteeMembers(pendingCommittee);
+
+        // assert
+        uint256 expectedOperators = registry.committeeMemberCount() / 2;
+        uint256 expectedWatchtowers = registry.committeeMemberCount() - expectedOperators;
+        assertEq(
+            memberRegistry.getCommitteeCandidates(SETUP_PENDING_COMMITTEE_DENOMINATION, Role.OPERATOR).length,
+            expectedOperators
+        );
+        assertEq(
+            memberRegistry.getCommitteeCandidates(SETUP_PENDING_COMMITTEE_DENOMINATION, Role.WATCHTOWER).length,
+            expectedWatchtowers
+        );
+    }
+
     function test_setReApplyForStream_Revert_EnforcedPause_PausedContract() external {
         // Arrange
         uint256 privKey = uint256(1);
@@ -246,7 +268,7 @@ contract TestMemberRegistry is Test, HelperContract {
         memberRegistry.setReApplyForStream(denomination, reApply);
     }
 
-    function test_removeCandidatesAndUpdateBalance_Success_PausedContract() external {
+    function test_stakePreStakedCandidatesBalance_Success_PausedContract() external {
         // Arrange
         address registryAddress = memberRegistry.committeeRegistry();
 
@@ -258,7 +280,7 @@ contract TestMemberRegistry is Test, HelperContract {
 
         // Act
         vm.prank(registryAddress);
-        memberRegistry.removeCandidatesAndUpdateBalance(members, denomination, packetNumber);
+        memberRegistry.stakePreStakedCandidatesBalance(members, denomination, packetNumber);
     }
 
     function test_selectCommittee_Success_PausedContract() external {
@@ -1525,15 +1547,32 @@ contract TestMemberRegistry is Test, HelperContract {
         // Arrange
         (Committee memory committee,) = setup_completeCommittee();
         StreamDenomination denomination = StreamDenomination(committee.streamId);
+
+        // Register max number of candidates for each role - this will trigger the creation of a pending committee
+        // and therefore the removal of the candidates that are now part of the pending committee
         uint256 numWatchtowers = Constants.MAX_CANDIDATES_SIZE_PER_ROLE;
         uint256 numOperators = Constants.MAX_CANDIDATES_SIZE_PER_ROLE;
-        // Register max number of candidates for each role
         setup_registerNewMembers(numWatchtowers, numOperators, denomination);
 
         // Perform peg flow for all slots in the packet except the last one
         setup_multiplePegFlows(Constants.SLOTS_PER_PACKET - 1);
         RegisterUserTakeSetup memory setup = setup_pegout();
 
+        // Assert that the amount of candidates before the packet is closed is equal to the max candidates size,
+        // minus the ones that are now part of the pending committee
+        uint256 defaultWatchtowers = registry.minCommitteeWatchtowers();
+        uint256 defaultOperators = registry.committeeMemberCount() - registry.minCommitteeWatchtowers();
+        assertEq(
+            memberRegistry.getCommitteeCandidates(denomination, Role.WATCHTOWER).length,
+            Constants.MAX_CANDIDATES_SIZE_PER_ROLE - defaultWatchtowers
+        );
+        assertEq(
+            memberRegistry.getCommitteeCandidates(denomination, Role.OPERATOR).length,
+            Constants.MAX_CANDIDATES_SIZE_PER_ROLE - defaultOperators
+        );
+
+        // Add missing amount of candidates to reach max candidates size
+        setup_registerNewMembers(defaultWatchtowers, defaultOperators, denomination);
         // Assert that the amount of candidates before the packet is closed is equal to the max candidates size
         assertEq(
             memberRegistry.getCommitteeCandidates(denomination, Role.OPERATOR).length,
@@ -1561,7 +1600,7 @@ contract TestMemberRegistry is Test, HelperContract {
             Constants.MAX_CANDIDATES_SIZE_PER_ROLE
         );
 
-        // Assert that member has not reapplied
+        // Assert that members have not reapplied
         for (uint256 i = 0; i < committee.members.length; i++) {
             address user = committee.members[i].memberAddress;
             uint256 minimumDeposit = streamManager.getMinimumDeposit(denomination, committee.members[i].role);
@@ -1572,7 +1611,7 @@ contract TestMemberRegistry is Test, HelperContract {
             assertEq(memberRegistry.getMemberPreStakedBalance(user, denomination), 0, "member pre-staked should be 0");
             assertTrue(
                 memberRegistry.getMemberRequestedRole(user, denomination) == Role.NONE,
-                "member requested role should NONE because they are not candidates"
+                "member requested role should be NONE because they are not candidates"
             );
             assertEq(
                 memberRegistry.getMemberAvailableBalance(user),
@@ -1658,8 +1697,8 @@ contract TestMemberRegistry is Test, HelperContract {
 
         setup_applyToStream_MultipleMembers(denomination, committee.members);
 
-        // Assert that the amount of candidates before the packet is closed is equal to the committee size
-        assertCandidateAmount(denomination, committee.members.length);
+        // Assert that the amount of candidates before the packet is closed is equal to 0
+        assertCandidateAmount(denomination, 0);
 
         // Assert
         vm.expectEmit(address(pegoutManager));
@@ -1668,8 +1707,8 @@ contract TestMemberRegistry is Test, HelperContract {
         // Act
         pegoutManager.registerUserTake(setup.pegoutTxSPVProof);
 
-        // Assert that the amount of candidates after the packet is closed is equal to the committee size
-        assertCandidateAmount(denomination, committee.members.length);
+        // Assert that the amount of candidates after the packet is closed is equal to 0
+        assertCandidateAmount(denomination, 0);
 
         // Assert that member reapplied correctly
         for (uint256 i = 0; i < committee.members.length; i++) {

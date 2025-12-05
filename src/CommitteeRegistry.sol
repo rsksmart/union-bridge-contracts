@@ -157,11 +157,11 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
 
         // slither-disable-next-line timestamp
         if (block.timestamp < createdAt + pendingCommitteeTimeout) {
-            // This is called from the pegManager, so we should not revert.
             revert PendingCommitteeNotExpired(_streamId, createdAt, createdAt + pendingCommitteeTimeout);
         }
 
-        _deletePendingCommittee(_streamId);
+        // slither-disable-next-line reentrancy-no-eth reentrancy-benign
+        _discardPendingCommittee(_streamId);
         _createCommittee(_streamId);
     }
 
@@ -180,7 +180,8 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
                 return;
             }
 
-            _deletePendingCommittee(_streamId);
+            // slither-disable-next-line reentrancy-no-eth reentrancy-benign
+            _discardPendingCommittee(_streamId);
         }
         _createCommittee(_streamId);
     }
@@ -212,7 +213,8 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
 
         // slither-disable-next-line timestamp
         if (block.timestamp >= createdAt + pendingCommitteeTimeout) {
-            _deletePendingCommittee(_streamId);
+            // slither-disable-next-line reentrancy-benign
+            _discardPendingCommittee(_streamId);
             _createCommittee(_streamId);
         }
 
@@ -224,7 +226,7 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
     // controlled by the same owner, making reentrancy attacks impossible.
     // slither-disable-next-line reentrancy-benign,reentrancy-events
     function _createCommittee(uint64 _streamId) internal returns (PendingCommitteeStatus) {
-        // NOTE: This method is called from the pegManager, so we should not revert.
+        // slither-disable-next-line reentrancy-benign
         (CommitteeMember[] memory committeeMembers, PendingCommitteeStatus status) = memberRegistry.selectCommittee(
             _streamId, minCommitteeWatchtowers, minCommitteeOperators, committeeMemberCount
         );
@@ -251,6 +253,7 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
             // Copy committee members from memory to storage
             committee.members.push(committeeMembers[i]);
 
+            // slither-disable-next-line calls-loop
             committee.fundingUTXOs.push(
                 memberRegistry.getMemberFundingUTXO(_streamId, committeeMembers[i].memberAddress)
             );
@@ -258,6 +261,7 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
             // Initialize committee users pending data
             committeesData[committeeId][committeeMembers[i].memberAddress].inCommittee = true;
         }
+        // slither-disable-next-line reentrancy-events
         emit NewPendingCommittee(committeeId, committee);
         return PendingCommitteeStatus.SUCCESS;
     }
@@ -298,7 +302,8 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
             pendingCommittee.aggregatedKey = _aggregatedKey;
         } else {
             if (keccak256(pendingCommittee.aggregatedKey) != keccak256(_aggregatedKey)) {
-                _deletePendingCommittee(pendingCommittee.streamId);
+                // slither-disable-next-line reentrancy-no-eth reentrancy-benign
+                _discardPendingCommittee(pendingCommittee.streamId);
                 _createCommittee(pendingCommittee.streamId); // Ignoring checks
                 return;
             }
@@ -312,11 +317,11 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
         }
 
         // Follow checks-effects-interactions pattern: state changes before external calls
-        _deletePendingCommittee(pendingCommittee.streamId);
+        _resetPendingCommittee(pendingCommittee.streamId);
         emit NewCommittee(_committeeId, pendingCommittee);
 
         // External calls last to prevent reentrancy
-        memberRegistry.removeCandidatesAndUpdateBalance(
+        memberRegistry.stakePreStakedCandidatesBalance(
             pendingCommittee.members,
             StreamDenomination(pendingCommittee.streamId),
             streamManager.getPacketsLength(pendingCommittee.streamId)
@@ -477,9 +482,16 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
         return block.timestamp >= createdAt + pendingCommitteeTimeout;
     }
 
-    function _deletePendingCommittee(uint64 _streamId) internal {
+    function _resetPendingCommittee(uint64 _streamId) internal {
         committeesById[pendingCommittees[_streamId]].isPending = false; // Mark the committee as not pending
-        pendingCommittees[_streamId] = 0; // Reset the pending committee ID
+        pendingCommittees[_streamId] = 0; // Clear the pending committee corresponding to the stream id
+    }
+
+    function _discardPendingCommittee(uint64 _streamId) internal {
+        Committee storage pendingCommittee = committeesById[pendingCommittees[_streamId]];
+        // slither-disable-next-line reentrancy-no-eth reentrancy-benign
+        memberRegistry.reAddCommitteeMembers(pendingCommittee);
+        _resetPendingCommittee(_streamId);
     }
 
     /// @notice Gets the operator dispute data (address and dispute public key) for operator-take operations

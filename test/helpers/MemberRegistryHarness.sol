@@ -26,4 +26,9 @@ contract MemberRegistryHarness is MemberRegistry {
     {
         _registerMember(_memberAddress, _publicKeysRegistration);
     }
+
+    function removeLastCandidateHarness(StreamDenomination _denomination, Role _role) public {
+        address[] storage candidates = committeesCandidates[_denomination][_role];
+        candidates.pop();
+    }
 }

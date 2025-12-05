@@ -7,6 +7,7 @@ import {Pausable} from "./Pausable.sol";
 import {
     Role,
     Member,
+    Committee,
     CommitteeMember,
     ApplicationData,
     Balance,
@@ -190,6 +191,15 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         (bool sent,) = payable(sender).call{value: amount}("");
         if (!sent) {
             revert FailedToSendRSK(sender, amount);
+        }
+    }
+
+    function reAddCommitteeMembers(Committee memory _discardedCommittee) external onlyCommitteeRegistry {
+        StreamDenomination denomination = StreamDenomination(_discardedCommittee.streamId);
+        CommitteeMember[] memory committeeMembers = _discardedCommittee.members;
+        for (uint256 i = 0; i < committeeMembers.length; i++) {
+            CommitteeMember memory member = committeeMembers[i];
+            committeesCandidates[denomination][member.role].push(member.memberAddress);
         }
     }
 
@@ -525,26 +535,24 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
 
     // ===================== Committee Integration Functions =====================
 
-    /// @notice Removes candidates from pool and updates their balances
+    /// @notice Moves candidates balance from pre staked to staked
     /// @dev Called by CommitteeRegistry during committee formation
     /// @dev Only callable by Committee Registry contract
     /// @param _members Array of committee members
     /// @param _denomination The stream denomination
     /// @param _packetNumber The packet number
-    function removeCandidatesAndUpdateBalance(
+    function stakePreStakedCandidatesBalance(
         CommitteeMember[] memory _members,
         StreamDenomination _denomination,
         uint64 _packetNumber
     ) external onlyCommitteeRegistry {
         for (uint256 i = 0; i < _members.length; i++) {
-            Role role = _movePreStakedToStaked(_members[i].memberAddress, _denomination, _packetNumber);
-            _removeFromCandidates(_members[i].memberAddress, _denomination, role);
+            _movePreStakedToStaked(_members[i].memberAddress, _denomination, _packetNumber);
         }
     }
 
     function _movePreStakedToStaked(address _memberAddress, StreamDenomination _denomination, uint64 _packetNumber)
         internal
-        returns (Role)
     {
         Member storage member = _getMember(_memberAddress);
 
@@ -557,7 +565,6 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         });
 
         member.balance.staked[uint8(_denomination)][_packetNumber] = originalData.preStaked;
-        return originalData.requestedRole;
     }
 
     function _moveStakedToAvailable(address _memberAddress, StreamDenomination _denomination, uint64 _packetNumber)
@@ -607,10 +614,10 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         StreamDenomination denomination = StreamDenomination(_streamId);
 
         // Get candidates per role.
-        address[] memory watchtowers = committeesCandidates[denomination][Role.WATCHTOWER];
-        address[] memory operators = committeesCandidates[denomination][Role.OPERATOR];
-        uint256 watchtowersLength = watchtowers.length;
-        uint256 operatorsLength = operators.length;
+        address[] storage watchtowersCandidates = committeesCandidates[denomination][Role.WATCHTOWER];
+        address[] storage operatorsCandidates = committeesCandidates[denomination][Role.OPERATOR];
+        uint256 watchtowersLength = watchtowersCandidates.length;
+        uint256 operatorsLength = operatorsCandidates.length;
 
         // Ensure we have enough candidates
         if (watchtowersLength < _minWatchtowers) {
@@ -657,10 +664,11 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
             uint256 randomPos = _getRandomPosition(btcBlockHash, length);
 
             selectedMembers[committeeMembersCounter++] =
-                CommitteeMember({memberAddress: operators[randomPos], role: Role.OPERATOR});
+                CommitteeMember({memberAddress: operatorsCandidates[randomPos], role: Role.OPERATOR});
 
             // Just move last position to replace random position. There is no need to swap values now.
-            operators[randomPos] = operators[length - 1];
+            operatorsCandidates[randomPos] = operatorsCandidates[length - 1];
+            operatorsCandidates.pop();
         }
 
         // Select random watchtowers
@@ -668,10 +676,11 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
             uint256 randomPos = _getRandomPosition(btcBlockHash, length);
 
             selectedMembers[committeeMembersCounter++] =
-                CommitteeMember({memberAddress: watchtowers[randomPos], role: Role.WATCHTOWER});
+                CommitteeMember({memberAddress: watchtowersCandidates[randomPos], role: Role.WATCHTOWER});
 
             // Just move last position to replace random position. There is no need to swap values now.
-            watchtowers[randomPos] = watchtowers[length - 1];
+            watchtowersCandidates[randomPos] = watchtowersCandidates[length - 1];
+            watchtowersCandidates.pop();
         }
 
         return (selectedMembers, PendingCommitteeStatus.SUCCESS);

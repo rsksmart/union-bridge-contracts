@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import {StreamDenomination, IStreamManager} from "./IStreamManager.sol";
 import {
     Role,
+    Committee,
     CommitteeMember,
     MemberRegistrationKeys,
     MemberKeys,
@@ -69,6 +70,8 @@ interface IMemberRegistry is IPausable {
     /// @param _packetNumber The packet number
     function releaseCommitteeMembers(CommitteeMember[] memory _committeeMembers, uint64 _streamId, uint64 _packetNumber)
         external;
+
+    function reAddCommitteeMembers(Committee memory _discardedCommittee) external;
 
     /// @notice Sets the reapply flag for a member in a specific stream
     /// @dev Controls whether the member will automatically reapply after committee release
@@ -148,12 +151,12 @@ interface IMemberRegistry is IPausable {
 
     // ===================== Committee Integration =====================
 
-    /// @notice Removes candidates from pool and updates their balances
+    /// @notice Moves candidates balance from pre staked to staked
     /// @dev Called by CommitteeRegistry during committee formation
     /// @param _members Array of committee members
     /// @param _denomination The stream denomination
     /// @param _packetNumber The packet number
-    function removeCandidatesAndUpdateBalance(
+    function stakePreStakedCandidatesBalance(
         CommitteeMember[] memory _members,
         StreamDenomination _denomination,
         uint64 _packetNumber
