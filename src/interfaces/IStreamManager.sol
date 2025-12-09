@@ -58,12 +58,9 @@ struct Slot {
     bytes32 acceptPeginTx;
     /// @notice The value of the accept peg-in transaction P2TR UTXO in satoshis
     uint64 acceptPeginAmount;
-    /// @notice Transaction ID of the peg-out transaction to the user account
-    /// @dev Used for normal peg-out operations
-    bytes32 take0Tx;
-    /// @notice Transaction ID of the transaction to the operator account as the operator advanced funds to the user
-    /// @dev Used when the operator advances funds to the user because not all members of the committee signed the peg-out transaction
-    bytes32 take1Tx;
+    /// @notice Transaction ID of the peg-out transaction to the user account.
+    /// @dev The tx where the user is given the funds is stored there, which can be take 0 or take 1.
+    bytes32 takeTx;
 }
 
 /// @notice Represents a packet within a stream that contains multiple slots

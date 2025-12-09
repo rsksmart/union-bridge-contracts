@@ -461,8 +461,7 @@ contract TestStreamManager is Test, HelperContract {
         assertEq(slot.acceptPeginTx, bytes32(0), "acceptPeginTx should be empty initially");
         assertEq(slot.acceptPeginAmount, 0, "acceptPeginAmount should be 0 initially");
         assertEq(slot.scriptPubKey, "", "scriptPubKey should be empty initially");
-        assertEq(slot.take0Tx, bytes32(0), "take0Tx should be empty initially");
-        assertEq(slot.take1Tx, bytes32(0), "take1Tx should be empty initially");
+        assertEq(slot.takeTx, bytes32(0), "takeTx should be empty initially");
 
         // Verify stream peginPacketPointer doesn't advance yet (packet not full)
         Stream memory updatedStream = streamManager.getStreamById(streamId);
@@ -775,8 +774,7 @@ contract TestStreamManager is Test, HelperContract {
         bytes32 initialAcceptPeginTx = initialSlot.acceptPeginTx;
         uint64 initialAcceptPeginAmount = initialSlot.acceptPeginAmount;
         bytes memory initialScriptPubKey = initialSlot.scriptPubKey;
-        bytes32 initialTake0Tx = initialSlot.take0Tx;
-        bytes32 initialTake1Tx = initialSlot.take1Tx;
+        bytes32 initialtakeTx = initialSlot.takeTx;
 
         // Act - call blockSlot as owner
         vm.prank(streamManager.owner());
@@ -790,8 +788,7 @@ contract TestStreamManager is Test, HelperContract {
         assertEq(blockedSlot.acceptPeginTx, initialAcceptPeginTx, "acceptPeginTx should remain unchanged");
         assertEq(blockedSlot.acceptPeginAmount, initialAcceptPeginAmount, "acceptPeginAmount should remain unchanged");
         assertEq(blockedSlot.scriptPubKey, initialScriptPubKey, "scriptPubKey should remain unchanged");
-        assertEq(blockedSlot.take0Tx, initialTake0Tx, "take0Tx should remain unchanged");
-        assertEq(blockedSlot.take1Tx, initialTake1Tx, "take1Tx should remain unchanged");
+        assertEq(blockedSlot.takeTx, initialtakeTx, "takeTx should remain unchanged");
         assertEq(blockedSlot.slotId, slotId, "slotId should remain unchanged");
     }
 
@@ -1062,6 +1059,6 @@ contract TestStreamManager is Test, HelperContract {
         // Verify final state
         Slot memory completedSlot = streamManager.getSlot(streamId, packetNumber, slotId);
         assertEq(uint256(completedSlot.state), uint256(SlotState.COMPLETED), "Slot should be COMPLETED");
-        assertEq(completedSlot.take0Tx, userTakeTx, "userTakeTx should be stored");
+        assertEq(completedSlot.takeTx, userTakeTx, "userTakeTx should be stored");
     }
 }

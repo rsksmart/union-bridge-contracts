@@ -280,8 +280,7 @@ contract StreamManager is IStreamManager, AccessControl {
                 acceptPeginTx: bytes32(0),
                 acceptPeginAmount: 0,
                 scriptPubKey: "",
-                take0Tx: "",
-                take1Tx: ""
+                takeTx: ""
             })
         );
         emit SlotReserved(_streamId, _packetNumber, slotId);
@@ -385,7 +384,7 @@ contract StreamManager is IStreamManager, AccessControl {
 
         // Update the slot state to COMPLETED and store the user take tx id
         slot.state = SlotState.COMPLETED;
-        slot.take0Tx = _userTakeTx;
+        slot.takeTx = _userTakeTx;
     }
 
     function _getSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) internal view returns (Slot storage) {
