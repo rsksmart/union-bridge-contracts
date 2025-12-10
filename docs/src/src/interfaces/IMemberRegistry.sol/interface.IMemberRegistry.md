@@ -1,5 +1,5 @@
 # IMemberRegistry
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b656e8c68a46e57c80c7029f9deb9e4b65b60046/src/interfaces/IMemberRegistry.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/4c35e62294ee16f56ba26d52283a5d84868fbd84/src/interfaces/IMemberRegistry.sol)
 
 **Inherits:**
 [IPausable](/src/interfaces/IPausable.sol/interface.IPausable.md)
@@ -114,6 +114,13 @@ function releaseCommitteeMembers(CommitteeMember[] memory _committeeMembers, uin
 |`_streamId`|`uint64`|The stream ID|
 |`_packetNumber`|`uint64`|The packet number|
 
+
+### reAddCommitteeMembers
+
+
+```solidity
+function reAddCommitteeMembers(Committee memory _discardedCommittee) external;
+```
 
 ### setReApplyForStream
 
@@ -361,15 +368,15 @@ function getReApplyForStream(StreamDenomination _denomination) external view ret
 |`<none>`|`bool`|True if the member will automatically reapply, false otherwise|
 
 
-### removeCandidatesAndUpdateBalance
+### stakePreStakedCandidatesBalance
 
-Removes candidates from pool and updates their balances
+Moves candidates balance from pre staked to staked
 
 *Called by CommitteeRegistry during committee formation*
 
 
 ```solidity
-function removeCandidatesAndUpdateBalance(
+function stakePreStakedCandidatesBalance(
     CommitteeMember[] memory _members,
     StreamDenomination _denomination,
     uint64 _packetNumber
@@ -416,6 +423,23 @@ function setStreamManager(IStreamManager _streamManager) external;
 |Name|Type|Description|
 |----|----|-----------|
 |`_streamManager`|`IStreamManager`|The address of the Stream Manager contract|
+
+
+### setBridge
+
+Sets the Bridge contract address
+
+*Only callable by the contract owner*
+
+
+```solidity
+function setBridge(IBridge _bridge) external;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_bridge`|`IBridge`|The address of the Bridge contract|
 
 
 ## Events
@@ -595,6 +619,20 @@ event CommitteeRegistryUpdated(address indexed newCommitteeRegistry);
 |Name|Type|Description|
 |----|----|-----------|
 |`newCommitteeRegistry`|`address`|The new committee registry address|
+
+### BridgeUpdated
+Event emitted when the bridge address is updated
+
+
+```solidity
+event BridgeUpdated(address indexed newBridge);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`newBridge`|`address`|The new bridge address|
 
 ## Errors
 ### MemberNotRegistered

@@ -1,5 +1,5 @@
 # PeginManager
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b656e8c68a46e57c80c7029f9deb9e4b65b60046/src/PeginManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/4c35e62294ee16f56ba26d52283a5d84868fbd84/src/PeginManager.sol)
 
 **Inherits:**
 [IPeginManager](/src/interfaces/IPeginManager.sol/interface.IPeginManager.md), [PegManagerBase](/src/PegManagerBase.sol/abstract.PegManagerBase.md)
@@ -138,20 +138,20 @@ Requests a peg-in operation by providing an SPV proof of the Bitcoin transaction
 
 
 ```solidity
-function requestPegin(BtcTxSPVProof calldata _peginRequestTxSPVProof) external nonReentrant whenNotPaused;
+function requestPegin(BtcTxSPVProof calldata _requestPeginTxSPVProof) external nonReentrant whenNotPaused;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_peginRequestTxSPVProof`|`BtcTxSPVProof`|The SPV proof containing the Bitcoin transaction and merkle proof|
+|`_requestPeginTxSPVProof`|`BtcTxSPVProof`|The SPV proof containing the Bitcoin transaction and merkle proof|
 
 
-### _validatePeginRequestProof
+### _validateRequestPeginProof
 
 
 ```solidity
-function _validatePeginRequestProof(BtcTxSPVProof calldata _peginRequestTxSPVProof)
+function _validateRequestPeginProof(BtcTxSPVProof calldata _requestPeginTxSPVProof)
     internal
     view
     returns (bytes32 requestPeginTxid);
@@ -161,7 +161,7 @@ function _validatePeginRequestProof(BtcTxSPVProof calldata _peginRequestTxSPVPro
 
 
 ```solidity
-function _extractPeginData(BtcTxSPVProof calldata _peginRequestTxSPVProof)
+function _extractPeginData(BtcTxSPVProof calldata _requestPeginTxSPVProof)
     internal
     view
     returns (
@@ -178,7 +178,7 @@ function _extractPeginData(BtcTxSPVProof calldata _peginRequestTxSPVProof)
 
 ```solidity
 function _validatePeginTransaction(
-    BtcTxSPVProof calldata _peginRequestTxSPVProof,
+    BtcTxSPVProof calldata _requestPeginTxSPVProof,
     address rskDestinationAddress,
     bytes32 btcReimbursementPubKey,
     bytes memory committeePubKey,

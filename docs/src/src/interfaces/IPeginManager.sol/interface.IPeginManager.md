@@ -1,5 +1,5 @@
 # IPeginManager
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b656e8c68a46e57c80c7029f9deb9e4b65b60046/src/interfaces/IPeginManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/4c35e62294ee16f56ba26d52283a5d84868fbd84/src/interfaces/IPeginManager.sol)
 
 **Inherits:**
 [IPausable](/src/interfaces/IPausable.sol/interface.IPausable.md)
@@ -73,13 +73,13 @@ Registers a peg-in request transaction from Bitcoin
 
 
 ```solidity
-function requestPegin(BtcTxSPVProof calldata _peginRequestTxSPVProof) external;
+function requestPegin(BtcTxSPVProof calldata _requestPeginTxSPVProof) external;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_peginRequestTxSPVProof`|`BtcTxSPVProof`|The BTC SPV proof of the peg-in request transaction|
+|`_requestPeginTxSPVProof`|`BtcTxSPVProof`|The BTC SPV proof of the peg-in request transaction|
 
 
 ### getAcceptPegin
@@ -182,7 +182,7 @@ Event emitted when a peg-in is successfully accepted
 event PeginAccepted(
     bytes32 indexed blockHash,
     bytes32 indexed acceptPeginTxid,
-    bytes32 indexed peginRequestTxid,
+    bytes32 indexed requestPeginTxid,
     uint64 vout,
     StreamPosition streamPosition,
     bytes32 speedUpPubKey,
@@ -198,7 +198,7 @@ event PeginAccepted(
 |----|----|-----------|
 |`blockHash`|`bytes32`|The Bitcoin block hash containing the accept transaction|
 |`acceptPeginTxid`|`bytes32`|The hash of the accept peg-in transaction|
-|`peginRequestTxid`|`bytes32`|The hash of the original peg-in request transaction|
+|`requestPeginTxid`|`bytes32`|The hash of the original peg-in request transaction|
 |`vout`|`uint64`|The output index of the transaction|
 |`streamPosition`|`StreamPosition`|The final position of funds in the stream system|
 |`speedUpPubKey`|`bytes32`|The public key for speed-up transactions|

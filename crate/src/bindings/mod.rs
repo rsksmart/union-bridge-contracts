@@ -9,5 +9,6 @@ pub mod r#member_registry;
 pub mod r#pause_manager;
 pub mod r#pegin_manager;
 pub mod r#pegout_manager;
+pub mod r#rbtc_bridge;
 pub mod r#signature_manager;
 pub mod r#stream_manager;

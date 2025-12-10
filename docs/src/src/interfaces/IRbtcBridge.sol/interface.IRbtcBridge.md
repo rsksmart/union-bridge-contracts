@@ -1,5 +1,5 @@
 # IRbtcBridge
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b656e8c68a46e57c80c7029f9deb9e4b65b60046/src/interfaces/IRbtcBridge.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/4c35e62294ee16f56ba26d52283a5d84868fbd84/src/interfaces/IRbtcBridge.sol)
 
 Interface for the RbtcBridge contract that acts as the single authorized intermediary
 between the Union Bridge system and the RSK PowPeg Bridge for RBTC minting/burning operations
