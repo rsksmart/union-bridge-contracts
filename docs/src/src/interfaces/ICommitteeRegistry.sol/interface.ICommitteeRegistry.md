@@ -1,5 +1,5 @@
 # ICommitteeRegistry
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/5935b1ba9b5693ff58c693caac2763a4b158c822/src/interfaces/ICommitteeRegistry.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/2c7f90ba21d83a98b646123c60d27a00fe0644fd/src/interfaces/ICommitteeRegistry.sol)
 
 Interface for managing committee registration and formation in the union bridge
 
@@ -379,15 +379,15 @@ function setCommitteeMemberCount(uint256 _committeeMemberCount) external;
 |`_committeeMemberCount`|`uint256`|The exact number of members required for a committee|
 
 
-### getOperatorTakeAddress
+### getOperatorDisputeData
 
-Gets the operator take address for a specific committee
+Gets the operator dispute data (address and dispute public key) for operator-take operations
 
 
 ```solidity
-function getOperatorTakeAddress(uint128 committeeId, SignatureData[] calldata signatureData)
+function getOperatorDisputeData(uint128 committeeId, SignatureData[] calldata signatureData)
     external
-    returns (address);
+    returns (address operatorAddress, bytes32 disputePubKey);
 ```
 **Parameters**
 
@@ -400,7 +400,8 @@ function getOperatorTakeAddress(uint128 committeeId, SignatureData[] calldata si
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`address`|The operator take address|
+|`operatorAddress`|`address`|The operator take address|
+|`disputePubKey`|`bytes32`|The operator's dispute public key (covenantPubKey) used for operator-take transactions|
 
 
 ### releaseCommittee
