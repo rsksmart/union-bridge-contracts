@@ -253,6 +253,19 @@ bash bind.sh
 
 It will automatically generate the rust files for the smart contracts using Alloy
 
+### Interact with Pow-Peg Bridge
+
+There are some configurations needed to use the pow-peg bridge for burning/minting like locking cap (default 400 RBTC), transfer permissions (default true), and union bridge address (alphanet and testnet only).
+This can be achived using the methods introduced at [RSKIP-502](https://github.com/rsksmart/RSKIPs/blob/master/IPs/RSKIP502.md) with an authorizer key.
+
+For local network this is not necesary as it will use the [BridgeMock](./test/helpers/BridgeMock.sol)
+
+Example to register the bridge address in alphanet and testnet with  ``setUnionBridgeContractAddressForTestnet`
+
+```bash
+cast send 0x0000000000000000000000000000000001000006 "setUnionBridgeContractAddressForTestnet(address)" 0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6 --rpc-url http://node-use1-1.alphanet.rskcomputing.net:4444 --legacy --value 0 --gas-limit 500100 --gas-price 4325612 --private-key <RAW_PRIVATE_KEY>
+```
+
 ### Docs
 
 To generate the documentation using forge doc:

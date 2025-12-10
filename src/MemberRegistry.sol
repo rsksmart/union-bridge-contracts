@@ -187,8 +187,9 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         member.balance.available = 0;
         emit AvailableBalanceRetrieved(sender, amount);
 
+        // Committee members are expected to be EOA
         // slither-disable-next-line arbitrary-send-eth,missing-zero-check
-        (bool sent,) = payable(sender).call{value: amount}("");
+        (bool sent,) = payable(sender).call{value: amount, gas: 2300}("");
         if (!sent) {
             revert FailedToSendRSK(sender, amount);
         }

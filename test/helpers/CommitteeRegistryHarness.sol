@@ -39,11 +39,6 @@ contract CommitteeRegistryHarness is CommitteeRegistry {
         return shouldCreateCommittee[_streamId];
     }
 
-    function setMemberRegistryHarness(MemberRegistryHarness _memberRegistryHarness) public {
-        memberRegistryHarness = _memberRegistryHarness;
-        memberRegistry = _memberRegistryHarness; // Also set the interface reference
-    }
-
     function createCommitteeWithLastCandidatesHarness(uint64 _streamId, uint256 numWatchtowers, uint256 numOperators)
         public
         returns (CommitteeMember[] memory committeeMembers, uint128 committeeId)

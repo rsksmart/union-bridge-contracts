@@ -1,5 +1,5 @@
 # OperatorTakeTxHashes
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b91181b0a4bd785ef0099b4b80f38101dfa816d0/src/interfaces/ISignatureManager.sol)
+[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/3db9056f26f2b3b61c05819d9eb725e59c32f233/src/interfaces/ISignatureManager.sol)
 
 Represents the state of OperatorTake transaction hashes for a specific accept peg-in
 

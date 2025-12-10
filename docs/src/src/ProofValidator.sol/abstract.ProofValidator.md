@@ -78,6 +78,75 @@ function _verifyTxConfirmations(
 |`_merkleBranchHashes`|`bytes32[]`|The hashes needed to verify the merkle proof|
 
 
+### _mintRbtc
+
+Mints RBTC to the Union Bridge contract address
+
+*Uses RSK bridge precompiled contract to mint the RBTC via requestUnionBridgeRbtc*
+
+*following RSKIP502: https://github.com/rsksmart/RSKIPs/blob/master/IPs/RSKIP502.md*
+
+*Will revert if:
+- Unauthorized caller
+- Exceeded locking cap
+- Transfers disabled
+- Unknown error*
+
+
+```solidity
+function _mintRbtc(address payable _to, uint256 _amount) internal;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_to`|`address payable`|The address to transfer the RBTC to|
+|`_amount`|`uint256`|The amount of RBTC to mint|
+
+
+### _sendRbtc
+
+Sends RBTC to the specified address using a low gas limit
+
+*Limit is set to 100_000 to avoid DDoS attacks and stealing gas while allowing to perform some smart contract operations for DEFI.*
+
+*Will revert if:
+- Unable to send RBTC
+- Exceeded gas limit*
+
+
+```solidity
+function _sendRbtc(address payable _to, uint256 _amount) internal;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_to`|`address payable`|The address to send the RBTC to|
+|`_amount`|`uint256`|The amount of RBTC to send|
+
+
+### _releaseRbtc
+
+Releases RBTC to the powpeg bridge following RSKIP502 https://github.com/rsksmart/RSKIPs/blob/master/IPs/RSKIP502.md
+
+*Will revert if:
+- Unauthorized caller
+- Invalid Value: Amount to return exceeds the previously transferred amount
+- Transfers disabled
+- Unknown error*
+
+
+```solidity
+function _releaseRbtc(uint256 _amountToReturn) internal;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_amountToReturn`|`uint256`|The amount of RBTC to release|
+
+
 ## Errors
 ### BridgeBtcInexistantBlockHash
 Error thrown when the provided Bitcoin block hash doesn't exist
@@ -180,6 +249,21 @@ error NotEnoughConfirmations(int256 actual, uint256 expected);
 |`actual`|`int256`|The actual number of confirmations the transaction has|
 |`expected`|`uint256`|The minimum number of confirmations required|
 
+### FailedToSendRBTC
+Error thrown when unable to transfer RBTC
+
+
+```solidity
+error FailedToSendRBTC(address to, uint256 amount);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`to`|`address`|The address to transfer the RBTC to|
+|`amount`|`uint256`|The amount of RBTC to transfer|
+
 ### BridgeAddressZero
 Error thrown when the bridge address is set to zero
 
@@ -196,6 +280,14 @@ Error thrown when an unauthorized caller attempts to access bridge functionality
 error BridgeUnauthorizedCaller();
 ```
 
+### BridgeTransfersDisabled
+Error thrown when RBTC transfers from the PowPeg to the Union Bridge are currently disabled
+
+
+```solidity
+error BridgeTransfersDisabled();
+```
+
 ### BridgeExceededLockingCap
 Error thrown when the locking cap is exceeded
 
@@ -209,4 +301,18 @@ error BridgeExceededLockingCap(uint256 amount);
 |Name|Type|Description|
 |----|----|-----------|
 |`amount`|`uint256`|The amount that would exceed the locking cap|
+
+### BridgeReleaseInvalidValue
+Error thrown when the amount being returned exceeds the previously transferred amount.
+
+
+```solidity
+error BridgeReleaseInvalidValue(uint256 amount);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`amount`|`uint256`|The amount that would exceed previously transferred amount|
 
