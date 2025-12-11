@@ -59,11 +59,11 @@ abstract contract ScriptUtils is Script {
         return ecdsaPublicKey;
     }
 
-    /// @notice Generates a deterministic hash that emulates a public key for the given private key and key type
+    /// @notice Generates a deterministic hash that emulates a public key hash for the given private key and key type
     /// @dev This is only for testing purposes
-    /// @param _privateKey The private key to generate the public key from
-    /// @param _keyType The key type to generate the public key for
-    /// @return The deterministic hash that emulates a public key
+    /// @param _privateKey The private key to generate the public key hash from
+    /// @param _keyType The key type to generate the public key hash for
+    /// @return The deterministic hash that emulates a public key hash
     function generateRSAPublicKeyHash(uint256 _privateKey, PublicKeyType _keyType) public pure returns (bytes32) {
         return keccak256(abi.encode(_privateKey, "rsa_der", uint8(_keyType)));
     }

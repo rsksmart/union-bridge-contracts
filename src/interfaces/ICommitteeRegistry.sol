@@ -198,7 +198,7 @@ interface ICommitteeRegistry is IPausable {
     /// @dev Registers public keys, deposits required bond, and provides funding UTXO for the requested role
     /// @param _requestedStream The stream denomination to apply for
     /// @param _requestedRole The role requested in the committee
-    /// @param _publicKeys Member public key registration with ECDSA and RSA keys
+    /// @param _publicKeys Member public key registration with ECDSA and RSA hash keys
     /// @param _fundingUTXO The Bitcoin UTXO that will be used for committee funding
     function applyToStream(
         StreamDenomination _requestedStream,
