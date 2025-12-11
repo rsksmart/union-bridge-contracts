@@ -308,11 +308,11 @@ interface IMemberRegistry is IPausable {
     /// @notice Thrown when an address is zero
     error InvalidZeroAddress();
 
-    /// @notice Thrown when a EDCSA public key is zero
+    /// @notice Thrown when a EDCSA public key is invalid (zero or not on curve)
     /// @param keyType The type of the public key (TAKE, COVENANT, or COMMUNICATION)
     /// @param publicKeyX The X-coordinate of the public key
     /// @param publicKeyY The Y-coordinate of the public key
-    error InvalidZeroEDCSAPublicKey(PublicKeyType keyType, bytes32 publicKeyX, bytes32 publicKeyY);
+    error InvalidEDCSAPublicKey(PublicKeyType keyType, bytes32 publicKeyX, bytes32 publicKeyY);
 
     /// @notice Thrown when a RSA public key hash is zero
     /// @param keyType The type of the public key (TAKE, COVENANT, or COMMUNICATION)

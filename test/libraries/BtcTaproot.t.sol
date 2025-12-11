@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import {Test} from "forge-std/Test.sol";
 import {BtcTaproot} from "src/libraries/BtcTaproot.sol";
 import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
+import {Secp256k1} from "src/libraries/Secp256k1.sol";
 
 contract TestBtcTaproot is Test {
     function setUp() external {}
@@ -64,6 +65,27 @@ contract TestBtcTaproot is Test {
             0x228f281f297fd01cd363b9c93f742ba2976c1ec5a6083d9f754cb61e505356c3,
             "Should give the correct tweaked public key"
         );
+    }
+
+    function test_getTweakedPublicKey_InvalidTweak_Reverts() external {
+        // Arrange
+        bytes32 publicKey = 0xd1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d;
+        // Create a tweak value that is not on curve (Secp256k1.N is the curve order)
+        bytes32 invalidTweak = bytes32(Secp256k1.N);
+        // Act & Assert
+        vm.expectRevert(abi.encodeWithSelector(BtcTaproot.InvalidTweak.selector, Secp256k1.N));
+        BtcTaproot.getTweakedPublicKey(publicKey, invalidTweak);
+    }
+
+    function test_getTweakedPublicKey_InvalidTweakGreaterThanN_Reverts() external {
+        // Arrange
+        bytes32 publicKey = 0xd1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d;
+        // Create a tweak value that is > Secp256k1.N (the curve order)
+        uint256 invalidTweakValue = Secp256k1.N + 1;
+        bytes32 invalidTweak = bytes32(invalidTweakValue);
+        // Act & Assert
+        vm.expectRevert(abi.encodeWithSelector(BtcTaproot.InvalidTweak.selector, invalidTweakValue));
+        BtcTaproot.getTweakedPublicKey(publicKey, invalidTweak);
     }
 
     function test_getP2TRScriptPubKey_Success() external pure {

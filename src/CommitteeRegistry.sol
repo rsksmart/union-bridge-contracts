@@ -88,8 +88,6 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
 
     // Note: Event emission happens in _createCommittee() after external calls to trusted memberRegistry contract.
     // This is safe because memberRegistry is a trusted contract and the event accurately reflects final state.
-    // slither-disable-next-line reentrancy-events
-
     function applyToStream(
         StreamDenomination _stream,
         Role _role,

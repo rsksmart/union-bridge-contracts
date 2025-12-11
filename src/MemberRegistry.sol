@@ -24,6 +24,7 @@ import {Constants} from "./libraries/Constants.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {IBridge} from "./interfaces/IBridge.sol";
 import {BtcHelper} from "./libraries/BtcHelper.sol";
+import {Secp256k1} from "./libraries/Secp256k1.sol";
 
 /// @title MemberRegistry
 /// @notice Manages member registration, applications, and balance tracking for the union bridge system
@@ -305,15 +306,15 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
     function _validatePublicKeys(MemberRegistrationKeys calldata _publicKeys) internal pure {
         _validateECDSAKey(_publicKeys.takeKey, PublicKeyType.TAKE);
 
-        // Placeholder for COVENANT key validation
+        _validateECDSAKey(_publicKeys.covenantKey, PublicKeyType.COVENANT);
 
         _validateRSAKeyHash(_publicKeys.communicationKey, PublicKeyType.COMMUNICATION);
     }
 
     function _validateECDSAKey(ECDSAPublicKey calldata _key, PublicKeyType _type) internal pure {
-        // Check if the public keys is not 0
-        if (_key.publicKeyX == bytes32(0) || _key.publicKeyY == bytes32(0)) {
-            revert InvalidZeroEDCSAPublicKey(_type, _key.publicKeyX, _key.publicKeyY);
+        // Check if the public keys is on the curve
+        if (!Secp256k1.isOnCurve(uint256(_key.publicKeyX), uint256(_key.publicKeyY))) {
+            revert InvalidEDCSAPublicKey(_type, _key.publicKeyX, _key.publicKeyY);
         }
 
         // Validate signature is not zero
@@ -399,7 +400,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
 
     /// @notice Gets the COMMUNICATION public key for a specific member
     /// @param _address The member's address
-    /// @return The RSA COMMUNICATION public key
+    /// @return The COMMUNICATION public key hash (RSA)
     function getMemberComPubKey(address _address) external view override returns (bytes32) {
         return _getMember(_address).publicKeys.communicationPubKey;
     }

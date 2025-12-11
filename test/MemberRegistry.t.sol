@@ -20,6 +20,7 @@ import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {HelperContract, StreamManagerHarness} from "test/helpers/HelperContract.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {Secp256k1} from "src/libraries/Secp256k1.sol";
 
 contract TestMemberRegistry is Test, HelperContract {
     MemberRegistrationKeys internal memberRegistrationKeys;
@@ -668,7 +669,7 @@ contract TestMemberRegistry is Test, HelperContract {
         // Assert invalid public key X
         vm.expectRevert(
             abi.encodeWithSelector(
-                IMemberRegistry.InvalidZeroEDCSAPublicKey.selector,
+                IMemberRegistry.InvalidEDCSAPublicKey.selector,
                 PublicKeyType.TAKE,
                 memberRegistrationKeys.takeKey.publicKeyX,
                 memberRegistrationKeys.takeKey.publicKeyY
@@ -694,7 +695,59 @@ contract TestMemberRegistry is Test, HelperContract {
         // Assert invalid public key Y
         vm.expectRevert(
             abi.encodeWithSelector(
-                IMemberRegistry.InvalidZeroEDCSAPublicKey.selector,
+                IMemberRegistry.InvalidEDCSAPublicKey.selector,
+                PublicKeyType.TAKE,
+                memberRegistrationKeys.takeKey.publicKeyX,
+                memberRegistrationKeys.takeKey.publicKeyY
+            )
+        );
+        // Act
+        vm.prank(user);
+        registry.applyToStream{value: minimumDeposit}(
+            DEFAULT_STREAM, DEFAULT_ROLE, memberRegistrationKeys, generateDefaultUTXO()
+        );
+    }
+
+    function test_applyToStream_Revert_InvalidEDCSAPublicKey_X_NotOnCurve_TAKE() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        address user = vm.addr(privKey);
+        uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, DEFAULT_ROLE);
+        vm.deal(user, minimumDeposit);
+
+        // Set the public key to a value that is not on the curve
+        memberRegistrationKeys.takeKey.publicKeyX = bytes32(Secp256k1.N);
+
+        // Assert invalid public key X
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IMemberRegistry.InvalidEDCSAPublicKey.selector,
+                PublicKeyType.TAKE,
+                memberRegistrationKeys.takeKey.publicKeyX,
+                memberRegistrationKeys.takeKey.publicKeyY
+            )
+        );
+        // Act
+        vm.prank(user);
+        registry.applyToStream{value: minimumDeposit}(
+            DEFAULT_STREAM, DEFAULT_ROLE, memberRegistrationKeys, generateDefaultUTXO()
+        );
+    }
+
+    function test_applyToStream_Revert_InvalidEDCSAPublicKey_Y_NotOnCurve_TAKE() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        address user = vm.addr(privKey);
+        uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, DEFAULT_ROLE);
+        vm.deal(user, minimumDeposit);
+
+        // Set the public key to a value that is not on the curve
+        memberRegistrationKeys.takeKey.publicKeyY = bytes32(Secp256k1.N);
+
+        // Assert invalid public key Y
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IMemberRegistry.InvalidEDCSAPublicKey.selector,
                 PublicKeyType.TAKE,
                 memberRegistrationKeys.takeKey.publicKeyX,
                 memberRegistrationKeys.takeKey.publicKeyY
@@ -767,6 +820,133 @@ contract TestMemberRegistry is Test, HelperContract {
         vm.expectRevert(
             abi.encodeWithSelector(
                 IMemberRegistry.InvalidZeroEDCSASignature.selector, PublicKeyType.TAKE, memberRegistrationKeys.takeKey
+            )
+        );
+        // Act
+        vm.prank(user);
+        registry.applyToStream{value: minimumDeposit}(
+            DEFAULT_STREAM, DEFAULT_ROLE, memberRegistrationKeys, generateDefaultUTXO()
+        );
+    }
+
+    function test_applyToStream_Revert_InvalidEDCSAPublicKey_X_NotOnCurve_COVENANT() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        address user = vm.addr(privKey);
+        uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, DEFAULT_ROLE);
+        vm.deal(user, minimumDeposit);
+
+        // Set the covenant public key X to a value that is not on the curve
+        memberRegistrationKeys.covenantKey.publicKeyX = bytes32(Secp256k1.N);
+
+        // Assert invalid covenant public key X
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IMemberRegistry.InvalidEDCSAPublicKey.selector,
+                PublicKeyType.COVENANT,
+                memberRegistrationKeys.covenantKey.publicKeyX,
+                memberRegistrationKeys.covenantKey.publicKeyY
+            )
+        );
+        // Act
+        vm.prank(user);
+        registry.applyToStream{value: minimumDeposit}(
+            DEFAULT_STREAM, DEFAULT_ROLE, memberRegistrationKeys, generateDefaultUTXO()
+        );
+    }
+
+    function test_applyToStream_Revert_InvalidEDCSAPublicKey_Y_NotOnCurve_COVENANT() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        address user = vm.addr(privKey);
+        uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, DEFAULT_ROLE);
+        vm.deal(user, minimumDeposit);
+
+        // Set the covenant public key Y to a value that is not on the curve
+        memberRegistrationKeys.covenantKey.publicKeyY = bytes32(Secp256k1.N);
+
+        // Assert invalid covenant public key Y
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IMemberRegistry.InvalidEDCSAPublicKey.selector,
+                PublicKeyType.COVENANT,
+                memberRegistrationKeys.covenantKey.publicKeyX,
+                memberRegistrationKeys.covenantKey.publicKeyY
+            )
+        );
+        // Act
+        vm.prank(user);
+        registry.applyToStream{value: minimumDeposit}(
+            DEFAULT_STREAM, DEFAULT_ROLE, memberRegistrationKeys, generateDefaultUTXO()
+        );
+    }
+
+    function test_applyToStream_Revert_InvalidZeroEDCSASignature_V_COVENANT() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        address user = vm.addr(privKey);
+        uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, DEFAULT_ROLE);
+        vm.deal(user, minimumDeposit);
+
+        // Set the signature V to 0
+        memberRegistrationKeys.covenantKey.v = 0;
+
+        // Assert invalid zero signature
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IMemberRegistry.InvalidZeroEDCSASignature.selector,
+                PublicKeyType.COVENANT,
+                memberRegistrationKeys.covenantKey
+            )
+        );
+        // Act
+        vm.prank(user);
+        registry.applyToStream{value: minimumDeposit}(
+            DEFAULT_STREAM, DEFAULT_ROLE, memberRegistrationKeys, generateDefaultUTXO()
+        );
+    }
+
+    function test_applyToStream_Revert_InvalidZeroEDCSASignature_R_COVENANT() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        address user = vm.addr(privKey);
+        uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, DEFAULT_ROLE);
+        vm.deal(user, minimumDeposit);
+
+        // Set the signature R to 0
+        memberRegistrationKeys.covenantKey.r = bytes32(0);
+
+        // Assert invalid zero signature
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IMemberRegistry.InvalidZeroEDCSASignature.selector,
+                PublicKeyType.COVENANT,
+                memberRegistrationKeys.covenantKey
+            )
+        );
+        // Act
+        vm.prank(user);
+        registry.applyToStream{value: minimumDeposit}(
+            DEFAULT_STREAM, DEFAULT_ROLE, memberRegistrationKeys, generateDefaultUTXO()
+        );
+    }
+
+    function test_applyToStream_Revert_InvalidZeroEDCSASignature_S_COVENANT() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        address user = vm.addr(privKey);
+        uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, DEFAULT_ROLE);
+        vm.deal(user, minimumDeposit);
+
+        // Set the signature S to 0
+        memberRegistrationKeys.covenantKey.s = bytes32(0);
+
+        // Assert invalid zero signature
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IMemberRegistry.InvalidZeroEDCSASignature.selector,
+                PublicKeyType.COVENANT,
+                memberRegistrationKeys.covenantKey
             )
         );
         // Act
