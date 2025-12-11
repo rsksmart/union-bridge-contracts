@@ -11,9 +11,14 @@ import {BtcHelper} from "./BtcHelper.sol";
 /// @dev Used for creating P2TR (Pay-to-Taproot) addresses and scripts in the union bridge
 /// @author Fairgate
 library BtcTaproot {
+    /// @notice Thrown when a tweak value is invalid (>= secp256k1 curve order)
+    /// @param times The invalid tweak value that was provided
+    error InvalidTweak(uint256 times);
+
     // Taproot Constants
     /// @dev Tag for TapTweak hash calculation
     /// @dev Used in the tweaked public key derivation process
+
     bytes constant TAP_TWEAK = bytes("TapTweak");
 
     /// @dev Leaf version for Taproot scripts (0xc0 = 192)
@@ -72,6 +77,10 @@ library BtcTaproot {
         // 1. Use tweak as internal key (x-only pubkey) to obtain y
         // The tweaked the public key (with TapTweak) is converted to integer (so it's like a private key)
         uint256 times = uint256(_tweak);
+        // Validate tweak is less than the order of the secp256k1 curve
+        if (times >= Secp256k1.N) {
+            revert InvalidTweak(times);
+        }
         uint256 publicKeyX = uint256(_publicKey);
         // 2. Get public key even y
         uint8 even = 0x02;
