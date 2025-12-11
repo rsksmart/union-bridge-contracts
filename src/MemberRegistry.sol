@@ -306,8 +306,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
     function _validatePublicKeys(MemberRegistrationKeys calldata _publicKeys) internal pure {
         _validateECDSAKey(_publicKeys.takeKey, PublicKeyType.TAKE);
 
-        // Placeholder for COVENANT key validation
-        // _validateECDSAKey(_publicKeys.covenantKey, PublicKeyType.COVENANT);
+        _validateECDSAKey(_publicKeys.covenantKey, PublicKeyType.COVENANT);
 
         _validateRSAKeyHash(_publicKeys.communicationKey, PublicKeyType.COMMUNICATION);
     }
