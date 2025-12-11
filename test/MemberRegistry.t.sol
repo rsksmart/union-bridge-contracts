@@ -10,7 +10,6 @@ import {
     PublicKeyType,
     CommitteeMember,
     MemberKeys,
-    RSAPublicKey,
     UTXO
 } from "src/interfaces/ICommitteeRegistry.sol";
 import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
@@ -511,7 +510,7 @@ contract TestMemberRegistry is Test, HelperContract {
         MemberRegistrationKeys memory differentPubKey;
         differentPubKey.takeKey = memberRegistrationKeys.takeKey; // Same TAKE key
         differentPubKey.covenantKey = memberRegistrationKeys.covenantKey; // Same COVENANT key
-        differentPubKey.communicationKey = generateRSAPublicKey(privKey + 1, PublicKeyType.COMMUNICATION); // Different COMMUNICATION key
+        differentPubKey.communicationKey = generateRSAPublicKeyHash(privKey + 1, PublicKeyType.COMMUNICATION); // Different COMMUNICATION key
 
         address user = vm.addr(privKey);
         Role role = Role.OPERATOR;
@@ -525,14 +524,13 @@ contract TestMemberRegistry is Test, HelperContract {
 
         vm.deal(user, minimumDeposit);
 
-        // Create expected hash values for the error
-        bytes32 storedComKeyHash = keccak256(abi.encode(memberRegistrationKeys.communicationKey.rsaPublicKey));
-        bytes32 newComKeyHash = keccak256(abi.encode(differentPubKey.communicationKey.rsaPublicKey));
-
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(
-                IMemberRegistry.PublicKeyMismatch.selector, PublicKeyType.COMMUNICATION, storedComKeyHash, newComKeyHash
+                IMemberRegistry.PublicKeyMismatch.selector,
+                PublicKeyType.COMMUNICATION,
+                memberRegistrationKeys.communicationKey,
+                differentPubKey.communicationKey
             )
         );
 
@@ -778,20 +776,19 @@ contract TestMemberRegistry is Test, HelperContract {
         );
     }
 
-    function test_applyToStream_Revert_InvalidZeroRSAPublicKey_COMMUNICATION() external {
+    function test_applyToStream_Revert_InvalidZeroRSAPublicKeyHash_COMMUNICATION() external {
         // Arrange
         uint256 privKey = uint256(1);
         address user = vm.addr(privKey);
         uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, DEFAULT_ROLE);
         vm.deal(user, minimumDeposit);
 
-        // Set RSA public key to empty (initialized to all zeros)
-        RSAPublicKey memory emptyRSAKey;
-        memberRegistrationKeys.communicationKey = emptyRSAKey;
+        // Set RSA public key hash to empty (initialized to all zeros)
+        memberRegistrationKeys.communicationKey = bytes32(0);
 
-        // Assert invalid zero RSA public key
+        // Assert invalid zero RSA public key hash
         vm.expectRevert(
-            abi.encodeWithSelector(IMemberRegistry.InvalidZeroRSAPublicKey.selector, PublicKeyType.COMMUNICATION)
+            abi.encodeWithSelector(IMemberRegistry.InvalidZeroRSAPublicKeyHash.selector, PublicKeyType.COMMUNICATION)
         );
         // Act
         vm.prank(user);
@@ -841,7 +838,6 @@ contract TestMemberRegistry is Test, HelperContract {
         );
     }
 
-    // TODO: Fix this test after RSA key migration - the array indexing approach no longer works
     function test_applyToStream_Revert_InvalidEDCSASignature() external {
         // Arrange
         uint256 privKey = uint256(1);
@@ -1750,17 +1746,13 @@ contract TestMemberRegistry is Test, HelperContract {
         setup_applyToStream(StreamDenomination._0_01BTC, memberAddress, publicKeysRegistration, Role.OPERATOR);
 
         // Get expected communication public key from registration
-        RSAPublicKey memory expectedComPubKey = publicKeysRegistration.communicationKey;
+        bytes32 expectedComPubKey = publicKeysRegistration.communicationKey;
 
         // Act
-        RSAPublicKey memory actualComPubKey = memberRegistry.getMemberComPubKey(memberAddress);
+        bytes32 actualComPubKey = memberRegistry.getMemberComPubKey(memberAddress);
 
         // Assert
-        assertEq(
-            keccak256(abi.encode(actualComPubKey)),
-            keccak256(abi.encode(expectedComPubKey)),
-            "Communication public key should match registration"
-        );
+        assertEq(actualComPubKey, expectedComPubKey, "Communication public key should match registration");
     }
 
     function test_getMemberComPubKey_Revert_MemberNotRegistered() public {

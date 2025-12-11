@@ -3,13 +3,7 @@ pragma solidity ^0.8.20;
 
 import {Script} from "forge-std/Script.sol";
 import {Vm} from "forge-std/Vm.sol";
-import {
-    PublicKeyType,
-    ECDSAPublicKey,
-    RSAPublicKey,
-    MemberRegistrationKeys,
-    RSA_PUBLIC_KEY_CHUNKS
-} from "src/interfaces/ICommitteeRegistry.sol";
+import {PublicKeyType, ECDSAPublicKey, MemberRegistrationKeys} from "src/interfaces/ICommitteeRegistry.sol";
 import {BtcTxSPVProof} from "src/interfaces/IPegCommonTypes.sol";
 import {BtcTransaction, BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
 import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
@@ -65,19 +59,19 @@ abstract contract ScriptUtils is Script {
         return ecdsaPublicKey;
     }
 
-    function generateRSAPublicKey(uint256 _privateKey, PublicKeyType _keyType)
-        public
-        pure
-        returns (RSAPublicKey memory rsaPublicKey)
-    {
-        bytes32[RSA_PUBLIC_KEY_CHUNKS] memory rsaPublicKeyArray;
-        for (uint256 i = 0; i < RSA_PUBLIC_KEY_CHUNKS; i++) {
-            rsaPublicKeyArray[i] = keccak256(abi.encode(_privateKey, "rsa_der", uint8(_keyType), i));
-        }
-        rsaPublicKey = RSAPublicKey({rsaPublicKey: rsaPublicKeyArray});
-        return rsaPublicKey;
+    /// @notice Generates a deterministic hash that emulates a public key for the given private key and key type
+    /// @dev This is only for testing purposes
+    /// @param _privateKey The private key to generate the public key from
+    /// @param _keyType The key type to generate the public key for
+    /// @return The deterministic hash that emulates a public key
+    function generateRSAPublicKeyHash(uint256 _privateKey, PublicKeyType _keyType) public pure returns (bytes32) {
+        return keccak256(abi.encode(_privateKey, "rsa_der", uint8(_keyType)));
     }
 
+    /// @notice Generates a deterministic registration 'public keys' from a private key
+    /// @dev This is only for testing purposes
+    /// @param _privateKey The private key to generate the public keys from
+    /// @return registrationKeys The deterministic registration 'public keys' struct
     function generateRegistrationPublicKeys(uint256 _privateKey)
         public
         returns (MemberRegistrationKeys memory registrationKeys)
@@ -85,7 +79,7 @@ abstract contract ScriptUtils is Script {
         // Generate a deterministic 'public keys' from a private key
         registrationKeys.takeKey = generateECDSAPublicKey(_privateKey, PublicKeyType.TAKE);
         registrationKeys.covenantKey = generateECDSAPublicKey(_privateKey, PublicKeyType.COVENANT);
-        registrationKeys.communicationKey = generateRSAPublicKey(_privateKey, PublicKeyType.COMMUNICATION);
+        registrationKeys.communicationKey = generateRSAPublicKeyHash(_privateKey, PublicKeyType.COMMUNICATION);
     }
 
     // ========================== Peg in ==========================

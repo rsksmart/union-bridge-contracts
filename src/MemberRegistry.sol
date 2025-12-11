@@ -13,10 +13,8 @@ import {
     Balance,
     UTXO,
     ECDSAPublicKey,
-    RSAPublicKey,
     MemberRegistrationKeys,
     MemberKeys,
-    RSA_PUBLIC_KEY_CHUNKS,
     PublicKeyType,
     PendingCommitteeStatus
 } from "./interfaces/ICommitteeRegistry.sol";
@@ -188,7 +186,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         emit AvailableBalanceRetrieved(sender, amount);
 
         // Committee members are expected to be EOA
-        // slither-disable-next-line arbitrary-send-eth,missing-zero-check
+        // slither-disable-next-line arbitrary-send-eth,missing-zero-check,return-bomb
         (bool sent,) = payable(sender).call{value: amount, gas: 2300}("");
         if (!sent) {
             revert FailedToSendRSK(sender, amount);
@@ -300,19 +298,6 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         }
     }
 
-    function _isRSAKeyEmpty(bytes32[RSA_PUBLIC_KEY_CHUNKS] memory _rsaPublicKey) internal pure returns (bool) {
-        for (uint256 i = 0; i < RSA_PUBLIC_KEY_CHUNKS; i++) {
-            if (_rsaPublicKey[i] != bytes32(0)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    function _getRSAKeyHash(bytes32[RSA_PUBLIC_KEY_CHUNKS] memory _rsaPublicKey) internal pure returns (bytes32) {
-        return keccak256(abi.encode(_rsaPublicKey));
-    }
-
     function _getAddressFromPublicKey(bytes memory _uncompressedPublicKey) internal pure returns (address) {
         return address(uint160(uint256(keccak256(_uncompressedPublicKey))));
     }
@@ -322,7 +307,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
 
         // Placeholder for COVENANT key validation
 
-        _validateRSAKey(_publicKeys.communicationKey, PublicKeyType.COMMUNICATION);
+        _validateRSAKeyHash(_publicKeys.communicationKey, PublicKeyType.COMMUNICATION);
     }
 
     function _validateECDSAKey(ECDSAPublicKey calldata _key, PublicKeyType _type) internal pure {
@@ -355,10 +340,10 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         }
     }
 
-    function _validateRSAKey(RSAPublicKey calldata _key, PublicKeyType _type) internal pure {
-        // Check if RSA key is empty
-        if (_isRSAKeyEmpty(_key.rsaPublicKey)) {
-            revert InvalidZeroRSAPublicKey(_type);
+    function _validateRSAKeyHash(bytes32 _keyHash, PublicKeyType _type) internal pure {
+        // Check if RSA public key hash is empty
+        if (_keyHash == bytes32(0)) {
+            revert InvalidZeroRSAPublicKeyHash(_type);
         }
     }
 
@@ -376,11 +361,11 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
                 PublicKeyType.COVENANT, _member.publicKeys.covenantPubKey, _publicKeys.covenantKey.publicKeyX
             );
         }
-        // COMMUNICATION key - compare RSA hashes
-        bytes32 storedComKeyHash = _getRSAKeyHash(_member.publicKeys.communicationPubKey.rsaPublicKey);
-        bytes32 newComKeyHash = _getRSAKeyHash(_publicKeys.communicationKey.rsaPublicKey);
-        if (storedComKeyHash != newComKeyHash) {
-            revert PublicKeyMismatch(PublicKeyType.COMMUNICATION, storedComKeyHash, newComKeyHash);
+        // COMMUNICATION key - compare RSA public key hashes
+        if (_member.publicKeys.communicationPubKey != _publicKeys.communicationKey) {
+            revert PublicKeyMismatch(
+                PublicKeyType.COMMUNICATION, _member.publicKeys.communicationPubKey, _publicKeys.communicationKey
+            );
         }
     }
 
@@ -415,7 +400,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
     /// @notice Gets the COMMUNICATION public key for a specific member
     /// @param _address The member's address
     /// @return The RSA COMMUNICATION public key
-    function getMemberComPubKey(address _address) external view override returns (RSAPublicKey memory) {
+    function getMemberComPubKey(address _address) external view override returns (bytes32) {
         return _getMember(_address).publicKeys.communicationPubKey;
     }
 

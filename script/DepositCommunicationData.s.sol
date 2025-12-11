@@ -7,8 +7,7 @@ import {
     ICommitteeRegistry,
     Committee,
     CommunicationData,
-    COMMUNICATION_DATA_CHUNKS,
-    RSAPublicKey
+    COMMUNICATION_DATA_CHUNKS
 } from "src/interfaces/ICommitteeRegistry.sol";
 import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
 
@@ -21,7 +20,7 @@ contract DepositCommunicationDataScript is ScriptUtils, ContractAddressManager {
     uint64 stream;
     uint256 privKey;
     address user;
-    RSAPublicKey comPubKey;
+    bytes32 comPubKey;
 
     function setUp(uint16 _mnemonicIndex, uint64 _streamIndex) internal {
         committeeRegistry = ICommitteeRegistry(getCommitteeRegistry());
@@ -47,7 +46,7 @@ contract DepositCommunicationDataScript is ScriptUtils, ContractAddressManager {
         setUp(_mnemonicIndex, _streamIndex);
 
         vm.startBroadcast(privKey);
-        RSAPublicKey[] memory committeeComPubkeys = getPendingCommitteeComPubKeys(stream);
+        bytes32[] memory committeeComPubkeys = getPendingCommitteeComPubKeys(stream);
         vm.stopBroadcast();
 
         uint128 committeeId = committeeRegistry.getPendingCommitteeId(stream);
@@ -70,14 +69,14 @@ contract DepositCommunicationDataScript is ScriptUtils, ContractAddressManager {
         // }
     }
 
-    function encryptComunicationData(RSAPublicKey[] memory committeeComPubkeys, string memory data)
+    function encryptComunicationData(bytes32[] memory committeeComPubkeys, string memory data)
         internal
         view
         returns (CommunicationData[] memory)
     {
         CommunicationData[] memory encryptedData = new CommunicationData[](committeeComPubkeys.length);
         for (uint256 i = 0; i < committeeComPubkeys.length; i++) {
-            if (keccak256(abi.encode(committeeComPubkeys[i])) == keccak256(abi.encode(comPubKey))) {
+            if (committeeComPubkeys[i] == comPubKey) {
                 continue;
             }
             encryptedData[i] = encryptData(committeeComPubkeys[i], data);
@@ -85,14 +84,14 @@ contract DepositCommunicationDataScript is ScriptUtils, ContractAddressManager {
         return encryptedData;
     }
 
-    function encryptData(RSAPublicKey memory communicationPublicKey, string memory data)
+    function encryptData(bytes32 _communicationPublicKey, string memory data)
         internal
         pure
         returns (CommunicationData memory)
     {
         // Placeholder for actual encryption logic
         // Here we just simulate "encryption" by concatenating the public key and data
-        bytes memory flat = abi.encodePacked(keccak256(abi.encode(communicationPublicKey)), ":", data);
+        bytes memory flat = abi.encodePacked(_communicationPublicKey, ":", data);
 
         require(flat.length <= 256, "Communication data too large");
 
@@ -120,10 +119,10 @@ contract DepositCommunicationDataScript is ScriptUtils, ContractAddressManager {
         }
     }
 
-    function getPendingCommitteeComPubKeys(uint64 _streamId) internal view returns (RSAPublicKey[] memory) {
+    function getPendingCommitteeComPubKeys(uint64 _streamId) internal view returns (bytes32[] memory) {
         Committee memory committee = committeeRegistry.getPendingCommittee(_streamId);
 
-        RSAPublicKey[] memory committeeMembersPubKeys = new RSAPublicKey[](committee.members.length);
+        bytes32[] memory committeeMembersPubKeys = new bytes32[](committee.members.length);
         for (uint256 i = 0; i < committee.members.length; i++) {
             address memberAddress = committee.members[i].memberAddress;
             committeeMembersPubKeys[i] = memberRegistry.getMemberComPubKey(memberAddress);

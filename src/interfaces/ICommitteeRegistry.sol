@@ -11,9 +11,6 @@ import {IPausable} from "./IPausable.sol";
 /// @dev Amount of bytes32 chunks for communication data
 uint8 constant COMMUNICATION_DATA_CHUNKS = 8;
 
-/// @dev Amount of bytes32 chunks for DER-encoded RSA public key
-uint8 constant RSA_PUBLIC_KEY_CHUNKS = 10;
-
 /// @notice Represents a Bitcoin UTXO used for committee member funding
 struct UTXO {
     /// @notice The Bitcoin transaction ID containing the UTXO
@@ -108,14 +105,6 @@ struct ECDSAPublicKey {
     bytes32 s;
 }
 
-/// @notice Represents RSA public key for communication
-/// @dev Contains DER-encoded RSA public key
-/// @dev We use a fixed bytes32 array for gas efficiency
-struct RSAPublicKey {
-    /// @notice DER-encoded RSA public key stored as bytes32 chunks
-    bytes32[RSA_PUBLIC_KEY_CHUNKS] rsaPublicKey;
-}
-
 /// @notice Member public key registration structure
 /// @dev Contains mixed key types for registration
 struct MemberRegistrationKeys {
@@ -123,8 +112,8 @@ struct MemberRegistrationKeys {
     ECDSAPublicKey takeKey;
     /// @notice COVENANT public key (ECDSA) - no validation
     ECDSAPublicKey covenantKey;
-    /// @notice COMMUNICATION public key (RSA) - RSA validation
-    RSAPublicKey communicationKey;
+    /// @notice COMMUNICATION public key hash (RSA) - input validation only
+    bytes32 communicationKey;
 }
 
 /// @notice Member public keys structure for members
@@ -134,15 +123,15 @@ struct MemberKeys {
     bytes32 takePubKey;
     /// @notice COVENANT public key (ECDSA)
     bytes32 covenantPubKey;
-    /// @notice COMMUNICATION public key (RSA)
-    RSAPublicKey communicationPubKey;
+    /// @notice COMMUNICATION public key hash (RSA)
+    bytes32 communicationPubKey;
 }
 
 /// @notice Represents a committee member with their keys, roles, and balance
 /// @dev Contains all information needed to manage a member's participation
 struct Member {
     /// @notice Member public keys for different purposes
-    /// @dev Contains TAKE (ECDSA), COVENANT (ECDSA), and COMMUNICATION (RSA) keys
+    /// @dev Contains TAKE (ECDSA), COVENANT (ECDSA), and COMMUNICATION (RSA hash) keys
     MemberKeys publicKeys;
     /// @notice Balance and staking information for the member
     Balance balance;
