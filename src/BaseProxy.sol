@@ -2,13 +2,13 @@
 pragma solidity ^0.8.20;
 
 import {ERC1967Utils, UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 
 /// @title Base Proxy
 /// @notice Abstract base contract for upgradeable proxy contracts
 /// @dev Provides UUPS upgradeability and ownership functionality
-/// @dev Inherits from OpenZeppelin's UUPSUpgradeable and OwnableUpgradeable
-abstract contract BaseProxy is UUPSUpgradeable, OwnableUpgradeable {
+/// @dev Inherits from OpenZeppelin's UUPSUpgradeable and Ownable2StepUpgradeable
+abstract contract BaseProxy is UUPSUpgradeable, Ownable2StepUpgradeable {
     /* ========== CONSTRUCTOR ========== */
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -20,7 +20,7 @@ abstract contract BaseProxy is UUPSUpgradeable, OwnableUpgradeable {
     /// @dev Can only be called once during contract deployment
     /// @param _initialOwner The address that will be set as the initial owner
     function __BaseProxy_init(address _initialOwner) public initializer {
-        // Validaton that the initial owner is not zero address is done in OwnableUpgradeable
+        // Validaton that the initial owner is not zero address is done in Ownable2StepUpgradeable
         __Ownable_init_unchained(_initialOwner);
     }
 

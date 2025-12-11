@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import {HelperContract} from "test/helpers/HelperContract.sol";
 import {IRbtcBridge} from "src/interfaces/IRbtcBridge.sol";
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 
 // Helper contract that rejects RBTC (no receive/fallback function)
 contract RejectRBTC {
