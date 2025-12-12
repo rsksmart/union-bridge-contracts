@@ -20,6 +20,11 @@ library Bech32m {
     /// @param value The value that exceeded the maximum allowed range
     error InvalidBitsSize(uint256 value);
 
+    /// @notice Error thrown when a tweaked public key has an invalid length
+    /// @param length The actual length of the tweaked public key
+    /// @param expected The expected length (32 bytes)
+    error InvalidTweakedPublicKeyLength(uint256 length, uint256 expected);
+
     // Bech32m Constants
     /// @dev Character set for Bech32m encoding (32 characters)
     /// @dev Used to convert 5-bit values to human-readable characters
@@ -166,6 +171,10 @@ library Bech32m {
         pure
         returns (string memory)
     {
+        // Validate tweaked public key length is 32 bytes
+        if (tweakedPubKey.length != 32) {
+            revert InvalidTweakedPublicKeyLength(tweakedPubKey.length, 32);
+        }
         // Convert to 5-bit words
         uint8[] memory words = convertBits(tweakedPubKey, 8, 5, true);
 

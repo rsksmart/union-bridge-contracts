@@ -23,4 +23,22 @@ contract TestBech32m is Test {
         );
         assertEq(p2trAddress, "bc1p2cjjjprlga4e4qe6tfuq5avytmpjnqpnp4mdrtylx5wuw67wt4eqg9jscq");
     }
+
+    function test_encodeTaprootAddress_InvalidTweakedPublicKeyLength_LessThan32Bytes_Reverts() external {
+        // Arrange - Create a tweaked public key with 31 bytes (less than required 32 bytes)
+        bytes memory invalidTweakedPubKey = hex"9c41e5b3c7e52002735340fce3aac35b53c4d7b45b23c6d904acf238285336";
+
+        // Act & Assert
+        vm.expectRevert(abi.encodeWithSelector(Bech32m.InvalidTweakedPublicKeyLength.selector, 31, 32));
+        Bech32m.encodeTaprootAddress(invalidTweakedPubKey, BtcNetwork.TESTNET);
+    }
+
+    function test_encodeTaprootAddress_InvalidTweakedPublicKeyLength_MoreThan32Bytes_Reverts() external {
+        // Arrange - Create a tweaked public key with 33 bytes (more than required 32 bytes)
+        bytes memory invalidTweakedPubKey = hex"9c41e5b3c7e52002735340fce3aac35b53c4d7b45b23c6d904acf2382853366ff0";
+
+        // Act & Assert
+        vm.expectRevert(abi.encodeWithSelector(Bech32m.InvalidTweakedPublicKeyLength.selector, 33, 32));
+        Bech32m.encodeTaprootAddress(invalidTweakedPubKey, BtcNetwork.TESTNET);
+    }
 }
