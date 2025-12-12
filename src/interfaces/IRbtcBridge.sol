@@ -87,4 +87,8 @@ interface IRbtcBridge {
     /// @dev The pegoutManager must send the RBTC amount via msg.value
     /// @dev Returns RBTC to PowPeg bridge via releaseUnionBridgeRbtc
     function burnRbtc() external payable;
+
+    /// @notice Gets the locking cap of the Union Bridge for RBTC minting operations
+    /// @return The locking cap of the Union Bridge
+    function getUnionBridgeLockingCap() external view returns (uint256);
 }

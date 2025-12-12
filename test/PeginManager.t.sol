@@ -46,10 +46,11 @@ contract TestPeginManager is Test, HelperContract {
         // Address is different according to amount and destination address
         string memory tempAddress = "bcrt1p9hdr74xdg69a7w6r4pfsrrnj3l7ku54x5jdmtwf4thnjyhkmeuhs79pnrw";
 
-        (string memory result, uint64 packetNumber, bytes32[] memory memberDisputeKeys) =
+        (string memory result, uint64 packetNumber, bytes32[] memory memberDisputeKeys, uint64 availableSlots) =
             peginManager.getRequestPeginData(dummyRskAddress, VALUE, BTC_REIMBURSEMENT_PUBKEY);
         assertEq(result, tempAddress, "Incorrect temporary peg in address at PegManager");
         assertEq(packetNumber, PACKET_NUMBER, "Incorrect packet number at PegManager");
+        assertEq(availableSlots, Constants.SLOTS_PER_PACKET, "Incorrect available slots for fresh packet");
 
         // Get the committee ID for the current packet
         uint128 currentCommitteeId = streamManager.getCommitteeId(setupStreamId, PACKET_NUMBER);
@@ -64,6 +65,23 @@ contract TestPeginManager is Test, HelperContract {
             MemberKeys memory keys = memberRegistry.getMemberPublicKeys(committeeMembers[i].memberAddress);
             assertEq(memberDisputeKeys[i], keys.covenantPubKey, "Incorrect dispute key for committee member");
         }
+    }
+
+    function test_getRequestPeginData_Revert_BridgeExceededLockingCap() external {
+        // Arrange
+        address dummyRskAddress = 0x7Ac5496aee77c1bA1F0854206A26DdA82A81d6d8;
+        uint64 testValue = VALUE; // 1_000_000 satoshis
+
+        // Simulate that all capacity has been used (lockingCap will be 0)
+        bridgeMock.setWeisTransferredToUnionBridge(400 ether);
+
+        uint256 lockingCap = rbtcBridge.getUnionBridgeLockingCap();
+
+        // Assert - expect revert with specific error
+        vm.expectRevert(abi.encodeWithSelector(IPeginManager.BridgeExceededLockingCap.selector, testValue, lockingCap));
+
+        // Act
+        peginManager.getRequestPeginData(dummyRskAddress, testValue, BTC_REIMBURSEMENT_PUBKEY);
     }
 
     function test_requestPegin_Success() external {

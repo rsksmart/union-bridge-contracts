@@ -283,6 +283,12 @@ interface IStreamManager is IAccessControl {
     /// @return The stream position associated with the transaction ID
     function getStreamPosition(bytes32 _acceptPeginTxid) external view returns (StreamPosition memory);
 
+    /// @notice Gets the length of the slots in a packet
+    /// @param _streamId The ID of the stream
+    /// @param _packetNumber The packet number
+    /// @return The length of the slots in the packet
+    function getPacketSlotsLength(uint64 _streamId, uint64 _packetNumber) external view returns (uint64);
+
     /// @notice Updates only the peg status of an existing stream position
     /// @param _acceptPeginTxid The accept peg-in transaction ID
     /// @param _newStatus The new peg status to set

@@ -62,8 +62,18 @@ contract PeginManager is IPeginManager, PegManagerBase {
     function getRequestPeginData(address _rootstockDepositAddress, uint64 _value, bytes32 _btcReimbursementPubKey)
         external
         view
-        returns (string memory bitcoinDepositAddress, uint64 packetNumber, bytes32[] memory memberDisputeKeys)
+        returns (
+            string memory bitcoinDepositAddress,
+            uint64 packetNumber,
+            bytes32[] memory memberDisputeKeys,
+            uint64 availableSlots
+        )
     {
+        // Validate Union Bridge locking cap
+        if (_value > rbtcBridge.getUnionBridgeLockingCap()) {
+            revert BridgeExceededLockingCap(_value, rbtcBridge.getUnionBridgeLockingCap());
+        }
+
         // Get the stream for this value
         Stream memory stream = streamManager.getStream(_value);
 
@@ -88,7 +98,8 @@ contract PeginManager is IPeginManager, PegManagerBase {
                 _rootstockDepositAddress, _value, _btcReimbursementPubKey, committeeKey
             ),
             stream.peginPacketPointer,
-            memberDisputeKeys
+            memberDisputeKeys,
+            Constants.SLOTS_PER_PACKET - streamManager.getPacketSlotsLength(stream.streamId, stream.peginPacketPointer)
         );
     }
 

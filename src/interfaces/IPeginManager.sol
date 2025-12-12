@@ -33,7 +33,12 @@ interface IPeginManager is IPausable {
     function getRequestPeginData(address _rootstockDepositAddress, uint64 _value, bytes32 _btcReimbursementPubKey)
         external
         view
-        returns (string memory temporaryPeginAddress, uint64 packetNumber, bytes32[] memory memberDisputeKeys);
+        returns (
+            string memory temporaryPeginAddress,
+            uint64 packetNumber,
+            bytes32[] memory memberDisputeKeys,
+            uint64 availableSlots
+        );
 
     /// @notice Retrieves the stream position information for a given request peg-in transaction id
     /// @dev Looks up the corresponding accept peg-in txid and queries the StreamManager
@@ -149,4 +154,9 @@ interface IPeginManager is IPausable {
     /// @param actual The actual version value
     /// @param expected The expected version value
     error InvalidBtcTxVersion(uint256 actual, uint256 expected);
+
+    /// @notice Thrown when the input amount exceeds the locking cap of the pow-peg bridge
+    /// @param value The input amount that exceeded the locking cap
+    /// @param lockingCap The locking cap of the pow-peg bridge
+    error BridgeExceededLockingCap(uint256 value, uint256 lockingCap);
 }

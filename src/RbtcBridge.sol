@@ -158,4 +158,11 @@ contract RbtcBridge is IRbtcBridge, BaseProxy, ReentrancyGuardUpgradeable {
             revert BridgeBtcUnknownError(result);
         }
     }
+
+    /// @notice Gets the locking cap of the Union Bridge for RBTC minting operations
+    /// @dev This method is new in RSKIP-502
+    /// @return The locking cap of the Union Bridge
+    function getUnionBridgeLockingCap() external view returns (uint256) {
+        return bridge.getUnionBridgeLockingCap();
+    }
 }

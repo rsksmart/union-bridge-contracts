@@ -369,4 +369,59 @@ contract RbtcBridgeTest is HelperContract {
         assertTrue(sent);
         assertEq(address(rbtcBridge).balance, balanceBefore + amount);
     }
+
+    // ============ getUnionBridgeLockingCap() Tests ============
+
+    function test_getUnionBridgeLockingCap_Success_ReturnsDefaultValue() external view {
+        // Arrange - default locking cap is 400 ether
+        uint256 expectedLockingCap = 400 ether;
+
+        // Act
+        uint256 lockingCap = rbtcBridge.getUnionBridgeLockingCap();
+
+        // Assert
+        assertEq(lockingCap, expectedLockingCap, "Locking cap should match default value");
+    }
+
+    function test_getUnionBridgeLockingCap_Success_ReturnsUpdatedValueAfterTransfers() external {
+        // Arrange
+        uint256 transferAmount = 100 ether;
+        uint256 expectedLockingCap = 400 ether - transferAmount; // 300 ether
+
+        // Act - simulate transfers by updating the bridge mock state
+        bridgeMock.setWeisTransferredToUnionBridge(transferAmount);
+        uint256 lockingCap = rbtcBridge.getUnionBridgeLockingCap();
+
+        // Assert
+        assertEq(lockingCap, expectedLockingCap, "Locking cap should decrease after transfers");
+    }
+
+    function test_getUnionBridgeLockingCap_Success_ReturnsZeroWhenCapExhausted() external {
+        // Arrange
+        uint256 transferAmount = 400 ether; // Exhaust all capacity
+        uint256 expectedLockingCap = 0;
+
+        // Act - simulate that all capacity has been used
+        bridgeMock.setWeisTransferredToUnionBridge(transferAmount);
+        uint256 lockingCap = rbtcBridge.getUnionBridgeLockingCap();
+
+        // Assert
+        assertEq(lockingCap, expectedLockingCap, "Locking cap should be zero when exhausted");
+    }
+
+    function test_getUnionBridgeLockingCap_Success_ReturnsCorrectValueAfterMultipleTransfers() external {
+        // Arrange
+        uint256 firstTransfer = 50 ether;
+        uint256 secondTransfer = 75 ether;
+        uint256 totalTransferred = firstTransfer + secondTransfer;
+        uint256 expectedLockingCap = 400 ether - totalTransferred; // 275 ether
+
+        // Act - simulate multiple transfers
+        bridgeMock.setWeisTransferredToUnionBridge(firstTransfer);
+        bridgeMock.setWeisTransferredToUnionBridge(totalTransferred);
+        uint256 lockingCap = rbtcBridge.getUnionBridgeLockingCap();
+
+        // Assert
+        assertEq(lockingCap, expectedLockingCap, "Locking cap should reflect cumulative transfers");
+    }
 }
