@@ -47,7 +47,7 @@ library BtcHelper {
     /// @param _toHash The data to hash
     /// @return The double SHA256 hash in big endian format
     function hash256(bytes memory _toHash) internal pure returns (bytes32) {
-        bytes32 littleEndianHash = sha256(abi.encode(sha256(_toHash)));
+        bytes32 littleEndianHash = sha256(abi.encodePacked(sha256(_toHash)));
         return reverseBytes32(littleEndianHash);
     }
 
