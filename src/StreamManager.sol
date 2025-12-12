@@ -259,6 +259,22 @@ contract StreamManager is IStreamManager, AccessControl {
         return _getSlot(_streamId, _packetNumber, _slotNumber);
     }
 
+    /// @notice Gets the length of the slots in a packet
+    /// @param _streamId The ID of the stream
+    /// @param _packetNumber The packet number
+    /// @return The length of the slots in the packet
+    function getPacketSlotsLength(uint64 _streamId, uint64 _packetNumber) external view returns (uint64) {
+        return _getPacketSlotsLength(_streamId, _packetNumber);
+    }
+
+    /// @notice Gets the length of the slots in a packet
+    /// @param _streamId The ID of the stream
+    /// @param _packetNumber The packet number
+    /// @return The length of the slots in the packet
+    function _getPacketSlotsLength(uint64 _streamId, uint64 _packetNumber) internal view returns (uint64) {
+        return uint64(slots[_streamId][_packetNumber].length);
+    }
+
     /// @notice Reserves a slot for a peg-in request
     /// @dev Creates a new slot with RESERVED state during request peg-in
     /// @param _streamId The ID of the stream
@@ -272,7 +288,7 @@ contract StreamManager is IStreamManager, AccessControl {
             revert InvalidPeginPacketNumber(_streamId, _packetNumber);
         }
 
-        uint64 slotId = uint64(slots[_streamId][_packetNumber].length);
+        uint64 slotId = _getPacketSlotsLength(_streamId, _packetNumber);
         slots[_streamId][_packetNumber].push(
             Slot({
                 slotId: slotId,
@@ -285,7 +301,7 @@ contract StreamManager is IStreamManager, AccessControl {
         );
         emit SlotReserved(_streamId, _packetNumber, slotId);
 
-        if (slots[_streamId][_packetNumber].length > Constants.SLOTS_PER_PACKET) {
+        if (_getPacketSlotsLength(_streamId, _packetNumber) > Constants.SLOTS_PER_PACKET) {
             revert _InconsistentSlotsPerPacket(_streamId, _packetNumber, slots[_streamId][_packetNumber].length);
         }
 
