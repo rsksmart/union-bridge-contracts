@@ -1,14 +1,14 @@
 # BaseProxy
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/4c35e62294ee16f56ba26d52283a5d84868fbd84/src/BaseProxy.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/13960dd321557c932048de4fc7353af5ceae0b8d/src/BaseProxy.sol)
 
 **Inherits:**
-UUPSUpgradeable, OwnableUpgradeable
+UUPSUpgradeable, Ownable2StepUpgradeable
 
 Abstract base contract for upgradeable proxy contracts
 
 *Provides UUPS upgradeability and ownership functionality*
 
-*Inherits from OpenZeppelin's UUPSUpgradeable and OwnableUpgradeable*
+*Inherits from OpenZeppelin's UUPSUpgradeable and Ownable2StepUpgradeable*
 
 
 ## Functions

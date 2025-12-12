@@ -1,5 +1,5 @@
 # RbtcBridge
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/4c35e62294ee16f56ba26d52283a5d84868fbd84/src/RbtcBridge.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/13960dd321557c932048de4fc7353af5ceae0b8d/src/RbtcBridge.sol)
 
 **Inherits:**
 [IRbtcBridge](/src/interfaces/IRbtcBridge.sol/interface.IRbtcBridge.md), [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md), ReentrancyGuardUpgradeable
@@ -204,5 +204,22 @@ function _releaseRbtc(uint256 _amountToReturn) internal;
 |Name|Type|Description|
 |----|----|-----------|
 |`_amountToReturn`|`uint256`|The amount of RBTC to return to the bridge in wei|
+
+
+### getUnionBridgeLockingCap
+
+Gets the locking cap of the Union Bridge for RBTC minting operations
+
+*This method is new in RSKIP-502*
+
+
+```solidity
+function getUnionBridgeLockingCap() external view returns (uint256);
+```
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`uint256`|The locking cap of the Union Bridge|
 
 

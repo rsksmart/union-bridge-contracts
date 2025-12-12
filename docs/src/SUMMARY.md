@@ -18,7 +18,6 @@
     - [ApplicationData](src/interfaces/ICommitteeRegistry.sol/struct.ApplicationData.md)
     - [PublicKeyType](src/interfaces/ICommitteeRegistry.sol/enum.PublicKeyType.md)
     - [ECDSAPublicKey](src/interfaces/ICommitteeRegistry.sol/struct.ECDSAPublicKey.md)
-    - [RSAPublicKey](src/interfaces/ICommitteeRegistry.sol/struct.RSAPublicKey.md)
     - [MemberRegistrationKeys](src/interfaces/ICommitteeRegistry.sol/struct.MemberRegistrationKeys.md)
     - [MemberKeys](src/interfaces/ICommitteeRegistry.sol/struct.MemberKeys.md)
     - [Member](src/interfaces/ICommitteeRegistry.sol/struct.Member.md)

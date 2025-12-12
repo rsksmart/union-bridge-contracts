@@ -1,5 +1,5 @@
 # Bech32m
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/4c35e62294ee16f56ba26d52283a5d84868fbd84/src/libraries/Bech32m.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/13960dd321557c932048de4fc7353af5ceae0b8d/src/libraries/Bech32m.sol)
 
 Library for Bech32m encoding and decoding used in Bitcoin Taproot addresses
 
@@ -238,4 +238,19 @@ error InvalidBitsSize(uint256 value);
 |Name|Type|Description|
 |----|----|-----------|
 |`value`|`uint256`|The value that exceeded the maximum allowed range|
+
+### InvalidTweakedPublicKeyLength
+Error thrown when a tweaked public key has an invalid length
+
+
+```solidity
+error InvalidTweakedPublicKeyLength(uint256 length, uint256 expected);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`length`|`uint256`|The actual length of the tweaked public key|
+|`expected`|`uint256`|The expected length (32 bytes)|
 

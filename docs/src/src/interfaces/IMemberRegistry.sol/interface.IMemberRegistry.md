@@ -1,5 +1,5 @@
 # IMemberRegistry
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/4c35e62294ee16f56ba26d52283a5d84868fbd84/src/interfaces/IMemberRegistry.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/13960dd321557c932048de4fc7353af5ceae0b8d/src/interfaces/IMemberRegistry.sol)
 
 **Inherits:**
 [IPausable](/src/interfaces/IPausable.sol/interface.IPausable.md)
@@ -167,7 +167,7 @@ Gets the COMMUNICATION public key for a specific member
 
 
 ```solidity
-function getMemberComPubKey(address _address) external view returns (RSAPublicKey memory);
+function getMemberComPubKey(address _address) external view returns (bytes32);
 ```
 **Parameters**
 
@@ -179,7 +179,7 @@ function getMemberComPubKey(address _address) external view returns (RSAPublicKe
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`RSAPublicKey`|The RSA COMMUNICATION public key|
+|`<none>`|`bytes32`|The COMMUNICATION public key (hashed)|
 
 
 ### getMemberPublicKeys
@@ -800,12 +800,12 @@ Thrown when an address is zero
 error InvalidZeroAddress();
 ```
 
-### InvalidZeroEDCSAPublicKey
-Thrown when a EDCSA public key is zero
+### InvalidEDCSAPublicKey
+Thrown when a EDCSA public key is invalid (zero or not on curve)
 
 
 ```solidity
-error InvalidZeroEDCSAPublicKey(PublicKeyType keyType, bytes32 publicKeyX, bytes32 publicKeyY);
+error InvalidEDCSAPublicKey(PublicKeyType keyType, bytes32 publicKeyX, bytes32 publicKeyY);
 ```
 
 **Parameters**
@@ -816,12 +816,12 @@ error InvalidZeroEDCSAPublicKey(PublicKeyType keyType, bytes32 publicKeyX, bytes
 |`publicKeyX`|`bytes32`|The X-coordinate of the public key|
 |`publicKeyY`|`bytes32`|The Y-coordinate of the public key|
 
-### InvalidZeroRSAPublicKey
-Thrown when a RSA public key is zero
+### InvalidZeroRSAPublicKeyHash
+Thrown when a RSA public key hash is zero
 
 
 ```solidity
-error InvalidZeroRSAPublicKey(PublicKeyType keyType);
+error InvalidZeroRSAPublicKeyHash(PublicKeyType keyType);
 ```
 
 **Parameters**

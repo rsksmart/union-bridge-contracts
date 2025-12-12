@@ -1,5 +1,5 @@
 # Secp256k1
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/4c35e62294ee16f56ba26d52283a5d84868fbd84/src/libraries/Secp256k1.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/13960dd321557c932048de4fc7353af5ceae0b8d/src/libraries/Secp256k1.sol)
 
 **Author:**
 Witnet Foundation

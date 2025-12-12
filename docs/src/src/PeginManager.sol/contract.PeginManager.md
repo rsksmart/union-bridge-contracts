@@ -1,5 +1,5 @@
 # PeginManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/4c35e62294ee16f56ba26d52283a5d84868fbd84/src/PeginManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/13960dd321557c932048de4fc7353af5ceae0b8d/src/PeginManager.sol)
 
 **Inherits:**
 [IPeginManager](/src/interfaces/IPeginManager.sol/interface.IPeginManager.md), [PegManagerBase](/src/PegManagerBase.sol/abstract.PegManagerBase.md)
@@ -105,7 +105,12 @@ Generates request peg-in data including temporary Bitcoin address and member dis
 function getRequestPeginData(address _rootstockDepositAddress, uint64 _value, bytes32 _btcReimbursementPubKey)
     external
     view
-    returns (string memory bitcoinDepositAddress, uint64 packetNumber, bytes32[] memory memberDisputeKeys);
+    returns (
+        string memory bitcoinDepositAddress,
+        uint64 packetNumber,
+        bytes32[] memory memberDisputeKeys,
+        uint64 availableSlots
+    );
 ```
 **Parameters**
 
@@ -122,6 +127,7 @@ function getRequestPeginData(address _rootstockDepositAddress, uint64 _value, by
 |`bitcoinDepositAddress`|`string`|The generated Bitcoin deposit address|
 |`packetNumber`|`uint64`|The packet number for this peg-in request|
 |`memberDisputeKeys`|`bytes32[]`|Array of dispute keys (covenant keys) for each committee member in order|
+|`availableSlots`|`uint64`||
 
 
 ### requestPegin

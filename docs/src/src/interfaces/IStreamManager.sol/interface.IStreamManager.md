@@ -1,5 +1,5 @@
 # IStreamManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/4c35e62294ee16f56ba26d52283a5d84868fbd84/src/interfaces/IStreamManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/13960dd321557c932048de4fc7353af5ceae0b8d/src/interfaces/IStreamManager.sol)
 
 **Inherits:**
 [IAccessControl](/src/interfaces/IAccessControl.sol/interface.IAccessControl.md)
@@ -516,6 +516,28 @@ function getStreamPosition(bytes32 _acceptPeginTxid) external view returns (Stre
 |Name|Type|Description|
 |----|----|-----------|
 |`<none>`|`StreamPosition`|The stream position associated with the transaction ID|
+
+
+### getPacketSlotsLength
+
+Gets the length of the slots in a packet
+
+
+```solidity
+function getPacketSlotsLength(uint64 _streamId, uint64 _packetNumber) external view returns (uint64);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_streamId`|`uint64`|The ID of the stream|
+|`_packetNumber`|`uint64`|The packet number|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`uint64`|The length of the slots in the packet|
 
 
 ### setPegStatus

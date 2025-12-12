@@ -1,5 +1,5 @@
 # IPeginManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/4c35e62294ee16f56ba26d52283a5d84868fbd84/src/interfaces/IPeginManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/13960dd321557c932048de4fc7353af5ceae0b8d/src/interfaces/IPeginManager.sol)
 
 **Inherits:**
 [IPausable](/src/interfaces/IPausable.sol/interface.IPausable.md)
@@ -21,7 +21,12 @@ Generates request peg-in data including temporary Bitcoin address and member dis
 function getRequestPeginData(address _rootstockDepositAddress, uint64 _value, bytes32 _btcReimbursementPubKey)
     external
     view
-    returns (string memory temporaryPeginAddress, uint64 packetNumber, bytes32[] memory memberDisputeKeys);
+    returns (
+        string memory temporaryPeginAddress,
+        uint64 packetNumber,
+        bytes32[] memory memberDisputeKeys,
+        uint64 availableSlots
+    );
 ```
 **Parameters**
 
@@ -38,6 +43,7 @@ function getRequestPeginData(address _rootstockDepositAddress, uint64 _value, by
 |`temporaryPeginAddress`|`string`|The generated temporary Bitcoin address for deposit|
 |`packetNumber`|`uint64`|The packet number for this peg-in request|
 |`memberDisputeKeys`|`bytes32[]`|Array of dispute keys (covenant keys) for each committee member in order|
+|`availableSlots`|`uint64`||
 
 
 ### getStreamPositionByRequestPegin
@@ -327,4 +333,19 @@ error InvalidBtcTxVersion(uint256 actual, uint256 expected);
 |----|----|-----------|
 |`actual`|`uint256`|The actual version value|
 |`expected`|`uint256`|The expected version value|
+
+### BridgeExceededLockingCap
+Thrown when the input amount exceeds the locking cap of the pow-peg bridge
+
+
+```solidity
+error BridgeExceededLockingCap(uint256 value, uint256 lockingCap);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`value`|`uint256`|The input amount that exceeded the locking cap|
+|`lockingCap`|`uint256`|The locking cap of the pow-peg bridge|
 

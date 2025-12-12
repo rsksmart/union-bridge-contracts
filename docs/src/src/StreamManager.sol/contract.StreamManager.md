@@ -1,5 +1,5 @@
 # StreamManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/4c35e62294ee16f56ba26d52283a5d84868fbd84/src/StreamManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/13960dd321557c932048de4fc7353af5ceae0b8d/src/StreamManager.sol)
 
 **Inherits:**
 [IStreamManager](/src/interfaces/IStreamManager.sol/interface.IStreamManager.md), [AccessControl](/src/AccessControl.sol/contract.AccessControl.md)
@@ -318,6 +318,50 @@ function getSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotNumber) ext
 |Name|Type|Description|
 |----|----|-----------|
 |`<none>`|`Slot`|The slot data|
+
+
+### getPacketSlotsLength
+
+Gets the length of the slots in a packet
+
+
+```solidity
+function getPacketSlotsLength(uint64 _streamId, uint64 _packetNumber) external view returns (uint64);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_streamId`|`uint64`|The ID of the stream|
+|`_packetNumber`|`uint64`|The packet number|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`uint64`|The length of the slots in the packet|
+
+
+### _getPacketSlotsLength
+
+Gets the length of the slots in a packet
+
+
+```solidity
+function _getPacketSlotsLength(uint64 _streamId, uint64 _packetNumber) internal view returns (uint64);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_streamId`|`uint64`|The ID of the stream|
+|`_packetNumber`|`uint64`|The packet number|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`uint64`|The length of the slots in the packet|
 
 
 ### reserveSlot
