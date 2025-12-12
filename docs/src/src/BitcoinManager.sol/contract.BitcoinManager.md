@@ -1,5 +1,5 @@
 # BitcoinManager
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b656e8c68a46e57c80c7029f9deb9e4b65b60046/src/BitcoinManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/13960dd321557c932048de4fc7353af5ceae0b8d/src/BitcoinManager.sol)
 
 **Inherits:**
 [IBitcoinManager](/src/interfaces/IBitcoinManager.sol/interface.IBitcoinManager.md), Initializable, [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md)
@@ -133,7 +133,7 @@ function getTemporaryPeginAddress(
 
 ### getRequestPeginTweakedPublicKey
 
-*Generates the PeginRequest Taproot output script pub key with both key spend and script spend paths*
+*Generates the RequestPegin Taproot output script pub key with both key spend and script spend paths*
 
 
 ```solidity
@@ -223,13 +223,13 @@ function validateRequestPeginP2TROutput(
 |`_p2trOut`|`BtcTxOut`|The P2TR output of the peg-in request|
 
 
-### getPeginRequestP2TRScriptPub
+### getRequestPeginP2TRScriptPub
 
-Generates the PeginRequest Taproot output script pub key with both key spend and script spend paths
+Generates the RequestPegin Taproot output script pub key with both key spend and script spend paths
 
 
 ```solidity
-function getPeginRequestP2TRScriptPub(
+function getRequestPeginP2TRScriptPub(
     address _rskDestinationAddress,
     uint64 _value,
     bytes32 _btcReimbursementPubKey,

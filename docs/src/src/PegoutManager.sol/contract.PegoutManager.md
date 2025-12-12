@@ -1,5 +1,5 @@
 # PegoutManager
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b656e8c68a46e57c80c7029f9deb9e4b65b60046/src/PegoutManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/13960dd321557c932048de4fc7353af5ceae0b8d/src/PegoutManager.sol)
 
 **Inherits:**
 [IPegoutManager](/src/interfaces/IPegoutManager.sol/interface.IPegoutManager.md), [PegManagerBase](/src/PegManagerBase.sol/abstract.PegManagerBase.md)
@@ -270,4 +270,11 @@ function setOperatorTakeTimeout(uint256 _timeout) external onlyOwner;
 |----|----|-----------|
 |`_timeout`|`uint256`|The new timeout duration in seconds|
 
+
+### _closePacketIfLastSlot
+
+
+```solidity
+function _closePacketIfLastSlot(StreamPosition memory streamInfo) internal;
+```
 

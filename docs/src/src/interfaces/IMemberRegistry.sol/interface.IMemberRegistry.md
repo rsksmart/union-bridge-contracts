@@ -1,5 +1,5 @@
 # IMemberRegistry
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b656e8c68a46e57c80c7029f9deb9e4b65b60046/src/interfaces/IMemberRegistry.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/13960dd321557c932048de4fc7353af5ceae0b8d/src/interfaces/IMemberRegistry.sol)
 
 **Inherits:**
 [IPausable](/src/interfaces/IPausable.sol/interface.IPausable.md)
@@ -115,6 +115,13 @@ function releaseCommitteeMembers(CommitteeMember[] memory _committeeMembers, uin
 |`_packetNumber`|`uint64`|The packet number|
 
 
+### reAddCommitteeMembers
+
+
+```solidity
+function reAddCommitteeMembers(Committee memory _discardedCommittee) external;
+```
+
 ### setReApplyForStream
 
 Sets the reapply flag for a member in a specific stream
@@ -160,7 +167,7 @@ Gets the COMMUNICATION public key for a specific member
 
 
 ```solidity
-function getMemberComPubKey(address _address) external view returns (RSAPublicKey memory);
+function getMemberComPubKey(address _address) external view returns (bytes32);
 ```
 **Parameters**
 
@@ -172,7 +179,7 @@ function getMemberComPubKey(address _address) external view returns (RSAPublicKe
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`RSAPublicKey`|The RSA COMMUNICATION public key|
+|`<none>`|`bytes32`|The COMMUNICATION public key (hashed)|
 
 
 ### getMemberPublicKeys
@@ -361,15 +368,15 @@ function getReApplyForStream(StreamDenomination _denomination) external view ret
 |`<none>`|`bool`|True if the member will automatically reapply, false otherwise|
 
 
-### removeCandidatesAndUpdateBalance
+### stakePreStakedCandidatesBalance
 
-Removes candidates from pool and updates their balances
+Moves candidates balance from pre staked to staked
 
 *Called by CommitteeRegistry during committee formation*
 
 
 ```solidity
-function removeCandidatesAndUpdateBalance(
+function stakePreStakedCandidatesBalance(
     CommitteeMember[] memory _members,
     StreamDenomination _denomination,
     uint64 _packetNumber
@@ -416,6 +423,23 @@ function setStreamManager(IStreamManager _streamManager) external;
 |Name|Type|Description|
 |----|----|-----------|
 |`_streamManager`|`IStreamManager`|The address of the Stream Manager contract|
+
+
+### setBridge
+
+Sets the Bridge contract address
+
+*Only callable by the contract owner*
+
+
+```solidity
+function setBridge(IBridge _bridge) external;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_bridge`|`IBridge`|The address of the Bridge contract|
 
 
 ## Events
@@ -596,6 +620,20 @@ event CommitteeRegistryUpdated(address indexed newCommitteeRegistry);
 |----|----|-----------|
 |`newCommitteeRegistry`|`address`|The new committee registry address|
 
+### BridgeUpdated
+Event emitted when the bridge address is updated
+
+
+```solidity
+event BridgeUpdated(address indexed newBridge);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`newBridge`|`address`|The new bridge address|
+
 ## Errors
 ### MemberNotRegistered
 Thrown when a member is not registered
@@ -762,12 +800,12 @@ Thrown when an address is zero
 error InvalidZeroAddress();
 ```
 
-### InvalidZeroEDCSAPublicKey
-Thrown when a EDCSA public key is zero
+### InvalidEDCSAPublicKey
+Thrown when a EDCSA public key is invalid (zero or not on curve)
 
 
 ```solidity
-error InvalidZeroEDCSAPublicKey(PublicKeyType keyType, bytes32 publicKeyX, bytes32 publicKeyY);
+error InvalidEDCSAPublicKey(PublicKeyType keyType, bytes32 publicKeyX, bytes32 publicKeyY);
 ```
 
 **Parameters**
@@ -778,12 +816,12 @@ error InvalidZeroEDCSAPublicKey(PublicKeyType keyType, bytes32 publicKeyX, bytes
 |`publicKeyX`|`bytes32`|The X-coordinate of the public key|
 |`publicKeyY`|`bytes32`|The Y-coordinate of the public key|
 
-### InvalidZeroRSAPublicKey
-Thrown when a RSA public key is zero
+### InvalidZeroRSAPublicKeyHash
+Thrown when a RSA public key hash is zero
 
 
 ```solidity
-error InvalidZeroRSAPublicKey(PublicKeyType keyType);
+error InvalidZeroRSAPublicKeyHash(PublicKeyType keyType);
 ```
 
 **Parameters**

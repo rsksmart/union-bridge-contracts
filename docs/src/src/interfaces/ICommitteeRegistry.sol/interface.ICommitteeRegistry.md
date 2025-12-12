@@ -1,5 +1,5 @@
 # ICommitteeRegistry
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b656e8c68a46e57c80c7029f9deb9e4b65b60046/src/interfaces/ICommitteeRegistry.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/13960dd321557c932048de4fc7353af5ceae0b8d/src/interfaces/ICommitteeRegistry.sol)
 
 **Inherits:**
 [IPausable](/src/interfaces/IPausable.sol/interface.IPausable.md)
@@ -33,7 +33,7 @@ function applyToStream(
 |----|----|-----------|
 |`_requestedStream`|`StreamDenomination`|The stream denomination to apply for|
 |`_requestedRole`|`Role`|The role requested in the committee|
-|`_publicKeys`|`MemberRegistrationKeys`|Member public key registration with ECDSA and RSA keys|
+|`_publicKeys`|`MemberRegistrationKeys`|Member public key registration with ECDSA and RSA hash keys|
 |`_fundingUTXO`|`UTXO`|The Bitcoin UTXO that will be used for committee funding|
 
 
@@ -399,15 +399,15 @@ function setCommitteeMemberCount(uint256 _committeeMemberCount) external;
 |`_committeeMemberCount`|`uint256`|The exact number of members required for a committee|
 
 
-### getOperatorTakeAddress
+### getOperatorDisputeData
 
-Gets the operator take address and public key for a specific committee
+Gets the operator dispute data (address and dispute public key) for operator-take operations
 
 
 ```solidity
-function getOperatorTakeAddress(uint128 committeeId, SignatureData[] calldata signatureData)
+function getOperatorDisputeData(uint128 committeeId, SignatureData[] calldata signatureData)
     external
-    returns (address operatorAddress, bytes32 takePubKey);
+    returns (address operatorAddress, bytes32 disputePubKey);
 ```
 **Parameters**
 
@@ -421,7 +421,7 @@ function getOperatorTakeAddress(uint128 committeeId, SignatureData[] calldata si
 |Name|Type|Description|
 |----|----|-----------|
 |`operatorAddress`|`address`|The operator take address|
-|`takePubKey`|`bytes32`|The operator's take public key|
+|`disputePubKey`|`bytes32`|The operator's dispute public key (covenantPubKey) used for operator-take transactions|
 
 
 ### releaseCommittee

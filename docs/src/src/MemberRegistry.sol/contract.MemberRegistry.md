@@ -1,5 +1,5 @@
 # MemberRegistry
-[Git Source](https://github.com/FairgateLabs/bitvmx-union-bridge-contracts/blob/b656e8c68a46e57c80c7029f9deb9e4b65b60046/src/MemberRegistry.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/13960dd321557c932048de4fc7353af5ceae0b8d/src/MemberRegistry.sol)
 
 **Inherits:**
 [IMemberRegistry](/src/interfaces/IMemberRegistry.sol/interface.IMemberRegistry.md), [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md), ReentrancyGuardUpgradeable, [Pausable](/src/Pausable.sol/contract.Pausable.md)
@@ -43,6 +43,15 @@ Committee registry contract for committee operations
 
 ```solidity
 address public committeeRegistry;
+```
+
+
+### bridge
+RSK Bridge contract for Bitcoin block hash entropy
+
+
+```solidity
+IBridge public bridge;
 ```
 
 
@@ -169,6 +178,13 @@ Withdraws available balance to the caller's address
 function withdrawAvailableBalance() external nonReentrant whenNotPaused;
 ```
 
+### reAddCommitteeMembers
+
+
+```solidity
+function reAddCommitteeMembers(Committee memory _discardedCommittee) external onlyCommitteeRegistry;
+```
+
 ### releaseCommitteeMembers
 
 Internal function to handle committee member release operations
@@ -222,20 +238,6 @@ function _movePreStakedToAvailable(Member storage _member, address _memberAddres
 function _removeFromCandidates(address _memberAddress, StreamDenomination _stream, Role _role) internal;
 ```
 
-### _isRSAKeyEmpty
-
-
-```solidity
-function _isRSAKeyEmpty(bytes32[RSA_PUBLIC_KEY_CHUNKS] memory _rsaPublicKey) internal pure returns (bool);
-```
-
-### _getRSAKeyHash
-
-
-```solidity
-function _getRSAKeyHash(bytes32[RSA_PUBLIC_KEY_CHUNKS] memory _rsaPublicKey) internal pure returns (bytes32);
-```
-
 ### _getAddressFromPublicKey
 
 
@@ -257,11 +259,11 @@ function _validatePublicKeys(MemberRegistrationKeys calldata _publicKeys) intern
 function _validateECDSAKey(ECDSAPublicKey calldata _key, PublicKeyType _type) internal pure;
 ```
 
-### _validateRSAKey
+### _validateRSAKeyHash
 
 
 ```solidity
-function _validateRSAKey(RSAPublicKey calldata _key, PublicKeyType _type) internal pure;
+function _validateRSAKeyHash(bytes32 _keyHash, PublicKeyType _type) internal pure;
 ```
 
 ### _validateMemberKeyMatch
@@ -307,7 +309,7 @@ Gets the COMMUNICATION public key for a specific member
 
 
 ```solidity
-function getMemberComPubKey(address _address) external view override returns (RSAPublicKey memory);
+function getMemberComPubKey(address _address) external view override returns (bytes32);
 ```
 **Parameters**
 
@@ -319,7 +321,7 @@ function getMemberComPubKey(address _address) external view override returns (RS
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`RSAPublicKey`|The RSA COMMUNICATION public key|
+|`<none>`|`bytes32`|The COMMUNICATION public key hash (RSA)|
 
 
 ### getMemberPublicKeys
@@ -549,9 +551,9 @@ function getReApplyForStream(StreamDenomination _denomination) external view ove
 |`<none>`|`bool`|True if the member will automatically reapply, false otherwise|
 
 
-### removeCandidatesAndUpdateBalance
+### stakePreStakedCandidatesBalance
 
-Removes candidates from pool and updates their balances
+Moves candidates balance from pre staked to staked
 
 *Called by CommitteeRegistry during committee formation*
 
@@ -559,7 +561,7 @@ Removes candidates from pool and updates their balances
 
 
 ```solidity
-function removeCandidatesAndUpdateBalance(
+function stakePreStakedCandidatesBalance(
     CommitteeMember[] memory _members,
     StreamDenomination _denomination,
     uint64 _packetNumber
@@ -579,8 +581,7 @@ function removeCandidatesAndUpdateBalance(
 
 ```solidity
 function _movePreStakedToStaked(address _memberAddress, StreamDenomination _denomination, uint64 _packetNumber)
-    internal
-    returns (Role);
+    internal;
 ```
 
 ### _moveStakedToAvailable
@@ -590,6 +591,30 @@ function _movePreStakedToStaked(address _memberAddress, StreamDenomination _deno
 function _moveStakedToAvailable(address _memberAddress, StreamDenomination _denomination, uint64 _packetNumber)
     internal;
 ```
+
+### _getRandomPosition
+
+Calculates a pseudo-random position within an array
+
+*Uses Bitcoin block hash as entropy source combined with array length*
+
+
+```solidity
+function _getRandomPosition(bytes32 _btcBlockHash, uint256 _arrayLength) private pure returns (uint256);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_btcBlockHash`|`bytes32`|The Bitcoin block hash used for entropy|
+|`_arrayLength`|`uint256`|The length of the array to select from|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`uint256`|The pseudo-random position within the array (0 to _arrayLength - 1)|
+
 
 ### selectCommittee
 
@@ -679,6 +704,23 @@ function setStreamManager(IStreamManager _streamManager) external override onlyO
 |Name|Type|Description|
 |----|----|-----------|
 |`_streamManager`|`IStreamManager`|The address of the Stream Manager contract|
+
+
+### setBridge
+
+Sets the Bridge contract address
+
+*Only callable by the contract owner*
+
+
+```solidity
+function setBridge(IBridge _bridge) external override onlyOwner;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_bridge`|`IBridge`|The address of the Bridge contract|
 
 
 ### setPauser

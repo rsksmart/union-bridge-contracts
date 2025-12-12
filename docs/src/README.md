@@ -478,7 +478,7 @@ sequenceDiagram
     M->>+PIM: requestPegin(btcTxSPVProof)
     Note right of M: Committee member monitors Bitcoin network and submits transaction
     PIM->>PIM: Validate BTC transaction and SPV proof
-    PIM->>PIM: Store pegin request data
+    PIM->>PIM: Store request pegin data
     PIM->>PIM: Generate accept peg-in transaction
     PIM-->>-M: PeginRequested event
     Note right of PIM: Event includes signature hash for committee members
@@ -979,7 +979,7 @@ graph TB
 
 #### Access Control
 
-- **BaseProxy** provides ownership functionality through OpenZeppelin's OwnableUpgradeable
+- **BaseProxy** provides ownership functionality through OpenZeppelin's Ownable2StepUpgradeable
 - **AccessControl** contract provides role-based access control
 - **PegManager** has administrative privileges over other contracts
 
