@@ -1,5 +1,5 @@
 # BtcTxOut
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/13960dd321557c932048de4fc7353af5ceae0b8d/src/interfaces/IBitcoinManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/96535706e496364789ce242b18e17052bb6e424e/src/interfaces/IBitcoinManager.sol)
 
 Represents a Bitcoin transaction output that creates a new UTXO
 

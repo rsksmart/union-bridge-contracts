@@ -9,6 +9,7 @@ import {
     MemberRegistrationKeys,
     MemberKeys,
     ECDSAPublicKey,
+    RSAPublicKey,
     PublicKeyType,
     UTXO,
     PendingCommitteeStatus
@@ -87,8 +88,8 @@ interface IMemberRegistry is IPausable {
 
     /// @notice Gets the COMMUNICATION public key for a specific member
     /// @param _address The member's address
-    /// @return The COMMUNICATION public key (hashed)
-    function getMemberComPubKey(address _address) external view returns (bytes32);
+    /// @return The COMMUNICATION public key (RSA struct)
+    function getMemberComPubKey(address _address) external view returns (RSAPublicKey memory);
 
     /// @notice Retrieves all public keys for a specific member
     /// @param _address The member's address
@@ -314,9 +315,9 @@ interface IMemberRegistry is IPausable {
     /// @param publicKeyY The Y-coordinate of the public key
     error InvalidEDCSAPublicKey(PublicKeyType keyType, bytes32 publicKeyX, bytes32 publicKeyY);
 
-    /// @notice Thrown when a RSA public key hash is zero
+    /// @notice Thrown when a RSA public key is zero
     /// @param keyType The type of the public key (TAKE, COVENANT, or COMMUNICATION)
-    error InvalidZeroRSAPublicKeyHash(PublicKeyType keyType);
+    error InvalidZeroRSAPublicKey(PublicKeyType keyType);
 
     /// @notice Thrown when a public key doesn't match the expected value
     /// @param keyType The type of the public key (TAKE, COVENANT, or COMMUNICATION)

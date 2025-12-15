@@ -1,5 +1,5 @@
 # OperatorTakeData
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/13960dd321557c932048de4fc7353af5ceae0b8d/src/interfaces/ISignatureManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/96535706e496364789ce242b18e17052bb6e424e/src/interfaces/ISignatureManager.sol)
 
 Represents OperatorTake transaction data for a committee member
 

@@ -1,5 +1,5 @@
 # MemberRegistry
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/13960dd321557c932048de4fc7353af5ceae0b8d/src/MemberRegistry.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/96535706e496364789ce242b18e17052bb6e424e/src/MemberRegistry.sol)
 
 **Inherits:**
 [IMemberRegistry](/src/interfaces/IMemberRegistry.sol/interface.IMemberRegistry.md), [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md), ReentrancyGuardUpgradeable, [Pausable](/src/Pausable.sol/contract.Pausable.md)
@@ -238,6 +238,20 @@ function _movePreStakedToAvailable(Member storage _member, address _memberAddres
 function _removeFromCandidates(address _memberAddress, StreamDenomination _stream, Role _role) internal;
 ```
 
+### _isRSAKeyEmpty
+
+
+```solidity
+function _isRSAKeyEmpty(bytes32[RSA_PUBLIC_KEY_CHUNKS] memory _rsaPublicKey) internal pure returns (bool);
+```
+
+### _getRSAKeyHash
+
+
+```solidity
+function _getRSAKeyHash(bytes32[RSA_PUBLIC_KEY_CHUNKS] memory _rsaPublicKey) internal pure returns (bytes32);
+```
+
 ### _getAddressFromPublicKey
 
 
@@ -259,11 +273,11 @@ function _validatePublicKeys(MemberRegistrationKeys calldata _publicKeys) intern
 function _validateECDSAKey(ECDSAPublicKey calldata _key, PublicKeyType _type) internal pure;
 ```
 
-### _validateRSAKeyHash
+### _validateRSAKey
 
 
 ```solidity
-function _validateRSAKeyHash(bytes32 _keyHash, PublicKeyType _type) internal pure;
+function _validateRSAKey(RSAPublicKey calldata _key, PublicKeyType _type) internal pure;
 ```
 
 ### _validateMemberKeyMatch
@@ -309,7 +323,7 @@ Gets the COMMUNICATION public key for a specific member
 
 
 ```solidity
-function getMemberComPubKey(address _address) external view override returns (bytes32);
+function getMemberComPubKey(address _address) external view override returns (RSAPublicKey memory);
 ```
 **Parameters**
 
@@ -321,7 +335,7 @@ function getMemberComPubKey(address _address) external view override returns (by
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`bytes32`|The COMMUNICATION public key hash (RSA)|
+|`<none>`|`RSAPublicKey`|The COMMUNICATION public key (RSA struct)|
 
 
 ### getMemberPublicKeys
