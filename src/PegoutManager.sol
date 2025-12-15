@@ -187,13 +187,13 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
             streamInfo
         );
 
-        // If it's the last slot in the package, close and release the committee
-        _closePacketIfLastSlot(streamInfo);
-
         // Update slot status
         streamManager.completeSlot(
             streamInfo.streamId, streamInfo.packetNumber, streamInfo.slotId, acceptPeginTxid, requestPegoutTxid
         );
+
+        // If it's the last slot in the package, close and release the committee
+        _closePacketIfLastSlot(streamInfo);
     }
 
     /// @notice Gets the peg-out signature hash for a specific stream, packet, and slot
@@ -313,9 +313,6 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
             revert InvalidPegStatus(streamInfo.pegStatus);
         }
 
-        // If it's the last slot in the package, close and release the committee
-        _closePacketIfLastSlot(streamInfo);
-
         // Validate that the vout is correct
         if (vout != Constants.VOUT_INDEX_TAPTREE) {
             revert IncorrectVout(vout, Constants.VOUT_INDEX_TAPTREE);
@@ -356,6 +353,9 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         streamManager.completeSlot(
             streamInfo.streamId, streamInfo.packetNumber, streamInfo.slotId, acceptPeginTxid, txid
         );
+
+        // If it's the last slot in the package, close and release the committee
+        _closePacketIfLastSlot(streamInfo);
     }
 
     /// @notice Sets the timeout duration for user take operations
