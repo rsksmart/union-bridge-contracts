@@ -13,7 +13,9 @@ import {
     Balance,
     UTXO,
     ECDSAPublicKey,
+    RSAPublicKey,
     MemberRegistrationKeys,
+    RSA_PUBLIC_KEY_CHUNKS,
     MemberKeys,
     PublicKeyType,
     PendingCommitteeStatus
@@ -299,6 +301,19 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         }
     }
 
+    function _isRSAKeyEmpty(bytes32[RSA_PUBLIC_KEY_CHUNKS] memory _rsaPublicKey) internal pure returns (bool) {
+        for (uint256 i = 0; i < RSA_PUBLIC_KEY_CHUNKS; i++) {
+            if (_rsaPublicKey[i] != bytes32(0)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function _getRSAKeyHash(bytes32[RSA_PUBLIC_KEY_CHUNKS] memory _rsaPublicKey) internal pure returns (bytes32) {
+        return keccak256(abi.encode(_rsaPublicKey));
+    }
+
     function _getAddressFromPublicKey(bytes memory _uncompressedPublicKey) internal pure returns (address) {
         return address(uint160(uint256(keccak256(_uncompressedPublicKey))));
     }
@@ -308,7 +323,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
 
         _validateECDSAKey(_publicKeys.covenantKey, PublicKeyType.COVENANT);
 
-        _validateRSAKeyHash(_publicKeys.communicationKey, PublicKeyType.COMMUNICATION);
+        _validateRSAKey(_publicKeys.communicationKey, PublicKeyType.COMMUNICATION);
     }
 
     function _validateECDSAKey(ECDSAPublicKey calldata _key, PublicKeyType _type) internal pure {
@@ -341,10 +356,10 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         }
     }
 
-    function _validateRSAKeyHash(bytes32 _keyHash, PublicKeyType _type) internal pure {
-        // Check if RSA public key hash is empty
-        if (_keyHash == bytes32(0)) {
-            revert InvalidZeroRSAPublicKeyHash(_type);
+    function _validateRSAKey(RSAPublicKey calldata _key, PublicKeyType _type) internal pure {
+        // Check if RSA public key is empty
+        if (_isRSAKeyEmpty(_key.rsaPublicKey)) {
+            revert InvalidZeroRSAPublicKey(_type);
         }
     }
 
@@ -362,11 +377,11 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
                 PublicKeyType.COVENANT, _member.publicKeys.covenantPubKey, _publicKeys.covenantKey.publicKeyX
             );
         }
-        // COMMUNICATION key - compare RSA public key hashes
-        if (_member.publicKeys.communicationPubKey != _publicKeys.communicationKey) {
-            revert PublicKeyMismatch(
-                PublicKeyType.COMMUNICATION, _member.publicKeys.communicationPubKey, _publicKeys.communicationKey
-            );
+        // COMMUNICATION key - compare RSA public key
+        bytes32 storedComKeyHash = _getRSAKeyHash(_member.publicKeys.communicationPubKey.rsaPublicKey);
+        bytes32 newComKeyHash = _getRSAKeyHash(_publicKeys.communicationKey.rsaPublicKey);
+        if (storedComKeyHash != newComKeyHash) {
+            revert PublicKeyMismatch(PublicKeyType.COMMUNICATION, storedComKeyHash, newComKeyHash);
         }
     }
 
@@ -400,8 +415,8 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
 
     /// @notice Gets the COMMUNICATION public key for a specific member
     /// @param _address The member's address
-    /// @return The COMMUNICATION public key hash (RSA)
-    function getMemberComPubKey(address _address) external view override returns (bytes32) {
+    /// @return The COMMUNICATION public key (RSA struct)
+    function getMemberComPubKey(address _address) external view override returns (RSAPublicKey memory) {
         return _getMember(_address).publicKeys.communicationPubKey;
     }
 
