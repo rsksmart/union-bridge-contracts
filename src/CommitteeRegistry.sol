@@ -497,10 +497,11 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
     /// @dev Only operators who have deposited their signatures nonces are eligible for take operations
     /// @param _committeeId The committee ID to get the operator from
     /// @param _signatureData Array of signature data for committee members
+    /// @param _missingNonces Number of missing nonces
     /// @return operatorAddress The address of the next available operator for take operations
     /// @return disputePubKey The operator's dispute public key
     /// @dev Reverts with TakeOperatorNotFound if no eligible operator is found
-    function getOperatorDisputeData(uint128 _committeeId, SignatureData[] calldata _signatureData)
+    function getOperatorDisputeData(uint128 _committeeId, SignatureData[] calldata _signatureData, uint8 _missingNonces)
         external
         onlyPegManager
         returns (address operatorAddress, bytes32 disputePubKey)
@@ -511,11 +512,20 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
         for (uint256 i = 0; i < membersLength; i++) {
             // committee.operatorTakeIndex is the last operator that did the advancement of funds. Start from the next one.
             uint256 operatorTakeIndex = (committee.operatorTakeIndex + 1 + i) % membersLength;
+
             if (
+                // check if the operator is an operator
+                // if there are missing nonces, check if the operator has deposited their nonce
+                // if all nonces are present, check if the operator has deposited their signature
                 committee.members[operatorTakeIndex].role == Role.OPERATOR
-                    && _signatureData[operatorTakeIndex].nonce.length > 0
+                    && (
+                        (_missingNonces > 0 && _signatureData[operatorTakeIndex].nonce.length > 0)
+                            || (_missingNonces == 0 && _signatureData[operatorTakeIndex].signature != bytes32(0))
+                    )
             ) {
+                // Update the operator take index
                 committee.operatorTakeIndex = operatorTakeIndex;
+                // Get the operator's address and dispute public key
                 operatorAddress = committee.members[operatorTakeIndex].memberAddress;
                 // slither-disable-next-line calls-loop
                 disputePubKey = memberRegistry.getMemberPublicKeys(operatorAddress).covenantPubKey;

@@ -23,6 +23,7 @@ import {IAccessControl} from "src/interfaces/IAccessControl.sol";
 import {HelperContract, StreamManagerHarness, MemberRegistryHarness} from "test/helpers/HelperContract.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Constants} from "src/libraries/Constants.sol";
+import {SignatureData} from "src/interfaces/ISignatureManager.sol";
 
 contract TestCommitteeRegistry is Test, HelperContract {
     uint256 constant MAX_GAS_PER_COMMITTEE_CREATION = 1500 * 1000; // Max gas per block in RSK is 6M8
@@ -2123,5 +2124,115 @@ contract TestCommitteeRegistry is Test, HelperContract {
         // Act
         vm.prank(memberAddressForOtherStream);
         registry.getMemberCommunicationData(committeeId, memberAddressForOtherStream);
+    }
+
+    function test_getOperatorDisputeData_Success_AllNoncesPresent_OperatorHasSignature() external {
+        // Arrange - Test the condition: _missingNonces == 0 && _signatureData[operatorTakeIndex].signature.length > 0
+        (Committee memory expectedCommittee, uint128 committeeId) = setup_completeCommittee();
+
+        // Create signature data array matching committee member order
+        SignatureData[] memory signatureData = new SignatureData[](expectedCommittee.members.length);
+
+        // Set up signature data: all members (both operators and watchtowers) have signatures and nonces
+        bytes32 dummySignature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
+        bytes memory dummyNonce =
+            hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
+
+        uint256 honestOperatorIndex = 2;
+        // All members have nonces (so missingNonces == 0)
+        for (uint256 i = 0; i < expectedCommittee.members.length; i++) {
+            signatureData[i].nonce = dummyNonce; // All have nonces
+
+            // Half of the members have signatures (operators)
+            if (i == honestOperatorIndex) {
+                signatureData[i].signature = dummySignature;
+            }
+        }
+        uint8 missingNonces = 0; // All nonces are present
+
+        // Find the first operator index that signed
+        uint256 expectedOpTakeIndex = honestOperatorIndex;
+
+        address expectedOperator = expectedCommittee.members[expectedOpTakeIndex].memberAddress;
+        bytes32 expectedDisputePubKey = getMemberDisputePubKey(expectedOperator);
+
+        // Act - Call through pegoutManager since it's onlyPegManager
+        vm.prank(address(pegoutManager));
+        (address operatorAddress, bytes32 disputePubKey) =
+            registry.getOperatorDisputeData(committeeId, signatureData, missingNonces);
+
+        // Assert
+        assertEq(operatorAddress, expectedOperator, "Operator address should match expected");
+        assertEq(disputePubKey, expectedDisputePubKey, "Dispute pub key should match expected");
+
+        // Verify the operator take index was updated
+        Committee memory updatedCommittee = registry.getCommittee(committeeId);
+        assertEq(updatedCommittee.operatorTakeIndex, expectedOpTakeIndex, "Operator take index should be updated");
+    }
+
+    function test_getOperatorDisputeData_Success_MissingNonces_OperatorHasNonce() external {
+        // Arrange - Test the condition: _missingNonces > 0 && _signatureData[operatorTakeIndex].nonce.length > 0
+        (Committee memory expectedCommittee, uint128 committeeId) = setup_completeCommittee();
+
+        // Create signature data array matching committee member order
+        SignatureData[] memory signatureData = new SignatureData[](expectedCommittee.members.length);
+
+        // Set up signature data: only specific operators have nonces
+        bytes memory dummyNonce =
+            hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
+
+        // Get current operator take index to know where to start
+        uint256 currentOpTakeIndex = expectedCommittee.operatorTakeIndex;
+
+        // Set up: Give nonce to a specific operator index that we know comes after operatorTakeIndex
+        // We'll use index (currentOpTakeIndex + 2) to ensure we skip at least one position
+        // But we need to make sure it's actually an operator, so we'll find the first operator after currentOpTakeIndex
+        uint256 targetIndex = (currentOpTakeIndex + 1) % expectedCommittee.members.length;
+
+        // Find first operator starting from targetIndex
+        while (expectedCommittee.members[targetIndex].role != Role.OPERATOR) {
+            targetIndex = (targetIndex + 1) % expectedCommittee.members.length;
+        }
+
+        // Now we know targetIndex is an operator. Give nonce only to this operator
+        signatureData[targetIndex].nonce = dummyNonce;
+        // All other members have empty nonces
+
+        uint8 missingNonces = uint8(signatureData.length - 1); // Only 1 nonce
+
+        // Expected operator is the one at targetIndex (the operator we gave nonce to)
+        uint256 expectedOpTakeIndex = targetIndex;
+        address expectedOperator = expectedCommittee.members[expectedOpTakeIndex].memberAddress;
+        bytes32 expectedDisputePubKey = getMemberDisputePubKey(expectedOperator);
+
+        // Act - Call through pegoutManager since it's onlyPegManager
+        vm.prank(address(pegoutManager));
+        (address operatorAddress, bytes32 disputePubKey) =
+            registry.getOperatorDisputeData(committeeId, signatureData, missingNonces);
+
+        // Assert
+        assertEq(operatorAddress, expectedOperator, "Operator address should match expected");
+        assertEq(disputePubKey, expectedDisputePubKey, "Dispute pub key should match expected");
+
+        // Verify the operator take index was updated
+        Committee memory updatedCommittee = registry.getCommittee(committeeId);
+        assertEq(updatedCommittee.operatorTakeIndex, expectedOpTakeIndex, "Operator take index should be updated");
+    }
+
+    function test_getOperatorDisputeData_Revert_TakeOperatorNotFound() external {
+        // Arrange - No operators have nonces or signatures
+        (Committee memory expectedCommittee, uint128 committeeId) = setup_completeCommittee();
+
+        // Create signature data array with empty nonces and signatures
+        SignatureData[] memory signatureData = new SignatureData[](expectedCommittee.members.length);
+
+        uint8 missingNonces = uint8(expectedCommittee.members.length); // All nonces are missing
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.TakeOperatorNotFound.selector, committeeId));
+
+        // Act - Call through pegoutManager since it's onlyPegManager
+        vm.prank(address(pegoutManager));
+        registry.getOperatorDisputeData(committeeId, signatureData, missingNonces);
     }
 }

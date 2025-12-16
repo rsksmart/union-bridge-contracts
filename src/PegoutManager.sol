@@ -243,9 +243,11 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         uint256 operatorTakeUpdatedAt = pegoutInfo.operatorTakeUpdatedAt;
         pegoutInfo.operatorTakeUpdatedAt = block.timestamp;
 
+        //slither-disable-next-line unused-return
+        (SignatureData[] memory signatureData, uint8 missingSignatures, uint8 missingNonces,) =
+            signatureManager.getPartialSignatures(_pegoutTxid);
+
         if (streamInfo.pegStatus == PegStatus.USER_TAKE) {
-            // slither-disable-next-line unused-return
-            (uint8 missingSignatures,,) = signatureManager.getSignaturesStatus(_pegoutTxid);
             if (missingSignatures == 0) {
                 revert UserTakeAlreadySigned(_pegoutTxid);
             }
@@ -266,11 +268,9 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
             revert InvalidPegStatus(streamInfo.pegStatus);
         }
 
-        SignatureData[] memory signatureData = signatureManager.getPartialSignatures(_pegoutTxid);
-
         // slither-disable-next-line reentrancy-no-eth reentrancy-benign
         (address takeOperatorAddress, bytes32 operatorDisputePubKey) =
-            committeeRegistry.getOperatorDisputeData(pegoutInfo.committeeId, signatureData);
+            committeeRegistry.getOperatorDisputeData(pegoutInfo.committeeId, signatureData, missingNonces);
 
         // Update state variables after external calls
         pegoutInfo.takeOperatorAddress = takeOperatorAddress;

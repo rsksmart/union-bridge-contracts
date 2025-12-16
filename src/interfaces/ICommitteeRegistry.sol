@@ -326,9 +326,10 @@ interface ICommitteeRegistry is IPausable {
     /// @notice Gets the operator dispute data (address and dispute public key) for operator-take operations
     /// @param committeeId The ID of the committee
     /// @param signatureData The signature data for the committee members
+    /// @param missingNonces Number of missing nonces
     /// @return operatorAddress The operator take address
     /// @return disputePubKey The operator's dispute public key (covenantPubKey) used for operator-take transactions
-    function getOperatorDisputeData(uint128 committeeId, SignatureData[] calldata signatureData)
+    function getOperatorDisputeData(uint128 committeeId, SignatureData[] calldata signatureData, uint8 missingNonces)
         external
         returns (address operatorAddress, bytes32 disputePubKey);
 
