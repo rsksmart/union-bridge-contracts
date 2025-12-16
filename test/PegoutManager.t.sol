@@ -311,7 +311,7 @@ contract TestPegoutManager is Test, HelperContract {
         signatureManager.checkAllSignaturesReady(pegoutSignatureHash);
     }
 
-    function test_registerUserTake_success() external {
+    function test_registerUserTake_Success() external {
         // Setup
         RegisterUserTakeSetup memory setup = setup_pegout();
         StreamPosition memory streamInfo = StreamPosition({
@@ -335,6 +335,44 @@ contract TestPegoutManager is Test, HelperContract {
         pegoutManager.registerUserTake(setup.pegoutTxSPVProof);
 
         // Verify the slot was marked as COMPLETED
+        Slot memory updatedSlot = streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId);
+        assertEq(uint256(updatedSlot.state), uint256(SlotState.COMPLETED), "Slot should be marked as COMPLETED");
+    }
+
+    function test_registerUserTake_Success_LastSlot() external {
+        // Arrange: Complete all slots except the last one (99 slots)
+        setup_multiplePegFlows(Constants.SLOTS_PER_PACKET - 1);
+
+        // Setup the last slot (slot 99)
+        RegisterUserTakeSetup memory setup = setup_pegout();
+
+        StreamPosition memory streamInfo = StreamPosition({
+            streamId: setup.stream.streamId,
+            packetNumber: setup.packetNumber,
+            slotId: setup.slotId,
+            pegStatus: PegStatus.USER_TAKE
+        });
+
+        // Verify we're on the last slot
+        assertEq(setup.slotId, Constants.SLOTS_PER_PACKET - 1, "Should be the last slot");
+
+        // Expect both PegoutRegistered and PacketClosed events
+        vm.expectEmit(address(pegoutManager));
+        emit IPegoutManager.PegoutRegistered(
+            setup.pegoutTxSPVProof.blockHash,
+            setup.pegoutTxid,
+            setup.acceptPeginTxid,
+            COMMITTEE_ID_STREAM_1_COMMITTEE_1,
+            streamInfo
+        );
+
+        vm.expectEmit(address(pegoutManager));
+        emit IPegoutManager.PacketClosed(setup.stream.streamId, setup.packetNumber);
+
+        // Act: Register the last slot
+        pegoutManager.registerUserTake(setup.pegoutTxSPVProof);
+
+        // Assert: Verify the slot was marked as COMPLETED
         Slot memory updatedSlot = streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId);
         assertEq(uint256(updatedSlot.state), uint256(SlotState.COMPLETED), "Slot should be marked as COMPLETED");
     }
@@ -787,6 +825,48 @@ contract TestPegoutManager is Test, HelperContract {
 
         assertTrue(
             streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId).state == SlotState.COMPLETED
+        );
+    }
+
+    function test_registerOperatorTake_Success_LastSlot() external {
+        // Arrange: Complete all slots except the last one (99 slots) using user take flow
+        setup_multiplePegFlows(Constants.SLOTS_PER_PACKET - 1);
+
+        // Setup the last slot (slot 99) with operator take
+        (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
+        bytes32 operatorPubKey = getMemberDisputePubKey(operatorAddress);
+        BtcTransaction memory pegoutTx =
+            createPegoutTx(setup.acceptPeginTxid, BtcHelper.pubKeyXonlyToCompact(operatorPubKey), VALUE);
+        BtcTxSPVProof memory pegoutTxSPVProof = createBtcTxSPVProof(pegoutTx);
+        bytes32 pegoutTxid = bitcoinManager.getBtcTxid(pegoutTx);
+
+        StreamPosition memory streamInfo = StreamPosition({
+            streamId: setup.stream.streamId,
+            packetNumber: setup.packetNumber,
+            slotId: setup.slotId,
+            pegStatus: PegStatus.OPERATOR_TAKE
+        });
+
+        // Verify we're on the last slot
+        assertEq(setup.slotId, Constants.SLOTS_PER_PACKET - 1, "Should be the last slot");
+
+        // Expect both PegoutRegistered and PacketClosed events
+        vm.expectEmit(address(pegoutManager));
+        emit IPegoutManager.PegoutRegistered(
+            pegoutTxSPVProof.blockHash, pegoutTxid, setup.acceptPeginTxid, COMMITTEE_ID_STREAM_1_COMMITTEE_1, streamInfo
+        );
+
+        vm.expectEmit(address(pegoutManager));
+        emit IPegoutManager.PacketClosed(setup.stream.streamId, setup.packetNumber);
+
+        // Act: Register the operator take for the last slot
+        vm.prank(operatorAddress);
+        pegoutManager.registerOperatorTake(pegoutTxSPVProof);
+
+        // Assert: Verify the slot was marked as COMPLETED
+        assertTrue(
+            streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId).state == SlotState.COMPLETED,
+            "Slot should be marked as COMPLETED"
         );
     }
 
