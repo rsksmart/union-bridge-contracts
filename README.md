@@ -26,7 +26,7 @@ This repository contains the specifications and Solidity code for the Union Brid
 ### Pre requisites
 
 - You'll need the [Rust](https://www.rust-lang.org/) compiler and Cargo, Rust's package manager. The easiest way to install both is by using [rustup.rs.](https://rustup.rs/)
-- [Foundry v1.3.0](https://book.getfoundry.sh/getting-started/installation) running `foundryup -v v1.3.0`
+- [Foundry v1.3.0](https://book.getfoundry.sh/getting-started/installation) running `foundryup -i v1.3.0`
 - [Node.js LTS (22)](https://nodejs.org/en/download)
 
 ### Install dependencies
@@ -36,12 +36,12 @@ This repository contains the specifications and Solidity code for the Union Brid
 
 ### Best Practices
 
-We are following [Foundry introduction](https://getfoundry.sh/introduction/overview) and here are the sections of:  
-[best practices - writing contracts](https://getfoundry.sh/guides/best-practices/writing-contracts)  
-[best practices - writing tests](https://getfoundry.sh/guides/best-practices/writing-tests)  
-[best practices - writing scripts](https://getfoundry.sh/guides/best-practices/writing-scripts)  
-[best practices - security](https://getfoundry.sh/guides/best-practices/security)  
-[best practices - key management](https://getfoundry.sh/guides/best-practices/key-management)  
+We are following [Foundry introduction](https://getfoundry.sh/introduction/overview) and here are the sections of:
+[best practices - writing contracts](https://getfoundry.sh/guides/best-practices/writing-contracts)
+[best practices - writing tests](https://getfoundry.sh/guides/best-practices/writing-tests)
+[best practices - writing scripts](https://getfoundry.sh/guides/best-practices/writing-scripts)
+[best practices - security](https://getfoundry.sh/guides/best-practices/security)
+[best practices - key management](https://getfoundry.sh/guides/best-practices/key-management)
 [best practices - commenting](https://getfoundry.sh/guides/best-practices/commenting)
 
 ### NatSpec
