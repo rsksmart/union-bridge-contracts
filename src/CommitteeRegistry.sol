@@ -519,8 +519,9 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
                 // if all nonces are present, check if the operator has deposited their signature
                 committee.members[operatorTakeIndex].role == Role.OPERATOR
                     && (
-                        (_missingNonces > 0 && _signatureData[operatorTakeIndex].nonce.length > 0)
-                            || (_missingNonces == 0 && _signatureData[operatorTakeIndex].signature != bytes32(0))
+                        _missingNonces == 0 // if all nonces are present
+                            ? _signatureData[operatorTakeIndex].signature != bytes32(0)
+                            : _signatureData[operatorTakeIndex].nonce.length > 0
                     )
             ) {
                 // Update the operator take index

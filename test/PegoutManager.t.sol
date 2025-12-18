@@ -11,7 +11,7 @@ import {IPegoutManager, PegoutTempInfo} from "src/interfaces/IPegoutManager.sol"
 import {IPeginManager} from "src/interfaces/IPeginManager.sol";
 import {IPegManagerBase} from "src/interfaces/IPegManagerBase.sol";
 import {Slot, SlotState, Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
-import {ISignatureManager, SignatureData} from "src/interfaces/ISignatureManager.sol";
+import {ISignatureManager} from "src/interfaces/ISignatureManager.sol";
 import {ProofValidator} from "src/ProofValidator.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {Constants} from "src/libraries/Constants.sol";
