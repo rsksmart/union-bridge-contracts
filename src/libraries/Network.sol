@@ -25,6 +25,9 @@ library ChainIds {
     /// @notice RSK testnet - the public test network
     uint256 constant RSK_TESTNET = 31;
 
+    /// @notice RSK Regtest
+    uint256 constant RSK_REGTEST = 33;
+
     /// @notice Local development network (Hardhat/Foundry default)
     /// @dev Used for local testing and development environments
     uint256 constant LOCAL = 31337;

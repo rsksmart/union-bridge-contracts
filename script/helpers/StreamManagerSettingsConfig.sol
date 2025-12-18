@@ -24,7 +24,7 @@ library StreamManagerSettingsConfig {
                 minimumSecurityDeposit: 22500000 gwei, // 2250 USD
                 disablementPaymentsPerChallenge: 2500000 gwei // 250 USD
             });
-        } else if (chainId == ChainIds.LOCAL) {
+        } else if (chainId == ChainIds.LOCAL || chainId == ChainIds.RSK_REGTEST) {
             return StreamManagerSettings({
                 peginConfirmations: 2,
                 pegoutConfirmations: 2,
