@@ -97,8 +97,8 @@ contract TestSignatureManager is Test, HelperContract {
     function test_addMemberSignature_Success() external {
         // Arrange
         // Init signatures and add all nonces
-        bytes32 hashToSign = setup_initSignatures();
-        setup_addAllNonces(hashToSign);
+        bytes32 txid = setup_initSignatures();
+        setup_addAllNonces(txid);
         // The signature an nonce values are dummy values
         bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
         uint256 memberIndex = 0;
@@ -107,31 +107,32 @@ contract TestSignatureManager is Test, HelperContract {
         // We emit the event we expect to see.
         // Assert
         vm.expectEmit(address(signatureManager));
-        emit ISignatureManager.SignatureAdded(hashToSign, committeeMember0adr, signature);
+        emit ISignatureManager.SignatureAdded(txid, committeeMember0adr, signature);
 
         // Act
         vm.prank(committeeMember0adr);
-        bool allSignaturesReady = signatureManager.addMemberSignature(hashToSign, signature);
+        bool allSignaturesReady = signatureManager.addMemberSignature(txid, signature);
 
         // Assert
         assertEq(allSignaturesReady, false, "Not all signatures should be ready at this point");
-        (uint8 missingSignatures, uint8 missingNonces, uint128 committeeId) =
-            signatureManager.getSignaturesStatus(hashToSign);
+        (SignatureData[] memory signatures, uint8 missingSignatures, uint8 missingNonces, uint128 committeeId) =
+            signatureManager.getPartialSignatures(txid);
+        // Check the missing signatures and missing nonces
         assertEq(missingSignatures, registry.committeeMemberCount() - 1, "missingSignatures should be equal to 1");
         assertEq(missingNonces, 0, "missingNonces should be equal to 1");
+        // Check the committee id
         assertEq(
             committeeId,
             COMMITTEE_ID_STREAM_1_COMMITTEE_1,
             "committeeId should be equal to the committee id that was created initially"
         );
-
-        SignatureData[] memory signatures = signatureManager.getPartialSignatures(hashToSign);
+        // Check the signatures length
         assertEq(
             signatures.length,
             registry.committeeMemberCount(),
             "signatures length should be equal to registry.committeeMemberCount()"
         );
-
+        // Check the signatures are empty for the members other than the one who signed
         CommitteeMember[] memory members = registry.getCommitteeMembers(committeeId);
         for (uint256 i = 0; i < members.length; i++) {
             if (members[i].memberAddress != committeeMember0adr) {
@@ -153,12 +154,12 @@ contract TestSignatureManager is Test, HelperContract {
     function test_addMemberSignature_Success_AllSignaturesReady() external {
         // Arrange
         // Init signatures and add all nonces
-        bytes32 hashToSign = setup_initSignatures();
-        setup_addAllNonces(hashToSign);
+        bytes32 txid = setup_initSignatures();
+        setup_addAllNonces(txid);
         // The signature an nonce values are dummy values
         bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
         uint256 memberCount = registry.committeeMemberCount();
-        setup_addMemberSignature_MultipleMembers(hashToSign, 0, memberCount - 1);
+        setup_addMemberSignature_MultipleMembers(txid, 0, memberCount - 1);
         // Pub key and address are generated based on the member index + 1
         uint256 lastMemberIndex = registry.committeeMemberCount() - 1;
         address lastMemberAddress = vm.addr(lastMemberIndex + 1);
@@ -166,30 +167,36 @@ contract TestSignatureManager is Test, HelperContract {
         // Assert
         // We emit the event we expect to see.
         vm.expectEmit(address(signatureManager));
-        emit ISignatureManager.SignatureAdded(hashToSign, lastMemberAddress, signature);
+        emit ISignatureManager.SignatureAdded(txid, lastMemberAddress, signature);
 
         // We emit the event we expect to see.
         vm.expectEmit(address(signatureManager));
-        emit ISignatureManager.AllSignaturesReady(hashToSign);
+        emit ISignatureManager.AllSignaturesReady(txid);
 
         // Act
         vm.prank(lastMemberAddress);
-        bool allSignaturesReady = signatureManager.addMemberSignature(hashToSign, signature);
+        bool allSignaturesReady = signatureManager.addMemberSignature(txid, signature);
 
         // Assert
         assertEq(allSignaturesReady, true, "Not all signatures should be ready at this point");
-        (uint8 missingSignatures, uint8 missingNonces, uint128 committeeId) =
-            signatureManager.getSignaturesStatus(hashToSign);
+        (SignatureData[] memory signatures, uint8 missingSignatures, uint8 missingNonces, uint128 committeeId) =
+            signatureManager.getPartialSignatures(txid);
+        // Check the missing signatures and missing nonces
         assertEq(missingSignatures, 0, "missingSignatures should be equal to 0");
         assertEq(missingNonces, 0, "missingNonces should be equal to 0");
-        assertEq(committeeId, COMMITTEE_ID_STREAM_1_COMMITTEE_1, "aggregatedKey should be equal to the committee key");
-        SignatureData[] memory signatures = signatureManager.getPartialSignatures(hashToSign);
+        // Check the committee id
+        assertEq(
+            committeeId,
+            COMMITTEE_ID_STREAM_1_COMMITTEE_1,
+            "committeeId should be equal to the committee id that was created initially"
+        );
+        // Check the signatures length
         assertEq(
             signatures.length,
             registry.committeeMemberCount(),
             "signatures length should be equal to registry.committeeMemberCount()"
         );
-
+        // Check the signatures are not empty
         CommitteeMember[] memory members = registry.getCommitteeMembers(committeeId);
         for (uint256 i = 0; i < members.length; i++) {
             assertNotEq(signatures[i].signature, bytes32(0), "signatures[i].signature should not be empty");
@@ -353,25 +360,31 @@ contract TestSignatureManager is Test, HelperContract {
     function test_initSignatures_Success() external {
         // Arrange
         uint8 committeeMemberCount = uint8(registry.committeeMemberCount());
-        bytes32 hashToSign = 0x1000000000000000000000000000000000000000000000000000000000000001;
+        bytes32 txid = 0x1000000000000000000000000000000000000000000000000000000000000001;
 
         // Act
         vm.prank(address(pegoutManager));
-        signatureManager.initSignatures(hashToSign, COMMITTEE_ID_STREAM_1_COMMITTEE_1);
+        signatureManager.initSignatures(txid, COMMITTEE_ID_STREAM_1_COMMITTEE_1);
 
         // Assert
-        (uint8 missingSignatures, uint8 missingNonces,) = signatureManager.getSignaturesStatus(hashToSign);
+        (SignatureData[] memory signatures, uint8 missingSignatures, uint8 missingNonces, uint128 committeeId) =
+            signatureManager.getPartialSignatures(txid);
+        // Check the missing signatures and missing nonces
         assertEq(
             missingSignatures, committeeMemberCount, "missingSignatures should be equal to the committee member count"
         );
         assertEq(missingNonces, committeeMemberCount, "missingNonces should be equal to the committee member count");
-        // assertEq(aggregatedKey, committeeKey, "aggregatedKey should be equal to the committee key");
-
-        SignatureData[] memory signatures = signatureManager.getPartialSignatures(hashToSign);
+        // Check the committee id
+        assertEq(
+            committeeId,
+            COMMITTEE_ID_STREAM_1_COMMITTEE_1,
+            "committeeId should be equal to the committee id that was created initially"
+        );
+        // Check the signatures length
         assertEq(
             signatures.length, committeeMemberCount, "signatures length should be equal to the committee member count"
         );
-
+        // Check the signatures and nonces are empty
         for (uint256 i = 0; i < signatures.length; i++) {
             assertEq(signatures[i].signature, bytes32(0), "signatures[i].signature should be empty");
             assertEq(signatures[i].nonce.length, 0, "signatures[i].nonce should be empty");
@@ -410,35 +423,35 @@ contract TestSignatureManager is Test, HelperContract {
     function test_initSignatures_Revert_CommitteeNotFound() external {
         // Arrange
         uint128 committeeId = 1;
-        bytes32 hashToSign = 0x1000000000000000000000000000000000000000000000000000000000000001;
+        bytes32 txid = 0x1000000000000000000000000000000000000000000000000000000000000001;
 
         // Assert
         vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.CommitteeNotFound.selector, committeeId));
 
         // Act
         vm.prank(address(pegoutManager));
-        signatureManager.initSignatures(hashToSign, committeeId);
+        signatureManager.initSignatures(txid, committeeId);
     }
 
     function test_initSignatures_Revert_Unauthorized() external {
         // Arrange
-        bytes32 hashToSign = 0x1000000000000000000000000000000000000000000000000000000000000001;
+        bytes32 txid = 0x1000000000000000000000000000000000000000000000000000000000000001;
 
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IAccessControl.UnauthorizedAccount.selector, address(this)));
 
         // Act
-        signatureManager.initSignatures(hashToSign, COMMITTEE_ID_STREAM_1_COMMITTEE_1);
+        signatureManager.initSignatures(txid, COMMITTEE_ID_STREAM_1_COMMITTEE_1);
     }
 
     function setup_initSignatures() internal returns (bytes32) {
-        bytes32 hashToSign = 0x1200000000000000000000000000000000000000000000000000000000000001;
+        bytes32 txid = 0x1200000000000000000000000000000000000000000000000000000000000001;
 
         // Act
         vm.prank(address(pegoutManager));
-        signatureManager.initSignatures(hashToSign, COMMITTEE_ID_STREAM_1_COMMITTEE_1);
+        signatureManager.initSignatures(txid, COMMITTEE_ID_STREAM_1_COMMITTEE_1);
 
-        return hashToSign;
+        return txid;
     }
 
     function setup_addAllNonces(bytes32 hashToSign) internal {

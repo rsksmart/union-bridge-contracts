@@ -148,27 +148,29 @@ contract SignatureManager is ISignatureManager, AccessControl {
     /// @notice Gets all partial signatures for a given hash
     /// @dev Returns signatures in the same order as committee members for Musig2 compatibility
     /// @param _txid The hash to get signatures for
-    /// @return Array of signature data for all committee members
-    function getPartialSignatures(bytes32 _txid) external view returns (SignatureData[] memory) {
+    /// @return partialSignaturesData Array of signature data for all committee members
+    /// @return missingSignatures Number of missing signatures
+    /// @return missingNonces Number of missing nonces
+    /// @return committeeId The committee ID for this signature collection
+    function getPartialSignatures(bytes32 _txid)
+        external
+        view
+        returns (
+            SignatureData[] memory partialSignaturesData,
+            uint8 missingSignatures,
+            uint8 missingNonces,
+            uint128 committeeId
+        )
+    {
         Signatures storage signatures = _getSignatures(_txid);
         CommitteeMember[] memory members = committeeRegistry.getCommitteeMembers(signatures.committeeId);
         uint8 memberCount = uint8(members.length);
-        SignatureData[] memory partialSignaturesData = new SignatureData[](memberCount);
+        partialSignaturesData = new SignatureData[](memberCount);
         // IMPORTANT: Musig2 requires the signatures and nonce to be in the same order when creating the partial and aggregated signatures
         for (uint256 i = 0; i < memberCount; i++) {
             partialSignaturesData[i] = signatures.partialSignaturesData[members[i].memberAddress];
         }
-        return partialSignaturesData;
-    }
-
-    /// @notice Gets the status of the signatures for a given hash
-    /// @param _txid The hash to get status for
-    /// @return missingSignatures Number of missing signatures
-    /// @return missingNonces Number of missing nonces
-    /// @return committeeId The committee ID for this signature collection
-    function getSignaturesStatus(bytes32 _txid) external view returns (uint8, uint8, uint128) {
-        Signatures storage signatures = _getSignatures(_txid);
-        return (signatures.missingSignatures, signatures.missingNonces, signatures.committeeId);
+        return (partialSignaturesData, signatures.missingSignatures, signatures.missingNonces, signatures.committeeId);
     }
 
     function _getSignatures(bytes32 _txid) internal view returns (Signatures storage) {

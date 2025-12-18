@@ -74,25 +74,28 @@ interface ISignatureManager is IAccessControl {
     /// @return True if all required signatures have been collected
     function checkAllSignaturesReady(bytes32 _hashToSign) external view returns (bool);
 
-    /// @notice Retrieves all partial signatures for a specific hash
-    /// @param _hashToSign The hash to get signatures for
-    /// @return Array of signature data from all committee members
-    function getPartialSignatures(bytes32 _hashToSign) external view returns (SignatureData[] memory);
-
-    /// @notice Gets the status of signatures for a specific hash
-    /// @param _hashToSign The hash to check status for
+    /// @notice Gets all partial signatures for a given hash
+    /// @dev Returns signatures in the same order as committee members for Musig2 compatibility
+    /// @param _txid The hash to get signatures for
+    /// @return partialSignaturesData Array of signature data for all committee members
     /// @return missingSignatures Number of missing signatures
     /// @return missingNonces Number of missing nonces
-    /// @return committeeId The committee ID responsible for these signatures
-    function getSignaturesStatus(bytes32 _hashToSign)
+    /// @return committeeId The committee ID for this signature collection
+    function getPartialSignatures(bytes32 _txid)
         external
         view
-        returns (uint8 missingSignatures, uint8 missingNonces, uint128 committeeId);
+        returns (
+            SignatureData[] memory partialSignaturesData,
+            uint8 missingSignatures,
+            uint8 missingNonces,
+            uint128 committeeId
+        );
 
     /// @notice Initializes OperatorTake transaction id collection for a specific accept peg-in
     /// @dev Sets up the OperatorTake hash tracking structure for committee members
     /// @param _acceptPeginTxid The accept peg-in transaction id
     /// @param _committeeId The ID of the committee responsible for OperatorTake operations
+
     function initOperatorTakeTxids(bytes32 _acceptPeginTxid, uint128 _committeeId) external;
 
     /// @notice Adds a OperatorTake transaction id for a committee member

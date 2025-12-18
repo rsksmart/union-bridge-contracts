@@ -643,13 +643,13 @@ contract TestPegoutManager is Test, HelperContract {
         // This depende on how they have been registered. First registered group are the watchtowers
         uint256 firstHonestOpIndex = registry.committeeMemberCount() / 2 + 1;
 
-        // Add just 2 signatures for the first and second operators
+        // Add just 2 signatures for the first and second honest operators (index 3 and 4)
         setup_addMemberSignature_MultipleMembers(setup.pegoutTxid, firstHonestOpIndex, 2);
 
         // Get the last operator take index
         Committee memory committee = registry.getCommittee(COMMITTEE_ID_STREAM_1_COMMITTEE_1);
         uint256 lastOpTakeIndex = committee.operatorTakeIndex;
-        uint256 expectedOpTakeIndex = (lastOpTakeIndex + 1) % committee.members.length;
+        uint256 expectedOpTakeIndex = (lastOpTakeIndex + 3) % committee.members.length;
 
         // Assert
         address expectedOperator = committee.members[expectedOpTakeIndex].memberAddress;
