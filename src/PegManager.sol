@@ -476,7 +476,7 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
                 packetNumber,
                 slot.slotId,
                 msg.sender,
-                bytes32(bridge.getBtcBlockchainBlockHashAtDepth(1))
+                BtcHelper.hash256(bridge.getBtcBlockchainBestBlockHeader())
             )
         );
 

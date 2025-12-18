@@ -10,9 +10,11 @@ library PegManagerSettingsConfig {
         if (chainId == ChainIds.RSK_MAINNET) {
             return PegManagerSettings({userTakeTimeout: 2 hours, operatorTakeTimeout: 2 hours});
         } else if (chainId == ChainIds.RSK_TESTNET) {
-            return PegManagerSettings({userTakeTimeout: 2 hours, operatorTakeTimeout: 2 hours});
+            return PegManagerSettings({userTakeTimeout: 10 minutes, operatorTakeTimeout: 10 minutes});
+        } else if (chainId == ChainIds.RSK_REGTEST) {
+            return PegManagerSettings({userTakeTimeout: 30 seconds, operatorTakeTimeout: 30 seconds});
         } else if (chainId == ChainIds.LOCAL) {
-            return PegManagerSettings({userTakeTimeout: 2 hours, operatorTakeTimeout: 2 hours});
+            return PegManagerSettings({userTakeTimeout: 30 seconds, operatorTakeTimeout: 30 seconds});
         } else {
             revert("Unsupported chainId");
         }

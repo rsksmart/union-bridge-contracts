@@ -17,14 +17,14 @@ library StreamManagerSettingsConfig {
             });
         } else if (chainId == ChainIds.RSK_TESTNET) {
             return StreamManagerSettings({
-                peginConfirmations: 6,
-                pegoutConfirmations: 6,
+                peginConfirmations: 1,
+                pegoutConfirmations: 1,
                 securityBondPercentageOperator: 800,
                 securityBondPercentageWatchtower: 100,
                 minimumSecurityDeposit: 22500000 gwei, // 2250 USD
                 disablementPaymentsPerChallenge: 2500000 gwei // 250 USD
             });
-        } else if (chainId == ChainIds.LOCAL) {
+        } else if (chainId == ChainIds.LOCAL || chainId == ChainIds.RSK_REGTEST) {
             return StreamManagerSettings({
                 peginConfirmations: 2,
                 pegoutConfirmations: 2,
