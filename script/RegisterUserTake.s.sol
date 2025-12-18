@@ -30,7 +30,7 @@ contract RegisterUserTakeScript is ScriptUtils, ContractAddressManager {
         // Calculate expected slot and packet numbers
         stream = pegoutManager.streamManager().getStream(amount);
         expectedPacketNumber = stream.pegoutPacketPointer;
-        expectedSlotId = stream.pegoutSlotPointer - 1; // At this point we already executed the peg out so we need to grab the previous slot
+        expectedSlotId = stream.pegoutSlotPointer; // At this point we already executed the peg out
     }
 
     function run() public {

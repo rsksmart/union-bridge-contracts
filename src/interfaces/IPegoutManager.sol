@@ -45,6 +45,7 @@ interface IPegoutManager is IPausable {
     // ===================== Peg-out Request =====================
 
     /// @notice Initiates a peg-out request to Bitcoin
+    /// @notice Reverts if a pegout is already in progress for the same stream
     /// @dev Requires payment in RBTC and will revert if no filled slot is available
     /// @dev Emits PegoutRequested event upon successful initiation
     /// @param _userPubKey The user's compressed public key that will receive the Bitcoin funds

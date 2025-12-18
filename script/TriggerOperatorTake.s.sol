@@ -7,7 +7,7 @@ import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
 import {Slot, Stream, SlotState, IStreamManager} from "src/interfaces/IStreamManager.sol";
 
-contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
+contract TriggerOperatorTakeScript is ScriptUtils, ContractAddressManager {
     PegoutManager pegoutManager;
 
     uint64 amount;
@@ -24,7 +24,7 @@ contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
         streamManager = pegoutManager.streamManager();
         stream = streamManager.getStream(amount);
         expectedPacketNumber = stream.pegoutPacketPointer;
-        expectedSlotId = stream.pegoutSlotPointer - 1; // At this point we already executed the peg out so we need to grab the previous slot
+        expectedSlotId = stream.pegoutSlotPointer; // At this point we already executed the peg out
     }
 
     function run(bytes32 _pegoutSignatureHash) public {

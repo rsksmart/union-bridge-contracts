@@ -558,9 +558,10 @@ sequenceDiagram
 
 1. **User requests pegout**: User calls `tryPegout()` with the Bitcoin public key where they want to receive funds and sends RBTC equal to the stream denomination
 2. **Validate request**: System validates the Bitcoin compressed public key format and amount limits
-3. **Store request**: Peg-out request is stored with all the necessary data
-4. **Generate user take transaction**: System generates the Bitcoin user take transaction using the stored UTXO from the previous accept peg-in and emits an event with the signature hash for committee members to sign
-5. **Burn RBTC**: PegoutManager calls `RbtcBridge.burnRbtc()` which releases RBTC back to the PowPeg Bridge, preparing for the Bitcoin peg-out
+3. **Lock slot**: System finds a filled slot and marks it as locked. Reverts if no filled slot is available or if there is a pegout in process
+4. **Store request**: Peg-out request is stored with all the necessary data
+5. **Generate user take transaction**: System generates the Bitcoin user take transaction using the stored UTXO from the previous accept peg-in and emits an event with the signature hash for committee members to sign
+6. **Burn RBTC**: PegoutManager calls `RbtcBridge.burnRbtc()` which releases RBTC back to the PowPeg Bridge, preparing for the Bitcoin peg-out
 
 ```mermaid
 sequenceDiagram
@@ -574,6 +575,8 @@ sequenceDiagram
     U->>+POM: tryPegout(userPubKey)
     Note right of U: Provides Bitcoin public key and sends RBTC
     POM->>POM: Validate request
+    POM->>POM: Lock slot
+    Note right of POM: Find filled slot and mark as locked<br/>Reverts if no filled slot available<br/>or pegout in process
     POM->>POM: Store pegout request data
     POM->>POM: Generate user take transaction
     POM->>POM: Burn RBTC via RbtcBridge

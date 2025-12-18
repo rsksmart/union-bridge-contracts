@@ -228,17 +228,24 @@ contract TestPegoutManager is Test, HelperContract {
             slotIdExpected = uint64(i % Constants.SLOTS_PER_PACKET);
 
             stream = streamManager.getStream(amount);
-            uint64 packetNumber = stream.pegoutPacketPointer;
-            uint64 slotId = stream.pegoutSlotPointer;
-            assertEq(packetNumberExpected, packetNumber);
-            assertEq(slotIdExpected, slotId);
+            assertEq(packetNumberExpected, stream.pegoutPacketPointer, "PacketNumber before tryPegout is not correct");
+            assertEq(slotIdExpected, stream.pegoutSlotPointer, "SlotId before tryPegout is not correct");
 
             // Act
             pegoutManager.tryPegout{value: amountInWei}(userPubKey);
 
             // Assert
-            Slot memory slot = streamManager.getSlot(stream.streamId, packetNumber, slotId);
+            stream = streamManager.getStream(amount);
+            assertEq(packetNumberExpected, stream.pegoutPacketPointer, "PacketNumber after tryPegout is not correct");
+            assertEq(slotIdExpected, stream.pegoutSlotPointer, "SlotId after tryPegoutis not correct");
+            Slot memory slot =
+                streamManager.getSlot(stream.streamId, stream.pegoutPacketPointer, stream.pegoutSlotPointer);
             assertEq(uint64(slot.state), uint64(SlotState.LOCKED), "Slot was not locked");
+
+            // Complete the slot
+            BtcTransaction memory pegoutTx = createPegoutTx(slot.acceptPeginTx, userPubKey, slot.acceptPeginAmount);
+            BtcTxSPVProof memory pegoutTxSPVProof = createBtcTxSPVProof(pegoutTx);
+            pegoutManager.registerUserTake(pegoutTxSPVProof);
         }
 
         stream = streamManager.getStream(amount);
@@ -299,6 +306,36 @@ contract TestPegoutManager is Test, HelperContract {
         pegoutManager.tryPegout{value: amountInWei}(userPubKey);
     }
 
+    function test_tryPegout_Revert_OtherPegoutInProcess() external {
+        // Arrange
+        bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+
+        bytes32 txId1 = 0xb24858ade3e5be49ae63facb93524ddf460d0771f093525dae328b6c435516a2;
+        bytes32 txId2 = 0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890;
+        bytes memory scriptPubKey = hex"02f519f51e435c20d38af683ea86862f4591ce8cda248077c2d9a72a76b62f32";
+
+        uint64 amount = 1000000; // 0.01 BTC
+        uint256 amountInWei = BtcHelper.satoshiToWei(amount);
+
+        Stream memory stream = streamManager.getStream(uint64(amount));
+        uint64 packetNumber = 0;
+
+        streamManager.setSlotHarness(stream.streamId, packetNumber, scriptPubKey, txId1, amount, SlotState.FILLED);
+        streamManager.setSlotHarness(stream.streamId, packetNumber, scriptPubKey, txId2, amount, SlotState.FILLED);
+
+        // Set up mock to allow burning this amount
+        bridgeMock.setWeisTransferredToUnionBridge(amountInWei * 2);
+
+        // First pegout should succeed
+        pegoutManager.tryPegout{value: amountInWei}(userPubKey);
+
+        // Assert - Second pegout should revert with PegoutInProcess
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.PegoutInProcess.selector, stream.streamId));
+
+        // Act - Second pegout should revert with PegoutInProcess
+        pegoutManager.tryPegout{value: amountInWei}(userPubKey);
+    }
+
     // we only check the revert case since the success cases are being checked in the _addMemberSignaturePegout tests
     function test_checkAllSignaturesReady_Revert_PegoutRequestNotFound() external {
         // Arrange
@@ -337,6 +374,11 @@ contract TestPegoutManager is Test, HelperContract {
         // Verify the slot was marked as COMPLETED
         Slot memory updatedSlot = streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId);
         assertEq(uint256(updatedSlot.state), uint256(SlotState.COMPLETED), "Slot should be marked as COMPLETED");
+
+        // Verify pegoutPacketPointer and pegoutSlotPointer advance correctly
+        Stream memory updatedStream = streamManager.getStreamById(setup.stream.streamId);
+        assertEq(updatedStream.pegoutPacketPointer, 0, "Should be the same packet");
+        assertEq(updatedStream.pegoutSlotPointer, 1, "Should advance slot pointer after completed");
     }
 
     function test_registerUserTake_Success_LastSlot() external {
@@ -375,6 +417,11 @@ contract TestPegoutManager is Test, HelperContract {
         // Assert: Verify the slot was marked as COMPLETED
         Slot memory updatedSlot = streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId);
         assertEq(uint256(updatedSlot.state), uint256(SlotState.COMPLETED), "Slot should be marked as COMPLETED");
+
+        // Verify pegoutPacketPointer and pegoutSlotPointer advance correctly
+        Stream memory updatedStream = streamManager.getStreamById(setup.stream.streamId);
+        assertEq(updatedStream.pegoutPacketPointer, 1, "Should advance to second packet");
+        assertEq(updatedStream.pegoutSlotPointer, 0, "Should advance slot pointer after completed");
     }
 
     function test_registerUserTake_Revert_InvalidSlotState() external {
@@ -1180,10 +1227,10 @@ contract TestPegoutManager is Test, HelperContract {
         Slot memory lockedSlot = streamManager.getSlot(stream.streamId, 1, 0);
         assertEq(uint256(lockedSlot.state), uint256(SlotState.LOCKED), "First slot in second packet should be LOCKED");
 
-        // 5. Verify pegoutPacketPointer and pegoutSlotPointer advance correctly
+        // 5. Verify pegoutPacketPointer have advanced and pegoutSlotPointer is up to the locked slot
         Stream memory updatedStream = streamManager.getStreamById(stream.streamId);
-        assertEq(updatedStream.pegoutPacketPointer, 1, "Should advance to second packet");
-        assertEq(updatedStream.pegoutSlotPointer, 1, "Should advance slot pointer after locking");
+        assertEq(updatedStream.pegoutPacketPointer, 1, "Should advance packet pointer");
+        assertEq(updatedStream.pegoutSlotPointer, 0, "Should be up to the locked slot");
     }
 
     function test_setStreamManager_Success() external {

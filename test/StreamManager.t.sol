@@ -42,14 +42,14 @@ contract TestStreamManager is Test, HelperContract {
         streamManager.lockSlot(setupStreamId);
     }
 
-    function test_lockSlot_NoFilledSlot() external {
+    function test_lockSlot_PegoutInProcess() external {
         // Arrange
         streamManager.pushSlotsHarness(setupStreamId, 0, 1, SlotState.LOCKED);
         uint256 slotsLength = streamManager.getSlotsLengthHarness(setupStreamId, 0);
         assertEq(slotsLength, 1, "Incorrect slots length");
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IStreamManager.NoFilledSlot.selector, setupStreamId));
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.PegoutInProcess.selector, setupStreamId));
 
         // Act
         vm.prank(address(pegoutManager));
@@ -983,6 +983,22 @@ contract TestStreamManager is Test, HelperContract {
         assertEq(returnedPacketNumber, secondPacketNumber, "Should return second packet number");
     }
 
+    function _test_lockSlot_Revert_PegoutInProcess(SlotState slotState) internal {
+        // Arrange
+        uint64 streamId = setupStreamId;
+        uint64 packetNumber = 0;
+
+        // Create multiple blocked slots
+        streamManager.pushSlotsHarness(streamId, packetNumber, Constants.SLOTS_PER_PACKET, slotState);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.PegoutInProcess.selector, streamId));
+
+        // Act
+        vm.prank(address(pegoutManager));
+        streamManager.lockSlot(streamId);
+    }
+
     function _test_lockSlot_Revert_NoFilledSlot(SlotState slotState) internal {
         // Arrange
         uint64 streamId = setupStreamId;
@@ -999,20 +1015,20 @@ contract TestStreamManager is Test, HelperContract {
         streamManager.lockSlot(streamId);
     }
 
-    function test_lockSlot_Revert_NoFilledSlot_AllReserved() external {
+    function test_lockSlot_Revert_PegoutInProcess_AllReserved() external {
         _test_lockSlot_Revert_NoFilledSlot(SlotState.RESERVED);
     }
 
-    function test_lockSlot_Revert_NoFilledSlot_AllLocked() external {
-        _test_lockSlot_Revert_NoFilledSlot(SlotState.LOCKED);
+    function test_lockSlot_Revert_PegoutInProcess_AllLocked() external {
+        _test_lockSlot_Revert_PegoutInProcess(SlotState.LOCKED);
     }
 
-    function test_lockSlot_Revert_NoFilledSlot_AllAdvanced() external {
-        _test_lockSlot_Revert_NoFilledSlot(SlotState.ADVANCED);
+    function test_lockSlot_Revert_PegoutInProcess_AllAdvanced() external {
+        _test_lockSlot_Revert_PegoutInProcess(SlotState.ADVANCED);
     }
 
-    function test_lockSlot_Revert_NoFilledSlot_AllCompleted() external {
-        _test_lockSlot_Revert_NoFilledSlot(SlotState.COMPLETED);
+    function test_lockSlot_Revert_PegoutInProcess_AllCompleted() external {
+        _test_lockSlot_Revert_PegoutInProcess(SlotState.COMPLETED);
     }
 
     function test_lockSlot_Revert_NoFilledSlot_AllBlocked() external {
