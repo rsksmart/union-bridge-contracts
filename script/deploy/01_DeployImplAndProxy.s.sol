@@ -70,7 +70,7 @@ contract DeployImplAndProxy is ScriptUtils {
         } else if (block.chainid == ChainIds.RSK_TESTNET) {
             // RSK Testnet
             btcBtcNetwork = BtcNetwork.TESTNET;
-        } else if (block.chainid == ChainIds.LOCAL) {
+        } else if (block.chainid == ChainIds.LOCAL || block.chainid == ChainIds.RSK_REGTEST) {
             // Foundry local chainid
             btcBtcNetwork = BtcNetwork.REGTEST;
             // Set Bridge Mock

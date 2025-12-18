@@ -68,9 +68,9 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
         for (uint64 i = 0; i < uint64(StreamDenomination.LENGTH); i++) {
             shouldCreateCommittee[i] = true;
         }
-        minCommitteeWatchtowers = 3;
-        minCommitteeOperators = 3;
-        committeeMemberCount = 10;
+        minCommitteeWatchtowers = 2;
+        minCommitteeOperators = 2;
+        committeeMemberCount = 4;
     }
 
     function _revertIfZero(uint256 _value) internal pure {

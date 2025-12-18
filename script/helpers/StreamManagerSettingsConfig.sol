@@ -64,7 +64,7 @@ library StreamManagerSettingsConfig {
             // we use 1 for testnet to speed up testing TODO: this should be changed before final deployment
             streamSettings.peginConfirmations = 1;
             streamSettings.pegoutConfirmations = 1;
-        } else if (_chainId == ChainIds.LOCAL) {
+        } else if (_chainId == ChainIds.LOCAL || _chainId == ChainIds.RSK_REGTEST) {
             // reduce pegin confirmations to 2 for faster testing
             streamSettings.peginConfirmations = 2;
             streamSettings.pegoutConfirmations = 2;
@@ -86,8 +86,8 @@ library StreamManagerSettingsConfig {
 
         // Current default values are the same for all denominations but this may change in the future
         settings = StreamManagerSettings({
-            securityBondPercentageOperator: 1000,
-            securityBondPercentageWatchtower: 200,
+            securityBondPercentageOperator: 1000, // 10 percent
+            securityBondPercentageWatchtower: 200, // 2 percent
             minimumSecurityDeposit: 22500000 gwei, // 2250 USD
             disablementPaymentsPerChallenge: 2500000 gwei // 250 USD
         });
@@ -99,7 +99,7 @@ library StreamManagerSettingsConfig {
             // security bond are cheaper on testnet to avoid draining the faucet.
             settings.securityBondPercentageOperator = 800;
             settings.securityBondPercentageWatchtower = 100;
-        } else if (_chainId == ChainIds.LOCAL) {
+        } else if (_chainId == ChainIds.LOCAL || _chainId == ChainIds.RSK_REGTEST) {
             // Currently local settings are the same except for the confirmations inside stream settings
         } else {
             revert("Unsupported _chainId");
