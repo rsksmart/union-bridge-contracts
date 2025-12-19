@@ -171,7 +171,7 @@ contract StreamManager is IStreamManager, AccessControl {
     /// @param _streamId The ID of the stream
     /// @return The committee ID, or 0 if no current packet
     function getAvailablePeginCommitteeId(uint64 _streamId) external view returns (uint128) {
-        Stream storage stream = streams[_streamId];
+        Stream memory stream = streams[_streamId];
         if (stream.peginPacketPointer >= packets[_streamId].length) {
             return 0;
         }
@@ -215,7 +215,11 @@ contract StreamManager is IStreamManager, AccessControl {
             // Found a non-blocked slot revert if not filled
             Slot storage currentSlot = packetSlots[stream.pegoutSlotPointer];
             if (currentSlot.state != SlotState.FILLED) {
-                revert NoFilledSlot(_streamId);
+                if (currentSlot.state == SlotState.RESERVED) {
+                    revert NoFilledSlot(_streamId);
+                } else {
+                    revert PegoutInProcess(_streamId);
+                }
             }
             return currentSlot;
         }
@@ -226,10 +230,11 @@ contract StreamManager is IStreamManager, AccessControl {
     }
 
     /// @notice Returns the first filled slot, locks it, and updates the peg-out pointers
+    /// @notice Reverts if a pegout is already in progress for the same stream
     /// @dev Can only be called by the PegManager
     /// @param _streamId The ID of the stream
     /// @return slot The locked slot data
-    /// @return packetNumber The packet number containing the slot
+    /// @return packet The packet number containing the slot
     function lockSlot(uint64 _streamId) external onlyPegManager returns (Slot memory, uint64) {
         Stream storage stream = streams[_streamId];
 
@@ -237,17 +242,7 @@ contract StreamManager is IStreamManager, AccessControl {
         Slot storage currentSlot = _findNextFilledSlot(_streamId);
         currentSlot.state = SlotState.LOCKED;
 
-        // Save the current packet number before potentially incrementing it
-        uint64 currentPacketNumber = stream.pegoutPacketPointer;
-
-        // Update the stream pegout pointers
-        stream.pegoutSlotPointer++;
-        if (stream.pegoutSlotPointer == Constants.SLOTS_PER_PACKET) {
-            stream.pegoutPacketPointer++;
-            stream.pegoutSlotPointer = 0;
-        }
-
-        return (currentSlot, currentPacketNumber);
+        return (currentSlot, stream.pegoutPacketPointer);
     }
 
     /// @notice Gets a specific slot from a stream and packet
@@ -374,6 +369,7 @@ contract StreamManager is IStreamManager, AccessControl {
 
     /// @notice Marks a slot as completed and stores the UserTake transaction id
     /// @dev Can only be called by the PegManager
+    /// @dev Moves the pegout slot pointer to the next slot
     /// @param _streamId The ID of the stream
     /// @param _packetNumber The packet number
     /// @param _slotId The slot ID
@@ -401,6 +397,14 @@ contract StreamManager is IStreamManager, AccessControl {
         // Update the slot state to COMPLETED and store the user take tx id
         slot.state = SlotState.COMPLETED;
         slot.takeTx = _userTakeTx;
+
+        // Update the stream pegout pointers
+        Stream storage stream = streams[_streamId];
+        stream.pegoutSlotPointer++;
+        if (stream.pegoutSlotPointer == Constants.SLOTS_PER_PACKET) {
+            stream.pegoutPacketPointer++;
+            stream.pegoutSlotPointer = 0;
+        }
     }
 
     function _getSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) internal view returns (Slot storage) {

@@ -155,6 +155,7 @@ interface IStreamManager is IAccessControl {
     function getPacket(uint64 _streamId, uint64 _packetNumber) external view returns (Packet memory);
 
     /// @notice Locks the first filled slot in a stream for peg-out processing
+    /// @notice Reverts if a pegout is already in progress for the same stream
     /// @dev Returns the slot information and packet number for the locked slot
     /// @param _streamId The index of the stream
     /// @return slot The slot information for the locked slot
@@ -386,6 +387,10 @@ interface IStreamManager is IAccessControl {
     /// @notice Thrown when there are no filled slots available for a given stream
     /// @param streamId The stream ID
     error NoFilledSlot(uint256 streamId);
+
+    /// @notice Thrown when there is already a pegout in process for a given stream
+    /// @param streamId The stream ID
+    error PegoutInProcess(uint256 streamId);
 
     /// @notice Thrown when a slot is in an unexpected state during lockSlot
     /// @param streamId The stream ID
