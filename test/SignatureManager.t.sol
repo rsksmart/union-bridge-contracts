@@ -536,6 +536,36 @@ contract TestSignatureManager is Test, HelperContract {
         signatureManager.addOperatorTakeTxid(acceptPeginTxid, operatorTakeTxid, operatorWonTxid);
     }
 
+    function test_addOperatorTakeTxid_Revert_InvalidTxid_OperatorTake() external {
+        // Arrange
+        bytes32 acceptPeginTxid = setup_initOperatorTakeTxids();
+        uint256 operatorIndex = registry.committeeMemberCount() / 2;
+        address memberAddress = vm.addr(operatorIndex + 1);
+        bytes32 operatorTakeTxid = hex"00";
+        bytes32 operatorWonTxid = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(ISignatureManager.InvalidHash.selector, operatorTakeTxid));
+
+        vm.prank(memberAddress);
+        signatureManager.addOperatorTakeTxid(acceptPeginTxid, operatorTakeTxid, operatorWonTxid);
+    }
+
+    function test_addOperatorTakeTxid_Revert_InvalidTxid_OperatorWon() external {
+        // Arrange
+        bytes32 acceptPeginTxid = setup_initOperatorTakeTxids();
+        uint256 operatorIndex = registry.committeeMemberCount() / 2;
+        address memberAddress = vm.addr(operatorIndex + 1);
+        bytes32 operatorWonTxid = hex"00";
+        bytes32 operatorTakeTxid = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(ISignatureManager.InvalidHash.selector, operatorWonTxid));
+
+        vm.prank(memberAddress);
+        signatureManager.addOperatorTakeTxid(acceptPeginTxid, operatorTakeTxid, operatorWonTxid);
+    }
+
     function test_addOperatorTakeTxid_Success_AllOperatorTakeTxidsAdded() external {
         // Arrange
         bytes32 acceptPeginTxid = setup_initOperatorTakeTxids();
