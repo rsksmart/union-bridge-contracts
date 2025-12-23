@@ -477,7 +477,7 @@ contract TestSignatureManager is Test, HelperContract {
             bytes32 takeTxid = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
             bytes32 wonTxid = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a1";
             vm.prank(memberAddress);
-            signatureManager.addOperatorTakeTxid(acceptPeginTxid, takeTxid, wonTxid);
+            signatureManager.addOperatorTakeTxids(acceptPeginTxid, takeTxid, wonTxid);
         }
     }
 
@@ -520,7 +520,7 @@ contract TestSignatureManager is Test, HelperContract {
         assertEq(committeeId, COMMITTEE_ID_STREAM_1_COMMITTEE_1, "committeeId should match");
     }
 
-    function test_addOperatorTakeTxid_Success() external {
+    function test_addOperatorTakeTxids_Success() external {
         // Arrange
         bytes32 acceptPeginTxid = setup_initOperatorTakeTxids();
         uint256 operatorIndex = registry.committeeMemberCount() / 2;
@@ -530,13 +530,13 @@ contract TestSignatureManager is Test, HelperContract {
 
         // Assert
         vm.expectEmit(address(signatureManager));
-        emit ISignatureManager.OperatorTakeTxidAdded(acceptPeginTxid, memberAddress, operatorTakeTxid, operatorWonTxid);
+        emit ISignatureManager.OperatorTakeTxidsAdded(acceptPeginTxid, memberAddress, operatorTakeTxid, operatorWonTxid);
 
         vm.prank(memberAddress);
-        signatureManager.addOperatorTakeTxid(acceptPeginTxid, operatorTakeTxid, operatorWonTxid);
+        signatureManager.addOperatorTakeTxids(acceptPeginTxid, operatorTakeTxid, operatorWonTxid);
     }
 
-    function test_addOperatorTakeTxid_Revert_InvalidTxid_OperatorTake() external {
+    function test_addOperatorTakeTxids_Revert_InvalidTxid_OperatorTake() external {
         // Arrange
         bytes32 acceptPeginTxid = setup_initOperatorTakeTxids();
         uint256 operatorIndex = registry.committeeMemberCount() / 2;
@@ -548,10 +548,10 @@ contract TestSignatureManager is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(ISignatureManager.InvalidHash.selector, operatorTakeTxid));
 
         vm.prank(memberAddress);
-        signatureManager.addOperatorTakeTxid(acceptPeginTxid, operatorTakeTxid, operatorWonTxid);
+        signatureManager.addOperatorTakeTxids(acceptPeginTxid, operatorTakeTxid, operatorWonTxid);
     }
 
-    function test_addOperatorTakeTxid_Revert_InvalidTxid_OperatorWon() external {
+    function test_addOperatorTakeTxids_Revert_InvalidTxid_OperatorWon() external {
         // Arrange
         bytes32 acceptPeginTxid = setup_initOperatorTakeTxids();
         uint256 operatorIndex = registry.committeeMemberCount() / 2;
@@ -563,10 +563,10 @@ contract TestSignatureManager is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(ISignatureManager.InvalidHash.selector, operatorWonTxid));
 
         vm.prank(memberAddress);
-        signatureManager.addOperatorTakeTxid(acceptPeginTxid, operatorTakeTxid, operatorWonTxid);
+        signatureManager.addOperatorTakeTxids(acceptPeginTxid, operatorTakeTxid, operatorWonTxid);
     }
 
-    function test_addOperatorTakeTxid_Success_AllOperatorTakeTxidsAdded() external {
+    function test_addOperatorTakeTxids_Success_AllOperatorTakeTxidsAdded() external {
         // Arrange
         bytes32 acceptPeginTxid = setup_initOperatorTakeTxids();
         uint256 operatorCount = registry.committeeMemberCount() / 2;
@@ -580,14 +580,14 @@ contract TestSignatureManager is Test, HelperContract {
 
         // Assert
         vm.expectEmit(address(signatureManager));
-        emit ISignatureManager.OperatorTakeTxidAdded(acceptPeginTxid, lastMemberAddress, takeTxid, wonTxid);
+        emit ISignatureManager.OperatorTakeTxidsAdded(acceptPeginTxid, lastMemberAddress, takeTxid, wonTxid);
 
         vm.expectEmit(address(signatureManager));
         emit ISignatureManager.AllOperatorTakeTxidsAdded(acceptPeginTxid);
 
         // Act
         vm.prank(lastMemberAddress);
-        signatureManager.addOperatorTakeTxid(acceptPeginTxid, takeTxid, wonTxid);
+        signatureManager.addOperatorTakeTxids(acceptPeginTxid, takeTxid, wonTxid);
 
         // Assert
         OperatorTakeData[] memory operatorTakeData = signatureManager.getOperatorTakeData(acceptPeginTxid);
@@ -597,7 +597,7 @@ contract TestSignatureManager is Test, HelperContract {
         }
     }
 
-    function test_addOperatorTakeTxid_Revert_AcceptPeginTxidNotFound() external {
+    function test_addOperatorTakeTxids_Revert_AcceptPeginTxidNotFound() external {
         // Arrange
         uint256 operatorIndex = registry.committeeMemberCount() / 2;
         address memberAddress = vm.addr(operatorIndex + 1);
@@ -610,10 +610,10 @@ contract TestSignatureManager is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(ISignatureManager.AcceptPeginTxidNotFound.selector, acceptPeginTxid));
 
         vm.prank(memberAddress);
-        signatureManager.addOperatorTakeTxid(acceptPeginTxid, operatorTakeTxid, operatorWonTxid);
+        signatureManager.addOperatorTakeTxids(acceptPeginTxid, operatorTakeTxid, operatorWonTxid);
     }
 
-    function test_addOperatorTakeTxid_Revert_MemberNotFoundInCommittee() external {
+    function test_addOperatorTakeTxids_Revert_MemberNotFoundInCommittee() external {
         // Arrange
         bytes32 acceptPeginTxid = setup_initOperatorTakeTxids();
         bytes32 operatorTakeTxid = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
@@ -638,10 +638,10 @@ contract TestSignatureManager is Test, HelperContract {
 
         // Act
         vm.prank(notMemberAddress);
-        signatureManager.addOperatorTakeTxid(acceptPeginTxid, operatorTakeTxid, operatorWonTxid);
+        signatureManager.addOperatorTakeTxids(acceptPeginTxid, operatorTakeTxid, operatorWonTxid);
     }
 
-    function test_addOperatorTakeTxid_Revert_MemberIsNotOperator() external {
+    function test_addOperatorTakeTxids_Revert_MemberIsNotOperator() external {
         // Arrange
         bytes32 acceptPeginTxid = setup_initOperatorTakeTxids();
         uint256 notOperatorIndex = 0;
@@ -658,10 +658,10 @@ contract TestSignatureManager is Test, HelperContract {
 
         // Act
         vm.prank(notOperatorAddress);
-        signatureManager.addOperatorTakeTxid(acceptPeginTxid, operatorTakeTxid, operatorWonTxid);
+        signatureManager.addOperatorTakeTxids(acceptPeginTxid, operatorTakeTxid, operatorWonTxid);
     }
 
-    function test_addOperatorTakeTxid_Revert_MemberHasAlreadyAddedoperatorTakeTxid() external {
+    function test_addOperatorTakeTxids_Revert_MemberHasAlreadyAddedoperatorTakeTxid() external {
         // Arrange
         bytes32 acceptPeginTxid = setup_initOperatorTakeTxids();
         uint256 operatorIndex = registry.committeeMemberCount() / 2;
@@ -670,12 +670,12 @@ contract TestSignatureManager is Test, HelperContract {
         bytes32 operatorWonTxid = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
 
         vm.prank(memberAddress);
-        signatureManager.addOperatorTakeTxid(acceptPeginTxid, operatorTakeTxid, operatorWonTxid);
+        signatureManager.addOperatorTakeTxids(acceptPeginTxid, operatorTakeTxid, operatorWonTxid);
 
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(
-                ISignatureManager.MemberAlreadyAddedOperatorTakeTxid.selector,
+                ISignatureManager.MemberAlreadyAddedOperatorTakeTxids.selector,
                 acceptPeginTxid,
                 memberAddress,
                 operatorTakeTxid,
@@ -685,10 +685,10 @@ contract TestSignatureManager is Test, HelperContract {
 
         // Act
         vm.prank(memberAddress);
-        signatureManager.addOperatorTakeTxid(acceptPeginTxid, operatorTakeTxid, operatorWonTxid);
+        signatureManager.addOperatorTakeTxids(acceptPeginTxid, operatorTakeTxid, operatorWonTxid);
     }
 
-    function test_addOperatorTakeTxid_Revert_AllHashesAlreadyPresent() external {
+    function test_addOperatorTakeTxids_Revert_AllHashesAlreadyPresent() external {
         // Arrange
         bytes32 acceptPeginTxid = setup_initOperatorTakeTxids();
         uint256 operatorCount = registry.committeeMemberCount() / 2;
@@ -708,7 +708,7 @@ contract TestSignatureManager is Test, HelperContract {
 
         // Act
         vm.prank(lastMemberAddress);
-        signatureManager.addOperatorTakeTxid(acceptPeginTxid, lastMemberTxid, lastMemberWonTxid);
+        signatureManager.addOperatorTakeTxids(acceptPeginTxid, lastMemberTxid, lastMemberWonTxid);
     }
 
     function test_checkAllOperatorTakesHashesReady_Revert_AcceptPeginTxidNotFound() external {
@@ -752,7 +752,7 @@ contract TestSignatureManager is Test, HelperContract {
 
             // Arrange (Add new operator take tx id)
             vm.prank(memberAddress);
-            signatureManager.addOperatorTakeTxid(acceptPeginTxid, txid, wonTxid);
+            signatureManager.addOperatorTakeTxids(acceptPeginTxid, txid, wonTxid);
         }
 
         // Act

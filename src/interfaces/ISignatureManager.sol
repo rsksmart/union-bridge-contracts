@@ -106,7 +106,7 @@ interface ISignatureManager is IAccessControl {
     /// @dev Called by committee operators to provide their OperatorTake transaction id
     /// @param _acceptPeginTxid The accept peg-in transaction id
     /// @param _takeTxid The OperatorTake transaction id provided by the member
-    function addOperatorTakeTxid(bytes32 _acceptPeginTxid, bytes32 _takeTxid, bytes32 _wonTxid) external;
+    function addOperatorTakeTxids(bytes32 _acceptPeginTxid, bytes32 _takeTxid, bytes32 _wonTxid) external;
 
     /// @notice Checks if all OperatorTake transaction id's are ready
     /// @param _acceptPeginTxid The accept peg-in transaction id
@@ -149,7 +149,7 @@ interface ISignatureManager is IAccessControl {
     /// @param memberAddress The member's address
     /// @param takeTxid The OperatorTake transaction id provided by the member
     /// @param wonTxid The OperatorWon transaction id provided by the member
-    event OperatorTakeTxidAdded(bytes32 acceptPeginTxid, address memberAddress, bytes32 takeTxid, bytes32 wonTxid);
+    event OperatorTakeTxidsAdded(bytes32 acceptPeginTxid, address memberAddress, bytes32 takeTxid, bytes32 wonTxid);
 
     /// @notice Event emitted when all OperatorTake and OperatorWon transaction id's are added
     /// @param acceptPeginTxid The accept peg-in transaction id
@@ -232,7 +232,7 @@ interface ISignatureManager is IAccessControl {
     /// @param memberAddress The member's address
     /// @param takeTxid The OperatorTake transaction id that was already added
     /// @param wonTxid The OperatorWon transaction id that was already added
-    error MemberAlreadyAddedOperatorTakeTxid(
+    error MemberAlreadyAddedOperatorTakeTxids(
         bytes32 acceptPeginTxid, address memberAddress, bytes32 takeTxid, bytes32 wonTxid
     );
 }

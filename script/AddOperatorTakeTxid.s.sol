@@ -7,7 +7,7 @@ import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol"
 import {PegoutManager} from "src/PegoutManager.sol";
 import {ISignatureManager, OperatorTakeData} from "src/interfaces/ISignatureManager.sol";
 
-contract AddOperatorTakeTxidScript is ScriptUtils, ContractAddressManager {
+contract addOperatorTakeTxidsScript is ScriptUtils, ContractAddressManager {
     PegoutManager pegoutManager;
     ISignatureManager signatureManager;
     uint256 privKey;
@@ -41,7 +41,7 @@ contract AddOperatorTakeTxidScript is ScriptUtils, ContractAddressManager {
         setUp(_mnemonicIndex, _acceptPeginTxid, _takeTxid, _wonTxid);
 
         vm.startBroadcast(privKey);
-        signatureManager.addOperatorTakeTxid(_acceptPeginTxid, _takeTxid, _wonTxid);
+        signatureManager.addOperatorTakeTxids(_acceptPeginTxid, _takeTxid, _wonTxid);
         vm.stopBroadcast();
 
         OperatorTakeData[] memory operatorTakeData = signatureManager.getOperatorTakeData(_acceptPeginTxid);

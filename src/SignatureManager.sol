@@ -249,7 +249,7 @@ contract SignatureManager is ISignatureManager, AccessControl {
     /// @dev Only operators can add OperatorTake transaction id's
     /// @param _acceptPeginTxid The accept peg-in transaction id
     /// @param _takeTxid The OperatorTake transaction id to add
-    function addOperatorTakeTxid(bytes32 _acceptPeginTxid, bytes32 _takeTxid, bytes32 _wonTxid) external {
+    function addOperatorTakeTxids(bytes32 _acceptPeginTxid, bytes32 _takeTxid, bytes32 _wonTxid) external {
         address sender = _msgSender();
         OperatorTakeTxids storage operatorTakeTxids = _getOperatorTakeTxids(_acceptPeginTxid);
 
@@ -278,7 +278,7 @@ contract SignatureManager is ISignatureManager, AccessControl {
         }
 
         if (operatorTakeTxids.takeTxids[sender] != bytes32(0) || operatorTakeTxids.wonTxids[sender] != bytes32(0)) {
-            revert MemberAlreadyAddedOperatorTakeTxid(
+            revert MemberAlreadyAddedOperatorTakeTxids(
                 _acceptPeginTxid, sender, operatorTakeTxids.takeTxids[sender], operatorTakeTxids.wonTxids[sender]
             );
         }
@@ -286,7 +286,7 @@ contract SignatureManager is ISignatureManager, AccessControl {
         operatorTakeTxids.takeTxids[sender] = _takeTxid;
         operatorTakeTxids.wonTxids[sender] = _wonTxid;
 
-        emit OperatorTakeTxidAdded(_acceptPeginTxid, sender, _takeTxid, _wonTxid);
+        emit OperatorTakeTxidsAdded(_acceptPeginTxid, sender, _takeTxid, _wonTxid);
 
         operatorTakeTxids.missingHashes -= 1;
         if (operatorTakeTxids.missingHashes == 0) {
