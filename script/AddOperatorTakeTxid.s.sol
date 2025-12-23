@@ -14,7 +14,7 @@ contract AddOperatorTakeTxidScript is ScriptUtils, ContractAddressManager {
     uint16 mnemonicIndex;
     address user;
 
-    function setUp(uint16 _mnemonicIndex, bytes32 _acceptPeginTxid, bytes32 _takeTxid) internal {
+    function setUp(uint16 _mnemonicIndex, bytes32 _acceptPeginTxid, bytes32 _takeTxid, bytes32 _wonTxid) internal {
         pegoutManager = PegoutManager(getPegoutManager());
         signatureManager = ISignatureManager(pegoutManager.signatureManager());
         // Read args from command line / env
@@ -23,6 +23,9 @@ contract AddOperatorTakeTxidScript is ScriptUtils, ContractAddressManager {
         }
         if (_takeTxid == bytes32(0)) {
             revert("TAKE_TXID must be provided");
+        }
+        if (_wonTxid == bytes32(0)) {
+            revert("WON_TXID must be provided");
         }
 
         mnemonicIndex = _mnemonicIndex;
@@ -34,11 +37,11 @@ contract AddOperatorTakeTxidScript is ScriptUtils, ContractAddressManager {
         user = vm.addr(privKey);
     }
 
-    function run(uint16 _mnemonicIndex, bytes32 _acceptPeginTxid, bytes32 _takeTxid) public {
-        setUp(_mnemonicIndex, _acceptPeginTxid, _takeTxid);
+    function run(uint16 _mnemonicIndex, bytes32 _acceptPeginTxid, bytes32 _takeTxid, bytes32 _wonTxid) public {
+        setUp(_mnemonicIndex, _acceptPeginTxid, _takeTxid, _wonTxid);
 
         vm.startBroadcast(privKey);
-        signatureManager.addOperatorTakeTxid(_acceptPeginTxid, _takeTxid, _takeTxid);
+        signatureManager.addOperatorTakeTxid(_acceptPeginTxid, _takeTxid, _wonTxid);
         vm.stopBroadcast();
 
         OperatorTakeData[] memory operatorTakeData = signatureManager.getOperatorTakeData(_acceptPeginTxid);

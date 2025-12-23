@@ -37,7 +37,7 @@ struct OperatorTakeData {
 }
 
 /// @notice Represents the state of OperatorTake transaction id's for a specific accept peg-in
-/// @dev Tracks OperatorTake transaction id's provided by committee members
+/// @dev Tracks OperatorTake and OperatorWon transaction id's provided by committee members
 struct OperatorTakeTxids {
     /// @notice Mapping of member addresses to their OperatorTake transaction id's
     mapping(address memberAddress => bytes32 operatorTakeTxid) takeTxids;
@@ -144,14 +144,14 @@ interface ISignatureManager is IAccessControl {
     /// @param hashToSign The hash for which all signatures are ready
     event AllSignaturesReady(bytes32 indexed hashToSign);
 
-    /// @notice Event emitted when a OperatorTake transaction id is added
+    /// @notice Event emitted when OperatorTake and OperatorWon transaction id are added for a member
     /// @param acceptPeginTxid The accept peg-in transaction id
     /// @param memberAddress The member's address
     /// @param takeTxid The OperatorTake transaction id provided by the member
     /// @param wonTxid The OperatorWon transaction id provided by the member
     event OperatorTakeTxidAdded(bytes32 acceptPeginTxid, address memberAddress, bytes32 takeTxid, bytes32 wonTxid);
 
-    /// @notice Event emitted when all OperatorTake transaction id's are added
+    /// @notice Event emitted when all OperatorTake and OperatorWon transaction id's are added
     /// @param acceptPeginTxid The accept peg-in transaction id
     event AllOperatorTakeTxidsAdded(bytes32 acceptPeginTxid);
 
@@ -227,7 +227,7 @@ interface ISignatureManager is IAccessControl {
     /// @param memberAddress The member's address
     error MemberIsNotOperator(uint128 committeeId, address memberAddress);
 
-    /// @notice Thrown when a member has already added a OperatorTake transaction id
+    /// @notice Thrown when a member has already added OperatorTake and OperatorWon transaction ids
     /// @param acceptPeginTxid The accept peg-in transaction id
     /// @param memberAddress The member's address
     /// @param takeTxid The OperatorTake transaction id that was already added

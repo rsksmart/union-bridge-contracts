@@ -245,7 +245,7 @@ contract SignatureManager is ISignatureManager, AccessControl {
         return operatorTakeTxidsMap[_acceptPeginTxid];
     }
 
-    /// @notice Adds a OperatorTake transaction id for an operator
+    /// @notice Adds a OperatorTake and OperatorWon transaction id for an operator
     /// @dev Only operators can add OperatorTake transaction id's
     /// @param _acceptPeginTxid The accept peg-in transaction id
     /// @param _takeTxid The OperatorTake transaction id to add
@@ -277,7 +277,7 @@ contract SignatureManager is ISignatureManager, AccessControl {
             revert MemberIsNotOperator(operatorTakeTxids.committeeId, sender);
         }
 
-        if (operatorTakeTxids.takeTxids[sender] != bytes32(0)) {
+        if (operatorTakeTxids.takeTxids[sender] != bytes32(0) || operatorTakeTxids.wonTxids[sender] != bytes32(0)) {
             revert MemberAlreadyAddedOperatorTakeTxid(
                 _acceptPeginTxid, sender, operatorTakeTxids.takeTxids[sender], operatorTakeTxids.wonTxids[sender]
             );
@@ -317,10 +317,11 @@ contract SignatureManager is ISignatureManager, AccessControl {
         OperatorTakeData[] memory operatorTakeData = new OperatorTakeData[](operatorsCount);
         operatorsCount = 0;
         for (uint256 i = 0; i < members.length; i++) {
+            address memberAddress = members[i].memberAddress;
             if (members[i].role == Role.OPERATOR) {
-                operatorTakeData[operatorsCount].takeTxid = txids.takeTxids[members[i].memberAddress];
-                operatorTakeData[operatorsCount].wonTxid = txids.wonTxids[members[i].memberAddress];
-                operatorTakeData[operatorsCount].memberAddress = members[i].memberAddress;
+                operatorTakeData[operatorsCount].takeTxid = txids.takeTxids[memberAddress];
+                operatorTakeData[operatorsCount].wonTxid = txids.wonTxids[memberAddress];
+                operatorTakeData[operatorsCount].memberAddress = memberAddress;
                 operatorsCount++;
             }
         }
