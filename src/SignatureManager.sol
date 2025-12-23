@@ -249,7 +249,7 @@ contract SignatureManager is ISignatureManager, AccessControl {
     /// @dev Only operators can add OperatorTake transaction id's
     /// @param _acceptPeginTxid The accept peg-in transaction id
     /// @param _takeTxid The OperatorTake transaction id to add
-    function addOperatorTakeTxid(bytes32 _acceptPeginTxid, bytes32 _takeTxid) external {
+    function addOperatorTakeTxid(bytes32 _acceptPeginTxid, bytes32 _takeTxid, bytes32 _wonTxid) external {
         address sender = _msgSender();
         OperatorTakeTxids storage operatorTakeTxids = _getOperatorTakeTxids(_acceptPeginTxid);
 
@@ -259,6 +259,10 @@ contract SignatureManager is ISignatureManager, AccessControl {
         // Check if hash is valid
         if (_takeTxid == bytes32(0)) {
             revert InvalidHash(_takeTxid);
+        }
+
+        if (_wonTxid == bytes32(0)) {
+            revert InvalidHash(_wonTxid);
         }
 
         Role role = _getMemberRole(operatorTakeTxids.committeeId, sender);
@@ -273,12 +277,16 @@ contract SignatureManager is ISignatureManager, AccessControl {
             revert MemberIsNotOperator(operatorTakeTxids.committeeId, sender);
         }
 
-        if (operatorTakeTxids.txids[sender] != bytes32(0)) {
-            revert MemberAlreadyAddedOperatorTakeTxid(_acceptPeginTxid, sender, _takeTxid);
+        if (operatorTakeTxids.takeTxids[sender] != bytes32(0)) {
+            revert MemberAlreadyAddedOperatorTakeTxid(
+                _acceptPeginTxid, sender, operatorTakeTxids.takeTxids[sender], operatorTakeTxids.wonTxids[sender]
+            );
         }
 
-        operatorTakeTxids.txids[sender] = _takeTxid;
-        emit OperatorTakeTxidAdded(_acceptPeginTxid, sender, _takeTxid);
+        operatorTakeTxids.takeTxids[sender] = _takeTxid;
+        operatorTakeTxids.wonTxids[sender] = _wonTxid;
+
+        emit OperatorTakeTxidAdded(_acceptPeginTxid, sender, _takeTxid, _wonTxid);
 
         operatorTakeTxids.missingHashes -= 1;
         if (operatorTakeTxids.missingHashes == 0) {
@@ -298,9 +306,9 @@ contract SignatureManager is ISignatureManager, AccessControl {
     /// @param _acceptPeginTxid The accept peg-in transaction id
     /// @return Array of OperatorTake transaction data for all operators
     function getOperatorTakeData(bytes32 _acceptPeginTxid) external view returns (OperatorTakeData[] memory) {
-        OperatorTakeTxids storage operatorTakeTxids = _getOperatorTakeTxids(_acceptPeginTxid);
+        OperatorTakeTxids storage txids = _getOperatorTakeTxids(_acceptPeginTxid);
         uint256 operatorsCount = 0;
-        CommitteeMember[] memory members = committeeRegistry.getCommitteeMembers(operatorTakeTxids.committeeId);
+        CommitteeMember[] memory members = committeeRegistry.getCommitteeMembers(txids.committeeId);
         for (uint256 i = 0; i < members.length; i++) {
             if (members[i].role == Role.OPERATOR) {
                 operatorsCount++;
@@ -310,7 +318,8 @@ contract SignatureManager is ISignatureManager, AccessControl {
         operatorsCount = 0;
         for (uint256 i = 0; i < members.length; i++) {
             if (members[i].role == Role.OPERATOR) {
-                operatorTakeData[operatorsCount].txid = operatorTakeTxids.txids[members[i].memberAddress];
+                operatorTakeData[operatorsCount].takeTxid = txids.takeTxids[members[i].memberAddress];
+                operatorTakeData[operatorsCount].wonTxid = txids.wonTxids[members[i].memberAddress];
                 operatorTakeData[operatorsCount].memberAddress = members[i].memberAddress;
                 operatorsCount++;
             }

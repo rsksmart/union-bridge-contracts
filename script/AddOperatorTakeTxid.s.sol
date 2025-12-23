@@ -38,14 +38,16 @@ contract AddOperatorTakeTxidScript is ScriptUtils, ContractAddressManager {
         setUp(_mnemonicIndex, _acceptPeginTxid, _takeTxid);
 
         vm.startBroadcast(privKey);
-        signatureManager.addOperatorTakeTxid(_acceptPeginTxid, _takeTxid);
+        signatureManager.addOperatorTakeTxid(_acceptPeginTxid, _takeTxid, _takeTxid);
         vm.stopBroadcast();
 
         OperatorTakeData[] memory operatorTakeData = signatureManager.getOperatorTakeData(_acceptPeginTxid);
         console.log("=== Operator take tx id added successfully ===");
         for (uint256 i = 0; i < operatorTakeData.length; i++) {
             console.log("Operator take tx id:");
-            console.logBytes32(operatorTakeData[i].txid);
+            console.logBytes32(operatorTakeData[i].takeTxid);
+            console.log("Operator won tx id:");
+            console.logBytes32(operatorTakeData[i].wonTxid);
             console.log("Operator address:");
             console.logAddress(operatorTakeData[i].memberAddress);
         }
