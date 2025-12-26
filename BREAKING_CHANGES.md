@@ -1,5 +1,19 @@
 # Breaking Changes
 
+## [Unreleased]
+
+### Changed
+
+- `SignatureManager.addOperatorTakeTxid` renamed to `addOperatorTakeTxids`.
+- `SignatureManager.getOperatorTakeTxids` now receive `operatorWonTxid` too.
+- `shell/script/operator-take/add-operator-take-txid.sh` and `script/operator-take/add-every-operator-take-txid.sh` to use `addOperatorTakeTxids` and deposit `operatorWonTxid`.
+
+
+### Removed
+
+- `shell/script/operator-take/add-every-operator-take-tx-hash.sh` unused script.
+
+
 ## [v0.2.2-alpha]
 
 ### Public Functions - Changed Names or Parameters (v0.2.2-alpha)
