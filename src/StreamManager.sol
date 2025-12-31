@@ -291,7 +291,8 @@ contract StreamManager is IStreamManager, AccessControl {
                 acceptPeginTx: bytes32(0),
                 acceptPeginAmount: 0,
                 scriptPubKey: "",
-                takeTx: ""
+                takeTx: "",
+                enablerScriptPubKey: ""
             })
         );
         emit SlotReserved(_streamId, _packetNumber, slotId);
@@ -313,12 +314,14 @@ contract StreamManager is IStreamManager, AccessControl {
     /// @param _stream The struct containing the stream, packet, and slot information
     /// @param _acceptPeginAmount The amount of the accept peg-in transaction
     /// @param _acceptPeginTx The hash of the accept peg-in transaction
-    /// @param _scriptPubKey The script pub key for the transaction
+    /// @param _scriptPubKey The script pub key for the taptree output
+    /// @param _enablerScriptPubKey The script pub key for the enabler output
     function fillSlot(
         StreamPosition memory _stream,
         uint64 _acceptPeginAmount,
         bytes32 _acceptPeginTx,
-        bytes memory _scriptPubKey
+        bytes memory _scriptPubKey,
+        bytes memory _enablerScriptPubKey
     ) external onlyPegManager {
         Slot storage slot = _getSlot(_stream.streamId, _stream.packetNumber, _stream.slotId);
 
@@ -330,6 +333,7 @@ contract StreamManager is IStreamManager, AccessControl {
         slot.acceptPeginTx = _acceptPeginTx;
         slot.acceptPeginAmount = _acceptPeginAmount;
         slot.scriptPubKey = _scriptPubKey;
+        slot.enablerScriptPubKey = _enablerScriptPubKey;
 
         emit SlotFilled(_stream.streamId, _stream.packetNumber, _stream.slotId, _acceptPeginTx, _acceptPeginAmount);
     }

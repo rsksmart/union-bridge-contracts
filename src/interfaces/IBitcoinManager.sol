@@ -140,6 +140,16 @@ interface IBitcoinManager {
         BtcTxOut calldata _p2trOut
     ) external view;
 
+    /// @notice Validates the enabler output in a request peg-in transaction
+    /// @param _committeePubKey The committee's public key
+    /// @param _disputeKeys The dispute keys (covenant public keys) for the committee
+    /// @param _enablerOut The enabler output to validate
+    function validateRequestPeginEnablerOutput(
+        bytes memory _committeePubKey,
+        bytes32[] memory _disputeKeys,
+        BtcTxOut calldata _enablerOut
+    ) external view;
+
     /// @notice Calculates the Bitcoin transaction id (txid) for a given transaction
     /// @dev Encodes the transaction into Bitcoin's raw format and performs double SHA256 hash
     /// @dev This is the standard Bitcoin transaction ID used for referencing transactions
@@ -152,14 +162,26 @@ interface IBitcoinManager {
     /// @param _committeePubKey The committee's public key (x-coordinate only)
     /// @param _userXOnlyPubKey The user's public key (x-coordinate only, 32 bytes)
     /// @param _registerPeginTx The transaction id of the peg-in request being spent
-    /// @param _prevoutData Data about the previous output being spent (amount and scriptPubKey)
+    /// @param _prevoutDatas Array of prevout data for all inputs being spent (taptree + enabler outputs)
+    /// @param _operatorDisputeKeys The dispute keys (covenant public keys) for OPERATOR members only
     /// @return BitcoinSignatureData containing txid, signatureHash, and signatureMessage
     function getAcceptPeginSignatureHash(
         bytes memory _committeePubKey,
         bytes32 _userXOnlyPubKey,
         bytes32 _registerPeginTx,
-        PrevoutData memory _prevoutData
+        PrevoutData[] memory _prevoutDatas,
+        bytes32[] memory _operatorDisputeKeys
     ) external view returns (BitcoinSignatureData memory);
+
+    /// @notice Generates the enabler output P2TR script pub key
+    /// @dev Creates a Taproot script for the enabler output with dispute keys in the merkle tree
+    /// @param _committeePubKey The committee's aggregated public key (33 bytes compressed)
+    /// @param _disputeKeys Array of dispute keys for committee members (x-only, 32 bytes each)
+    /// @return The P2TR script pub key bytes
+    function getEnablerOutputP2TRScriptPub(bytes memory _committeePubKey, bytes32[] memory _disputeKeys)
+        external
+        pure
+        returns (bytes memory);
 
     /// @notice Generates a P2WPKH script pub key for speed-up outputs
     /// @dev Creates a P2WPKH script for Child Pays for Parent (CPFP) transactions to speed up the original transaction
@@ -177,9 +199,9 @@ interface IBitcoinManager {
     /// @dev Generates the hash that committee members must sign to authorize a peg-out
     /// @param _userPubKey The user's public key in compressed format that will receive the funds
     /// @param _acceptPeginTx The transaction id of the accept peg-in tx being spent
-    /// @param _prevoutData Data about the previous output being spent (amount and scriptPubKey)
+    /// @param _prevoutDatas Array of prevout data for all inputs being spent (taptree + enabler outputs)
     /// @return BitcoinSignatureData containing txid, signatureHash, and signatureMessage
-    function getPegoutTxData(bytes memory _userPubKey, bytes32 _acceptPeginTx, PrevoutData memory _prevoutData)
+    function getPegoutTxData(bytes memory _userPubKey, bytes32 _acceptPeginTx, PrevoutData[] memory _prevoutDatas)
         external
         pure
         returns (BitcoinSignatureData memory);

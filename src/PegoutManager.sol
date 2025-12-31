@@ -81,12 +81,11 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         // slither-disable-next-line reentrancy-benign
         (Slot memory slot, uint64 packetNumber) = streamManager.lockSlot(stream.streamId);
 
+        PrevoutData[] memory prevoutDatas = _preparePegoutPrevoutDatas(slot);
+
         // Compute the Bitcoin peg-out signature hash
-        BitcoinSignatureData memory pegoutSignatureData = bitcoinManager.getPegoutTxData(
-            _userPubKey,
-            slot.acceptPeginTx,
-            PrevoutData({value: slot.acceptPeginAmount, scriptPubKey: slot.scriptPubKey})
-        );
+        BitcoinSignatureData memory pegoutSignatureData =
+            bitcoinManager.getPegoutTxData(_userPubKey, slot.acceptPeginTx, prevoutDatas);
 
         uint128 committeeId =
             _storePegoutAndInitSignatures(pegoutSignatureData.txid, stream.streamId, packetNumber, slot.slotId);
@@ -153,8 +152,8 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         }
 
         // Validate that the vout is correct
-        if (vout != Constants.VOUT_INDEX_TAPTREE) {
-            revert IncorrectVout(vout, Constants.VOUT_INDEX_TAPTREE);
+        if (vout != Constants.ACCEPT_PEGIN_VOUT_TAPTREE) {
+            revert IncorrectVout(vout, Constants.ACCEPT_PEGIN_VOUT_TAPTREE);
         }
 
         // Calculate the transaction id for verification
@@ -314,8 +313,8 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         }
 
         // Validate that the vout is correct
-        if (vout != Constants.VOUT_INDEX_TAPTREE) {
-            revert IncorrectVout(vout, Constants.VOUT_INDEX_TAPTREE);
+        if (vout != Constants.ACCEPT_PEGIN_VOUT_TAPTREE) {
+            revert IncorrectVout(vout, Constants.ACCEPT_PEGIN_VOUT_TAPTREE);
         }
 
         PegoutTempInfo memory pegoutInfo = pegoutTempInfo[acceptPeginTxid];
@@ -388,5 +387,17 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
             emit PacketClosed(streamInfo.streamId, streamInfo.packetNumber);
             committeeRegistry.releaseCommittee(streamInfo.streamId, streamInfo.packetNumber);
         }
+    }
+
+    function _preparePegoutPrevoutDatas(Slot memory _slot) internal pure returns (PrevoutData[] memory) {
+        PrevoutData[] memory prevoutDatas = new PrevoutData[](2);
+
+        // Taptree prevout - read from slot
+        prevoutDatas[0] = PrevoutData({value: _slot.acceptPeginAmount, scriptPubKey: _slot.scriptPubKey});
+
+        // Enabler prevout - read from slot
+        prevoutDatas[1] = PrevoutData({value: Constants.ENABLER_AMOUNT, scriptPubKey: _slot.enablerScriptPubKey});
+
+        return prevoutDatas;
     }
 }

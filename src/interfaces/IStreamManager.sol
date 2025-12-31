@@ -61,6 +61,9 @@ struct Slot {
     /// @notice Transaction ID of the peg-out transaction to the user account.
     /// @dev The tx where the user is given the funds is stored there, which can be take 0 or take 1.
     bytes32 takeTx;
+    /// @notice The scriptPubKey of the Accept Peg-in enabler output
+    /// @dev This is the locking script for the enabler output that will be consumed by the peg-out transaction
+    bytes enablerScriptPubKey;
 }
 
 /// @notice Represents a packet within a stream that contains multiple slots
@@ -181,12 +184,14 @@ interface IStreamManager is IAccessControl {
     /// @param _stream The struct containing the stream, packet, and slot information
     /// @param _acceptPeginAmount The amount of the accept peg-in transaction in satoshis
     /// @param _acceptPeginTx The transaction ID of the accept peg-in transaction
-    /// @param _scriptPubKey The scriptPubKey of the accept peg-in transaction
+    /// @param _scriptPubKey The scriptPubKey of the accept peg-in taptree output
+    /// @param _enablerScriptPubKey The scriptPubKey of the accept peg-in enabler output
     function fillSlot(
         StreamPosition memory _stream,
         uint64 _acceptPeginAmount,
         bytes32 _acceptPeginTx,
-        bytes memory _scriptPubKey
+        bytes memory _scriptPubKey,
+        bytes memory _enablerScriptPubKey
     ) external;
 
     /// @notice Blocks a reserved slot due to timeout or refund proof

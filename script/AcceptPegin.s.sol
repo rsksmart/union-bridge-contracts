@@ -10,11 +10,13 @@ import {Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
+import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 
 contract AcceptPeginScript is ScriptUtils, ContractAddressManager {
     PeginManager peginManager;
     IStreamManager streamManager;
     IBitcoinManager bitcoinManager;
+    ICommitteeRegistry committeeRegistry;
 
     function setUp(bytes32 _requestPeginTxid) internal returns (BtcTxSPVProof memory peginAcceptedTxSPVProof) {
         // This is the peg-in request transaction id that was previously registered
@@ -25,6 +27,7 @@ contract AcceptPeginScript is ScriptUtils, ContractAddressManager {
         // Smart contract addresses
         streamManager = IStreamManager(peginManager.streamManager());
         bitcoinManager = IBitcoinManager(peginManager.bitcoinManager());
+        committeeRegistry = ICommitteeRegistry(getCommitteeRegistry());
 
         // Check if the peg-in request exists and is in REGISTERED status
         StreamPosition memory streamPosition = peginManager.getStreamPositionByRequestPegin(_requestPeginTxid);
@@ -40,27 +43,45 @@ contract AcceptPeginScript is ScriptUtils, ContractAddressManager {
             streamManager.getCommitteePubKey(streamPosition.streamId, streamPosition.packetNumber);
 
         // BtcTransaction to verify
-        BtcTransaction memory btcTransaction =
-            BtcTransaction({version: 2, inputs: new BtcTxIn[](1), outputs: new BtcTxOut[](2), locktime: 0});
+        BtcTransaction memory btcTransaction = BtcTransaction({
+            version: Constants.BTC_TX_VERSION,
+            inputs: new BtcTxIn[](2),
+            outputs: new BtcTxOut[](Constants.ACCEPT_PEGIN_OUTPUT_COUNT),
+            locktime: 0
+        });
 
-        // Input consuming the peg-in request UTXO
+        // Input consuming the peg-in request taptree UTXO
         btcTransaction.inputs[0] = BtcTxIn({
             txId: _requestPeginTxid,
-            vout: 0, // VOUT_INDEX_TAPTREE is 0
+            vout: Constants.REQUEST_PEGIN_VOUT_TAPTREE,
             scriptSig: hex"",
-            sequence: 0xFFFFFFFD
+            sequence: Constants.SEQUENCE
+        });
+
+        // Input consuming the peg-in request enabler UTXO
+        btcTransaction.inputs[1] = BtcTxIn({
+            txId: _requestPeginTxid,
+            vout: Constants.REQUEST_PEGIN_VOUT_ENABLER,
+            scriptSig: hex"",
+            sequence: Constants.SEQUENCE
         });
 
         // Pegin P2TR output
         Stream memory stream = streamManager.getStreamById(streamPosition.streamId);
         btcTransaction.outputs[0] = BtcTxOut({
-            amount: stream.denomination - Constants.P2TR_FEE - Constants.SPEED_UP_AMOUNT,
+            amount: stream.denomination - Constants.P2TR_FEE - Constants.ENABLER_AMOUNT - Constants.SPEED_UP_AMOUNT,
             scriptPubKey: getAcceptPeginP2TRScriptPub(committeePubKey)
         });
 
+        // Enabler output
+        uint128 committeeId = streamManager.getCommitteeId(streamPosition.streamId, streamPosition.packetNumber);
+        bytes32[] memory operatorDisputeKeys = committeeRegistry.getOperatorDisputeKeys(committeeId);
+        bytes memory enablerScript = bitcoinManager.getEnablerOutputP2TRScriptPub(committeePubKey, operatorDisputeKeys);
+        btcTransaction.outputs[1] = BtcTxOut({amount: Constants.ENABLER_AMOUNT, scriptPubKey: enablerScript});
+
         // Speed up output (child pays for parent)
-        btcTransaction.outputs[1] = BtcTxOut({
-            amount: Constants.SPEED_UP_AMOUNT, // SPEED_UP_AMOUNT
+        btcTransaction.outputs[2] = BtcTxOut({
+            amount: Constants.SPEED_UP_AMOUNT,
             scriptPubKey: bitcoinManager.getSpeedUpScriptPub(requestPeginTempInfo.btcReimbursementPubKey)
         });
 

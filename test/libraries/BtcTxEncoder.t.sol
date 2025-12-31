@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import {Test} from "forge-std/Test.sol";
 import {BtcTxEncoder} from "src/libraries/BtcTxEncoder.sol";
 import {BtcTxIn, BtcTxOut, BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
+import {Constants} from "src/libraries/Constants.sol";
 
 contract TestBtcTxEncoder is Test {
     function setUp() external {}
@@ -77,7 +78,7 @@ contract TestBtcTxEncoder is Test {
         btcTx.inputs[0] = BtcTxIn({
             txId: 0xab4fc20be47cf3d862da4d9a477b3d5d0e0f3b1e54ce220e34646e7f7550f99c,
             vout: 0,
-            sequence: 0xfffffffd,
+            sequence: Constants.SEQUENCE,
             scriptSig: hex""
         });
         btcTx.outputs[0] = BtcTxOut({

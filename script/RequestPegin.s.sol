@@ -8,13 +8,18 @@ import {BtcTxSPVProof, StreamPosition, PegStatus} from "src/interfaces/IPegCommo
 import {IBitcoinManager, BtcTransaction, BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
 import {Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {OpCodes} from "src/libraries/OpCodes.sol";
+import {Constants} from "src/libraries/Constants.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
+import {ICommitteeRegistry, CommitteeMember} from "src/interfaces/ICommitteeRegistry.sol";
+import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
 
 contract RequestPeginScript is ScriptUtils, ContractAddressManager {
     PeginManager peginManager;
     IStreamManager streamManager;
     IBitcoinManager bitcoinManager;
+    ICommitteeRegistry committeeRegistry;
+    IMemberRegistry memberRegistry;
 
     function setUp(address _rskDestinationAddress) internal returns (BtcTxSPVProof memory requestPeginTxSPVProof) {
         // ====== Arguments ======
@@ -25,13 +30,19 @@ contract RequestPeginScript is ScriptUtils, ContractAddressManager {
         // Smart contract addresses
         streamManager = IStreamManager(peginManager.streamManager());
         bitcoinManager = IBitcoinManager(peginManager.bitcoinManager());
+        committeeRegistry = ICommitteeRegistry(getCommitteeRegistry());
+        memberRegistry = IMemberRegistry(committeeRegistry.memberRegistry());
         // Committee public key
         Stream memory stream = streamManager.getStream(value);
         uint64 packetNumber = stream.peginPacketPointer;
         bytes memory committeePubKey = streamManager.getCommitteePubKey(stream.streamId, packetNumber);
         // BtcTransaction to verify
-        BtcTransaction memory btcTransaction =
-            BtcTransaction({version: 2, inputs: new BtcTxIn[](1), outputs: new BtcTxOut[](2), locktime: 0});
+        BtcTransaction memory btcTransaction = BtcTransaction({
+            version: Constants.BTC_TX_VERSION,
+            inputs: new BtcTxIn[](1),
+            outputs: new BtcTxOut[](Constants.REQUEST_PEGIN_OUTPUT_COUNT),
+            locktime: 0
+        });
         // User funding tx
         btcTransaction.inputs[0] = BtcTxIn({
             txId: 0x360b81785dc7c2f40627fea364676dbb73e6276683caffd9f906b0e0bd36b3d2,
@@ -58,6 +69,15 @@ contract RequestPeginScript is ScriptUtils, ContractAddressManager {
                 btcReimbursementPubKey
             )
         });
+        // Enabler output
+        uint128 committeeId = streamManager.getCommitteeId(stream.streamId, packetNumber);
+        CommitteeMember[] memory committeeMembers = committeeRegistry.getCommitteeMembers(committeeId);
+        bytes32[] memory disputeKeys = new bytes32[](committeeMembers.length);
+        for (uint256 i = 0; i < committeeMembers.length; i++) {
+            disputeKeys[i] = memberRegistry.getMemberPublicKeys(committeeMembers[i].memberAddress).covenantPubKey;
+        }
+        bytes memory enablerScript = bitcoinManager.getEnablerOutputP2TRScriptPub(committeePubKey, disputeKeys);
+        btcTransaction.outputs[2] = BtcTxOut({amount: Constants.ENABLER_AMOUNT, scriptPubKey: enablerScript});
         // SPV proof to verify with the bridge.getBtcTransactionConfirmations
         requestPeginTxSPVProof = BtcTxSPVProof({
             blockHash: 0x0000000000000000000282fa21665766e58eb6cb94e458c3ef6d4af1121e38d9,

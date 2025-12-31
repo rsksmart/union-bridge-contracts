@@ -577,6 +577,7 @@ contract TestStreamManager is Test, HelperContract {
         bytes32 acceptPeginTx = bytes32(uint256(0x123456789abcdef));
         uint64 acceptPeginAmount = 100000000; // 1 BTC in satoshis
         bytes memory scriptPubKey = hex"5120abc123def456789012345678901234567890123456789012345678901234567890";
+        bytes memory enablerScriptPubKey = hex"5120fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210";
 
         // Create StreamPosition struct
         StreamPosition memory streamPos = StreamPosition({
@@ -592,7 +593,7 @@ contract TestStreamManager is Test, HelperContract {
 
         // Act
         vm.prank(address(peginManager));
-        streamManager.fillSlot(streamPos, acceptPeginAmount, acceptPeginTx, scriptPubKey);
+        streamManager.fillSlot(streamPos, acceptPeginAmount, acceptPeginTx, scriptPubKey, enablerScriptPubKey);
 
         // Assert
         Slot memory filledSlot = streamManager.getSlot(streamId, packetNumber, slotId);
@@ -600,6 +601,7 @@ contract TestStreamManager is Test, HelperContract {
         assertEq(filledSlot.acceptPeginTx, acceptPeginTx, "acceptPeginTx should match");
         assertEq(filledSlot.acceptPeginAmount, acceptPeginAmount, "acceptPeginAmount should match");
         assertEq(filledSlot.scriptPubKey, scriptPubKey, "scriptPubKey should match");
+        assertEq(filledSlot.enablerScriptPubKey, enablerScriptPubKey, "enablerScriptPubKey should match");
         assertEq(filledSlot.slotId, slotId, "slotId should remain unchanged");
     }
 
@@ -611,6 +613,7 @@ contract TestStreamManager is Test, HelperContract {
         bytes32 acceptPeginTx = bytes32(uint256(0x123456789abcdef));
         uint64 acceptPeginAmount = 100000000;
         bytes memory scriptPubKey = hex"5120abc123def456789012345678901234567890123456789012345678901234567890";
+        bytes memory enablerScriptPubKey = hex"5120fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210";
 
         // Create StreamPosition struct
         StreamPosition memory streamPos = StreamPosition({
@@ -624,7 +627,7 @@ contract TestStreamManager is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(IAccessControl.UnauthorizedAccount.selector, address(this)));
 
         // Act - try to call fillSlot from non-PegManager address (this test contract)
-        streamManager.fillSlot(streamPos, acceptPeginAmount, acceptPeginTx, scriptPubKey);
+        streamManager.fillSlot(streamPos, acceptPeginAmount, acceptPeginTx, scriptPubKey, enablerScriptPubKey);
     }
 
     function test_fillSlot_Revert_SlotNotReserved() external {
@@ -640,6 +643,7 @@ contract TestStreamManager is Test, HelperContract {
         bytes32 acceptPeginTx = bytes32(uint256(0x123456789abcdef));
         uint64 acceptPeginAmount = 100000000;
         bytes memory scriptPubKey = hex"5120abc123def456789012345678901234567890123456789012345678901234567890";
+        bytes memory enablerScriptPubKey = hex"5120fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210";
 
         // Create StreamPosition struct
         StreamPosition memory streamPos = StreamPosition({
@@ -658,7 +662,7 @@ contract TestStreamManager is Test, HelperContract {
 
         // Act - try to fill slot that's not in RESERVED state
         vm.prank(address(peginManager));
-        streamManager.fillSlot(streamPos, acceptPeginAmount, acceptPeginTx, scriptPubKey);
+        streamManager.fillSlot(streamPos, acceptPeginAmount, acceptPeginTx, scriptPubKey, enablerScriptPubKey);
     }
 
     function test_fillSlot_Revert_SlotNotReserved_BLOCKED() external {
@@ -677,6 +681,7 @@ contract TestStreamManager is Test, HelperContract {
         bytes32 acceptPeginTx = bytes32(uint256(0x123456789abcdef));
         uint64 acceptPeginAmount = 100000000;
         bytes memory scriptPubKey = hex"5120abc123def456789012345678901234567890123456789012345678901234567890";
+        bytes memory enablerScriptPubKey = hex"5120fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210";
 
         // Create StreamPosition struct
         StreamPosition memory streamPos = StreamPosition({
@@ -695,7 +700,7 @@ contract TestStreamManager is Test, HelperContract {
 
         // Act - try to fill blocked slot
         vm.prank(address(peginManager));
-        streamManager.fillSlot(streamPos, acceptPeginAmount, acceptPeginTx, scriptPubKey);
+        streamManager.fillSlot(streamPos, acceptPeginAmount, acceptPeginTx, scriptPubKey, enablerScriptPubKey);
     }
 
     function test_fillSlot_Revert_NonExistentSlot() external {
@@ -708,6 +713,7 @@ contract TestStreamManager is Test, HelperContract {
         bytes32 acceptPeginTx = bytes32(uint256(0x123456789abcdef));
         uint64 acceptPeginAmount = 100000000;
         bytes memory scriptPubKey = hex"5120abc123def456789012345678901234567890123456789012345678901234567890";
+        bytes memory enablerScriptPubKey = hex"5120fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210";
 
         // Create StreamPosition struct with invalid slotId
         StreamPosition memory streamPos = StreamPosition({
@@ -724,7 +730,7 @@ contract TestStreamManager is Test, HelperContract {
 
         // Act - try to fill non-existent slot
         vm.prank(address(peginManager));
-        streamManager.fillSlot(streamPos, acceptPeginAmount, acceptPeginTx, scriptPubKey);
+        streamManager.fillSlot(streamPos, acceptPeginAmount, acceptPeginTx, scriptPubKey, enablerScriptPubKey);
     }
 
     // ==================== SLOT BLOCKING TESTS ====================
@@ -742,7 +748,13 @@ contract TestStreamManager is Test, HelperContract {
         });
 
         vm.prank(address(peginManager));
-        streamManager.fillSlot(streamPos, 100000000, bytes32(uint256(0x123)), hex"5120abc123");
+        streamManager.fillSlot(
+            streamPos,
+            100000000,
+            bytes32(uint256(0x123)),
+            hex"5120abc123",
+            hex"5120fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210"
+        );
 
         // Verify slot is FILLED
         Slot memory filledSlot = streamManager.getSlot(streamId, packetNumber, slotId);
@@ -1044,6 +1056,7 @@ contract TestStreamManager is Test, HelperContract {
         bytes32 acceptPeginTx = bytes32(uint256(0x123));
         uint64 acceptPeginAmount = 100000000;
         bytes memory scriptPubKey = hex"5120abc123";
+        bytes memory enablerScriptPubKey = hex"5120fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210";
         bytes32 userTakeTx = bytes32(uint256(0x456));
 
         // 1. Reserve slot
@@ -1058,7 +1071,7 @@ contract TestStreamManager is Test, HelperContract {
             pegStatus: PegStatus.REGISTERED
         });
         vm.prank(address(peginManager));
-        streamManager.fillSlot(streamPos, acceptPeginAmount, acceptPeginTx, scriptPubKey);
+        streamManager.fillSlot(streamPos, acceptPeginAmount, acceptPeginTx, scriptPubKey, enablerScriptPubKey);
 
         // 3. Lock slot
         vm.prank(address(pegoutManager));

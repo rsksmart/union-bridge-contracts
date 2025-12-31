@@ -120,23 +120,36 @@ contract PeginManager is IPeginManager, PegManagerBase {
             bytes memory committeePubKey
         ) = _extractPeginData(_requestPeginTxSPVProof);
 
+        // Get committee ID and dispute keys before validation
+        uint128 committeeId = streamManager.getCommitteeId(stream.streamId, packetNumber);
+        bytes32[] memory disputeKeys = committeeRegistry.getCommitteeDisputeKeys(committeeId);
+
         _validatePeginTransaction(
             _requestPeginTxSPVProof,
             rskDestinationAddress,
             btcReimbursementPubKey,
             committeePubKey,
+            disputeKeys,
             stream,
             requestPeginTxid
         );
 
-        // Pre-compute signature data before external calls to follow checks-effects-interactions
-        PrevoutData memory prevoutData = PrevoutData({
-            value: _requestPeginTxSPVProof.btcTx.outputs[Constants.VOUT_INDEX_TAPTREE].amount,
-            scriptPubKey: _requestPeginTxSPVProof.btcTx.outputs[Constants.VOUT_INDEX_TAPTREE].scriptPubKey
+        // Pre-compute prevout data for both inputs before external calls to follow checks-effects-interactions
+        PrevoutData[] memory prevoutDatas = new PrevoutData[](2);
+        // First input: taptree output from request peg-in
+        prevoutDatas[0] = PrevoutData({
+            value: _requestPeginTxSPVProof.btcTx.outputs[Constants.REQUEST_PEGIN_VOUT_TAPTREE].amount,
+            scriptPubKey: _requestPeginTxSPVProof.btcTx.outputs[Constants.REQUEST_PEGIN_VOUT_TAPTREE].scriptPubKey
+        });
+        // Second input: enabler output from request peg-in
+        prevoutDatas[1] = PrevoutData({
+            value: Constants.SPEED_UP_AMOUNT,
+            scriptPubKey: bitcoinManager.getEnablerOutputP2TRScriptPub(committeePubKey, disputeKeys)
         });
 
+        bytes32[] memory operatorDisputeKeys = committeeRegistry.getOperatorDisputeKeys(committeeId);
         BitcoinSignatureData memory acceptPeginSignatureData = bitcoinManager.getAcceptPeginSignatureHash(
-            committeePubKey, btcReimbursementPubKey, requestPeginTxid, prevoutData
+            committeePubKey, btcReimbursementPubKey, requestPeginTxid, prevoutDatas, operatorDisputeKeys
         );
 
         // Store temp info before external calls
@@ -146,9 +159,6 @@ contract PeginManager is IPeginManager, PegManagerBase {
             acceptPeginSignatureHash: acceptPeginSignatureData.signatureHash
         });
         peginTempInfo[requestPeginTxid] = requestPeginInfo;
-
-        // Pre-compute committee ID before external calls
-        uint128 committeeId = streamManager.getCommitteeId(stream.streamId, packetNumber);
 
         // Store request mapping before external calls
         acceptPegins[requestPeginTxid] = acceptPeginSignatureData.txid;
@@ -172,10 +182,10 @@ contract PeginManager is IPeginManager, PegManagerBase {
             committeeId,
             requestPeginTxid,
             acceptPeginSignatureData.txid,
-            Constants.VOUT_INDEX_TAPTREE,
+            Constants.REQUEST_PEGIN_VOUT_TAPTREE,
             streamPos,
             requestPeginInfo,
-            prevoutData,
+            prevoutDatas[0], // Prevout data for taptree output (first input)
             acceptPeginSignatureData.signatureMessage
         );
 
@@ -223,12 +233,14 @@ contract PeginManager is IPeginManager, PegManagerBase {
         )
     {
         // Second transaction should be OP_RETURN with data
-        (packetNumber, rskDestinationAddress, btcReimbursementPubKey) =
-            bitcoinManager.getPeginOpReturnData(_requestPeginTxSPVProof.btcTx.outputs[Constants.VOUT_INDEX_SPEED_UP]);
+        (packetNumber, rskDestinationAddress, btcReimbursementPubKey) = bitcoinManager.getPeginOpReturnData(
+            _requestPeginTxSPVProof.btcTx.outputs[Constants.REQUEST_PEGIN_VOUT_OP_RETURN]
+        );
 
         // First transaction is the Pegin P2TR _requestPeginTxSPVProof.btcTx.outputs[0]
         // Get corresponding stream for the amount if non found reverts
-        stream = streamManager.getStream(_requestPeginTxSPVProof.btcTx.outputs[Constants.VOUT_INDEX_TAPTREE].amount);
+        stream =
+            streamManager.getStream(_requestPeginTxSPVProof.btcTx.outputs[Constants.REQUEST_PEGIN_VOUT_TAPTREE].amount);
 
         // getCommitteePubKey reverts if packet does not exist
         committeePubKey = streamManager.getCommitteePubKey(stream.streamId, packetNumber);
@@ -239,6 +251,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
         address rskDestinationAddress,
         bytes32 btcReimbursementPubKey,
         bytes memory committeePubKey,
+        bytes32[] memory disputeKeys,
         Stream memory stream,
         bytes32 requestPeginTxid
     ) internal view {
@@ -249,7 +262,12 @@ contract PeginManager is IPeginManager, PegManagerBase {
             stream.denomination,
             btcReimbursementPubKey,
             committeePubKey,
-            _requestPeginTxSPVProof.btcTx.outputs[Constants.VOUT_INDEX_TAPTREE]
+            _requestPeginTxSPVProof.btcTx.outputs[Constants.REQUEST_PEGIN_VOUT_TAPTREE]
+        );
+
+        // Validates the enabler output (vout 2) with the correct amount and scriptPubKey
+        bitcoinManager.validateRequestPeginEnablerOutput(
+            committeePubKey, disputeKeys, _requestPeginTxSPVProof.btcTx.outputs[Constants.REQUEST_PEGIN_VOUT_ENABLER]
         );
 
         // Verifies the requestPeginTxid part of the Merkle Root of Tx of a Block
@@ -272,7 +290,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
     /// @dev Only callable when contract is unpaused
     function acceptPegin(BtcTxSPVProof calldata _peginAcceptedTxSPVProof) external nonReentrant whenNotPaused {
         // The first input consumes the the peg in request utxo
-        bytes32 requestPeginTxid = _peginAcceptedTxSPVProof.btcTx.inputs[Constants.VOUT_INDEX_TAPTREE].txId;
+        bytes32 requestPeginTxid = _peginAcceptedTxSPVProof.btcTx.inputs[Constants.REQUEST_PEGIN_VOUT_TAPTREE].txId;
 
         // Validate the peg in request tx exists and the status
         StreamPosition memory streamInfo = _getStreamPositionByRequestPegin(requestPeginTxid);
@@ -306,7 +324,8 @@ contract PeginManager is IPeginManager, PegManagerBase {
             requestPeginTxid,
             _peginAcceptedTxSPVProof.blockHash,
             acceptPegintxid,
-            _peginAcceptedTxSPVProof.btcTx.outputs[Constants.VOUT_INDEX_TAPTREE]
+            _peginAcceptedTxSPVProof.btcTx.outputs[Constants.ACCEPT_PEGIN_VOUT_TAPTREE],
+            _peginAcceptedTxSPVProof.btcTx.outputs[Constants.ACCEPT_PEGIN_VOUT_ENABLER]
         );
     }
 
@@ -314,14 +333,21 @@ contract PeginManager is IPeginManager, PegManagerBase {
         bytes32 _requestPeginTxid,
         bytes32 _blockHash,
         bytes32 _acceptPegintxid,
-        BtcTxOut memory _acceptPeginTxOutput
+        BtcTxOut memory _acceptPeginTxOutput,
+        BtcTxOut memory _enablerOutput
     ) internal {
         // Update the peg in request status to ACCEPTED to avoid processing it again
         streamManager.setPegStatus(_acceptPegintxid, PegStatus.ACCEPTED);
         StreamPosition memory stream = streamManager.getStreamPosition(_acceptPegintxid);
 
         // Fill the reserved slot with accept peg-in transaction details
-        streamManager.fillSlot(stream, _acceptPeginTxOutput.amount, _acceptPegintxid, _acceptPeginTxOutput.scriptPubKey);
+        streamManager.fillSlot(
+            stream,
+            _acceptPeginTxOutput.amount,
+            _acceptPegintxid,
+            _acceptPeginTxOutput.scriptPubKey,
+            _enablerOutput.scriptPubKey
+        );
 
         uint256 rbtcAmount = BtcHelper.satoshiToWei(_acceptPeginTxOutput.amount);
         RequestPeginTempInfo storage requestTempInfo = peginTempInfo[_requestPeginTxid];
@@ -331,7 +357,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
             _blockHash,
             _acceptPegintxid,
             _requestPeginTxid,
-            Constants.VOUT_INDEX_TAPTREE,
+            Constants.ACCEPT_PEGIN_VOUT_TAPTREE,
             stream,
             requestTempInfo.btcReimbursementPubKey,
             requestTempInfo.rskDestinationAddress,

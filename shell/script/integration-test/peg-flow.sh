@@ -11,8 +11,8 @@
 
 set -e  # exit on error
 
-PEGIN_TXID="0x57450e6c6141e63115cf56fc9fd8c29e20792a8c488c3d9e2bd99edac6496ffc"
-PEGOUT_TXID="0xa1fcb1ea38e5679173216935c3b8325ffbcc0c4c6c6c81f409b7584361a6ac7b"
+PEGIN_TXID="0x53afc0118c15081dcfb82692ff3010f25036696388b37b169f68c2348baf2b0e"
+PEGOUT_TXID="0x7f199fa320d5e552bd9ef24303d805ea1ff69c8bc23ed5a56e9e8f3fb9c00c0b"
 
 # Slot parameters for monitoring (using defaults from test setup)
 STREAM_ID=0
@@ -87,6 +87,8 @@ echo "================ CHECK SLOT STATE AFTER USER TAKE ================"
 echo "After user take, slot should be in COMPLETED state:"
 bash "$SCRIPT_DIR/get-slot-info.sh" -s "$STREAM_ID" -p "$PACKET_NUMBER" -l "$SLOT_ID" $ALPHANET_FLAG
 
-bash "$SCRIPT_DIR/integration-test/operator-take-flow.sh" $ALPHANET_FLAG
+# Note: operator-take-flow.sh is a separate standalone test for operator advancing funds
+# It should be run independently, not as part of the main peg-flow
+# bash "$SCRIPT_DIR/integration-test/operator-take-flow.sh" $ALPHANET_FLAG
 
 echo "================ PEGIN FLOW COMPLETE ================"

@@ -18,7 +18,7 @@ import {StreamDenomination, IStreamManager} from "./interfaces/IStreamManager.so
 import {IPeginManager} from "./interfaces/IPeginManager.sol";
 import {IPegoutManager} from "./interfaces/IPegoutManager.sol";
 import {SignatureData} from "./interfaces/ISignatureManager.sol";
-import {IMemberRegistry} from "./interfaces/IMemberRegistry.sol";
+import {IMemberRegistry, MemberKeys} from "./interfaces/IMemberRegistry.sol";
 import {BytesHelper} from "./libraries/BytesHelper.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
@@ -646,5 +646,47 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
         emit CommitteeMembersReleased(_streamId, _packetNumber);
         // Delegate member release operations to MemberRegistry
         memberRegistry.releaseCommitteeMembers(committeeMembers, _streamId, _packetNumber);
+    }
+
+    /// @notice Gets the dispute keys (covenant public keys) for all committee members
+    /// @param _committeeId The committee ID
+    /// @return Array of dispute keys for all members
+    function getCommitteeDisputeKeys(uint128 _committeeId) external view returns (bytes32[] memory) {
+        CommitteeMember[] memory committeeMembers = _getCommitteeMembers(_committeeId);
+        bytes32[] memory disputeKeys = new bytes32[](committeeMembers.length);
+        for (uint256 i = 0; i < committeeMembers.length; i++) {
+            // slither-disable-next-line calls-loop
+            MemberKeys memory keys = memberRegistry.getMemberPublicKeys(committeeMembers[i].memberAddress);
+            disputeKeys[i] = keys.covenantPubKey;
+        }
+        return disputeKeys;
+    }
+
+    /// @notice Gets the dispute keys (covenant public keys) for operator committee members only
+    /// @param _committeeId The committee ID
+    /// @return Array of dispute keys for operator members only
+    function getOperatorDisputeKeys(uint128 _committeeId) external view returns (bytes32[] memory) {
+        CommitteeMember[] memory committeeMembers = _getCommitteeMembers(_committeeId);
+
+        // TODO: consider having an operator count stored in Committee
+        uint256 operatorCount = 0;
+        for (uint256 i = 0; i < committeeMembers.length; i++) {
+            if (committeeMembers[i].role == Role.OPERATOR) {
+                operatorCount++;
+            }
+        }
+
+        // Create array of the correct size and populate with operator keys only
+        bytes32[] memory operatorDisputeKeys = new bytes32[](operatorCount);
+        uint256 index = 0;
+        for (uint256 i = 0; i < committeeMembers.length; i++) {
+            if (committeeMembers[i].role == Role.OPERATOR) {
+                // slither-disable-next-line calls-loop
+                MemberKeys memory keys = memberRegistry.getMemberPublicKeys(committeeMembers[i].memberAddress);
+                operatorDisputeKeys[index] = keys.covenantPubKey;
+                index++;
+            }
+        }
+        return operatorDisputeKeys;
     }
 }

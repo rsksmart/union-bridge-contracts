@@ -45,10 +45,16 @@ contract TestPegoutManager is Test, HelperContract {
 
     function test_tryPegout_Success() external {
         // Arrange
-        BtcTxIn[] memory inputs = new BtcTxIn[](1);
+        BtcTxIn[] memory inputs = new BtcTxIn[](2);
         inputs[0] = BtcTxIn({
             txId: 0xb24858ade3e5be49ae63facb93524ddf460d0771f093525dae328b6c435516a2,
             vout: 0,
+            sequence: 4294967293,
+            scriptSig: hex""
+        });
+        inputs[1] = BtcTxIn({
+            txId: 0xb24858ade3e5be49ae63facb93524ddf460d0771f093525dae328b6c435516a2,
+            vout: 1, // Enabler output from accept pegin
             sequence: 4294967293,
             scriptSig: hex""
         });
@@ -59,9 +65,9 @@ contract TestPegoutManager is Test, HelperContract {
 
         BitcoinSignatureData memory expectedSignatureData = BitcoinSignatureData({
             tx: BtcTransaction({version: 2, inputs: inputs, outputs: outputs, locktime: 0}),
-            txid: 0x797853a318220995510a2cfd90f40ee81ca9931896fd9f86e4681ac925e2c1fc,
-            signatureHash: 0xfb6d69787860ef13b81041a168cb1f530eb5d87973d34430fc9eb8cef62eb7ad,
-            signatureMessage: hex"00010200000000000000234337e863e00e6ff45f167a14f3963bea912bc0d739c2b402d04f376e814ae24f973621fe8403b6facae9abab80d863a847d3fb007ba2f9830f8e16e6e9b4d4a0c6dbc3091625a23fd870bf8d09182484c12fa63a5c29045a431cf445f153e523e9829bfb4e23fbd3c4848baa035af15d73bcb83e510f7f097f90a21a4280d2bfd84e32f90f61452c95235739095ef9347def223e2b2a49d799abe42099e5850000000000"
+            txid: 0xabfb8bf949dbb4c3cb6d3915b2bef8a143b70fce3b9fd4b4fe9be37f068248ce,
+            signatureHash: 0x804ac902aa1508fa4a465795bfe2424f4e07b4de22f9a6d852b76b2b75346acb,
+            signatureMessage: hex"000102000000000000002b8084abbfc6f1a5fe96508cb072809c2d082150a6c62d95f8080f7ec35e4cce20cb368f69e16a937d044c377b1f7fd5568bb167c478f5dbec16b25df5f66e422c5f3653a318908b90809fa9dcebdcb183de87e4551b25545400edc916887bc982d397cbbcff87bc5d0c4c70e424f9b830efbad7bf0be479da5d1d1bafdb9798bfd84e32f90f61452c95235739095ef9347def223e2b2a49d799abe42099e5850000000000"
         });
 
         bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
@@ -131,23 +137,29 @@ contract TestPegoutManager is Test, HelperContract {
         // Arrange
         // These values are attached to txIdCounter value in HelperContract.getRequestPeginTxIn().
         // Counter should start in 0, otherwise the test will fail or expectedDigest and userPubKey should be updated.
-        BtcTxIn[] memory inputs = new BtcTxIn[](1);
+        BtcTxIn[] memory inputs = new BtcTxIn[](2);
         inputs[0] = BtcTxIn({
-            txId: 0x5acf9ba03e33879b175ce2d5a826a418b753452613df27137c558c44f36711ba,
+            txId: 0xf837a95b6ec0ccd8de062d670fa2f030717a5620fa895b3944219cf9ead6726f,
             vout: 0,
+            sequence: 4294967293,
+            scriptSig: hex""
+        });
+        inputs[1] = BtcTxIn({
+            txId: 0xf837a95b6ec0ccd8de062d670fa2f030717a5620fa895b3944219cf9ead6726f,
+            vout: 1, // Enabler output from accept pegin
             sequence: 4294967293,
             scriptSig: hex""
         });
 
         BtcTxOut[] memory outputs = new BtcTxOut[](2);
-        outputs[0] = BtcTxOut({amount: 998250, scriptPubKey: hex"00143fd2e14f4b448a071e074e1e1879318447f2a266"});
+        outputs[0] = BtcTxOut({amount: 997710, scriptPubKey: hex"00143fd2e14f4b448a071e074e1e1879318447f2a266"});
         outputs[1] = BtcTxOut({amount: 540, scriptPubKey: hex"00143fd2e14f4b448a071e074e1e1879318447f2a266"});
 
         BitcoinSignatureData memory expectedSignatureData = BitcoinSignatureData({
             tx: BtcTransaction({version: 2, inputs: inputs, outputs: outputs, locktime: 0}),
-            txid: 0xdd83f9ce809828c7e7715c33aebe10960ab6c5ad763ee4a23687c612815e2e37,
-            signatureHash: 0xc151063d7a30a584ccd02ec37a51dadca1545fdf232f4d0a1435bb025d5b15dc,
-            signatureMessage: hex"00010200000000000000c369745d8920f99556e50cac4392807dd9050a35f34ec9b94861cc49b5aabdcdc35d473d9e25f1af7cffe3004bcca82430a4dbea0076331b74ddf0a584963b81be45ad9e08ae96e42d7fd1f70a454432049ebd6a625fa377ffa22033fd8692d623e9829bfb4e23fbd3c4848baa035af15d73bcb83e510f7f097f90a21a4280d2f81b4776c4bc98417c41f791185dfa89d0789939526bc6907fcdcb6f7490398b0000000000"
+            txid: 0xafad842b1b8f49f6d9de8aa5cd5fdb9a5f50f2b33fc8b1acdcb2c9d3c9ea9133,
+            signatureHash: 0xa5390b84db52aa3f66560572657bad25d651e6dea3a90907d6787d0d297d4005,
+            signatureMessage: hex"0001020000000000000089f6e06b960cb1d58b400ce4723a6260fd1bbec42160c17983754cff066186932c1e076a7009940f0eb2b5dd000c843b832b4d8a557143abdb0a3cd82a6c5280407675effde803a1d25ae0cef3d28078714be9b575b64508f9f0aebe4fed57fb82d397cbbcff87bc5d0c4c70e424f9b830efbad7bf0be479da5d1d1bafdb9798746cd9645b9737e2fe4f54c9efe0315e18e49e72384bb3d7e04aedb0d8887da30000000000"
         });
 
         bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
@@ -490,7 +502,9 @@ contract TestPegoutManager is Test, HelperContract {
         setup.pegoutTxSPVProof = createBtcTxSPVProof(setup.pegoutTx);
 
         vm.expectRevert(
-            abi.encodeWithSelector(IPegoutManager.IncorrectVout.selector, uint32(1), Constants.VOUT_INDEX_TAPTREE)
+            abi.encodeWithSelector(
+                IPegoutManager.IncorrectVout.selector, uint32(1), Constants.ACCEPT_PEGIN_VOUT_TAPTREE
+            )
         );
 
         pegoutManager.registerUserTake(setup.pegoutTxSPVProof);
@@ -967,12 +981,14 @@ contract TestPegoutManager is Test, HelperContract {
         BtcTransaction memory pegoutTx =
             createPegoutTx(setup.acceptPeginTxid, BtcHelper.pubKeyXonlyToCompact(operatorPubKey), VALUE);
         BtcTxSPVProof memory pegoutTxSPVProof = createBtcTxSPVProof(pegoutTx);
-        pegoutTxSPVProof.btcTx.inputs[0].vout = Constants.VOUT_INDEX_TAPTREE + 1; // Set an incorrect vout
+        pegoutTxSPVProof.btcTx.inputs[0].vout = Constants.ACCEPT_PEGIN_VOUT_TAPTREE + 1; // Set an incorrect vout
 
         // Expect the PegoutRegistered event
         vm.expectRevert(
             abi.encodeWithSelector(
-                IPegoutManager.IncorrectVout.selector, Constants.VOUT_INDEX_TAPTREE + 1, Constants.VOUT_INDEX_TAPTREE
+                IPegoutManager.IncorrectVout.selector,
+                Constants.ACCEPT_PEGIN_VOUT_TAPTREE + 1,
+                Constants.ACCEPT_PEGIN_VOUT_TAPTREE
             )
         );
 
@@ -1431,10 +1447,16 @@ contract TestPegoutManager is Test, HelperContract {
         // Arrange
         pauseAndUnpauseContracts();
         // Arrange
-        BtcTxIn[] memory inputs = new BtcTxIn[](1);
+        BtcTxIn[] memory inputs = new BtcTxIn[](2);
         inputs[0] = BtcTxIn({
             txId: 0xb24858ade3e5be49ae63facb93524ddf460d0771f093525dae328b6c435516a2,
             vout: 0,
+            sequence: 4294967293,
+            scriptSig: hex""
+        });
+        inputs[1] = BtcTxIn({
+            txId: 0xb24858ade3e5be49ae63facb93524ddf460d0771f093525dae328b6c435516a2,
+            vout: 1, // Enabler output from accept pegin
             sequence: 4294967293,
             scriptSig: hex""
         });
@@ -1445,9 +1467,9 @@ contract TestPegoutManager is Test, HelperContract {
 
         BitcoinSignatureData memory expectedSignatureData = BitcoinSignatureData({
             tx: BtcTransaction({version: 2, inputs: inputs, outputs: outputs, locktime: 0}),
-            txid: 0x797853a318220995510a2cfd90f40ee81ca9931896fd9f86e4681ac925e2c1fc,
-            signatureHash: 0xfb6d69787860ef13b81041a168cb1f530eb5d87973d34430fc9eb8cef62eb7ad,
-            signatureMessage: hex"00010200000000000000234337e863e00e6ff45f167a14f3963bea912bc0d739c2b402d04f376e814ae24f973621fe8403b6facae9abab80d863a847d3fb007ba2f9830f8e16e6e9b4d4a0c6dbc3091625a23fd870bf8d09182484c12fa63a5c29045a431cf445f153e523e9829bfb4e23fbd3c4848baa035af15d73bcb83e510f7f097f90a21a4280d2bfd84e32f90f61452c95235739095ef9347def223e2b2a49d799abe42099e5850000000000"
+            txid: 0xabfb8bf949dbb4c3cb6d3915b2bef8a143b70fce3b9fd4b4fe9be37f068248ce,
+            signatureHash: 0x804ac902aa1508fa4a465795bfe2424f4e07b4de22f9a6d852b76b2b75346acb,
+            signatureMessage: hex"000102000000000000002b8084abbfc6f1a5fe96508cb072809c2d082150a6c62d95f8080f7ec35e4cce20cb368f69e16a937d044c377b1f7fd5568bb167c478f5dbec16b25df5f66e422c5f3653a318908b90809fa9dcebdcb183de87e4551b25545400edc916887bc982d397cbbcff87bc5d0c4c70e424f9b830efbad7bf0be479da5d1d1bafdb9798bfd84e32f90f61452c95235739095ef9347def223e2b2a49d799abe42099e5850000000000"
         });
 
         bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";

@@ -168,12 +168,18 @@ abstract contract ScriptUtils is Script {
         pure
         returns (BtcTransaction memory)
     {
-        // Input: spend the accept peg-in UTXO
-        BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
+        // Inputs: spend the accept peg-in taptree UTXO and enabler UTXO
+        BtcTxIn[] memory btcInputs = new BtcTxIn[](2);
         btcInputs[0] = BtcTxIn({
             txId: _acceptPeginTxid,
-            vout: 0, // P2TR output is at index 0
-            sequence: 0xfffffffd,
+            vout: Constants.ACCEPT_PEGIN_VOUT_TAPTREE, // P2TR taptree output
+            sequence: Constants.SEQUENCE,
+            scriptSig: hex""
+        });
+        btcInputs[1] = BtcTxIn({
+            txId: _acceptPeginTxid,
+            vout: Constants.ACCEPT_PEGIN_VOUT_ENABLER, // Enabler output
+            sequence: Constants.SEQUENCE,
             scriptSig: hex""
         });
 

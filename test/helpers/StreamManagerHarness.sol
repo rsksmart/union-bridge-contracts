@@ -36,7 +36,8 @@ contract StreamManagerHarness is StreamManager {
                 acceptPeginTx: _txId,
                 acceptPeginAmount: _amount,
                 scriptPubKey: _scriptPubKey,
-                takeTx: ""
+                takeTx: "",
+                enablerScriptPubKey: ""
             })
         );
 
@@ -57,7 +58,8 @@ contract StreamManagerHarness is StreamManager {
                     scriptPubKey: hex"00",
                     acceptPeginTx: bytes32(0),
                     acceptPeginAmount: 0,
-                    takeTx: ""
+                    takeTx: "",
+                    enablerScriptPubKey: ""
                 })
             );
         }

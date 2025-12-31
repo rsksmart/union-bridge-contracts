@@ -19,6 +19,9 @@ import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
 contract TestBtcHelper is Test, HelperContract {
     function setUp() external {
         runTestDeployScript();
+
+        // Creating a committee is required for getRequestPeginEnablerOut which needs committee dispute keys
+        setup_completeCommittee();
     }
 
     function test_getTemporaryPeginAddress_Success() external view {
@@ -99,7 +102,7 @@ contract TestBtcHelper is Test, HelperContract {
         btcTx.inputs[0] = BtcTxIn({
             txId: 0xab4fc20be47cf3d862da4d9a477b3d5d0e0f3b1e54ce220e34646e7f7550f99c,
             vout: 0,
-            sequence: 0xfffffffd,
+            sequence: Constants.SEQUENCE,
             scriptSig: hex""
         });
         btcTx.outputs[0] = BtcTxOut({
@@ -177,6 +180,39 @@ contract TestBtcHelper is Test, HelperContract {
         );
     }
 
+    function test_getEnablerOutputP2TRScriptPub_Success() external view {
+        // Arrange
+        bytes memory committeePubKey = hex"02d1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d";
+
+        // Hardcoded dispute keys from the test committee (10 members)
+        bytes32[] memory disputeKeys = new bytes32[](10);
+        disputeKeys[0] = 0x186ba6bc992e556294d75dcf0b60cbea88d3de0bae02cf4401e97d2fbfdca40d;
+        disputeKeys[1] = 0xb40e85efe8651cd63b9514adac7fcca825484acb6841ee80867fcaa7d41156c6;
+        disputeKeys[2] = 0x58b91a3800e0cd15d0acb64b5aad901043a62ca82862b8f0a97ff5e2de50af6c;
+        disputeKeys[3] = 0x8a8240d1ff88b42c53e5cf1d3093a9589277b0e8e413712599d0ef2a5a32c04b;
+        disputeKeys[4] = 0x2e6ec7e4985bca96582f7474eef4c7ebb6552b066c60c8e2d4ded3b8d56f9060;
+        disputeKeys[5] = 0x924b3bf87fc171eade0db2940235b89bb714776b0e833652377d7e93be52d8cd;
+        disputeKeys[6] = 0xda48fd2a49e1d997c456c4fb1c5075b0d4a3cc733a18eda2eac650d4fa1636bd;
+        disputeKeys[7] = 0xf8935fcdc39fc07d8decedeab6fc2fefd7059a754e223aff6f028303b86239a8;
+        disputeKeys[8] = 0x99696efd85605ae9c7e1486a6ee8ed074122afd6be8f7ac1b41db5a14b96dafd;
+        disputeKeys[9] = 0xe711328b222907a4428b24e7624117257415082694a0aa23bd52fdafe1f54536;
+
+        // Expected P2TR scriptPubKey generated from the committee pubkey and dispute keys
+        bytes memory expectedScript = hex"51201cbeafdb8fa122bf71ea817df2ed9131bfa165952d63ba5841313f918a0f86c9";
+
+        // Act
+        bytes memory script = bitcoinManager.getEnablerOutputP2TRScriptPub(committeePubKey, disputeKeys);
+
+        // Assert
+        // P2TR scriptPubKey should be 34 bytes: OP_1 (0x51) + OP_PUSHBYTES_32 (0x20) + 32 bytes witness program
+        assertEq(script.length, 34, "P2TR script should be 34 bytes");
+        assertEq(uint8(script[0]), 0x51, "First byte should be OP_1");
+        assertEq(uint8(script[1]), 0x20, "Second byte should be OP_PUSHBYTES_32");
+
+        // Verify it matches the expected output
+        assertEq(script, expectedScript, "Script should match expected P2TR output");
+    }
+
     // ========================== REGISTER ACCEPT PEG IN ==========================
     function test_getSpeedUpScriptPub_Success() external {
         // Arrange
@@ -235,18 +271,25 @@ contract TestBtcHelper is Test, HelperContract {
         bytes32 p2tr_spk = 0x9687ca13c4fb3fa3ba05c2f9119dda026bfe66f0098dcf9b896a98ecb2e96702;
         bytes memory userPubKey = hex"027d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f";
         bytes32 acceptPeginTx = 0x8cc94a32480857817b037792eb95556670c9e001981f36102b72b96a8e559789;
-        PrevoutData memory prevoutData = PrevoutData({
+        // Prepare prevout data for both inputs: taptree and enabler outputs
+        PrevoutData[] memory prevoutDatas = new PrevoutData[](2);
+        prevoutDatas[0] = PrevoutData({
             // txid: 0x8cc94a32480857817b037792eb95556670c9e001981f36102b72b96a8e559789,
             // vout: 0,
             value: 9365,
             scriptPubKey: BtcTaproot.getP2TRScriptPubKey(p2tr_spk)
         });
+        // Mock enabler output - using simple script for testing
+        prevoutDatas[1] = PrevoutData({
+            value: Constants.SPEED_UP_AMOUNT,
+            scriptPubKey: BtcTaproot.getP2TRScriptPubKey(p2tr_spk) // Using same script for simplicity in test
+        });
 
         // The amount to be sent to the user
-        // prevoutData.value - (Constants.SPEED_UP_AMOUNT + Constants.P2TR_FEE); // 0.00008730 BTC
+        // prevoutDatas[0].value - (Constants.SPEED_UP_AMOUNT + Constants.P2TR_FEE); // 0.00008730 BTC
 
         // Act
-        BitcoinSignatureData memory pegoutData = bitcoinManager.getPegoutTxData(userPubKey, acceptPeginTx, prevoutData);
+        BitcoinSignatureData memory pegoutData = bitcoinManager.getPegoutTxData(userPubKey, acceptPeginTx, prevoutDatas);
         bytes32 result = pegoutData.signatureHash;
 
         // ExpectedHash hash computed externally from a run of the pegout flow of the protocol builder
@@ -262,7 +305,7 @@ contract TestBtcHelper is Test, HelperContract {
         //     }
         // ]
         // - amount = 9365 - (540 + 335);
-        bytes32 expectedHash = 0x827d50165346809719d5da8e3ef29b3e91b586648aee5846fc32e7714a117d0a;
+        bytes32 expectedHash = 0x5bf6a18f4e077624f52731dc49f21c17951f80e0a73a75c1273cf4ce5ddb6b2e;
 
         // Assert
         assertEq(result, expectedHash, "Encoded data does not match expectedHash value");

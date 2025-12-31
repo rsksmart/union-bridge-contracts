@@ -93,9 +93,9 @@ contract TestPeginManager is Test, HelperContract {
         BtcTxSPVProof memory requestPeginTxSPVProof = createBtcTxSPVProof(btcTransaction);
         bytes32 expectedRequestPeginTxid = getBtcTxid(btcTransaction);
         bytes32 expectedAcceptPeginTxid = getBtcTxid(getBtcAcceptPeginTx(btcTransaction));
-        bytes32 expectedAcceptPeginSignatureHash = hex"80ad6ee31d49f3021483e3212fc64c9a20139f6ea38b0bfedc2af0480fca166a";
+        bytes32 expectedAcceptPeginSignatureHash = hex"1a1fba8f81e68461425440126f33619691ce7dc26e7a2310543e5d7388db68da";
         bytes memory expectedAcceptPeginSignatureMessage =
-            hex"0001020000000000000045eb25874678e195a26959dbc0597bca2bbc693af2ff2e73a862eb5156b285384f973621fe8403b6facae9abab80d863a847d3fb007ba2f9830f8e16e6e9b4d45314b96b3848ec1e8f6c656d51101273a35b12be9382350f8d4fa53959c09e9c23e9829bfb4e23fbd3c4848baa035af15d73bcb83e510f7f097f90a21a4280d226916279b0a803d308531e7b8917970c07fb21a964842101f7278dda63f4cfce0000000000";
+            hex"00010200000000000000cca7f37cc7110cc0b507a5507ba2d8df3c539bb987b27e662bde2740048dc41120cb368f69e16a937d044c377b1f7fd5568bb167c478f5dbec16b25df5f66e424147566e5a4482ee0e3dcbae3fc237584ddfb58a3fd46c1c84b10f20a667227e82d397cbbcff87bc5d0c4c70e424f9b830efbad7bf0be479da5d1d1bafdb9798a7639b7aac9bfcebbaac4b8eb8685ed0c7ef5b017bd81e5c140868cbe0de2f5c0000000000";
 
         RequestPeginTempInfo memory expectedRequestPeginInfo = RequestPeginTempInfo({
             rskDestinationAddress: RSK_DESTINATION_ADDRESS,
@@ -164,8 +164,8 @@ contract TestPeginManager is Test, HelperContract {
         );
         assertEq(
             peginTempInfo.acceptPeginSignatureHash,
-            hex"80ad6ee31d49f3021483e3212fc64c9a20139f6ea38b0bfedc2af0480fca166a",
-            "Incorrect peg in temp info btcReimbursementPubKey"
+            expectedAcceptPeginSignatureHash,
+            "Incorrect peg in temp info acceptPeginSignatureHash"
         );
     }
 

@@ -55,7 +55,7 @@ abstract contract HelperContract is Test, TestUtils {
     uint256 constant TAKE_1_TIMEOUT_DEFAULT = 2 hours;
 
     // Dummy requested roles and streams for the members
-    StreamDenomination internal constant DEFAULT_STREAM = StreamDenomination._0_001BTC;
+    StreamDenomination internal constant DEFAULT_STREAM = StreamDenomination._0_01BTC;
     Role internal constant DEFAULT_ROLE = Role.OPERATOR;
 
     BitcoinManager internal bitcoinManager;
@@ -273,11 +273,28 @@ abstract contract HelperContract is Test, TestUtils {
         return BtcTxOut({amount: 0, scriptPubKey: script});
     }
 
+    function getRequestPeginEnablerOut() internal view returns (BtcTxOut memory) {
+        // Get committee members and dispute keys
+        Stream memory stream = streamManager.getStream(VALUE);
+        uint128 committeeId = streamManager.getCommitteeId(stream.streamId, stream.peginPacketPointer);
+        CommitteeMember[] memory committeeMembers = registry.getCommitteeMembers(committeeId);
+
+        bytes32[] memory disputeKeys = new bytes32[](committeeMembers.length);
+        for (uint256 i = 0; i < committeeMembers.length; i++) {
+            disputeKeys[i] = memberRegistry.getMemberPublicKeys(committeeMembers[i].memberAddress).covenantPubKey;
+        }
+
+        // Get the enabler output script using the BitcoinManager
+        bytes memory enablerScript = bitcoinManager.getEnablerOutputP2TRScriptPub(COMMITTEE_PUB_KEY(), disputeKeys);
+
+        return BtcTxOut({amount: Constants.ENABLER_AMOUNT, scriptPubKey: enablerScript});
+    }
+
     function getBtcRequestPeginTx() internal returns (BtcTransaction memory) {
         BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
         btcInputs[0] = getRequestPeginTxIn();
         // Output
-        BtcTxOut[] memory btcOutputs = new BtcTxOut[](2);
+        BtcTxOut[] memory btcOutputs = new BtcTxOut[](Constants.REQUEST_PEGIN_OUTPUT_COUNT);
         btcOutputs[0] = getRequestPeginP2TROut();
 
         Stream memory stream = streamManager.getStream(VALUE);
@@ -286,6 +303,7 @@ abstract contract HelperContract is Test, TestUtils {
         address rskDestinationAddress = getPeginRskDestinationAddress();
         bytes32 btcReimbursementPubKey = getPeginBtcReimbursementPubKey();
         btcOutputs[1] = getRequestPeginOpReturnOut(packetNumber, rskDestinationAddress, btcReimbursementPubKey);
+        btcOutputs[2] = getRequestPeginEnablerOut();
         return BtcTransaction({
             version: Constants.BTC_TX_VERSION,
             inputs: btcInputs,
@@ -299,13 +317,15 @@ abstract contract HelperContract is Test, TestUtils {
     }
 
     // ========================== Peg In Accept ==========================
-    function getBtcAcceptPeginTx(BtcTransaction memory _tx) internal pure returns (BtcTransaction memory) {
-        BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
+    function getBtcAcceptPeginTx(BtcTransaction memory _tx) internal view returns (BtcTransaction memory) {
+        BtcTxIn[] memory btcInputs = new BtcTxIn[](2);
         btcInputs[0] = getAcceptPeginTxIn(_tx);
+        btcInputs[1] = getAcceptPeginEnablerTxIn(_tx);
         // Output
-        BtcTxOut[] memory btcOutputs = new BtcTxOut[](2);
+        BtcTxOut[] memory btcOutputs = new BtcTxOut[](Constants.ACCEPT_PEGIN_OUTPUT_COUNT);
         btcOutputs[0] = getAcceptPeginP2TROut();
-        btcOutputs[1] = getBtcSpeedUpOut();
+        btcOutputs[1] = getAcceptPeginEnablerOut(_tx);
+        btcOutputs[2] = getBtcSpeedUpOut();
         // Locktime
         return BtcTransaction({
             version: Constants.BTC_TX_VERSION,
@@ -319,6 +339,15 @@ abstract contract HelperContract is Test, TestUtils {
         return BtcTxIn({txId: getBtcTxid(_tx), vout: 0, sequence: Constants.SEQUENCE, scriptSig: hex""});
     }
 
+    function getAcceptPeginEnablerTxIn(BtcTransaction memory _tx) internal pure returns (BtcTxIn memory) {
+        return BtcTxIn({
+            txId: getBtcTxid(_tx),
+            vout: Constants.REQUEST_PEGIN_VOUT_ENABLER,
+            sequence: Constants.SEQUENCE,
+            scriptSig: hex""
+        });
+    }
+
     function getBtcSpeedUpOut() internal pure returns (BtcTxOut memory) {
         return BtcTxOut({
             amount: Constants.SPEED_UP_AMOUNT,
@@ -330,9 +359,23 @@ abstract contract HelperContract is Test, TestUtils {
 
     function getAcceptPeginP2TROut() internal pure returns (BtcTxOut memory) {
         return BtcTxOut({
-            amount: VALUE - (Constants.P2TR_FEE + Constants.SPEED_UP_AMOUNT),
+            // we substract the speed up amount twice: once for the speed up output and once for the enabler output
+            amount: VALUE - (Constants.P2TR_FEE + Constants.SPEED_UP_AMOUNT + Constants.SPEED_UP_AMOUNT),
             scriptPubKey: hex"51209687ca13c4fb3fa3ba05c2f9119dda026bfe66f0098dcf9b896a98ecb2e96702"
         });
+    }
+
+    function getAcceptPeginEnablerOut(BtcTransaction memory _requestTx) internal view returns (BtcTxOut memory) {
+        // Extract packet number from the request pegin transaction's OP_RETURN output
+        (uint64 packetNumber,,) =
+            bitcoinManager.getPeginOpReturnData(_requestTx.outputs[Constants.REQUEST_PEGIN_VOUT_OP_RETURN]);
+
+        uint128 committeeId = streamManager.getCommitteeId(uint64(DEFAULT_STREAM), packetNumber);
+        bytes32[] memory operatorDisputeKeys = registry.getOperatorDisputeKeys(committeeId);
+        bytes memory committeePubKey = streamManager.getCommitteePubKey(uint64(DEFAULT_STREAM), packetNumber);
+        bytes memory enablerScript = bitcoinManager.getEnablerOutputP2TRScriptPub(committeePubKey, operatorDisputeKeys);
+
+        return BtcTxOut({amount: Constants.ENABLER_AMOUNT, scriptPubKey: enablerScript});
     }
 
     function satoshiToWei(uint256 _amount) internal pure returns (uint256) {
@@ -437,12 +480,14 @@ abstract contract HelperContract is Test, TestUtils {
         assertEq(uint256(slot.state), uint256(SlotState.LOCKED), "Slot should be locked after peg-out request");
         assertEq(slot.acceptPeginTx, setup.acceptPeginTxid, "Slot should reference the correct accept peg-in tx");
 
-        // Get the correct signature data that matches what tryPegout() will generate
-        BitcoinSignatureData memory pegoutSignatureData = bitcoinManager.getPegoutTxData(
-            setup.userPubKey,
-            setup.acceptPeginTxid,
-            PrevoutData({value: slot.acceptPeginAmount, scriptPubKey: slot.scriptPubKey})
-        );
+        // Prepare prevout data for both inputs: taptree and enabler outputs
+        // Read both from slot (matching production code in _preparePegoutPrevoutDatas)
+        PrevoutData[] memory prevoutDatas = new PrevoutData[](2);
+        prevoutDatas[0] = PrevoutData({value: slot.acceptPeginAmount, scriptPubKey: slot.scriptPubKey});
+        prevoutDatas[1] = PrevoutData({value: Constants.ENABLER_AMOUNT, scriptPubKey: slot.enablerScriptPubKey});
+
+        BitcoinSignatureData memory pegoutSignatureData =
+            bitcoinManager.getPegoutTxData(setup.userPubKey, setup.acceptPeginTxid, prevoutDatas);
 
         // Create a peg-out transaction that spends the accept peg-in UTXO
         setup.pegoutTx = pegoutSignatureData.tx;
