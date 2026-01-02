@@ -218,6 +218,12 @@ interface IBitcoinManager {
     /// @param _memberPubKey The committee member's public key that should receive the funds
     function validatePegoutMemberOutput(BtcTxOut calldata _pegoutOutput, bytes32 _memberPubKey) external pure;
 
+    /// @notice Validates that a peg-out transaction output encodes the correct peg-out id in OP_RETURN
+    /// @dev Ensures the OP_RETURN output contains the expected peg-out id for tracking
+    /// @param _pegoutIdOutput The Bitcoin transaction output containing OP_RETURN data
+    /// @param _pegoutId The expected peg-out id to validate against
+    function validatePegoutIdOutput(BtcTxOut calldata _pegoutIdOutput, bytes32 _pegoutId) external pure;
+
     // Errors
     /// @notice Thrown when OP_RETURN data length doesn't match expected format
     /// @param actual The actual length of the OP_RETURN data

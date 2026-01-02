@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import {PegManagerBase} from "./PegManagerBase.sol";
 import {IPegoutManager, PegoutManagerSettings, PegoutTempInfo} from "./interfaces/IPegoutManager.sol";
 import {ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
-import {SignatureData} from "./interfaces/ISignatureManager.sol";
+import {SignatureData, OperatorTakeData} from "./interfaces/ISignatureManager.sol";
 import {Stream, Slot} from "./interfaces/IStreamManager.sol";
 import {IBitcoinManager, PrevoutData, BitcoinSignatureData} from "./interfaces/IBitcoinManager.sol";
 import {BtcTxSPVProof, StreamPosition, PegStatus} from "./interfaces/IPegCommonTypes.sol";
@@ -90,16 +90,6 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         uint128 committeeId =
             _storePegoutAndInitSignatures(pegoutSignatureData.txid, stream.streamId, packetNumber, slot.slotId);
 
-        pegoutTempInfo[slot.acceptPeginTx] = PegoutTempInfo({
-            userPubKey: _userPubKey,
-            createdAt: block.timestamp,
-            operatorTakeUpdatedAt: 0,
-            committeeId: committeeId,
-            takeOperatorAddress: address(0),
-            operatorDisputePubKey: bytes32(0)
-        });
-        streamManager.setPegStatus(slot.acceptPeginTx, PegStatus.USER_TAKE);
-
         // Store the pegout to pegin tx id mapping
         pegoutToPeginTxid[pegoutSignatureData.txid] = slot.acceptPeginTx;
 
@@ -120,6 +110,18 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
             )
         );
 
+        pegoutTempInfo[slot.acceptPeginTx] = PegoutTempInfo({
+            userPubKey: _userPubKey,
+            createdAt: block.timestamp,
+            operatorTakeUpdatedAt: 0,
+            committeeId: committeeId,
+            takeOperatorAddress: address(0),
+            operatorDisputePubKey: bytes32(0),
+            pegoutId: pegoutId,
+            advanceFundsBlockNumber: 0,
+            reimbursementKickoffTxid: bytes32(0)
+        });
+
         // slither-disable-next-line reentrancy-events
         emit PegoutRequested(
             _userPubKey,
@@ -131,6 +133,8 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
             stream.denomination,
             pegoutId
         );
+
+        streamManager.setPegStatus(slot.acceptPeginTx, PegStatus.USER_TAKE);
     }
 
     /// @notice Register a peg-out transaction from Bitcoin
@@ -145,11 +149,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         uint32 vout = _pegoutTxSPVProof.btcTx.inputs[0].vout;
 
         // get the stream data for this pegout
-        StreamPosition memory streamInfo = streamManager.getStreamPosition(acceptPeginTxid);
-
-        if (streamInfo.pegStatus == PegStatus.NOT_REGISTERED) {
-            revert PeginNotRequested(acceptPeginTxid);
-        }
+        StreamPosition memory streamInfo = _validatePegoutStatus(acceptPeginTxid, PegStatus.USER_TAKE);
 
         // Validate that the vout is correct
         if (vout != Constants.ACCEPT_PEGIN_VOUT_TAPTREE) {
@@ -256,13 +256,14 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
                 revert UserTakeTimeoutNotExpired(pegoutInfo.createdAt, pegoutInfo.createdAt + userTakeTimeout);
             }
 
-            streamManager.setPegStatus(acceptPeginTxid, PegStatus.OPERATOR_TAKE);
+            streamManager.setPegStatus(acceptPeginTxid, PegStatus.OP_SELECTED);
             advanceSlot = true;
-        } else if (streamInfo.pegStatus == PegStatus.OPERATOR_TAKE) {
+        } else if (streamInfo.pegStatus == PegStatus.OP_SELECTED) {
             // slither-disable-next-line timestamp
             if (block.timestamp <= operatorTakeUpdatedAt + operatorTakeTimeout) {
                 revert OperatorTakeTimeoutNotExpired(operatorTakeUpdatedAt, operatorTakeUpdatedAt + operatorTakeTimeout);
             }
+            // TODO: Handle other PegStatus like ADVANCED and KICKOFF.
         } else {
             revert InvalidPegStatus(streamInfo.pegStatus);
         }
@@ -290,6 +291,131 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         }
     }
 
+    function registerAdvanceFunds(bytes32 acceptPeginTxid, BtcTxSPVProof calldata _advanceFunds)
+        external
+        nonReentrant
+        whenNotPaused
+    {
+        StreamPosition memory streamInfo = _validatePegoutStatus(acceptPeginTxid, PegStatus.OP_SELECTED);
+
+        PegoutTempInfo storage pegoutInfo = _validateOperatorTakeAddress(acceptPeginTxid);
+
+        bytes32 txid = _verifyAdvanceFundsTx(_advanceFunds, pegoutInfo, streamInfo.streamId);
+
+        // update the peg status to ADVANCED
+        streamManager.setPegStatus(acceptPeginTxid, PegStatus.ADVANCED);
+
+        // Update advance funds block number
+        pegoutInfo.advanceFundsBlockNumber = getBlockNumber(
+            txid, _advanceFunds.blockHash, _advanceFunds.merkleBranchPath, _advanceFunds.merkleBranchHashes
+        );
+
+        // slither-disable-next-line reentrancy-events
+        emit AdvanceFundsRegistered(
+            _advanceFunds.blockHash, txid, acceptPeginTxid, pegoutInfo.pegoutId, pegoutInfo.committeeId, streamInfo
+        );
+    }
+
+    function _verifyAdvanceFundsTx(
+        BtcTxSPVProof calldata _advanceFunds,
+        PegoutTempInfo memory _pegoutInfo,
+        uint64 _streamId
+    ) internal view returns (bytes32) {
+        // Calculate the transaction id for verification
+        bytes32 txid = bitcoinManager.getBtcTxid(_advanceFunds.btcTx);
+
+        // Get the stream to check confirmations
+        Stream memory stream = streamManager.getStreamById(_streamId);
+
+        // Verify the txid is part of the Merkle Root and has enough confirmations
+        _verifyTxConfirmations(
+            stream.pegoutConfirmations,
+            txid,
+            _advanceFunds.blockHash,
+            _advanceFunds.merkleBranchPath,
+            _advanceFunds.merkleBranchHashes
+        );
+
+        uint64 userAmount = stream.denomination - (Constants.P2TR_FEE * 2 + Constants.SPEED_UP_AMOUNT);
+
+        if (_advanceFunds.btcTx.outputs[0].amount != userAmount) {
+            revert WrongUserAmount(_advanceFunds.btcTx.outputs[0].amount, userAmount);
+        }
+
+        // Validate that the first output pays to the operator's dispute key
+        bitcoinManager.validatePegoutUserOutput(_advanceFunds.btcTx.outputs[0], _pegoutInfo.userPubKey);
+
+        // Validate that the second output contains the pegout ID
+        bitcoinManager.validatePegoutIdOutput(_advanceFunds.btcTx.outputs[1], _pegoutInfo.pegoutId);
+        return txid;
+    }
+
+    function _validatePegoutStatus(bytes32 _acceptPeginTxid, PegStatus _expectedStatus)
+        internal
+        view
+        returns (StreamPosition memory)
+    {
+        StreamPosition memory streamInfo = streamManager.getStreamPosition(_acceptPeginTxid);
+
+        if (streamInfo.pegStatus == PegStatus.NOT_REGISTERED) {
+            revert PeginNotRequested(_acceptPeginTxid);
+        }
+
+        if (streamInfo.pegStatus != _expectedStatus) {
+            revert InvalidPegStatus(streamInfo.pegStatus);
+        }
+
+        return streamInfo;
+    }
+
+    function _validateOperatorTakeAddress(bytes32 _acceptPeginTxid) internal view returns (PegoutTempInfo storage) {
+        PegoutTempInfo storage pegoutInfo = pegoutTempInfo[_acceptPeginTxid];
+        address sender = _msgSender();
+        if (pegoutInfo.takeOperatorAddress != sender) {
+            revert OperatorTakeAddressNotMatch(pegoutInfo.takeOperatorAddress, sender);
+        }
+        return pegoutInfo;
+    }
+
+    function registerReimbursementKickoff(bytes32 acceptPeginTxid, BtcTxSPVProof calldata _kickoffSPV)
+        external
+        nonReentrant
+        whenNotPaused
+    {
+        StreamPosition memory streamInfo = _validatePegoutStatus(acceptPeginTxid, PegStatus.ADVANCED);
+
+        PegoutTempInfo storage pegoutInfo = _validateOperatorTakeAddress(acceptPeginTxid);
+
+        // Calculate the transaction id for verification
+        bytes32 txid = bitcoinManager.getBtcTxid(_kickoffSPV.btcTx);
+
+        Stream memory stream = streamManager.getStreamById(streamInfo.streamId);
+
+        // Verify the txid is part of the Merkle Root and has enough confirmations
+        _verifyTxConfirmations(
+            stream.pegoutConfirmations,
+            txid,
+            _kickoffSPV.blockHash,
+            _kickoffSPV.merkleBranchPath,
+            _kickoffSPV.merkleBranchHashes
+        );
+
+        int256 blockNumber =
+            getBlockNumber(txid, _kickoffSPV.blockHash, _kickoffSPV.merkleBranchPath, _kickoffSPV.merkleBranchHashes);
+
+        if (blockNumber < pegoutInfo.advanceFundsBlockNumber) {
+            revert ReimbursementKickoffBeforeAdvanceFunds(pegoutInfo.advanceFundsBlockNumber, blockNumber);
+        }
+
+        // Update the reimbursement kickoff txid
+        pegoutInfo.reimbursementKickoffTxid = txid;
+
+        // update the peg status to KICKOFF
+        streamManager.setPegStatus(acceptPeginTxid, PegStatus.KICKOFF);
+
+        emit ReimbursementKickoffRegistered(txid, acceptPeginTxid, pegoutInfo.committeeId, streamInfo);
+    }
+
     /// @notice Deposits an operator take proof for a peg-out transaction
     /// @param _pegoutTxSPVProof The BTC SPV proof of the operator take peg-out transaction
     /// @dev Validates the SPV proof and marks the slot as paid when operator takes over
@@ -301,31 +427,47 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         bytes32 acceptPeginTxid = _pegoutTxSPVProof.btcTx.inputs[0].txId;
         uint32 vout = _pegoutTxSPVProof.btcTx.inputs[0].vout;
 
-        // get the stream data for this pegout
-        StreamPosition memory streamInfo = streamManager.getStreamPosition(acceptPeginTxid);
-
-        if (streamInfo.pegStatus == PegStatus.NOT_REGISTERED) {
-            revert PeginNotRequested(acceptPeginTxid);
-        }
-
-        if (streamInfo.pegStatus != PegStatus.OPERATOR_TAKE) {
-            revert InvalidPegStatus(streamInfo.pegStatus);
-        }
+        StreamPosition memory streamInfo = _validatePegoutStatus(acceptPeginTxid, PegStatus.KICKOFF);
 
         // Validate that the vout is correct
         if (vout != Constants.ACCEPT_PEGIN_VOUT_TAPTREE) {
             revert IncorrectVout(vout, Constants.ACCEPT_PEGIN_VOUT_TAPTREE);
         }
 
-        PegoutTempInfo memory pegoutInfo = pegoutTempInfo[acceptPeginTxid];
-        address sender = _msgSender();
-        // slither-disable-next-line timestamp
-        if (pegoutInfo.takeOperatorAddress != sender) {
-            revert OperatorTakeAddressNotMatch(pegoutInfo.takeOperatorAddress, sender);
+        PegoutTempInfo storage pegoutInfo = _validateOperatorTakeAddress(acceptPeginTxid);
+
+        if (pegoutInfo.reimbursementKickoffTxid != _pegoutTxSPVProof.btcTx.inputs[1].txId) {
+            revert ReimbursementKickoffTxidNotMatch(
+                pegoutInfo.reimbursementKickoffTxid, _pegoutTxSPVProof.btcTx.inputs[1].txId
+            );
         }
+
+        // Validate that the first output pays to the operator's dispute key
+        bitcoinManager.validatePegoutMemberOutput(_pegoutTxSPVProof.btcTx.outputs[0], pegoutInfo.operatorDisputePubKey);
 
         // Calculate the transaction id for verification
         bytes32 txid = bitcoinManager.getBtcTxid(_pegoutTxSPVProof.btcTx);
+
+        OperatorTakeData[] memory opTakeData = signatureManager.getOperatorTakeData(acceptPeginTxid);
+
+        uint256 memberIndex = 0;
+        bool found = false;
+        for (uint256 i = 0; i < opTakeData.length; i++) {
+            if (opTakeData[i].memberAddress == pegoutInfo.takeOperatorAddress) {
+                memberIndex = i;
+                found = true;
+                break;
+            }
+        }
+
+        if (!found || opTakeData[memberIndex].takeTxid == bytes32(0)) {
+            revert OperatorTakeDataNotFound(acceptPeginTxid, pegoutInfo.takeOperatorAddress);
+        }
+
+        // Validate operator take txid matched the one deposited during accept pegin
+        if (txid != opTakeData[memberIndex].takeTxid) {
+            revert OperatorTakeTxidNotMatch(opTakeData[memberIndex].takeTxid, txid);
+        }
 
         // Get the stream to check confirmations
         Stream memory stream = streamManager.getStreamById(streamInfo.streamId);
@@ -338,9 +480,6 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
             _pegoutTxSPVProof.merkleBranchPath,
             _pegoutTxSPVProof.merkleBranchHashes
         );
-
-        // Validate that the first output pays to the operator's dispute key
-        bitcoinManager.validatePegoutMemberOutput(_pegoutTxSPVProof.btcTx.outputs[0], pegoutInfo.operatorDisputePubKey);
 
         // update the peg status to COMPLETED
         streamManager.setPegStatus(acceptPeginTxid, PegStatus.COMPLETED);

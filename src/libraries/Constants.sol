@@ -110,6 +110,9 @@ library Constants {
     /// @dev Amount sent to enabler output for operator dispute mechanism
     uint64 constant ENABLER_AMOUNT = 540;
 
+    /// @dev Reimbursement kickoff amount in satoshis for Bitcoin transactions
+    uint64 constant REIMBURSEMENT_KICKOFF_AMOUNT = 5137;
+
     /// @dev Dust threshold in satoshis for Bitcoin transactions
     /// @dev Minimum amount required for a Bitcoin output to be considered valid
     uint64 constant DUST_THRESHOLD = 300;

@@ -86,7 +86,7 @@ contract TestPeginManager is Test, HelperContract {
 
     function test_requestPegin_Success() external {
         // Arrange
-        BtcTransaction memory btcTransaction = getBtcRequestPeginTx();
+        (BtcTransaction memory btcTransaction,) = getBtcRequestPeginTx();
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(10);
         // Create Pegin struct information
@@ -171,7 +171,7 @@ contract TestPeginManager is Test, HelperContract {
 
     function test_requestPegin_Revert_PeginAlreadyRequested() external {
         // Arrange
-        BtcTransaction memory btcTransaction = getBtcRequestPeginTx();
+        (BtcTransaction memory btcTransaction,) = getBtcRequestPeginTx();
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(10);
         // Create Pegin struct information
@@ -192,7 +192,7 @@ contract TestPeginManager is Test, HelperContract {
     function test_requestPegin_Revert_NotEnoughConfirmations() external {
         // Arrange
         int256 actualConfirmations = 0;
-        BtcTransaction memory btcTransaction = getBtcRequestPeginTx();
+        (BtcTransaction memory btcTransaction,) = getBtcRequestPeginTx();
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(actualConfirmations);
         // Create Pegin struct information
@@ -211,7 +211,7 @@ contract TestPeginManager is Test, HelperContract {
 
     function test_requestPegin_Revert_BridgeBtcTxInvalidMerkleBranch() external {
         // Arrange
-        BtcTransaction memory btcTransaction = getBtcRequestPeginTx();
+        (BtcTransaction memory btcTransaction,) = getBtcRequestPeginTx();
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE);
         // Create Pegin struct information
@@ -233,7 +233,7 @@ contract TestPeginManager is Test, HelperContract {
     function test_requestPegin_Revert_IncorrectBtcTxVersion() external {
         // ===  Before test setup  is run for this  test ===
         // Arrange
-        BtcTransaction memory btcTransaction = getBtcRequestPeginTx();
+        (BtcTransaction memory btcTransaction,) = getBtcRequestPeginTx();
         btcTransaction.version = 1;
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(10);
@@ -254,7 +254,7 @@ contract TestPeginManager is Test, HelperContract {
     function test_requestPegin_Revert_IncorrectLocktime() external {
         // ===  Before test setup  is run for this  test ===
         // Arrange
-        BtcTransaction memory btcTransaction = getBtcRequestPeginTx();
+        (BtcTransaction memory btcTransaction,) = getBtcRequestPeginTx();
         btcTransaction.locktime = 1;
         // Set Mock Bridge state
         bridgeMock.setBtcTransactionConfirmations(10);
@@ -273,7 +273,7 @@ contract TestPeginManager is Test, HelperContract {
     }
 
     function test_acceptPegin_Revert_PeginNotRequested() external {
-        BtcTransaction memory btcTx = HelperContract.getBtcRequestPeginTx();
+        (BtcTransaction memory btcTx,) = HelperContract.getBtcRequestPeginTx();
 
         // Arrange
         BtcTransaction memory btcTransaction = getBtcAcceptPeginTx(btcTx);
@@ -296,7 +296,7 @@ contract TestPeginManager is Test, HelperContract {
         Committee memory expectedCommittee = setup_getExpectedSecondCommittee();
 
         // Arrange
-        BtcTransaction memory peginTx = setup_requestPeginFlow();
+        (BtcTransaction memory peginTx,) = setup_requestPeginFlow();
         BtcTransaction memory btcTransaction = getBtcAcceptPeginTx(peginTx);
         // Create Pegin accepted tx struct information
         BtcTxSPVProof memory peginAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
@@ -339,7 +339,7 @@ contract TestPeginManager is Test, HelperContract {
         setup_depositAggregatedKey_MultipleMembers(COMMITTEE_ID_STREAM_1_COMMITTEE_2, memberIndexStart, memberCount);
 
         // Arrange
-        BtcTransaction memory peginTx = setup_requestPeginFlow();
+        (BtcTransaction memory peginTx,) = setup_requestPeginFlow();
         BtcTransaction memory btcTransaction = getBtcAcceptPeginTx(peginTx);
         // Create Pegin accepted tx struct information
         BtcTxSPVProof memory peginAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
@@ -373,7 +373,7 @@ contract TestPeginManager is Test, HelperContract {
 
     function test_acceptPegin_Success() external {
         // ===  Before test setup  is run for this  test ===
-        BtcTransaction memory peginTx = setup_requestPeginFlow();
+        (BtcTransaction memory peginTx,) = setup_requestPeginFlow();
         // Arrange
         BtcTransaction memory btcTransaction = getBtcAcceptPeginTx(peginTx);
         // Set Mock Bridge state
@@ -429,7 +429,7 @@ contract TestPeginManager is Test, HelperContract {
         setup_requestPeginFlow();
 
         // ===  Before test setup  is run for this  test ===
-        BtcTransaction memory peginTx = setup_requestPeginFlow();
+        (BtcTransaction memory peginTx,) = setup_requestPeginFlow();
         // Arrange
         BtcTransaction memory btcTransaction = getBtcAcceptPeginTx(peginTx);
         // Set Mock Bridge state
@@ -453,7 +453,7 @@ contract TestPeginManager is Test, HelperContract {
         setup_requestPeginFlow();
 
         // ===  Before test setup  is run for this  test ===
-        BtcTransaction memory peginTx = setup_requestPeginFlow();
+        (BtcTransaction memory peginTx,) = setup_requestPeginFlow();
         // Arrange
         BtcTransaction memory btcTransaction = getBtcAcceptPeginTx(peginTx);
         bytes32 expectedAcceptPeginTxid = bitcoinManager.getBtcTxid(btcTransaction);
@@ -477,7 +477,7 @@ contract TestPeginManager is Test, HelperContract {
 
     function test_acceptPegin_Revert_Revert_NotEnoughConfirmations() external {
         // ===  Before test setup  is run for this  test ===
-        BtcTransaction memory peginTx = setup_requestPeginFlow();
+        (BtcTransaction memory peginTx,) = setup_requestPeginFlow();
         // Arrange
         BtcTransaction memory btcTransaction = getBtcAcceptPeginTx(peginTx);
         int256 actualConfirmations = 0;
@@ -500,7 +500,7 @@ contract TestPeginManager is Test, HelperContract {
     function test_requestPegin_MultipleSlots_SamePacket() external {
         // Make Constants.SLOTS_PER_PACKET - 1 requests
         for (uint64 i = 0; i < Constants.SLOTS_PER_PACKET - 1; i++) {
-            BtcTransaction memory btcTransaction = getBtcRequestPeginTx();
+            (BtcTransaction memory btcTransaction,) = getBtcRequestPeginTx();
             // Modify tx to make each unique
             btcTransaction.inputs[0].scriptSig = abi.encodePacked(bytes32(uint256(i + 1)));
             BtcTxSPVProof memory requestPeginTxSPVProof = createBtcTxSPVProof(btcTransaction);
@@ -527,7 +527,7 @@ contract TestPeginManager is Test, HelperContract {
     function test_requestPegin_PacketAdvancement() external {
         // Fill up the packet
         for (uint64 i = 0; i < Constants.SLOTS_PER_PACKET; i++) {
-            BtcTransaction memory btcTransaction = getBtcRequestPeginTx();
+            (BtcTransaction memory btcTransaction,) = getBtcRequestPeginTx();
             btcTransaction.inputs[0].scriptSig = abi.encodePacked(bytes32(uint256(i + 1)));
             BtcTxSPVProof memory requestPeginTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
@@ -541,13 +541,13 @@ contract TestPeginManager is Test, HelperContract {
 
     function test_acceptPegin_UsesSpecificSlotId() external {
         // 1. Make multiple request pegins
-        BtcTransaction memory peginTx1 = getBtcRequestPeginTx();
+        (BtcTransaction memory peginTx1,) = getBtcRequestPeginTx();
         peginTx1.inputs[0].scriptSig = abi.encodePacked(bytes32(uint256(1)));
         BtcTxSPVProof memory requestPeginTxSPVProof1 = createBtcTxSPVProof(peginTx1);
         peginManager.requestPegin(requestPeginTxSPVProof1);
         bytes32 requestPeginTxid1 = getBtcTxid(peginTx1);
 
-        BtcTransaction memory peginTx2 = getBtcRequestPeginTx();
+        (BtcTransaction memory peginTx2,) = getBtcRequestPeginTx();
         peginTx2.inputs[0].scriptSig = abi.encodePacked(bytes32(uint256(2)));
         BtcTxSPVProof memory requestPeginTxSPVProof2 = createBtcTxSPVProof(peginTx2);
         peginManager.requestPegin(requestPeginTxSPVProof2);
@@ -575,7 +575,7 @@ contract TestPeginManager is Test, HelperContract {
 
     function test_acceptPegin_Revert_SlotBlocked() external {
         // 1. Request pegin to reserve slot
-        BtcTransaction memory peginTx = setup_requestPeginFlow();
+        (BtcTransaction memory peginTx,) = setup_requestPeginFlow();
         bytes32 requestPeginTxid = getBtcTxid(peginTx);
         StreamPosition memory streamPosition = peginManager.getStreamPositionByRequestPegin(requestPeginTxid);
 
@@ -781,7 +781,7 @@ contract TestPeginManager is Test, HelperContract {
 
     function test_requestPegin_Revert_EnforcedPause_PausedContract() external {
         // Arrange
-        BtcTransaction memory btcTransaction = getBtcRequestPeginTx();
+        (BtcTransaction memory btcTransaction,) = getBtcRequestPeginTx();
         BtcTxSPVProof memory requestPeginTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
         pauseContracts();
@@ -795,7 +795,7 @@ contract TestPeginManager is Test, HelperContract {
 
     function test_requestPegin_Success_UnpausedContract() external {
         // Arrange
-        BtcTransaction memory btcTransaction = getBtcRequestPeginTx();
+        (BtcTransaction memory btcTransaction,) = getBtcRequestPeginTx();
         BtcTxSPVProof memory requestPeginTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
         pauseAndUnpauseContracts();
@@ -806,7 +806,7 @@ contract TestPeginManager is Test, HelperContract {
 
     function test_acceptPegin_Revert_EnforcedPause_PausedContract() external {
         // Arrange
-        BtcTransaction memory peginTx = setup_requestPeginFlow();
+        (BtcTransaction memory peginTx,) = setup_requestPeginFlow();
         BtcTransaction memory btcTransaction = getBtcAcceptPeginTx(peginTx);
         BtcTxSPVProof memory peginAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
@@ -821,7 +821,7 @@ contract TestPeginManager is Test, HelperContract {
 
     function test_acceptPegin_Success_UnpausedContract() external {
         // Arrange
-        BtcTransaction memory peginTx = setup_requestPeginFlow();
+        (BtcTransaction memory peginTx,) = setup_requestPeginFlow();
         BtcTransaction memory btcTransaction = getBtcAcceptPeginTx(peginTx);
         BtcTxSPVProof memory peginAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
@@ -835,7 +835,7 @@ contract TestPeginManager is Test, HelperContract {
 
     function test_acceptPegin_RbtcBridgeIntegration() external {
         // Arrange
-        BtcTransaction memory peginTx = setup_requestPeginFlow();
+        (BtcTransaction memory peginTx,) = setup_requestPeginFlow();
         BtcTransaction memory btcTransaction = getBtcAcceptPeginTx(peginTx);
         BtcTxSPVProof memory peginAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
@@ -862,7 +862,7 @@ contract TestPeginManager is Test, HelperContract {
 
     function test_acceptPegin_Revert_BridgeExceededLockingCap() external {
         // Arrange
-        BtcTransaction memory peginTx = setup_requestPeginFlow();
+        (BtcTransaction memory peginTx,) = setup_requestPeginFlow();
         BtcTransaction memory btcTransaction = getBtcAcceptPeginTx(peginTx);
         BtcTxSPVProof memory peginAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
@@ -880,7 +880,7 @@ contract TestPeginManager is Test, HelperContract {
 
     function test_acceptPegin_Revert_BridgeTransfersDisabled() external {
         // Arrange
-        BtcTransaction memory peginTx = setup_requestPeginFlow();
+        (BtcTransaction memory peginTx,) = setup_requestPeginFlow();
         BtcTransaction memory btcTransaction = getBtcAcceptPeginTx(peginTx);
         BtcTxSPVProof memory peginAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
 

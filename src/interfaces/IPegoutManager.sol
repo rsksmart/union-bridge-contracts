@@ -21,6 +21,12 @@ struct PegoutTempInfo {
     address takeOperatorAddress;
     /// @notice The dispute public key (covenantPubKey) of the selected operator for operator-take transactions (x-coordinate only)
     bytes32 operatorDisputePubKey;
+    /// @notice The unique identifier for this peg-out operation
+    bytes32 pegoutId;
+    /// @notice Block number when advance funds was mined
+    int256 advanceFundsBlockNumber;
+    /// @notice The transaction id of the reimbursement kickoff transaction
+    bytes32 reimbursementKickoffTxid;
 }
 
 /// @notice Settings for the PegoutManager contract
@@ -98,6 +104,26 @@ interface IPegoutManager is IPausable {
         StreamPosition streamInfo
     );
 
+    /// @notice Event emitted when advance funds are successfully registered
+    /// @param blockHash The Bitcoin block hash containing the advance funds transaction
+    /// @param txid The hash of the advance funds transaction
+    /// @param acceptPeginTxid The hash of the original accept peg-in transaction
+    /// @param pegoutId The unique identifier for this peg-out operation
+    /// @param committeeId The ID of the committee responsible for this advance funds
+    /// @param streamInfo The stream position information related to this advance funds
+    event AdvanceFundsRegistered(
+        bytes32 indexed blockHash,
+        bytes32 indexed txid,
+        bytes32 indexed acceptPeginTxid,
+        bytes32 pegoutId,
+        uint128 committeeId,
+        StreamPosition streamInfo
+    );
+
+    event ReimbursementKickoffRegistered(
+        bytes32 indexed txid, bytes32 indexed acceptPeginTxid, uint128 committeeId, StreamPosition streamInfo
+    );
+
     /// @notice Sets User Take Timeout
     /// @dev Allows the contract owner to update the timeout for user take actions
     /// @param _timeout The new timeout value in seconds
@@ -119,6 +145,18 @@ interface IPegoutManager is IPausable {
     /// @notice Gets the current timeout duration for operator take operations
     /// @return The timeout duration in seconds
     function operatorTakeTimeout() external view returns (uint256);
+
+    /// @notice Registers the advance funds transaction submitted by the operator
+    /// @dev Validates the SPV proof and updated the peg-out status accordingly
+    /// @param acceptPeginTxid The accept peg-in transaction id that it's being advanced
+    /// @param _advanceFunds The BTC SPV proof of the advance funds transaction
+    function registerAdvanceFunds(bytes32 acceptPeginTxid, BtcTxSPVProof calldata _advanceFunds) external;
+
+    /// @notice Registers the reimbursement kickoff transaction submitted by the operator
+    /// @dev Validates the SPV proof and updates the peg-out status accordingly
+    /// @param acceptPeginTxid The accept peg-in transaction id that it's being reimbursed
+    /// @param _kickoffSPV The BTC SPV proof of the reimbursement kickoff transaction
+    function registerReimbursementKickoff(bytes32 acceptPeginTxid, BtcTxSPVProof calldata _kickoffSPV) external;
 
     /// @notice Registers the Bitcoin peg-out transaction to the operator account
     /// @dev Validates the SPV proof and marks the slot as paid when operator takes over
@@ -246,4 +284,29 @@ interface IPegoutManager is IPausable {
     /// @param expectedOperator The expected operator address that should take the pegout
     /// @param actualOperator The actual operator address that was provided
     error OperatorTakeAddressNotMatch(address expectedOperator, address actualOperator);
+
+    /// @notice Thrown when the reimbursement kickoff transaction is mined before the advance funds transaction
+    /// @param advanceFundsBlockNumber The block number when advance funds was mined
+    /// @param reimbursementKickoffBlockNumber The block number when reimbursement kickoff was mined
+    error ReimbursementKickoffBeforeAdvanceFunds(int256 advanceFundsBlockNumber, int256 reimbursementKickoffBlockNumber);
+
+    /// @notice Thrown when the advance funds amount is lower than the expected peg-out amount
+    /// @param actual The actual amount in satoshis of the advance funds transaction
+    /// @param expected The expected amount in satoshis that should be advanced
+    error WrongUserAmount(uint256 actual, uint256 expected);
+
+    /// @notice Thrown when the reimbursement kickoff txid does not match the expected value
+    /// @param expected The expected reimbursement kickoff txid
+    /// @param actual The actual reimbursement kickoff txid provided
+    error ReimbursementKickoffTxidNotMatch(bytes32 expected, bytes32 actual);
+
+    /// @notice Thrown when operator take data is not found for a given accept peg-in txid and operator address
+    /// @param acceptPeginTxid The accept peg-in transaction id
+    /// @param operatorAddress The operator address for which the data was not found
+    error OperatorTakeDataNotFound(bytes32 acceptPeginTxid, address operatorAddress);
+
+    /// @notice Thrown when the operator take transaction id does not match the expected value
+    /// @param expected The expected operator take transaction id
+    /// @param actual The actual operator take transaction id provided
+    error OperatorTakeTxidNotMatch(bytes32 expected, bytes32 actual);
 }

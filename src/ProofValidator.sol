@@ -117,4 +117,14 @@ abstract contract ProofValidator is Initializable {
             revert NotEnoughConfirmations(confirmations, _minConfirmations);
         }
     }
+
+    function getBlockNumber(
+        bytes32 _txid,
+        bytes32 _blockHash,
+        uint256 _merkleBranchPath,
+        bytes32[] memory _merkleBranchHashes
+    ) internal view returns (int256) {
+        return bridge.getBtcBlockchainBestChainHeight()
+            - bridge.getBtcTransactionConfirmations(_txid, _blockHash, _merkleBranchPath, _merkleBranchHashes);
+    }
 }

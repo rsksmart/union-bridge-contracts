@@ -89,6 +89,7 @@ bash "$SCRIPT_DIR/get-slot-info.sh" -s "$STREAM_ID" -p "$PACKET_NUMBER" -l "$SLO
 
 # Note: operator-take-flow.sh is a separate standalone test for operator advancing funds
 # It should be run independently, not as part of the main peg-flow
+# TODO: Uncomment after fixing. Need to registerAdvanceFunds and ReimbursementKickoff first.
 # bash "$SCRIPT_DIR/integration-test/operator-take-flow.sh" $ALPHANET_FLAG
 
 echo "================ PEGIN FLOW COMPLETE ================"

@@ -84,7 +84,7 @@ contract TestBtcHelper is Test, HelperContract {
 
     function test_getBtcTxid_Success() external {
         // Arrange
-        BtcTransaction memory btcTx = getBtcRequestPeginTx();
+        (BtcTransaction memory btcTx,) = getBtcRequestPeginTx();
         // Act
         bytes32 txid = bitcoinManager.getBtcTxid(btcTx);
         // Assert
@@ -150,7 +150,9 @@ contract TestBtcHelper is Test, HelperContract {
 
     function test_validateRequestPeginP2TROutput_Success() external {
         // Arrange
-        BtcTxOut memory btcTxOut = getBtcRequestPeginTx().outputs[0];
+
+        (BtcTransaction memory btcTx,) = getBtcRequestPeginTx();
+        BtcTxOut memory btcTxOut = btcTx.outputs[0];
         uint64 value = VALUE;
         address rskDestinationAddress = getPeginRskDestinationAddress();
         bytes32 btcReimbursementPubKey = getPeginBtcReimbursementPubKey();
@@ -165,7 +167,8 @@ contract TestBtcHelper is Test, HelperContract {
 
     function test_validateRequestPeginP2TROutput_Revert_InvalidOutputAmount() external {
         // Arrange
-        BtcTxOut memory btcTxOut = getBtcRequestPeginTx().outputs[0];
+        (BtcTransaction memory btcTx,) = getBtcRequestPeginTx();
+        BtcTxOut memory btcTxOut = btcTx.outputs[0];
         btcTxOut.amount = VALUE - Constants.P2TR_FEE;
         uint64 value = VALUE;
         address rskDestinationAddress = getPeginRskDestinationAddress();
@@ -333,5 +336,38 @@ contract TestBtcHelper is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(IBitcoinManager.InvalidZeroAddress.selector));
         // Act
         bitcoinManager.setPeginManager(IPeginManager(zeroAddress));
+    }
+
+    function test_validatePegoutIdOutput_Success() external view {
+        // Arrange
+        bytes32 expectedPegoutId = hex"abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef";
+        bytes memory pegoutIdScript = BtcScriptParser.getPegoutIdScript(expectedPegoutId);
+        BtcTxOut memory btcTxOut = BtcTxOut({amount: 10000, scriptPubKey: pegoutIdScript});
+
+        // Act
+        bitcoinManager.validatePegoutIdOutput(btcTxOut, expectedPegoutId);
+        // Assert if not reverts everything is ok
+    }
+
+    function test_validatePegoutIdOutput_Revert_IncorrectOutputScript() external {
+        // Arrange
+        bytes32 expectedPegoutId = hex"abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef";
+        bytes memory pegoutIdScript = BtcScriptParser.getPegoutIdScript(expectedPegoutId);
+        BtcTxOut memory btcTxOut = BtcTxOut({amount: 10000, scriptPubKey: pegoutIdScript});
+
+        bytes32 differentPegoutId = hex"123456123456123456123456123456123456123456123456";
+        bytes memory differentPegoutIdScript = BtcScriptParser.getPegoutIdScript(differentPegoutId);
+
+        // Assert
+        vm.assertNotEq(expectedPegoutId, differentPegoutId, "Test setup error: pegout IDs should be different");
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IBitcoinManager.IncorrectOutputScript.selector, pegoutIdScript, differentPegoutIdScript
+            )
+        );
+
+        // Act
+        bitcoinManager.validatePegoutIdOutput(btcTxOut, differentPegoutId);
     }
 }

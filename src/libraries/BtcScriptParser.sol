@@ -40,6 +40,10 @@ library BtcScriptParser {
         return abi.encodePacked(OpCodes.OP_0, OpCodes.OP_PUSHBYTES_32, scriptHash);
     }
 
+    function getPegoutIdScript(bytes32 _pegoutId) internal pure returns (bytes memory) {
+        return abi.encodePacked(OpCodes.OP_RETURN, _pegoutId);
+    }
+
     /// @notice Pushes a number onto the Bitcoin script stack
     /// @dev Handles different number ranges with appropriate opcodes and encoding
     /// @dev Uses minimal encoding for numbers to optimize script size

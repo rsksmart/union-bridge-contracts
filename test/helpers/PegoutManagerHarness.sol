@@ -31,7 +31,10 @@ contract PegoutManagerHarness is PegoutManager {
             operatorTakeUpdatedAt: 0,
             committeeId: 0,
             takeOperatorAddress: address(0),
-            operatorDisputePubKey: bytes32(0)
+            operatorDisputePubKey: bytes32(0),
+            pegoutId: bytes32(0),
+            advanceFundsBlockNumber: 0,
+            reimbursementKickoffTxid: bytes32(0)
         });
     }
 }

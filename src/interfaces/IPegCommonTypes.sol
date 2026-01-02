@@ -34,10 +34,16 @@ enum PegStatus {
     ACCEPTED,
     /// @notice Operation has been taken by the user and is awaiting committee acceptance
     USER_TAKE,
-    /// @notice Operation has been taken by the operator and is awaiting committee acceptance
-    OPERATOR_TAKE,
-    /// @notice Operation has been won by the operator and is awaiting committee acceptance
-    OPERATOR_WON,
+    /// @notice an operator has been selected for advancing the slot
+    OP_SELECTED,
+    /// @notice Slot is being advanced by an operator to the user
+    ADVANCED,
+    /// @notice Operator has presented reimbursement kickoff proof for the slot
+    KICKOFF,
+    /// @notice Slot is under challenge after kickoff presentation
+    CHALLENGE,
+    /// @notice Operator slot id secret has been revealed to initiate a challenge
+    REVEALED,
     /// @notice Operation has been completed and funds have been paid out
     COMPLETED,
     /// @notice This must always be the last element since it represents the total count of enum elements

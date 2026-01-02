@@ -34,7 +34,7 @@ enum SlotState {
     LOCKED,
     /// @notice Slot is being advanced by an operator to the user
     ADVANCED,
-    /// @notice Slot has been paid out via peg-out transaction
+    /// @notice Slot has been paid out
     COMPLETED,
     /// @notice Slot is blocked due to timeout or refund proof
     BLOCKED,

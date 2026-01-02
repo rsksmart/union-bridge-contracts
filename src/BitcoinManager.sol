@@ -285,6 +285,12 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         _compareOutputPubKey(_userOutput.scriptPubKey, expectedScriptPubKey);
     }
 
+    function validatePegoutIdOutput(BtcTxOut calldata _pegoutIdOutput, bytes32 _pegoutId) external pure {
+        bytes memory pegoutIdScript = BtcScriptParser.getPegoutIdScript(_pegoutId);
+
+        _compareOutputPubKey(_pegoutIdOutput.scriptPubKey, pegoutIdScript);
+    }
+
     // ========================== Peg In Accept ==========================
     /// @notice Gets the signature hash for a peg-in accept transaction
     /// @param _committeePubKey The committee's public key (x-only)
@@ -587,6 +593,43 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
             txid: txid,
             signatureHash: pegoutSignatureHash,
             signatureMessage: pegoutSignatureMessage
+        });
+    }
+
+    function getAdvanceFundsTx(bytes memory _userPubKey, uint64 _streamDenomination, bytes32 _pegoutId)
+        external
+        pure
+        returns (BtcTransaction memory)
+    {
+        // Prepare the inputs
+        BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
+        btcInputs[0] = BtcTxIn({
+            txId: hex"0000000000000000000000000000000000000000000000000000000000000000",
+            vout: 0,
+            scriptSig: bytes(""),
+            sequence: Constants.SEQUENCE
+        });
+
+        // Prepare the outputs, user and speed up
+        BtcTxOut[] memory btcOutputs = new BtcTxOut[](2);
+
+        // Calculate fee and speedUpAmount from amount
+        // TODO: atm is returning hardcoded values, should be calculated
+        (uint64 fee, uint64 speedUpAmount) = BtcHelper.calculateFeeAndSpeedUp();
+
+        // User pegout
+        bytes memory scriptPubKey = BtcScriptParser.getP2WPKHScript(_userPubKey);
+        btcOutputs[0] = BtcTxOut({amount: _streamDenomination - 2 * fee - speedUpAmount, scriptPubKey: scriptPubKey});
+
+        // Pegout ID output
+        btcOutputs[1] = BtcTxOut({amount: 0, scriptPubKey: BtcScriptParser.getPegoutIdScript(_pegoutId)});
+
+        // Prepare Btc Transaction
+        return BtcTransaction({
+            version: Constants.BTC_TX_VERSION,
+            locktime: Constants.LOCKTIME,
+            inputs: btcInputs,
+            outputs: btcOutputs
         });
     }
 

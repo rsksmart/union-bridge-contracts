@@ -210,4 +210,70 @@ abstract contract ScriptUtils is Script {
         btcTxSPVProof.merkleBranchHashes[0] = 0x480fd40f2e47eeea8edeef2f7f3e2c680642f748c989ed2e542fe5d28164da51;
         return btcTxSPVProof;
     }
+
+    function getOperatorTakeTx(
+        bytes32 _acceptPeginTxid,
+        bytes32 _reimbursementKickoffTxid,
+        bytes memory _operatorPubKey,
+        uint64 _streamDenomination
+    ) internal pure returns (BtcTransaction memory) {
+        // Input: spend the accept peg-in UTXO
+        BtcTxIn[] memory btcInputs = new BtcTxIn[](2);
+        btcInputs[0] = BtcTxIn({
+            txId: _acceptPeginTxid,
+            vout: 0, // P2TR output is at index 0
+            sequence: 0xfffffffd,
+            scriptSig: hex""
+        });
+
+        btcInputs[1] = BtcTxIn({
+            txId: _reimbursementKickoffTxid,
+            vout: 0, // P2TR output is at index 0
+            sequence: 0xfffffffd,
+            scriptSig: hex""
+        });
+
+        // Outputs
+        BtcTxOut[] memory btcOutputs = new BtcTxOut[](2);
+
+        // operator output amount
+        // This should include fee and speedup from accept pegin and from operator take itself.
+        // REIMBURSEMENT_KICKOFF_AMOUNT may be updated based on committee members count.
+        uint64 operatorAmount = _streamDenomination + Constants.REIMBURSEMENT_KICKOFF_AMOUNT
+            - 2 * (Constants.P2TR_FEE + Constants.SPEED_UP_AMOUNT);
+        bytes memory operatorScriptPubKey = BtcScriptParser.getP2WPKHScript(_operatorPubKey);
+
+        // pay to operator's P2WPKH
+        btcOutputs[0] = BtcTxOut({amount: operatorAmount, scriptPubKey: operatorScriptPubKey});
+
+        // speedup
+        btcOutputs[1] = BtcTxOut({amount: Constants.SPEED_UP_AMOUNT, scriptPubKey: operatorScriptPubKey});
+
+        return BtcTransaction({version: Constants.BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
+    }
+
+    function getReimbursementKickoffTx(bytes memory _committeePubKey, uint32 _slotIndex)
+        internal
+        pure
+        returns (BtcTransaction memory)
+    {
+        // Input: spend Operator Initial deposit UTXO for this particular slot
+        BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
+        btcInputs[0] = BtcTxIn({
+            // Input txid is uncheckable by the contract
+            txId: bytes32(0xabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd),
+            vout: _slotIndex,
+            sequence: 0xfffffffd,
+            scriptSig: hex""
+        });
+
+        // Outputs
+        BtcTxOut[] memory btcOutputs = new BtcTxOut[](1);
+        bytes memory committeeScriptPubKey = BtcScriptParser.getP2WPKHScript(_committeePubKey);
+
+        // P2TR
+        btcOutputs[0] = BtcTxOut({amount: Constants.REIMBURSEMENT_KICKOFF_AMOUNT, scriptPubKey: committeeScriptPubKey});
+
+        return BtcTransaction({version: Constants.BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
+    }
 }

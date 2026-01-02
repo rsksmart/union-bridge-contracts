@@ -2,11 +2,18 @@
 
 ## [Unreleased]
 
+### Added 
+
+- `PegoutManager.registerAdvanceFunds` to register advance funds SPV proof.
+- `PegoutManager.registerReimbursementKickoff` to register reimbursement kickoff SPV proof.
+-  New states to `PegStatus`: `OP_SELECTED`, `ADVANCED`, `KICKOFF`, `CHALLENGE` and `REVEALED`.
+
 ### Changed
 
 - `SignatureManager.addOperatorTakeTxid` renamed to `addOperatorTakeTxids`.
 - `SignatureManager.getOperatorTakeTxids` now receive `operatorWonTxid` too.
 - `shell/script/operator-take/add-operator-take-txid.sh` and `script/operator-take/add-every-operator-take-txid.sh` to use `addOperatorTakeTxids` and deposit `operatorWonTxid`.
+- Before calling to `PegoutManager.registerOperatorTake`, now it's required to call `registerAdvanceFunds` and `registerReimbursementKickoff` first.
 
 
 ### Removed

@@ -78,7 +78,7 @@ contract BitcoinManagerTaprootTreeTest is Test {
 
     // ============= Tests =============
 
-    function test_buildTaprootTree_OneLeaf() public {
+    function test_buildTaprootTree_OneLeaf() public view {
         bytes32[] memory leaves = new bytes32[](1);
         leaves[0] = BtcTaproot.getLeaf(createTimelockScript(1, PUBKEY_X));
 
@@ -90,7 +90,7 @@ contract BitcoinManagerTaprootTreeTest is Test {
         assertTrue(actualRoot != bytes32(0), "Merkle root should not be zero");
     }
 
-    function test_buildTaprootTree_TwoLeaves() public {
+    function test_buildTaprootTree_TwoLeaves() public view {
         bytes32[] memory leaves = new bytes32[](2);
         leaves[0] = BtcTaproot.getLeaf(createTimelockScript(1, PUBKEY_X));
         leaves[1] = BtcTaproot.getLeaf(createTimelockScript(2, PUBKEY_X));
@@ -103,7 +103,7 @@ contract BitcoinManagerTaprootTreeTest is Test {
         assertTrue(actualRoot != bytes32(0), "Merkle root should not be zero");
     }
 
-    function test_buildTaprootTree_ThreeLeaves() public {
+    function test_buildTaprootTree_ThreeLeaves() public view {
         bytes32[] memory leaves = new bytes32[](3);
         for (uint32 i = 0; i < 3; i++) {
             leaves[i] = BtcTaproot.getLeaf(createTimelockScript(i + 1, PUBKEY_X));
@@ -115,7 +115,7 @@ contract BitcoinManagerTaprootTreeTest is Test {
         assertEq(merkleRoot, expectedRoot, "Three leaves merkle root should match BitVMX");
     }
 
-    function test_buildTaprootTree_FourLeaves() public {
+    function test_buildTaprootTree_FourLeaves() public view {
         bytes32[] memory leaves = new bytes32[](4);
         for (uint32 i = 0; i < 4; i++) {
             leaves[i] = BtcTaproot.getLeaf(createTimelockScript(i + 1, PUBKEY_X));
@@ -127,7 +127,7 @@ contract BitcoinManagerTaprootTreeTest is Test {
         assertEq(merkleRoot, expectedRoot, "Four leaves merkle root should match BitVMX");
     }
 
-    function test_buildTaprootTree_FiveLeaves() public {
+    function test_buildTaprootTree_FiveLeaves() public view {
         bytes32[] memory leaves = new bytes32[](5);
         for (uint32 i = 0; i < 5; i++) {
             leaves[i] = BtcTaproot.getLeaf(createTimelockScript(i + 1, PUBKEY_X));
@@ -139,7 +139,7 @@ contract BitcoinManagerTaprootTreeTest is Test {
         assertEq(merkleRoot, expectedRoot, "Five leaves merkle root should match BitVMX");
     }
 
-    function test_buildTaprootTree_SixLeaves() public {
+    function test_buildTaprootTree_SixLeaves() public view {
         bytes32[] memory leaves = new bytes32[](6);
         for (uint32 i = 0; i < 6; i++) {
             leaves[i] = BtcTaproot.getLeaf(createTimelockScript(i + 1, PUBKEY_X));
@@ -151,7 +151,7 @@ contract BitcoinManagerTaprootTreeTest is Test {
         assertEq(merkleRoot, expectedRoot, "Six leaves merkle root should match BitVMX");
     }
 
-    function test_buildTaprootTree_SevenLeaves() public {
+    function test_buildTaprootTree_SevenLeaves() public view {
         bytes32[] memory leaves = new bytes32[](7);
         for (uint32 i = 0; i < 7; i++) {
             leaves[i] = BtcTaproot.getLeaf(createTimelockScript(i + 1, PUBKEY_X));
@@ -163,7 +163,7 @@ contract BitcoinManagerTaprootTreeTest is Test {
         assertEq(merkleRoot, expectedRoot, "Seven leaves merkle root should match BitVMX");
     }
 
-    function test_buildTaprootTree_TenLeaves() public {
+    function test_buildTaprootTree_TenLeaves() public view {
         bytes32[] memory leaves = new bytes32[](10);
         for (uint32 i = 0; i < 10; i++) {
             leaves[i] = BtcTaproot.getLeaf(createTimelockScript(i + 1, PUBKEY_X));
@@ -176,7 +176,7 @@ contract BitcoinManagerTaprootTreeTest is Test {
     }
 
     /// @notice Test edge cases
-    function test_buildTaprootTree_EdgeCases() public {
+    function test_buildTaprootTree_EdgeCases() public view {
         // Test empty array
         bytes32[] memory emptyLeaves = new bytes32[](0);
         bytes32 emptyRoot = bitcoinManager.buildMerkleTreeFromLeaves(emptyLeaves);

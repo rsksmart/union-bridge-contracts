@@ -1726,6 +1726,9 @@ contract TestMemberRegistry is Test, HelperContract {
         // Arrange
         (Committee memory committee,) = setup_completeCommittee();
         StreamDenomination denomination = StreamDenomination(committee.streamId);
+        // Move the block to avoid creating a new committee with same committeeId and pushing the members into the older committee.
+        vm.warp(BLOCK_COMMITTEE_2);
+        vm.roll(BLOCK_COMMITTEE_2);
 
         // Register max number of candidates for each role - this will trigger the creation of a pending committee
         // and therefore the removal of the candidates that are now part of the pending committee
