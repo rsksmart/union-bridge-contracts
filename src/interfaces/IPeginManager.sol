@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import {PrevoutData} from "./IBitcoinManager.sol";
 import {IPausable} from "./IPausable.sol";
-import {BtcTxSPVProof, StreamPosition} from "./IPegCommonTypes.sol";
+import {BtcTxSPVProof, StreamPosition, PegStatus} from "./IPegCommonTypes.sol";
 
 /// @notice Temporary information stored during peg-in request processing
 /// @dev Contains data needed for the accept peg-in phase
@@ -52,6 +52,32 @@ interface IPeginManager is IPausable {
     /// @param _requestPeginTxSPVProof The BTC SPV proof of the peg-in request transaction
     function requestPegin(BtcTxSPVProof calldata _requestPeginTxSPVProof) external;
 
+    /// @notice Gets the accept peg-in transaction id for a given request transaction id
+    /// @param _btcTxid The Bitcoin transaction id of the peg-in request
+    /// @return The accept peg-in transaction id
+    function getAcceptPegin(bytes32 _btcTxid) external view returns (bytes32);
+
+    /// @notice Gets temporary information stored during peg-in request processing
+    /// @param btcTxid The Bitcoin transaction id of the peg-in request
+    /// @return The temporary information needed for the accept phase
+    function getRequestPeginTempInfo(bytes32 btcTxid) external view returns (RequestPeginTempInfo memory);
+
+    // ===================== Accept Peg-in Request =====================
+
+    /// @notice Accepts and registers a Bitcoin peg-in transaction to the committee account
+    /// @dev Validates the SPV proof and completes the peg-in process
+    /// @dev Emits PeginAccepted event upon successful acceptance
+    /// @param _peginAcceptedTxSPVProof The BTC SPV proof of the accept peg-in transaction
+    function acceptPegin(BtcTxSPVProof calldata _peginAcceptedTxSPVProof) external;
+
+    /// @notice Registers a user reimbursement transaction from Bitcoin
+    /// @dev Validates the SPV proof and completes the user reimbursement process
+    /// @dev Emits UserReimbursementRegistered event upon successful registration
+    /// @param _userReimbursementTxSPVProof The BTC SPV proof of the user reimbursement transaction
+    function registerUserReimbursement(BtcTxSPVProof calldata _userReimbursementTxSPVProof) external;
+
+    // ===================== Events =====================
+
     /// @notice Event emitted when a peg-in request is successfully registered
     /// @param committeeId The ID of the committee responsible for this peg-in
     /// @param requestPeginTxid The hash of the peg-in request transaction
@@ -71,24 +97,6 @@ interface IPeginManager is IPausable {
         PrevoutData prevoutData,
         bytes acceptPeginSignatureMessage
     );
-
-    /// @notice Gets the accept peg-in transaction id for a given request transaction id
-    /// @param _btcTxid The Bitcoin transaction id of the peg-in request
-    /// @return The accept peg-in transaction id
-    function getAcceptPegin(bytes32 _btcTxid) external view returns (bytes32);
-
-    /// @notice Gets temporary information stored during peg-in request processing
-    /// @param btcTxid The Bitcoin transaction id of the peg-in request
-    /// @return The temporary information needed for the accept phase
-    function getRequestPeginTempInfo(bytes32 btcTxid) external view returns (RequestPeginTempInfo memory);
-
-    // ===================== Accept Peg-in Request =====================
-
-    /// @notice Accepts and registers a Bitcoin peg-in transaction to the committee account
-    /// @dev Validates the SPV proof and completes the peg-in process
-    /// @dev Emits PeginAccepted event upon successful acceptance
-    /// @param _peginAcceptedTxSPVProof The BTC SPV proof of the accept peg-in transaction
-    function acceptPegin(BtcTxSPVProof calldata _peginAcceptedTxSPVProof) external;
 
     /// @notice Event emitted when a peg-in is successfully accepted
     /// @param blockHash The Bitcoin block hash containing the accept transaction
@@ -112,14 +120,26 @@ interface IPeginManager is IPausable {
         bytes utxoScriptPubKey
     );
 
-    // ===================== Events =====================
-
     /// @notice Event emitted when a packet is closed in the stream
     /// @param streamId The ID of the stream where the packet was closed
     /// @param packetNumber The number of the packet that was closed
     /// @dev Indicates that all slots in the packet have been processed and pegged out
     /// @dev This event is used to track the lifecycle of packets in the stream
     event PacketClosed(uint64 indexed streamId, uint64 indexed packetNumber);
+
+    /// @notice Event emitted when a user reimbursement is successfully registered
+    /// @param userReimbursementTxid The hash of the user reimbursement btc transaction
+    /// @param requestPeginTxid The hash of the request peg-in btc transaction
+    /// @param streamId The ID of the stream where the user reimbursement was registered
+    /// @param packetNumber The number of the packet where the user reimbursement was registered
+    /// @param slotId The ID of the slot where the user reimbursement was registered
+    event UserReimbursementRegistered(
+        bytes32 indexed userReimbursementTxid,
+        bytes32 indexed requestPeginTxid,
+        uint64 streamId,
+        uint64 packetNumber,
+        uint64 slotId
+    );
 
     // ===================== Errors =====================
 
@@ -159,4 +179,15 @@ interface IPeginManager is IPausable {
     /// @param value The input amount that exceeded the locking cap
     /// @param lockingCap The locking cap of the pow-peg bridge
     error BridgeExceededLockingCap(uint256 value, uint256 lockingCap);
+
+    /// @notice Thrown when the peg-in status is not valid for the current operation
+    /// @param btcTxid The Bitcoin transaction id that was not valid
+    /// @param expected The expected peg status
+    /// @param actual The actual peg status
+    error PeginInvalidStatus(bytes32 btcTxid, PegStatus actual, PegStatus expected);
+
+    /// @notice Thrown when the output index (vout) doesn't match the expected value
+    /// @param actual The actual vout value
+    /// @param expected The expected vout value
+    error IncorrectVout(uint32 actual, uint32 expected);
 }

@@ -363,14 +363,12 @@ contract StreamManager is IStreamManager, AccessControl {
         emit SlotFilled(_stream.streamId, _stream.packetNumber, _stream.slotId, _acceptPeginTx, _acceptPeginAmount);
     }
 
-    // TODO: this is a placeholder, we need to define what proof needs to be deposited in order to actually block the slot
-    // TODO: add validation to ensure caller is a committee member and provides proper proof
     /// @notice Blocks a reserved slot due to timeout or refund proof
     /// @dev Updates the slot state from RESERVED to BLOCKED
     /// @param _streamId The ID of the stream
     /// @param _packetNumber The packet number
     /// @param _slotId The ID of the slot to block
-    function blockSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) external onlyOwner {
+    function blockSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) external onlyPegManager {
         Slot storage slot = _getSlot(_streamId, _packetNumber, _slotId);
 
         if (slot.state != SlotState.RESERVED) {
