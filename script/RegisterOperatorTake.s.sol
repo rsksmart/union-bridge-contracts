@@ -6,8 +6,10 @@ import {PegoutManager} from "src/PegoutManager.sol";
 import {BtcTxSPVProof, StreamPosition} from "src/interfaces/IPegCommonTypes.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
-import {Slot, SlotState, IStreamManager} from "src/interfaces/IStreamManager.sol";
+import {Slot, SlotState, IStreamManager, Packet} from "src/interfaces/IStreamManager.sol";
 import {BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
+import {BtcTxEncoder} from "src/libraries/BtcTxEncoder.sol";
+import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
 
@@ -17,6 +19,8 @@ contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
     uint64 amount;
     bytes operatorPubKey;
     bytes32 acceptPeginTxid;
+    bytes committeePubKey;
+    bytes userPubKey;
 
     IStreamManager streamManager;
     uint64 expectedStreamId;
@@ -28,8 +32,10 @@ contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
 
         ICommitteeRegistry registry = ICommitteeRegistry(getCommitteeRegistry());
         IMemberRegistry memberRegistry = registry.memberRegistry();
+
         bytes32 operatorXOnlyPubKey = memberRegistry.getMemberPublicKeys(getDeployerAddress()).covenantPubKey;
-        operatorPubKey = abi.encodePacked(bytes1(0x02), operatorXOnlyPubKey);
+        operatorPubKey = BtcHelper.pubKeyXonlyToCompact(operatorXOnlyPubKey);
+        userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
         amount = 100_000; // 0.001 BTC
 
         // Calculate expected slot and packet numbers
@@ -38,17 +44,41 @@ contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
         expectedStreamId = streamPosition.streamId;
         expectedPacketNumber = streamPosition.packetNumber;
         expectedSlotId = streamPosition.slotId;
+
+        Packet memory packet = streamManager.getPacket(expectedStreamId, expectedPacketNumber);
+        committeePubKey = packet.committeePubKey;
     }
 
-    function run(bytes32 _acceptPeginTxid) public {
+    function run(bytes32 _acceptPeginTxid, bytes32 _pegoutId) public {
         setUp(_acceptPeginTxid);
 
-        BtcTransaction memory pegoutTx = createPegoutTx(_acceptPeginTxid, operatorPubKey, amount);
-        BtcTxSPVProof memory pegoutTxSPVProof = createBtcTxSPVProof(pegoutTx);
+        // ADVANCE FUNDS
+        BtcTransaction memory advanceFundsTx = createAdvanceFundsTx(userPubKey, amount, _pegoutId);
+        BtcTxSPVProof memory advanceFundsSPV = createBtcTxSPVProof(advanceFundsTx);
+
+        // Register advance funds
+        vm.startBroadcast(getDeployerKey());
+        pegoutManager.registerAdvanceFunds(_acceptPeginTxid, advanceFundsSPV);
+        vm.stopBroadcast();
+
+        // REIMBURSEMENT KICKOFF
+        BtcTransaction memory kickoffTx = createReimbursementKickoffTx(committeePubKey, uint32(expectedSlotId));
+        BtcTxSPVProof memory kickoffTxSPVProof = createBtcTxSPVProof(kickoffTx);
+        bytes32 reimbursementKickoffTxid = BtcHelper.hash256(BtcTxEncoder.encodeTx(kickoffTx));
+
+        // Register reimbursement kickoff
+        vm.startBroadcast(getDeployerKey());
+        pegoutManager.registerReimbursementKickoff(_acceptPeginTxid, kickoffTxSPVProof);
+        vm.stopBroadcast();
+
+        // OPERATOR TAKE
+        BtcTransaction memory takeTx =
+            createOperatorTakeTx(_acceptPeginTxid, reimbursementKickoffTxid, operatorPubKey, amount);
+        BtcTxSPVProof memory takeTxSPVProof = createBtcTxSPVProof(takeTx);
 
         // Register operator take
         vm.startBroadcast(getDeployerKey());
-        pegoutManager.registerOperatorTake(pegoutTxSPVProof);
+        pegoutManager.registerOperatorTake(takeTxSPVProof);
         vm.stopBroadcast();
 
         Slot memory slot = streamManager.getSlot(expectedStreamId, expectedPacketNumber, expectedSlotId);

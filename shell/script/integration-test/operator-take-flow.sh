@@ -2,12 +2,11 @@
 set -e  # exit on error
 
 RSK_DESTINATION_ADDRESS="0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
-REQUEST_PEGIN_TXID="0x2f4d99bc339321df09c32e0011a83ef0be0c7375db767dc3470bc70e1c6e74d7"
-ACCEPT_PEGIN_TXID="0x287ccabdb0e43b06ed2a4370139e9373a3fcb88625c4752e7947c5b858828115"
-PEGOUT_TXID="0x6d9b1b6038abf95b56f09cc4ba6ad4efae011cc3e8d64828918c01a413965071"
+REQUEST_PEGIN_TXID="0x8bad66813bd68159f156cc4a019463bb6c860751e47d1ccba6b7faa8be8e20fc"
+ACCEPT_PEGIN_TXID="0x4c76f6c3810b960e58dad2209b67290f087da5fc5ac861a80d82f8612ad89618"
+PEGOUT_TXID="0xd87724b91410c1cf4bc0386c266620fcdffe00579b43a0f016c9adbb057b4d4c"
 MNEMONIC_INDEX=0
 NONCE="0xf8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000"
-TAKE_TXID="0x568f1ca77e2ee65f336da9e4aad15526bbf6e17338c4e1baf6e42e2cc188dfa1"
 
 # Current Timestamp plus 3 hours
 TIMESTAMP=$(($(date +%s) + 3 * 3600))
@@ -46,7 +45,7 @@ done
 echo "================ RUN OPERATOR TAKE FLOW ================"
 
 bash "$SCRIPT_DIR/request-pegin.sh" -a "$RSK_DESTINATION_ADDRESS" $ALPHANET_FLAG
-bash "$SCRIPT_DIR/operator-take/add-every-operator-take-txid.sh" -a "$ACCEPT_PEGIN_TXID" -t "$TAKE_TXID" $ALPHANET_FLAG
+bash "$SCRIPT_DIR/operator-take/add-every-operator-take-txid.sh" -a "$ACCEPT_PEGIN_TXID" $ALPHANET_FLAG
 bash "$SCRIPT_DIR/signatures/add-every-member-nonce-and-signature.sh" -h "$ACCEPT_PEGIN_TXID" $ALPHANET_FLAG
 bash "$SCRIPT_DIR/accept-pegin.sh" -r "$REQUEST_PEGIN_TXID" $ALPHANET_FLAG
 bash "$SCRIPT_DIR/try-pegout.sh" $ALPHANET_FLAG

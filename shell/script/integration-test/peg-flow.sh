@@ -57,7 +57,7 @@ echo "================ CHECK SLOT STATE AFTER REQUEST ================"
 echo "After request pegin, slot should be in RESERVED state:"
 bash "$SCRIPT_DIR/get-slot-info.sh" -s "$STREAM_ID" -p "$PACKET_NUMBER" -l "$SLOT_ID" $ALPHANET_FLAG
 
-bash "$SCRIPT_DIR/operator-take/add-every-operator-take-txid.sh" $ALPHANET_FLAG
+bash "$SCRIPT_DIR/operator-take/add-every-operator-take-txid.sh" -a "$PEGIN_TXID" $ALPHANET_FLAG
 bash "$SCRIPT_DIR/signatures/add-every-member-nonce-and-signature.sh" -h "$PEGIN_TXID" $ALPHANET_FLAG
 
 # Accept pegin - this fills the reserved slot to FILLED state
@@ -89,7 +89,6 @@ bash "$SCRIPT_DIR/get-slot-info.sh" -s "$STREAM_ID" -p "$PACKET_NUMBER" -l "$SLO
 
 # Note: operator-take-flow.sh is a separate standalone test for operator advancing funds
 # It should be run independently, not as part of the main peg-flow
-# TODO: Uncomment after fixing. Need to registerAdvanceFunds and ReimbursementKickoff first.
-# bash "$SCRIPT_DIR/integration-test/operator-take-flow.sh" $ALPHANET_FLAG
+bash "$SCRIPT_DIR/integration-test/operator-take-flow.sh" $ALPHANET_FLAG
 
 echo "================ PEGIN FLOW COMPLETE ================"

@@ -596,43 +596,6 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         });
     }
 
-    function getAdvanceFundsTx(bytes memory _userPubKey, uint64 _streamDenomination, bytes32 _pegoutId)
-        external
-        pure
-        returns (BtcTransaction memory)
-    {
-        // Prepare the inputs
-        BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
-        btcInputs[0] = BtcTxIn({
-            txId: hex"0000000000000000000000000000000000000000000000000000000000000000",
-            vout: 0,
-            scriptSig: bytes(""),
-            sequence: Constants.SEQUENCE
-        });
-
-        // Prepare the outputs, user and speed up
-        BtcTxOut[] memory btcOutputs = new BtcTxOut[](2);
-
-        // Calculate fee and speedUpAmount from amount
-        // TODO: atm is returning hardcoded values, should be calculated
-        (uint64 fee, uint64 speedUpAmount) = BtcHelper.calculateFeeAndSpeedUp();
-
-        // User pegout
-        bytes memory scriptPubKey = BtcScriptParser.getP2WPKHScript(_userPubKey);
-        btcOutputs[0] = BtcTxOut({amount: _streamDenomination - 2 * fee - speedUpAmount, scriptPubKey: scriptPubKey});
-
-        // Pegout ID output
-        btcOutputs[1] = BtcTxOut({amount: 0, scriptPubKey: BtcScriptParser.getPegoutIdScript(_pegoutId)});
-
-        // Prepare Btc Transaction
-        return BtcTransaction({
-            version: Constants.BTC_TX_VERSION,
-            locktime: Constants.LOCKTIME,
-            inputs: btcInputs,
-            outputs: btcOutputs
-        });
-    }
-
     /// @dev Returns Signature Hash. The signature hash is the actual "message" that we sign when creating the signature.
     /// @dev It's a tagged hash of the common signature message, along with a sighash epoch prefix and the optional extension:
     /// @dev https://learnmeabitcoin.com/technical/upgrades/taproot/#signature-hash

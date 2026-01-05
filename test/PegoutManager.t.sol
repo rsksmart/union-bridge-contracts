@@ -940,7 +940,7 @@ contract TestPegoutManager is Test, HelperContract {
 
         bytes32 reimbursementTxid = bitcoinManager.getBtcTxid(setup.reimbursementKickoffSPV.btcTx);
 
-        BtcTransaction memory operatorTakeTx = getOperatorTakeTx(
+        BtcTransaction memory operatorTakeTx = createOperatorTakeTx(
             wrongAcceptPeginTxid, reimbursementTxid, BtcHelper.pubKeyXonlyToCompact(operatorPubKey), VALUE
         );
         BtcTxSPVProof memory operatorTakeSPV = createBtcTxSPVProof(operatorTakeTx);
@@ -1005,7 +1005,7 @@ contract TestPegoutManager is Test, HelperContract {
 
         bytes32 reimbursementTxid = bitcoinManager.getBtcTxid(setup.reimbursementKickoffSPV.btcTx);
 
-        BtcTransaction memory operatorTakeTx = getOperatorTakeTx(
+        BtcTransaction memory operatorTakeTx = createOperatorTakeTx(
             setup.acceptPeginTxid, reimbursementTxid, BtcHelper.pubKeyXonlyToCompact(wrongOperatorPubKey), VALUE
         );
         BtcTxSPVProof memory operatorTakeSPV = createBtcTxSPVProof(operatorTakeTx);
@@ -1056,7 +1056,7 @@ contract TestPegoutManager is Test, HelperContract {
 
         bytes32 reimbursementTxid = bitcoinManager.getBtcTxid(setup.reimbursementKickoffSPV.btcTx);
 
-        BtcTransaction memory operatorTakeTx = getOperatorTakeTx(
+        BtcTransaction memory operatorTakeTx = createOperatorTakeTx(
             setup.acceptPeginTxid, reimbursementTxid, BtcHelper.pubKeyXonlyToCompact(operatorPubKey), VALUE
         );
         operatorTakeTx.outputs[1].amount += 1000; // Modify the tx to produce a different txid
@@ -1676,28 +1676,12 @@ contract TestPegoutManager is Test, HelperContract {
         pegoutManager.registerAdvanceFunds(wrongAcceptPeginTxid, pegoutSetup.advanceFundsSPV);
     }
 
-    function test_registerAdvanceFunds_Revert_InvalidPegStatus() external {
-        // Arrange
-        (address opAddress, RegisterUserTakeSetup memory setup) = setup_advanceFunds();
-
-        // Set peg status to COMPLETED to trigger invalid status error
-        vm.prank(address(pegoutManager));
-        streamManager.setPegStatus(setup.acceptPeginTxid, PegStatus.COMPLETED);
-
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegoutManager.InvalidPegStatus.selector, PegStatus.COMPLETED));
-
-        // Act
-        vm.prank(opAddress);
-        pegoutManager.registerAdvanceFunds(setup.acceptPeginTxid, setup.advanceFundsSPV);
-    }
-
     function test_registerAdvanceFunds_Revert_WrongUserAmount() external {
         // Arrange
         (address opAddress, RegisterUserTakeSetup memory setup) = setup_advanceFunds();
 
         BtcTxSPVProof memory wrongSPV =
-            createBtcTxSPVProof(bitcoinManager.getAdvanceFundsTx(setup.userPubKey, VALUE + 1, setup.pegoutId));
+            createBtcTxSPVProof(createAdvanceFundsTx(setup.userPubKey, VALUE + 1, setup.pegoutId));
 
         // Assert
         vm.expectRevert(
@@ -1717,8 +1701,7 @@ contract TestPegoutManager is Test, HelperContract {
         // Arrange
         (address opAddress, RegisterUserTakeSetup memory setup) = setup_advanceFunds();
 
-        BtcTxSPVProof memory wrongSPV =
-            createBtcTxSPVProof(bitcoinManager.getAdvanceFundsTx(setup.userPubKey, VALUE, hex"00"));
+        BtcTxSPVProof memory wrongSPV = createBtcTxSPVProof(createAdvanceFundsTx(setup.userPubKey, VALUE, hex"00"));
 
         // Assert
         vm.expectRevert(
@@ -1741,7 +1724,7 @@ contract TestPegoutManager is Test, HelperContract {
         bytes memory operatorDisputePubKeyCompact = BtcHelper.pubKeyXonlyToCompact(operatorPubKey);
 
         BtcTxSPVProof memory wrongSPV =
-            createBtcTxSPVProof(bitcoinManager.getAdvanceFundsTx(operatorDisputePubKeyCompact, VALUE, setup.pegoutId));
+            createBtcTxSPVProof(createAdvanceFundsTx(operatorDisputePubKeyCompact, VALUE, setup.pegoutId));
 
         // Assert
         vm.expectRevert(
@@ -1769,6 +1752,22 @@ contract TestPegoutManager is Test, HelperContract {
 
         // Act
         vm.prank(wrongAddress);
+        pegoutManager.registerAdvanceFunds(setup.acceptPeginTxid, setup.advanceFundsSPV);
+    }
+
+    function test_registerAdvanceFunds_Revert_InvalidPegStatus() external {
+        // Arrange
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_advanceFunds();
+
+        // Set peg status to COMPLETED to trigger invalid status error
+        vm.prank(address(pegoutManager));
+        streamManager.setPegStatus(setup.acceptPeginTxid, PegStatus.COMPLETED);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IPegoutManager.InvalidPegStatus.selector, PegStatus.COMPLETED));
+
+        // Act
+        vm.prank(opAddress);
         pegoutManager.registerAdvanceFunds(setup.acceptPeginTxid, setup.advanceFundsSPV);
     }
 

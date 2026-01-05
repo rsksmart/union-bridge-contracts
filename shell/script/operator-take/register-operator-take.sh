@@ -7,6 +7,7 @@ cd "$CURRENT_PATH/../../.."
 
 # Defaults
 ACCEPT_PEGIN_TXID="0x287ccabdb0e43b06ed2a4370139e9373a3fcb88625c4752e7947c5b858828115"
+PEGOUT_ID="0x10585ac9ce7f432fe24638c1b8f4ff53b27931f637e8f1b379b96d90de10051d"
 
 # set up environment variables
 source .env
@@ -34,11 +35,13 @@ while getopts ":a:-:" opt; do
       ;;
   esac
 done
+
 echo "================ REGISTER OPERATOR TAKE REQUEST TO $RPC ================"
 forge script \
     script/RegisterOperatorTake.s.sol \
-     --sig "run(bytes32)" \
+     --sig "run(bytes32, bytes32)" \
     "$ACCEPT_PEGIN_TXID" \
+    "$PEGOUT_ID" \
     --rpc-url $RPC \
     --legacy \
     --broadcast \

@@ -540,8 +540,7 @@ abstract contract HelperContract is Test, TestUtils {
             )
         );
 
-        setup.advanceFundsSPV =
-            createBtcTxSPVProof(bitcoinManager.getAdvanceFundsTx(setup.userPubKey, VALUE, setup.pegoutId));
+        setup.advanceFundsSPV = createBtcTxSPVProof(createAdvanceFundsTx(setup.userPubKey, VALUE, setup.pegoutId));
     }
 
     function setup_pegFlow() internal returns (RegisterUserTakeSetup memory setup) {
@@ -839,13 +838,14 @@ abstract contract HelperContract is Test, TestUtils {
         bytes32 operatorPubKey = getMemberDisputePubKey(_operatorAddress);
         bytes memory operatorDisputePubKeyCompact = BtcHelper.pubKeyXonlyToCompact(operatorPubKey);
 
-        BtcTransaction memory reimbursementKickoffTx = getReimbursementKickoffTx(operatorDisputePubKeyCompact, _slotId);
+        BtcTransaction memory reimbursementKickoffTx =
+            createReimbursementKickoffTx(operatorDisputePubKeyCompact, _slotId);
 
         reimbursementKickoffSPV = createBtcTxSPVProof(reimbursementKickoffTx);
 
         bytes32 reimbursementTxid = bitcoinManager.getBtcTxid(reimbursementKickoffTx);
 
-        opTakeTx = getOperatorTakeTx(_acceptPeginTxid, reimbursementTxid, operatorDisputePubKeyCompact, VALUE);
+        opTakeTx = createOperatorTakeTx(_acceptPeginTxid, reimbursementTxid, operatorDisputePubKeyCompact, VALUE);
     }
 
     function setup_operatorTake() internal returns (address operatorAddress, RegisterUserTakeSetup memory setup) {

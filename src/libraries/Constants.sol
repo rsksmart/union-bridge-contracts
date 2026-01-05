@@ -54,6 +54,26 @@ library Constants {
     /// @dev Third output (index 2) contains the speed-up payment for CPFP
     uint32 constant ACCEPT_PEGIN_VOUT_SPEED_UP = 2;
 
+    /// @dev Output index for user output in advance funds Bitcoin transactions
+    /// @dev First output (index 0) contains the payment to the user
+    uint32 constant ADVANCE_FUNDS_VOUT_USER = 0;
+
+    /// @dev Output index for OP_RETURN output in advance funds Bitcoin transactions
+    /// @dev Second output (index 1) contains metadata for tracking
+    uint32 constant ADVANCE_FUNDS_VOUT_OP_RETURN = 1;
+
+    /// @dev Input index for user input in operator take Bitcoin transactions
+    /// @dev First input (index 0) spends the accept peg-in output UTXO
+    uint32 constant OPERATOR_TAKE_VIN_ACCEPT_PEGIN = 0;
+
+    /// @dev Input index for reimbursement kickoff input in operator take Bitcoin transactions
+    /// @dev Second input (index 1) spends the reimbursement kickoff UTXO
+    uint32 constant OPERATOR_TAKE_VIN_REIMBURSEMENT_KICKOFF = 1;
+
+    /// @dev Output index for user in operator take Bitcoin transactions
+    /// @dev First output (index 0) contains the payment to the user
+    uint32 constant OPERATOR_TAKE_VOUT_USER = 0;
+
     // Pegout Transaction Input Indices
     /// @dev Input index for consuming the accept peg-in taptree output in pegout Bitcoin transactions
     /// @dev First input (index 0) spends the accept peg-in taptree UTXO

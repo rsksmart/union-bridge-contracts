@@ -145,8 +145,8 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
     /// @dev Only callable when contract is unpaused
     function registerUserTake(BtcTxSPVProof calldata _pegoutTxSPVProof) external nonReentrant whenNotPaused {
         // Get the accept peg-in tx id from the first input (this is what gets spent)
-        bytes32 acceptPeginTxid = _pegoutTxSPVProof.btcTx.inputs[0].txId;
-        uint32 vout = _pegoutTxSPVProof.btcTx.inputs[0].vout;
+        bytes32 acceptPeginTxid = _pegoutTxSPVProof.btcTx.inputs[Constants.PEGOUT_VIN_TAPTREE].txId;
+        uint32 vout = _pegoutTxSPVProof.btcTx.inputs[Constants.PEGOUT_VIN_TAPTREE].vout;
 
         // get the stream data for this pegout
         StreamPosition memory streamInfo = _validatePegoutStatus(acceptPeginTxid, PegStatus.USER_TAKE);
@@ -173,7 +173,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
 
         // Validate that the first output is a P2WPKH paying the user
         bytes memory userPubKey = pegoutTempInfo[acceptPeginTxid].userPubKey;
-        bitcoinManager.validatePegoutUserOutput(_pegoutTxSPVProof.btcTx.outputs[0], userPubKey);
+        bitcoinManager.validatePegoutUserOutput(_pegoutTxSPVProof.btcTx.outputs[Constants.PEGOUT_VOUT_USER], userPubKey);
 
         // update the peg status to COMPLETED
         streamManager.setPegStatus(acceptPeginTxid, PegStatus.COMPLETED);
@@ -338,15 +338,19 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
 
         uint64 userAmount = stream.denomination - (Constants.P2TR_FEE * 2 + Constants.SPEED_UP_AMOUNT);
 
-        if (_advanceFunds.btcTx.outputs[0].amount != userAmount) {
-            revert WrongUserAmount(_advanceFunds.btcTx.outputs[0].amount, userAmount);
+        if (_advanceFunds.btcTx.outputs[Constants.ADVANCE_FUNDS_VOUT_USER].amount != userAmount) {
+            revert WrongUserAmount(_advanceFunds.btcTx.outputs[Constants.ADVANCE_FUNDS_VOUT_USER].amount, userAmount);
         }
 
         // Validate that the first output pays to the operator's dispute key
-        bitcoinManager.validatePegoutUserOutput(_advanceFunds.btcTx.outputs[0], _pegoutInfo.userPubKey);
+        bitcoinManager.validatePegoutUserOutput(
+            _advanceFunds.btcTx.outputs[Constants.ADVANCE_FUNDS_VOUT_USER], _pegoutInfo.userPubKey
+        );
 
         // Validate that the second output contains the pegout ID
-        bitcoinManager.validatePegoutIdOutput(_advanceFunds.btcTx.outputs[1], _pegoutInfo.pegoutId);
+        bitcoinManager.validatePegoutIdOutput(
+            _advanceFunds.btcTx.outputs[Constants.ADVANCE_FUNDS_VOUT_OP_RETURN], _pegoutInfo.pegoutId
+        );
         return txid;
     }
 
@@ -424,8 +428,8 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
     /// @dev Only callable when contract is unpaused
     function registerOperatorTake(BtcTxSPVProof calldata _pegoutTxSPVProof) external nonReentrant whenNotPaused {
         // Get the accept peg-in tx id from the first input (this is what gets spent)
-        bytes32 acceptPeginTxid = _pegoutTxSPVProof.btcTx.inputs[0].txId;
-        uint32 vout = _pegoutTxSPVProof.btcTx.inputs[0].vout;
+        bytes32 acceptPeginTxid = _pegoutTxSPVProof.btcTx.inputs[Constants.OPERATOR_TAKE_VIN_ACCEPT_PEGIN].txId;
+        uint32 vout = _pegoutTxSPVProof.btcTx.inputs[Constants.OPERATOR_TAKE_VIN_ACCEPT_PEGIN].vout;
 
         StreamPosition memory streamInfo = _validatePegoutStatus(acceptPeginTxid, PegStatus.KICKOFF);
 
@@ -436,14 +440,20 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
 
         PegoutTempInfo storage pegoutInfo = _validateOperatorTakeAddress(acceptPeginTxid);
 
-        if (pegoutInfo.reimbursementKickoffTxid != _pegoutTxSPVProof.btcTx.inputs[1].txId) {
+        if (
+            pegoutInfo.reimbursementKickoffTxid
+                != _pegoutTxSPVProof.btcTx.inputs[Constants.OPERATOR_TAKE_VIN_REIMBURSEMENT_KICKOFF].txId
+        ) {
             revert ReimbursementKickoffTxidNotMatch(
-                pegoutInfo.reimbursementKickoffTxid, _pegoutTxSPVProof.btcTx.inputs[1].txId
+                pegoutInfo.reimbursementKickoffTxid,
+                _pegoutTxSPVProof.btcTx.inputs[Constants.OPERATOR_TAKE_VIN_REIMBURSEMENT_KICKOFF].txId
             );
         }
 
         // Validate that the first output pays to the operator's dispute key
-        bitcoinManager.validatePegoutMemberOutput(_pegoutTxSPVProof.btcTx.outputs[0], pegoutInfo.operatorDisputePubKey);
+        bitcoinManager.validatePegoutMemberOutput(
+            _pegoutTxSPVProof.btcTx.outputs[Constants.OPERATOR_TAKE_VOUT_USER], pegoutInfo.operatorDisputePubKey
+        );
 
         // Calculate the transaction id for verification
         bytes32 txid = bitcoinManager.getBtcTxid(_pegoutTxSPVProof.btcTx);

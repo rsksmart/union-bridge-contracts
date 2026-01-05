@@ -13,6 +13,7 @@ import {
 import {BtcTxSPVProof} from "src/interfaces/IPegCommonTypes.sol";
 import {BtcTransaction, BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
 import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
+import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {BtcTaproot} from "src/libraries/BtcTaproot.sol";
 import {OpCodes} from "src/libraries/OpCodes.sol";
 import {Constants} from "src/libraries/Constants.sol";
@@ -191,10 +192,10 @@ abstract contract ScriptUtils is Script {
         bytes memory userScriptPubKey = BtcScriptParser.getP2WPKHScript(_userPubKey);
 
         // pay to user's P2WPKH
-        btcOutputs[0] = BtcTxOut({amount: userAmount, scriptPubKey: userScriptPubKey});
+        btcOutputs[Constants.PEGOUT_VOUT_USER] = BtcTxOut({amount: userAmount, scriptPubKey: userScriptPubKey});
 
         // speedup
-        btcOutputs[1] = BtcTxOut({amount: 300, scriptPubKey: userScriptPubKey});
+        btcOutputs[Constants.PEGOUT_VOUT_SPEED_UP] = BtcTxOut({amount: 300, scriptPubKey: userScriptPubKey});
 
         return BtcTransaction({version: Constants.BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
     }
@@ -211,7 +212,7 @@ abstract contract ScriptUtils is Script {
         return btcTxSPVProof;
     }
 
-    function getOperatorTakeTx(
+    function createOperatorTakeTx(
         bytes32 _acceptPeginTxid,
         bytes32 _reimbursementKickoffTxid,
         bytes memory _operatorPubKey,
@@ -219,17 +220,17 @@ abstract contract ScriptUtils is Script {
     ) internal pure returns (BtcTransaction memory) {
         // Input: spend the accept peg-in UTXO
         BtcTxIn[] memory btcInputs = new BtcTxIn[](2);
-        btcInputs[0] = BtcTxIn({
+        btcInputs[Constants.OPERATOR_TAKE_VIN_ACCEPT_PEGIN] = BtcTxIn({
             txId: _acceptPeginTxid,
             vout: 0, // P2TR output is at index 0
-            sequence: 0xfffffffd,
+            sequence: Constants.SEQUENCE,
             scriptSig: hex""
         });
 
-        btcInputs[1] = BtcTxIn({
+        btcInputs[Constants.OPERATOR_TAKE_VIN_REIMBURSEMENT_KICKOFF] = BtcTxIn({
             txId: _reimbursementKickoffTxid,
             vout: 0, // P2TR output is at index 0
-            sequence: 0xfffffffd,
+            sequence: Constants.SEQUENCE,
             scriptSig: hex""
         });
 
@@ -244,7 +245,8 @@ abstract contract ScriptUtils is Script {
         bytes memory operatorScriptPubKey = BtcScriptParser.getP2WPKHScript(_operatorPubKey);
 
         // pay to operator's P2WPKH
-        btcOutputs[0] = BtcTxOut({amount: operatorAmount, scriptPubKey: operatorScriptPubKey});
+        btcOutputs[Constants.OPERATOR_TAKE_VOUT_USER] =
+            BtcTxOut({amount: operatorAmount, scriptPubKey: operatorScriptPubKey});
 
         // speedup
         btcOutputs[1] = BtcTxOut({amount: Constants.SPEED_UP_AMOUNT, scriptPubKey: operatorScriptPubKey});
@@ -252,7 +254,7 @@ abstract contract ScriptUtils is Script {
         return BtcTransaction({version: Constants.BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
     }
 
-    function getReimbursementKickoffTx(bytes memory _committeePubKey, uint32 _slotIndex)
+    function createReimbursementKickoffTx(bytes memory _committeePubKey, uint32 _slotIndex)
         internal
         pure
         returns (BtcTransaction memory)
@@ -263,7 +265,7 @@ abstract contract ScriptUtils is Script {
             // Input txid is uncheckable by the contract
             txId: bytes32(0xabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd),
             vout: _slotIndex,
-            sequence: 0xfffffffd,
+            sequence: Constants.SEQUENCE,
             scriptSig: hex""
         });
 
@@ -275,5 +277,44 @@ abstract contract ScriptUtils is Script {
         btcOutputs[0] = BtcTxOut({amount: Constants.REIMBURSEMENT_KICKOFF_AMOUNT, scriptPubKey: committeeScriptPubKey});
 
         return BtcTransaction({version: Constants.BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
+    }
+
+    function createAdvanceFundsTx(bytes memory _userPubKey, uint64 _streamDenomination, bytes32 _pegoutId)
+        internal
+        pure
+        returns (BtcTransaction memory)
+    {
+        // Prepare the inputs
+        BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
+        btcInputs[0] = BtcTxIn({
+            txId: hex"0000000000000000000000000000000000000000000000000000000000000000",
+            vout: 0,
+            scriptSig: bytes(""),
+            sequence: Constants.SEQUENCE
+        });
+
+        // Prepare the outputs, user and speed up
+        BtcTxOut[] memory btcOutputs = new BtcTxOut[](2);
+
+        // Calculate fee and speedUpAmount from amount
+        // TODO: atm is returning hardcoded values, should be calculated
+        (uint64 fee, uint64 speedUpAmount) = BtcHelper.calculateFeeAndSpeedUp();
+
+        // User pegout
+        bytes memory scriptPubKey = BtcScriptParser.getP2WPKHScript(_userPubKey);
+        btcOutputs[Constants.ADVANCE_FUNDS_VOUT_USER] =
+            BtcTxOut({amount: _streamDenomination - 2 * fee - speedUpAmount, scriptPubKey: scriptPubKey});
+
+        // Pegout ID output
+        btcOutputs[Constants.ADVANCE_FUNDS_VOUT_OP_RETURN] =
+            BtcTxOut({amount: 0, scriptPubKey: BtcScriptParser.getPegoutIdScript(_pegoutId)});
+
+        // Prepare Btc Transaction
+        return BtcTransaction({
+            version: Constants.BTC_TX_VERSION,
+            locktime: Constants.LOCKTIME,
+            inputs: btcInputs,
+            outputs: btcOutputs
+        });
     }
 }
