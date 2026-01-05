@@ -675,9 +675,17 @@ sequenceDiagram
 
     M->>M: Bitcoin user funds advancement
     Note right of M: Operator advances BTC to user's Bitcoin address
+    M->>+POM: registerAdvanceFunds(btcTxSPVProof)
+    Note right of M: Operator calls `registerAdvanceFunds()` with the advancement tx and SPV proof
+    POM->>POM: Validate BTC transaction and SPV proof
+    POM-->>-ENV: AdvanceFundsRegistered event
 
     M->>M: Bitcoin Reimbursement Kickoff
     Note right of M: Operator broadcasts Reimbursement Kickoff Bitcoin transaction
+    M->>+POM: registerReimbursementKickoff(btcTxSPVProof)
+    Note right of M: Operator calls `registerReimbursementKickoff()` with the kickoff tx and SPV proof
+    POM->>POM: Validate BTC transaction and SPV proof
+    POM-->>-ENV: ReimbursementKickoffRegistered event
 
     Note over M,ENV: Challenge period timeout
     Note over M,ENV: If no one challenges within timeout period

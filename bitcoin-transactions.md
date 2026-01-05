@@ -32,6 +32,12 @@ This document describes the Bitcoin transactions created by the Union Bridge pro
     - [Outputs](#operator_won_tx-outputs)
     - [Transaction Flow](#operator_won_tx-transaction-flow)
   - [Accept PegIn Protocol Integration with Dispute Core](#accept-pegin-protocol-integration-with-dispute-core)
+- [Dispute Core Protocol - Transaction Details](#dispute-core-protocol---transaction-details)
+  - [1. REIMBURSEMENT_KICKOFF_TX (Reimbursement Kickoff Transaction)](#1-reimbursement_kickoff_tx-reimbursement-kickoff-transaction)
+    - [Inputs](#reimbursement_kickoff_tx-inputs)
+    - [Outputs](#reimbursement_kickoff_tx-outputs)
+    - [Transaction Flow](#reimbursement_kickoff_tx-transaction-flow)
+    - [Dispute Core Protocol Integration with Accept PegIn](#dispute-core-protocol-integration-with-accept-pegin)
 - [User Take Protocol - Transaction Details](#user-take-protocol---transaction-details)
   - [1. USER_TAKE_TX (User Take Transaction)](#1-user_take_tx-user-take-transaction)
     - [Inputs](#user_take_tx-inputs)
@@ -83,6 +89,10 @@ The Union Bridge system includes multiple protocols. This document covers the fo
 
 1. **ADVANCE_FUNDS_TX** - Transaction allowing operators to advance funds to users before executing operator take transactions (peg-out flow, **proof of payment**)
 
+### Dispute Core Protocol
+
+1. **REIMBURSEMENT_KICKOFF_TX** - Transaction that enables operators to claim funds through OPERATOR_TAKE_TX (peg-out flow, one per operator per slot)
+
 ### Transaction Relationships
 
 The following diagram shows how all transactions across the different protocols relate to each other:
@@ -99,9 +109,11 @@ graph TD
     G[ADVANCE_FUNDS_TX<br/>Advance Funds Protocol<br/>Operator advances funds to user] -->|Proof of payment| H[Dispute Resolution<br/>If challenged, validates operator actions]
     H -->|If proof correct| E
     
-    %% Dispute Core Protocol inputs
-    I[Dispute Core<br/>REIMBURSEMENT_KICKOFF_TX] -->|spends with timelock| J[OPERATOR_TAKE_TX input 1<br/>Accept PegIn Protocol]
-    K[REVEAL_TX_OP_operator_index<br/>Dispute Core Protocol] -->|spends with committee aggregated key| L[OPERATOR_WON_TX input 1<br/>Accept PegIn Protocol]
+    %% Dispute Core Protocol
+    I[Dispute Core<br/>OP_INITIAL_DEPOSIT_TX] -->|spends with Winternitz signature| M[REIMBURSEMENT_KICKOFF_TX<br/>Dispute Core Protocol]
+    M -->|Output 0: OPERATOR_TAKE_ENABLER| J[OPERATOR_TAKE_TX input 1<br/>Accept PegIn Protocol]
+    M -->|Output 0| N[CHALLENGE_TX<br/>Dispute Core Protocol]
+    K[REVEAL_INPUT_TX<br/>Dispute Core Protocol] -->|spends with committee aggregated key| L[OPERATOR_WON_TX input 1<br/>Accept PegIn Protocol]
     
     style A fill:#e1f5fe
     style B fill:#f3e5f5
@@ -115,9 +127,58 @@ graph TD
     style J fill:#fce4ec
     style K fill:#fce4ec
     style L fill:#fce4ec
+    style M fill:#fce4ec
+    style N fill:#fce4ec
 ```
 
 **Prerequisites**: The Accept PegIn Protocol requires that a **REQUEST_PEGIN_TX** transaction must be created by the user and confirmed on the blockchain before the ACCEPT_PEGIN_TX can be executed, as it serves as the input source for the accept transaction.
+
+## Peg-Out Flow with Rootstock Contract Integration
+
+The peg-out flow involves both Bitcoin transactions and Rootstock smart contract calls. The following diagram shows the complete sequence:
+
+```mermaid
+sequenceDiagram
+    participant Op as Operator
+    participant BTC as Bitcoin Blockchain
+    participant RSK as Rootstock Contract
+    participant User as User
+
+    Note over Op,RSK: Operator Selected (Status: OP_SELECTED)
+    
+    Op->>BTC: 1. Dispatch ADVANCE_FUNDS_TX
+    BTC-->>Op: Transaction mined
+    Op->>RSK: 2. registerAdvanceFunds(SPV proof)
+    RSK-->>Op: Status: ADVANCED<br/>Event: AdvanceFundsRegistered
+    RSK->>User: Funds advanced
+    
+    Op->>BTC: 3. Dispatch REIMBURSEMENT_KICKOFF_TX
+    BTC-->>Op: Transaction mined
+    Op->>RSK: 4. registerReimbursementKickoff(SPV proof)
+    RSK-->>Op: Status: KICKOFF<br/>Event: ReimbursementKickoffRegistered
+    
+    Note over Op,BTC: Wait for long timelock expiry
+    
+    Op->>BTC: 5. Dispatch OPERATOR_TAKE_TX
+    BTC-->>Op: Transaction mined
+    Op->>RSK: 6. registerOperatorTake(SPV proof)
+    RSK-->>Op: Status: COMPLETED<br/>Event: PegoutRegistered
+```
+
+**Key Steps**:
+
+1. **ADVANCE_FUNDS_TX**: Operator dispatches transaction on Bitcoin to advance funds to user
+2. **registerAdvanceFunds**: Operator submits SPV proof to Rootstock contract; status changes to `ADVANCED`
+3. **REIMBURSEMENT_KICKOFF_TX**: Operator dispatches transaction on Bitcoin to enable OPERATOR_TAKE_TX
+4. **registerReimbursementKickoff**: Operator submits SPV proof to Rootstock contract; status changes to `KICKOFF`
+5. **OPERATOR_TAKE_TX**: After long timelock expires, operator dispatches transaction on Bitcoin to claim funds
+6. **registerOperatorTake**: Operator submits SPV proof to Rootstock contract; status changes to `COMPLETED`
+
+**Contract Validations**:
+
+- **registerAdvanceFunds**: Validates caller is selected operator, verifies output amounts and OP_RETURN data
+- **registerReimbursementKickoff**: Validates caller is selected operator, verifies ADVANCE_FUNDS_TX was previously registered, checks block height ordering
+- **registerOperatorTake**: Validates inputs connect to ACCEPT_PEGIN_TX and registered REIMBURSEMENT_KICKOFF_TX, verifies txid matches pre-registered transaction
 
 ## Transaction Lifecycle
 
@@ -367,15 +428,18 @@ graph LR
 - **Type**: Taproot (P2TR)
 - **Spend Mode**: Script path (timelock)
 - **Sighash Type**: SIGHASH_ALL
-- **Timelock**: DISPUTE_CORE_LONG_TIMELOCK blocks
+- **Timelock**: LONG_TIMELOCK blocks (from StreamSettings)
 - **Previous Transaction**: REIMBURSEMENT_KICKOFF_TX (from Dispute Core protocol)
-- **Description**: Spends the take enabler output from the Dispute Core protocol. This transaction is part of the Dispute Core protocol and provides the mechanism for operators to claim funds after the dispute resolution process.
-- **Dispute Core Context**: The REIMBURSEMENT_KICKOFF_TX is created as part of the Dispute Core protocol setup and contains timelocked outputs that can be spent by operators under specific conditions.
+- **Description**: Spends the operator take enabler output (output 0) from REIMBURSEMENT_KICKOFF_TX. This output is created when the operator dispatches REIMBURSEMENT_KICKOFF_TX after advancing funds to the user. The operator must wait for the long timelock to expire before they can spend this output.
+- **Dispute Core Context**: The REIMBURSEMENT_KICKOFF_TX is created and dispatched by the operator as part of the peg-out flow after advancing funds to the user. The transaction creates the operator take enabler output that enables OPERATOR_TAKE_TX execution.
 - **Taproot Script Details**:
-  - **Script Path**: Uses timelock script leaf for spending
-  - **Script Tree**: Contains timelock script leaf
-  - **Script Leaf**: `OP_1 <DISPUTE_CORE_LONG_TIMELOCK> OP_CHECKSEQUENCEVERIFY OP_DROP <operator_dispute_key> OP_CHECKSIG`
-  - **Spending Conditions**: Must wait for timelock expiry, then sign with operator's dispute key
+  - **Script Path**: Uses long timelock script leaf for spending
+  - **Script Tree**: Contains multiple script leaves (one per committee member)
+  - **Script Leaf (Operator Owner)**: `OP_1 <LONG_TIMELOCK> OP_CHECKSEQUENCEVERIFY OP_DROP <operator_dispute_key> OP_CHECKSIG`
+  - **Spending Conditions**: 
+    - Must wait for long timelock expiry (LONG_TIMELOCK blocks)
+    - Must sign with operator's dispute key
+    - The operator can only spend using their own script leaf (long timelock path)
 
 #### OPERATOR_TAKE_TX Outputs
 
@@ -427,20 +491,21 @@ graph LR
   - **Script Tree**: Empty (no script leaves) - only key path spending is allowed
   - **Spending Path**: Key path spending with committee aggregated signature
 
-##### OPERATOR_WON_TX Input 1: From REVEAL_TX_OP_{operator_index}
+##### OPERATOR_WON_TX Input 1: From REVEAL_INPUT_TX
 
 - **Type**: Taproot (P2TR)
 - **Spend Mode**: KeyOnly with Aggregate signature
 - **Sighash Type**: SIGHASH_ALL
-- **Key Required**: Committee aggregated key
-- **Previous Transaction**: REVEAL_TX_OP_{operator_index}
-- **Description**: Spends the won enabler output from the dispute core protocol
+- **Key Required**: Committee aggregated key (`take_aggregated_key`)
+- **Previous Transaction**: REVEAL_INPUT_TX (from Dispute Core protocol, indexed by slot)
+- **Description**: Spends the OPERATOR_WON_ENABLER output (output 0) from REVEAL_INPUT_TX. This output is created when the operator successfully reveals the input during dispute resolution. The operator can claim funds after winning a challenge dispute.
+- **Dispute Core Context**: The REVEAL_INPUT_TX is created as part of the dispute resolution process. When an operator is challenged and successfully reveals the input (proving they advanced funds correctly), this transaction creates the OPERATOR_WON_ENABLER output that enables OPERATOR_WON_TX execution.
 - **Taproot Script Details**:
   - **Key Path**: Uses committee aggregated key for direct spending
   - **Script Tree**: Contains dispute resolution script leaves
   - **Script Leaves**: Multiple script paths for dispute resolution scenarios
   - **Spending Path**: Key path spending with committee aggregated signature
-  - **Dispute Context**: This input is only available after successful dispute resolution
+  - **Dispute Context**: This input is only available after successful dispute resolution (operator reveals input and wait challenge timelock)
 
 #### OPERATOR_WON_TX Outputs
 
@@ -462,8 +527,8 @@ graph LR
 
 ```mermaid
 graph LR
-    A[ACCEPT_PEGIN_TX<br/>output 0] --> B[OPERATOR_WON_TX<br/>Inputs:<br/>• Input 0: ACCEPT_PEGIN_TX output<br/>  Key Path: Committee Aggregated Key<br/><br/>--------------------------------<br/><br/>• Input 1: REVEAL_TX_OP_operator_index output<br/>  Key Path: Committee Aggregated Key]
-    C[REVEAL_TX_OP_operator_index<br/>output] --> B
+    A[ACCEPT_PEGIN_TX<br/>output 0] --> B[OPERATOR_WON_TX<br/>Inputs:<br/>• Input 0: ACCEPT_PEGIN_TX output<br/>  Key Path: Committee Aggregated Key<br/><br/>--------------------------------<br/><br/>• Input 1: REVEAL_INPUT_TX output<br/>  Key Path: Committee Aggregated Key]
+    C[REVEAL_INPUT_TX<br/>Dispute Core Protocol<br/>output 0: OPERATOR_WON_ENABLER] --> B
     B --> D[OPERATOR_WON_TX<br/>Outputs:<br/>• Output 0: Operator Output<br/>  P2WPKH - Operator's dispute key<br/><br/>--------------------------------<br/><br/>• Output 1: Speedup Output<br/>  P2WPKH - Operator's speedup key]
     
     style A fill:#f3e5f5
@@ -476,10 +541,113 @@ graph LR
 
 The Accept PegIn Protocol integrates with the **Dispute Core Protocol** to provide dispute resolution mechanisms:
 
-- **REIMBURSEMENT_KICKOFF_TX**: Part of the Dispute Core protocol that creates timelocked outputs for operator reimbursement
+- **REIMBURSEMENT_KICKOFF_TX**: Part of the Dispute Core protocol that creates outputs enabling operator reimbursement through OPERATOR_TAKE_TX
 - **Dispute Resolution**: Provides mechanisms for operators to claim funds after successful dispute resolution
 - **Timelock Protection**: Long timelocks prevent premature spending and ensure proper dispute resolution
 - **Cross-Protocol Coordination**: Accept PegIn Protocol coordinates with Dispute Core Protocol for complete peg-out functionality
+
+## Dispute Core Protocol - Transaction Details
+
+The **Dispute Core Protocol** is responsible for managing dispute resolution mechanisms and enabling operators to claim funds through the Accept PegIn Protocol. This protocol creates transactions that coordinate with the Accept PegIn Protocol to provide secure fund claiming mechanisms.
+
+### 1. REIMBURSEMENT_KICKOFF_TX (Reimbursement Kickoff Transaction)
+
+**Purpose**: Transaction that enables operators to claim funds through OPERATOR_TAKE_TX. This transaction is created as part of the Dispute Core protocol setup and provides the mechanism for operators to claim funds after advancing funds to users. The transaction creates an output (OPERATOR_TAKE_ENABLER) that serves as input 1 for OPERATOR_TAKE_TX.
+
+#### REIMBURSEMENT_KICKOFF_TX Inputs
+
+##### Input 0: From OP_INITIAL_DEPOSIT_TX
+
+- **Type**: Taproot (P2TR)
+- **Spend Mode**: Script path (Winternitz signature)
+- **Sighash Type**: SIGHASH_ALL
+- **Key Required**: Operator's Winternitz key for PEGOUT_ID_KEY
+- **Previous Transaction**: OP_INITIAL_DEPOSIT_TX (from Dispute Core protocol)
+- **Description**: Spends the initial deposit output from the operator's initial deposit transaction. The operator must sign with their Winternitz key to prove knowledge of the pegout ID.
+- **Taproot Script Details**:
+  - **Script Path**: Uses Winternitz signature script leaf for spending
+  - **Script Tree**: Contains script leaves for reimbursement kickoff and dispute validation
+  - **Script Leaf 0**: `VERIFY_WINTERNITZ_SIGNATURE(<dispute_aggregated_key>, PEGOUT_ID_KEY, <pegout_id_key>)` - Verifies Winternitz signature for pegout ID
+  - **Script Leaf 1**: `VERIFY_SIGNATURE(<dispute_aggregated_key>)` - Validates dispute aggregated key signature
+  - **Spending Conditions**: Must provide Winternitz signature proving knowledge of the pegout ID (32 bytes)
+
+#### REIMBURSEMENT_KICKOFF_TX Outputs
+
+##### Output 0: OPERATOR_TAKE_ENABLER Output
+
+- **Type**: Taproot (P2TR)
+- **Amount**: `AUTO_AMOUNT` (calculated during protocol setup)
+- **Key**: Committee aggregated key (`take_aggregated_key`)
+- **Leaves**: Multiple script leaves for challenge and operator take scenarios
+- **Purpose**: Main output that enables OPERATOR_TAKE_TX and CHALLENGE_TX transactions
+- **Taproot Script Details**:
+  - **Key Path**: Uses committee aggregated key for direct spending
+  - **Script Tree**: Contains multiple script leaves:
+    1. **Operator Take Script (Long Timelock)**: `OP_1 <LONG_TIMELOCK> OP_CHECKSEQUENCEVERIFY OP_DROP <operator_dispute_key> OP_CHECKSIG` - Allows operator to claim funds after long timelock expires
+    2. **Challenge Script (Short Timelock)**: `OP_1 <SHORT_TIMELOCK> OP_CHECKSEQUENCEVERIFY OP_DROP VERIFY_WINTERNITZ_SIGNATURE(<dispute_aggregated_key>, CHALLENGE_KEY, <challenge_key>)` - Allows any committee member to challenge after short timelock expires
+  - **Script Leaves**: One script per committee member
+    - **For Operator Owner**: Long timelock script allowing operator to claim funds
+    - **For Other Members**: Short timelock + Winternitz signature script allowing challenge
+  - **Spending Conditions**: 
+    - Operator can spend via long timelock script path after timelock expiry
+    - Any committee member can spend via challenge script path after short timelock expiry
+  - **REIMBURSEMENT_KICKOFF_TX Output Script Tree**:
+
+    ```mermaid
+    graph TD
+        A[REIMBURSEMENT_KICKOFF_TX Output 0] --> B[Committee Aggregated Key]
+        A --> C[Script Tree]
+        C --> D["Leaf ({operator_index}): Operator Long Timelock Script"]
+        C --> F["Leaf (M - 1): Members Challenge Script"]
+        
+        D --> G["OP_1 <LONG_TIMELOCK> OP_CHECKSEQUENCEVERIFY OP_DROP <operator_dispute_key> OP_CHECKSIG"]
+        F --> I["OP_1 <SHORT_TIMELOCK> OP_CHECKSEQUENCEVERIFY OP_DROP VERIFY_WINTERNITZ_SIGNATURE(<dispute_aggregated_key>, CHALLENGE_KEY, <challenge_key>)"]
+        
+        style A fill:#fce4ec
+        style C fill:#fff3e0
+        style D fill:#fff3e0
+        style F fill:#fff3e0
+    ```
+
+#### REIMBURSEMENT_KICKOFF_TX Transaction Flow
+
+```mermaid
+graph LR
+    A[OP_INITIAL_DEPOSIT_TX<br/>output 0] --> B[REIMBURSEMENT_KICKOFF_TX<br/>Inputs:<br/>• Input 0: OP_INITIAL_DEPOSIT_TX output<br/>  Script Path: Winternitz Signature]
+    B --> C[REIMBURSEMENT_KICKOFF_TX<br/>Outputs:<br/>• Output 0: OPERATOR_TAKE_ENABLER Output<br/>  P2TR - Committee Aggregated Key<br/>  Multiple script leaves]
+    
+    %% Flow to next transactions
+    C --> D[OPERATOR_TAKE_TX<br/>input 1<br/>Script Path: Long Timelock]
+    C --> E[CHALLENGE_TX<br/>input 0<br/>Script Path: Short Timelock + Winternitz]
+    
+    style A fill:#fce4ec
+    style B fill:#fce4ec
+    style C fill:#fce4ec
+    style D fill:#fff3e0
+    style E fill:#fce4ec
+```
+
+**Key Points**:
+
+- **Operator Responsibility**: Operator creates, signs (with Winternitz signature for pegout ID), and broadcasts REIMBURSEMENT_KICKOFF_TX after advancing funds to the user
+- **Pegout ID Verification**: The operator must prove knowledge of the pegout ID using their Winternitz key
+- **Multiple Spending Paths**: The output supports both operator take (long timelock) and challenge (short timelock) scenarios
+- **Cross-Protocol Integration**: This transaction's output serves as input 1 for OPERATOR_TAKE_TX in the Accept PegIn Protocol
+
+#### Dispute Core Protocol Integration with Accept PegIn
+
+The Dispute Core Protocol integrates with the **Accept PegIn Protocol** to provide secure fund claiming mechanisms:
+
+- **OPERATOR_TAKE_ENABLER**: Output from REIMBURSEMENT_KICKOFF_TX that serves as input 1 for OPERATOR_TAKE_TX
+- **Rootstock Registration**: After REIMBURSEMENT_KICKOFF_TX is mined, the operator calls `registerReimbursementKickoff` on the Rootstock contract with SPV proof
+- **Status Management**: The contract changes slot status to `KICKOFF` upon successful registration
+- **Timelock Protection**: Long timelocks prevent premature spending and ensure proper dispute resolution
+- **Challenge Mechanism**: Short timelock + Winternitz signature allows committee members to challenge operator actions
+- **Cross-Protocol Coordination**: Dispute Core Protocol coordinates with Accept PegIn Protocol and Rootstock contracts for complete peg-out functionality
+- **Operator Workflow**: 
+  1. Operator dispatches ADVANCE_FUNDS_TX and calls `registerAdvanceFunds`
+  2. Operator dispatches REIMBURSEMENT_KICKOFF_TX and calls `registerReimbursementKickoff`
+  3. After long timelock expires, operator dispatches OPERATOR_TAKE_TX and calls `registerOperatorTake`
 
 ## User Take Protocol - Transaction Details
 
@@ -541,18 +709,23 @@ graph LR
 ##### Input 0: Operator's Advance Funds Input
 
 - **Type**: SegWit (P2WPKH)
-- **Spend Mode**: KeyOnly
+- **Spend Mode**: KeyOnly (Segwit)
 - **Sighash Type**: SIGHASH_ALL
-- **Key Required**: Operator's dispute key
+- **Key Required**: Operator's dispute key (`dispute_key`)
 - **Previous Transaction**: Operator's input transaction (ADVANCE_FUNDS_INPUT_TX)
-- **Description**: Spends the operator's own funds to advance money to the user
+- **Description**: Spends the operator's own funds to advance money to the user. This is the primary source of funds for the advance funds transaction. The operator must have sufficient balance in their dispute key address to cover the user amount plus fees.
+- **Source**: The operator provides a UTXO from their wallet that will be spent to fund the advance. This UTXO is referenced as ADVANCE_FUNDS_INPUT_TX in the protocol.
+- **Amount Requirement**: The input amount must be sufficient to cover:
+  - User funds output: `accept_pegin_amount - USER_TAKE_FEE`
+  - Transaction fees
+  - Optional change output (if change > DUST_VALUE)
 
 ##### Input 1: Previous Operator Take UTXO (Optional)
 
 - **Type**: SegWit (P2WPKH)
-- **Spend Mode**: KeyOnly
+- **Spend Mode**: KeyOnly (Segwit)
 - **Sighash Type**: SIGHASH_ALL
-- **Key Required**: Operator's dispute key
+- **Key Required**: Operator's dispute key (`dispute_key`)
 - **Previous Transaction**: Previous OPERATOR_TAKE_TX output (if available)
 - **Description**: Spends any remaining funds from a previous operator take transaction
 
@@ -567,26 +740,40 @@ graph LR
 
 ##### Output 1: OP_RETURN Output
 
-- **Type**: OP_RETURN
+- **Type**: OP_RETURN (unspendable)
 - **Amount**: 0 sats
-- **Purpose**: Contains pegout metadata for transaction monitoring
-- **Data Format**: Contains pegout ID information
+- **Purpose**: Contains pegout metadata for transaction monitoring and validation
+- **Data Format**: Contains the pegout ID (`pegout_id`) as raw bytes
+- **Data Structure**: 
+  - **Content**: `pegout_id` (32 bytes) - The unique identifier for this peg-out request
+  - **Encoding**: Raw bytes of the pegout ID
+- **Validation**: The Rootstock contract validates this OP_RETURN output when `registerAdvanceFunds` is called to ensure:
+  - The pegout ID matches the one generated in the `tryPegout` call
+  - The transaction is correctly associated with the peg-out request
+- **Usage**: This output allows the system to link the ADVANCE_FUNDS_TX to the specific peg-out request and verify that the operator is advancing funds for the correct slot.
 
 ##### Output 2: Operator Change Output (Optional)
 
 - **Type**: SegWit (P2WPKH)
-- **Amount**: `input_amount - user_amount - fees` (if > dust threshold)
+- **Amount**: `input_amount - user_amount - transaction_fees` (if > DUST_VALUE)
 - **Key**: Operator's dispute key
-- **Purpose**: Returns unused funds to the operator
-- **Condition**: Only created if change amount > dust threshold
+- **Purpose**: Returns unused funds to the operator after covering user amount and fees
+- **Calculation**:
+  - Total input amount: Sum of Input 0 amount + Input 1 amount (if present)
+  - User amount: `accept_pegin_amount - USER_TAKE_FEE`
+  - Operator fee: `fee` (from AdvanceFundsRequest)
+  - Transaction fees: Network fees for the transaction
+  - Change: `input_amount - (accept_pegin_amount + fee + transaction_fees)`
+- **Condition**: Only created if change amount > `DUST_VALUE` (540 sats)
+- **Purpose**: Ensures the operator receives any excess funds after advancing the required amount to the user and paying fees. If the change is below the dust threshold, it is included in the transaction fees.
 
 #### ADVANCE_FUNDS_TX Transaction Flow
 
 ```mermaid
-graph LR
-    A[Operator's Advance Funds Input<br/>ADVANCE_FUNDS_INPUT_TX] --> B[ADVANCE_FUNDS_TX<br/>Inputs:<br/>• Input 0: Operator's Advance Funds Input<br/>  Key Path: Operator's dispute key<br/><br/>--------------------------------<br/><br/>• Input 1: Previous Operator Take UTXO<br/>  Key Path: Operator's dispute key]
-    C[Previous OPERATOR_TAKE_TX<br/>output] --> B
-    B --> D[ADVANCE_FUNDS_TX<br/>Outputs:<br/>• Output 0: User Funds Output<br/>  P2WPKH - User's key<br/><br/>--------------------------------<br/><br/>• Output 1: OP_RETURN Output<br/>  Pegout metadata<br/><br/>--------------------------------<br/><br/>• Output 2: Operator Change Output<br/>  P2WPKH - Operator's dispute key]
+graph TD
+    A[Operator's Advance Funds Input<br/>ADVANCE_FUNDS_INPUT_TX<br/>P2WPKH - Operator's dispute key] --> B[ADVANCE_FUNDS_TX<br/>Inputs:<br/>• Input 0: Operator's Advance Funds Input<br/>  SegWit - Operator's dispute key<br/><br/>-------------------------------<br/><br/>• Input 1: Previous OPERATOR_TAKE_TX output<br/>  SegWit - Operator's dispute key<br/>  Optional]
+    C[Previous OPERATOR_TAKE_TX<br/>output<br/>Optional] --> B
+    B --> D[ADVANCE_FUNDS_TX<br/>Outputs:<br/>• Output 0: User Funds Output<br/>  P2WPKH - User's key<br/>  Amount: accept_pegin_amount - USER_TAKE_FEE<br/><br/>-------------------------------<br/><br/>• Output 1: OP_RETURN Output<br/>  Contains: pegout_id 32 bytes<br/><br/>-------------------------------<br/><br/>• Output 2: Operator Change Output<br/>  P2WPKH - Operator's dispute key<br/>  Amount: input_amount - user_amount - fees<br/>  Optional if change > DUST_VALUE]
     
     style A fill:#fff3e0
     style B fill:#fff3e0
@@ -594,15 +781,31 @@ graph LR
     style D fill:#fff3e0
 ```
 
+**Validation Requirements**:
+
+When `registerAdvanceFunds` is called on the Rootstock contract, the following validations are performed:
+
+- **Output 0 Validation**: 
+  - Amount must equal `accept_pegin_amount - USER_TAKE_FEE`
+  - Script must be P2WPKH for the user's public key
+- **Output 1 Validation**:
+  - Must be an OP_RETURN output
+  - Must contain the correct `pegout_id` matching the one from `tryPegout`
+- **Caller Validation**:
+  - Caller must be the selected operator for that slot
+  - Slot status must be `OP_SELECTED`
+
 ### Advance Funds Protocol Integration with Dispute Core
 
 The Advance Funds Protocol integrates with the **Dispute Core Protocol** to provide dispute resolution mechanisms:
 
 - **Proof of Payment**: ADVANCE_FUNDS_TX serves as proof that the operator has advanced funds to the user
+- **Rootstock Registration**: After ADVANCE_FUNDS_TX is mined, the operator calls `registerAdvanceFunds` on the Rootstock contract with SPV proof
+- **Status Management**: The contract changes slot status to `ADVANCED` upon successful registration
 - **Dispute Resolution**: If challenged, this transaction proof validates the operator's actions
 - **OPERATOR_WON_TX Execution**: If the proof is correct, OPERATOR_WON_TX will be executed
-- **Reimbursement**: The protocol triggers REIMBURSEMENT_KICKOFF_TX in the Dispute Core Protocol
-- **Cross-Protocol Coordination**: Advance Funds Protocol coordinates with Dispute Core Protocol for complete dispute resolution
+- **Reimbursement Flow**: After ADVANCE_FUNDS_TX is registered, the operator dispatches REIMBURSEMENT_KICKOFF_TX, then calls `registerReimbursementKickoff` to register it
+- **Cross-Protocol Coordination**: Advance Funds Protocol coordinates with Dispute Core Protocol and Rootstock contracts for complete dispute resolution
 
 ## Glossary
 
@@ -614,8 +817,9 @@ The Advance Funds Protocol integrates with the **Dispute Core Protocol** to prov
 - **OPERATOR_TAKE_TX**: Fallback transaction allowing operators to claim funds (peg-out flow)
 - **OPERATOR_WON_TX**: Disputed fallback transaction for operators to claim funds after winning a challenge (peg-out flow)
 - **ADVANCE_FUNDS_TX**: Transaction allowing operators to advance funds to users before executing operator take transactions (peg-out flow, proof of payment)
-- **REIMBURSEMENT_KICKOFF_TX**: Dispute Core protocol transaction with timelocked outputs for operator reimbursement
-- **REVEAL_TX_OP_{operator_index}**: Dispute Core protocol transaction enabling operator to claim funds after dispute resolution
+- **REIMBURSEMENT_KICKOFF_TX**: Dispute Core protocol transaction that enables operators to claim funds through OPERATOR_TAKE_TX
+- **OP_INITIAL_DEPOSIT_TX**: Dispute Core protocol transaction containing operator's initial deposit
+- **REVEAL_INPUT_TX**: Dispute Core protocol transaction enabling operator to claim funds after dispute resolution (used by OPERATOR_WON_TX)
 
 ### Key Types
 
@@ -649,3 +853,9 @@ The Advance Funds Protocol integrates with the **Dispute Core Protocol** to prov
 - **Pre-signing**: Committee members pre-sign transactions during setup phase
 - **Timelock**: Time-based spending condition requiring specific block height or time
 - **Dispute Resolution**: Process for resolving conflicts in operator transactions
+- **OPERATOR_TAKE_ENABLER**: UTXO from REIMBURSEMENT_KICKOFF_TX output 0 that enables OPERATOR_TAKE_TX execution
+- **OPERATOR_WON_ENABLER**: UTXO from REVEAL_INPUT_TX output 0 that enables OPERATOR_WON_TX execution
+- **Pegout ID**: 32-byte identifier used to link peg-out requests with dispute core transactions
+- **registerAdvanceFunds**: Rootstock contract function to register ADVANCE_FUNDS_TX SPV proof and update status to ADVANCED
+- **registerReimbursementKickoff**: Rootstock contract function to register REIMBURSEMENT_KICKOFF_TX SPV proof and update status to KICKOFF
+- **registerOperatorTake**: Rootstock contract function to register OPERATOR_TAKE_TX SPV proof and update status to COMPLETED
