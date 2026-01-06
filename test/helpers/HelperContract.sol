@@ -895,6 +895,26 @@ abstract contract HelperContract is Test, TestUtils {
         bridgeMock.setBtcBlockchainBestChainHeight(BEST_CHAIN_HEIGHT + 1);
     }
 
+    function assertStreamPositionAndSlotStateByRequestPegin(
+        bytes32 _requestPeginTxid,
+        uint64 _streamId,
+        uint64 _packetNumber,
+        uint64 _slotId,
+        SlotState _expectedSlotState
+    ) internal {
+        // Verify each request gets correct slotId
+        StreamPosition memory streamPosition = peginManager.getStreamPositionByRequestPegin(_requestPeginTxid);
+        assertEq(streamPosition.streamId, 1, "Incorrect streamId registered");
+        assertEq(streamPosition.slotId, _slotId, "Incorrect slotId registered");
+        assertEq(streamPosition.packetNumber, _packetNumber, "Incorrect packetNumber registered");
+
+        // Verify slot is RESERVED
+        Slot memory reservedSlot =
+            streamManager.getSlot(streamPosition.streamId, streamPosition.packetNumber, streamPosition.slotId);
+        assertEq(uint256(reservedSlot.state), uint256(_expectedSlotState), "Incorrect slot state registered");
+        assertEq(reservedSlot.slotId, streamPosition.slotId, "Slot ID should match StreamPosition");
+    }
+
     function assertEventOperatorTakeTriggered(
         bytes32 pegoutTxid,
         RegisterUserTakeSetup memory setup,
