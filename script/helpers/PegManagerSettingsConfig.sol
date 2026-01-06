@@ -6,7 +6,7 @@ import {PegoutManagerSettings} from "src/interfaces/IPegoutManager.sol";
 import {ChainIds} from "src/libraries/Network.sol";
 
 library PegManagerSettingsConfig {
-    function getSettings(uint256 chainId) internal pure returns (PegoutManagerSettings memory) {
+    function getSettingsForChain(uint256 chainId) internal pure returns (PegoutManagerSettings memory) {
         if (chainId == ChainIds.RSK_MAINNET) {
             return PegoutManagerSettings({userTakeTimeout: 2 hours, operatorTakeTimeout: 2 hours});
         } else if (chainId == ChainIds.RSK_TESTNET) {

@@ -102,20 +102,55 @@ struct Stream {
     /// @notice Number of confirmations required for peg-out transactions
     /// @dev Ensures sufficient Bitcoin confirmations before completing peg-outs
     uint8 pegoutConfirmations;
+    /// @notice Timelock settings for the stream
+    TimelockSettings timelockSettings;
 }
 
-struct StreamManagerSettings {
+/// @notice Bitcoin Timelock settings in blocks for the stream
+/// @dev These are the timelock settings used to verify the Bitcoin transactions for the stream
+struct TimelockSettings {
+    /// @notice Short timelock in Bitcoin blocks used in Union protocol
+    uint8 shortTimelock;
+    /// @notice Long timelock in Bitcoin blocks used in Union protocol
+    uint8 longTimelock;
+    /// @notice Request peg-in timelock in Bitcoin blocks used in Union protocol
+    /// @dev This is used for the user to recover the funds if the request peg-in timelock expires
+    uint8 requestPeginTimelock;
+    /// @notice Op won timelock in Bitcoin blocks used in Union protocol when operator wins the challenge
+    /// @dev After this time, if no one challenges the operator, the operator wins the challenge
+    uint8 opWonTimelock;
+    /// @notice Claim gate timelock in Bitcoin blocks used in Union protocol when claim gate is triggered
+    uint8 claimGateTimelock;
+    /// @notice Input not revealed timelock in Bitcoin blocks used in Union protocol when input is not revealed in the challenge
+    /// @dev This is the time the operator has to reveal the input in the challenge, if it does not, the watchtower wins the challenge
+    uint8 inputNotRevealedTimelock;
+    /// @notice Operator no cosign timelock in Bitcoin blocks used in Union protocol when operator does not cosign
+    uint8 opNoCosignTimelock;
+    /// @notice Watchtower no challenge timelock in Bitcoin blocks used in Union protocol when watchtower does not challenge the operator
+    /// @dev This is the time the watchtower has to choose interval for the operator inputs (aka Challenger Tx), if it does not the watchtower is punished
+    uint8 wtNoChallengeTimelock;
+}
+
+struct StreamSettings {
+    /// @notice The denomination of the stream in satoshis
+    /// @dev All funds in this stream must match this exact amount
+    uint64 denomination;
     /// @notice Number of confirmations required for peg-in transactions
     uint8 peginConfirmations;
     /// @notice Number of confirmations required for peg-out transactions
     uint8 pegoutConfirmations;
+    /// @notice Timelock settings for the Bitcoin transactions stored in the stream manager
+    TimelockSettings timelockSettings;
+}
+
+struct StreamManagerSettings {
     /// @notice Percentage of security bond for the operator
     uint16 securityBondPercentageOperator;
     /// @notice Percentage of security bond for the watchtower
     uint16 securityBondPercentageWatchtower;
-    /// @notice Minimum security deposit required for committee members
+    /// @notice Minimum security deposit required for committee members (used to calculate challengeCost in getMinimumDeposit)
     uint256 minimumSecurityDeposit;
-    /// @notice Amount of disablement payments per challenge
+    /// @notice Amount of disablement payments per challenge (used to calculate challengeCost in getMinimumDeposit)
     uint256 disablementPaymentsPerChallenge;
 }
 
@@ -367,6 +402,11 @@ interface IStreamManager is IAccessControl {
     /// @param _confirmations The number of confirmations required
     event PegoutConfirmationsUpdated(uint64 _streamId, uint8 _confirmations);
 
+    /// @notice Event emitted when the timelock settings are updated
+    /// @param _streamId The ID of the stream
+    /// @param _timelockSettings The timelock settings that were updated
+    event TimelockSettingsUpdated(uint64 _streamId, TimelockSettings _timelockSettings);
+
     // Errors
     /// @notice Thrown when a stream is not found for the given denomination
     /// @param denomination The denomination that was not found
@@ -476,4 +516,21 @@ interface IStreamManager is IAccessControl {
     /// @param slotId The slot ID
     /// @param currentState The current state of the slot
     error SlotNotBlockable(uint256 streamId, uint256 packetNumber, uint256 slotId, SlotState currentState);
+
+    /// @notice Thrown when the timelock settings are invalid
+    /// @param timelockSettings The invalid timelock settings
+    error InvalidTimelockSettings(TimelockSettings timelockSettings);
+
+    /// @notice Thrown when the stream settings confirmations are invalid
+    /// @param streamId The stream ID
+    /// @param denomination The denomination of the stream
+    /// @param peginConfirmations The number of peg-in confirmations
+    /// @param pegoutConfirmations The number of peg-out confirmations
+    error InvalidStreamSettings(
+        uint64 streamId, uint64 denomination, uint8 peginConfirmations, uint8 pegoutConfirmations
+    );
+
+    /// @notice Thrown when the stream settings length is invalid
+    /// @param streamSettingsLength The number of stream settings
+    error InvalidStreamSettingsLength(uint256 streamSettingsLength);
 }

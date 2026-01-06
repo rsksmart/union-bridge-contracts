@@ -122,24 +122,26 @@ abstract contract ScriptUtils is Script {
     }
 
     function getRequestPeginP2TRScriptPub(
+        uint32 _timelockBlocks,
         address _rskDestinationAddress,
         uint64 _value,
         bytes32 _btcReimbursementPubKey,
         bytes memory _committeePubKey
     ) internal pure returns (bytes memory) {
-        bytes32 tweakedPublicKey =
-            getRequestPeginTweakedPublicKey(_rskDestinationAddress, _value, _btcReimbursementPubKey, _committeePubKey);
+        bytes32 tweakedPublicKey = getRequestPeginTweakedPublicKey(
+            _timelockBlocks, _rskDestinationAddress, _value, _btcReimbursementPubKey, _committeePubKey
+        );
         return BtcTaproot.getP2TRScriptPubKey(tweakedPublicKey);
     }
 
     function getRequestPeginTweakedPublicKey(
+        uint32 _timelockBlocks,
         address _rskDestinationAddress,
         uint64 _value,
         bytes32 _btcReimbursementPubKey,
         bytes memory _committeePubKey
     ) internal pure returns (bytes32) {
-        bytes memory timelockScript =
-            BtcScriptParser.getTimelockScript(Constants.TIMELOCK_BLOCKS, _btcReimbursementPubKey);
+        bytes memory timelockScript = BtcScriptParser.getTimelockScript(_timelockBlocks, _btcReimbursementPubKey);
         bytes32 timelockLeaf = BtcTaproot.getLeaf(timelockScript);
 
         bytes memory extraDataScript =

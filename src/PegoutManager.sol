@@ -15,10 +15,10 @@ import {IRbtcBridge} from "./interfaces/IRbtcBridge.sol";
 /// @title PegoutManager
 /// @notice Manages peg-out operations from Rootstock to Bitcoin
 contract PegoutManager is IPegoutManager, PegManagerBase {
-    /// @notice Timeout for user take operations
+    /// @notice Timeout in seconds for user take operations
     uint256 public userTakeTimeout;
 
-    /// @notice Timeout for operator take operations
+    /// @notice Timeout in seconds for operator take operations
     uint256 public operatorTakeTimeout;
 
     mapping(bytes32 acceptPeginTxid => PegoutTempInfo tempInfo) internal pegoutTempInfo;

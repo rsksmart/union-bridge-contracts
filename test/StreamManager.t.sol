@@ -3,7 +3,15 @@ pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
-import {SlotState, Slot, Packet, Stream, IStreamManager, StreamDenomination} from "src/interfaces/IStreamManager.sol";
+import {
+    SlotState,
+    Slot,
+    Packet,
+    Stream,
+    IStreamManager,
+    StreamDenomination,
+    TimelockSettings
+} from "src/interfaces/IStreamManager.sol";
 import {IAccessControl} from "src/interfaces/IAccessControl.sol";
 import {StreamPosition, PegStatus} from "src/interfaces/IPegCommonTypes.sol";
 import {Constants} from "src/libraries/Constants.sol";
@@ -162,6 +170,392 @@ contract TestStreamManager is Test, HelperContract {
             pegoutConfirmations,
             "pegoutConfirmations was not set correctly"
         );
+    }
+
+    function test_setTimelockSettings_Success() external {
+        // Arrange
+        uint64 streamId = 0;
+        TimelockSettings memory newTimelockSettings = TimelockSettings({
+            shortTimelock: 8,
+            longTimelock: 16,
+            requestPeginTimelock: 14,
+            opWonTimelock: 200,
+            claimGateTimelock: 8,
+            inputNotRevealedTimelock: 10,
+            opNoCosignTimelock: 14,
+            wtNoChallengeTimelock: 14
+        });
+
+        // Get initial timelock settings for comparison
+        TimelockSettings memory initialSettings = streamManager.getStreamById(streamId).timelockSettings;
+        assertEq(initialSettings.shortTimelock, 6, "Initial shortTimelock should be 6");
+
+        // Assert event emission
+        vm.expectEmit(address(streamManager));
+        emit IStreamManager.TimelockSettingsUpdated(streamId, newTimelockSettings);
+
+        // Act
+        vm.prank(streamManager.owner());
+        streamManager.setTimelockSettings(streamId, newTimelockSettings);
+
+        // Assert
+        TimelockSettings memory updatedSettings = streamManager.getStreamById(streamId).timelockSettings;
+        assertEq(
+            updatedSettings.shortTimelock, newTimelockSettings.shortTimelock, "shortTimelock was not set correctly"
+        );
+        assertEq(updatedSettings.longTimelock, newTimelockSettings.longTimelock, "longTimelock was not set correctly");
+        assertEq(
+            updatedSettings.requestPeginTimelock,
+            newTimelockSettings.requestPeginTimelock,
+            "requestPeginTimelock was not set correctly"
+        );
+        assertEq(
+            updatedSettings.opWonTimelock, newTimelockSettings.opWonTimelock, "opWonTimelock was not set correctly"
+        );
+        assertEq(
+            updatedSettings.claimGateTimelock,
+            newTimelockSettings.claimGateTimelock,
+            "claimGateTimelock was not set correctly"
+        );
+        assertEq(
+            updatedSettings.inputNotRevealedTimelock,
+            newTimelockSettings.inputNotRevealedTimelock,
+            "inputNotRevealedTimelock was not set correctly"
+        );
+        assertEq(
+            updatedSettings.opNoCosignTimelock,
+            newTimelockSettings.opNoCosignTimelock,
+            "opNoCosignTimelock was not set correctly"
+        );
+        assertEq(
+            updatedSettings.wtNoChallengeTimelock,
+            newTimelockSettings.wtNoChallengeTimelock,
+            "wtNoChallengeTimelock was not set correctly"
+        );
+    }
+
+    function test_setTimelockSettings_Revert_InvalidStreamId() external {
+        // Arrange
+        uint64 invalidStreamId = 10;
+        TimelockSettings memory timelockSettings = TimelockSettings({
+            shortTimelock: 6,
+            longTimelock: 12,
+            requestPeginTimelock: 12,
+            opWonTimelock: 100,
+            claimGateTimelock: 6,
+            inputNotRevealedTimelock: 8,
+            opNoCosignTimelock: 12,
+            wtNoChallengeTimelock: 12
+        });
+
+        vm.prank(streamManager.owner());
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.StreamNotFoundById.selector, invalidStreamId));
+
+        // Act
+        streamManager.setTimelockSettings(invalidStreamId, timelockSettings);
+    }
+
+    function test_setTimelockSettings_Revert_NotOwner() external {
+        // Arrange
+        uint64 streamId = 0;
+        TimelockSettings memory timelockSettings = TimelockSettings({
+            shortTimelock: 6,
+            longTimelock: 12,
+            requestPeginTimelock: 12,
+            opWonTimelock: 100,
+            claimGateTimelock: 6,
+            inputNotRevealedTimelock: 8,
+            opNoCosignTimelock: 12,
+            wtNoChallengeTimelock: 12
+        });
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, this));
+
+        // Act
+        streamManager.setTimelockSettings(streamId, timelockSettings);
+    }
+
+    function test_setTimelockSettings_Revert_InvalidTimelockSettings() external {
+        // Arrange
+        uint64 streamId = 0;
+        TimelockSettings memory invalidTimelockSettings = TimelockSettings({
+            shortTimelock: 0, // Invalid: zero value
+            longTimelock: 12,
+            requestPeginTimelock: 12,
+            opWonTimelock: 100,
+            claimGateTimelock: 6,
+            inputNotRevealedTimelock: 8,
+            opNoCosignTimelock: 12,
+            wtNoChallengeTimelock: 12
+        });
+
+        vm.prank(streamManager.owner());
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IStreamManager.InvalidTimelockSettings.selector, invalidTimelockSettings)
+        );
+
+        // Act
+        streamManager.setTimelockSettings(streamId, invalidTimelockSettings);
+    }
+
+    function test_setTimelockSettings_Revert_InvalidTimelockSettings_ZeroRequestPeginTimelock() external {
+        // Arrange
+        uint64 streamId = 0;
+        TimelockSettings memory invalidTimelockSettings = TimelockSettings({
+            shortTimelock: 6,
+            longTimelock: 12,
+            requestPeginTimelock: 0, // Invalid: zero value
+            opWonTimelock: 100,
+            claimGateTimelock: 6,
+            inputNotRevealedTimelock: 8,
+            opNoCosignTimelock: 12,
+            wtNoChallengeTimelock: 12
+        });
+
+        vm.prank(streamManager.owner());
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IStreamManager.InvalidTimelockSettings.selector, invalidTimelockSettings)
+        );
+
+        // Act
+        streamManager.setTimelockSettings(streamId, invalidTimelockSettings);
+    }
+
+    function test_validateTimelockSettings_Revert_ZeroShortTimelock() external {
+        // Arrange - Create invalid timelock settings with zero shortTimelock
+        uint64 streamId = 0;
+        TimelockSettings memory invalidSettings = TimelockSettings({
+            shortTimelock: 0,
+            longTimelock: 12,
+            requestPeginTimelock: 12,
+            opWonTimelock: 100,
+            claimGateTimelock: 6,
+            inputNotRevealedTimelock: 8,
+            opNoCosignTimelock: 12,
+            wtNoChallengeTimelock: 12
+        });
+
+        vm.prank(streamManager.owner());
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.InvalidTimelockSettings.selector, invalidSettings));
+
+        // Act
+        streamManager.setTimelockSettings(streamId, invalidSettings);
+    }
+
+    function test_validateTimelockSettings_Revert_ZeroLongTimelock() external {
+        // Arrange - Create invalid timelock settings with zero longTimelock
+        uint64 streamId = 0;
+        TimelockSettings memory invalidSettings = TimelockSettings({
+            shortTimelock: 6,
+            longTimelock: 0,
+            requestPeginTimelock: 12,
+            opWonTimelock: 100,
+            claimGateTimelock: 6,
+            inputNotRevealedTimelock: 8,
+            opNoCosignTimelock: 12,
+            wtNoChallengeTimelock: 12
+        });
+
+        vm.prank(streamManager.owner());
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.InvalidTimelockSettings.selector, invalidSettings));
+
+        // Act
+        streamManager.setTimelockSettings(streamId, invalidSettings);
+    }
+
+    function test_validateTimelockSettings_Revert_ZeroOpWonTimelock() external {
+        // Arrange - Create invalid timelock settings with zero opWonTimelock
+        uint64 streamId = 0;
+        TimelockSettings memory invalidSettings = TimelockSettings({
+            shortTimelock: 6,
+            longTimelock: 12,
+            requestPeginTimelock: 12,
+            opWonTimelock: 0,
+            claimGateTimelock: 6,
+            inputNotRevealedTimelock: 8,
+            opNoCosignTimelock: 12,
+            wtNoChallengeTimelock: 12
+        });
+
+        vm.prank(streamManager.owner());
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.InvalidTimelockSettings.selector, invalidSettings));
+
+        // Act
+        streamManager.setTimelockSettings(streamId, invalidSettings);
+    }
+
+    function test_validateTimelockSettings_Revert_ZeroClaimGateTimelock() external {
+        // Arrange - Create invalid timelock settings with zero claimGateTimelock
+        uint64 streamId = 0;
+        TimelockSettings memory invalidSettings = TimelockSettings({
+            shortTimelock: 6,
+            longTimelock: 12,
+            requestPeginTimelock: 12,
+            opWonTimelock: 100,
+            claimGateTimelock: 0,
+            inputNotRevealedTimelock: 8,
+            opNoCosignTimelock: 12,
+            wtNoChallengeTimelock: 12
+        });
+
+        vm.prank(streamManager.owner());
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.InvalidTimelockSettings.selector, invalidSettings));
+
+        // Act
+        streamManager.setTimelockSettings(streamId, invalidSettings);
+    }
+
+    function test_validateTimelockSettings_Revert_ZeroInputNotRevealedTimelock() external {
+        // Arrange - Create invalid timelock settings with zero inputNotRevealedTimelock
+        uint64 streamId = 0;
+        TimelockSettings memory invalidSettings = TimelockSettings({
+            shortTimelock: 6,
+            longTimelock: 12,
+            requestPeginTimelock: 12,
+            opWonTimelock: 100,
+            claimGateTimelock: 6,
+            inputNotRevealedTimelock: 0,
+            opNoCosignTimelock: 12,
+            wtNoChallengeTimelock: 12
+        });
+
+        vm.prank(streamManager.owner());
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.InvalidTimelockSettings.selector, invalidSettings));
+
+        // Act
+        streamManager.setTimelockSettings(streamId, invalidSettings);
+    }
+
+    function test_validateTimelockSettings_Revert_ZeroOpNoCosignTimelock() external {
+        // Arrange - Create invalid timelock settings with zero opNoCosignTimelock
+        uint64 streamId = 0;
+        TimelockSettings memory invalidSettings = TimelockSettings({
+            shortTimelock: 6,
+            longTimelock: 12,
+            requestPeginTimelock: 12,
+            opWonTimelock: 100,
+            claimGateTimelock: 6,
+            inputNotRevealedTimelock: 8,
+            opNoCosignTimelock: 0,
+            wtNoChallengeTimelock: 12
+        });
+
+        vm.prank(streamManager.owner());
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.InvalidTimelockSettings.selector, invalidSettings));
+
+        // Act
+        streamManager.setTimelockSettings(streamId, invalidSettings);
+    }
+
+    function test_validateTimelockSettings_Revert_ZeroWtNoChallengeTimelock() external {
+        // Arrange - Create invalid timelock settings with zero wtNoChallengeTimelock
+        uint64 streamId = 0;
+        TimelockSettings memory invalidSettings = TimelockSettings({
+            shortTimelock: 6,
+            longTimelock: 12,
+            requestPeginTimelock: 12,
+            opWonTimelock: 100,
+            claimGateTimelock: 6,
+            inputNotRevealedTimelock: 8,
+            opNoCosignTimelock: 12,
+            wtNoChallengeTimelock: 0
+        });
+
+        vm.prank(streamManager.owner());
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.InvalidTimelockSettings.selector, invalidSettings));
+
+        // Act
+        streamManager.setTimelockSettings(streamId, invalidSettings);
+    }
+
+    function test_validateTimelockSettings_Revert_ZeroRequestPeginTimelock() external {
+        // Arrange - Create invalid timelock settings with zero requestPeginTimelock
+        uint64 streamId = 0;
+        TimelockSettings memory invalidSettings = TimelockSettings({
+            shortTimelock: 6,
+            longTimelock: 12,
+            requestPeginTimelock: 0,
+            opWonTimelock: 100,
+            claimGateTimelock: 6,
+            inputNotRevealedTimelock: 8,
+            opNoCosignTimelock: 12,
+            wtNoChallengeTimelock: 12
+        });
+
+        vm.prank(streamManager.owner());
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.InvalidTimelockSettings.selector, invalidSettings));
+
+        // Act
+        streamManager.setTimelockSettings(streamId, invalidSettings);
+    }
+
+    function test_validateTimelockSettings_Revert_AllZero() external {
+        // Arrange - Create invalid timelock settings with all fields set to zero
+        uint64 streamId = 0;
+        TimelockSettings memory invalidSettings = TimelockSettings({
+            shortTimelock: 0,
+            longTimelock: 0,
+            requestPeginTimelock: 0,
+            opWonTimelock: 0,
+            claimGateTimelock: 0,
+            inputNotRevealedTimelock: 0,
+            opNoCosignTimelock: 0,
+            wtNoChallengeTimelock: 0
+        });
+
+        vm.prank(streamManager.owner());
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.InvalidTimelockSettings.selector, invalidSettings));
+
+        // Act
+        streamManager.setTimelockSettings(streamId, invalidSettings);
+    }
+
+    function test_validateTimelockSettings_Revert_MultipleZeroFields() external {
+        // Arrange - Create invalid timelock settings with multiple zero fields
+        uint64 streamId = 0;
+        TimelockSettings memory invalidSettings = TimelockSettings({
+            shortTimelock: 0,
+            longTimelock: 0,
+            requestPeginTimelock: 12,
+            opWonTimelock: 100,
+            claimGateTimelock: 0,
+            inputNotRevealedTimelock: 8,
+            opNoCosignTimelock: 0,
+            wtNoChallengeTimelock: 12
+        });
+
+        vm.prank(streamManager.owner());
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.InvalidTimelockSettings.selector, invalidSettings));
+
+        // Act
+        streamManager.setTimelockSettings(streamId, invalidSettings);
     }
 
     function test_setCommitteeRegistry_Success() external {

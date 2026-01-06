@@ -95,7 +95,11 @@ contract PeginManager is IPeginManager, PegManagerBase {
 
         return (
             bitcoinManager.getTemporaryPeginAddress(
-                _rootstockDepositAddress, _value, _btcReimbursementPubKey, committeeKey
+                stream.timelockSettings.requestPeginTimelock,
+                _rootstockDepositAddress,
+                _value,
+                _btcReimbursementPubKey,
+                committeeKey
             ),
             stream.peginPacketPointer,
             memberDisputeKeys,
@@ -126,6 +130,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
 
         _validatePeginTransaction(
             _requestPeginTxSPVProof,
+            stream.timelockSettings.requestPeginTimelock,
             rskDestinationAddress,
             btcReimbursementPubKey,
             committeePubKey,
@@ -248,6 +253,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
 
     function _validatePeginTransaction(
         BtcTxSPVProof calldata _requestPeginTxSPVProof,
+        uint32 _timelockBlocks,
         address rskDestinationAddress,
         bytes32 btcReimbursementPubKey,
         bytes memory committeePubKey,
@@ -258,6 +264,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
         // Validates that the Taproot Script has a Key Path for the committeePubKey
         // and has a timelock for btcReimbursementPubKey
         bitcoinManager.validateRequestPeginP2TROutput(
+            _timelockBlocks,
             rskDestinationAddress,
             stream.denomination,
             btcReimbursementPubKey,

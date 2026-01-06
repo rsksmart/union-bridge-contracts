@@ -137,9 +137,6 @@ library Constants {
     /// @dev Minimum amount required for a Bitcoin output to be considered valid
     uint64 constant DUST_THRESHOLD = 300;
 
-    /// @dev Timelock blocks for Bitcoin transactions
-    uint8 constant TIMELOCK_BLOCKS = 1;
-
     /// @dev Length of signature nonce in bytes
     /// @dev Used for multi-signature operations in committee transactions
     uint8 constant SIGNATURE_NONCE_LENGTH = 66;

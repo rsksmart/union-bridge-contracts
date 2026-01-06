@@ -31,9 +31,11 @@ contract TestBtcHelper is Test, HelperContract {
         bytes32 btcReimbursementPubKey = 0x7d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f;
         bytes memory committeePubKey =
             abi.encodePacked(bytes1(0x02), bytes32(0xd1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d));
+        uint32 timelockBlocks = 1;
         // Act
-        string memory result =
-            bitcoinManager.getTemporaryPeginAddress(rskAddress, value, btcReimbursementPubKey, committeePubKey);
+        string memory result = bitcoinManager.getTemporaryPeginAddress(
+            timelockBlocks, rskAddress, value, btcReimbursementPubKey, committeePubKey
+        );
         // Assert
         string memory expectedAddress = "bcrt1pff4szccvny97tn5d5q9xf5kw30p9njxnvd6q0tmp8f7tk8adphuqnxt4tt";
         assertEq(result, expectedAddress, "Incorrect temporary peg in address at BitcoinManager");
@@ -46,9 +48,13 @@ contract TestBtcHelper is Test, HelperContract {
         bytes32 btcReimbursementPubKey = 0x7d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f;
         bytes memory committeePubKey =
             abi.encodePacked(bytes1(0x02), bytes32(0xd1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d));
+        uint32 timelockBlocks = 1;
+
         // Act
-        string memory result =
-            bitcoinManager.getTemporaryPeginAddress(rskAddress, value, btcReimbursementPubKey, committeePubKey);
+        string memory result = bitcoinManager.getTemporaryPeginAddress(
+            timelockBlocks, rskAddress, value, btcReimbursementPubKey, committeePubKey
+        );
+
         // Assert
         string memory expectedAddress = "bcrt1p9hdr74xdg69a7w6r4pfsrrnj3l7ku54x5jdmtwf4thnjyhkmeuhs79pnrw";
         assertEq(result, expectedAddress, "Incorrect temporary peg in address at BitcoinManager");
@@ -60,12 +66,15 @@ contract TestBtcHelper is Test, HelperContract {
         uint64 value = 100_000; // 0.001 BTC
         bytes32 btcReimbursementPubKey = 0x7d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f;
         bytes memory committeePubKey = new bytes(0); // Invalid length (0 bytes)
+        uint32 timelockBlocks = 1;
 
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IBitcoinManager.InvalidCommitteePublicKeyLength.selector, 0, 33));
 
         // Act
-        bitcoinManager.getTemporaryPeginAddress(rskAddress, value, btcReimbursementPubKey, committeePubKey);
+        bitcoinManager.getTemporaryPeginAddress(
+            timelockBlocks, rskAddress, value, btcReimbursementPubKey, committeePubKey
+        );
     }
 
     function test_getTemporaryPeginAddress_Revert_InvalidCommitteePublicKeyZero() external {
@@ -74,12 +83,15 @@ contract TestBtcHelper is Test, HelperContract {
         uint64 value = 100_000; // 0.001 BTC
         bytes32 btcReimbursementPubKey = 0x7d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f;
         bytes memory committeePubKey = new bytes(33); // All zeros, 33 bytes
+        uint32 timelockBlocks = 1;
 
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IBitcoinManager.InvalidCommitteePublicKeyZero.selector));
 
         // Act
-        bitcoinManager.getTemporaryPeginAddress(rskAddress, value, btcReimbursementPubKey, committeePubKey);
+        bitcoinManager.getTemporaryPeginAddress(
+            timelockBlocks, rskAddress, value, btcReimbursementPubKey, committeePubKey
+        );
     }
 
     function test_getBtcTxid_Success() external {
@@ -113,6 +125,7 @@ contract TestBtcHelper is Test, HelperContract {
             amount: 0,
             scriptPubKey: hex"6a4552534b5f504547494e00000000000000007ac5496aee77c1ba1f0854206a26dda82a81d6d87d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f"
         });
+
         // Act
         bytes32 txid = bitcoinManager.getBtcTxid(btcTx);
         // Assert
@@ -157,10 +170,11 @@ contract TestBtcHelper is Test, HelperContract {
         address rskDestinationAddress = getPeginRskDestinationAddress();
         bytes32 btcReimbursementPubKey = getPeginBtcReimbursementPubKey();
         bytes memory committeePubKey = COMMITTEE_PUB_KEY();
+        uint32 timelockBlocks = 1;
         // Act
         vm.prank(address(peginManager));
         bitcoinManager.validateRequestPeginP2TROutput(
-            rskDestinationAddress, value, btcReimbursementPubKey, committeePubKey, btcTxOut
+            timelockBlocks, rskDestinationAddress, value, btcReimbursementPubKey, committeePubKey, btcTxOut
         );
         // Assert if not reverts everything is ok
     }
@@ -174,12 +188,13 @@ contract TestBtcHelper is Test, HelperContract {
         address rskDestinationAddress = getPeginRskDestinationAddress();
         bytes32 btcReimbursementPubKey = getPeginBtcReimbursementPubKey();
         bytes memory committeePubKey = COMMITTEE_PUB_KEY();
+        uint32 timelockBlocks = 1;
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IBitcoinManager.InvalidOutputAmount.selector, btcTxOut.amount, value));
         // Act
         vm.prank(address(peginManager));
         bitcoinManager.validateRequestPeginP2TROutput(
-            rskDestinationAddress, value, btcReimbursementPubKey, committeePubKey, btcTxOut
+            timelockBlocks, rskDestinationAddress, value, btcReimbursementPubKey, committeePubKey, btcTxOut
         );
     }
 

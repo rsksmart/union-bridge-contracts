@@ -54,7 +54,11 @@ contract RequestPeginScript is ScriptUtils, ContractAddressManager {
         btcTransaction.outputs[0] = BtcTxOut({
             amount: value,
             scriptPubKey: getRequestPeginP2TRScriptPub(
-                _rskDestinationAddress, value, btcReimbursementPubKey, committeePubKey
+                stream.timelockSettings.requestPeginTimelock,
+                _rskDestinationAddress,
+                value,
+                btcReimbursementPubKey,
+                committeePubKey
             )
         });
         // OP_RETURN output

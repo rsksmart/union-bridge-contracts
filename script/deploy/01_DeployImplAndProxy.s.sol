@@ -20,7 +20,7 @@ import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
 import {PegoutManagerSettings} from "src/interfaces/IPegoutManager.sol";
-import {StreamManagerSettings} from "src/interfaces/IStreamManager.sol";
+import {StreamManagerSettings, StreamSettings, StreamDenomination} from "src/interfaces/IStreamManager.sol";
 import {StreamManagerSettingsConfig} from "script/helpers/StreamManagerSettingsConfig.sol";
 import {PegManagerSettingsConfig} from "script/helpers/PegManagerSettingsConfig.sol";
 import {IRbtcBridge} from "src/interfaces/IRbtcBridge.sol";
@@ -48,24 +48,22 @@ contract DeployImplAndProxy is ScriptUtils {
     address public upgradableOwner;
     address public pauser;
     BtcNetwork public btcBtcNetwork;
-    uint64[] denominations;
     address payable public bridgeAddress;
     StreamManagerSettings public streamManagerSettings;
+    StreamSettings[] public streamSettings;
     PegoutManagerSettings public pegoutManagerSettings;
 
     function setUp() internal {
         bridgeAddress = RSK_BRIDGE_ADDRESS;
-        denominations = [
-            uint64(100_000), // 0.001 BTC
-            uint64(1_000_000), // 0.01 BTC
-            uint64(10_000_000), // 0.1 BTC
-            uint64(100_000_000), // 1 BTC
-            uint64(1_000_000_000) // 10 BTC
-        ];
         upgradableOwner = getDeployerAddress();
         pauser = getPauserAddress();
-        streamManagerSettings = StreamManagerSettingsConfig.getSettings(block.chainid);
-        pegoutManagerSettings = PegManagerSettingsConfig.getSettings(block.chainid);
+        uint64[] memory denominations = StreamManagerSettingsConfig.getDenominations();
+        streamManagerSettings = StreamManagerSettingsConfig.getStreamManagerSettings(block.chainid);
+
+        for (uint64 i = 0; i < denominations.length; i++) {
+            streamSettings.push(StreamManagerSettingsConfig.getStreamSettings(block.chainid, i, denominations[i]));
+        }
+        pegoutManagerSettings = PegManagerSettingsConfig.getSettingsForChain(block.chainid);
         // RSK Mainnet
         if (block.chainid == ChainIds.RSK_MAINNET) {
             btcBtcNetwork = BtcNetwork.MAINNET;
@@ -137,8 +135,8 @@ contract DeployImplAndProxy is ScriptUtils {
             address(peginManager),
             address(pegoutManager),
             committeeRegistry,
-            denominations,
-            streamManagerSettings
+            streamManagerSettings,
+            streamSettings
         );
         if (streamManager.owner() != upgradableOwner) {
             revert("StreamManager owner is not the upgradable owner");
@@ -335,9 +333,14 @@ contract DeployImplAndProxy is ScriptUtils {
         address _peginManager,
         address _pegoutManager,
         ICommitteeRegistry _committeeRegistry,
-        uint64[] memory _denominations,
-        StreamManagerSettings memory _settings
+        StreamManagerSettings memory _settings,
+        StreamSettings[] memory _streamSettings
     ) public returns (StreamManager) {
+        uint256 length = _streamSettings.length;
+        if (length == 0 || length > uint64(StreamDenomination.LENGTH)) {
+            revert("StreamManager settings length does not match denominations length or is zero");
+        }
+
         string memory contractName = "StreamManager.sol";
         if (vm.isContext(VmSafe.ForgeContext.TestGroup)) {
             contractName = "StreamManagerHarness.sol";
@@ -347,7 +350,7 @@ contract DeployImplAndProxy is ScriptUtils {
             contractName,
             abi.encodeCall(
                 StreamManager.initialize,
-                (_upgradableOwner, _peginManager, _pegoutManager, _committeeRegistry, _denominations, _settings)
+                (_upgradableOwner, _peginManager, _pegoutManager, _committeeRegistry, _settings, _streamSettings)
             )
         );
         return StreamManager(proxyAdddress);

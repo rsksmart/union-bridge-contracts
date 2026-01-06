@@ -7,6 +7,7 @@
 - `PegoutManager.registerAdvanceFunds` to register advance funds SPV proof.
 - `PegoutManager.registerReimbursementKickoff` to register reimbursement kickoff SPV proof.
 -  New states to `PegStatus`: `OP_SELECTED`, `ADVANCED`, `KICKOFF`, `CHALLENGE` and `REVEALED`.
+- `StreamManager.setTimelockSettings` to modify the timelocks of a strream.
 
 ### Changed
 
@@ -14,6 +15,7 @@
 - `SignatureManager.getOperatorTakeTxids` now receive `operatorWonTxid` too.
 - `shell/script/operator-take/add-operator-take-txid.sh` and `script/operator-take/add-every-operator-take-txid.sh` to use `addOperatorTakeTxids` and deposit `operatorWonTxid`.
 - Before calling to `PegoutManager.registerOperatorTake`, now it's required to call `registerAdvanceFunds` and `registerReimbursementKickoff` first.
+- `StreamManager.initialize` now recieves `StreamSettings[]` instead of denominations
 
 
 ### Removed

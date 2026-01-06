@@ -26,7 +26,7 @@ This repository contains the specifications and Solidity code for the Union Brid
 ### Pre requisites
 
 - You'll need the [Rust](https://www.rust-lang.org/) compiler and Cargo, Rust's package manager. The easiest way to install both is by using [rustup.rs.](https://rustup.rs/)
-- [Foundry v1.3.0](https://book.getfoundry.sh/getting-started/installation) running `foundryup -i v1.3.0`
+- [Foundry v1.3.0](https://book.getfoundry.sh/getting-started/installation) running `foundryup -i v1.3.0` It's important that is this version, otherwise the Alloy version released for the rust crate can change.
 - [Node.js LTS (22)](https://nodejs.org/en/download)
 
 ### Install dependencies
@@ -305,6 +305,55 @@ A slot can have the following states:
 - `Completed`: when the peg-out is processed (happy path) or the operator receives the reimbursement after advance.
 
 <img src="./specs/imgs/slots_transitions.png" alt="Slots transitions" width="400">
+
+### Streams Initialization
+
+The StreamManager contract requires specific configuration parameters during initialization. These parameters are defined in the `StreamManagerSettingsConfig` library (`script/helpers/StreamManagerSettingsConfig.sol`) and are used by the deployment script (`script/deploy/01_DeployImplAndProxy.s.sol`) to initialize the StreamManager contract.
+
+#### Stream Manager Settings
+
+The `StreamManagerSettings` struct configures global settings for the StreamManager:
+
+- **`securityBondPercentageOperator`** (uint16): Security bond percentage for operators in 10_000 format (e.g., 1000 = 10%). Default: 1000 (10%) for mainnet, 800 (8%) for testnet.
+- **`securityBondPercentageWatchtower`** (uint16): Security bond percentage for watchtowers in 10_000 format (e.g., 200 = 2%). Default: 200 (2%) for mainnet, 100 (1%) for testnet.
+- **`minimumSecurityDeposit`** (uint256): Minimum security deposit required for committee members in wei. Default: 22,500,000 gwei (2,250 USD).
+- **`disablementPaymentsPerChallenge`** (uint256): Amount of disablement payments per challenge in wei. Default: 2,500,000 gwei (250 USD).
+
+#### Stream Settings
+
+Each stream requires a `StreamSettings` struct that defines:
+
+- **`denomination`** (uint64): The Bitcoin denomination in satoshis. Five streams are created by default:
+  - 0.001 BTC: 100,000 satoshis
+  - 0.01 BTC: 1,000,000 satoshis
+  - 0.1 BTC: 10,000,000 satoshis
+  - 1 BTC: 100,000,000 satoshis
+  - 10 BTC: 1,000,000,000 satoshis
+
+- **`peginConfirmations`** (uint8): Number of Bitcoin confirmations required for peg-in transactions. Default: 12 blocks for mainnet, 1 block for testnet, 2 blocks for local development.
+
+- **`pegoutConfirmations`** (uint8): Number of Bitcoin confirmations required for peg-out transactions. Default: 12 blocks for mainnet, 1 block for testnet, 2 blocks for local development.
+
+- **`timelockSettings`** (TimelockSettings): Bitcoin timelock settings in blocks for dispute resolution and protocol operations.
+
+#### Timelock Settings
+
+The `TimelockSettings` struct configures various timelocks used in the Union protocol:
+
+- **`shortTimelock`** (uint8): Short timelock in Bitcoin blocks. Default: 6 blocks.
+- **`longTimelock`** (uint8): Long timelock in Bitcoin blocks. Default: 12 blocks.
+- **`requestPeginTimelock`** (uint8): Request peg-in timelock in Bitcoin blocks. Used for user fund recovery if the request peg-in timelock expires. Default: 12 blocks (1 block for local test groups).
+- **`opWonTimelock`** (uint8): Operator won timelock in Bitcoin blocks. After this time, if no one challenges the operator, the operator wins the challenge. Default: 150 blocks.
+- **`claimGateTimelock`** (uint8): Claim gate timelock in Bitcoin blocks when claim gate is triggered. Default: 6 blocks.
+- **`inputNotRevealedTimelock`** (uint8): Input not revealed timelock in Bitcoin blocks. Time the operator has to reveal the input in the challenge; if not, the watchtower wins. Default: 8 blocks.
+- **`opNoCosignTimelock`** (uint8): Operator no cosign timelock in Bitcoin blocks when operator does not cosign. Default: 12 blocks.
+- **`wtNoChallengeTimelock`** (uint8): Watchtower no challenge timelock in Bitcoin blocks. Time the watchtower has to choose interval for the operator inputs (Challenger Tx); if not, the watchtower is punished. Default: 12 blocks.
+
+#### BitVMX Integration
+
+These configuration values are used with `set var` commands in BitVMX to initialize the Union protocol. The values defined in `StreamManagerSettingsConfig.sol` should match the environment variables set in BitVMX to ensure consistent behavior between the smart contract deployment and the BitVMX client initialization.
+
+The deployment script (`01_DeployImplAndProxy.s.sol`) automatically retrieves the appropriate settings based on the chain ID and test context, ensuring that the StreamManager is initialized with the correct parameters for each environment.
 
 ### Packet Creation Flow
 

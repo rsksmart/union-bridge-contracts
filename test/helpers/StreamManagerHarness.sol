@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import {SlotState, Slot, StreamManager} from "src/StreamManager.sol";
 import {ICommitteeRegistry, Role} from "src/interfaces/ICommitteeRegistry.sol";
-import {StreamManagerSettings} from "src/interfaces/IStreamManager.sol";
+import {StreamManagerSettings, StreamSettings, TimelockSettings} from "src/interfaces/IStreamManager.sol";
 
 /// @notice Wrapper for testing StreamManager
 contract StreamManagerHarness is StreamManager {
@@ -12,11 +12,11 @@ contract StreamManagerHarness is StreamManager {
         address _peginManager,
         address _pegoutManager,
         ICommitteeRegistry _committeeRegistry,
-        uint64[] memory _denominations,
-        StreamManagerSettings memory _settings
+        StreamManagerSettings memory _settings,
+        StreamSettings[] memory _streamSettings
     ) public override initializer {
         StreamManager.initialize(
-            _initialOwner, _peginManager, _pegoutManager, _committeeRegistry, _denominations, _settings
+            _initialOwner, _peginManager, _pegoutManager, _committeeRegistry, _settings, _streamSettings
         );
     }
 

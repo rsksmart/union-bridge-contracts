@@ -8,7 +8,9 @@ import {
     SlotState,
     IStreamManager,
     StreamDenomination,
-    StreamManagerSettings
+    StreamManagerSettings,
+    StreamSettings,
+    TimelockSettings
 } from "./interfaces/IStreamManager.sol";
 import {AccessControl} from "./AccessControl.sol";
 import {Constants} from "src/libraries/Constants.sol";
@@ -44,52 +46,75 @@ contract StreamManager is IStreamManager, AccessControl {
     /// @param _peginManager The address of the PeginManager contract
     /// @param _pegoutManager The address of the PegoutManager contract
     /// @param _committeeRegistry The CommitteeRegistry contract address
-    /// @param _denominations Array of Bitcoin denominations in satoshis for each stream
-    /// @param _settings The settings for the StreamManager including confirmation counts and security bond percentages
+    /// @param _settings Struct with the settings for the StreamManager including security bond percentages
+    /// @param _streamSettings Array of structs with the settings for each stream including confirmation counts and timelock settings
     function initialize(
         address _initialOwner,
         address _peginManager,
         address _pegoutManager,
         ICommitteeRegistry _committeeRegistry,
-        uint64[] memory _denominations,
-        StreamManagerSettings memory _settings
+        StreamManagerSettings memory _settings,
+        StreamSettings[] memory _streamSettings
     ) public virtual initializer {
-        uint256 length = _denominations.length;
+        // Initialize the AccessControl contract
+        __AccessControl_init(_initialOwner, address(_peginManager), address(_pegoutManager));
+
+        // Set the committee registry
+        _setCommitteeRegistry(_committeeRegistry);
+
+        // Set the Stream Manager settings
+        _setSecurityBondPercentage(Role.WATCHTOWER, _settings.securityBondPercentageWatchtower);
+        _setSecurityBondPercentage(Role.OPERATOR, _settings.securityBondPercentageOperator);
+        _setMinimumSecurityDeposit(_settings.minimumSecurityDeposit);
+        _setDisablementPaymentsPerChallenge(_settings.disablementPaymentsPerChallenge);
+
+        // Validate the denominations
+        uint256 length = _streamSettings.length;
         if (length > Constants.MAX_DENOMINATIONS_SIZE) {
             revert tooManyDenominations(Constants.MAX_DENOMINATIONS_SIZE);
         }
+
+        // Validate the stream settings
+        if (length == 0) {
+            revert InvalidStreamSettingsLength(length);
+        }
+        // Initialize the streams
         for (uint64 i = 0; i < length; i++) {
+            _validateTimelockSettings(_streamSettings[i].timelockSettings);
+            if (_streamSettings[i].peginConfirmations == 0 || _streamSettings[i].pegoutConfirmations == 0) {
+                revert InvalidStreamSettings(
+                    i,
+                    _streamSettings[i].denomination,
+                    _streamSettings[i].peginConfirmations,
+                    _streamSettings[i].pegoutConfirmations
+                );
+            }
             streams.push(
                 Stream({
                     streamId: i,
-                    denomination: _denominations[i],
+                    denomination: _streamSettings[i].denomination,
                     peginPacketPointer: 0,
                     pegoutPacketPointer: 0,
                     pegoutSlotPointer: 0,
-                    peginConfirmations: _settings.peginConfirmations,
-                    pegoutConfirmations: _settings.pegoutConfirmations
+                    peginConfirmations: _streamSettings[i].peginConfirmations,
+                    pegoutConfirmations: _streamSettings[i].pegoutConfirmations,
+                    timelockSettings: _streamSettings[i].timelockSettings
                 })
             );
-            emit StreamCreated(i, _denominations[i]);
+            emit StreamCreated(i, _streamSettings[i].denomination);
         }
-        __AccessControl_init(_initialOwner, address(_peginManager), address(_pegoutManager));
+    }
 
-        if (address(_committeeRegistry) == address(0)) {
-            revert InvalidZeroAddress();
+    function _validateTimelockSettings(TimelockSettings memory _timelockSettings) internal pure {
+        // Using a single if statement to reduce contract size
+        if (
+            _timelockSettings.shortTimelock == 0 || _timelockSettings.longTimelock == 0
+                || _timelockSettings.opWonTimelock == 0 || _timelockSettings.claimGateTimelock == 0
+                || _timelockSettings.inputNotRevealedTimelock == 0 || _timelockSettings.opNoCosignTimelock == 0
+                || _timelockSettings.wtNoChallengeTimelock == 0 || _timelockSettings.requestPeginTimelock == 0
+        ) {
+            revert InvalidTimelockSettings(_timelockSettings);
         }
-        committeeRegistry = _committeeRegistry;
-
-        if (_settings.securityBondPercentageWatchtower > 10_000) {
-            revert InvalidPercentage(_settings.securityBondPercentageWatchtower);
-        }
-        if (_settings.securityBondPercentageOperator > 10_000) {
-            revert InvalidPercentage(_settings.securityBondPercentageOperator);
-        }
-
-        securityBondPercentage[Role.WATCHTOWER] = _settings.securityBondPercentageWatchtower;
-        securityBondPercentage[Role.OPERATOR] = _settings.securityBondPercentageOperator;
-        minimumSecurityDeposit = _settings.minimumSecurityDeposit;
-        disablementPaymentsPerChallenge = _settings.disablementPaymentsPerChallenge;
     }
 
     /// @notice Creates a new packet for a stream
@@ -446,6 +471,20 @@ contract StreamManager is IStreamManager, AccessControl {
         return slotPercentage > challengeCost ? slotPercentage : challengeCost;
     }
 
+    /// @notice Sets the timelock settings for a stream
+    /// @dev Can only be called by the owner
+    /// @param _streamId The ID of the stream
+    /// @param _timelockSettings The timelock settings to set
+    function setTimelockSettings(uint64 _streamId, TimelockSettings memory _timelockSettings)
+        external
+        streamExists(_streamId)
+        onlyOwner
+    {
+        _validateTimelockSettings(_timelockSettings);
+        streams[_streamId].timelockSettings = _timelockSettings;
+        emit TimelockSettingsUpdated(_streamId, _timelockSettings);
+    }
+
     /// @notice Sets the number of confirmations required for peg-in transactions
     /// @dev Can only be called by the owner
     /// @param _streamId The ID of the stream
@@ -480,6 +519,10 @@ contract StreamManager is IStreamManager, AccessControl {
     /// @dev Can only be called by the owner
     /// @param _committeeRegistry The new committee registry contract address
     function setCommitteeRegistry(ICommitteeRegistry _committeeRegistry) external onlyOwner {
+        _setCommitteeRegistry(_committeeRegistry);
+    }
+
+    function _setCommitteeRegistry(ICommitteeRegistry _committeeRegistry) internal {
         if (address(_committeeRegistry) == address(0)) {
             revert InvalidZeroAddress();
         }
@@ -492,6 +535,10 @@ contract StreamManager is IStreamManager, AccessControl {
     /// @param _percentage The security bond percentage in 10_000 format (e.g. 1000 = 10%)
     /// @notice Reverts if the role is NONE or if the percentage is 0 or greater than 10_000
     function setSecurityBondPercentage(Role _role, uint16 _percentage) external onlyOwner {
+        _setSecurityBondPercentage(_role, _percentage);
+    }
+
+    function _setSecurityBondPercentage(Role _role, uint16 _percentage) internal {
         if (_role == Role.NONE) {
             revert InvalidRole(_role);
         }
@@ -505,6 +552,10 @@ contract StreamManager is IStreamManager, AccessControl {
     }
 
     function setMinimumSecurityDeposit(uint256 _cost) external onlyOwner {
+        _setMinimumSecurityDeposit(_cost);
+    }
+
+    function _setMinimumSecurityDeposit(uint256 _cost) internal {
         if (_cost == 0) {
             revert InvalidZeroValue();
         }
@@ -512,7 +563,15 @@ contract StreamManager is IStreamManager, AccessControl {
         emit MinimumSecurityDepositUpdated(_cost);
     }
 
+    /// @notice Sets the disablement payments cost per challenge, this is used to calculate the minimum deposit for a role
+    /// @param _cost The new disablement payments per challenge in wei
+    /// @dev Can only be called by the owner
+    /// @dev Emits a DisablementPaymentsPerChallengeUpdated event on success
     function setDisablementPaymentsPerChallenge(uint256 _cost) external onlyOwner {
+        _setDisablementPaymentsPerChallenge(_cost);
+    }
+
+    function _setDisablementPaymentsPerChallenge(uint256 _cost) internal {
         if (_cost == 0) {
             revert InvalidZeroValue();
         }
@@ -546,17 +605,25 @@ contract StreamManager is IStreamManager, AccessControl {
     }
 
     modifier streamExists(uint64 _streamId) {
-        if (_streamId >= streams.length) {
-            revert StreamNotFoundById(_streamId);
-        }
+        _streamExists(_streamId);
         _;
     }
 
+    function _streamExists(uint64 _streamId) internal view {
+        if (_streamId >= streams.length) {
+            revert StreamNotFoundById(_streamId);
+        }
+    }
+
     modifier onlyCommitteeRegistry() {
+        _onlyCommitteeRegistry();
+        _;
+    }
+
+    function _onlyCommitteeRegistry() internal view {
         address sender = _msgSender();
         if (address(committeeRegistry) != sender) {
             revert UnauthorizedAccount(sender);
         }
-        _;
     }
 }

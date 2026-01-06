@@ -30,14 +30,14 @@ struct PegoutTempInfo {
 }
 
 /// @notice Settings for the PegoutManager contract
-/// @dev Contains timeout configurations for peg-out operations
+/// @dev Contains timeout configurations in seconds for peg-out operations
 struct PegoutManagerSettings {
-    /// @notice Timeout for the user to take the pegout
-    /// @dev This is the time the members have to sign the pegout transaction
-    uint256 userTakeTimeout; // Timeout for the user to take the pegout
-    /// @notice Timeout for the operator to take the pegout
+    /// @notice Timeout in seconds for the user to take the pegout
+    /// @dev This is the time the members have to sign the pegout transaction before start of operator take
+    uint256 userTakeTimeout;
+    /// @notice Timeout in seconds for the operator to take the pegout
     /// @dev This is the time the operator has to advance the funds to the user and present the proof
-    uint256 operatorTakeTimeout; // Timeout for the operator to take the pegout
+    uint256 operatorTakeTimeout;
 }
 
 /// @title IPegoutManager

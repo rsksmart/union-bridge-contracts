@@ -104,12 +104,14 @@ interface IBitcoinManager {
 
     /// @notice Obtains a temporary Bitcoin address for request peg-in operations
     /// @dev Creates a Taproot address with committee and user key paths for secure peg-in
+    /// @param _timelockBlocks The timelock blocks for the Bitcoin transaction
     /// @param _rskDestinationAddress The RSK address that will receive the RBTC
     /// @param _value The amount in satoshis to peg in (must match stream denomination)
     /// @param _btcReimbursementPubKey The user's Bitcoin public key (x-coordinate only, 32 bytes)
     /// @param _committeePubKey The committee's public key
     /// @return temporaryPeginAddress The generated temporary Bitcoin address for deposit
     function getTemporaryPeginAddress(
+        uint32 _timelockBlocks,
         address _rskDestinationAddress,
         uint64 _value,
         bytes32 _btcReimbursementPubKey,
@@ -127,12 +129,14 @@ interface IBitcoinManager {
 
     /// @notice Validates a P2TR output for request peg-in transactions
     /// @dev Ensures the Taproot output has the correct script structure with committee and user key paths
+    /// @param _timelockBlocks The timelock blocks for the Bitcoin transaction
     /// @param _rskDestinationAddress The RSK address that should receive the RBTC
     /// @param _streamDenomination The expected amount in satoshis
     /// @param _btcReimbursementPubKey The user's Bitcoin public key (x-coordinate only)
     /// @param _committeePubKey The committee's public key
     /// @param _p2trOut The Bitcoin transaction output to validate
     function validateRequestPeginP2TROutput(
+        uint32 _timelockBlocks,
         address _rskDestinationAddress,
         uint64 _streamDenomination,
         bytes32 _btcReimbursementPubKey,
@@ -242,6 +246,10 @@ interface IBitcoinManager {
     /// @notice Thrown when a public key is invalid or malformed
     /// @param publicKey The invalid public key that was provided
     error InvalidPublicKey(bytes32 publicKey);
+
+    /// @notice Thrown when a timelock blocks is invalid or zero
+    /// @param timelockBlocks The invalid timelock blocks that was provided
+    error InvalidTimelockBlocks(uint32 timelockBlocks);
 
     /// @notice Thrown when a public key has invalid length
     /// @param length The invalid length that was provided
