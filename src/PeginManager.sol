@@ -299,14 +299,14 @@ contract PeginManager is IPeginManager, PegManagerBase {
     function registerUserReimbursement(
         BtcTxSPVProof calldata _userReimbursementTxSPVProof,
         uint32 _reimbursementPeginVin
-    ) external whenNotPaused {
+    ) external nonReentrant whenNotPaused {
         // the first input should be the request peg-in txid
         bytes32 requestPeginTxid = _userReimbursementTxSPVProof.btcTx.inputs[_reimbursementPeginVin].txId;
 
         // Validate the peg in request tx exists and the status
         StreamPosition memory streamInfo = _getStreamPositionByRequestPegin(requestPeginTxid);
         if (streamInfo.pegStatus != PegStatus.REGISTERED) {
-            revert PeginInvalidStatus(requestPeginTxid, streamInfo.pegStatus, PegStatus.REGISTERED);
+            revert InvalidPegStatus(requestPeginTxid, streamInfo.pegStatus, PegStatus.REGISTERED);
         }
 
         // Calculate userReimbursementTxid from BtcTransaction
@@ -324,8 +324,9 @@ contract PeginManager is IPeginManager, PegManagerBase {
         }
 
         // Validate the txid is NOT the same as the accept peg-in txid
-        if (acceptPegins[requestPeginTxid] == userReimbursementTxid) {
-            revert InvalidAcceptPeginTxid(acceptPegins[requestPeginTxid], userReimbursementTxid);
+        bytes32 acceptPeginTxid = acceptPegins[requestPeginTxid];
+        if (acceptPeginTxid == userReimbursementTxid) {
+            revert InvalidAcceptPeginTxid(acceptPeginTxid, userReimbursementTxid);
         }
 
         // Verify the userReimbursementTxid part of the Merkle Root of Tx of a Block
@@ -342,10 +343,9 @@ contract PeginManager is IPeginManager, PegManagerBase {
         // Block slot as it has already been reimbursted to the user.
         // slither-disable-next-line reentrancy-no-eth reentrancy-benign
         streamManager.blockSlot(streamInfo.streamId, streamInfo.packetNumber, streamInfo.slotId);
+        streamManager.setPegStatus(acceptPeginTxid, PegStatus.BLOCKED);
 
-        emit UserReimbursementRegistered(
-            userReimbursementTxid, requestPeginTxid, streamInfo.streamId, streamInfo.packetNumber, streamInfo.slotId
-        );
+        emit UserReimbursementRegistered(userReimbursementTxid, requestPeginTxid, streamInfo);
     }
 
     /// @notice Accepts a peg-in operation by providing an SPV proof of the accept peg-in transaction

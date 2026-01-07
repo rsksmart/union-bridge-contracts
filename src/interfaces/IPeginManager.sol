@@ -136,15 +136,9 @@ interface IPeginManager is IPausable {
     /// @notice Event emitted when a user reimbursement is successfully registered
     /// @param userReimbursementTxid The hash of the user reimbursement btc transaction
     /// @param requestPeginTxid The hash of the request peg-in btc transaction
-    /// @param streamId The ID of the stream where the user reimbursement was registered
-    /// @param packetNumber The number of the packet where the user reimbursement was registered
-    /// @param slotId The ID of the slot where the user reimbursement was registered
+    /// @param streamInfo The stream position information where the user reimbursement was registered
     event UserReimbursementRegistered(
-        bytes32 indexed userReimbursementTxid,
-        bytes32 indexed requestPeginTxid,
-        uint64 streamId,
-        uint64 packetNumber,
-        uint64 slotId
+        bytes32 indexed userReimbursementTxid, bytes32 indexed requestPeginTxid, StreamPosition streamInfo
     );
 
     // ===================== Errors =====================
@@ -190,7 +184,7 @@ interface IPeginManager is IPausable {
     /// @param btcTxid The Bitcoin transaction id that was not valid
     /// @param expected The expected peg status
     /// @param actual The actual peg status
-    error PeginInvalidStatus(bytes32 btcTxid, PegStatus actual, PegStatus expected);
+    error InvalidPegStatus(bytes32 btcTxid, PegStatus actual, PegStatus expected);
 
     /// @notice Thrown when the output index (vout) doesn't match the expected value
     /// @param actual The actual vout value

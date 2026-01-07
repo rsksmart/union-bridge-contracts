@@ -901,7 +901,7 @@ abstract contract HelperContract is Test, TestUtils {
         uint64 _packetNumber,
         uint64 _slotId,
         SlotState _expectedSlotState
-    ) internal {
+    ) internal view {
         // Verify each request gets correct slotId
         StreamPosition memory streamPosition = peginManager.getStreamPositionByRequestPegin(_requestPeginTxid);
         assertEq(streamPosition.streamId, 1, "Incorrect streamId registered");

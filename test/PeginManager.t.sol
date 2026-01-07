@@ -552,7 +552,6 @@ contract TestPeginManager is Test, HelperContract {
         peginManager.acceptPegin(acceptPeginTxSPVProof2);
 
         // 3. Verify correct slot is filled (slot 1, not slot 0)
-        StreamPosition memory streamPosition2 = peginManager.getStreamPositionByRequestPegin(requestPeginTxid2);
         assertStreamPositionAndSlotStateByRequestPegin(
             requestPeginTxid2, setupStreamId, PACKET_NUMBER, 1, SlotState.FILLED
         );
@@ -890,7 +889,6 @@ contract TestPeginManager is Test, HelperContract {
     }
 
     // ============ Register User Reimbursement Tests ============
-
     function test_registerUserReimbursement_Success() external {
         // Arrange
         uint32 reimbursementPeginVin = 0;
@@ -901,25 +899,25 @@ contract TestPeginManager is Test, HelperContract {
         bytes32 userReimbursementTxid = getBtcTxid(userReimbursementTx);
         BtcTxSPVProof memory userReimbursementTxSPVProof = createBtcTxSPVProof(userReimbursementTx);
 
-        // Get stream position before
+        // Get stream position
         StreamPosition memory streamPositionBefore = peginManager.getStreamPositionByRequestPegin(requestPeginTxid);
 
         // Assert - expect event
         vm.expectEmit(address(peginManager));
-        emit IPeginManager.UserReimbursementRegistered(
-            userReimbursementTxid,
-            requestPeginTxid,
-            streamPositionBefore.streamId,
-            streamPositionBefore.packetNumber,
-            streamPositionBefore.slotId
-        );
+        emit IPeginManager.UserReimbursementRegistered(userReimbursementTxid, requestPeginTxid, streamPositionBefore);
 
         // Act
         peginManager.registerUserReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
 
         // Assert - verify slot is blocked
+        StreamPosition memory streamPositionAfter = peginManager.getStreamPositionByRequestPegin(requestPeginTxid);
+        assertEq(
+            uint256(streamPositionAfter.pegStatus),
+            uint256(PegStatus.BLOCKED),
+            "Stream position status should be BLOCKED"
+        );
         Slot memory slot = streamManager.getSlot(
-            streamPositionBefore.streamId, streamPositionBefore.packetNumber, streamPositionBefore.slotId
+            streamPositionAfter.streamId, streamPositionAfter.packetNumber, streamPositionAfter.slotId
         );
         assertEq(uint256(slot.state), uint256(SlotState.BLOCKED), "Slot should be BLOCKED after user reimbursement");
     }
@@ -937,7 +935,7 @@ contract TestPeginManager is Test, HelperContract {
         // Assert - expect revert
         vm.expectRevert(
             abi.encodeWithSelector(
-                IPeginManager.PeginInvalidStatus.selector,
+                IPeginManager.InvalidPegStatus.selector,
                 requestPeginTxid,
                 PegStatus.NOT_REGISTERED,
                 PegStatus.REGISTERED
@@ -966,7 +964,7 @@ contract TestPeginManager is Test, HelperContract {
         // Assert - expect revert with PeginInvalidStatus
         vm.expectRevert(
             abi.encodeWithSelector(
-                IPeginManager.PeginInvalidStatus.selector, requestPeginTxid, PegStatus.ACCEPTED, PegStatus.REGISTERED
+                IPeginManager.InvalidPegStatus.selector, requestPeginTxid, PegStatus.ACCEPTED, PegStatus.REGISTERED
             )
         );
 
@@ -1063,9 +1061,10 @@ contract TestPeginManager is Test, HelperContract {
 
         // Verify slot is blocked
         StreamPosition memory streamPosition = peginManager.getStreamPositionByRequestPegin(requestPeginTxid);
+        assertEq(uint256(streamPosition.pegStatus), uint256(PegStatus.BLOCKED), "PegStatus should be BLOCKED");
         Slot memory slot =
             streamManager.getSlot(streamPosition.streamId, streamPosition.packetNumber, streamPosition.slotId);
-        assertEq(uint256(slot.state), uint256(SlotState.BLOCKED), "Slot should be BLOCKED");
+        assertEq(uint256(slot.state), uint256(SlotState.BLOCKED), "Slot state should be BLOCKED");
     }
 
     function test_registerUserReimbursement_Revert_BridgeBtcTxInvalidMerkleBranch() external {
@@ -1107,16 +1106,10 @@ contract TestPeginManager is Test, HelperContract {
         peginManager.registerUserReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
 
         // Try to register again - should revert because slot is already blocked
-        StreamPosition memory streamPosition = peginManager.getStreamPositionByRequestPegin(requestPeginTxid);
-
-        // Assert - expect revert with SlotNotBlockable (since slot is now BLOCKED, not RESERVED)
+        // Assert - expect revert with InvalidPegStatus (since slot is now BLOCKED, not RESERVED)
         vm.expectRevert(
             abi.encodeWithSelector(
-                IStreamManager.SlotNotBlockable.selector,
-                streamPosition.streamId,
-                streamPosition.packetNumber,
-                streamPosition.slotId,
-                SlotState.BLOCKED
+                IPeginManager.InvalidPegStatus.selector, requestPeginTxid, PegStatus.BLOCKED, PegStatus.REGISTERED
             )
         );
 
