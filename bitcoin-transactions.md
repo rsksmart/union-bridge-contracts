@@ -7,6 +7,7 @@ This document describes the Bitcoin transactions created by the Union Bridge pro
 - [Union Bridge Context](#union-bridge-context)
 - [Overview](#overview)
   - [User Transaction](#user-transaction)
+  - [Optional - Reject Pegin](#optional---reject-pegin)
   - [Accept PegIn Protocol](#accept-pegin-protocol)
   - [User Take Protocol](#user-take-protocol)
   - [Advance Funds Protocol](#advance-funds-protocol)
@@ -19,6 +20,10 @@ This document describes the Bitcoin transactions created by the Union Bridge pro
     - [Inputs](#request_pegin_tx-inputs)
     - [Outputs](#request_pegin_tx-outputs)
     - [Transaction Flow](#request_pegin_tx-transaction-flow)
+  - [1. USER_REIMBURSMENT_TX (User Reimbursement Transaction)](#1-user_reimbursment_tx-user-reimbursement-transaction)
+    - [Inputs](#user_reimbursment_tx-inputs)
+    - [Outputs](#user_reimbursment_tx-outputs)
+    - [Transaction Flow](#user_reimbursment_tx-transaction-flow)
   - [1. ACCEPT_PEGIN_TX (Accept PegIn Transaction)](#1-accept_pegin_tx-accept-pegin-transaction)
     - [Inputs](#accept_pegin_tx-inputs)
     - [Outputs](#accept_pegin_tx-outputs)
@@ -62,6 +67,7 @@ This document describes the Bitcoin transactions created by the Union Bridge pro
 The **Accept PegIn Protocol** is part of the larger Union Bridge system that facilitates cross-chain asset transfers between Bitcoin and Rootstock:
 
 - **REQUEST_PEGIN_TX** and **ACCEPT_PEGIN_TX** are part of the **peg-in flow** (Bitcoin → Rootstock)
+- **USER_REIMBURSEMENT_TX** and **REJECT_PEGIN_TX** cancel the **peg-in flow** (Bitcoin → Rootstock)
 - **USER_TAKE_TX**, **OPERATOR_TAKE_TX**, and **OPERATOR_WON_TX** are part of the **peg-out flow** (Rootstock → Bitcoin)
 - **USER_TAKE_TX** is the **common case** for peg-out (optimistic path)
 - **OPERATOR_TAKE_TX** is the **fallback** when not all committee signatures are available
@@ -74,6 +80,12 @@ The Union Bridge system includes multiple protocols. This document covers the fo
 ### User Transaction
 
 1. **REQUEST_PEGIN_TX** - Initial transaction created by user to request peg-in (peg-in flow)
+
+### Optional - Reject Pegin
+
+1. **USER_REIMBURSEMENT_TX** - User sends this transaction after a time window to recover his funds
+
+2. **REJECT_PEGIN_TX** - Committee members can reject a pegin transaction to avoid accepting a pegin.
 
 ### Accept PegIn Protocol
 
@@ -313,6 +325,66 @@ graph LR
     style D fill:#f3e5f5
 ```
 
+### 1. USER_REIMBURSMENT_TX (User Reimbursement Transaction)
+
+**Purpose**: This transactions can be send by the user to recover it's funds after the timelock to accept the pegin expires.
+
+#### USER_REIMBURSMENT_TX Inputs
+
+##### Input X (we don't know were the user is using it): From REQUEST_PEGIN_TX
+
+- **Type**: Taproot (P2TR)
+- **Spend Mode**: Script path (timelock)
+- **Sighash Type**: SIGHASH_ALL
+- **Timelock**: LONG_TIMELOCK blocks (from StreamSettings)
+- **Key Required**: User reimbursement key `reimbursement_pubkey`
+- **Previous Transaction**: REQUEST_PEGIN_TX
+- **Description**: Spends the output from the request peg-in transaction using the user reimbursment key after timelock expires.
+- **Taproot Script Details**:
+  - **Key Path**: Uses the committee aggregated key for direct spending
+  - **Script Tree**: Contains two script leaves:
+    1. **Timelock Script**: `OP_1 <TIMELOCK_BLOCKS> OP_CHECKSEQUENCEVERIFY OP_DROP <reimbursement_pubkey> OP_CHECKSIG` (1 block timelock for user reimbursement)
+    2. **OP_RETURN Script**: `OP_RETURN <rootstock_address_bytes><amount_bytes>` (contains Rootstock address and amount data)
+    3. **OP_RETURN Data Format**: `vec![rootstock_address, value.to_be_bytes().as_slice()].concat()` (concatenated rootstock address and big-endian amount bytes)
+  - **REQUEST_PEGIN_TX Script Tree**:
+
+    ```mermaid
+    graph TD
+        A[REQUEST_PEGIN_TX Taproot Output] --> B[Committee Aggregated Key]
+        A --> C[Script Tree]
+        C --> D[Leaf 1: Timelock Script]
+        C --> E[Leaf 2: OP_RETURN Script]
+        
+        D --> F["OP_1 <TIMELOCK_BLOCKS> OP_CHECKSEQUENCEVERIFY OP_DROP <reimbursement_pubkey> OP_CHECKSIG"]
+        E --> G["OP_RETURN <rootstock_address_bytes><amount_bytes><br/>vec![rootstock_address, value.to_be_bytes().as_slice()].concat()"]
+        
+        style A fill:#e1f5fe
+        style B fill:#f3e5f5
+        style C fill:#e8f5e8
+        style D fill:#fff3e0
+        style E fill:#fff3e0
+    ```
+
+#### USER_REIMBURSMENT_TX Outputs
+
+As this is a user transaction he can decide any output.
+
+#### USER_REIMBURSMENT_TX Transaction Flow
+
+```mermaid
+graph LR
+    A[User's Bitcoin UTXO] --> B[REQUEST_PEGIN_TX<br/>Inputs:<br/>• Input 0: User's Bitcoin UTXO<br/>  User's private key]
+    B --> C[REQUEST_PEGIN_TX<br/>Outputs:<br/>• Output 0: PegIn Request Output<br/>  P2TR - Committee Aggregated Key<br/><br/>--------------------------------<br/><br/>• Output 1: OP_RETURN Output<br/>  RSK pegin metadata<br/><br/>--------------------------------<br/><br/>• Output 2: Change Output<br/>  P2WPKH - User's key]
+    
+    %% Flow to next transaction
+    C --> D[USER_REIMBURSMENT_TX<br/>input X<br/>Script path: Timelock Script]
+    
+    style A fill:#e1f5fe
+    style B fill:#e1f5fe
+    style C fill:#e1f5fe
+    style D fill:#f3e5f5
+```
+
 ### 1. ACCEPT_PEGIN_TX (Accept PegIn Transaction)
 
 **Purpose**: This is the main transaction that accepts a peg-in request from a user and creates outputs that can be claimed by operators.
@@ -436,7 +508,7 @@ graph LR
   - **Script Path**: Uses long timelock script leaf for spending
   - **Script Tree**: Contains multiple script leaves (one per committee member)
   - **Script Leaf (Operator Owner)**: `OP_1 <LONG_TIMELOCK> OP_CHECKSEQUENCEVERIFY OP_DROP <operator_dispute_key> OP_CHECKSIG`
-  - **Spending Conditions**: 
+  - **Spending Conditions**:
     - Must wait for long timelock expiry (LONG_TIMELOCK blocks)
     - Must sign with operator's dispute key
     - The operator can only spend using their own script leaf (long timelock path)
@@ -588,7 +660,7 @@ The **Dispute Core Protocol** is responsible for managing dispute resolution mec
   - **Script Leaves**: One script per committee member
     - **For Operator Owner**: Long timelock script allowing operator to claim funds
     - **For Other Members**: Short timelock + Winternitz signature script allowing challenge
-  - **Spending Conditions**: 
+  - **Spending Conditions**:
     - Operator can spend via long timelock script path after timelock expiry
     - Any committee member can spend via challenge script path after short timelock expiry
   - **REIMBURSEMENT_KICKOFF_TX Output Script Tree**:
@@ -644,7 +716,7 @@ The Dispute Core Protocol integrates with the **Accept PegIn Protocol** to provi
 - **Timelock Protection**: Long timelocks prevent premature spending and ensure proper dispute resolution
 - **Challenge Mechanism**: Short timelock + Winternitz signature allows committee members to challenge operator actions
 - **Cross-Protocol Coordination**: Dispute Core Protocol coordinates with Accept PegIn Protocol and Rootstock contracts for complete peg-out functionality
-- **Operator Workflow**: 
+- **Operator Workflow**:
   1. Operator dispatches ADVANCE_FUNDS_TX and calls `registerAdvanceFunds`
   2. Operator dispatches REIMBURSEMENT_KICKOFF_TX and calls `registerReimbursementKickoff`
   3. After long timelock expires, operator dispatches OPERATOR_TAKE_TX and calls `registerOperatorTake`
@@ -744,7 +816,7 @@ graph LR
 - **Amount**: 0 sats
 - **Purpose**: Contains pegout metadata for transaction monitoring and validation
 - **Data Format**: Contains the pegout ID (`pegout_id`) as raw bytes
-- **Data Structure**: 
+- **Data Structure**:
   - **Content**: `pegout_id` (32 bytes) - The unique identifier for this peg-out request
   - **Encoding**: Raw bytes of the pegout ID
 - **Validation**: The Rootstock contract validates this OP_RETURN output when `registerAdvanceFunds` is called to ensure:
@@ -785,7 +857,7 @@ graph TD
 
 When `registerAdvanceFunds` is called on the Rootstock contract, the following validations are performed:
 
-- **Output 0 Validation**: 
+- **Output 0 Validation**:
   - Amount must equal `accept_pegin_amount - USER_TAKE_FEE`
   - Script must be P2WPKH for the user's public key
 - **Output 1 Validation**:

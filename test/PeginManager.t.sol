@@ -927,7 +927,6 @@ contract TestPeginManager is Test, HelperContract {
         bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
         BtcTransaction memory userReimbursementTx = getBtcUserReimbursementTx(requestPeginTxid);
 
-        bridgeMock.setBtcTransactionConfirmations(10);
         BtcTxSPVProof memory userReimbursementTxSPVProof = createBtcTxSPVProof(userReimbursementTx);
 
         // Assert - expect revert
@@ -974,32 +973,21 @@ contract TestPeginManager is Test, HelperContract {
         // Arrange
         uint32 reimbursementPeginVin = 0;
         (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
-        bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
+        BtcTransaction memory btcTransaction = getBtcAcceptPeginTx(requestPeginTx);
 
-        // Get the expected accept pegin txid
-        bytes32 expectedAcceptPeginTxid = peginManager.getAcceptPegin(requestPeginTxid);
+        BtcTxSPVProof memory acceptPeginTxSPVProof = createBtcTxSPVProof(btcTransaction);
+        bytes32 acceptPeginTxid = getBtcTxid(btcTransaction);
+        bytes32 expectedUserReimbursementTxid = acceptPeginTxid;
 
-        // Create a user reimbursement tx that has the same structure as accept pegin to test the check
-        // We'll create a transaction that when hashed would equal the accept pegin txid
-        // Actually, this is very difficult to test without manipulating the transaction structure
-        // The check validates: if (acceptPegins[requestPeginTxid] == userReimbursementTxid)
-        // To properly test this, we'd need to create a user reimbursement tx with the same txid as accept pegin
-        // Since this is practically impossible without complex manipulation, we'll test that normal flow works
-        // (which validates the txids are different) in the success test
-
-        // For this test, we'll verify the normal case where txids are different works correctly
-        // The actual revert case (txids being equal) is an edge case that's very difficult to reproduce
-        BtcTransaction memory userReimbursementTx = getBtcUserReimbursementTx(requestPeginTxid);
-        bytes32 userReimbursementTxid = getBtcTxid(userReimbursementTx);
-
-        // Verify the txids are different (this is the normal case)
-        assertTrue(
-            expectedAcceptPeginTxid != userReimbursementTxid,
-            "User reimbursement txid should be different from accept pegin txid"
+        // Assert - expect revert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IPeginManager.InvalidAcceptPeginTxid.selector, acceptPeginTxid, expectedUserReimbursementTxid
+            )
         );
 
-        // The actual revert case where they're equal would require creating a transaction
-        // that hashes to the same value, which is cryptographically infeasible to do intentionally
+        // Act - register accept pegin as user reimbursement
+        peginManager.registerUserReimbursement(acceptPeginTxSPVProof, reimbursementPeginVin);
     }
 
     function test_registerUserReimbursement_Revert_NotEnoughConfirmations() external {

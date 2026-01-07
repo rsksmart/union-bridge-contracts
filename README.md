@@ -575,7 +575,9 @@ sequenceDiagram
     Note right of SM: Signed transaction is ready for broadcast to Bitcoin network
 ```
 
-### Phase 3: Accept Peg-In
+### Phase 3: Accept or Reject Peg-In
+
+#### Normal Case: Accept Peg-In - All Members Signed
 
 1. **Member submits accept**: A committee member who monitors the Bitcoin network calls `acceptPegin()` with the broadcasted transaction and SPV proof
 2. **System validates**: System validates the accept transaction and proof
@@ -600,6 +602,10 @@ sequenceDiagram
     PIM-->>-ENV: PeginAccepted event
     Note right of PIM: BTC is now pegged-in to RSK, RBTC minted to user's address
 ```
+
+#### Alternative Case: Reject Pegin - Not all members signed
+
+**User Reimbursement**: After a time window the user can spend the request pegin transaction to recover the funds. If this is the case someone who monitors the Bitcoin network calls `registerUserReimbursement()` with the broadcasted transaction and SPV proof to mark that slot as BLOCKED.
 
 ## Peg-Out Process (RSK → Bitcoin)
 
