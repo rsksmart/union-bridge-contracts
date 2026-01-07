@@ -889,11 +889,11 @@ contract TestPeginManager is Test, HelperContract {
     // ============ Register User Reimbursement Tests ============
     function test_registerUserReimbursement_Success() external {
         // Arrange
-        uint32 reimbursementPeginVin = 0;
         (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
         bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
 
         BtcTransaction memory userReimbursementTx = getBtcUserReimbursementTx(requestPeginTxid);
+        uint32 reimbursementPeginVin = userReimbursementTx.inputs[0].vout;
         bytes32 userReimbursementTxid = getBtcTxid(userReimbursementTx);
         BtcTxSPVProof memory userReimbursementTxSPVProof = createBtcTxSPVProof(userReimbursementTx);
 
@@ -922,10 +922,10 @@ contract TestPeginManager is Test, HelperContract {
 
     function test_registerUserReimbursement_Revert_PeginNotRequested() external {
         // Arrange
-        uint32 reimbursementPeginVin = 0;
         (BtcTransaction memory requestPeginTx,) = getBtcRequestPeginTx();
         bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
         BtcTransaction memory userReimbursementTx = getBtcUserReimbursementTx(requestPeginTxid);
+        uint32 reimbursementPeginVin = userReimbursementTx.inputs[0].vout;
 
         BtcTxSPVProof memory userReimbursementTxSPVProof = createBtcTxSPVProof(userReimbursementTx);
 
@@ -945,7 +945,6 @@ contract TestPeginManager is Test, HelperContract {
 
     function test_registerUserReimbursement_Revert_PeginAlreadyAccepted() external {
         // Arrange
-        uint32 reimbursementPeginVin = 0;
         (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
         bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
 
@@ -956,6 +955,7 @@ contract TestPeginManager is Test, HelperContract {
 
         // Now try to register user reimbursement
         BtcTransaction memory userReimbursementTx = getBtcUserReimbursementTx(requestPeginTxid);
+        uint32 reimbursementPeginVin = userReimbursementTx.inputs[0].vout;
         BtcTxSPVProof memory userReimbursementTxSPVProof = createBtcTxSPVProof(userReimbursementTx);
 
         // Assert - expect revert with PeginInvalidStatus
@@ -992,11 +992,11 @@ contract TestPeginManager is Test, HelperContract {
 
     function test_registerUserReimbursement_Revert_NotEnoughConfirmations() external {
         // Arrange
-        uint32 reimbursementPeginVin = 0;
         (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
         bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
 
         BtcTransaction memory userReimbursementTx = getBtcUserReimbursementTx(requestPeginTxid);
+        uint32 reimbursementPeginVin = userReimbursementTx.inputs[0].vout;
         int256 actualConfirmations = 0;
         bridgeMock.setBtcTransactionConfirmations(actualConfirmations);
         BtcTxSPVProof memory userReimbursementTxSPVProof = createBtcTxSPVProof(userReimbursementTx);
@@ -1017,10 +1017,10 @@ contract TestPeginManager is Test, HelperContract {
 
     function test_registerUserReimbursement_Revert_EnforcedPause_PausedContract() external {
         // Arrange
-        uint32 reimbursementPeginVin = 0;
         (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
         bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
         BtcTransaction memory userReimbursementTx = getBtcUserReimbursementTx(requestPeginTxid);
+        uint32 reimbursementPeginVin = userReimbursementTx.inputs[0].vout;
         BtcTxSPVProof memory userReimbursementTxSPVProof = createBtcTxSPVProof(userReimbursementTx);
 
         pauseContracts();
@@ -1034,10 +1034,10 @@ contract TestPeginManager is Test, HelperContract {
 
     function test_registerUserReimbursement_Success_UnpausedContract() external {
         // Arrange
-        uint32 reimbursementPeginVin = 0;
         (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
         bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
         BtcTransaction memory userReimbursementTx = getBtcUserReimbursementTx(requestPeginTxid);
+        uint32 reimbursementPeginVin = userReimbursementTx.inputs[0].vout;
         BtcTxSPVProof memory userReimbursementTxSPVProof = createBtcTxSPVProof(userReimbursementTx);
 
         pauseAndUnpauseContracts();
@@ -1055,10 +1055,10 @@ contract TestPeginManager is Test, HelperContract {
 
     function test_registerUserReimbursement_Revert_BridgeBtcTxInvalidMerkleBranch() external {
         // Arrange
-        uint32 reimbursementPeginVin = 0;
         (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
         bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
         BtcTransaction memory userReimbursementTx = getBtcUserReimbursementTx(requestPeginTxid);
+        uint32 reimbursementPeginVin = userReimbursementTx.inputs[0].vout;
         bytes32 userReimbursementTxid = getBtcTxid(userReimbursementTx);
 
         // Set Mock Bridge state to invalid merkle branch
@@ -1081,11 +1081,10 @@ contract TestPeginManager is Test, HelperContract {
 
     function test_registerUserReimbursement_Revert_AlreadyRegistered() external {
         // Arrange
-        uint32 reimbursementPeginVin = 0;
         (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
         bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
         BtcTransaction memory userReimbursementTx = getBtcUserReimbursementTx(requestPeginTxid);
-
+        uint32 reimbursementPeginVin = userReimbursementTx.inputs[0].vout;
         BtcTxSPVProof memory userReimbursementTxSPVProof = createBtcTxSPVProof(userReimbursementTx);
 
         // Register first time
@@ -1105,12 +1104,12 @@ contract TestPeginManager is Test, HelperContract {
 
     function test_registerUserReimbursement_Revert_IncorrectVout() external {
         // Arrange
-        uint32 reimbursementPeginVin = 0;
         (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
         bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
 
         // Create a user reimbursement tx with incorrect vout (using vout 1 instead of 0)
         BtcTransaction memory userReimbursementTx = getBtcUserReimbursementTx(requestPeginTxid);
+        uint32 reimbursementPeginVin = userReimbursementTx.inputs[0].vout;
         uint32 incorrectVout = reimbursementPeginVin + 1;
         userReimbursementTx.inputs[0].vout = incorrectVout;
 

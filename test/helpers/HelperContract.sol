@@ -394,12 +394,7 @@ abstract contract HelperContract is Test, TestUtils {
     function getBtcUserReimbursementTx(bytes32 _requestPeginTxid) internal pure returns (BtcTransaction memory) {
         BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
         // Input spends the request pegin taptree output (vout 0)
-        btcInputs[0] = BtcTxIn({
-            txId: _requestPeginTxid,
-            vout: Constants.REIMBURSMENT_PEGIN_VIN_TAPTREE,
-            sequence: Constants.SEQUENCE,
-            scriptSig: hex""
-        });
+        btcInputs[0] = BtcTxIn({txId: _requestPeginTxid, vout: 0, sequence: Constants.SEQUENCE, scriptSig: hex""});
 
         // Output: P2WPKH to user's reimbursement pubkey
         BtcTxOut[] memory btcOutputs = new BtcTxOut[](1);
