@@ -201,56 +201,6 @@ contract PeginManager is IPeginManager, PegManagerBase {
         signatureManager.initOperatorTakeTxids(acceptPeginSignatureData.txid, committeeId);
     }
 
-    function registerUserReimbursement(BtcTxSPVProof calldata _userReimbursementTxSPVProof) external whenNotPaused {
-        // the first input should be the request peg-in txid
-        bytes32 requestPeginTxid =
-            _userReimbursementTxSPVProof.btcTx.inputs[Constants.REIMBURSMENT_PEGIN_VIN_TAPTREE].txId;
-
-        // Validate the peg in request tx exists and the status
-        StreamPosition memory streamInfo = _getStreamPositionByRequestPegin(requestPeginTxid);
-        if (streamInfo.pegStatus != PegStatus.REGISTERED) {
-            revert PeginInvalidStatus(requestPeginTxid, streamInfo.pegStatus, PegStatus.REGISTERED);
-        }
-
-        // Calculate userReimbursementTxid from BtcTransaction
-        bytes32 userReimbursementTxid = bitcoinManager.getBtcTxid(_userReimbursementTxSPVProof.btcTx);
-
-        // Valdate the vout is correct
-        if (
-            _userReimbursementTxSPVProof.btcTx.inputs[Constants.REIMBURSMENT_PEGIN_VIN_TAPTREE].vout
-                != Constants.REQUEST_PEGIN_VOUT_TAPTREE
-        ) {
-            revert IncorrectVout(
-                _userReimbursementTxSPVProof.btcTx.inputs[Constants.REIMBURSMENT_PEGIN_VIN_TAPTREE].vout,
-                Constants.REQUEST_PEGIN_VOUT_TAPTREE
-            );
-        }
-
-        // Validate the txid is NOT the same as the accept peg-in txid
-        if (acceptPegins[requestPeginTxid] == userReimbursementTxid) {
-            revert InvalidAcceptPeginTxid(acceptPegins[requestPeginTxid], userReimbursementTxid);
-        }
-
-        // Verify the userReimbursementTxid part of the Merkle Root of Tx of a Block
-        // and that block is inside Bitcoin Mainchain
-        // annd has enough confirmations
-        _verifyTxConfirmations(
-            streamManager.getStreamById(streamInfo.streamId).peginConfirmations,
-            userReimbursementTxid,
-            _userReimbursementTxSPVProof.blockHash,
-            _userReimbursementTxSPVProof.merkleBranchPath,
-            _userReimbursementTxSPVProof.merkleBranchHashes
-        );
-
-        // Block slot as it has already been reimbursted to the user.
-        // slither-disable-next-line reentrancy-no-eth reentrancy-benign
-        streamManager.blockSlot(streamInfo.streamId, streamInfo.packetNumber, streamInfo.slotId);
-
-        emit UserReimbursementRegistered(
-            userReimbursementTxid, requestPeginTxid, streamInfo.streamId, streamInfo.packetNumber, streamInfo.slotId
-        );
-    }
-
     function _validateRequestPeginProof(BtcTxSPVProof calldata _requestPeginTxSPVProof)
         internal
         view
@@ -336,6 +286,65 @@ contract PeginManager is IPeginManager, PegManagerBase {
             _requestPeginTxSPVProof.blockHash,
             _requestPeginTxSPVProof.merkleBranchPath,
             _requestPeginTxSPVProof.merkleBranchHashes
+        );
+    }
+
+    /// @notice Registers a user reimbursement transaction from Bitcoin
+    /// @param _userReimbursementTxSPVProof The BTC SPV proof of the user reimbursement transaction
+    /// @param _reimbursementPeginVin The input index of the reimbursement peg-in transaction
+    /// @dev This function validates the user reimbursement transaction, it must spend the output from the request peg-in transaction
+    /// @dev Updates the stream position to USER_TAKE and stores the user reimbursement transaction in the stream
+    /// @dev Emits UserReimbursementRegistered event upon successful registration
+    /// @dev Only callable when contract is unpaused
+    function registerUserReimbursement(
+        BtcTxSPVProof calldata _userReimbursementTxSPVProof,
+        uint32 _reimbursementPeginVin
+    ) external whenNotPaused {
+        // the first input should be the request peg-in txid
+        bytes32 requestPeginTxid = _userReimbursementTxSPVProof.btcTx.inputs[_reimbursementPeginVin].txId;
+
+        // Validate the peg in request tx exists and the status
+        StreamPosition memory streamInfo = _getStreamPositionByRequestPegin(requestPeginTxid);
+        if (streamInfo.pegStatus != PegStatus.REGISTERED) {
+            revert PeginInvalidStatus(requestPeginTxid, streamInfo.pegStatus, PegStatus.REGISTERED);
+        }
+
+        // Calculate userReimbursementTxid from BtcTransaction
+        bytes32 userReimbursementTxid = bitcoinManager.getBtcTxid(_userReimbursementTxSPVProof.btcTx);
+
+        // Valdate the vout is correct
+        if (
+            _userReimbursementTxSPVProof.btcTx.inputs[_reimbursementPeginVin].vout
+                != Constants.REQUEST_PEGIN_VOUT_TAPTREE
+        ) {
+            revert IncorrectVout(
+                _userReimbursementTxSPVProof.btcTx.inputs[_reimbursementPeginVin].vout,
+                Constants.REQUEST_PEGIN_VOUT_TAPTREE
+            );
+        }
+
+        // Validate the txid is NOT the same as the accept peg-in txid
+        if (acceptPegins[requestPeginTxid] == userReimbursementTxid) {
+            revert InvalidAcceptPeginTxid(acceptPegins[requestPeginTxid], userReimbursementTxid);
+        }
+
+        // Verify the userReimbursementTxid part of the Merkle Root of Tx of a Block
+        // and that block is inside Bitcoin Mainchain
+        // annd has enough confirmations
+        _verifyTxConfirmations(
+            streamManager.getStreamById(streamInfo.streamId).peginConfirmations,
+            userReimbursementTxid,
+            _userReimbursementTxSPVProof.blockHash,
+            _userReimbursementTxSPVProof.merkleBranchPath,
+            _userReimbursementTxSPVProof.merkleBranchHashes
+        );
+
+        // Block slot as it has already been reimbursted to the user.
+        // slither-disable-next-line reentrancy-no-eth reentrancy-benign
+        streamManager.blockSlot(streamInfo.streamId, streamInfo.packetNumber, streamInfo.slotId);
+
+        emit UserReimbursementRegistered(
+            userReimbursementTxid, requestPeginTxid, streamInfo.streamId, streamInfo.packetNumber, streamInfo.slotId
         );
     }
 
