@@ -371,8 +371,8 @@ abstract contract HelperContract is Test, TestUtils {
 
     function getAcceptPeginP2TROut() internal pure returns (BtcTxOut memory) {
         return BtcTxOut({
-            // we substract the speed up amount twice: once for the speed up output and once for the enabler output
-            amount: VALUE - (Constants.P2TR_FEE + Constants.SPEED_UP_AMOUNT + Constants.SPEED_UP_AMOUNT),
+            // we subtract the fee, speed up amount, and enabler amount from the value
+            amount: VALUE - (Constants.P2TR_FEE + Constants.SPEED_UP_AMOUNT + Constants.ENABLER_AMOUNT),
             scriptPubKey: hex"51209687ca13c4fb3fa3ba05c2f9119dda026bfe66f0098dcf9b896a98ecb2e96702"
         });
     }

@@ -18,7 +18,7 @@ import {Committee} from "src/interfaces/ICommitteeRegistry.sol";
 contract TestSignatureManager is Test, HelperContract {
     uint128 internal setupCommitteeId;
     Committee internal setupExpectedCommittee;
-    bytes32 constant ACCEPT_PEGIN_TXID = hex"f837a95b6ec0ccd8de062d670fa2f030717a5620fa895b3944219cf9ead6726f";
+    bytes32 constant ACCEPT_PEGIN_TXID = hex"7066db15e0f6989207b98ac8511491033cf349096354777e17bbdf2f30d87497";
 
     function setUp() external {
         runTestDeployScript();

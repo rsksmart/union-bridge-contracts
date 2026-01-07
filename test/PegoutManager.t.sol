@@ -67,8 +67,8 @@ contract TestPegoutManager is Test, HelperContract {
         BitcoinSignatureData memory expectedSignatureData = BitcoinSignatureData({
             tx: BtcTransaction({version: 2, inputs: inputs, outputs: outputs, locktime: 0}),
             txid: 0xabfb8bf949dbb4c3cb6d3915b2bef8a143b70fce3b9fd4b4fe9be37f068248ce,
-            signatureHash: 0x804ac902aa1508fa4a465795bfe2424f4e07b4de22f9a6d852b76b2b75346acb,
-            signatureMessage: hex"000102000000000000002b8084abbfc6f1a5fe96508cb072809c2d082150a6c62d95f8080f7ec35e4cce20cb368f69e16a937d044c377b1f7fd5568bb167c478f5dbec16b25df5f66e422c5f3653a318908b90809fa9dcebdcb183de87e4551b25545400edc916887bc982d397cbbcff87bc5d0c4c70e424f9b830efbad7bf0be479da5d1d1bafdb9798bfd84e32f90f61452c95235739095ef9347def223e2b2a49d799abe42099e5850000000000"
+            signatureHash: 0xdd29c8f66fa383866201b7b3f03da54ba426f0da1b14594df99e8eaaa32d520a,
+            signatureMessage: hex"000102000000000000002b8084abbfc6f1a5fe96508cb072809c2d082150a6c62d95f8080f7ec35e4cce17685862d673aaad7a4904f7eb4c397f372737f0476a1b1af21e168466de61de2c5f3653a318908b90809fa9dcebdcb183de87e4551b25545400edc916887bc982d397cbbcff87bc5d0c4c70e424f9b830efbad7bf0be479da5d1d1bafdb9798bfd84e32f90f61452c95235739095ef9347def223e2b2a49d799abe42099e5850000000000"
         });
 
         bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
@@ -139,27 +139,27 @@ contract TestPegoutManager is Test, HelperContract {
         // Counter should start in 0, otherwise the test will fail or expectedDigest and userPubKey should be updated.
         BtcTxIn[] memory inputs = new BtcTxIn[](2);
         inputs[0] = BtcTxIn({
-            txId: 0xf837a95b6ec0ccd8de062d670fa2f030717a5620fa895b3944219cf9ead6726f,
+            txId: 0x7066db15e0f6989207b98ac8511491033cf349096354777e17bbdf2f30d87497,
             vout: 0,
             sequence: 4294967293,
             scriptSig: hex""
         });
         inputs[1] = BtcTxIn({
-            txId: 0xf837a95b6ec0ccd8de062d670fa2f030717a5620fa895b3944219cf9ead6726f,
+            txId: 0x7066db15e0f6989207b98ac8511491033cf349096354777e17bbdf2f30d87497,
             vout: 1, // Enabler output from accept pegin
             sequence: 4294967293,
             scriptSig: hex""
         });
 
         BtcTxOut[] memory outputs = new BtcTxOut[](2);
-        outputs[0] = BtcTxOut({amount: 997710, scriptPubKey: hex"00143fd2e14f4b448a071e074e1e1879318447f2a266"});
+        outputs[0] = BtcTxOut({amount: 997170, scriptPubKey: hex"00143fd2e14f4b448a071e074e1e1879318447f2a266"});
         outputs[1] = BtcTxOut({amount: 540, scriptPubKey: hex"00143fd2e14f4b448a071e074e1e1879318447f2a266"});
 
         BitcoinSignatureData memory expectedSignatureData = BitcoinSignatureData({
             tx: BtcTransaction({version: 2, inputs: inputs, outputs: outputs, locktime: 0}),
-            txid: 0xafad842b1b8f49f6d9de8aa5cd5fdb9a5f50f2b33fc8b1acdcb2c9d3c9ea9133,
-            signatureHash: 0xa5390b84db52aa3f66560572657bad25d651e6dea3a90907d6787d0d297d4005,
-            signatureMessage: hex"0001020000000000000089f6e06b960cb1d58b400ce4723a6260fd1bbec42160c17983754cff066186932c1e076a7009940f0eb2b5dd000c843b832b4d8a557143abdb0a3cd82a6c5280407675effde803a1d25ae0cef3d28078714be9b575b64508f9f0aebe4fed57fb82d397cbbcff87bc5d0c4c70e424f9b830efbad7bf0be479da5d1d1bafdb9798746cd9645b9737e2fe4f54c9efe0315e18e49e72384bb3d7e04aedb0d8887da30000000000"
+            txid: 0xa783194dd3344414b1db1d6998b267e2f14efaa352d54dee8cc4a82896aa49e5,
+            signatureHash: 0x8dfc4febb29188322a1caadd525db8c3fe1c46f6712174d1e773b99548900abb,
+            signatureMessage: hex"00010200000000000000a2044f500cad83fd1ad061a734ea9fd9a6adc2369e88089b4355d01d9ccf9c2e59d52669fd0ba656235c4671b864d775311a265ac214f4d751b9517b072a834b407675effde803a1d25ae0cef3d28078714be9b575b64508f9f0aebe4fed57fb82d397cbbcff87bc5d0c4c70e424f9b830efbad7bf0be479da5d1d1bafdb9798f2a5c89faccd16313699d479ce6a709382b4c8c3089dccc0a0225da80421c01a0000000000"
         });
 
         bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
@@ -1516,8 +1516,8 @@ contract TestPegoutManager is Test, HelperContract {
         BitcoinSignatureData memory expectedSignatureData = BitcoinSignatureData({
             tx: BtcTransaction({version: 2, inputs: inputs, outputs: outputs, locktime: 0}),
             txid: 0xabfb8bf949dbb4c3cb6d3915b2bef8a143b70fce3b9fd4b4fe9be37f068248ce,
-            signatureHash: 0x804ac902aa1508fa4a465795bfe2424f4e07b4de22f9a6d852b76b2b75346acb,
-            signatureMessage: hex"000102000000000000002b8084abbfc6f1a5fe96508cb072809c2d082150a6c62d95f8080f7ec35e4cce20cb368f69e16a937d044c377b1f7fd5568bb167c478f5dbec16b25df5f66e422c5f3653a318908b90809fa9dcebdcb183de87e4551b25545400edc916887bc982d397cbbcff87bc5d0c4c70e424f9b830efbad7bf0be479da5d1d1bafdb9798bfd84e32f90f61452c95235739095ef9347def223e2b2a49d799abe42099e5850000000000"
+            signatureHash: 0xdd29c8f66fa383866201b7b3f03da54ba426f0da1b14594df99e8eaaa32d520a,
+            signatureMessage: hex"000102000000000000002b8084abbfc6f1a5fe96508cb072809c2d082150a6c62d95f8080f7ec35e4cce17685862d673aaad7a4904f7eb4c397f372737f0476a1b1af21e168466de61de2c5f3653a318908b90809fa9dcebdcb183de87e4551b25545400edc916887bc982d397cbbcff87bc5d0c4c70e424f9b830efbad7bf0be479da5d1d1bafdb9798bfd84e32f90f61452c95235739095ef9347def223e2b2a49d799abe42099e5850000000000"
         });
 
         bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";

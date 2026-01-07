@@ -142,20 +142,20 @@ library Constants {
     /// @dev Amount sent to speed-up output to accelerate parent transaction
     uint64 constant SPEED_UP_AMOUNT = 540;
 
-    /// @dev Enabler output amount in satoshis for dispute resolution
-    /// @dev Amount sent to enabler output for operator dispute mechanism
-    uint64 constant ENABLER_AMOUNT = 540;
-
     /// @dev Dust threshold in satoshis for Bitcoin transactions
     /// @dev Minimum amount required for a Bitcoin output to be considered valid
-    uint64 constant DUST_THRESHOLD = 300;
+    uint64 constant DUST_AMOUNT = 540;
+
+    /// @dev Enabler output amount in satoshis for dispute resolution
+    /// @dev Amount sent to enabler output for operator dispute mechanism
+    uint64 constant ENABLER_AMOUNT = DUST_AMOUNT * 2;
 
     /// @dev Length of signature nonce in bytes
     /// @dev Used for multi-signature operations in committee transactions
     uint8 constant SIGNATURE_NONCE_LENGTH = 66;
 
     // Stream and Packet Constants
-    /// @dev Number of slots per packet in the stream
+    /// @dev Number of slots per packet in the streamfv
     /// @dev NOTE: SLOTS_PER_PACKET should be smaller than 2^16 to avoid overflow of Stream.pegoutSlotPointer
     uint8 constant SLOTS_PER_PACKET = 100;
 
