@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import {SlotState, Slot, StreamManager} from "src/StreamManager.sol";
 import {ICommitteeRegistry, Role} from "src/interfaces/ICommitteeRegistry.sol";
-import {StreamManagerSettings, StreamSettings, TimelockSettings} from "src/interfaces/IStreamManager.sol";
+import {StreamManagerSettings, StreamSettings} from "src/interfaces/IStreamManager.sol";
 
 /// @notice Wrapper for testing StreamManager
 contract StreamManagerHarness is StreamManager {

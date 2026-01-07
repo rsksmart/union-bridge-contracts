@@ -904,11 +904,11 @@ abstract contract HelperContract is Test, TestUtils {
     ) internal view {
         // Verify each request gets correct slotId
         StreamPosition memory streamPosition = peginManager.getStreamPositionByRequestPegin(_requestPeginTxid);
-        assertEq(streamPosition.streamId, 1, "Incorrect streamId registered");
-        assertEq(streamPosition.slotId, _slotId, "Incorrect slotId registered");
+        assertEq(streamPosition.streamId, _streamId, "Incorrect streamId registered");
         assertEq(streamPosition.packetNumber, _packetNumber, "Incorrect packetNumber registered");
+        assertEq(streamPosition.slotId, _slotId, "Incorrect slotId registered");
 
-        // Verify slot is RESERVED
+        // Verify slot state
         Slot memory reservedSlot =
             streamManager.getSlot(streamPosition.streamId, streamPosition.packetNumber, streamPosition.slotId);
         assertEq(uint256(reservedSlot.state), uint256(_expectedSlotState), "Incorrect slot state registered");
