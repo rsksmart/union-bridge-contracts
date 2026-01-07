@@ -14,6 +14,8 @@ struct RequestPeginTempInfo {
     bytes32 btcReimbursementPubKey;
     /// @notice The signature hash that committee members need to sign
     bytes32 acceptPeginSignatureHash;
+    /// @notice The block number of the request peg-in transaction
+    int256 btcBlockNumber;
 }
 
 /// @title IPeginManager
@@ -88,19 +90,15 @@ interface IPeginManager is IPausable {
     /// @param committeeId The ID of the committee responsible for this peg-in
     /// @param requestPeginTxid The hash of the peg-in request transaction
     /// @param acceptPeginTxid The hash of the accept peg-in transaction
-    /// @param vout The output index of the transaction
     /// @param streamPosition The struct with the position information (stream, packet, slot, status)
     /// @param requestPeginInfo Temporary information needed for the accept phase
-    /// @param prevoutData Data about the previous output being spent
     /// @param acceptPeginSignatureMessage The signature message for committee signing
     event PeginRequested(
         uint128 indexed committeeId,
         bytes32 indexed requestPeginTxid,
         bytes32 indexed acceptPeginTxid,
-        uint64 vout,
         StreamPosition streamPosition,
         RequestPeginTempInfo requestPeginInfo,
-        PrevoutData prevoutData,
         bytes acceptPeginSignatureMessage
     );
 
@@ -194,4 +192,9 @@ interface IPeginManager is IPausable {
     /// @notice Thrown when the user reimbursement transaction id is the same as the accept peg-in txid
     /// @param userReimbursementTxid The user reimbursement transaction id that is the same as the accept peg-in txid
     error InvalidUserReimbursementTx(bytes32 userReimbursementTxid);
+
+    /// @notice Thrown when the user reimbursement transaction is mined before the timelock period
+    /// @param blocksElapsedSinceRequestPegin The number of blocks elapsed since the request peg-in transaction
+    /// @param timelockBlocks The timelock period in blocks
+    error UserReimbursementBeforeTimelock(int256 blocksElapsedSinceRequestPegin, uint256 timelockBlocks);
 }

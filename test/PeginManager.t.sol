@@ -88,6 +88,7 @@ contract TestPeginManager is Test, HelperContract {
         // Arrange
         (BtcTransaction memory btcTransaction,) = getBtcRequestPeginTx();
         // Set Mock Bridge state
+        bridgeMock.setBtcBlockchainBestChainHeight(100);
         bridgeMock.setBtcTransactionConfirmations(10);
         // Create Pegin struct information
         BtcTxSPVProof memory requestPeginTxSPVProof = createBtcTxSPVProof(btcTransaction);
@@ -100,10 +101,9 @@ contract TestPeginManager is Test, HelperContract {
         RequestPeginTempInfo memory expectedRequestPeginInfo = RequestPeginTempInfo({
             rskDestinationAddress: RSK_DESTINATION_ADDRESS,
             btcReimbursementPubKey: BTC_REIMBURSEMENT_PUBKEY,
-            acceptPeginSignatureHash: expectedAcceptPeginSignatureHash
+            acceptPeginSignatureHash: expectedAcceptPeginSignatureHash,
+            btcBlockNumber: 1
         });
-        PrevoutData memory expectedPrevoutData =
-            PrevoutData({value: btcTransaction.outputs[0].amount, scriptPubKey: btcTransaction.outputs[0].scriptPubKey});
         uint128 expectedCommitteeId = streamManager.getCommitteeId(setupStreamId, PACKET_NUMBER);
 
         // Assert
@@ -112,7 +112,6 @@ contract TestPeginManager is Test, HelperContract {
             expectedCommitteeId,
             expectedRequestPeginTxid,
             expectedAcceptPeginTxid,
-            0,
             StreamPosition({
                 streamId: setupStreamId,
                 packetNumber: PACKET_NUMBER,
@@ -120,7 +119,6 @@ contract TestPeginManager is Test, HelperContract {
                 pegStatus: PegStatus.REGISTERED
             }),
             expectedRequestPeginInfo,
-            expectedPrevoutData,
             expectedAcceptPeginSignatureMessage
         );
 
