@@ -79,17 +79,17 @@ The **Accept PegIn Protocol** is part of the larger Union Bridge system that fac
 
 ## Overview
 
-The Union Bridge system includes multiple protocols. This document covers the following protocols and their transaction types:
+The Union Bridge system includes multiple BitVMX protocols. This document covers the following BitVMX union protocols and their transaction types:
 
 ### User Transaction
 
 1. **REQUEST_PEGIN_TX** - Initial transaction created by user to request peg-in (peg-in flow)
 
-### Optional - Reject Pegin
+2. **USER_REIMBURSEMENT_TX** - User sends this transaction after a time window to recover the funds
 
-1. **USER_REIMBURSEMENT_TX** - User sends this transaction after a time window to recover the funds
+### Reject Pegin
 
-2. **REJECT_PEGIN_TX** - Committee members can reject a pegin transaction to avoid accepting a pegin.
+1. **REJECT_PEGIN_TX** - Committee members can reject a pegin transaction to avoid accepting a pegin.
 
 ### Accept PegIn Protocol
 
@@ -115,36 +115,37 @@ The following diagram shows how all transactions across the different protocols 
 
 ```mermaid
 graph TD
-    A[REQUEST_PEGIN_TX<br/>User Transaction<br/>created by user] -->|spends with committee aggregated key| B[ACCEPT_PEGIN_TX<br/>Accept PegIn Protocol]
+    A[REQUEST_PEGIN_TX<br/>User Transaction<br/>created by user] -->|Output 0 and 2: Key path<br/>spends with committee aggregated key| B[ACCEPT_PEGIN_TX<br/>Accept PegIn Protocol]
+    A -->|Output 0: Script path<br/>spends with timelock| O[USER_REIMBURSEMENT_TX<br/>User Transaction<br/>User recovers funds]
+    A -->|Output 2: Script path<br/>spends with dispute key| P[REJECT_PEGIN_TX<br/>Reject Pegin<br/>Committee member rejects pegin]
     B -->|Output 0| C[USER_TAKE_TX<br/>User Take Protocol<br/>Common Case]
     B -->|Output 0| D[OPERATOR_TAKE_TX<br/>Accept PegIn Protocol<br/>Fallback]
     B -->|Output 0| E[OPERATOR_WON_TX<br/>Accept PegIn Protocol<br/>Disputed Fallback]
-    B -->|Output 1| F[User speedup P2WPKH<br/>Accept PegIn Protocol]
+    B -->|Output 2| F[User speedup P2WPKH<br/>Accept PegIn Protocol]
     
     %% Advance Funds Protocol
-    G[ADVANCE_FUNDS_TX<br/>Advance Funds Protocol<br/>Operator advances funds to user] -->|Proof of payment| H[Dispute Resolution<br/>If challenged, validates operator actions]
-    H -->|If proof correct| E
+    G[ADVANCE_FUNDS_TX<br/>Advance Funds Protocol<br/>Operator advances funds to user] -->|Proof of payment| M
     
     %% Dispute Core Protocol
     I[Dispute Core<br/>OP_INITIAL_DEPOSIT_TX] -->|spends with Winternitz signature| M[REIMBURSEMENT_KICKOFF_TX<br/>Dispute Core Protocol]
-    M -->|Output 0: OPERATOR_TAKE_ENABLER| J[OPERATOR_TAKE_TX input 1<br/>Accept PegIn Protocol]
+    M -->|Output 0: OPERATOR_TAKE_ENABLER| D
     M -->|Output 0| N[CHALLENGE_TX<br/>Dispute Core Protocol]
-    K[REVEAL_INPUT_TX<br/>Dispute Core Protocol] -->|spends with committee aggregated key| L[OPERATOR_WON_TX input 1<br/>Accept PegIn Protocol]
+    N --> K[REVEAL_INPUT_TX<br/>Dispute Core Protocol]
+    K -->|Output 0: OPERATOR_WON_ENABLER| E
     
     style A fill:#e1f5fe
     style B fill:#f3e5f5
     style C fill:#e8f5e8
-    style D fill:#fff3e0
-    style E fill:#fce4ec
+    style D fill:#e8f5e8
+    style E fill:#e8f5e8
     style F fill:#fff3e0
     style G fill:#fff3e0
-    style H fill:#fce4ec
     style I fill:#fce4ec
-    style J fill:#fce4ec
     style K fill:#fce4ec
-    style L fill:#fce4ec
     style M fill:#fce4ec
     style N fill:#fce4ec
+    style O fill:#ffe0b2
+    style P fill:#ffe0b2
 ```
 
 **Prerequisites**: The Accept PegIn Protocol requires that a **REQUEST_PEGIN_TX** transaction must be created by the user and confirmed on the blockchain before the ACCEPT_PEGIN_TX can be executed, as it serves as the input source for the accept transaction.
@@ -305,10 +306,37 @@ graph TD
   - **Reimbursement XPK**: `reimbursement_pubkey` (32 bytes)
   - **Total Size**: 69 bytes
 
-##### Output 2: Change Output (Optional)
+##### Output 2: Pegin Request Accept Enabler
+
+- **Type**: Taproot (P2TR)
+- **Amount**: `ENABLER_AMOUNT` (540 sats)
+- **Key**: Committee aggregated key (`take_aggregated_key`)
+- **Leaves**: Contains script leaves for each committee member's dispute key
+- **Purpose**: Enabler output that can be consumed by ACCEPT_PEGIN_TX (via key path) or REJECT_PEGIN_TX (via script path with dispute key) to control whether the pegin can be accepted
+- **Taproot Script Details**:
+  - **Key Path**: Uses committee aggregated key for direct spending at accept pegin
+  - **Script Tree**: Contains multiple script leaves, one per committee member dispute key to reject the pegin:
+    - **verify_signature Script**: `<dispute_xonly_pubkey> OP_CHECKSIG`
+  - **REQUEST_PEGIN_TX Enabler Script Tree**:
+
+    ```mermaid
+    graph TD
+        A[REQUEST_PEGIN_TX Enabler Output] --> B[Committee Aggregated Key]
+        A --> C[Script Tree]
+        C --> D[Leaf N: verify_signature Script]
+        
+        D --> E["<dispute_xonly_pubkey> OP_CHECKSIG"]
+        
+        style A fill:#e1f5fe
+        style B fill:#f3e5f5
+        style C fill:#e8f5e8
+        style D fill:#fff3e0
+    ```
+
+##### Output 3: Change Output (Optional)
 
 - **Type**: SegWit (P2WPKH)
-- **Amount**: `input_value - pegin_amount - fees` (if > 546 sats)
+- **Amount**: `input_value - pegin_amount - ENABLER_AMOUNT - fees` (if > 546 sats)
 - **Key**: User's public key
 - **Purpose**: Returns unused funds to the user
 - **Condition**: Only created if change amount > 546 sats (dust threshold)
@@ -318,7 +346,7 @@ graph TD
 ```mermaid
 graph LR
     A[User's Bitcoin UTXO] --> B[REQUEST_PEGIN_TX<br/>Inputs:<br/>• Input 0: User's Bitcoin UTXO<br/>  User's private key]
-    B --> C[REQUEST_PEGIN_TX<br/>Outputs:<br/>• Output 0: PegIn Request Output<br/>  P2TR - Committee Aggregated Key<br/><br/>--------------------------------<br/><br/>• Output 1: OP_RETURN Output<br/>  RSK pegin metadata<br/><br/>--------------------------------<br/><br/>• Output 2: Change Output<br/>  P2WPKH - User's key]
+    B --> C[REQUEST_PEGIN_TX<br/>Outputs:<br/>• Output 0: PegIn Request Output<br/>  P2TR - Committee Aggregated Key<br/><br/>--------------------------------<br/><br/>• Output 1: OP_RETURN Output<br/>  RSK pegin metadata<br/><br/>--------------------------------<br/><br/>• Output 2: Pegin Request Accept Enabler<br/>  P2TR - Members dispute Key<br/><br/>--------------------------------<br/><br/>• Output 3: Change Output<br/>  P2WPKH - User's key]
     
     %% Flow to next transaction
     C --> D[ACCEPT_PEGIN_TX<br/>input 0<br/>Key Path: Committee Aggregated Key]
@@ -331,30 +359,30 @@ graph LR
 
 ### 1. USER_REIMBURSMENT_TX (User Reimbursement Transaction)
 
-**Purpose**: This transactions can be send by the user to recover it's funds after the timelock to accept the pegin expires.
+**Purpose**: This transaction can be sent by the user to recover their funds after the timelock to accept the pegin expires. It consumes Output 0 (PegIn Request Output) from REQUEST_PEGIN_TX via script path using the timelock script.
 
 #### USER_REIMBURSMENT_TX Inputs
 
-##### Input X (we don't know were the user is using it): From REQUEST_PEGIN_TX
+##### Input 0: From REQUEST_PEGIN_TX Output 0
 
 - **Type**: Taproot (P2TR)
 - **Spend Mode**: Script path (timelock)
 - **Sighash Type**: SIGHASH_ALL
 - **Timelock**: LONG_TIMELOCK blocks (from StreamSettings)
 - **Key Required**: User reimbursement key `reimbursement_pubkey`
-- **Previous Transaction**: REQUEST_PEGIN_TX
-- **Description**: Spends the output from the request peg-in transaction using the user reimbursment key after timelock expires.
+- **Previous Transaction**: REQUEST_PEGIN_TX Output 0 (PegIn Request Output)
+- **Description**: Spends Output 0 (PegIn Request Output) from the request peg-in transaction using the user reimbursement key after the timelock expires. This provides an alternative path for the user to recover their funds if the committee does not accept the pegin within the timelock period.
 - **Taproot Script Details**:
   - **Key Path**: Uses the committee aggregated key for direct spending
   - **Script Tree**: Contains two script leaves:
     1. **Timelock Script**: `OP_1 <TIMELOCK_BLOCKS> OP_CHECKSEQUENCEVERIFY OP_DROP <reimbursement_pubkey> OP_CHECKSIG` (1 block timelock for user reimbursement)
     2. **OP_RETURN Script**: `OP_RETURN <rootstock_address_bytes><amount_bytes>` (contains Rootstock address and amount data)
     3. **OP_RETURN Data Format**: `vec![rootstock_address, value.to_be_bytes().as_slice()].concat()` (concatenated rootstock address and big-endian amount bytes)
-  - **REQUEST_PEGIN_TX Script Tree**:
+  - **REQUEST_PEGIN_TX Output 0 Script Tree**:
 
     ```mermaid
     graph TD
-        A[REQUEST_PEGIN_TX Taproot Output] --> B[Committee Aggregated Key]
+        A[REQUEST_PEGIN_TX Output 0<br/>PegIn Request Output] --> B[Committee Aggregated Key]
         A --> C[Script Tree]
         C --> D[Leaf 1: Timelock Script]
         C --> E[Leaf 2: OP_RETURN Script]
@@ -378,10 +406,10 @@ As this is a user transaction he can decide any output.
 ```mermaid
 graph LR
     A[User's Bitcoin UTXO] --> B[REQUEST_PEGIN_TX<br/>Inputs:<br/>• Input 0: User's Bitcoin UTXO<br/>  User's private key]
-    B --> C[REQUEST_PEGIN_TX<br/>Outputs:<br/>• Output 0: PegIn Request Output<br/>  P2TR - Committee Aggregated Key<br/><br/>--------------------------------<br/><br/>• Output 1: OP_RETURN Output<br/>  RSK pegin metadata<br/><br/>--------------------------------<br/><br/>• Output 2: Change Output<br/>  P2WPKH - User's key]
+    B --> C[REQUEST_PEGIN_TX<br/>Outputs:<br/>• Output 0: PegIn Request Output<br/>  P2TR - Committee Aggregated Key<br/><br/>--------------------------------<br/><br/>• Output 1: OP_RETURN Output<br/>  RSK pegin metadata<br/><br/>--------------------------------<br/><br/>• Output 2: Pegin Request Accept Enabler<br/>  P2TR - Members dispute Key<br/><br/>--------------------------------<br/><br/>• Output 3: Change Output<br/>  P2WPKH - User's key]
     
-    %% Flow to next transaction
-    C --> D[USER_REIMBURSMENT_TX<br/>input X<br/>Script path: Timelock Script]
+    %% Flow to USER_REIMBURSMENT_TX
+    C -->|Output 0: Script path<br/>spends with timelock| D[USER_REIMBURSMENT_TX<br/>Inputs:<br/>• Input 0: REQUEST_PEGIN_TX Output 0<br/>  Script Path: Timelock Script]
     
     style A fill:#e1f5fe
     style B fill:#e1f5fe
@@ -391,27 +419,27 @@ graph LR
 
 ### 1. REJECT_PEGIN_TX (Reject Pegin Transaction)
 
-**Purpose**: This transactions can be send by any member of the committee, consuming the enabler output to avoid the committe from accepting it.
+**Purpose**: This transaction can be sent by any member of the committee, consuming the enabler output (Output 2) from REQUEST_PEGIN_TX to prevent the committee from accepting the pegin. Once this enabler output is consumed, ACCEPT_PEGIN_TX cannot be executed since it requires both Output 0 and Output 2 from REQUEST_PEGIN_TX.
 
 #### REJECT_PEGIN_TX Inputs
 
-##### Input 0: From REQUEST_PEGIN_TX VOUT 2
+##### Input 0: From REQUEST_PEGIN_TX Output 2 (Enabler Output)
 
 - **Type**: Taproot (P2TR)
 - **Spend Mode**: Script path (dispute key)
 - **Sighash Type**: SIGHASH_ALL
-- **Key Required**: Committee memeber dispute key `dispute_xonly_pubkey`
-- **Previous Transaction**: REQUEST_PEGIN_TX
-- **Description**: Spends the enabler output from the request peg-in transaction using the member dispute key.
+- **Key Required**: Committee member dispute key `dispute_xonly_pubkey`
+- **Previous Transaction**: REQUEST_PEGIN_TX Output 2 (Pegin Request Accept Enabler)
+- **Description**: Spends the enabler output (Output 2) from the request peg-in transaction using the committee member's dispute key. This prevents ACCEPT_PEGIN_TX from being executed, as ACCEPT_PEGIN_TX requires both Output 0 and Output 2 from REQUEST_PEGIN_TX.
 - **Taproot Script Details**:
   - **Key Path**: Uses the committee aggregated key for direct spending at accept pegin
   - **Script Tree**: Contains multiple script leaves, one per committee member dispute key to reject the pegin:
     - **verify_signature Script**: `<dispute_xonly_pubkey> OP_CHECKSIG`
-  - **REQUEST_PEGIN_TX Enabler Script Tree**:
+  - **REQUEST_PEGIN_TX Enabler Output (Output 2) Script Tree**:
 
     ```mermaid
     graph TD
-        A[REQUEST_PEGIN_TX Taproot Output] --> B[Committee Aggregated Key]
+        A[REQUEST_PEGIN_TX Output 2<br/>Enabler Output] --> B[Committee Aggregated Key]
         A --> C[Script Tree]
         C --> D[Leaf N: verify_signature Script]
         
@@ -432,15 +460,15 @@ Output is not important as we only want to consume the enabler.
 ```mermaid
 graph LR
     A[User's Bitcoin UTXO] --> B[REQUEST_PEGIN_TX<br/>Inputs:<br/>• Input 0: User's Bitcoin UTXO<br/>  User's private key]
-    B --> C[REQUEST_PEGIN_TX<br/>Outputs:<br/>• Output 0: PegIn Request Output<br/>  P2TR - Committee Aggregated Key<br/><br/>--------------------------------<br/><br/>• Output 1: OP_RETURN Output<br/>  RSK pegin metadata<br/><br/>--------------------------------<br/><br/>• Output 2: Pegin Request Accept Enabler<br/> PT2R - Members dispute Key <br/><br/>--------------------------------<br/><br/>• Output 3: Change Output<br/>  P2WPKH - User's key]
+    B --> C[REQUEST_PEGIN_TX<br/>Outputs:<br/>• Output 0: PegIn Request Output<br/>  P2TR - Committee Aggregated Key<br/><br/>--------------------------------<br/><br/>• Output 1: OP_RETURN Output<br/>  RSK pegin metadata<br/><br/>--------------------------------<br/><br/>• Output 2: Pegin Request Accept Enabler<br/>  P2TR - Members dispute Key <br/><br/>--------------------------------<br/><br/>• Output 3: Change Output<br/>  P2WPKH - User's key]
     
-    %% Flow to next transaction
-    C --> D[USER_REIMBURSMENT_TX<br/>input X<br/>Script path: Timelock Script]
+    %% Flow to REJECT_PEGIN_TX
+    C -->|Output 2: Script path<br/>spends with dispute key| D[REJECT_PEGIN_TX<br/>Inputs:<br/>• Input 0: REQUEST_PEGIN_TX Output 2<br/>  Script Path: Dispute Key]
     
     style A fill:#e1f5fe
     style B fill:#e1f5fe
     style C fill:#e1f5fe
-    style D fill:#f3e5f5
+    style D fill:#ffebee
 ```
 
 ### 1. ACCEPT_PEGIN_TX (Accept PegIn Transaction)
@@ -449,14 +477,14 @@ graph LR
 
 #### ACCEPT_PEGIN_TX Inputs
 
-##### Input 0: From REQUEST_PEGIN_TX
+##### Input 0: From REQUEST_PEGIN_TX Output 0
 
 - **Type**: Taproot (P2TR)
 - **Spend Mode**: KeyOnly with Aggregate signature
 - **Sighash Type**: SIGHASH_ALL
 - **Key Required**: Committee aggregated key (`take_aggregated_key`)
 - **Previous Transaction**: REQUEST_PEGIN_TX (must be created by user and mined before this transaction)
-- **Description**: Spends the output from the request peg-in transaction (created by user) using the committee's aggregated key signature. The REQUEST_PEGIN_TX must be confirmed on the blockchain before this transaction can be executed.
+- **Description**: Spends Output 0 (PegIn Request Output) from the request peg-in transaction using the committee's aggregated key signature. The REQUEST_PEGIN_TX must be confirmed on the blockchain before this transaction can be executed.
 - **Taproot Script Details**:
   - **Key Path**: Uses the committee aggregated key for direct spending
   - **Script Tree**: Contains two script leaves:
@@ -482,12 +510,40 @@ graph LR
         style E fill:#fff3e0
     ```
 
+##### Input 1: From REQUEST_PEGIN_TX Output 2
+
+- **Type**: Taproot (P2TR)
+- **Spend Mode**: KeyOnly with Aggregate signature
+- **Sighash Type**: SIGHASH_ALL
+- **Key Required**: Committee aggregated key (`take_aggregated_key`)
+- **Previous Transaction**: REQUEST_PEGIN_TX Output 2 (Enabler Output)
+- **Description**: Spends Output 2 (Pegin Request Accept Enabler) from the request peg-in transaction using the committee's aggregated key signature. This input must be consumed along with Input 0 to accept the pegin. If this output is consumed by REJECT_PEGIN_TX instead, the pegin cannot be accepted.
+- **Taproot Script Details**:
+  - **Key Path**: Uses committee aggregated key for direct spending at accept pegin
+  - **Script Tree**: Contains multiple script leaves, one per committee member dispute key to reject the pegin:
+    - **verify_signature Script**: `<dispute_xonly_pubkey> OP_CHECKSIG`
+  - **REQUEST_PEGIN_TX Enabler Script Tree**:
+
+    ```mermaid
+    graph TD
+        A[REQUEST_PEGIN_TX Enabler Output] --> B[Committee Aggregated Key]
+        A --> C[Script Tree]
+        C --> D[Leaf N: verify_signature Script]
+        
+        D --> E["<dispute_xonly_pubkey> OP_CHECKSIG"]
+        
+        style A fill:#e1f5fe
+        style B fill:#f3e5f5
+        style C fill:#e8f5e8
+        style D fill:#fff3e0
+    ```
+
 #### ACCEPT_PEGIN_TX Outputs
 
 ##### Output 0: Main PegIn Output
 
 - **Type**: Taproot (P2TR)
-- **Amount**: `pegin_request.amount - P2TR_FEE - SPEEDUP_VALUE`
+- **Amount**: `pegin_request.amount - P2TR_FEE - SPEEDUP_VALUE - ENABLER_AMOUNT`
 - **Key**: Committee aggregated key (`take_aggregated_key`)
 - **Leaves**: Empty (no script paths)
 - **Purpose**: Main output that can be spent by operators in subsequent transactions
@@ -507,7 +563,34 @@ graph LR
         style C fill:#ffebee
     ```
 
-##### Output 1: Speedup Output
+##### Output 1: CANCEL_TAKE_0 Enabler Output
+
+- **Type**: Taproot (P2TR)
+- **Amount**: `ENABLER_AMOUNT` (540 sats)
+- **Key**: Committee aggregated key (`take_aggregated_key`)
+- **Leaves**: Contains script leaves for each operator's dispute key
+- **Purpose**: Enabler output that can be consumed to cancel operator take transactions. Contains operator-only dispute keys, allowing operators to cancel their own take transactions if needed.
+- **Taproot Script Details**:
+  - **Key Path**: Uses committee aggregated key for direct spending
+  - **Script Tree**: Contains multiple script leaves, one per operator dispute key:
+    - **verify_signature Script**: `<operator_dispute_xonly_pubkey> OP_CHECKSIG`
+  - **ACCEPT_PEGIN_TX CANCEL_TAKE_0 Enabler Script Tree**:
+
+    ```mermaid
+    graph TD
+        A[ACCEPT_PEGIN_TX CANCEL_TAKE_0 Enabler Output] --> B[Committee Aggregated Key]
+        A --> C[Script Tree]
+        C --> D[Leaf N: verify_signature Script]
+        
+        D --> E["<operator_dispute_xonly_pubkey> OP_CHECKSIG"]
+        
+        style A fill:#f3e5f5
+        style B fill:#e8f5e8
+        style C fill:#e8f5e8
+        style D fill:#fff3e0
+    ```
+
+##### Output 2: Speedup Output
 
 - **Type**: SegWit (P2WPKH)
 - **Amount**: SPEEDUP_VALUE
@@ -518,8 +601,9 @@ graph LR
 
 ```mermaid
 graph LR
-    A[REQUEST_PEGIN_TX<br/>created by user<br/>output] --> B[ACCEPT_PEGIN_TX<br/>Inputs:<br/>• Input 0: REQUEST_PEGIN_TX output<br/>  Key Path: Committee Aggregated Key]
-    B --> C[ACCEPT_PEGIN_TX<br/>Outputs:<br/>• Output 0: Main PegIn Output<br/>  P2TR - Committee Aggregated Key<br/><br/>--------------------------------<br/><br/>• Output 1: Speedup Output<br/>  P2WPKH - User's reimbursement key]
+    A[REQUEST_PEGIN_TX<br/>created by user<br/>Output 0] --> B[ACCEPT_PEGIN_TX<br/>Inputs:<br/>• Input 0: REQUEST_PEGIN_TX Output 0<br/>  Key Path: Committee Aggregated Key<br/><br/>--------------------------------<br/><br/>• Input 1: REQUEST_PEGIN_TX Output 2<br/>  Key Path: Committee Aggregated Key]
+    G[REQUEST_PEGIN_TX<br/>created by user<br/>Output 2] --> B
+    B --> C[ACCEPT_PEGIN_TX<br/>Outputs:<br/>• Output 0: Main PegIn Output<br/>  P2TR - Committee Aggregated Key<br/><br/>--------------------------------<br/><br/>• Output 1: CANCEL_TAKE_0 Enabler<br/>  P2TR - Operator dispute keys<br/><br/>--------------------------------<br/><br/>• Output 2: Speedup Output<br/>  P2WPKH - User's reimbursement key]
     
     %% Flow to next transactions
     C --> D[USER_TAKE_TX<br/>input 0<br/>Key Path: Committee Aggregated Key]
@@ -527,6 +611,7 @@ graph LR
     C --> F[OPERATOR_WON_TX<br/>input 0<br/>Key Path: Committee Aggregated Key]
     
     style A fill:#e1f5fe
+    style G fill:#e1f5fe
     style B fill:#f3e5f5
     style C fill:#f3e5f5
     style D fill:#e8f5e8
