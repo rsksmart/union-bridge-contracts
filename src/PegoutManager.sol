@@ -57,7 +57,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         return pegoutTempInfo[_acceptPeginTxid];
     }
 
-    function _validatePegoutRequest(bytes calldata _userPubKey, uint256 amountInWei) internal pure {
+    function _validatePegoutRequest(bytes memory _userPubKey, uint256 amountInWei) internal pure {
         if (BtcHelper.weiToSatoshi(amountInWei) > type(uint64).max) {
             revert PegoutRequestAmountExceedsUint64Limit(BtcHelper.weiToSatoshi(amountInWei));
         }
@@ -74,7 +74,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
     /// @dev The user must send the exact amount of RBTC they want to peg-out
     /// @dev Emits the PegoutRequested event
     /// @dev Only callable when contract is unpaused
-    function tryPegout(bytes calldata _userPubKey) external payable nonReentrant whenNotPaused {
+    function tryPegout(bytes memory _userPubKey) external payable nonReentrant whenNotPaused {
         _validatePegoutRequest(_userPubKey, msg.value);
 
         Stream memory stream = streamManager.getStream(uint64(BtcHelper.weiToSatoshi(msg.value)));
@@ -119,7 +119,9 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
             operatorDisputePubKey: bytes32(0),
             pegoutId: pegoutId,
             advanceFundsBlockNumber: 0,
-            reimbursementKickoffTxid: bytes32(0)
+            reimbursementKickoffTxid: bytes32(0),
+            challengeTxid: bytes32(0),
+            revealTxid: bytes32(0)
         });
 
         // slither-disable-next-line reentrancy-events
@@ -143,7 +145,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
     /// @dev The transaction must spend the accept peg-in output and pay to the user's address
     /// @dev Emits the PegoutRegistered event
     /// @dev Only callable when contract is unpaused
-    function registerUserTake(BtcTxSPVProof calldata _pegoutTxSPVProof) external nonReentrant whenNotPaused {
+    function registerUserTake(BtcTxSPVProof memory _pegoutTxSPVProof) external nonReentrant whenNotPaused {
         // Get the accept peg-in tx id from the first input (this is what gets spent)
         bytes32 acceptPeginTxid = _pegoutTxSPVProof.btcTx.inputs[Constants.PEGOUT_VIN_TAPTREE].txId;
         uint32 vout = _pegoutTxSPVProof.btcTx.inputs[Constants.PEGOUT_VIN_TAPTREE].vout;
@@ -172,8 +174,10 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         );
 
         // Validate that the first output is a P2WPKH paying the user
-        bytes memory userPubKey = pegoutTempInfo[acceptPeginTxid].userPubKey;
-        bitcoinManager.validatePegoutUserOutput(_pegoutTxSPVProof.btcTx.outputs[Constants.PEGOUT_VOUT_USER], userPubKey);
+        // bytes memory userPubKey = pegoutTempInfo[acceptPeginTxid].userPubKey;
+        bitcoinManager.validatePegoutUserOutput(
+            _pegoutTxSPVProof.btcTx.outputs[Constants.PEGOUT_VOUT_USER], pegoutTempInfo[acceptPeginTxid].userPubKey
+        );
 
         // update the peg status to COMPLETED
         streamManager.setPegStatus(acceptPeginTxid, PegStatus.COMPLETED);
@@ -291,7 +295,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         }
     }
 
-    function registerAdvanceFunds(bytes32 acceptPeginTxid, BtcTxSPVProof calldata _advanceFunds)
+    function registerAdvanceFunds(bytes32 acceptPeginTxid, BtcTxSPVProof memory _advanceFunds)
         external
         nonReentrant
         whenNotPaused
@@ -315,7 +319,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
     }
 
     function _verifyAdvanceFundsTx(
-        BtcTxSPVProof calldata _advanceFunds,
+        BtcTxSPVProof memory _advanceFunds,
         PegoutTempInfo memory _pegoutInfo,
         uint64 _streamId
     ) internal view returns (bytes32 txid, int256 confirmations) {
@@ -360,7 +364,15 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         return pegoutInfo;
     }
 
-    function registerReimbursementKickoff(bytes32 acceptPeginTxid, BtcTxSPVProof calldata _kickoffSPV)
+    function _validateMemberInCommittee(uint128 _committeeId) internal view {
+        address _memberAddress = _msgSender();
+        bool inCommittee = committeeRegistry.isMemberInCommittee(_committeeId, _memberAddress);
+        if (!inCommittee) {
+            revert ICommitteeRegistry.MemberNotInCommittee(_committeeId, _memberAddress);
+        }
+    }
+
+    function registerReimbursementKickoff(bytes32 acceptPeginTxid, BtcTxSPVProof memory _kickoffSPV)
         external
         nonReentrant
         whenNotPaused
@@ -404,7 +416,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
     /// @dev Only callable when the peg status is OPERATOR_TAKE
     /// @dev Emits PegoutRegistered event upon successful deposit
     /// @dev Only callable when contract is unpaused
-    function registerOperatorTake(BtcTxSPVProof calldata _pegoutTxSPVProof) external nonReentrant whenNotPaused {
+    function registerOperatorTake(BtcTxSPVProof memory _pegoutTxSPVProof) external nonReentrant whenNotPaused {
         // Get the accept peg-in tx id from the first input (this is what gets spent)
         bytes32 acceptPeginTxid = _pegoutTxSPVProof.btcTx.inputs[Constants.OPERATOR_TAKE_VIN_ACCEPT_PEGIN].txId;
         uint32 vout = _pegoutTxSPVProof.btcTx.inputs[Constants.OPERATOR_TAKE_VIN_ACCEPT_PEGIN].vout;
@@ -454,7 +466,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
 
         // Validate operator take txid matched the one deposited during accept pegin
         if (txid != opTakeData[memberIndex].takeTxid) {
-            revert OperatorTakeTxidNotMatch(opTakeData[memberIndex].takeTxid, txid);
+            revert OperatorTakeTxidNotMatch(txid, opTakeData[memberIndex].takeTxid);
         }
 
         // Get the stream to check confirmations
@@ -469,11 +481,11 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
             _pegoutTxSPVProof.merkleBranchHashes
         );
 
-        // update the peg status to COMPLETED
-        streamManager.setPegStatus(acceptPeginTxid, PegStatus.COMPLETED);
-
         // slither-disable-next-line reentrancy-events
         emit PegoutRegistered(_pegoutTxSPVProof.blockHash, txid, acceptPeginTxid, pegoutInfo.committeeId, streamInfo);
+
+        // update the peg status to COMPLETED
+        streamManager.setPegStatus(acceptPeginTxid, PegStatus.COMPLETED);
 
         // Update slot status
         streamManager.completeSlot(
@@ -482,6 +494,84 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
 
         // If it's the last slot in the package, close and release the committee
         _closePacketIfLastSlot(streamInfo);
+    }
+
+    function registerChallenge(bytes32 _acceptPeginTxid, BtcTxSPVProof memory _challenge)
+        external
+        nonReentrant
+        whenNotPaused
+    {
+        StreamPosition memory streamInfo = _validatePegoutStatus(_acceptPeginTxid, PegStatus.KICKOFF);
+
+        if (_challenge.btcTx.inputs.length != Constants.CHALLENGE_INPUT_COUNT) {
+            revert InvalidChallengeInputCount(_challenge.btcTx.inputs.length, Constants.CHALLENGE_INPUT_COUNT);
+        }
+
+        PegoutTempInfo storage pegoutInfo = pegoutTempInfo[_acceptPeginTxid];
+        _validateMemberInCommittee(pegoutInfo.committeeId);
+
+        bytes32 kickoffTxid = _challenge.btcTx.inputs[Constants.CHALLENGE_VIN_REIMBURSEMENT_KICKOFF].txId;
+        if (pegoutInfo.reimbursementKickoffTxid != kickoffTxid) {
+            revert ReimbursementKickoffTxidNotMatch(kickoffTxid, pegoutInfo.reimbursementKickoffTxid);
+        }
+
+        // Calculate the transaction id for verification
+        bytes32 txid = bitcoinManager.getBtcTxid(_challenge.btcTx);
+
+        Stream memory stream = streamManager.getStreamById(streamInfo.streamId);
+
+        // Verify the txid is part of the Merkle Root and has enough confirmations
+        _verifyTxConfirmations(
+            stream.pegoutConfirmations,
+            txid,
+            _challenge.blockHash,
+            _challenge.merkleBranchPath,
+            _challenge.merkleBranchHashes
+        );
+
+        emit ChallengeRegistered(txid, _acceptPeginTxid, pegoutInfo.committeeId, streamInfo);
+
+        pegoutInfo.challengeTxid = txid;
+        streamManager.setPegStatus(_acceptPeginTxid, PegStatus.CHALLENGE);
+    }
+
+    function registerInputRevealed(bytes32 _acceptPeginTxid, BtcTxSPVProof memory _inputRevealed)
+        external
+        nonReentrant
+        whenNotPaused
+    {
+        StreamPosition memory streamInfo = _validatePegoutStatus(_acceptPeginTxid, PegStatus.CHALLENGE);
+
+        if (_inputRevealed.btcTx.inputs.length != Constants.INPUT_REVEALED_INPUT_COUNT) {
+            revert InvalidRevealedInputCount(_inputRevealed.btcTx.inputs.length, Constants.INPUT_REVEALED_INPUT_COUNT);
+        }
+
+        PegoutTempInfo storage pegoutInfo = pegoutTempInfo[_acceptPeginTxid];
+        _validateMemberInCommittee(pegoutInfo.committeeId);
+
+        bytes32 challengeTxid = _inputRevealed.btcTx.inputs[Constants.INPUT_REVEALED_VIN_CHALLENGE].txId;
+        if (pegoutInfo.challengeTxid != challengeTxid) {
+            revert ChallengeTxidNotMatch(challengeTxid, pegoutInfo.challengeTxid);
+        }
+
+        // Calculate the transaction id for verification
+        bytes32 txid = bitcoinManager.getBtcTxid(_inputRevealed.btcTx);
+
+        Stream memory stream = streamManager.getStreamById(streamInfo.streamId);
+
+        // Verify the txid is part of the Merkle Root and has enough confirmations
+        _verifyTxConfirmations(
+            stream.pegoutConfirmations,
+            txid,
+            _inputRevealed.blockHash,
+            _inputRevealed.merkleBranchPath,
+            _inputRevealed.merkleBranchHashes
+        );
+
+        emit RevealRegistered(txid, _acceptPeginTxid, pegoutInfo.committeeId, streamInfo);
+
+        pegoutInfo.revealTxid = txid;
+        streamManager.setPegStatus(_acceptPeginTxid, PegStatus.REVEALED);
     }
 
     /// @notice Sets the timeout duration for user take operations

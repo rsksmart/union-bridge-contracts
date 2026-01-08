@@ -1,5 +1,14 @@
 # Breaking Changes
 
+## [Unreleased]
+
+- `PegoutManager.registerAdvanceFunds` to register advance funds SPV proof.
+- `PegoutManager.registerReimbursementKickoff` to register reimbursement kickoff SPV proof.
+- New states to `PegStatus`: `OP_SELECTED`, `ADVANCED`, `KICKOFF`, `CHALLENGE` and `REVEALED`.
+- `StreamManager.setTimelockSettings` to modify the timelocks of a strream.
+- `PegoutManager.registerChallenge` to register a challenge SPV proof.
+- `PegoutManager.registerInputRevealed` to register an input revealed SPV proof.
+
 ## [v0.3.0-alpha]
 
 ### Public Functions - Changed Names or Parameters (v0.3.0-alpha)

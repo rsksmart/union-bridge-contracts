@@ -5,6 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {HelperContract, StreamManagerHarness} from "test/helpers/HelperContract.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {Pausable} from "src/Pausable.sol";
+import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {BtcTransaction, BtcTxSPVProof, StreamPosition, PegStatus} from "src/interfaces/IPegCommonTypes.sol";
 import {BitcoinSignatureData} from "src/interfaces/IBitcoinManager.sol";
 import {IPegoutManager, PegoutTempInfo} from "src/interfaces/IPegoutManager.sol";
@@ -1063,7 +1064,7 @@ contract TestPegoutManager is Test, HelperContract {
 
         // Expect the PegoutRegistered event
         vm.expectRevert(
-            abi.encodeWithSelector(IPegoutManager.OperatorTakeTxidNotMatch.selector, realTakeTxid, wrongTakeTxid)
+            abi.encodeWithSelector(IPegoutManager.OperatorTakeTxidNotMatch.selector, wrongTakeTxid, realTakeTxid)
         );
 
         // Act
@@ -1112,7 +1113,6 @@ contract TestPegoutManager is Test, HelperContract {
     function test_registerOperatorTake_Success_UnpausedContract() external {
         // Arrange
         pauseAndUnpauseContracts();
-
         (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
 
         // Act
@@ -1495,7 +1495,6 @@ contract TestPegoutManager is Test, HelperContract {
     function test_tryPegout_Success_UnpausedContract() external {
         // Arrange
         pauseAndUnpauseContracts();
-        // Arrange
         BtcTxIn[] memory inputs = new BtcTxIn[](2);
         inputs[0] = BtcTxIn({
             txId: 0xb24858ade3e5be49ae63facb93524ddf460d0771f093525dae328b6c435516a2,
@@ -1560,42 +1559,42 @@ contract TestPegoutManager is Test, HelperContract {
 
     function test_registerUserTake_Revert_EnforcedPause_PausedContract() external {
         // Arrange
-        RegisterUserTakeSetup memory pegoutSetup = setup_pegout();
+        RegisterUserTakeSetup memory setup = setup_pegout();
         pauseContracts();
 
         // Assert
         vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
 
         // Act
-        pegoutManager.registerUserTake(pegoutSetup.pegoutTxSPVProof);
+        pegoutManager.registerUserTake(setup.pegoutTxSPVProof);
     }
 
     function test_registerUserTake_Success_UnpausedContract() external {
         // Arrange
-        RegisterUserTakeSetup memory pegoutSetup = setup_pegout();
         pauseAndUnpauseContracts();
+        RegisterUserTakeSetup memory setup = setup_pegout();
 
         // Act
-        pegoutManager.registerUserTake(pegoutSetup.pegoutTxSPVProof);
+        pegoutManager.registerUserTake(setup.pegoutTxSPVProof);
     }
 
     function test_triggerOperatorTake_Revert_EnforcedPause_PausedContract() external {
         // Arrange
-        RegisterUserTakeSetup memory pegoutSetup = setup_pegout();
+        RegisterUserTakeSetup memory setup = setup_pegout();
         pauseContracts();
 
         // Assert
         vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
 
         // Act
-        pegoutManager.triggerOperatorTake(pegoutSetup.pegoutSignatureHash);
+        pegoutManager.triggerOperatorTake(setup.pegoutSignatureHash);
     }
 
     function test_triggerOperatorTake_Success_UnpausedContract() external {
         // Arrange
         pauseAndUnpauseContracts();
-        RegisterUserTakeSetup memory pegoutSetup = setup_pegout();
-        bytes32 pegoutTxId = pegoutSetup.pegoutTxid;
+        RegisterUserTakeSetup memory setup = setup_pegout();
+        bytes32 pegoutTxId = setup.pegoutTxid;
         bytes memory nonce =
             hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
         uint256 createdAt = block.timestamp;
@@ -1609,7 +1608,7 @@ contract TestPegoutManager is Test, HelperContract {
         setup_addMemberNonce(secondOpAddress, pegoutTxId, nonce);
 
         // Assert
-        assertEventOperatorTakeTriggered(pegoutTxId, pegoutSetup, secondOpAddress, createdAt);
+        assertEventOperatorTakeTriggered(pegoutTxId, setup, secondOpAddress, createdAt);
 
         // Act
         pegoutManager.triggerOperatorTake(pegoutTxId);
@@ -1617,39 +1616,42 @@ contract TestPegoutManager is Test, HelperContract {
 
     function test_registerAdvanceFunds_Success_UnpausedContract() external {
         // Arrange
-        (address opAddress, RegisterUserTakeSetup memory pegoutSetup) = setup_advanceFunds();
-        bytes32 txid = bitcoinManager.getBtcTxid(pegoutSetup.advanceFundsSPV.btcTx);
+        pauseAndUnpauseContracts();
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_advanceFunds();
+        bytes32 txid = bitcoinManager.getBtcTxid(setup.advanceFundsSPV.btcTx);
         StreamPosition memory streamInfo = StreamPosition({
-            streamId: pegoutSetup.stream.streamId,
-            packetNumber: pegoutSetup.packetNumber,
-            slotId: pegoutSetup.slotId,
+            streamId: setup.stream.streamId,
+            packetNumber: setup.packetNumber,
+            slotId: setup.slotId,
             pegStatus: PegStatus.OP_SELECTED
         });
-
-        pauseAndUnpauseContracts();
 
         // Assert
         vm.expectEmit(address(pegoutManager));
         emit IPegoutManager.AdvanceFundsRegistered(
-            pegoutSetup.advanceFundsSPV.blockHash,
+            setup.advanceFundsSPV.blockHash,
             txid,
-            pegoutSetup.acceptPeginTxid,
-            pegoutSetup.pegoutId,
+            setup.acceptPeginTxid,
+            setup.pegoutId,
             COMMITTEE_ID_STREAM_1_COMMITTEE_1,
             streamInfo
         );
 
         // Act
         vm.prank(opAddress);
-        pegoutManager.registerAdvanceFunds(pegoutSetup.acceptPeginTxid, pegoutSetup.advanceFundsSPV);
+        pegoutManager.registerAdvanceFunds(setup.acceptPeginTxid, setup.advanceFundsSPV);
 
-        streamInfo = streamManager.getStreamPosition(pegoutSetup.acceptPeginTxid);
+        streamInfo = streamManager.getStreamPosition(setup.acceptPeginTxid);
         assertEq(uint256(streamInfo.pegStatus), uint256(PegStatus.ADVANCED));
+        assertTrue(
+            streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId).state == SlotState.ADVANCED,
+            "Slot state should be ADVANCED"
+        );
     }
 
     function test_registerAdvanceFunds_Revert_EnforcedPause_PausedContract() external {
         // Arrange
-        (address opAddress, RegisterUserTakeSetup memory pegoutSetup) = setup_advanceFunds();
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_advanceFunds();
         pauseContracts();
 
         // Assert
@@ -1657,12 +1659,12 @@ contract TestPegoutManager is Test, HelperContract {
 
         // Act
         vm.prank(opAddress);
-        pegoutManager.registerAdvanceFunds(pegoutSetup.acceptPeginTxid, pegoutSetup.advanceFundsSPV);
+        pegoutManager.registerAdvanceFunds(setup.acceptPeginTxid, setup.advanceFundsSPV);
     }
 
     function test_registerAdvanceFunds_Revert_PeginNotRequested() external {
         // Arrange
-        (address opAddress, RegisterUserTakeSetup memory pegoutSetup) = setup_advanceFunds();
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_advanceFunds();
         bytes32 wrongAcceptPeginTxid = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
 
         // Assert
@@ -1670,7 +1672,7 @@ contract TestPegoutManager is Test, HelperContract {
 
         // Act
         vm.prank(opAddress);
-        pegoutManager.registerAdvanceFunds(wrongAcceptPeginTxid, pegoutSetup.advanceFundsSPV);
+        pegoutManager.registerAdvanceFunds(wrongAcceptPeginTxid, setup.advanceFundsSPV);
     }
 
     function test_registerAdvanceFunds_Revert_WrongUserAmount() external {
@@ -1770,32 +1772,38 @@ contract TestPegoutManager is Test, HelperContract {
 
     function test_registerReimbursementKickoff_Success_UnpausedContract() external {
         // Arrange
-        (address opAddress, RegisterUserTakeSetup memory pegoutSetup) = setup_reimbursementKickoff();
-        bytes32 txid = bitcoinManager.getBtcTxid(pegoutSetup.reimbursementKickoffSPV.btcTx);
+        pauseAndUnpauseContracts();
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_reimbursementKickoff();
+        bytes32 txid = bitcoinManager.getBtcTxid(setup.reimbursementKickoffSPV.btcTx);
         StreamPosition memory streamInfo = StreamPosition({
-            streamId: pegoutSetup.stream.streamId,
-            packetNumber: pegoutSetup.packetNumber,
-            slotId: pegoutSetup.slotId,
+            streamId: setup.stream.streamId,
+            packetNumber: setup.packetNumber,
+            slotId: setup.slotId,
             pegStatus: PegStatus.ADVANCED
         });
-        pauseAndUnpauseContracts();
 
         vm.expectEmit(address(pegoutManager));
         emit IPegoutManager.ReimbursementKickoffRegistered(
-            txid, pegoutSetup.acceptPeginTxid, COMMITTEE_ID_STREAM_1_COMMITTEE_1, streamInfo
+            txid, setup.acceptPeginTxid, COMMITTEE_ID_STREAM_1_COMMITTEE_1, streamInfo
         );
 
         // Act
         vm.prank(opAddress);
-        pegoutManager.registerReimbursementKickoff(pegoutSetup.acceptPeginTxid, pegoutSetup.reimbursementKickoffSPV);
+        pegoutManager.registerReimbursementKickoff(setup.acceptPeginTxid, setup.reimbursementKickoffSPV);
 
-        streamInfo = streamManager.getStreamPosition(pegoutSetup.acceptPeginTxid);
+        streamInfo = streamManager.getStreamPosition(setup.acceptPeginTxid);
         assertEq(uint256(streamInfo.pegStatus), uint256(PegStatus.KICKOFF));
+        assertTrue(
+            streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId).state == SlotState.ADVANCED,
+            "Slot state should be ADVANCED"
+        );
+        PegoutTempInfo memory pegoutInfo = pegoutManager.getPegoutTempInfo(setup.acceptPeginTxid);
+        assertEq(pegoutInfo.reimbursementKickoffTxid, txid, "Reimbursement kickoff txid should be recorded");
     }
 
     function test_registerReimbursementKickoff_Revert_EnforcedPause_PausedContract() external {
         // Arrange
-        (address opAddress, RegisterUserTakeSetup memory pegoutSetup) = setup_reimbursementKickoff();
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_reimbursementKickoff();
         pauseContracts();
 
         // Assert
@@ -1803,12 +1811,12 @@ contract TestPegoutManager is Test, HelperContract {
 
         // Act
         vm.prank(opAddress);
-        pegoutManager.registerReimbursementKickoff(pegoutSetup.acceptPeginTxid, pegoutSetup.reimbursementKickoffSPV);
+        pegoutManager.registerReimbursementKickoff(setup.acceptPeginTxid, setup.reimbursementKickoffSPV);
     }
 
     function test_registerReimbursementKickoff_Revert_PeginNotRequested() external {
         // Arrange
-        (address opAddress, RegisterUserTakeSetup memory pegoutSetup) = setup_reimbursementKickoff();
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_reimbursementKickoff();
         bytes32 wrongAcceptPeginTxid = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
 
         // Assert
@@ -1816,7 +1824,7 @@ contract TestPegoutManager is Test, HelperContract {
 
         // Act
         vm.prank(opAddress);
-        pegoutManager.registerReimbursementKickoff(wrongAcceptPeginTxid, pegoutSetup.reimbursementKickoffSPV);
+        pegoutManager.registerReimbursementKickoff(wrongAcceptPeginTxid, setup.reimbursementKickoffSPV);
     }
 
     function test_registerReimbursementKickoff_Revert_InvalidPegStatus() external {
@@ -1833,6 +1841,275 @@ contract TestPegoutManager is Test, HelperContract {
         // Act
         vm.prank(opAddress);
         pegoutManager.registerReimbursementKickoff(setup.acceptPeginTxid, setup.reimbursementKickoffSPV);
+    }
+
+    function getCommitteeMemberAddressByIndex(uint128 committeeId, uint256 index) internal view returns (address) {
+        Committee memory committee = registry.getCommittee(committeeId);
+        require(index < committee.members.length, "Index out of bounds");
+        return committee.members[index].memberAddress;
+    }
+
+    function test_registerChallenge_Success_OperatorCall() external {
+        // Arrange
+        pauseAndUnpauseContracts();
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
+        bytes32 txid = bitcoinManager.getBtcTxid(setup.challengeSPV.btcTx);
+        StreamPosition memory streamInfo = StreamPosition({
+            streamId: setup.stream.streamId,
+            packetNumber: setup.packetNumber,
+            slotId: setup.slotId,
+            pegStatus: PegStatus.KICKOFF
+        });
+
+        vm.expectEmit(address(pegoutManager));
+        emit IPegoutManager.ChallengeRegistered(
+            txid, setup.acceptPeginTxid, COMMITTEE_ID_STREAM_1_COMMITTEE_1, streamInfo
+        );
+
+        // Act
+        vm.prank(opAddress);
+        pegoutManager.registerChallenge(setup.acceptPeginTxid, setup.challengeSPV);
+
+        streamInfo = streamManager.getStreamPosition(setup.acceptPeginTxid);
+        assertEq(uint256(streamInfo.pegStatus), uint256(PegStatus.CHALLENGE));
+        assertTrue(
+            streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId).state == SlotState.ADVANCED,
+            "Slot state should be ADVANCED"
+        );
+        PegoutTempInfo memory pegoutInfo = pegoutManager.getPegoutTempInfo(setup.acceptPeginTxid);
+        assertEq(pegoutInfo.challengeTxid, txid, "Challenge txid should be recorded");
+    }
+
+    function test_registerChallenge_Success_MemberCall() external {
+        // Arrange
+        pauseAndUnpauseContracts();
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
+        bytes32 txid = bitcoinManager.getBtcTxid(setup.challengeSPV.btcTx);
+        StreamPosition memory streamInfo = StreamPosition({
+            streamId: setup.stream.streamId,
+            packetNumber: setup.packetNumber,
+            slotId: setup.slotId,
+            pegStatus: PegStatus.KICKOFF
+        });
+
+        address memberAddress = getCommitteeMemberAddressByIndex(COMMITTEE_ID_STREAM_1_COMMITTEE_1, 0);
+        assertNotEq(memberAddress, opAddress, "Member address should be different from operator address");
+
+        vm.expectEmit(address(pegoutManager));
+        emit IPegoutManager.ChallengeRegistered(
+            txid, setup.acceptPeginTxid, COMMITTEE_ID_STREAM_1_COMMITTEE_1, streamInfo
+        );
+
+        // Act
+        vm.prank(memberAddress);
+        pegoutManager.registerChallenge(setup.acceptPeginTxid, setup.challengeSPV);
+
+        streamInfo = streamManager.getStreamPosition(setup.acceptPeginTxid);
+        assertEq(uint256(streamInfo.pegStatus), uint256(PegStatus.CHALLENGE));
+        assertTrue(
+            streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId).state == SlotState.ADVANCED,
+            "Slot state should be ADVANCED"
+        );
+        PegoutTempInfo memory pegoutInfo = pegoutManager.getPegoutTempInfo(setup.acceptPeginTxid);
+        assertEq(pegoutInfo.challengeTxid, txid, "Challenge txid should be recorded");
+    }
+
+    function test_registerChallenge_Revert_EnforcedPause_PausedContract() external {
+        // Arrange
+        (, RegisterUserTakeSetup memory setup) = setup_operatorTake();
+        pauseContracts();
+
+        // Assert
+        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
+
+        // Act
+        pegoutManager.registerChallenge(setup.acceptPeginTxid, setup.challengeSPV);
+    }
+
+    function test_registerChallenge_Revert_PeginNotRequested() external {
+        // Arrange
+        (, RegisterUserTakeSetup memory setup) = setup_operatorTake();
+        bytes32 wrongAcceptPeginTxid = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IPegoutManager.PeginNotRequested.selector, wrongAcceptPeginTxid));
+
+        // Act
+        pegoutManager.registerChallenge(wrongAcceptPeginTxid, setup.challengeSPV);
+    }
+
+    function test_registerChallenge_Revert_InvalidPegStatus() external {
+        // Arrange
+        (, RegisterUserTakeSetup memory setup) = setup_operatorTake();
+
+        // Set peg status to COMPLETED to trigger invalid status error
+        vm.prank(address(pegoutManager));
+        streamManager.setPegStatus(setup.acceptPeginTxid, PegStatus.COMPLETED);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IPegoutManager.InvalidPegStatus.selector, PegStatus.COMPLETED));
+
+        // Act
+        pegoutManager.registerChallenge(setup.acceptPeginTxid, setup.challengeSPV);
+    }
+
+    function test_registerChallenge_Revert_ReimbursementKickoffTxidNotMatch() external {
+        // Arrange
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
+        bytes32 txid = bitcoinManager.getBtcTxid(setup.reimbursementKickoffSPV.btcTx);
+        bytes32 wrongTxid = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
+        bytes memory committeePubKey = streamManager.getCommitteePubKey(uint64(DEFAULT_STREAM), setup.packetNumber);
+        BtcTxSPVProof memory wrongSPV = createBtcTxSPVProof(createChallengeTx(wrongTxid, committeePubKey));
+        address memberAddress = getCommitteeMemberAddressByIndex(COMMITTEE_ID_STREAM_1_COMMITTEE_1, 0);
+
+        assertNotEq(memberAddress, opAddress, "Member address should be different from operator address");
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IPegoutManager.ReimbursementKickoffTxidNotMatch.selector, wrongTxid, txid)
+        );
+
+        // Act
+        vm.prank(memberAddress);
+        pegoutManager.registerChallenge(setup.acceptPeginTxid, wrongSPV);
+    }
+
+    function test_registerChallenge_Revert_MemberNotInCommittee() external {
+        // Arrange
+        (, RegisterUserTakeSetup memory setup) = setup_operatorTake();
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ICommitteeRegistry.MemberNotInCommittee.selector, COMMITTEE_ID_STREAM_1_COMMITTEE_1, address(this)
+            )
+        );
+
+        // Act
+        pegoutManager.registerChallenge(setup.acceptPeginTxid, setup.challengeSPV);
+    }
+
+    function test_registerInputRevealed_Success_OperatorCall() external {
+        // Arrange
+        pauseAndUnpauseContracts();
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_challenge();
+        bytes32 txid = bitcoinManager.getBtcTxid(setup.inputRevealedSPV.btcTx);
+        StreamPosition memory streamInfo = StreamPosition({
+            streamId: setup.stream.streamId,
+            packetNumber: setup.packetNumber,
+            slotId: setup.slotId,
+            pegStatus: PegStatus.CHALLENGE
+        });
+
+        vm.expectEmit(address(pegoutManager));
+        emit IPegoutManager.RevealRegistered(txid, setup.acceptPeginTxid, COMMITTEE_ID_STREAM_1_COMMITTEE_1, streamInfo);
+
+        // Act
+        vm.prank(opAddress);
+        pegoutManager.registerInputRevealed(setup.acceptPeginTxid, setup.inputRevealedSPV);
+
+        streamInfo = streamManager.getStreamPosition(setup.acceptPeginTxid);
+        assertEq(uint256(streamInfo.pegStatus), uint256(PegStatus.REVEALED));
+
+        assertTrue(
+            streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId).state == SlotState.ADVANCED,
+            "Slot state should be ADVANCED"
+        );
+
+        PegoutTempInfo memory pegoutInfo = pegoutManager.getPegoutTempInfo(setup.acceptPeginTxid);
+        assertEq(pegoutInfo.revealTxid, txid, "Input revealed txid should be recorded");
+    }
+
+    function test_registerInputRevealed_Success_MemberCall() external {
+        // Arrange
+        pauseAndUnpauseContracts();
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_challenge();
+        bytes32 txid = bitcoinManager.getBtcTxid(setup.inputRevealedSPV.btcTx);
+        StreamPosition memory streamInfo = StreamPosition({
+            streamId: setup.stream.streamId,
+            packetNumber: setup.packetNumber,
+            slotId: setup.slotId,
+            pegStatus: PegStatus.CHALLENGE
+        });
+
+        address memberAddress = getCommitteeMemberAddressByIndex(COMMITTEE_ID_STREAM_1_COMMITTEE_1, 0);
+        assertNotEq(memberAddress, opAddress, "Member address should be different from operator address");
+
+        vm.expectEmit(address(pegoutManager));
+        emit IPegoutManager.RevealRegistered(txid, setup.acceptPeginTxid, COMMITTEE_ID_STREAM_1_COMMITTEE_1, streamInfo);
+
+        // Act
+        vm.prank(memberAddress);
+        pegoutManager.registerInputRevealed(setup.acceptPeginTxid, setup.inputRevealedSPV);
+
+        streamInfo = streamManager.getStreamPosition(setup.acceptPeginTxid);
+        assertEq(uint256(streamInfo.pegStatus), uint256(PegStatus.REVEALED));
+
+        assertTrue(
+            streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId).state == SlotState.ADVANCED,
+            "Slot state should be ADVANCED"
+        );
+
+        PegoutTempInfo memory pegoutInfo = pegoutManager.getPegoutTempInfo(setup.acceptPeginTxid);
+        assertEq(pegoutInfo.revealTxid, txid, "Input revealed txid should be recorded");
+    }
+
+    function test_registerInputRevealed_Revert_EnforcedPause_PausedContract() external {
+        // Arrange
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_challenge();
+        pauseContracts();
+
+        // Assert
+        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
+
+        // Act
+        vm.prank(opAddress);
+        pegoutManager.registerInputRevealed(setup.acceptPeginTxid, setup.inputRevealedSPV);
+    }
+
+    function test_registerInputRevealed_Revert_PeginNotRequested() external {
+        // Arrange
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_challenge();
+        bytes32 wrongAcceptPeginTxid = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IPegoutManager.PeginNotRequested.selector, wrongAcceptPeginTxid));
+
+        // Act
+        vm.prank(opAddress);
+        pegoutManager.registerInputRevealed(wrongAcceptPeginTxid, setup.inputRevealedSPV);
+    }
+
+    function test_registerInputRevealed_Revert_InvalidPegStatus() external {
+        // Arrange
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_challenge();
+
+        // Set peg status to COMPLETED to trigger invalid status error
+        vm.prank(address(pegoutManager));
+        streamManager.setPegStatus(setup.acceptPeginTxid, PegStatus.COMPLETED);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IPegoutManager.InvalidPegStatus.selector, PegStatus.COMPLETED));
+
+        // Act
+        vm.prank(opAddress);
+        pegoutManager.registerInputRevealed(setup.acceptPeginTxid, setup.inputRevealedSPV);
+    }
+
+    function test_registerInputRevealed_Revert_ChallengeTxidNotMatch() external {
+        // Arrange
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_challenge();
+        bytes32 txid = bitcoinManager.getBtcTxid(setup.challengeSPV.btcTx);
+        bytes32 wrongTxid = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
+        bytes memory committeePubKey = streamManager.getCommitteePubKey(uint64(DEFAULT_STREAM), setup.packetNumber);
+        BtcTxSPVProof memory wrongSPV = createBtcTxSPVProof(createRevealTx(wrongTxid, committeePubKey));
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IPegoutManager.ChallengeTxidNotMatch.selector, wrongTxid, txid));
+
+        // Act
+        vm.prank(opAddress);
+        pegoutManager.registerInputRevealed(setup.acceptPeginTxid, wrongSPV);
     }
 
     function test_setUserTakeTimeout_Success_PausedContract() external {

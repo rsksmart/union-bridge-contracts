@@ -483,6 +483,8 @@ abstract contract HelperContract is Test, TestUtils {
         BtcTxSPVProof advanceFundsSPV;
         BtcTxSPVProof reimbursementKickoffSPV;
         BtcTxSPVProof operatorTakeSPV;
+        BtcTxSPVProof challengeSPV;
+        BtcTxSPVProof inputRevealedSPV;
         Stream stream;
         uint64 packetNumber;
         uint64 slotId;
@@ -835,11 +837,14 @@ abstract contract HelperContract is Test, TestUtils {
         operatorAddress = actualPegoutInfo.takeOperatorAddress;
 
         BtcTransaction memory opTakeTx;
-
         (opTakeTx, setup.reimbursementKickoffSPV) =
             setup_getOperatorTakeData(setup.acceptPeginTxid, operatorAddress, uint32(setup.slotId));
-
         setup.operatorTakeSPV = createBtcTxSPVProof(opTakeTx);
+
+        bytes32 reimbursementTxid = bitcoinManager.getBtcTxid(setup.reimbursementKickoffSPV.btcTx);
+        bytes memory committeePubKey = streamManager.getCommitteePubKey(uint64(DEFAULT_STREAM), setup.packetNumber);
+
+        setup.challengeSPV = createBtcTxSPVProof(createChallengeTx(reimbursementTxid, committeePubKey));
     }
 
     function setup_getOperatorTakeData(bytes32 _acceptPeginTxid, address _operatorAddress, uint32 _slotId)
@@ -864,6 +869,17 @@ abstract contract HelperContract is Test, TestUtils {
 
         vm.prank(operatorAddress);
         pegoutManager.registerReimbursementKickoff(setup.acceptPeginTxid, setup.reimbursementKickoffSPV);
+    }
+
+    function setup_challenge() internal returns (address operatorAddress, RegisterUserTakeSetup memory setup) {
+        (operatorAddress, setup) = setup_operatorTake();
+
+        bytes memory committeePubKey = streamManager.getCommitteePubKey(uint64(DEFAULT_STREAM), setup.packetNumber);
+        bytes32 challengeTxid = bitcoinManager.getBtcTxid(setup.challengeSPV.btcTx);
+        setup.inputRevealedSPV = createBtcTxSPVProof(createRevealTx(challengeTxid, committeePubKey));
+
+        vm.prank(operatorAddress);
+        pegoutManager.registerChallenge(setup.acceptPeginTxid, setup.challengeSPV);
     }
 
     function setup_reimbursementKickoff()
@@ -914,7 +930,9 @@ abstract contract HelperContract is Test, TestUtils {
             operatorDisputePubKey: getMemberDisputePubKey(operatorAddress),
             pegoutId: setup.pegoutId,
             advanceFundsBlockNumber: 0,
-            reimbursementKickoffTxid: bytes32(0)
+            reimbursementKickoffTxid: bytes32(0),
+            challengeTxid: bytes32(0),
+            revealTxid: bytes32(0)
         });
 
         StreamPosition memory expectedStreamPosition = StreamPosition({

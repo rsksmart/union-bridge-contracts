@@ -2293,4 +2293,41 @@ contract TestCommitteeRegistry is Test, HelperContract {
         vm.prank(address(pegoutManager));
         registry.getOperatorDisputeData(committeeId, signatureData, missingNonces);
     }
+
+    function test_isMemberInCommittee_Success_True() external {
+        // Arrange
+        (Committee memory expectedCommittee, uint128 committeeId) = setup_completeCommittee();
+        address memberAddress = expectedCommittee.members[0].memberAddress;
+
+        // Act
+        bool isMember = registry.isMemberInCommittee(committeeId, memberAddress);
+
+        // Assert
+        assertTrue(isMember, "Member should be in committee");
+    }
+
+    function test_isMemberInCommittee_Success_False_WrongAddress() external {
+        // Arrange
+        (, uint128 committeeId) = setup_completeCommittee();
+        address nonMemberAddress = vm.addr(999); // Address not in committee
+
+        // Act
+        bool isMember = registry.isMemberInCommittee(committeeId, nonMemberAddress);
+
+        // Assert
+        assertFalse(isMember, "Address should not be in committee");
+    }
+
+    function test_isMemberInCommittee_Success_False_WrongCommittee() external {
+        // Arrange
+        (Committee memory expectedCommittee, uint128 committeeId) = setup_completeCommittee();
+        address memberAddress = expectedCommittee.members[0].memberAddress;
+        uint128 wrongCommitteeId = committeeId + 1; // Non-existent committee
+
+        // Act
+        bool isMember = registry.isMemberInCommittee(wrongCommitteeId, memberAddress);
+
+        // Assert
+        assertFalse(isMember, "Address should not be in committee");
+    }
 }

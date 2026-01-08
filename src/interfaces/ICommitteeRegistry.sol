@@ -298,6 +298,11 @@ interface ICommitteeRegistry {
         view
         returns (CommunicationData[] memory communicationData);
 
+    /// @notice Checks if a member is part of a specific committee
+    /// @param _committeeId The committee ID
+    /// @param _memberAddress The address of the member to check
+    function isMemberInCommittee(uint128 _committeeId, address _memberAddress) external view returns (bool);
+
     /// @notice Sets the Pegin Manager contract address
     /// @dev Only callable by the contract owner
     /// @param _peginManager The address of the Pegin Manager contract

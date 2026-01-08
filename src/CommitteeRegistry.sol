@@ -276,6 +276,10 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
         }
     }
 
+    function isMemberInCommittee(uint128 _committeeId, address _memberAddress) external view returns (bool) {
+        return committeesData[_committeeId][_memberAddress].inCommittee;
+    }
+
     /// @notice Allows a member to deposit information for committee formation
     /// @dev Called by members to provide their aggregated key for a pending committee
     /// @dev Only callable when contract is unpaused

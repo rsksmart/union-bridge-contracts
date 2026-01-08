@@ -20,6 +20,8 @@ import {Constants} from "src/libraries/Constants.sol";
 
 abstract contract ScriptUtils is Script {
     int256 public constant CONFIRMATIONS = 10;
+    // Fake amount just for testing purposes
+    uint64 constant REIMBURSEMENT_KICKOFF_AMOUNT = 5137;
 
     function getDeployerKey() public view returns (uint256) {
         return getMemberKey(uint32(vm.envUint("DEPLOYER_INDEX")));
@@ -243,9 +245,8 @@ abstract contract ScriptUtils is Script {
 
         // operator output amount
         // This should include fee and speedup from accept pegin and from operator take itself.
-        // REIMBURSEMENT_KICKOFF_AMOUNT may be updated based on committee members count.
-        uint64 operatorAmount = _streamDenomination + Constants.REIMBURSEMENT_KICKOFF_AMOUNT
-            - 2 * (Constants.P2TR_FEE + Constants.SPEED_UP_AMOUNT);
+        uint64 operatorAmount =
+            _streamDenomination + REIMBURSEMENT_KICKOFF_AMOUNT - 2 * (Constants.P2TR_FEE + Constants.SPEED_UP_AMOUNT);
         bytes memory operatorScriptPubKey = BtcScriptParser.getP2WPKHScript(_operatorPubKey);
 
         // pay to operator's P2WPKH
@@ -278,7 +279,7 @@ abstract contract ScriptUtils is Script {
         bytes memory committeeScriptPubKey = BtcScriptParser.getP2WPKHScript(_committeePubKey);
 
         // P2TR
-        btcOutputs[0] = BtcTxOut({amount: Constants.REIMBURSEMENT_KICKOFF_AMOUNT, scriptPubKey: committeeScriptPubKey});
+        btcOutputs[0] = BtcTxOut({amount: REIMBURSEMENT_KICKOFF_AMOUNT, scriptPubKey: committeeScriptPubKey});
 
         return BtcTransaction({version: Constants.BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
     }
@@ -324,7 +325,6 @@ abstract contract ScriptUtils is Script {
 
     // ========================== User Reimbursement ==========================
     function createBtcUserReimbursementTx(bytes32 _requestPeginTxid, uint64 _amount, bytes32 _btcReimbursementPubKey)
-        internal
         pure
         returns (BtcTransaction memory)
     {
@@ -348,6 +348,32 @@ abstract contract ScriptUtils is Script {
             outputs: btcOutputs,
             locktime: Constants.LOCKTIME
         });
+    }
+
+    // ========================== Challenge ==========================
+    function createChallengeTx(bytes32 _reimbursementKickoffTxid, bytes memory _committeePubKey)
+        pure
+        returns (BtcTransaction memory)
+    {
+        // Input: spend the reimbursement kickoff UTXO
+        BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
+        btcInputs[0] = BtcTxIn({
+            txId: _reimbursementKickoffTxid,
+            vout: 0, // P2TR output is at index 0
+            sequence: Constants.SEQUENCE,
+            scriptSig: hex""
+        });
+
+        // Outputs
+        BtcTxOut[] memory btcOutputs = new BtcTxOut[](1);
+
+        // P2TR to committee
+        btcOutputs[0] = BtcTxOut({
+            amount: REIMBURSEMENT_KICKOFF_AMOUNT,
+            scriptPubKey: getAcceptPeginP2TRScriptPub(_committeePubKey)
+        });
+
+        return BtcTransaction({version: Constants.BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
     }
 
     // ========================== Reject Peg-in ==========================
@@ -376,5 +402,30 @@ abstract contract ScriptUtils is Script {
             outputs: btcOutputs,
             locktime: Constants.LOCKTIME
         });
+    }
+
+    // ========================== Reveal ==========================
+    function createRevealTx(bytes32 _challengeTxid, bytes memory _committeePubKey)
+        internal
+        pure
+        returns (BtcTransaction memory)
+    {
+        // Input: spend the challenge UTXO
+        BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
+        btcInputs[0] = BtcTxIn({
+            txId: _challengeTxid,
+            vout: 0, // P2TR output is at index 0
+            sequence: Constants.SEQUENCE,
+            scriptSig: hex""
+        });
+
+        // Outputs
+        BtcTxOut[] memory btcOutputs = new BtcTxOut[](1);
+
+        // P2TR to committee
+        // This is a fake amount just for testing purposes
+        btcOutputs[0] = BtcTxOut({amount: 2000, scriptPubKey: getAcceptPeginP2TRScriptPub(_committeePubKey)});
+
+        return BtcTransaction({version: Constants.BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
     }
 }

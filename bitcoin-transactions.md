@@ -47,6 +47,12 @@ This document describes the Bitcoin transactions created by the Union Bridge pro
     - [Outputs](#reimbursement_kickoff_tx-outputs)
     - [Transaction Flow](#reimbursement_kickoff_tx-transaction-flow)
     - [Dispute Core Protocol Integration with Accept PegIn](#dispute-core-protocol-integration-with-accept-pegin)
+  - [2. CHALLENGE_TX (Challenge Transaction)](#2-challenge_tx-challenge-transaction)
+    - [Inputs](#challenge_tx-inputs)
+    - [Outputs](#challenge_tx-outputs)
+    - [Transaction Flow](#challenge_tx-transaction-flow)
+    - [CHALLENGE_TX Registration and Validation](#challenge_tx-registration-and-validation)
+    - [CHALLENGE_TX Integration with Dispute Resolution](#challenge_tx-integration-with-dispute-resolution)
 - [User Take Protocol - Transaction Details](#user-take-protocol---transaction-details)
   - [1. USER_TAKE_TX (User Take Transaction)](#1-user_take_tx-user-take-transaction)
     - [Inputs](#user_take_tx-inputs)
@@ -108,6 +114,8 @@ The Union Bridge system includes multiple BitVMX protocols. This document covers
 ### Dispute Core Protocol
 
 1. **REIMBURSEMENT_KICKOFF_TX** - Transaction that enables operators to claim funds through OPERATOR_TAKE_TX (peg-out flow, one per operator per slot)
+2. **CHALLENGE_TX** - Transaction that allows committee members to challenge operator actions if they detect incorrect behavior (peg-out flow, dispute resolution)
+3. **REVEAL_INPUT_TX** - Transaction that allows operators to reveal the input (slot ID signature) during dispute resolution, proving they correctly advanced funds (peg-out flow, dispute resolution)
 
 ### Transaction Relationships
 
@@ -128,10 +136,10 @@ graph TD
     
     %% Dispute Core Protocol
     I[Dispute Core<br/>OP_INITIAL_DEPOSIT_TX] -->|spends with Winternitz signature| M[REIMBURSEMENT_KICKOFF_TX<br/>Dispute Core Protocol]
-    M -->|Output 0: OPERATOR_TAKE_ENABLER| D
-    M -->|Output 0| N[CHALLENGE_TX<br/>Dispute Core Protocol]
-    N --> K[REVEAL_INPUT_TX<br/>Dispute Core Protocol]
-    K -->|Output 0: OPERATOR_WON_ENABLER| E
+    M -->|Output 0: OPERATOR_TAKE_ENABLER| J[OPERATOR_TAKE_TX input 1<br/>Accept PegIn Protocol]
+    M -->|Output 0| N[CHALLENGE_TX<br/>Dispute Core Protocol<br/>Challenge operator actions]
+    N -->|Output 0: REVEAL_INPUT Output| K[REVEAL_INPUT_TX<br/>Dispute Core Protocol<br/>Operator reveals input]
+    K -->|Output 0: OPERATOR_WON_ENABLER| L[OPERATOR_WON_TX input 1<br/>Accept PegIn Protocol]
     
     style A fill:#e1f5fe
     style B fill:#f3e5f5
@@ -864,6 +872,178 @@ The Dispute Core Protocol integrates with the **Accept PegIn Protocol** to provi
   2. Operator dispatches REIMBURSEMENT_KICKOFF_TX and calls `registerReimbursementKickoff`
   3. After long timelock expires, operator dispatches OPERATOR_TAKE_TX and calls `registerOperatorTake`
 
+### 2. CHALLENGE_TX (Challenge Transaction)
+
+**Purpose**: Transaction that allows any committee member (watchtower) to challenge an operator's REIMBURSEMENT_KICKOFF_TX if they detect incorrect behavior, such as an invalid ADVANCE_FUNDS_TX (wrong amount, wrong recipient, or forked chain). This transaction initiates the dispute resolution process and requires the operator to reveal the input or face penalties.
+
+#### CHALLENGE_TX Inputs
+
+##### Input 0: From REIMBURSEMENT_KICKOFF_TX
+
+- **Type**: Taproot (P2TR)
+- **Spend Mode**: Script path (short timelock + Winternitz signature)
+- **Sighash Type**: SIGHASH_ALL
+- **Timelock**: SHORT_TIMELOCK blocks (from StreamSettings)
+- **Key Required**: Challenging member's Winternitz key for CHALLENGE_KEY
+- **Previous Transaction**: REIMBURSEMENT_KICKOFF_TX (from Dispute Core protocol, output 0)
+- **Description**: Spends the OPERATOR_TAKE_ENABLER output from REIMBURSEMENT_KICKOFF_TX. The challenging member must wait for the short timelock to expire and sign with their Winternitz key to prove they are challenging the operator's actions.
+- **Taproot Script Details**:
+  - **Script Path**: Uses short timelock + Winternitz signature script leaf for spending
+  - **Script Tree**: Contains multiple script leaves (one per committee member)
+  - **Script Leaf (Challenging Member)**: `OP_1 <SHORT_TIMELOCK> OP_CHECKSEQUENCEVERIFY OP_DROP VERIFY_WINTERNITZ_SIGNATURE(<dispute_aggregated_key>, CHALLENGE_KEY, <challenge_key>)` - Allows any committee member to challenge after short timelock expires
+  - **Winternitz Signature Data**: The challenging member signs the value `[1u8]` (single byte with value 1) using their CHALLENGE_KEY Winternitz key
+  - **Spending Conditions**: 
+    - Must wait for short timelock expiry (SHORT_TIMELOCK blocks)
+    - Must provide Winternitz signature with CHALLENGE_KEY proving the challenge intent
+    - The challenging member uses their own script leaf index (their member index in the committee)
+
+#### CHALLENGE_TX Outputs
+
+##### Output 0: REVEAL_INPUT Output
+
+- **Type**: Taproot (P2TR)
+- **Amount**: `AUTO_AMOUNT` (calculated during protocol setup)
+- **Key**: Committee aggregated key (`dispute_aggregated_key`)
+- **Leaves**: Two script leaves for reveal input and input not revealed scenarios
+- **Purpose**: Main output that enables REVEAL_INPUT_TX and INPUT_NOT_REVEALED_TX transactions
+- **Taproot Script Details**:
+  - **Key Path**: Uses committee aggregated key for direct spending
+  - **Script Tree**: Contains two script leaves:
+    1. **Reveal Input Script**: `VERIFY_WINTERNITZ_SIGNATURE(<operator_dispute_key>, SLOT_ID_KEY, <slot_id_key>)` - Allows operator to reveal the input by signing with their SLOT_ID_KEY Winternitz key
+    2. **Input Not Revealed Script**: `OP_1 <INPUT_NOT_REVEALED_TIMELOCK> OP_CHECKSEQUENCEVERIFY OP_DROP VERIFY_SIGNATURE(<dispute_aggregated_key>)` - Allows committee to claim funds if operator doesn't reveal input within the timelock
+  - **Spending Conditions**: 
+    - Operator can spend via reveal input script path by providing Winternitz signature with SLOT_ID_KEY
+    - Committee can spend via input not revealed script path after timelock expiry if operator fails to reveal
+
+##### Output 1 to N: Speedup Outputs
+
+- **Type**: SegWit (P2WPKH)
+- **Amount**: `SPEEDUP_VALUE` (540 satoshis) per output
+- **Key**: Each committee member's speedup key (`speedup_key`)
+- **Count**: One speedup output per committee member
+- **Purpose**: Speedup transactions for each committee member to accelerate future transaction confirmations
+- **Indexing**: The speedup output index for each member is `1 + member_index` (where member_index is 0-based)
+
+#### CHALLENGE_TX Transaction Flow
+
+```mermaid
+graph LR
+    A[REIMBURSEMENT_KICKOFF_TX<br/>output 0: OPERATOR_TAKE_ENABLER] --> B[CHALLENGE_TX<br/>Inputs:<br/>• Input 0: REIMBURSEMENT_KICKOFF_TX output<br/>  Script Path: Short Timelock + Winternitz<br/>  Data: [1u8] signed with CHALLENGE_KEY]
+    B --> C[CHALLENGE_TX<br/>Outputs:<br/>• Output 0: REVEAL_INPUT Output<br/>  P2TR - Committee Aggregated Key<br/>  Two script leaves<br/><br/>• Output 1-N: Speedup Outputs<br/>  P2WPKH - One per committee member<br/>  Amount: SPEEDUP_VALUE each]
+    
+    %% Flow to next transactions
+    C --> D[REVEAL_INPUT_TX<br/>input 0<br/>Script Path: Winternitz Signature<br/>Operator reveals input]
+    C --> E[INPUT_NOT_REVEALED_TX<br/>input 0<br/>Script Path: Timelock<br/>If operator doesn't reveal]
+    
+    style A fill:#fce4ec
+    style B fill:#fce4ec
+    style C fill:#fce4ec
+    style D fill:#fff3e0
+    style E fill:#fce4ec
+```
+
+#### CHALLENGE_TX Registration and Validation
+
+The Rootstock contract validates CHALLENGE_TX through the `registerChallenge` function:
+
+- **Status Validation**: The slot must be in `KICKOFF` status (REIMBURSEMENT_KICKOFF_TX must be previously registered)
+- **Input Validation**: 
+  - CHALLENGE_TX must have exactly 1 input (CHALLENGE_INPUT_COUNT)
+  - Input 0 must reference the registered REIMBURSEMENT_KICKOFF_TX transaction ID
+- **Member Validation**: The caller must be a member of the committee for that slot
+- **SPV Proof**: The transaction must be verified with sufficient confirmations using SPV proof
+- **Status Update**: Upon successful registration, the slot status changes to `CHALLENGE`
+
+#### CHALLENGE_TX Integration with Dispute Resolution
+
+CHALLENGE_TX is a critical component of the dispute resolution mechanism:
+
+- **Challenge Trigger**: Can be dispatched at any time after REIMBURSEMENT_KICKOFF_TX is registered, as long as the short timelock has expired
+- **Operator Response**: The operator must respond by dispatching REVEAL_INPUT_TX to prove they advanced funds correctly
+- **Timeout Protection**: If the operator fails to reveal within INPUT_NOT_REVEALED_TIMELOCK blocks, INPUT_NOT_REVEALED_TX can be dispatched, leading to operator penalties
+- **Dispute Outcome**: 
+  - If operator reveals correctly: Operator can proceed with OPERATOR_WON_TX
+  - If operator fails to reveal: Watchtower wins the challenge, operator is penalized
+
+### 3. REVEAL_INPUT_TX (Reveal Input Transaction)
+
+**Purpose**: Transaction that allows the operator to reveal the input (slot ID signature) during dispute resolution, proving they correctly advanced funds. This transaction is dispatched by the operator in response to a CHALLENGE_TX and creates the OPERATOR_WON_ENABLER output that enables OPERATOR_WON_TX execution.
+
+#### REVEAL_INPUT_TX Inputs
+
+##### Input 0: From CHALLENGE_TX
+
+- **Type**: Taproot (P2TR)
+- **Spend Mode**: Script path (Winternitz signature)
+- **Sighash Type**: SIGHASH_ALL
+- **Key Required**: Operator's Winternitz key for SLOT_ID_KEY
+- **Previous Transaction**: CHALLENGE_TX (from Dispute Core protocol, output 0)
+- **Description**: Spends the REVEAL_INPUT output from CHALLENGE_TX. The operator must sign with their SLOT_ID_KEY Winternitz key to prove knowledge of the slot ID, demonstrating they correctly advanced funds for the challenged slot.
+- **Winternitz Signature Data**: The operator signs the slot index value `(slot_index as u16).to_le_bytes()` (2 bytes, little-endian) using their SLOT_ID_KEY Winternitz key
+- **Taproot Script Details**:
+  - **Script Path**: Uses Winternitz signature script leaf (leaf 0) for spending
+  - **Script Tree**: Contains two script leaves:
+    1. **Reveal Input Script (Leaf 0)**: `VERIFY_WINTERNITZ_SIGNATURE(<operator_dispute_key>, SLOT_ID_KEY, <slot_id_key>)` - Allows operator to reveal the input by signing with their SLOT_ID_KEY Winternitz key
+    2. **Input Not Revealed Script (Leaf 1)**: `OP_1 <INPUT_NOT_REVEALED_TIMELOCK> OP_CHECKSEQUENCEVERIFY OP_DROP VERIFY_SIGNATURE(<dispute_aggregated_key>)` - Allows committee to claim funds if operator doesn't reveal input within the timelock (used by INPUT_NOT_REVEALED_TX)
+  - **Spending Conditions**: 
+    - Operator can spend via reveal input script path (leaf 0) by providing Winternitz signature with SLOT_ID_KEY
+    - The signature must sign the slot index value (2 bytes, u16, little-endian)
+    - Committee can spend via input not revealed script path (leaf 1) after timelock expiry if operator fails to reveal
+
+#### REVEAL_INPUT_TX Outputs
+
+##### Output 0: OPERATOR_WON_ENABLER Output
+
+- **Type**: Taproot (P2TR)
+- **Amount**: `AUTO_AMOUNT` (calculated during protocol setup)
+- **Key**: Committee aggregated key (`take_aggregated_key`)
+- **Leaves**: One script leaf for operator won scenario
+- **Purpose**: Main output that enables OPERATOR_WON_TX execution (serves as input 1 for OPERATOR_WON_TX)
+- **Taproot Script Details**:
+  - **Key Path**: Uses committee aggregated key for direct spending
+  - **Script Tree**: Contains one script leaf:
+    1. **Operator Won Script**: `OP_1 <OP_WON_TIMELOCK> OP_CHECKSEQUENCEVERIFY OP_DROP VERIFY_SIGNATURE(<take_aggregated_key>)` - Allows operator to claim funds after winning a challenge dispute, requires waiting for OP_WON_TIMELOCK blocks
+  - **Spending Conditions**: 
+    - After OP_WON_TIMELOCK blocks expire, the operator can spend via script path using committee aggregated key signature
+    - This output serves as input 1 for OPERATOR_WON_TX in the Accept PegIn Protocol
+  - **REVEAL_INPUT_TX Output Script Tree**:
+
+
+##### Output 1: Speedup Output
+
+- **Type**: SegWit (P2WPKH)
+- **Amount**: `SPEEDUP_VALUE` (540 satoshis)
+- **Key**: Operator's speedup key (`speedup_key`)
+- **Purpose**: Speedup transaction for the operator to accelerate future transaction confirmations
+
+#### REVEAL_INPUT_TX Transaction Flow
+
+```mermaid
+graph LR
+    A[CHALLENGE_TX<br/>output 0: REVEAL_INPUT Output] --> B[REVEAL_INPUT_TX<br/>Inputs:<br/>• Input 0: CHALLENGE_TX output<br/>  Script Path: Winternitz Signature<br/>  Data: slot_index (u16, little-endian)<br/>  Signed with SLOT_ID_KEY]
+    B --> C[REVEAL_INPUT_TX<br/>Outputs:<br/>• Output 0: OPERATOR_WON_ENABLER Output<br/>  P2TR - Committee Aggregated Key<br/>  Operator Won Script with Timelock<br/><br/>• Output 1: Speedup Output<br/>  P2WPKH - Operator's speedup key<br/>  Amount: SPEEDUP_VALUE]
+    
+    %% Flow to next transaction
+    C --> D[OPERATOR_WON_TX<br/>input 1<br/>Script Path: Operator Won Script<br/>After OP_WON_TIMELOCK expires]
+    
+    style A fill:#fce4ec
+    style B fill:#fce4ec
+    style C fill:#fce4ec
+    style D fill:#fce4ec
+```
+
+#### REVEAL_INPUT_TX Integration with Dispute Resolution
+
+REVEAL_INPUT_TX is a critical component of the dispute resolution mechanism:
+
+- **Challenge Response**: Dispatched by the operator after CHALLENGE_TX is registered to prove they advanced funds correctly
+- **Slot ID Proof**: The Winternitz signature on the slot index proves the operator knows which slot they're defending
+- **OPERATOR_WON_TX Enablement**: Creates the OPERATOR_WON_ENABLER output that enables OPERATOR_WON_TX execution
+- **Timelock Requirement**: The OPERATOR_WON_ENABLER output requires OP_WON_TIMELOCK blocks to pass before OPERATOR_WON_TX can be executed
+- **Dispute Outcome**: 
+  - If operator reveals correctly: Operator can proceed with OPERATOR_WON_TX after timelock expiry
+  - If operator fails to reveal: INPUT_NOT_REVEALED_TX can be dispatched, leading to operator penalties
+
 ## User Take Protocol - Transaction Details
 
 ### 1. USER_TAKE_TX (User Take Transaction)
@@ -1033,8 +1213,10 @@ The Advance Funds Protocol integrates with the **Dispute Core Protocol** to prov
 - **OPERATOR_WON_TX**: Disputed fallback transaction for operators to claim funds after winning a challenge (peg-out flow)
 - **ADVANCE_FUNDS_TX**: Transaction allowing operators to advance funds to users before executing operator take transactions (peg-out flow, proof of payment)
 - **REIMBURSEMENT_KICKOFF_TX**: Dispute Core protocol transaction that enables operators to claim funds through OPERATOR_TAKE_TX
+- **CHALLENGE_TX**: Dispute Core protocol transaction that allows committee members to challenge operator actions if they detect incorrect behavior
 - **OP_INITIAL_DEPOSIT_TX**: Dispute Core protocol transaction containing operator's initial deposit
 - **REVEAL_INPUT_TX**: Dispute Core protocol transaction enabling operator to claim funds after dispute resolution (used by OPERATOR_WON_TX)
+- **INPUT_NOT_REVEALED_TX**: Dispute Core protocol transaction that allows committee to claim funds if operator fails to reveal input within timelock
 
 ### Key Types
 

@@ -26,6 +26,10 @@ struct PegoutTempInfo {
     int256 advanceFundsBlockNumber;
     /// @notice The transaction id of the reimbursement kickoff transaction
     bytes32 reimbursementKickoffTxid;
+    /// @notice The transaction id of the challenge transaction
+    bytes32 challengeTxid;
+    /// @notice The transaction id of the input reveal transaction
+    bytes32 revealTxid;
 }
 
 /// @notice Settings for the PegoutManager contract
@@ -119,7 +123,30 @@ interface IPegoutManager {
         StreamPosition streamInfo
     );
 
+    /// @notice Event emitted when reimbursement kickoff is successfully registered
+    /// @param txid The hash of the reimbursement kickoff transaction
+    /// @param acceptPeginTxid The hash of the original accept peg-in transaction
+    /// @param committeeId The ID of the committee responsible for this reimbursement kickoff
+    /// @param streamInfo The stream position information related to this reimbursement kickoff
     event ReimbursementKickoffRegistered(
+        bytes32 indexed txid, bytes32 indexed acceptPeginTxid, uint128 committeeId, StreamPosition streamInfo
+    );
+
+    /// @notice Event emitted when a challenge is registered for a peg-out
+    /// @param txid The hash of the challenge transaction
+    /// @param acceptPeginTxid The hash of the original accept peg-in transaction
+    /// @param committeeId The ID of the committee responsible for this challenge
+    /// @param streamInfo The stream position information related to this challenge
+    event ChallengeRegistered(
+        bytes32 indexed txid, bytes32 indexed acceptPeginTxid, uint128 committeeId, StreamPosition streamInfo
+    );
+
+    /// @notice Event emitted when an input is revealed for a challenge
+    /// @param txid The hash of the reveal transaction
+    /// @param acceptPeginTxid The hash of the original accept peg-in transaction
+    /// @param committeeId The ID of the committee responsible for this pegout
+    /// @param streamInfo The stream position information related to this pegout
+    event RevealRegistered(
         bytes32 indexed txid, bytes32 indexed acceptPeginTxid, uint128 committeeId, StreamPosition streamInfo
     );
 
@@ -163,6 +190,12 @@ interface IPegoutManager {
     /// @dev Emits PegoutRegistered event upon successful deposit
     /// @param _pegoutTxSPVProof The BTC SPV proof of the operator take peg-out transaction
     function registerOperatorTake(BtcTxSPVProof calldata _pegoutTxSPVProof) external;
+
+    /// @notice Registers a challenge for a peg-out transaction
+    /// @dev Validates the SPV proof and updates the peg-out status accordingly
+    /// @param acceptPeginTxid The accept peg-in transaction id that is being challenged
+    /// @param _challenge The BTC SPV proof of the challenge transaction
+    function registerChallenge(bytes32 acceptPeginTxid, BtcTxSPVProof calldata _challenge) external;
 
     /// @notice Triggers the operator take process for a peg-out when not all committee members sign within timeout
     /// @dev This function can be called after a User Take expiration or after an Operator Take expiration
@@ -287,9 +320,14 @@ interface IPegoutManager {
     error WrongUserAmount(uint256 actual, uint256 expected);
 
     /// @notice Thrown when the reimbursement kickoff txid does not match the expected value
-    /// @param expected The expected reimbursement kickoff txid
     /// @param actual The actual reimbursement kickoff txid provided
-    error ReimbursementKickoffTxidNotMatch(bytes32 expected, bytes32 actual);
+    /// @param expected The expected reimbursement kickoff txid
+    error ReimbursementKickoffTxidNotMatch(bytes32 actual, bytes32 expected);
+
+    /// @notice Thrown when the challenge txid does not match the expected value
+    /// @param actual The actual challenge txid provided
+    /// @param expected The expected challenge txid
+    error ChallengeTxidNotMatch(bytes32 actual, bytes32 expected);
 
     /// @notice Thrown when operator take data is not found for a given accept peg-in txid and operator address
     /// @param acceptPeginTxid The accept peg-in transaction id
@@ -297,7 +335,17 @@ interface IPegoutManager {
     error OperatorTakeDataNotFound(bytes32 acceptPeginTxid, address operatorAddress);
 
     /// @notice Thrown when the operator take transaction id does not match the expected value
-    /// @param expected The expected operator take transaction id
     /// @param actual The actual operator take transaction id provided
-    error OperatorTakeTxidNotMatch(bytes32 expected, bytes32 actual);
+    /// @param expected The expected operator take transaction id
+    error OperatorTakeTxidNotMatch(bytes32 actual, bytes32 expected);
+
+    /// @notice Thrown when the number of inputs in a challenge transaction is incorrect
+    /// @param actual The actual number of inputs found
+    /// @param expected The expected number of inputs
+    error InvalidChallengeInputCount(uint256 actual, uint256 expected);
+
+    /// @notice Thrown when the number of inputs in a input reveal transaction is incorrect
+    /// @param actual The actual number of inputs found
+    /// @param expected The expected number of inputs
+    error InvalidRevealedInputCount(uint256 actual, uint256 expected);
 }

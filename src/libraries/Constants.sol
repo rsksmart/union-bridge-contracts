@@ -97,6 +97,17 @@ library Constants {
     /// @dev Second output (index 1) contains the speed-up payment for CPFP
     uint32 constant PEGOUT_VOUT_SPEED_UP = 1;
 
+    /// @dev Input index for reimbursement kickoff input in challenge vin reimbursement kickoff Bitcoin transactions
+    /// @dev First input (index 0) spends the reimbursement kickoff UTXO
+    uint32 constant CHALLENGE_VIN_REIMBURSEMENT_KICKOFF = 0;
+
+    /// @dev Number of inputs in a challenge Bitcoin transaction
+    uint32 constant CHALLENGE_INPUT_COUNT = 1;
+
+    uint32 constant INPUT_REVEALED_VIN_CHALLENGE = 0;
+
+    uint32 constant INPUT_REVEALED_INPUT_COUNT = 1;
+
     // Transaction Input/Output Counts
     /// @dev Number of outputs in a request peg-in transaction
     /// @dev Includes: taptree output, OP_RETURN metadata, and enabler output
@@ -134,9 +145,6 @@ library Constants {
     /// @dev Enabler output amount in satoshis for dispute resolution
     /// @dev Amount sent to enabler output for operator dispute mechanism
     uint64 constant ENABLER_AMOUNT = 540;
-
-    /// @dev Reimbursement kickoff amount in satoshis for Bitcoin transactions
-    uint64 constant REIMBURSEMENT_KICKOFF_AMOUNT = 5137;
 
     /// @dev Dust threshold in satoshis for Bitcoin transactions
     /// @dev Minimum amount required for a Bitcoin output to be considered valid
