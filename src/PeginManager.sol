@@ -403,6 +403,76 @@ contract PeginManager is IPeginManager, PegManagerBase {
         }
     }
 
+    /// @notice Registers a reject peg-in transaction from Bitcoin
+    /// @dev Validates the SPV proof and registers the reject peg-in transaction
+    /// @dev Emits RejectPeginRegistered event upon successful registration
+    /// @dev Slot state is set to BLOCKED
+    /// @param _rejectPeginTxSPVProof The BTC SPV proof of the reject peg-in transaction
+    function registerRejectPegin(BtcTxSPVProof memory _rejectPeginTxSPVProof) external nonReentrant whenNotPaused {
+        // the input index should be the request peg-in txid
+        bytes32 requestPeginTxid = _rejectPeginTxSPVProof.btcTx.inputs[Constants.REJECT_PEGIN_VIN_ENABLER].txId;
+
+        // Validate the peg in request tx exists and the status
+        StreamPosition memory streamInfo = _getStreamPositionByRequestPegin(requestPeginTxid);
+        if (streamInfo.pegStatus != PegStatus.REGISTERED) {
+            revert InvalidPegStatus(requestPeginTxid, streamInfo.pegStatus, PegStatus.REGISTERED);
+        }
+
+        // Calculate userReimbursementTxid from BtcTransaction
+        bytes32 rejectPeginTxid = bitcoinManager.getBtcTxid(_rejectPeginTxSPVProof.btcTx);
+
+        bytes32 acceptPeginTxid = acceptPegins[requestPeginTxid];
+        // Validate the txid is NOT the same as the accept peg-in txid
+        if (acceptPeginTxid == rejectPeginTxid) {
+            revert InvalidAcceptPeginTxid(acceptPeginTxid, rejectPeginTxid);
+        }
+
+        // Verify the pegin rejected transaction
+        _verifyRejectPeginTransaction(_rejectPeginTxSPVProof, rejectPeginTxid, streamInfo.streamId);
+
+        // Block slot as it has already been reimbursted to the user.
+        // slither-disable-next-line reentrancy-no-eth reentrancy-benign
+        streamManager.blockSlot(streamInfo.streamId, streamInfo.packetNumber, streamInfo.slotId);
+        streamManager.setPegStatus(acceptPeginTxid, PegStatus.BLOCKED);
+
+        // Set user reimbursement txid as rejected peg-in txid
+        peginTempInfo[requestPeginTxid].rejectPeginTxid = rejectPeginTxid;
+
+        emit RejectPeginRegistered(rejectPeginTxid, requestPeginTxid, streamInfo);
+    }
+
+    function _verifyRejectPeginTransaction(
+        BtcTxSPVProof memory _rejectPeginTxSPVProof,
+        bytes32 _rejectPeginTxid,
+        uint64 _streamId
+    ) internal view {
+        // Valdate the vout is correct
+        if (
+            _rejectPeginTxSPVProof.btcTx.inputs[Constants.REJECT_PEGIN_VIN_ENABLER].vout
+                != Constants.REQUEST_PEGIN_VOUT_ENABLER
+        ) {
+            revert IncorrectVout(
+                _rejectPeginTxSPVProof.btcTx.inputs[Constants.REJECT_PEGIN_VIN_ENABLER].vout,
+                Constants.REQUEST_PEGIN_VOUT_ENABLER
+            );
+        }
+
+        Stream memory stream = streamManager.getStreamById(_streamId);
+
+        // Verify the userReimbursementTxid part of the Merkle Root of Tx of a Block
+        // and that block is inside Bitcoin Mainchain
+        // and has enough confirmations
+        _verifyTxConfirmations(
+            stream.peginConfirmations,
+            _rejectPeginTxid,
+            _rejectPeginTxSPVProof.blockHash,
+            _rejectPeginTxSPVProof.merkleBranchPath,
+            _rejectPeginTxSPVProof.merkleBranchHashes
+        );
+
+        // TODO review if we should wait an amount of blocks before rejecting the peg-in
+    }
+
     /// @notice Accepts a peg-in operation by providing an SPV proof of the accept peg-in transaction
     /// @param _peginAcceptedTxSPVProof The SPV proof containing the accept peg-in Bitcoin transaction
     /// @dev This function validates the accept peg-in transaction, it must spend the output from the request peg-in transaction

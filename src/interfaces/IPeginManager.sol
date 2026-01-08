@@ -81,12 +81,20 @@ interface IPeginManager is IPausable {
     /// @notice Registers a user reimbursement transaction from Bitcoin
     /// @dev Validates the SPV proof and completes the user reimbursement process
     /// @dev Emits UserReimbursementRegistered event upon successful registration
+    /// @dev Slot state is set to BLOCKED
     /// @param _userReimbursementTxSPVProof The BTC SPV proof of the user reimbursement transaction
     /// @param _reimbursementPeginVin The input index of the reimbursement peg-in transaction
     function registerUserReimbursement(
         BtcTxSPVProof calldata _userReimbursementTxSPVProof,
         uint32 _reimbursementPeginVin
     ) external;
+
+    /// @notice Registers a reject peg-in transaction from Bitcoin
+    /// @dev Validates the SPV proof and registers the reject peg-in transaction
+    /// @dev Emits RejectPeginRegistered event upon successful registration
+    /// @dev Slot state is set to BLOCKED
+    /// @param _rejectPeginTxSPVProof The BTC SPV proof of the reject peg-in transaction
+    function registerRejectPegin(BtcTxSPVProof calldata _rejectPeginTxSPVProof) external;
 
     // ===================== Events =====================
 

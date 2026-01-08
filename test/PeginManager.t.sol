@@ -890,6 +890,8 @@ contract TestPeginManager is Test, HelperContract {
         bytes32 userReimbursementTxid = getBtcTxid(userReimbursementTx);
         BtcTxSPVProof memory userReimbursementTxSPVProof = createBtcTxSPVProof(userReimbursementTx);
 
+        pauseAndUnpauseContracts();
+
         // Get stream position
         StreamPosition memory streamPositionBefore = peginManager.getStreamPositionByRequestPegin(requestPeginTxid);
 
@@ -911,6 +913,10 @@ contract TestPeginManager is Test, HelperContract {
             streamPositionAfter.streamId, streamPositionAfter.packetNumber, streamPositionAfter.slotId
         );
         assertEq(uint256(slot.state), uint256(SlotState.BLOCKED), "Slot should be BLOCKED after user reimbursement");
+
+        // Verify user reimbursement txid is stored
+        RequestPeginTempInfo memory peginTempInfo = peginManager.getRequestPeginTempInfo(requestPeginTxid);
+        assertEq(peginTempInfo.userReimbursementTxid, userReimbursementTxid, "User reimbursement txid should be stored");
     }
 
     function test_registerUserReimbursement_Revert_PeginNotRequested() external {
@@ -1021,27 +1027,6 @@ contract TestPeginManager is Test, HelperContract {
 
         // Act
         peginManager.registerUserReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
-    }
-
-    function test_registerUserReimbursement_Success_UnpausedContract() external {
-        // Arrange
-        (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
-        bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
-        BtcTransaction memory userReimbursementTx = getBtcUserReimbursementTx(requestPeginTxid);
-        uint32 reimbursementPeginVin = userReimbursementTx.inputs[0].vout;
-        BtcTxSPVProof memory userReimbursementTxSPVProof = createBtcTxSPVProof(userReimbursementTx);
-
-        pauseAndUnpauseContracts();
-
-        // Act & Assert - should succeed
-        peginManager.registerUserReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
-
-        // Verify slot is blocked
-        StreamPosition memory streamPosition = peginManager.getStreamPositionByRequestPegin(requestPeginTxid);
-        assertEq(uint256(streamPosition.pegStatus), uint256(PegStatus.BLOCKED), "PegStatus should be BLOCKED");
-        Slot memory slot =
-            streamManager.getSlot(streamPosition.streamId, streamPosition.packetNumber, streamPosition.slotId);
-        assertEq(uint256(slot.state), uint256(SlotState.BLOCKED), "Slot state should be BLOCKED");
     }
 
     function test_registerUserReimbursement_Revert_BridgeBtcTxInvalidMerkleBranch() external {
@@ -1156,5 +1141,271 @@ contract TestPeginManager is Test, HelperContract {
 
         // Act
         peginManager.registerUserReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
+    }
+
+    // ============ Register Reject Peg-in Tests ============
+    function test_registerRejectPegin_Success() external {
+        // Arrange
+        (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
+        bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
+
+        // Get a committee member address for the onlyMember modifier
+        uint128 committeeId = streamManager.getCommitteeId(setupStreamId, PACKET_NUMBER);
+        CommitteeMember[] memory committeeMembers = registry.getCommitteeMembers(committeeId);
+        address memberAddress = committeeMembers[0].memberAddress;
+
+        BtcTransaction memory rejectPeginTx = getBtcRejectPeginTx(requestPeginTxid);
+        bytes32 rejectPeginTxid = getBtcTxid(rejectPeginTx);
+        BtcTxSPVProof memory rejectPeginTxSPVProof = createBtcTxSPVProof(rejectPeginTx);
+
+        // Get stream position
+        StreamPosition memory streamPositionBefore = peginManager.getStreamPositionByRequestPegin(requestPeginTxid);
+
+        pauseAndUnpauseContracts();
+
+        // Assert - expect event
+        vm.expectEmit(address(peginManager));
+        emit IPeginManager.RejectPeginRegistered(rejectPeginTxid, requestPeginTxid, streamPositionBefore);
+
+        // Act - call from committee member address
+        vm.prank(memberAddress);
+        peginManager.registerRejectPegin(rejectPeginTxSPVProof);
+
+        // Assert - verify slot is blocked
+        StreamPosition memory streamPositionAfter = peginManager.getStreamPositionByRequestPegin(requestPeginTxid);
+        assertEq(
+            uint256(streamPositionAfter.pegStatus),
+            uint256(PegStatus.BLOCKED),
+            "Stream position status should be BLOCKED"
+        );
+        Slot memory slot = streamManager.getSlot(
+            streamPositionAfter.streamId, streamPositionAfter.packetNumber, streamPositionAfter.slotId
+        );
+        assertEq(uint256(slot.state), uint256(SlotState.BLOCKED), "Slot should be BLOCKED after reject pegin");
+
+        // Verify rejectPeginTxid is stored
+        RequestPeginTempInfo memory peginTempInfo = peginManager.getRequestPeginTempInfo(requestPeginTxid);
+        assertEq(peginTempInfo.rejectPeginTxid, rejectPeginTxid, "Reject pegin txid should be stored");
+    }
+
+    function test_registerRejectPegin_Revert_PeginNotRequested() external {
+        // Arrange
+        (BtcTransaction memory requestPeginTx,) = getBtcRequestPeginTx();
+        bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
+        BtcTransaction memory rejectPeginTx = getBtcRejectPeginTx(requestPeginTxid);
+        BtcTxSPVProof memory rejectPeginTxSPVProof = createBtcTxSPVProof(rejectPeginTx);
+
+        // Get a committee member address
+        uint128 committeeId = streamManager.getCommitteeId(setupStreamId, PACKET_NUMBER);
+        CommitteeMember[] memory committeeMembers = registry.getCommitteeMembers(committeeId);
+        address memberAddress = committeeMembers[0].memberAddress;
+
+        // Assert - expect revert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IPeginManager.InvalidPegStatus.selector,
+                requestPeginTxid,
+                PegStatus.NOT_REGISTERED,
+                PegStatus.REGISTERED
+            )
+        );
+
+        // Act
+        vm.prank(memberAddress);
+        peginManager.registerRejectPegin(rejectPeginTxSPVProof);
+    }
+
+    function test_registerRejectPegin_Revert_PeginAlreadyAccepted() external {
+        // Arrange
+        (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
+        bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
+
+        // Accept the pegin first
+        BtcTransaction memory acceptPeginTx = getBtcAcceptPeginTx(requestPeginTx);
+        BtcTxSPVProof memory acceptPeginTxSPVProof = createBtcTxSPVProof(acceptPeginTx);
+        peginManager.acceptPegin(acceptPeginTxSPVProof);
+
+        // Get a committee member address
+        uint128 committeeId = streamManager.getCommitteeId(setupStreamId, PACKET_NUMBER);
+        CommitteeMember[] memory committeeMembers = registry.getCommitteeMembers(committeeId);
+        address memberAddress = committeeMembers[0].memberAddress;
+
+        // Now try to register reject pegin
+        BtcTransaction memory rejectPeginTx = getBtcRejectPeginTx(requestPeginTxid);
+        BtcTxSPVProof memory rejectPeginTxSPVProof = createBtcTxSPVProof(rejectPeginTx);
+
+        // Assert - expect revert with InvalidPegStatus
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IPeginManager.InvalidPegStatus.selector, requestPeginTxid, PegStatus.ACCEPTED, PegStatus.REGISTERED
+            )
+        );
+
+        // Act
+        vm.prank(memberAddress);
+        peginManager.registerRejectPegin(rejectPeginTxSPVProof);
+    }
+
+    function test_registerRejectPegin_Revert_InvalidAcceptPeginTxid() external {
+        // Arrange
+        (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
+        bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
+
+        // Get a committee member address
+        uint128 committeeId = streamManager.getCommitteeId(setupStreamId, PACKET_NUMBER);
+        CommitteeMember[] memory committeeMembers = registry.getCommitteeMembers(committeeId);
+        address memberAddress = committeeMembers[0].memberAddress;
+
+        // Create accept pegin tx and use it as reject pegin (should fail)
+        BtcTransaction memory acceptPeginTx = getBtcAcceptPeginTx(requestPeginTx);
+        bytes32 acceptPeginTxid = getBtcTxid(acceptPeginTx);
+        BtcTxSPVProof memory acceptPeginTxSPVProof = createBtcTxSPVProof(acceptPeginTx);
+
+        // Assert - expect revert
+        vm.expectRevert(
+            abi.encodeWithSelector(IPeginManager.InvalidAcceptPeginTxid.selector, acceptPeginTxid, acceptPeginTxid)
+        );
+
+        // Act - try to register accept pegin as reject pegin (should fail because txids match)
+        vm.prank(memberAddress);
+        peginManager.registerRejectPegin(acceptPeginTxSPVProof);
+    }
+
+    function test_registerRejectPegin_Revert_NotEnoughConfirmations() external {
+        // Arrange
+        (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
+        bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
+
+        // Get a committee member address
+        uint128 committeeId = streamManager.getCommitteeId(setupStreamId, PACKET_NUMBER);
+        CommitteeMember[] memory committeeMembers = registry.getCommitteeMembers(committeeId);
+        address memberAddress = committeeMembers[0].memberAddress;
+
+        BtcTransaction memory rejectPeginTx = getBtcRejectPeginTx(requestPeginTxid);
+        int256 actualConfirmations = 0;
+        bridgeMock.setBtcTransactionConfirmations(actualConfirmations);
+        BtcTxSPVProof memory rejectPeginTxSPVProof = createBtcTxSPVProof(rejectPeginTx);
+
+        StreamPosition memory streamPosition = peginManager.getStreamPositionByRequestPegin(requestPeginTxid);
+        Stream memory stream = streamManager.getStreamById(streamPosition.streamId);
+
+        // Assert - expect revert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ProofValidator.NotEnoughConfirmations.selector, actualConfirmations, stream.peginConfirmations
+            )
+        );
+
+        // Act
+        vm.prank(memberAddress);
+        peginManager.registerRejectPegin(rejectPeginTxSPVProof);
+    }
+
+    function test_registerRejectPegin_Revert_EnforcedPause_PausedContract() external {
+        // Arrange
+        (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
+        bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
+        BtcTransaction memory rejectPeginTx = getBtcRejectPeginTx(requestPeginTxid);
+        BtcTxSPVProof memory rejectPeginTxSPVProof = createBtcTxSPVProof(rejectPeginTx);
+
+        // Get a committee member address
+        uint128 committeeId = streamManager.getCommitteeId(setupStreamId, PACKET_NUMBER);
+        CommitteeMember[] memory committeeMembers = registry.getCommitteeMembers(committeeId);
+        address memberAddress = committeeMembers[0].memberAddress;
+
+        pauseContracts();
+
+        // Assert
+        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
+
+        // Act
+        vm.prank(memberAddress);
+        peginManager.registerRejectPegin(rejectPeginTxSPVProof);
+    }
+
+    function test_registerRejectPegin_Revert_BridgeBtcTxInvalidMerkleBranch() external {
+        // Arrange
+        (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
+        bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
+        BtcTransaction memory rejectPeginTx = getBtcRejectPeginTx(requestPeginTxid);
+        bytes32 rejectPeginTxid = getBtcTxid(rejectPeginTx);
+
+        // Get a committee member address
+        uint128 committeeId = streamManager.getCommitteeId(setupStreamId, PACKET_NUMBER);
+        CommitteeMember[] memory committeeMembers = registry.getCommitteeMembers(committeeId);
+        address memberAddress = committeeMembers[0].memberAddress;
+
+        // Set Mock Bridge state to invalid merkle branch
+        bridgeMock.setBtcTransactionConfirmations(BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE);
+        BtcTxSPVProof memory rejectPeginTxSPVProof = createBtcTxSPVProof(rejectPeginTx);
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ProofValidator.BridgeBtcTxInvalidMerkleBranch.selector,
+                rejectPeginTxid,
+                rejectPeginTxSPVProof.merkleBranchPath,
+                rejectPeginTxSPVProof.merkleBranchHashes
+            )
+        );
+
+        // Act
+        vm.prank(memberAddress);
+        peginManager.registerRejectPegin(rejectPeginTxSPVProof);
+    }
+
+    function test_registerRejectPegin_Revert_AlreadyRegistered() external {
+        // Arrange
+        (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
+        bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
+        BtcTransaction memory rejectPeginTx = getBtcRejectPeginTx(requestPeginTxid);
+        BtcTxSPVProof memory rejectPeginTxSPVProof = createBtcTxSPVProof(rejectPeginTx);
+
+        // Get a committee member address
+        uint128 committeeId = streamManager.getCommitteeId(setupStreamId, PACKET_NUMBER);
+        CommitteeMember[] memory committeeMembers = registry.getCommitteeMembers(committeeId);
+        address memberAddress = committeeMembers[0].memberAddress;
+
+        // Register first time
+        vm.prank(memberAddress);
+        peginManager.registerRejectPegin(rejectPeginTxSPVProof);
+
+        // Try to register again - should revert because slot is already blocked
+        // Assert - expect revert with InvalidPegStatus (since slot is now BLOCKED, not REGISTERED)
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IPeginManager.InvalidPegStatus.selector, requestPeginTxid, PegStatus.BLOCKED, PegStatus.REGISTERED
+            )
+        );
+
+        // Act
+        vm.prank(memberAddress);
+        peginManager.registerRejectPegin(rejectPeginTxSPVProof);
+    }
+
+    function test_registerRejectPegin_Revert_IncorrectVout() external {
+        // Arrange
+        (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
+        bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
+
+        // Get a committee member address
+        uint128 committeeId = streamManager.getCommitteeId(setupStreamId, PACKET_NUMBER);
+        CommitteeMember[] memory committeeMembers = registry.getCommitteeMembers(committeeId);
+        address memberAddress = committeeMembers[0].memberAddress;
+
+        // Create a reject pegin tx with incorrect vout (using vout 0 instead of 2)
+        BtcTransaction memory rejectPeginTx = getBtcRejectPeginTx(requestPeginTxid);
+        uint32 correctVout = Constants.REQUEST_PEGIN_VOUT_ENABLER;
+        uint32 incorrectVout = 0;
+        rejectPeginTx.inputs[0].vout = incorrectVout;
+
+        BtcTxSPVProof memory rejectPeginTxSPVProof = createBtcTxSPVProof(rejectPeginTx);
+
+        // Assert - expect revert with IncorrectVout
+        vm.expectRevert(abi.encodeWithSelector(IPeginManager.IncorrectVout.selector, incorrectVout, correctVout));
+
+        // Act
+        vm.prank(memberAddress);
+        peginManager.registerRejectPegin(rejectPeginTxSPVProof);
     }
 }

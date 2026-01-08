@@ -412,6 +412,33 @@ abstract contract HelperContract is Test, TestUtils {
         });
     }
 
+    // ========================== Reject Peg-in ==========================
+    function getBtcRejectPeginTx(bytes32 _requestPeginTxid) internal pure returns (BtcTransaction memory) {
+        BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
+        // Input spends the request pegin enabler output (vout 2)
+        btcInputs[0] = BtcTxIn({
+            txId: _requestPeginTxid,
+            vout: Constants.REQUEST_PEGIN_VOUT_ENABLER,
+            sequence: Constants.SEQUENCE,
+            scriptSig: hex""
+        });
+
+        // Output: P2WPKH to user's reimbursement pubkey
+        BtcTxOut[] memory btcOutputs = new BtcTxOut[](1);
+        btcOutputs[0] = BtcTxOut({
+            // Amount minus fees (simplified - in reality would be more precise)
+            amount: Constants.ENABLER_AMOUNT - Constants.P2TR_FEE,
+            scriptPubKey: BtcScriptParser.getP2WPKHScript(BtcHelper.pubKeyXonlyToCompact(BTC_REIMBURSEMENT_PUBKEY))
+        });
+
+        return BtcTransaction({
+            version: Constants.BTC_TX_VERSION,
+            inputs: btcInputs,
+            outputs: btcOutputs,
+            locktime: Constants.LOCKTIME
+        });
+    }
+
     function satoshiToWei(uint256 _amount) internal pure returns (uint256) {
         return _amount * 10 ** 10;
     }
