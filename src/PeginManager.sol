@@ -138,7 +138,9 @@ contract PeginManager is IPeginManager, PegManagerBase {
             btcReimbursementPubKey: btcReimbursementPubKey,
             acceptPeginSignatureHash: acceptPeginSignatureData.signatureHash,
             // Calculate the block number of the request peg-in transaction
-            btcBlockNumber: _getBlockNumberFromConfirmations(confirmations)
+            btcBlockNumber: _getBlockNumberFromConfirmations(confirmations),
+            userReimbursementTxid: bytes32(0),
+            rejectPeginTxid: bytes32(0)
         });
         peginTempInfo[requestPeginTxid] = requestPeginInfo;
 
@@ -354,6 +356,9 @@ contract PeginManager is IPeginManager, PegManagerBase {
         streamManager.blockSlot(streamInfo.streamId, streamInfo.packetNumber, streamInfo.slotId);
         streamManager.setPegStatus(acceptPeginTxid, PegStatus.BLOCKED);
 
+        // Set user reimbursement txid as rejected peg-in txid
+        peginTempInfo[requestPeginTxid].userReimbursementTxid = userReimbursementTxid;
+
         emit UserReimbursementRegistered(userReimbursementTxid, requestPeginTxid, streamInfo);
     }
 
@@ -379,7 +384,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
 
         // Verify the userReimbursementTxid part of the Merkle Root of Tx of a Block
         // and that block is inside Bitcoin Mainchain
-        // annd has enough confirmations
+        // and has enough confirmations
         int256 btcConfirmations = _verifyTxConfirmations(
             stream.peginConfirmations,
             _userReimbursementTxid,
@@ -388,15 +393,12 @@ contract PeginManager is IPeginManager, PegManagerBase {
             _userReimbursementTxSPVProof.merkleBranchHashes
         );
 
-        int256 blocksBetweenRequestPeginAndUserReimbursement =
+        int256 blocksElapsedSinceRequestPegin =
             _getBlockNumberFromConfirmations(btcConfirmations) - peginTempInfo[_requestPeginTxid].btcBlockNumber;
 
-        if (
-            blocksBetweenRequestPeginAndUserReimbursement
-                < int256(uint256(stream.timelockSettings.requestPeginTimelock))
-        ) {
+        if (blocksElapsedSinceRequestPegin < int256(uint256(stream.timelockSettings.requestPeginTimelock))) {
             revert UserReimbursementBeforeTimelock(
-                blocksBetweenRequestPeginAndUserReimbursement, stream.timelockSettings.requestPeginTimelock
+                blocksElapsedSinceRequestPegin, stream.timelockSettings.requestPeginTimelock
             );
         }
     }

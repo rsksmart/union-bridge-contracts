@@ -16,6 +16,10 @@ struct RequestPeginTempInfo {
     bytes32 acceptPeginSignatureHash;
     /// @notice The block number of the request peg-in transaction
     int256 btcBlockNumber;
+    /// @notice The transaction id of the user reimbursement transaction
+    bytes32 userReimbursementTxid;
+    /// @notice The transaction id of the rejected peg-in transaction
+    bytes32 rejectPeginTxid;
 }
 
 /// @title IPeginManager
@@ -137,6 +141,14 @@ interface IPeginManager is IPausable {
     /// @param streamInfo The stream position information where the user reimbursement was registered
     event UserReimbursementRegistered(
         bytes32 indexed userReimbursementTxid, bytes32 indexed requestPeginTxid, StreamPosition streamInfo
+    );
+
+    /// @notice Event emitted when a reject peg-in is successfully registered
+    /// @param rejectPeginTxid The hash of the reject peg-in btc transaction
+    /// @param requestPeginTxid The hash of the request peg-in btc transaction
+    /// @param streamInfo The stream position information where the reject peg-in was registered
+    event RejectPeginRegistered(
+        bytes32 indexed rejectPeginTxid, bytes32 indexed requestPeginTxid, StreamPosition streamInfo
     );
 
     // ===================== Errors =====================
