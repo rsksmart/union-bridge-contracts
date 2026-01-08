@@ -19,6 +19,8 @@ import {OpCodes} from "src/libraries/OpCodes.sol";
 import {Constants} from "src/libraries/Constants.sol";
 
 abstract contract ScriptUtils is Script {
+    int256 public constant CONFIRMATIONS = 10;
+
     function getDeployerKey() public view returns (uint256) {
         return getMemberKey(uint32(vm.envUint("DEPLOYER_INDEX")));
     }

@@ -87,9 +87,7 @@ contract TestPeginManager is Test, HelperContract {
     function test_requestPegin_Success() external {
         // Arrange
         (BtcTransaction memory btcTransaction,) = getBtcRequestPeginTx();
-        // Set Mock Bridge state
-        bridgeMock.setBtcBlockchainBestChainHeight(100);
-        bridgeMock.setBtcTransactionConfirmations(10);
+        bridgeMock.setBtcBlockchainBestChainHeight(BEST_CHAIN_HEIGHT);
         // Create Pegin struct information
         BtcTxSPVProof memory requestPeginTxSPVProof = createBtcTxSPVProof(btcTransaction);
         bytes32 expectedRequestPeginTxid = getBtcTxid(btcTransaction);
@@ -102,7 +100,9 @@ contract TestPeginManager is Test, HelperContract {
             rskDestinationAddress: RSK_DESTINATION_ADDRESS,
             btcReimbursementPubKey: BTC_REIMBURSEMENT_PUBKEY,
             acceptPeginSignatureHash: expectedAcceptPeginSignatureHash,
-            btcBlockNumber: 1
+            btcBlockNumber: BEST_CHAIN_HEIGHT - CONFIRMATIONS,
+            userReimbursementTxid: bytes32(0),
+            rejectPeginTxid: bytes32(0)
         });
         uint128 expectedCommitteeId = streamManager.getCommitteeId(setupStreamId, PACKET_NUMBER);
 
@@ -156,13 +156,14 @@ contract TestPeginManager is Test, HelperContract {
             expectedAcceptPeginSignatureHash,
             "Incorrect peg in temp info acceptPeginSignatureHash"
         );
+        assertEq(peginTempInfo.userReimbursementTxid, bytes32(0), "Incorrect peg in temp info userReimbursementTxid");
+        assertEq(peginTempInfo.rejectPeginTxid, bytes32(0), "Incorrect peg in temp info rejectPeginTxid");
     }
 
     function test_requestPegin_Revert_PeginAlreadyRequested() external {
         // Arrange
         (BtcTransaction memory btcTransaction,) = getBtcRequestPeginTx();
-        // Set Mock Bridge state
-        bridgeMock.setBtcTransactionConfirmations(10);
+
         // Create Pegin struct information
         BtcTxSPVProof memory requestPeginTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
@@ -224,8 +225,7 @@ contract TestPeginManager is Test, HelperContract {
         // Arrange
         (BtcTransaction memory btcTransaction,) = getBtcRequestPeginTx();
         btcTransaction.version = 1;
-        // Set Mock Bridge state
-        bridgeMock.setBtcTransactionConfirmations(10);
+
         // Create Pegin struct information
         BtcTxSPVProof memory requestPeginTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
@@ -245,8 +245,7 @@ contract TestPeginManager is Test, HelperContract {
         // Arrange
         (BtcTransaction memory btcTransaction,) = getBtcRequestPeginTx();
         btcTransaction.locktime = 1;
-        // Set Mock Bridge state
-        bridgeMock.setBtcTransactionConfirmations(10);
+
         // Create Pegin struct information
         BtcTxSPVProof memory requestPeginTxSPVProof = createBtcTxSPVProof(btcTransaction);
         requestPeginTxSPVProof.merkleBranchHashes[0] =
@@ -266,8 +265,7 @@ contract TestPeginManager is Test, HelperContract {
 
         // Arrange
         BtcTransaction memory btcTransaction = getBtcAcceptPeginTx(btcTx);
-        // Set Mock Bridge state
-        bridgeMock.setBtcTransactionConfirmations(10);
+
         // Create Pegin struct information
         BtcTxSPVProof memory peginAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
@@ -365,8 +363,7 @@ contract TestPeginManager is Test, HelperContract {
         (BtcTransaction memory peginTx,) = setup_requestPeginFlow();
         // Arrange
         BtcTransaction memory btcTransaction = getBtcAcceptPeginTx(peginTx);
-        // Set Mock Bridge state
-        bridgeMock.setBtcTransactionConfirmations(10);
+
         // Create Pegin struct information
         BtcTxSPVProof memory peginAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
@@ -421,8 +418,7 @@ contract TestPeginManager is Test, HelperContract {
         (BtcTransaction memory peginTx,) = setup_requestPeginFlow();
         // Arrange
         BtcTransaction memory btcTransaction = getBtcAcceptPeginTx(peginTx);
-        // Set Mock Bridge state
-        bridgeMock.setBtcTransactionConfirmations(10);
+
         // Create Pegin struct information
         BtcTxSPVProof memory peginAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
@@ -448,8 +444,7 @@ contract TestPeginManager is Test, HelperContract {
         bytes32 expectedAcceptPeginTxid = bitcoinManager.getBtcTxid(btcTransaction);
         btcTransaction.outputs[0].scriptPubKey = hex"111111b4045c40a133ee361f766ceae4d82398fc5058";
         bytes32 actualAcceptPeginTxid = bitcoinManager.getBtcTxid(btcTransaction);
-        // Set Mock Bridge state
-        bridgeMock.setBtcTransactionConfirmations(10);
+
         // Create Pegin accepted tx struct information
         BtcTxSPVProof memory peginAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
@@ -1114,6 +1109,49 @@ contract TestPeginManager is Test, HelperContract {
         // Assert - expect revert with IncorrectVout
         vm.expectRevert(
             abi.encodeWithSelector(IPeginManager.IncorrectVout.selector, incorrectVout, reimbursementPeginVin)
+        );
+
+        // Act
+        peginManager.registerUserReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
+    }
+
+    function test_registerUserReimbursement_Revert_UserReimbursementBeforeTimelock() external {
+        // Arrange
+        (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
+        bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
+
+        // Get the stream to check timelock settings
+        StreamPosition memory streamPosition = peginManager.getStreamPositionByRequestPegin(requestPeginTxid);
+        Stream memory stream = streamManager.getStreamById(streamPosition.streamId);
+        uint256 requestPeginTimelock = stream.timelockSettings.requestPeginTimelock;
+
+        // Get the btcBlockNumber stored when request pegin was made
+        RequestPeginTempInfo memory peginTempInfo = peginManager.getRequestPeginTempInfo(requestPeginTxid);
+        int256 requestPeginBlockNumber = peginTempInfo.btcBlockNumber;
+
+        // Set confirmations high enough to pass _verifyTxConfirmations but make blocksElapsed < timelock
+        int256 userReimbursementConfirmations = CONFIRMATIONS + 1; // 11 confirmations
+        bridgeMock.setBtcTransactionConfirmations(userReimbursementConfirmations);
+
+        BtcTransaction memory userReimbursementTx = getBtcUserReimbursementTx(requestPeginTxid);
+        uint32 reimbursementPeginVin = userReimbursementTx.inputs[0].vout;
+        BtcTxSPVProof memory userReimbursementTxSPVProof = createBtcTxSPVProof(userReimbursementTx);
+
+        // Keep BEST_CHAIN_HEIGHT at current value (1001 after setup_requestPeginFlow)
+        int256 currentBestChainHeight = bridgeMock.getBtcBlockchainBestChainHeight();
+        // Calculate expected blocksElapsed
+        int256 userReimbursementBlockNumber =
+            bridgeMock.getBtcBlockchainBestChainHeight() - userReimbursementConfirmations;
+        // blocksElapsed = (1001 - 11) - 990 = 0 < 1 ✓
+        int256 blocksElapsedSinceRequestPegin = userReimbursementBlockNumber - requestPeginBlockNumber;
+
+        // Assert - expect revert with UserReimbursementBeforeTimelock
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IPeginManager.UserReimbursementBeforeTimelock.selector,
+                blocksElapsedSinceRequestPegin,
+                requestPeginTimelock
+            )
         );
 
         // Act

@@ -206,7 +206,7 @@ contract DeployImplAndProxy is ScriptUtils {
 
         if (block.chainid == ChainIds.LOCAL) {
             vm.startBroadcast(getDeployerKey());
-            BridgeMock(bridgeAddress).setBtcTransactionConfirmations(10);
+            BridgeMock(bridgeAddress).setBtcTransactionConfirmations(CONFIRMATIONS);
             // Set RbtcBridge as the authorized union bridge contract for testing
             BridgeMock(bridgeAddress).setUnionBridgeContractAddressForTestnet(address(rbtcBridge));
             // Fund BridgeMock with RBTC so it can mint
