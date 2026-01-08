@@ -299,10 +299,15 @@ The Union Bridge system uses a trust minimized committee approach to manage Bitc
 A slot can have the following states:
 
 - `Prepared`, when all the dispute resolution information is linked to the slot (setup completed). In this state the slot is ready to be assigned to a request peg-in operation.
+- `Blocked`, when pegin is not accepted by committee (Reject Pegin TX) or time window for the committee to sign has passed and the user recover the funds (User Reimbursement TX). The slot becomes blocked and cannot be used.
 - `Filled`, when the Committee members have confirmed and registered a peg-in. In this state the slot is ready for peg-out.
 - `Locked`, when the slot is assigned to a peg-out operation.
-- `Advanced`: when the operator advanced funds.
-- `Completed`: when the peg-out is processed (happy path) or the operator receives the reimbursement after advance.
+- `OP Selected`, when the timewindow for all memebers to sign the pegout (User Take TX) has passed and not all members signed. An operator is selected to send the funds to the user.
+- `Advanced`: when the selected operator advanced funds. If no funds advanced we go back to select an operator
+- `Kickoff`: when the selected operator presents the reimbursement kickoff tx. If the reimbursement kickoff tx is not presented after some time we go back to select an operator.
+- `Challenged`: when a member (operator or watchtower) does not think reimbursement is valid it sends a Challenge Tx. After this point the selected operator can't receive the reimbursement (Operator Take TX), and needs to win the challenge.
+- `Revealed`: when the selected operator reveals the inputs (Reveal Slot ID TX) to be presented to BitVMX dispute. If it does not present the reveal tx we go back to select an operator.
+- `Completed`: when the peg-out is processed (happy path) or the operator presents the reimbursement after advance the funds without challenge, or operator receives the funds after winning the challenge.
 
 <img src="./specs/imgs/slots_transitions.png" alt="Slots transitions" width="400">
 
@@ -605,7 +610,9 @@ sequenceDiagram
 
 #### Alternative Case: Reject Pegin - Not all members signed
 
-**User Reimbursement**: After a time window the user can spend the request pegin transaction to recover the funds. If this is the case someone who monitors the Bitcoin network calls `registerUserReimbursement()` with the broadcasted transaction and SPV proof to mark that slot as BLOCKED.
+- **User Reimbursement**: After a time window the user can spend the request pegin transaction to recover the funds. If this is the case someone who monitors the Bitcoin network calls `registerUserReimbursement()` with the broadcasted [USER_REIMBUSEMENT_TX](./bitcoin-transactions.md#1-user_reimbursment_tx-user-reimbursement-transaction) and SPV proof to mark that slot as BLOCKED.
+
+- **Reject Pegin**: For some reason the committee does not accept the request pegin. A member brodcast a [REJECT_PEGIN_TX](./bitcoin-transactions.md#1-reject_pegin_tx-reject-pegin-transaction) to consume the enabler and calls `registerRejectPegin()` with the SPV proof of that transaction and mark the slot as BLOCKED.
 
 ## Peg-Out Process (RSK → Bitcoin)
 
