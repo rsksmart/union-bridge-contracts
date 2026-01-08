@@ -113,7 +113,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
     /// @dev The transaction must have at least 2 outputs: one P2TR output and one OP_RETURN output
     /// @dev Emits the PeginRequested event
     /// @dev Only callable when contract is unpaused
-    function requestPegin(BtcTxSPVProof calldata _requestPeginTxSPVProof) external nonReentrant whenNotPaused {
+    function requestPegin(BtcTxSPVProof memory _requestPeginTxSPVProof) external nonReentrant whenNotPaused {
         bytes32 requestPeginTxid = _validateRequestPeginProof(_requestPeginTxSPVProof);
 
         (
@@ -166,7 +166,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
         signatureManager.initOperatorTakeTxids(acceptPeginSignatureData.txid, committeeId);
     }
 
-    function _validateRequestPeginProof(BtcTxSPVProof calldata _requestPeginTxSPVProof)
+    function _validateRequestPeginProof(BtcTxSPVProof memory _requestPeginTxSPVProof)
         internal
         view
         returns (bytes32 requestPeginTxid)
@@ -191,7 +191,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
         }
     }
 
-    function _validatePeginP2TRAndOpReturn(BtcTxSPVProof calldata _requestPeginTxSPVProof)
+    function _validatePeginP2TRAndOpReturn(BtcTxSPVProof memory _requestPeginTxSPVProof)
         internal
         view
         returns (
@@ -228,7 +228,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
     }
 
     function _validatePeginEnablerAndConfirmations(
-        BtcTxSPVProof calldata _requestPeginTxSPVProof,
+        BtcTxSPVProof memory _requestPeginTxSPVProof,
         bytes32 _btcReimbursementPubKey,
         bytes memory _committeePubKey,
         Stream memory _stream,
@@ -271,7 +271,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
         bytes32 _btcReimbursementPubKey,
         uint128 _committeeId,
         bytes32 _requestPeginTxid,
-        BtcTxSPVProof calldata _requestPeginTxSPVProof,
+        BtcTxSPVProof memory _requestPeginTxSPVProof,
         bytes32[] memory _disputeKeys,
         bytes memory _committeePubKey
     ) internal view returns (BitcoinSignatureData memory acceptPeginSignatureData) {
@@ -363,7 +363,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
     }
 
     function _verifyUserReimbursementTransaction(
-        BtcTxSPVProof calldata _userReimbursementTxSPVProof,
+        BtcTxSPVProof memory _userReimbursementTxSPVProof,
         bytes32 _requestPeginTxid,
         bytes32 _userReimbursementTxid,
         uint64 _streamId,
@@ -409,7 +409,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
     /// @dev Updates the stream position to ACCEPTED and stores the peg-in transaction in the stream
     /// @dev Emits the PeginAccepted event
     /// @dev Only callable when contract is unpaused
-    function acceptPegin(BtcTxSPVProof calldata _peginAcceptedTxSPVProof) external nonReentrant whenNotPaused {
+    function acceptPegin(BtcTxSPVProof memory _peginAcceptedTxSPVProof) external nonReentrant whenNotPaused {
         // The first input consumes the the peg in request utxo
         bytes32 requestPeginTxid = _peginAcceptedTxSPVProof.btcTx.inputs[Constants.REQUEST_PEGIN_VOUT_TAPTREE].txId;
 
