@@ -320,10 +320,11 @@ contract PeginManager is IPeginManager, PegManagerBase {
     /// @dev This function validates the user reimbursement transaction and completes the user reimbursement process
     /// @dev Emits the UserReimbursementRegistered event
     /// @dev Only callable when contract is unpaused
-    function registerUserReimbursement(
-        BtcTxSPVProof calldata _userReimbursementTxSPVProof,
-        uint32 _reimbursementPeginVin
-    ) external nonReentrant whenNotPaused {
+    function userReimbursement(BtcTxSPVProof memory _userReimbursementTxSPVProof, uint32 _reimbursementPeginVin)
+        external
+        nonReentrant
+        whenNotPaused
+    {
         // the input should be the request peg-in txid
         bytes32 requestPeginTxid = _userReimbursementTxSPVProof.btcTx.inputs[_reimbursementPeginVin].txId;
 
@@ -408,7 +409,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
     /// @dev Emits RejectPeginRegistered event upon successful registration
     /// @dev Slot state is set to BLOCKED
     /// @param _rejectPeginTxSPVProof The BTC SPV proof of the reject peg-in transaction
-    function registerRejectPegin(BtcTxSPVProof memory _rejectPeginTxSPVProof) external nonReentrant whenNotPaused {
+    function rejectPegin(BtcTxSPVProof memory _rejectPeginTxSPVProof) external nonReentrant whenNotPaused {
         // the input index should be the request peg-in txid
         bytes32 requestPeginTxid = _rejectPeginTxSPVProof.btcTx.inputs[Constants.REJECT_PEGIN_VIN_ENABLER].txId;
 

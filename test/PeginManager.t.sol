@@ -880,7 +880,7 @@ contract TestPeginManager is Test, HelperContract {
     }
 
     // ============ Register User Reimbursement Tests ============
-    function test_registerUserReimbursement_Success() external {
+    function test_userReimbursement_Success() external {
         // Arrange
         (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
         bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
@@ -900,7 +900,7 @@ contract TestPeginManager is Test, HelperContract {
         emit IPeginManager.UserReimbursementRegistered(userReimbursementTxid, requestPeginTxid, streamPositionBefore);
 
         // Act
-        peginManager.registerUserReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
+        peginManager.userReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
 
         // Assert - verify slot is blocked
         StreamPosition memory streamPositionAfter = peginManager.getStreamPositionByRequestPegin(requestPeginTxid);
@@ -919,7 +919,7 @@ contract TestPeginManager is Test, HelperContract {
         assertEq(peginTempInfo.userReimbursementTxid, userReimbursementTxid, "User reimbursement txid should be stored");
     }
 
-    function test_registerUserReimbursement_Revert_PeginNotRequested() external {
+    function test_userReimbursement_Revert_PeginNotRequested() external {
         // Arrange
         (BtcTransaction memory requestPeginTx,) = getBtcRequestPeginTx();
         bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
@@ -939,10 +939,10 @@ contract TestPeginManager is Test, HelperContract {
         );
 
         // Act
-        peginManager.registerUserReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
+        peginManager.userReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
     }
 
-    function test_registerUserReimbursement_Revert_PeginAlreadyAccepted() external {
+    function test_userReimbursement_Revert_PeginAlreadyAccepted() external {
         // Arrange
         (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
         bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
@@ -965,10 +965,10 @@ contract TestPeginManager is Test, HelperContract {
         );
 
         // Act
-        peginManager.registerUserReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
+        peginManager.userReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
     }
 
-    function test_registerUserReimbursement_Revert_InvalidUserReimbursementTx() external {
+    function test_userReimbursement_Revert_InvalidUserReimbursementTx() external {
         // Arrange
         uint32 reimbursementPeginVin = 0;
         (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
@@ -984,10 +984,10 @@ contract TestPeginManager is Test, HelperContract {
         );
 
         // Act - register accept pegin as user reimbursement
-        peginManager.registerUserReimbursement(acceptPeginTxSPVProof, reimbursementPeginVin);
+        peginManager.userReimbursement(acceptPeginTxSPVProof, reimbursementPeginVin);
     }
 
-    function test_registerUserReimbursement_Revert_NotEnoughConfirmations() external {
+    function test_userReimbursement_Revert_NotEnoughConfirmations() external {
         // Arrange
         (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
         bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
@@ -1009,10 +1009,10 @@ contract TestPeginManager is Test, HelperContract {
         );
 
         // Act
-        peginManager.registerUserReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
+        peginManager.userReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
     }
 
-    function test_registerUserReimbursement_Revert_EnforcedPause_PausedContract() external {
+    function test_userReimbursement_Revert_EnforcedPause_PausedContract() external {
         // Arrange
         (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
         bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
@@ -1026,10 +1026,10 @@ contract TestPeginManager is Test, HelperContract {
         vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
 
         // Act
-        peginManager.registerUserReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
+        peginManager.userReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
     }
 
-    function test_registerUserReimbursement_Revert_BridgeBtcTxInvalidMerkleBranch() external {
+    function test_userReimbursement_Revert_BridgeBtcTxInvalidMerkleBranch() external {
         // Arrange
         (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
         bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
@@ -1052,10 +1052,10 @@ contract TestPeginManager is Test, HelperContract {
         );
 
         // Act
-        peginManager.registerUserReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
+        peginManager.userReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
     }
 
-    function test_registerUserReimbursement_Revert_AlreadyRegistered() external {
+    function test_userReimbursement_Revert_AlreadyRegistered() external {
         // Arrange
         (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
         bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
@@ -1064,7 +1064,7 @@ contract TestPeginManager is Test, HelperContract {
         BtcTxSPVProof memory userReimbursementTxSPVProof = createBtcTxSPVProof(userReimbursementTx);
 
         // Register first time
-        peginManager.registerUserReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
+        peginManager.userReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
 
         // Try to register again - should revert because slot is already blocked
         // Assert - expect revert with InvalidPegStatus (since slot is now BLOCKED, not RESERVED)
@@ -1075,10 +1075,10 @@ contract TestPeginManager is Test, HelperContract {
         );
 
         // Act
-        peginManager.registerUserReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
+        peginManager.userReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
     }
 
-    function test_registerUserReimbursement_Revert_IncorrectVout() external {
+    function test_userReimbursement_Revert_IncorrectVout() external {
         // Arrange
         (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
         bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
@@ -1097,10 +1097,10 @@ contract TestPeginManager is Test, HelperContract {
         );
 
         // Act
-        peginManager.registerUserReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
+        peginManager.userReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
     }
 
-    function test_registerUserReimbursement_Revert_UserReimbursementBeforeTimelock() external {
+    function test_userReimbursement_Revert_UserReimbursementBeforeTimelock() external {
         // Arrange
         (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
         bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
@@ -1140,11 +1140,11 @@ contract TestPeginManager is Test, HelperContract {
         );
 
         // Act
-        peginManager.registerUserReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
+        peginManager.userReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
     }
 
     // ============ Register Reject Peg-in Tests ============
-    function test_registerRejectPegin_Success() external {
+    function test_rejectPegin_Success() external {
         // Arrange
         (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
         bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
@@ -1169,7 +1169,7 @@ contract TestPeginManager is Test, HelperContract {
 
         // Act - call from committee member address
         vm.prank(memberAddress);
-        peginManager.registerRejectPegin(rejectPeginTxSPVProof);
+        peginManager.rejectPegin(rejectPeginTxSPVProof);
 
         // Assert - verify slot is blocked
         StreamPosition memory streamPositionAfter = peginManager.getStreamPositionByRequestPegin(requestPeginTxid);
@@ -1188,7 +1188,7 @@ contract TestPeginManager is Test, HelperContract {
         assertEq(peginTempInfo.rejectPeginTxid, rejectPeginTxid, "Reject pegin txid should be stored");
     }
 
-    function test_registerRejectPegin_Revert_PeginNotRequested() external {
+    function test_rejectPegin_Revert_PeginNotRequested() external {
         // Arrange
         (BtcTransaction memory requestPeginTx,) = getBtcRequestPeginTx();
         bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
@@ -1212,10 +1212,10 @@ contract TestPeginManager is Test, HelperContract {
 
         // Act
         vm.prank(memberAddress);
-        peginManager.registerRejectPegin(rejectPeginTxSPVProof);
+        peginManager.rejectPegin(rejectPeginTxSPVProof);
     }
 
-    function test_registerRejectPegin_Revert_PeginAlreadyAccepted() external {
+    function test_rejectPegin_Revert_PeginAlreadyAccepted() external {
         // Arrange
         (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
         bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
@@ -1243,10 +1243,10 @@ contract TestPeginManager is Test, HelperContract {
 
         // Act
         vm.prank(memberAddress);
-        peginManager.registerRejectPegin(rejectPeginTxSPVProof);
+        peginManager.rejectPegin(rejectPeginTxSPVProof);
     }
 
-    function test_registerRejectPegin_Revert_InvalidAcceptPeginTxid() external {
+    function test_rejectPegin_Revert_InvalidAcceptPeginTxid() external {
         // Arrange
         (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
         bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
@@ -1268,10 +1268,10 @@ contract TestPeginManager is Test, HelperContract {
 
         // Act - try to register accept pegin as reject pegin (should fail because txids match)
         vm.prank(memberAddress);
-        peginManager.registerRejectPegin(acceptPeginTxSPVProof);
+        peginManager.rejectPegin(acceptPeginTxSPVProof);
     }
 
-    function test_registerRejectPegin_Revert_NotEnoughConfirmations() external {
+    function test_rejectPegin_Revert_NotEnoughConfirmations() external {
         // Arrange
         (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
         bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
@@ -1298,10 +1298,10 @@ contract TestPeginManager is Test, HelperContract {
 
         // Act
         vm.prank(memberAddress);
-        peginManager.registerRejectPegin(rejectPeginTxSPVProof);
+        peginManager.rejectPegin(rejectPeginTxSPVProof);
     }
 
-    function test_registerRejectPegin_Revert_EnforcedPause_PausedContract() external {
+    function test_rejectPegin_Revert_EnforcedPause_PausedContract() external {
         // Arrange
         (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
         bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
@@ -1320,10 +1320,10 @@ contract TestPeginManager is Test, HelperContract {
 
         // Act
         vm.prank(memberAddress);
-        peginManager.registerRejectPegin(rejectPeginTxSPVProof);
+        peginManager.rejectPegin(rejectPeginTxSPVProof);
     }
 
-    function test_registerRejectPegin_Revert_BridgeBtcTxInvalidMerkleBranch() external {
+    function test_rejectPegin_Revert_BridgeBtcTxInvalidMerkleBranch() external {
         // Arrange
         (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
         bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
@@ -1351,10 +1351,10 @@ contract TestPeginManager is Test, HelperContract {
 
         // Act
         vm.prank(memberAddress);
-        peginManager.registerRejectPegin(rejectPeginTxSPVProof);
+        peginManager.rejectPegin(rejectPeginTxSPVProof);
     }
 
-    function test_registerRejectPegin_Revert_AlreadyRegistered() external {
+    function test_rejectPegin_Revert_AlreadyRegistered() external {
         // Arrange
         (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
         bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
@@ -1368,7 +1368,7 @@ contract TestPeginManager is Test, HelperContract {
 
         // Register first time
         vm.prank(memberAddress);
-        peginManager.registerRejectPegin(rejectPeginTxSPVProof);
+        peginManager.rejectPegin(rejectPeginTxSPVProof);
 
         // Try to register again - should revert because slot is already blocked
         // Assert - expect revert with InvalidPegStatus (since slot is now BLOCKED, not REGISTERED)
@@ -1380,10 +1380,10 @@ contract TestPeginManager is Test, HelperContract {
 
         // Act
         vm.prank(memberAddress);
-        peginManager.registerRejectPegin(rejectPeginTxSPVProof);
+        peginManager.rejectPegin(rejectPeginTxSPVProof);
     }
 
-    function test_registerRejectPegin_Revert_IncorrectVout() external {
+    function test_rejectPegin_Revert_IncorrectVout() external {
         // Arrange
         (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
         bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
@@ -1406,6 +1406,6 @@ contract TestPeginManager is Test, HelperContract {
 
         // Act
         vm.prank(memberAddress);
-        peginManager.registerRejectPegin(rejectPeginTxSPVProof);
+        peginManager.rejectPegin(rejectPeginTxSPVProof);
     }
 }

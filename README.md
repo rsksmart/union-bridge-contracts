@@ -610,9 +610,9 @@ sequenceDiagram
 
 #### Alternative Case: Reject Pegin - Not all members signed
 
-- **User Reimbursement**: After a time window the user can spend the request pegin transaction to recover the funds. If this is the case someone who monitors the Bitcoin network calls `registerUserReimbursement()` with the broadcasted [USER_REIMBUSEMENT_TX](./bitcoin-transactions.md#1-user_reimbursment_tx-user-reimbursement-transaction) and SPV proof to mark that slot as BLOCKED.
+- **User Reimbursement**: After a time window the user can spend the request pegin transaction to recover the funds. If this is the case someone who monitors the Bitcoin network calls `userReimbursement()` with the broadcasted [USER_REIMBUSEMENT_TX](./bitcoin-transactions.md#1-user_reimbursment_tx-user-reimbursement-transaction) and SPV proof to mark that slot as BLOCKED.
 
-- **Reject Pegin**: For some reason the committee does not accept the request pegin. A member brodcast a [REJECT_PEGIN_TX](./bitcoin-transactions.md#1-reject_pegin_tx-reject-pegin-transaction) to consume the enabler and calls `registerRejectPegin()` with the SPV proof of that transaction and mark the slot as BLOCKED.
+- **Reject Pegin**: For some reason the committee does not accept the request pegin. A member brodcast a [REJECT_PEGIN_TX](./bitcoin-transactions.md#1-reject_pegin_tx-reject-pegin-transaction) to consume the enabler and calls `rejectPegin()` with the SPV proof of that transaction and mark the slot as BLOCKED.
 
 ## Peg-Out Process (RSK → Bitcoin)
 
