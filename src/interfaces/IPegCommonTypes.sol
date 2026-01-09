@@ -46,7 +46,7 @@ enum PegStatus {
     REVEALED,
     /// @notice Operation has been completed and funds have been paid out
     COMPLETED,
-    /// @notice Slot is blocked due to timeout or refund proof
+    /// @notice Pegin is blocked due to timeout or refund proof
     BLOCKED,
     /// @notice This must always be the last element since it represents the total count of enum elements
     /// @dev Used for validation and iteration over the enum values

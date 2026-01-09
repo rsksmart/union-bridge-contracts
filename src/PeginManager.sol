@@ -300,7 +300,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
         BtcTxSPVProof calldata _userReimbursementTxSPVProof,
         uint32 _reimbursementPeginVin
     ) external nonReentrant whenNotPaused {
-        // the first input should be the request peg-in txid
+        // the input should be the request peg-in txid
         bytes32 requestPeginTxid = _userReimbursementTxSPVProof.btcTx.inputs[_reimbursementPeginVin].txId;
 
         // Validate the peg in request tx exists and the status
@@ -308,9 +308,6 @@ contract PeginManager is IPeginManager, PegManagerBase {
         if (streamInfo.pegStatus != PegStatus.REGISTERED) {
             revert InvalidPegStatus(requestPeginTxid, streamInfo.pegStatus, PegStatus.REGISTERED);
         }
-
-        // Calculate userReimbursementTxid from BtcTransaction
-        bytes32 userReimbursementTxid = bitcoinManager.getBtcTxid(_userReimbursementTxSPVProof.btcTx);
 
         // Valdate the vout is correct
         if (
@@ -322,11 +319,13 @@ contract PeginManager is IPeginManager, PegManagerBase {
                 Constants.REQUEST_PEGIN_VOUT_TAPTREE
             );
         }
+        // Calculate userReimbursementTxid from BtcTransaction
+        bytes32 userReimbursementTxid = bitcoinManager.getBtcTxid(_userReimbursementTxSPVProof.btcTx);
 
         // Validate the txid is NOT the same as the accept peg-in txid
         bytes32 acceptPeginTxid = acceptPegins[requestPeginTxid];
         if (acceptPeginTxid == userReimbursementTxid) {
-            revert InvalidAcceptPeginTxid(acceptPeginTxid, userReimbursementTxid);
+            revert InvalidUserReimbursementTx(userReimbursementTxid);
         }
 
         // Verify the userReimbursementTxid part of the Merkle Root of Tx of a Block

@@ -83,7 +83,7 @@ The Union Bridge system includes multiple protocols. This document covers the fo
 
 ### Optional - Reject Pegin
 
-1. **USER_REIMBURSEMENT_TX** - User sends this transaction after a time window to recover his funds
+1. **USER_REIMBURSEMENT_TX** - User sends this transaction after a time window to recover the funds
 
 2. **REJECT_PEGIN_TX** - Committee members can reject a pegin transaction to avoid accepting a pegin.
 

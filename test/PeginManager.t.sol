@@ -969,7 +969,7 @@ contract TestPeginManager is Test, HelperContract {
         peginManager.registerUserReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
     }
 
-    function test_registerUserReimbursement_Revert_InvalidAcceptPeginTxid() external {
+    function test_registerUserReimbursement_Revert_InvalidUserReimbursementTx() external {
         // Arrange
         uint32 reimbursementPeginVin = 0;
         (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
@@ -981,9 +981,7 @@ contract TestPeginManager is Test, HelperContract {
 
         // Assert - expect revert
         vm.expectRevert(
-            abi.encodeWithSelector(
-                IPeginManager.InvalidAcceptPeginTxid.selector, acceptPeginTxid, expectedUserReimbursementTxid
-            )
+            abi.encodeWithSelector(IPeginManager.InvalidUserReimbursementTx.selector, expectedUserReimbursementTxid)
         );
 
         // Act - register accept pegin as user reimbursement

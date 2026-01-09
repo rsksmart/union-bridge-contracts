@@ -181,7 +181,7 @@ interface IPeginManager is IPausable {
     error BridgeExceededLockingCap(uint256 value, uint256 lockingCap);
 
     /// @notice Thrown when the peg-in status is not valid for the current operation
-    /// @param btcTxid The Bitcoin transaction id that was not valid
+    /// @param btcTxid The Bitcoin transaction id that was being registered
     /// @param expected The expected peg status
     /// @param actual The actual peg status
     error InvalidPegStatus(bytes32 btcTxid, PegStatus actual, PegStatus expected);
@@ -190,4 +190,8 @@ interface IPeginManager is IPausable {
     /// @param actual The actual vout value
     /// @param expected The expected vout value
     error IncorrectVout(uint32 actual, uint32 expected);
+
+    /// @notice Thrown when the user reimbursement transaction id is the same as the accept peg-in txid
+    /// @param userReimbursementTxid The user reimbursement transaction id that is the same as the accept peg-in txid
+    error InvalidUserReimbursementTx(bytes32 userReimbursementTxid);
 }
