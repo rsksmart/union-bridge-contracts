@@ -23,7 +23,7 @@ contract RegisterUserTakeScript is ScriptUtils, ContractAddressManager {
     function setUp() internal {
         pegoutManager = PegoutManager(getPegoutManager());
 
-        acceptPeginTxid = 0x53afc0118c15081dcfb82692ff3010f25036696388b37b169f68c2348baf2b0e;
+        acceptPeginTxid = 0x7edd5873b3737806dce2a3287302c25719776227e943b236e7b9aece5486f2e9;
         userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
         amount = 100_000; // 0.001 BTC
 

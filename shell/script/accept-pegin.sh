@@ -6,7 +6,7 @@ cd "$CURRENT_PATH/../.."
 
 
 # Defaults
-REQUEST_PEGIN_TXID="0x0f1c151f3fb74f0020f06c40975e7d1dceb12162666bfdee42c10caf6f8aecba"
+REQUEST_PEGIN_TXID="0x0f52a17b791cf01a50af91789469afb496087fb45850b4e8b43f756ad925ad20"
 
 # set up environment variables
 source .env
