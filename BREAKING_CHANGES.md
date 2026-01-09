@@ -6,8 +6,9 @@
 
 - `PegoutManager.registerAdvanceFunds` to register advance funds SPV proof.
 - `PegoutManager.registerReimbursementKickoff` to register reimbursement kickoff SPV proof.
--  New states to `PegStatus`: `OP_SELECTED`, `ADVANCED`, `KICKOFF`, `CHALLENGE` and `REVEALED`.
+- New states to `PegStatus`: `OP_SELECTED`, `ADVANCED`, `KICKOFF`, `CHALLENGE`, `REVEALED` and `BLOCKED`.
 - `StreamManager.setTimelockSettings` to modify the timelocks of a strream.
+- `PeginManager.registerUserReimbursement` to register user reimbursment SPV proof.
 
 ### Changed
 

@@ -129,21 +129,12 @@ contract TestPeginManager is Test, HelperContract {
 
         // Assert
         bytes32 txid = getBtcTxid(btcTransaction);
-        // Registered Peg In
-        StreamPosition memory streamPosition = peginManager.getStreamPositionByRequestPegin(txid);
-        assertEq(streamPosition.streamId, 1, "Incorrect streamId registered");
-        assertEq(streamPosition.packetNumber, 0, "Incorrect packetNumber registered");
-        assertEq(streamPosition.slotId, 0, "Should reserve first slot in packet");
-        assertEq(uint256(streamPosition.pegStatus), uint256(PegStatus.REGISTERED), "Request Pegin was not registered");
 
         // Verify slot is properly reserved
-        Slot memory reservedSlot =
-            streamManager.getSlot(streamPosition.streamId, streamPosition.packetNumber, streamPosition.slotId);
-        assertEq(uint256(reservedSlot.state), uint256(SlotState.RESERVED), "Slot should be RESERVED");
-        assertEq(reservedSlot.slotId, streamPosition.slotId, "Slot ID should match StreamPosition");
+        assertStreamPositionAndSlotStateByRequestPegin(txid, setupStreamId, PACKET_NUMBER, 0, SlotState.RESERVED);
 
         // Verify stream pointers haven't advanced (since packet not full)
-        Stream memory stream = streamManager.getStreamById(streamPosition.streamId);
+        Stream memory stream = streamManager.getStreamById(setupStreamId);
         assertEq(stream.peginPacketPointer, 0, "Packet pointer should not advance for single request");
 
         BtcTransaction memory expectedAcceptPeginTx = getBtcAcceptPeginTx(btcTransaction);
@@ -559,18 +550,14 @@ contract TestPeginManager is Test, HelperContract {
         peginManager.acceptPegin(acceptPeginTxSPVProof2);
 
         // 3. Verify correct slot is filled (slot 1, not slot 0)
-        StreamPosition memory streamPosition2 = peginManager.getStreamPositionByRequestPegin(requestPeginTxid2);
-        Slot memory filledSlot =
-            streamManager.getSlot(streamPosition2.streamId, streamPosition2.packetNumber, streamPosition2.slotId);
-        assertEq(uint256(filledSlot.state), uint256(SlotState.FILLED), "Slot 1 should be FILLED");
-        assertEq(streamPosition2.slotId, 1, "Should be slot 1");
+        assertStreamPositionAndSlotStateByRequestPegin(
+            requestPeginTxid2, setupStreamId, PACKET_NUMBER, 1, SlotState.FILLED
+        );
 
         // 4. Verify first slot remains in RESERVED state
-        StreamPosition memory streamPosition1 = peginManager.getStreamPositionByRequestPegin(requestPeginTxid1);
-        Slot memory reservedSlot =
-            streamManager.getSlot(streamPosition1.streamId, streamPosition1.packetNumber, streamPosition1.slotId);
-        assertEq(uint256(reservedSlot.state), uint256(SlotState.RESERVED), "Slot 0 should remain RESERVED");
-        assertEq(streamPosition1.slotId, 0, "Should be slot 0");
+        assertStreamPositionAndSlotStateByRequestPegin(
+            requestPeginTxid1, setupStreamId, PACKET_NUMBER, 0, SlotState.RESERVED
+        );
     }
 
     function test_acceptPegin_Revert_SlotBlocked() external {
@@ -580,7 +567,7 @@ contract TestPeginManager is Test, HelperContract {
         StreamPosition memory streamPosition = peginManager.getStreamPositionByRequestPegin(requestPeginTxid);
 
         // 2. Block the slot externally
-        vm.prank(streamManager.owner());
+        vm.prank(address(peginManager));
         streamManager.blockSlot(streamPosition.streamId, streamPosition.packetNumber, streamPosition.slotId);
 
         // 3. Try to accept pegin
@@ -800,8 +787,13 @@ contract TestPeginManager is Test, HelperContract {
 
         pauseAndUnpauseContracts();
 
-        // Act & Assert
+        // Act
         peginManager.requestPegin(requestPeginTxSPVProof);
+
+        // Assert
+        assertStreamPositionAndSlotStateByRequestPegin(
+            getBtcTxid(btcTransaction), setupStreamId, PACKET_NUMBER, 0, SlotState.RESERVED
+        );
     }
 
     function test_acceptPegin_Revert_EnforcedPause_PausedContract() external {
@@ -892,5 +884,241 @@ contract TestPeginManager is Test, HelperContract {
 
         // Act
         peginManager.acceptPegin(peginAcceptedTxSPVProof);
+    }
+
+    // ============ Register User Reimbursement Tests ============
+    function test_registerUserReimbursement_Success() external {
+        // Arrange
+        (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
+        bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
+
+        BtcTransaction memory userReimbursementTx = getBtcUserReimbursementTx(requestPeginTxid);
+        uint32 reimbursementPeginVin = userReimbursementTx.inputs[0].vout;
+        bytes32 userReimbursementTxid = getBtcTxid(userReimbursementTx);
+        BtcTxSPVProof memory userReimbursementTxSPVProof = createBtcTxSPVProof(userReimbursementTx);
+
+        // Get stream position
+        StreamPosition memory streamPositionBefore = peginManager.getStreamPositionByRequestPegin(requestPeginTxid);
+
+        // Assert - expect event
+        vm.expectEmit(address(peginManager));
+        emit IPeginManager.UserReimbursementRegistered(userReimbursementTxid, requestPeginTxid, streamPositionBefore);
+
+        // Act
+        peginManager.registerUserReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
+
+        // Assert - verify slot is blocked
+        StreamPosition memory streamPositionAfter = peginManager.getStreamPositionByRequestPegin(requestPeginTxid);
+        assertEq(
+            uint256(streamPositionAfter.pegStatus),
+            uint256(PegStatus.BLOCKED),
+            "Stream position status should be BLOCKED"
+        );
+        Slot memory slot = streamManager.getSlot(
+            streamPositionAfter.streamId, streamPositionAfter.packetNumber, streamPositionAfter.slotId
+        );
+        assertEq(uint256(slot.state), uint256(SlotState.BLOCKED), "Slot should be BLOCKED after user reimbursement");
+    }
+
+    function test_registerUserReimbursement_Revert_PeginNotRequested() external {
+        // Arrange
+        (BtcTransaction memory requestPeginTx,) = getBtcRequestPeginTx();
+        bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
+        BtcTransaction memory userReimbursementTx = getBtcUserReimbursementTx(requestPeginTxid);
+        uint32 reimbursementPeginVin = userReimbursementTx.inputs[0].vout;
+
+        BtcTxSPVProof memory userReimbursementTxSPVProof = createBtcTxSPVProof(userReimbursementTx);
+
+        // Assert - expect revert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IPeginManager.InvalidPegStatus.selector,
+                requestPeginTxid,
+                PegStatus.NOT_REGISTERED,
+                PegStatus.REGISTERED
+            )
+        );
+
+        // Act
+        peginManager.registerUserReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
+    }
+
+    function test_registerUserReimbursement_Revert_PeginAlreadyAccepted() external {
+        // Arrange
+        (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
+        bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
+
+        // Accept the pegin first
+        BtcTransaction memory acceptPeginTx = getBtcAcceptPeginTx(requestPeginTx);
+        BtcTxSPVProof memory acceptPeginTxSPVProof = createBtcTxSPVProof(acceptPeginTx);
+        peginManager.acceptPegin(acceptPeginTxSPVProof);
+
+        // Now try to register user reimbursement
+        BtcTransaction memory userReimbursementTx = getBtcUserReimbursementTx(requestPeginTxid);
+        uint32 reimbursementPeginVin = userReimbursementTx.inputs[0].vout;
+        BtcTxSPVProof memory userReimbursementTxSPVProof = createBtcTxSPVProof(userReimbursementTx);
+
+        // Assert - expect revert with PeginInvalidStatus
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IPeginManager.InvalidPegStatus.selector, requestPeginTxid, PegStatus.ACCEPTED, PegStatus.REGISTERED
+            )
+        );
+
+        // Act
+        peginManager.registerUserReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
+    }
+
+    function test_registerUserReimbursement_Revert_InvalidUserReimbursementTx() external {
+        // Arrange
+        uint32 reimbursementPeginVin = 0;
+        (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
+        BtcTransaction memory btcTransaction = getBtcAcceptPeginTx(requestPeginTx);
+
+        BtcTxSPVProof memory acceptPeginTxSPVProof = createBtcTxSPVProof(btcTransaction);
+        bytes32 acceptPeginTxid = getBtcTxid(btcTransaction);
+        bytes32 expectedUserReimbursementTxid = acceptPeginTxid;
+
+        // Assert - expect revert
+        vm.expectRevert(
+            abi.encodeWithSelector(IPeginManager.InvalidUserReimbursementTx.selector, expectedUserReimbursementTxid)
+        );
+
+        // Act - register accept pegin as user reimbursement
+        peginManager.registerUserReimbursement(acceptPeginTxSPVProof, reimbursementPeginVin);
+    }
+
+    function test_registerUserReimbursement_Revert_NotEnoughConfirmations() external {
+        // Arrange
+        (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
+        bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
+
+        BtcTransaction memory userReimbursementTx = getBtcUserReimbursementTx(requestPeginTxid);
+        uint32 reimbursementPeginVin = userReimbursementTx.inputs[0].vout;
+        int256 actualConfirmations = 0;
+        bridgeMock.setBtcTransactionConfirmations(actualConfirmations);
+        BtcTxSPVProof memory userReimbursementTxSPVProof = createBtcTxSPVProof(userReimbursementTx);
+
+        StreamPosition memory streamPosition = peginManager.getStreamPositionByRequestPegin(requestPeginTxid);
+        Stream memory stream = streamManager.getStreamById(streamPosition.streamId);
+
+        // Assert - expect revert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ProofValidator.NotEnoughConfirmations.selector, actualConfirmations, stream.peginConfirmations
+            )
+        );
+
+        // Act
+        peginManager.registerUserReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
+    }
+
+    function test_registerUserReimbursement_Revert_EnforcedPause_PausedContract() external {
+        // Arrange
+        (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
+        bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
+        BtcTransaction memory userReimbursementTx = getBtcUserReimbursementTx(requestPeginTxid);
+        uint32 reimbursementPeginVin = userReimbursementTx.inputs[0].vout;
+        BtcTxSPVProof memory userReimbursementTxSPVProof = createBtcTxSPVProof(userReimbursementTx);
+
+        pauseContracts();
+
+        // Assert
+        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
+
+        // Act
+        peginManager.registerUserReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
+    }
+
+    function test_registerUserReimbursement_Success_UnpausedContract() external {
+        // Arrange
+        (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
+        bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
+        BtcTransaction memory userReimbursementTx = getBtcUserReimbursementTx(requestPeginTxid);
+        uint32 reimbursementPeginVin = userReimbursementTx.inputs[0].vout;
+        BtcTxSPVProof memory userReimbursementTxSPVProof = createBtcTxSPVProof(userReimbursementTx);
+
+        pauseAndUnpauseContracts();
+
+        // Act & Assert - should succeed
+        peginManager.registerUserReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
+
+        // Verify slot is blocked
+        StreamPosition memory streamPosition = peginManager.getStreamPositionByRequestPegin(requestPeginTxid);
+        assertEq(uint256(streamPosition.pegStatus), uint256(PegStatus.BLOCKED), "PegStatus should be BLOCKED");
+        Slot memory slot =
+            streamManager.getSlot(streamPosition.streamId, streamPosition.packetNumber, streamPosition.slotId);
+        assertEq(uint256(slot.state), uint256(SlotState.BLOCKED), "Slot state should be BLOCKED");
+    }
+
+    function test_registerUserReimbursement_Revert_BridgeBtcTxInvalidMerkleBranch() external {
+        // Arrange
+        (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
+        bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
+        BtcTransaction memory userReimbursementTx = getBtcUserReimbursementTx(requestPeginTxid);
+        uint32 reimbursementPeginVin = userReimbursementTx.inputs[0].vout;
+        bytes32 userReimbursementTxid = getBtcTxid(userReimbursementTx);
+
+        // Set Mock Bridge state to invalid merkle branch
+        bridgeMock.setBtcTransactionConfirmations(BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE);
+        BtcTxSPVProof memory userReimbursementTxSPVProof = createBtcTxSPVProof(userReimbursementTx);
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ProofValidator.BridgeBtcTxInvalidMerkleBranch.selector,
+                userReimbursementTxid,
+                userReimbursementTxSPVProof.merkleBranchPath,
+                userReimbursementTxSPVProof.merkleBranchHashes
+            )
+        );
+
+        // Act
+        peginManager.registerUserReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
+    }
+
+    function test_registerUserReimbursement_Revert_AlreadyRegistered() external {
+        // Arrange
+        (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
+        bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
+        BtcTransaction memory userReimbursementTx = getBtcUserReimbursementTx(requestPeginTxid);
+        uint32 reimbursementPeginVin = userReimbursementTx.inputs[0].vout;
+        BtcTxSPVProof memory userReimbursementTxSPVProof = createBtcTxSPVProof(userReimbursementTx);
+
+        // Register first time
+        peginManager.registerUserReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
+
+        // Try to register again - should revert because slot is already blocked
+        // Assert - expect revert with InvalidPegStatus (since slot is now BLOCKED, not RESERVED)
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IPeginManager.InvalidPegStatus.selector, requestPeginTxid, PegStatus.BLOCKED, PegStatus.REGISTERED
+            )
+        );
+
+        // Act
+        peginManager.registerUserReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
+    }
+
+    function test_registerUserReimbursement_Revert_IncorrectVout() external {
+        // Arrange
+        (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
+        bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
+
+        // Create a user reimbursement tx with incorrect vout (using vout 1 instead of 0)
+        BtcTransaction memory userReimbursementTx = getBtcUserReimbursementTx(requestPeginTxid);
+        uint32 reimbursementPeginVin = userReimbursementTx.inputs[0].vout;
+        uint32 incorrectVout = reimbursementPeginVin + 1;
+        userReimbursementTx.inputs[0].vout = incorrectVout;
+
+        BtcTxSPVProof memory userReimbursementTxSPVProof = createBtcTxSPVProof(userReimbursementTx);
+
+        // Assert - expect revert with IncorrectVout
+        vm.expectRevert(
+            abi.encodeWithSelector(IPeginManager.IncorrectVout.selector, incorrectVout, reimbursementPeginVin)
+        );
+
+        // Act
+        peginManager.registerUserReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
     }
 }

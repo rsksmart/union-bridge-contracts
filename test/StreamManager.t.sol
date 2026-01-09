@@ -1064,7 +1064,7 @@ contract TestStreamManager is Test, HelperContract {
         (uint64 streamId, uint64 packetNumber, uint64 slotId) = setup_fillSlot();
 
         // Block the reserved slot
-        vm.prank(streamManager.owner());
+        vm.prank(address(peginManager));
         streamManager.blockSlot(streamId, packetNumber, slotId);
 
         // Verify slot is blocked
@@ -1160,7 +1160,7 @@ contract TestStreamManager is Test, HelperContract {
         (streamId, packetNumber, slotId) = setup_fillSlot();
 
         // Block the slot to have a BLOCKED slot for testing
-        vm.prank(streamManager.owner());
+        vm.prank(address(peginManager));
         streamManager.blockSlot(streamId, packetNumber, slotId);
 
         // Verify slot is BLOCKED
@@ -1183,7 +1183,7 @@ contract TestStreamManager is Test, HelperContract {
         bytes32 initialtakeTx = initialSlot.takeTx;
 
         // Act - call blockSlot as owner
-        vm.prank(streamManager.owner());
+        vm.prank(address(peginManager));
         streamManager.blockSlot(streamId, packetNumber, slotId);
 
         // Assert
@@ -1198,12 +1198,12 @@ contract TestStreamManager is Test, HelperContract {
         assertEq(blockedSlot.slotId, slotId, "slotId should remain unchanged");
     }
 
-    function test_blockSlot_Revert_OnlyOwner() external {
+    function test_blockSlot_Revert_OnlyPegManager() external {
         // Arrange
         (uint64 streamId, uint64 packetNumber, uint64 slotId) = setup_fillSlot();
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+        vm.expectRevert(abi.encodeWithSelector(IAccessControl.UnauthorizedAccount.selector, address(this)));
 
         // Act - try to call blockSlot from non-owner address (this test contract)
         streamManager.blockSlot(streamId, packetNumber, slotId);
@@ -1218,7 +1218,7 @@ contract TestStreamManager is Test, HelperContract {
         assertEq(uint256(slot.state), uint256(SlotState.FILLED), "Slot should be FILLED");
 
         // Act - try to block filled slot (should revert)
-        vm.prank(streamManager.owner());
+        vm.prank(address(peginManager));
         vm.expectRevert(
             abi.encodeWithSelector(
                 IStreamManager.SlotNotBlockable.selector, streamId, packetNumber, slotId, SlotState.FILLED
@@ -1241,7 +1241,7 @@ contract TestStreamManager is Test, HelperContract {
         assertEq(uint256(slot.state), uint256(SlotState.LOCKED), "Slot should be LOCKED");
 
         // Act - try to block locked slot (should revert)
-        vm.prank(streamManager.owner());
+        vm.prank(address(peginManager));
         vm.expectRevert(
             abi.encodeWithSelector(
                 IStreamManager.SlotNotBlockable.selector, streamId, packetNumber, slotId, SlotState.LOCKED
@@ -1264,7 +1264,7 @@ contract TestStreamManager is Test, HelperContract {
         assertEq(uint256(slot.state), uint256(SlotState.COMPLETED), "Slot should be COMPLETED");
 
         // Act - try to block completed slot (should revert)
-        vm.prank(streamManager.owner());
+        vm.prank(address(peginManager));
         vm.expectRevert(
             abi.encodeWithSelector(
                 IStreamManager.SlotNotBlockable.selector, streamId, packetNumber, slotId, SlotState.COMPLETED
@@ -1287,7 +1287,7 @@ contract TestStreamManager is Test, HelperContract {
         assertEq(uint256(slot.state), uint256(SlotState.BLOCKED), "Slot should be BLOCKED");
 
         // Act - try to block already blocked slot (should revert)
-        vm.prank(streamManager.owner());
+        vm.prank(address(peginManager));
         vm.expectRevert(
             abi.encodeWithSelector(
                 IStreamManager.SlotNotBlockable.selector, streamId, packetNumber, slotId, SlotState.BLOCKED
@@ -1303,7 +1303,7 @@ contract TestStreamManager is Test, HelperContract {
         uint64 invalidSlotId = 999; // Non-existent slot
 
         // Act - try to block non-existent slot (should revert)
-        vm.prank(streamManager.owner());
+        vm.prank(address(peginManager));
         vm.expectRevert(
             abi.encodeWithSelector(IStreamManager.NonExistentSlot.selector, streamId, packetNumber, invalidSlotId)
         );

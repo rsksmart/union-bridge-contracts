@@ -289,6 +289,64 @@ contract PeginManager is IPeginManager, PegManagerBase {
         );
     }
 
+    /// @notice Registers a user reimbursement transaction from Bitcoin
+    /// @param _userReimbursementTxSPVProof The BTC SPV proof of the user reimbursement transaction
+    /// @param _reimbursementPeginVin The input index of the reimbursement peg-in transaction
+    /// @dev This function validates the user reimbursement transaction, it must spend the output from the request peg-in transaction
+    /// @dev Updates the stream position to USER_TAKE and stores the user reimbursement transaction in the stream
+    /// @dev Emits UserReimbursementRegistered event upon successful registration
+    /// @dev Only callable when contract is unpaused
+    function registerUserReimbursement(
+        BtcTxSPVProof calldata _userReimbursementTxSPVProof,
+        uint32 _reimbursementPeginVin
+    ) external nonReentrant whenNotPaused {
+        // the input should be the request peg-in txid
+        bytes32 requestPeginTxid = _userReimbursementTxSPVProof.btcTx.inputs[_reimbursementPeginVin].txId;
+
+        // Validate the peg in request tx exists and the status
+        StreamPosition memory streamInfo = _getStreamPositionByRequestPegin(requestPeginTxid);
+        if (streamInfo.pegStatus != PegStatus.REGISTERED) {
+            revert InvalidPegStatus(requestPeginTxid, streamInfo.pegStatus, PegStatus.REGISTERED);
+        }
+
+        // Valdate the vout is correct
+        if (
+            _userReimbursementTxSPVProof.btcTx.inputs[_reimbursementPeginVin].vout
+                != Constants.REQUEST_PEGIN_VOUT_TAPTREE
+        ) {
+            revert IncorrectVout(
+                _userReimbursementTxSPVProof.btcTx.inputs[_reimbursementPeginVin].vout,
+                Constants.REQUEST_PEGIN_VOUT_TAPTREE
+            );
+        }
+        // Calculate userReimbursementTxid from BtcTransaction
+        bytes32 userReimbursementTxid = bitcoinManager.getBtcTxid(_userReimbursementTxSPVProof.btcTx);
+
+        // Validate the txid is NOT the same as the accept peg-in txid
+        bytes32 acceptPeginTxid = acceptPegins[requestPeginTxid];
+        if (acceptPeginTxid == userReimbursementTxid) {
+            revert InvalidUserReimbursementTx(userReimbursementTxid);
+        }
+
+        // Verify the userReimbursementTxid part of the Merkle Root of Tx of a Block
+        // and that block is inside Bitcoin Mainchain
+        // annd has enough confirmations
+        _verifyTxConfirmations(
+            streamManager.getStreamById(streamInfo.streamId).peginConfirmations,
+            userReimbursementTxid,
+            _userReimbursementTxSPVProof.blockHash,
+            _userReimbursementTxSPVProof.merkleBranchPath,
+            _userReimbursementTxSPVProof.merkleBranchHashes
+        );
+
+        // Block slot as it has already been reimbursted to the user.
+        // slither-disable-next-line reentrancy-no-eth reentrancy-benign
+        streamManager.blockSlot(streamInfo.streamId, streamInfo.packetNumber, streamInfo.slotId);
+        streamManager.setPegStatus(acceptPeginTxid, PegStatus.BLOCKED);
+
+        emit UserReimbursementRegistered(userReimbursementTxid, requestPeginTxid, streamInfo);
+    }
+
     /// @notice Accepts a peg-in operation by providing an SPV proof of the accept peg-in transaction
     /// @param _peginAcceptedTxSPVProof The SPV proof containing the accept peg-in Bitcoin transaction
     /// @dev This function validates the accept peg-in transaction, it must spend the output from the request peg-in transaction
@@ -308,20 +366,20 @@ contract PeginManager is IPeginManager, PegManagerBase {
             revert PeginAlreadyAccepted(requestPeginTxid);
         }
 
-        // Calculate acceptPegintxid from BtcTransaction
-        bytes32 acceptPegintxid = bitcoinManager.getBtcTxid(_peginAcceptedTxSPVProof.btcTx);
+        // Calculate acceptPeginTxid from BtcTransaction
+        bytes32 acceptPeginTxid = bitcoinManager.getBtcTxid(_peginAcceptedTxSPVProof.btcTx);
 
         // Validate the txid is the same calculated at request peg in tx
-        if (acceptPegins[requestPeginTxid] != acceptPegintxid) {
-            revert InvalidAcceptPeginTxid(acceptPegins[requestPeginTxid], acceptPegintxid);
+        if (acceptPegins[requestPeginTxid] != acceptPeginTxid) {
+            revert InvalidAcceptPeginTxid(acceptPegins[requestPeginTxid], acceptPeginTxid);
         }
 
-        // Verify the acceptPegintxid part of the Merkle Root of Tx of a Block
+        // Verify the acceptPeginTxid part of the Merkle Root of Tx of a Block
         // and that block is inside Bitcoin Mainchain
         // annd has enough confirmations
         _verifyTxConfirmations(
             streamManager.getStreamById(streamInfo.streamId).peginConfirmations,
-            acceptPegintxid,
+            acceptPeginTxid,
             _peginAcceptedTxSPVProof.blockHash,
             _peginAcceptedTxSPVProof.merkleBranchPath,
             _peginAcceptedTxSPVProof.merkleBranchHashes
@@ -330,7 +388,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
         _storePegin(
             requestPeginTxid,
             _peginAcceptedTxSPVProof.blockHash,
-            acceptPegintxid,
+            acceptPeginTxid,
             _peginAcceptedTxSPVProof.btcTx.outputs[Constants.ACCEPT_PEGIN_VOUT_TAPTREE],
             _peginAcceptedTxSPVProof.btcTx.outputs[Constants.ACCEPT_PEGIN_VOUT_ENABLER]
         );
@@ -339,19 +397,19 @@ contract PeginManager is IPeginManager, PegManagerBase {
     function _storePegin(
         bytes32 _requestPeginTxid,
         bytes32 _blockHash,
-        bytes32 _acceptPegintxid,
+        bytes32 _acceptPeginTxid,
         BtcTxOut memory _acceptPeginTxOutput,
         BtcTxOut memory _enablerOutput
     ) internal {
         // Update the peg in request status to ACCEPTED to avoid processing it again
-        streamManager.setPegStatus(_acceptPegintxid, PegStatus.ACCEPTED);
-        StreamPosition memory stream = streamManager.getStreamPosition(_acceptPegintxid);
+        streamManager.setPegStatus(_acceptPeginTxid, PegStatus.ACCEPTED);
+        StreamPosition memory stream = streamManager.getStreamPosition(_acceptPeginTxid);
 
         // Fill the reserved slot with accept peg-in transaction details
         streamManager.fillSlot(
             stream,
             _acceptPeginTxOutput.amount,
-            _acceptPegintxid,
+            _acceptPeginTxid,
             _acceptPeginTxOutput.scriptPubKey,
             _enablerOutput.scriptPubKey
         );
@@ -362,7 +420,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
         // slither-disable-next-line reentrancy-events
         emit PeginAccepted(
             _blockHash,
-            _acceptPegintxid,
+            _acceptPeginTxid,
             _requestPeginTxid,
             Constants.ACCEPT_PEGIN_VOUT_TAPTREE,
             stream,
