@@ -113,7 +113,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
     /// @dev The transaction must have at least 2 outputs: one P2TR output and one OP_RETURN output
     /// @dev Emits the PeginRequested event
     /// @dev Only callable when contract is unpaused
-    function requestPegin(BtcTxSPVProof calldata _requestPeginTxSPVProof) external nonReentrant whenNotPaused {
+    function requestPegin(BtcTxSPVProof memory _requestPeginTxSPVProof) external nonReentrant whenNotPaused {
         bytes32 requestPeginTxid = _validateRequestPeginProof(_requestPeginTxSPVProof);
 
         (
@@ -122,75 +122,40 @@ contract PeginManager is IPeginManager, PegManagerBase {
             bytes32 btcReimbursementPubKey,
             Stream memory stream,
             bytes memory committeePubKey
-        ) = _extractPeginData(_requestPeginTxSPVProof);
+        ) = _validatePeginP2TRAndOpReturn(_requestPeginTxSPVProof);
 
         // Get committee ID and dispute keys before validation
         uint128 committeeId = streamManager.getCommitteeId(stream.streamId, packetNumber);
-        bytes32[] memory disputeKeys = committeeRegistry.getCommitteeDisputeKeys(committeeId);
 
-        _validatePeginTransaction(
-            _requestPeginTxSPVProof,
-            stream.timelockSettings.requestPeginTimelock,
-            rskDestinationAddress,
-            btcReimbursementPubKey,
-            committeePubKey,
-            disputeKeys,
-            stream,
-            requestPeginTxid
-        );
-
-        // Pre-compute prevout data for both inputs before external calls to follow checks-effects-interactions
-        PrevoutData[] memory prevoutDatas = new PrevoutData[](2);
-        // First input: taptree output from request peg-in
-        prevoutDatas[0] = PrevoutData({
-            value: _requestPeginTxSPVProof.btcTx.outputs[Constants.REQUEST_PEGIN_VOUT_TAPTREE].amount,
-            scriptPubKey: _requestPeginTxSPVProof.btcTx.outputs[Constants.REQUEST_PEGIN_VOUT_TAPTREE].scriptPubKey
-        });
-        // Second input: enabler output from request peg-in
-        prevoutDatas[1] = PrevoutData({
-            value: Constants.SPEED_UP_AMOUNT,
-            scriptPubKey: bitcoinManager.getEnablerOutputP2TRScriptPub(committeePubKey, disputeKeys)
-        });
-
-        bytes32[] memory operatorDisputeKeys = committeeRegistry.getOperatorDisputeKeys(committeeId);
-        BitcoinSignatureData memory acceptPeginSignatureData = bitcoinManager.getAcceptPeginSignatureHash(
-            committeePubKey, btcReimbursementPubKey, requestPeginTxid, prevoutDatas, operatorDisputeKeys
+        (int256 confirmations, BitcoinSignatureData memory acceptPeginSignatureData) =
+        _validatePeginEnablerAndConfirmations(
+            _requestPeginTxSPVProof, btcReimbursementPubKey, committeePubKey, stream, requestPeginTxid, committeeId
         );
 
         // Store temp info before external calls
         RequestPeginTempInfo memory requestPeginInfo = RequestPeginTempInfo({
             rskDestinationAddress: rskDestinationAddress,
             btcReimbursementPubKey: btcReimbursementPubKey,
-            acceptPeginSignatureHash: acceptPeginSignatureData.signatureHash
+            acceptPeginSignatureHash: acceptPeginSignatureData.signatureHash,
+            // Calculate the block number of the request peg-in transaction
+            btcBlockNumber: _getBlockNumberFromConfirmations(confirmations),
+            userReimbursementTxid: bytes32(0),
+            rejectPeginTxid: bytes32(0)
         });
         peginTempInfo[requestPeginTxid] = requestPeginInfo;
 
         // Store request mapping before external calls
         acceptPegins[requestPeginTxid] = acceptPeginSignatureData.txid;
 
-        // Reserve slot during request peg-in - external call
-        // slither-disable-next-line reentrancy-no-eth reentrancy-benign
-        uint64 slotId = streamManager.reserveSlot(stream.streamId, packetNumber);
-
-        // Complete state updates after external call
-        StreamPosition memory streamPos = StreamPosition({
-            streamId: stream.streamId,
-            packetNumber: packetNumber,
-            slotId: slotId,
-            pegStatus: PegStatus.REGISTERED
-        });
-
-        streamManager.setStreamPosition(acceptPeginSignatureData.txid, streamPos);
+        StreamPosition memory streamPos = _reserveSlot(stream.streamId, packetNumber, acceptPeginSignatureData.txid);
 
         // slither-disable-next-line reentrancy-events
         emit PeginRequested(
             committeeId,
             requestPeginTxid,
             acceptPeginSignatureData.txid,
-            Constants.REQUEST_PEGIN_VOUT_TAPTREE,
             streamPos,
             requestPeginInfo,
-            prevoutDatas[0], // Prevout data for taptree output (first input)
             acceptPeginSignatureData.signatureMessage
         );
 
@@ -201,7 +166,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
         signatureManager.initOperatorTakeTxids(acceptPeginSignatureData.txid, committeeId);
     }
 
-    function _validateRequestPeginProof(BtcTxSPVProof calldata _requestPeginTxSPVProof)
+    function _validateRequestPeginProof(BtcTxSPVProof memory _requestPeginTxSPVProof)
         internal
         view
         returns (bytes32 requestPeginTxid)
@@ -226,7 +191,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
         }
     }
 
-    function _extractPeginData(BtcTxSPVProof calldata _requestPeginTxSPVProof)
+    function _validatePeginP2TRAndOpReturn(BtcTxSPVProof memory _requestPeginTxSPVProof)
         internal
         view
         returns (
@@ -249,57 +214,117 @@ contract PeginManager is IPeginManager, PegManagerBase {
 
         // getCommitteePubKey reverts if packet does not exist
         committeePubKey = streamManager.getCommitteePubKey(stream.streamId, packetNumber);
-    }
 
-    function _validatePeginTransaction(
-        BtcTxSPVProof calldata _requestPeginTxSPVProof,
-        uint32 _timelockBlocks,
-        address rskDestinationAddress,
-        bytes32 btcReimbursementPubKey,
-        bytes memory committeePubKey,
-        bytes32[] memory disputeKeys,
-        Stream memory stream,
-        bytes32 requestPeginTxid
-    ) internal view {
         // Validates that the Taproot Script has a Key Path for the committeePubKey
         // and has a timelock for btcReimbursementPubKey
         bitcoinManager.validateRequestPeginP2TROutput(
-            _timelockBlocks,
+            stream.timelockSettings.requestPeginTimelock,
             rskDestinationAddress,
             stream.denomination,
             btcReimbursementPubKey,
             committeePubKey,
             _requestPeginTxSPVProof.btcTx.outputs[Constants.REQUEST_PEGIN_VOUT_TAPTREE]
         );
+    }
+
+    function _validatePeginEnablerAndConfirmations(
+        BtcTxSPVProof memory _requestPeginTxSPVProof,
+        bytes32 _btcReimbursementPubKey,
+        bytes memory _committeePubKey,
+        Stream memory _stream,
+        bytes32 _requestPeginTxid,
+        uint128 _committeeId
+    ) internal view returns (int256 confirmations, BitcoinSignatureData memory acceptPeginSignatureData) {
+        // Get the dispute keys of all members of the committee
+        bytes32[] memory disputeKeys = committeeRegistry.getCommitteeDisputeKeys(_committeeId);
 
         // Validates the enabler output (vout 2) with the correct amount and scriptPubKey
         bitcoinManager.validateRequestPeginEnablerOutput(
-            committeePubKey, disputeKeys, _requestPeginTxSPVProof.btcTx.outputs[Constants.REQUEST_PEGIN_VOUT_ENABLER]
+            _committeePubKey, disputeKeys, _requestPeginTxSPVProof.btcTx.outputs[Constants.REQUEST_PEGIN_VOUT_ENABLER]
         );
 
         // Verifies the requestPeginTxid part of the Merkle Root of Tx of a Block
         // and that block is inside Bitcoin Mainchain
         // and has enough confirmations
-        _verifyTxConfirmations(
-            stream.peginConfirmations,
-            requestPeginTxid,
+        confirmations = _verifyTxConfirmations(
+            _stream.peginConfirmations,
+            _requestPeginTxid,
             _requestPeginTxSPVProof.blockHash,
             _requestPeginTxSPVProof.merkleBranchPath,
             _requestPeginTxSPVProof.merkleBranchHashes
         );
+
+        return (
+            confirmations,
+            _calculateAcceptPeginSignatureData(
+                _btcReimbursementPubKey,
+                _committeeId,
+                _requestPeginTxid,
+                _requestPeginTxSPVProof,
+                disputeKeys,
+                _committeePubKey
+            )
+        );
+    }
+
+    function _calculateAcceptPeginSignatureData(
+        bytes32 _btcReimbursementPubKey,
+        uint128 _committeeId,
+        bytes32 _requestPeginTxid,
+        BtcTxSPVProof memory _requestPeginTxSPVProof,
+        bytes32[] memory _disputeKeys,
+        bytes memory _committeePubKey
+    ) internal view returns (BitcoinSignatureData memory acceptPeginSignatureData) {
+        // Pre-compute prevout data for both inputs before external calls to follow checks-effects-interactions
+        PrevoutData[] memory prevoutDatas = new PrevoutData[](2);
+        // First input: taptree output from request peg-in
+        prevoutDatas[0] = PrevoutData({
+            value: _requestPeginTxSPVProof.btcTx.outputs[Constants.REQUEST_PEGIN_VOUT_TAPTREE].amount,
+            scriptPubKey: _requestPeginTxSPVProof.btcTx.outputs[Constants.REQUEST_PEGIN_VOUT_TAPTREE].scriptPubKey
+        });
+        // Second input: enabler output from request peg-in
+        prevoutDatas[1] = PrevoutData({
+            value: Constants.SPEED_UP_AMOUNT,
+            scriptPubKey: bitcoinManager.getEnablerOutputP2TRScriptPub(_committeePubKey, _disputeKeys)
+        });
+        // Get the operators dispute keys of the committee
+        bytes32[] memory operatorDisputeKeys = committeeRegistry.getOperatorDisputeKeys(_committeeId);
+        acceptPeginSignatureData = bitcoinManager.getAcceptPeginSignatureHash(
+            _committeePubKey, _btcReimbursementPubKey, _requestPeginTxid, prevoutDatas, operatorDisputeKeys
+        );
+    }
+
+    function _reserveSlot(uint64 _streamId, uint64 packetNumber, bytes32 _txid)
+        internal
+        returns (StreamPosition memory streamPos)
+    {
+        // Reserve slot during request peg-in - external call
+        // slither-disable-next-line reentrancy-no-eth reentrancy-benign
+        uint64 slotId = streamManager.reserveSlot(_streamId, packetNumber);
+
+        // Complete state updates after external call
+        streamPos = StreamPosition({
+            streamId: _streamId,
+            packetNumber: packetNumber,
+            slotId: slotId,
+            pegStatus: PegStatus.REGISTERED
+        });
+
+        streamManager.setStreamPosition(_txid, streamPos);
+        return streamPos;
     }
 
     /// @notice Registers a user reimbursement transaction from Bitcoin
     /// @param _userReimbursementTxSPVProof The BTC SPV proof of the user reimbursement transaction
-    /// @param _reimbursementPeginVin The input index of the reimbursement peg-in transaction
-    /// @dev This function validates the user reimbursement transaction, it must spend the output from the request peg-in transaction
-    /// @dev Updates the stream position to USER_TAKE and stores the user reimbursement transaction in the stream
-    /// @dev Emits UserReimbursementRegistered event upon successful registration
+    /// @param _reimbursementPeginVin The input index of the request peg-in btc transaction that was spent
+    /// @dev This function validates the user reimbursement transaction and completes the user reimbursement process
+    /// @dev Emits the UserReimbursementRegistered event
     /// @dev Only callable when contract is unpaused
-    function registerUserReimbursement(
-        BtcTxSPVProof calldata _userReimbursementTxSPVProof,
-        uint32 _reimbursementPeginVin
-    ) external nonReentrant whenNotPaused {
+    function userReimbursement(BtcTxSPVProof memory _userReimbursementTxSPVProof, uint32 _reimbursementPeginVin)
+        external
+        nonReentrant
+        whenNotPaused
+    {
         // the input should be the request peg-in txid
         bytes32 requestPeginTxid = _userReimbursementTxSPVProof.btcTx.inputs[_reimbursementPeginVin].txId;
 
@@ -309,6 +334,42 @@ contract PeginManager is IPeginManager, PegManagerBase {
             revert InvalidPegStatus(requestPeginTxid, streamInfo.pegStatus, PegStatus.REGISTERED);
         }
 
+        // Calculate userReimbursementTxid from BtcTransaction
+        bytes32 userReimbursementTxid = bitcoinManager.getBtcTxid(_userReimbursementTxSPVProof.btcTx);
+
+        bytes32 acceptPeginTxid = acceptPegins[requestPeginTxid];
+        // Validate the txid is NOT the same as the accept peg-in txid
+        if (acceptPeginTxid == userReimbursementTxid) {
+            revert InvalidUserReimbursementTx(userReimbursementTxid);
+        }
+
+        // Verify the user reimbursement transaction
+        _verifyUserReimbursementTransaction(
+            _userReimbursementTxSPVProof,
+            requestPeginTxid,
+            userReimbursementTxid,
+            streamInfo.streamId,
+            _reimbursementPeginVin
+        );
+
+        // Block slot as it has already been reimbursted to the user.
+        // slither-disable-next-line reentrancy-no-eth reentrancy-benign
+        streamManager.blockSlot(streamInfo.streamId, streamInfo.packetNumber, streamInfo.slotId);
+        streamManager.setPegStatus(acceptPeginTxid, PegStatus.BLOCKED);
+
+        // Set user reimbursement txid as rejected peg-in txid
+        peginTempInfo[requestPeginTxid].userReimbursementTxid = userReimbursementTxid;
+
+        emit UserReimbursementRegistered(userReimbursementTxid, requestPeginTxid, streamInfo);
+    }
+
+    function _verifyUserReimbursementTransaction(
+        BtcTxSPVProof memory _userReimbursementTxSPVProof,
+        bytes32 _requestPeginTxid,
+        bytes32 _userReimbursementTxid,
+        uint64 _streamId,
+        uint32 _reimbursementPeginVin
+    ) internal view {
         // Valdate the vout is correct
         if (
             _userReimbursementTxSPVProof.btcTx.inputs[_reimbursementPeginVin].vout
@@ -319,32 +380,98 @@ contract PeginManager is IPeginManager, PegManagerBase {
                 Constants.REQUEST_PEGIN_VOUT_TAPTREE
             );
         }
-        // Calculate userReimbursementTxid from BtcTransaction
-        bytes32 userReimbursementTxid = bitcoinManager.getBtcTxid(_userReimbursementTxSPVProof.btcTx);
 
-        // Validate the txid is NOT the same as the accept peg-in txid
-        bytes32 acceptPeginTxid = acceptPegins[requestPeginTxid];
-        if (acceptPeginTxid == userReimbursementTxid) {
-            revert InvalidUserReimbursementTx(userReimbursementTxid);
-        }
+        Stream memory stream = streamManager.getStreamById(_streamId);
 
         // Verify the userReimbursementTxid part of the Merkle Root of Tx of a Block
         // and that block is inside Bitcoin Mainchain
-        // annd has enough confirmations
-        _verifyTxConfirmations(
-            streamManager.getStreamById(streamInfo.streamId).peginConfirmations,
-            userReimbursementTxid,
+        // and has enough confirmations
+        int256 btcConfirmations = _verifyTxConfirmations(
+            stream.peginConfirmations,
+            _userReimbursementTxid,
             _userReimbursementTxSPVProof.blockHash,
             _userReimbursementTxSPVProof.merkleBranchPath,
             _userReimbursementTxSPVProof.merkleBranchHashes
         );
+
+        int256 blocksElapsedSinceRequestPegin =
+            _getBlockNumberFromConfirmations(btcConfirmations) - peginTempInfo[_requestPeginTxid].btcBlockNumber;
+
+        if (blocksElapsedSinceRequestPegin < int256(uint256(stream.timelockSettings.requestPeginTimelock))) {
+            revert UserReimbursementBeforeTimelock(
+                blocksElapsedSinceRequestPegin, stream.timelockSettings.requestPeginTimelock
+            );
+        }
+    }
+
+    /// @notice Registers a reject peg-in transaction from Bitcoin
+    /// @dev Validates the SPV proof and registers the reject peg-in transaction
+    /// @dev Emits RejectPeginRegistered event upon successful registration
+    /// @dev Slot state is set to BLOCKED
+    /// @param _rejectPeginTxSPVProof The BTC SPV proof of the reject peg-in transaction
+    function rejectPegin(BtcTxSPVProof memory _rejectPeginTxSPVProof) external nonReentrant whenNotPaused {
+        // the input index should be the request peg-in txid
+        bytes32 requestPeginTxid = _rejectPeginTxSPVProof.btcTx.inputs[Constants.REJECT_PEGIN_VIN_ENABLER].txId;
+
+        // Validate the peg in request tx exists and the status
+        StreamPosition memory streamInfo = _getStreamPositionByRequestPegin(requestPeginTxid);
+        if (streamInfo.pegStatus != PegStatus.REGISTERED) {
+            revert InvalidPegStatus(requestPeginTxid, streamInfo.pegStatus, PegStatus.REGISTERED);
+        }
+
+        // Calculate userReimbursementTxid from BtcTransaction
+        bytes32 rejectPeginTxid = bitcoinManager.getBtcTxid(_rejectPeginTxSPVProof.btcTx);
+
+        bytes32 acceptPeginTxid = acceptPegins[requestPeginTxid];
+        // Validate the txid is NOT the same as the accept peg-in txid
+        if (acceptPeginTxid == rejectPeginTxid) {
+            revert InvalidAcceptPeginTxid(acceptPeginTxid, rejectPeginTxid);
+        }
+
+        // Verify the pegin rejected transaction
+        _verifyRejectPeginTransaction(_rejectPeginTxSPVProof, rejectPeginTxid, streamInfo.streamId);
 
         // Block slot as it has already been reimbursted to the user.
         // slither-disable-next-line reentrancy-no-eth reentrancy-benign
         streamManager.blockSlot(streamInfo.streamId, streamInfo.packetNumber, streamInfo.slotId);
         streamManager.setPegStatus(acceptPeginTxid, PegStatus.BLOCKED);
 
-        emit UserReimbursementRegistered(userReimbursementTxid, requestPeginTxid, streamInfo);
+        // Set user reimbursement txid as rejected peg-in txid
+        peginTempInfo[requestPeginTxid].rejectPeginTxid = rejectPeginTxid;
+
+        emit RejectPeginRegistered(rejectPeginTxid, requestPeginTxid, streamInfo);
+    }
+
+    function _verifyRejectPeginTransaction(
+        BtcTxSPVProof memory _rejectPeginTxSPVProof,
+        bytes32 _rejectPeginTxid,
+        uint64 _streamId
+    ) internal view {
+        // Valdate the vout is correct
+        if (
+            _rejectPeginTxSPVProof.btcTx.inputs[Constants.REJECT_PEGIN_VIN_ENABLER].vout
+                != Constants.REQUEST_PEGIN_VOUT_ENABLER
+        ) {
+            revert IncorrectVout(
+                _rejectPeginTxSPVProof.btcTx.inputs[Constants.REJECT_PEGIN_VIN_ENABLER].vout,
+                Constants.REQUEST_PEGIN_VOUT_ENABLER
+            );
+        }
+
+        Stream memory stream = streamManager.getStreamById(_streamId);
+
+        // Verify the userReimbursementTxid part of the Merkle Root of Tx of a Block
+        // and that block is inside Bitcoin Mainchain
+        // and has enough confirmations
+        _verifyTxConfirmations(
+            stream.peginConfirmations,
+            _rejectPeginTxid,
+            _rejectPeginTxSPVProof.blockHash,
+            _rejectPeginTxSPVProof.merkleBranchPath,
+            _rejectPeginTxSPVProof.merkleBranchHashes
+        );
+
+        // TODO review if we should wait an amount of blocks before rejecting the peg-in
     }
 
     /// @notice Accepts a peg-in operation by providing an SPV proof of the accept peg-in transaction
@@ -353,7 +480,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
     /// @dev Updates the stream position to ACCEPTED and stores the peg-in transaction in the stream
     /// @dev Emits the PeginAccepted event
     /// @dev Only callable when contract is unpaused
-    function acceptPegin(BtcTxSPVProof calldata _peginAcceptedTxSPVProof) external nonReentrant whenNotPaused {
+    function acceptPegin(BtcTxSPVProof memory _peginAcceptedTxSPVProof) external nonReentrant whenNotPaused {
         // The first input consumes the the peg in request utxo
         bytes32 requestPeginTxid = _peginAcceptedTxSPVProof.btcTx.inputs[Constants.REQUEST_PEGIN_VOUT_TAPTREE].txId;
 
@@ -463,5 +590,9 @@ contract PeginManager is IPeginManager, PegManagerBase {
     {
         bytes32 acceptPeginTxid = acceptPegins[_requestPeginTxid];
         return streamManager.getStreamPosition(acceptPeginTxid);
+    }
+
+    function _getBlockNumberFromConfirmations(int256 _confirmations) internal view returns (int256) {
+        return bridge.getBtcBlockchainBestChainHeight() - _confirmations;
     }
 }

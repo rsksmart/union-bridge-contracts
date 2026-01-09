@@ -483,9 +483,6 @@ contract TestPegoutManager is Test, HelperContract {
         // Create SPV proof for the peg-out transaction
         BtcTxSPVProof memory pegoutTxSPVProof = createBtcTxSPVProof(pegoutTx);
 
-        // Set mock bridge confirmations
-        bridgeMock.setBtcTransactionConfirmations(10);
-
         // Expect revert for invalid accept peg-in tx id
         vm.expectRevert(
             abi.encodeWithSelector(IPeginManager.InvalidAcceptPeginTxid.selector, differentTxid, acceptPeginTxid)

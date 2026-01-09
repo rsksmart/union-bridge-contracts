@@ -87,7 +87,7 @@ abstract contract ProofValidator is Initializable {
         bytes32 _blockHash,
         uint256 _merkleBranchPath,
         bytes32[] memory _merkleBranchHashes
-    ) internal view {
+    ) internal view returns (int256) {
         // Get tx confirmations using ProofValidator from Rsk bridge precompiled contract
         int256 confirmations =
             bridge.getBtcTransactionConfirmations(_txid, _blockHash, _merkleBranchPath, _merkleBranchHashes);
@@ -116,6 +116,7 @@ abstract contract ProofValidator is Initializable {
         if (uint256(confirmations) < _minConfirmations) {
             revert NotEnoughConfirmations(confirmations, _minConfirmations);
         }
+        return confirmations;
     }
 
     function getBlockNumber(

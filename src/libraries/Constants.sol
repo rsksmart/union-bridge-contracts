@@ -32,6 +32,11 @@ library Constants {
     /// @dev Third output (index 2) contains the enabler output with dispute keys
     uint32 constant REQUEST_PEGIN_VOUT_ENABLER = 2;
 
+    // Reject Peg-in Transaction Input Indices
+    /// @dev Input index for consuming the request peg-in enabler output in reject peg-in Bitcoin transactions
+    /// @dev First input (index 0) contains the rejected output by a member of the committee
+    uint32 constant REJECT_PEGIN_VIN_ENABLER = 0;
+
     // Accept Peg-in Transaction Input Indices
     /// @dev Input index for consuming the request peg-in taptree output in accept peg-in Bitcoin transactions
     /// @dev First input (index 0) spends the request peg-in taptree UTXO

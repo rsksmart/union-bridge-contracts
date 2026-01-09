@@ -412,6 +412,33 @@ abstract contract HelperContract is Test, TestUtils {
         });
     }
 
+    // ========================== Reject Peg-in ==========================
+    function getBtcRejectPeginTx(bytes32 _requestPeginTxid) internal pure returns (BtcTransaction memory) {
+        BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
+        // Input spends the request pegin enabler output (vout 2)
+        btcInputs[0] = BtcTxIn({
+            txId: _requestPeginTxid,
+            vout: Constants.REQUEST_PEGIN_VOUT_ENABLER,
+            sequence: Constants.SEQUENCE,
+            scriptSig: hex""
+        });
+
+        // Output: P2WPKH to user's reimbursement pubkey
+        BtcTxOut[] memory btcOutputs = new BtcTxOut[](1);
+        btcOutputs[0] = BtcTxOut({
+            // Amount minus fees (simplified - in reality would be more precise)
+            amount: Constants.ENABLER_AMOUNT - Constants.P2TR_FEE,
+            scriptPubKey: BtcScriptParser.getP2WPKHScript(BtcHelper.pubKeyXonlyToCompact(BTC_REIMBURSEMENT_PUBKEY))
+        });
+
+        return BtcTransaction({
+            version: Constants.BTC_TX_VERSION,
+            inputs: btcInputs,
+            outputs: btcOutputs,
+            locktime: Constants.LOCKTIME
+        });
+    }
+
     function satoshiToWei(uint256 _amount) internal pure returns (uint256) {
         return _amount * 10 ** 10;
     }
@@ -443,12 +470,15 @@ abstract contract HelperContract is Test, TestUtils {
         // Arrange
         BtcTransaction memory btcTransaction = getBtcAcceptPeginTx(_tx);
         // Set Mock Bridge state
-        bridgeMock.setBtcTransactionConfirmations(10);
+        bridgeMock.setBtcBlockchainBestChainHeight(BEST_CHAIN_HEIGHT);
+        bridgeMock.setBtcTransactionConfirmations(CONFIRMATIONS);
         // Create Pegin accepted tx struct information
         BtcTxSPVProof memory peginAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
         // Act
         peginManager.acceptPegin(peginAcceptedTxSPVProof);
+
+        bridgeMock.setBtcBlockchainBestChainHeight(BEST_CHAIN_HEIGHT + 1);
 
         return btcTransaction;
     }
@@ -459,13 +489,17 @@ abstract contract HelperContract is Test, TestUtils {
         Stream memory stream = streamManager.getStream(VALUE);
 
         // Set Mock Bridge state
-        bridgeMock.setBtcTransactionConfirmations(10);
+        bridgeMock.setBtcBlockchainBestChainHeight(BEST_CHAIN_HEIGHT);
+        bridgeMock.setBtcTransactionConfirmations(CONFIRMATIONS);
         // Create Pegin struct information
         BtcTxSPVProof memory requestPeginTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
         // Act
         peginManager.requestPegin(requestPeginTxSPVProof);
 
+        // Update the best chain for timelock verifications
+        bridgeMock.setBtcBlockchainBestChainHeight(BEST_CHAIN_HEIGHT + 1);
+        // Assert
         Slot memory slot = streamManager.getSlot(stream.streamId, stream.peginPacketPointer, slotId);
         assertEq(uint256(slot.state), uint256(SlotState.RESERVED), "Slot state should be RESERVED after pegin request");
     }

@@ -14,6 +14,12 @@ struct RequestPeginTempInfo {
     bytes32 btcReimbursementPubKey;
     /// @notice The signature hash that committee members need to sign
     bytes32 acceptPeginSignatureHash;
+    /// @notice The block number of the request peg-in transaction
+    int256 btcBlockNumber;
+    /// @notice The transaction id of the user reimbursement transaction
+    bytes32 userReimbursementTxid;
+    /// @notice The transaction id of the rejected peg-in transaction
+    bytes32 rejectPeginTxid;
 }
 
 /// @title IPeginManager
@@ -75,12 +81,18 @@ interface IPeginManager is IPausable {
     /// @notice Registers a user reimbursement transaction from Bitcoin
     /// @dev Validates the SPV proof and completes the user reimbursement process
     /// @dev Emits UserReimbursementRegistered event upon successful registration
+    /// @dev Slot state is set to BLOCKED
     /// @param _userReimbursementTxSPVProof The BTC SPV proof of the user reimbursement transaction
     /// @param _reimbursementPeginVin The input index of the reimbursement peg-in transaction
-    function registerUserReimbursement(
-        BtcTxSPVProof calldata _userReimbursementTxSPVProof,
-        uint32 _reimbursementPeginVin
-    ) external;
+    function userReimbursement(BtcTxSPVProof calldata _userReimbursementTxSPVProof, uint32 _reimbursementPeginVin)
+        external;
+
+    /// @notice Registers a reject peg-in transaction from Bitcoin
+    /// @dev Validates the SPV proof and registers the reject peg-in transaction
+    /// @dev Emits RejectPeginRegistered event upon successful registration
+    /// @dev Slot state is set to BLOCKED
+    /// @param _rejectPeginTxSPVProof The BTC SPV proof of the reject peg-in transaction
+    function rejectPegin(BtcTxSPVProof calldata _rejectPeginTxSPVProof) external;
 
     // ===================== Events =====================
 
@@ -88,19 +100,15 @@ interface IPeginManager is IPausable {
     /// @param committeeId The ID of the committee responsible for this peg-in
     /// @param requestPeginTxid The hash of the peg-in request transaction
     /// @param acceptPeginTxid The hash of the accept peg-in transaction
-    /// @param vout The output index of the transaction
     /// @param streamPosition The struct with the position information (stream, packet, slot, status)
     /// @param requestPeginInfo Temporary information needed for the accept phase
-    /// @param prevoutData Data about the previous output being spent
     /// @param acceptPeginSignatureMessage The signature message for committee signing
     event PeginRequested(
         uint128 indexed committeeId,
         bytes32 indexed requestPeginTxid,
         bytes32 indexed acceptPeginTxid,
-        uint64 vout,
         StreamPosition streamPosition,
         RequestPeginTempInfo requestPeginInfo,
-        PrevoutData prevoutData,
         bytes acceptPeginSignatureMessage
     );
 
@@ -139,6 +147,14 @@ interface IPeginManager is IPausable {
     /// @param streamInfo The stream position information where the user reimbursement was registered
     event UserReimbursementRegistered(
         bytes32 indexed userReimbursementTxid, bytes32 indexed requestPeginTxid, StreamPosition streamInfo
+    );
+
+    /// @notice Event emitted when a reject peg-in is successfully registered
+    /// @param rejectPeginTxid The hash of the reject peg-in btc transaction
+    /// @param requestPeginTxid The hash of the request peg-in btc transaction
+    /// @param streamInfo The stream position information where the reject peg-in was registered
+    event RejectPeginRegistered(
+        bytes32 indexed rejectPeginTxid, bytes32 indexed requestPeginTxid, StreamPosition streamInfo
     );
 
     // ===================== Errors =====================
@@ -194,4 +210,9 @@ interface IPeginManager is IPausable {
     /// @notice Thrown when the user reimbursement transaction id is the same as the accept peg-in txid
     /// @param userReimbursementTxid The user reimbursement transaction id that is the same as the accept peg-in txid
     error InvalidUserReimbursementTx(bytes32 userReimbursementTxid);
+
+    /// @notice Thrown when the user reimbursement transaction is mined before the timelock period
+    /// @param blocksElapsedSinceRequestPegin The number of blocks elapsed since the request peg-in transaction
+    /// @param timelockBlocks The timelock period in blocks
+    error UserReimbursementBeforeTimelock(int256 blocksElapsedSinceRequestPegin, uint256 timelockBlocks);
 }

@@ -9,6 +9,7 @@
 - New states to `PegStatus`: `OP_SELECTED`, `ADVANCED`, `KICKOFF`, `CHALLENGE`, `REVEALED` and `BLOCKED`.
 - `StreamManager.setTimelockSettings` to modify the timelocks of a strream.
 - `PeginManager.registerUserReimbursement` to register user reimbursment SPV proof.
+- `PeginManager.registerRejectPegin` to register reject pegin SPV proof.
 
 ### Changed
 
@@ -17,12 +18,11 @@
 - `shell/script/operator-take/add-operator-take-txid.sh` and `script/operator-take/add-every-operator-take-txid.sh` to use `addOperatorTakeTxids` and deposit `operatorWonTxid`.
 - Before calling to `PegoutManager.registerOperatorTake`, now it's required to call `registerAdvanceFunds` and `registerReimbursementKickoff` first.
 - `StreamManager.initialize` now recieves `StreamSettings[]` instead of denominations
-
+- PeginTempInfo struct has added userReimbursementTxid and rejectPeginTxid fields
 
 ### Removed
 
 - `shell/script/operator-take/add-every-operator-take-tx-hash.sh` unused script.
-
 
 ## [v0.2.2-alpha]
 
