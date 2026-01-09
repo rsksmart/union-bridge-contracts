@@ -11,6 +11,7 @@ import {IStreamManager} from "./interfaces/IStreamManager.sol";
 import {ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
 import {ISignatureManager} from "./interfaces/ISignatureManager.sol";
 import {IRbtcBridge} from "./interfaces/IRbtcBridge.sol";
+import {PegStatus, StreamPosition} from "./interfaces/IPegCommonTypes.sol";
 
 /// @title PegManagerBase
 /// @notice Abstract base contract for shared functionality between PeginManager and PegoutManager
@@ -93,5 +94,23 @@ abstract contract PegManagerBase is IPegManagerBase, BaseProxy, ProofValidator, 
     /// @dev Only callable by the contract owner
     function setPauser(address _newPauser) public override onlyOwner {
         super.setPauser(_newPauser);
+    }
+
+    function _validatePegStatus(bytes32 _acceptPeginTxid, PegStatus _expectedStatus)
+        internal
+        view
+        returns (StreamPosition memory)
+    {
+        StreamPosition memory streamInfo = streamManager.getStreamPosition(_acceptPeginTxid);
+
+        if (streamInfo.pegStatus == PegStatus.NOT_REGISTERED) {
+            revert PeginNotRequested(_acceptPeginTxid);
+        }
+
+        if (streamInfo.pegStatus != _expectedStatus) {
+            revert InvalidPegStatus(streamInfo.pegStatus);
+        }
+
+        return streamInfo;
     }
 }

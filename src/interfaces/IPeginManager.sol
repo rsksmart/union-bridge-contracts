@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import {PrevoutData} from "./IBitcoinManager.sol";
-import {IPausable} from "./IPausable.sol";
-import {BtcTxSPVProof, StreamPosition, PegStatus} from "./IPegCommonTypes.sol";
+import {IPegManagerBase} from "./IPegManagerBase.sol";
+import {BtcTxSPVProof, StreamPosition} from "./IPegCommonTypes.sol";
 
 /// @notice Temporary information stored during peg-in request processing
 /// @dev Contains data needed for the accept peg-in phase
@@ -24,7 +23,7 @@ struct RequestPeginTempInfo {
 
 /// @title IPeginManager
 /// @notice Interface for managing peg-in operations
-interface IPeginManager is IPausable {
+interface IPeginManager {
     // ===================== Peg-in Request =====================
 
     /// @notice Generates request peg-in data including temporary Bitcoin address and member dispute keys
@@ -163,10 +162,6 @@ interface IPeginManager is IPausable {
     /// @param btcTxid The Bitcoin transaction id that was already requested
     error PeginAlreadyRequested(bytes32 btcTxid);
 
-    /// @notice Thrown when trying to process a peg-in that hasn't been requested
-    /// @param btcTxid The Bitcoin transaction id that wasn't requested
-    error PeginNotRequested(bytes32 btcTxid);
-
     /// @notice Thrown when the accept peg-in transaction id doesn't match the expected value
     /// @param expected The expected transaction id
     /// @param actual The actual transaction id received
@@ -195,12 +190,6 @@ interface IPeginManager is IPausable {
     /// @param value The input amount that exceeded the locking cap
     /// @param lockingCap The locking cap of the pow-peg bridge
     error BridgeExceededLockingCap(uint256 value, uint256 lockingCap);
-
-    /// @notice Thrown when the peg-in status is not valid for the current operation
-    /// @param btcTxid The Bitcoin transaction id that was being registered
-    /// @param expected The expected peg status
-    /// @param actual The actual peg status
-    error InvalidPegStatus(bytes32 btcTxid, PegStatus actual, PegStatus expected);
 
     /// @notice Thrown when the output index (vout) doesn't match the expected value
     /// @param actual The actual vout value

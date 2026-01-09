@@ -270,7 +270,9 @@ contract TestPeginManager is Test, HelperContract {
         BtcTxSPVProof memory peginAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPeginManager.PeginNotRequested.selector, btcTransaction.inputs[0].txId));
+        vm.expectRevert(
+            abi.encodeWithSelector(IPegManagerBase.PeginNotRequested.selector, btcTransaction.inputs[0].txId)
+        );
 
         // Act
         peginManager.acceptPegin(peginAcceptedTxSPVProof);
@@ -929,14 +931,7 @@ contract TestPeginManager is Test, HelperContract {
         BtcTxSPVProof memory userReimbursementTxSPVProof = createBtcTxSPVProof(userReimbursementTx);
 
         // Assert - expect revert
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IPeginManager.InvalidPegStatus.selector,
-                requestPeginTxid,
-                PegStatus.NOT_REGISTERED,
-                PegStatus.REGISTERED
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(IPegManagerBase.PeginNotRequested.selector, bytes32(0)));
 
         // Act
         peginManager.userReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
@@ -958,11 +953,7 @@ contract TestPeginManager is Test, HelperContract {
         BtcTxSPVProof memory userReimbursementTxSPVProof = createBtcTxSPVProof(userReimbursementTx);
 
         // Assert - expect revert with PeginInvalidStatus
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IPeginManager.InvalidPegStatus.selector, requestPeginTxid, PegStatus.ACCEPTED, PegStatus.REGISTERED
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(IPegManagerBase.InvalidPegStatus.selector, PegStatus.ACCEPTED));
 
         // Act
         peginManager.userReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
@@ -1068,11 +1059,7 @@ contract TestPeginManager is Test, HelperContract {
 
         // Try to register again - should revert because slot is already blocked
         // Assert - expect revert with InvalidPegStatus (since slot is now BLOCKED, not RESERVED)
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IPeginManager.InvalidPegStatus.selector, requestPeginTxid, PegStatus.BLOCKED, PegStatus.REGISTERED
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(IPegManagerBase.InvalidPegStatus.selector, PegStatus.BLOCKED));
 
         // Act
         peginManager.userReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
@@ -1201,14 +1188,7 @@ contract TestPeginManager is Test, HelperContract {
         address memberAddress = committeeMembers[0].memberAddress;
 
         // Assert - expect revert
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IPeginManager.InvalidPegStatus.selector,
-                requestPeginTxid,
-                PegStatus.NOT_REGISTERED,
-                PegStatus.REGISTERED
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(IPegManagerBase.PeginNotRequested.selector, bytes32(0)));
 
         // Act
         vm.prank(memberAddress);
@@ -1235,11 +1215,7 @@ contract TestPeginManager is Test, HelperContract {
         BtcTxSPVProof memory rejectPeginTxSPVProof = createBtcTxSPVProof(rejectPeginTx);
 
         // Assert - expect revert with InvalidPegStatus
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IPeginManager.InvalidPegStatus.selector, requestPeginTxid, PegStatus.ACCEPTED, PegStatus.REGISTERED
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(IPegManagerBase.InvalidPegStatus.selector, PegStatus.ACCEPTED));
 
         // Act
         vm.prank(memberAddress);
@@ -1372,11 +1348,7 @@ contract TestPeginManager is Test, HelperContract {
 
         // Try to register again - should revert because slot is already blocked
         // Assert - expect revert with InvalidPegStatus (since slot is now BLOCKED, not REGISTERED)
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IPeginManager.InvalidPegStatus.selector, requestPeginTxid, PegStatus.BLOCKED, PegStatus.REGISTERED
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(IPegManagerBase.InvalidPegStatus.selector, PegStatus.BLOCKED));
 
         // Act
         vm.prank(memberAddress);

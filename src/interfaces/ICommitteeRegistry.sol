@@ -6,7 +6,6 @@ import {IPeginManager} from "./IPeginManager.sol";
 import {IPegoutManager} from "./IPegoutManager.sol";
 import {SignatureData} from "./ISignatureManager.sol";
 import {IMemberRegistry} from "./IMemberRegistry.sol";
-import {IPausable} from "./IPausable.sol";
 
 /// @dev Amount of bytes32 chunks for communication data
 uint8 constant COMMUNICATION_DATA_CHUNKS = 8;
@@ -204,7 +203,7 @@ struct CommunicationData {
 /// @notice Interface for managing committee registration and formation in the union bridge
 /// @dev This interface provides functions for member registration, committee formation,
 /// @dev and balance management for the committee system
-interface ICommitteeRegistry is IPausable {
+interface ICommitteeRegistry {
     /// @notice Applies to participate in a stream with a specific role
     /// @dev Registers public keys, deposits required bond, and provides funding UTXO for the requested role
     /// @param _requestedStream The stream denomination to apply for
