@@ -44,7 +44,7 @@ contract TestPeginManager is Test, HelperContract {
     function test_getRequestPeginData_Success() external view {
         address dummyRskAddress = 0x7Ac5496aee77c1bA1F0854206A26DdA82A81d6d8;
         // Address is different according to amount and destination address
-        string memory tempAddress = "bcrt1p9hdr74xdg69a7w6r4pfsrrnj3l7ku54x5jdmtwf4thnjyhkmeuhs79pnrw";
+        string memory tempAddress = "bcrt1pwpfkfegptuz3k0y9j47cutzcrstnrz6sz44x3senwwtjp5ugmh7q578ryg";
 
         (string memory result, uint64 packetNumber, bytes32[] memory memberDisputeKeys, uint64 availableSlots) =
             peginManager.getRequestPeginData(dummyRskAddress, VALUE, BTC_REIMBURSEMENT_PUBKEY);
@@ -93,9 +93,9 @@ contract TestPeginManager is Test, HelperContract {
         bytes32 expectedRequestPeginTxid = getBtcTxid(btcTransaction);
         bytes32 expectedAcceptPeginTxid = getBtcTxid(getBtcAcceptPeginTx(btcTransaction));
 
-        bytes32 expectedAcceptPeginSignatureHash = hex"a9b50176451cfd98f60f1703a958bfe88dfa6fe2f5b4857e714dbac76125c5de";
+        bytes32 expectedAcceptPeginSignatureHash = hex"d0b947b4a387d74fa2573bb1d7af331e0c449fe2df5736ac4b5dc75fef33be0b";
         bytes memory expectedAcceptPeginSignatureMessage =
-            hex"00010200000000000000edc1f1d689afb66da88998b8b67bb0b79a953f6087db1966592161c6bb1e5d6e20cb368f69e16a937d044c377b1f7fd5568bb167c478f5dbec16b25df5f66e424147566e5a4482ee0e3dcbae3fc237584ddfb58a3fd46c1c84b10f20a667227e82d397cbbcff87bc5d0c4c70e424f9b830efbad7bf0be479da5d1d1bafdb9798ada11d7ef66f5f2f0ecffbd60df8245f07169195111fb316e1a4f5e4f46283d80000000000";
+            hex"0001020000000000000076e9f1ac81644dca942247ede19b1bb17f1a4d92f15378e1dbe704a859cfef8220cb368f69e16a937d044c377b1f7fd5568bb167c478f5dbec16b25df5f66e422b3ac75d6a97ae6e639bef7f437c42979095f6b394068bd7e03b96b1a0d7be2382d397cbbcff87bc5d0c4c70e424f9b830efbad7bf0be479da5d1d1bafdb9798ada11d7ef66f5f2f0ecffbd60df8245f07169195111fb316e1a4f5e4f46283d80000000000";
 
         RequestPeginTempInfo memory expectedRequestPeginInfo = RequestPeginTempInfo({
             rskDestinationAddress: RSK_DESTINATION_ADDRESS,

@@ -246,7 +246,7 @@ abstract contract HelperContract is Test, TestUtils {
     function getRequestPeginP2TROut() internal pure returns (BtcTxOut memory) {
         return BtcTxOut({
             amount: VALUE,
-            scriptPubKey: hex"51202dda3f54cd468bdf3b43a853018e728ffd6e52a6a49bb5b9355de7225edbcf2f"
+            scriptPubKey: hex"5120705364e5015f051b3c85957d8e2c581c17318b50156a68c333739720d388ddfc"
         });
     }
 

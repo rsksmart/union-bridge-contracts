@@ -139,13 +139,13 @@ contract TestPegoutManager is Test, HelperContract {
         // Counter should start in 0, otherwise the test will fail or expectedDigest and userPubKey should be updated.
         BtcTxIn[] memory inputs = new BtcTxIn[](2);
         inputs[0] = BtcTxIn({
-            txId: 0x7066db15e0f6989207b98ac8511491033cf349096354777e17bbdf2f30d87497,
+            txId: 0x86a4861257c7ebf023b8348bd635294eac25742a14e09a9fbf097e7e9883c39c,
             vout: 0,
             sequence: 4294967293,
             scriptSig: hex""
         });
         inputs[1] = BtcTxIn({
-            txId: 0x7066db15e0f6989207b98ac8511491033cf349096354777e17bbdf2f30d87497,
+            txId: 0x86a4861257c7ebf023b8348bd635294eac25742a14e09a9fbf097e7e9883c39c,
             vout: 1, // Enabler output from accept pegin
             sequence: 4294967293,
             scriptSig: hex""
@@ -157,9 +157,9 @@ contract TestPegoutManager is Test, HelperContract {
 
         BitcoinSignatureData memory expectedSignatureData = BitcoinSignatureData({
             tx: BtcTransaction({version: 2, inputs: inputs, outputs: outputs, locktime: 0}),
-            txid: 0xa783194dd3344414b1db1d6998b267e2f14efaa352d54dee8cc4a82896aa49e5,
-            signatureHash: 0x8dfc4febb29188322a1caadd525db8c3fe1c46f6712174d1e773b99548900abb,
-            signatureMessage: hex"00010200000000000000a2044f500cad83fd1ad061a734ea9fd9a6adc2369e88089b4355d01d9ccf9c2e59d52669fd0ba656235c4671b864d775311a265ac214f4d751b9517b072a834b407675effde803a1d25ae0cef3d28078714be9b575b64508f9f0aebe4fed57fb82d397cbbcff87bc5d0c4c70e424f9b830efbad7bf0be479da5d1d1bafdb9798f2a5c89faccd16313699d479ce6a709382b4c8c3089dccc0a0225da80421c01a0000000000"
+            txid: 0x8bb1b910ea4b919b2a3914bbcb39786c3e979c6edd3117e4b702bbfcb7224477,
+            signatureHash: 0x21d3c9759058195b78e7f98b7d13e51679d02c597934410fba2d9c7b9e4a8c7e,
+            signatureMessage: hex"00010200000000000000c77d74477f90a2ed553a54c0a6ee38b973986ee7c01a1316824fa95fa3f55d0759d52669fd0ba656235c4671b864d775311a265ac214f4d751b9517b072a834b407675effde803a1d25ae0cef3d28078714be9b575b64508f9f0aebe4fed57fb82d397cbbcff87bc5d0c4c70e424f9b830efbad7bf0be479da5d1d1bafdb9798f2a5c89faccd16313699d479ce6a709382b4c8c3089dccc0a0225da80421c01a0000000000"
         });
 
         bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";

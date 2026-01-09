@@ -119,7 +119,7 @@ contract TestBtcHelper is Test, HelperContract {
         });
         btcTx.outputs[0] = BtcTxOut({
             amount: 100000,
-            scriptPubKey: hex"51202dda3f54cd468bdf3b43a853018e728ffd6e52a6a49bb5b9355de7225edbcf2f"
+            scriptPubKey: hex"5120705364e5015f051b3c85957d8e2c581c17318b50156a68c333739720d388ddfc"
         });
         btcTx.outputs[1] = BtcTxOut({
             amount: 0,
@@ -131,7 +131,7 @@ contract TestBtcHelper is Test, HelperContract {
         // Assert
         assertEq(
             txid,
-            0x3e2dae98db783476cc24e8fea4c7b6fdbfc6c211d576ab835ccf0c1e4e36f8f9,
+            0x032aba885f5456d794ae371d7e541eea9104d86dd6e93b5ee10da0d943efe61e,
             "Hashing the Transaction without the witness with Hash256 didn't give the correct txId"
         );
     }
@@ -170,7 +170,7 @@ contract TestBtcHelper is Test, HelperContract {
         address rskDestinationAddress = getPeginRskDestinationAddress();
         bytes32 btcReimbursementPubKey = getPeginBtcReimbursementPubKey();
         bytes memory committeePubKey = COMMITTEE_PUB_KEY();
-        uint32 timelockBlocks = 1;
+        uint32 timelockBlocks = 12;
         // Act
         vm.prank(address(peginManager));
         bitcoinManager.validateRequestPeginP2TROutput(
