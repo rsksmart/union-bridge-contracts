@@ -21,7 +21,7 @@ contract RegisterOperatorTakeScript is ScriptUtils {
     uint64 expectedPacketNumber;
     uint64 expectedSlotId;
 
-    function setUp(bytes32 _acceptPeginTxHash) internal {
+    function setUp(bytes32 _acceptPeginTxid) internal {
         pegManager = getPegManagerAddress();
 
         ICommitteeRegistry registry = pegManager.committeeRegistry();

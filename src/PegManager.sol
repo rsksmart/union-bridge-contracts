@@ -484,17 +484,6 @@ contract PegManager is IPegManager, BaseProxy, ProofValidator {
             )
         );
 
-        // Compute pegout ID
-        bytes32 pegoutId = keccak256(
-            abi.encode(
-                stream.streamId,
-                packetNumber,
-                slot.slotId,
-                msg.sender,
-                BtcHelper.hash256(bridge.getBtcBlockchainBestBlockHeader())
-            )
-        );
-
         // slither-disable-next-line reentrancy-events
         emit PegoutRequested(
             _userPubKey,

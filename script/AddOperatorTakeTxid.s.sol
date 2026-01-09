@@ -13,7 +13,7 @@ contract AddOperatorTakeTxidScript is ScriptUtils {
     uint16 mnemonicIndex;
     address user;
 
-    function setUp(uint16 _mnemonicIndex, bytes32 _acceptPeginTxHash, bytes32 _takeTxhash) internal {
+    function setUp(uint16 _mnemonicIndex, bytes32 _acceptPeginTxid, bytes32 _takeTxid) internal {
         pegManager = getPegManagerAddress();
         signatureManager = pegManager.signatureManager();
         // Read args from command line / env

@@ -775,7 +775,7 @@ contract TestPegManager is Test, HelperContract {
         // Arrange
         (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
         bytes32 operatorPubKey = getMemberDisputePubKey(operatorAddress);
-        bytes32 wrongAcceptPeginTxHash = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
+        bytes32 wrongAcceptPeginTxid = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
         BtcTransaction memory pegoutTx =
             createPegoutTx(wrongAcceptPeginTxid, BtcHelper.pubKeyXonlyToCompact(operatorPubKey), VALUE);
         BtcTxSPVProof memory pegoutTxSPVProof = createBtcTxSPVProof(pegoutTx);
