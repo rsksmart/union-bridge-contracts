@@ -3,8 +3,7 @@ pragma solidity ^0.8.20;
 
 import {BitcoinSignatureData} from "./IBitcoinManager.sol";
 import {SlotState} from "./IStreamManager.sol";
-import {IPausable} from "./IPausable.sol";
-import {BtcTxSPVProof, StreamPosition, PegStatus} from "./IPegCommonTypes.sol";
+import {BtcTxSPVProof, StreamPosition} from "./IPegCommonTypes.sol";
 
 /// @notice Temporary information stored during peg-out processing
 /// @dev Contains data needed for peg-out transaction validation
@@ -42,7 +41,7 @@ struct PegoutManagerSettings {
 
 /// @title IPegoutManager
 /// @notice Interface for managing peg-out operations
-interface IPegoutManager is IPausable {
+interface IPegoutManager {
     /// @notice Gets temporary information stored during peg-out processing
     /// @param acceptPeginTxid The accept peg-in transaction id
     /// @return The temporary information needed for peg-out processing
@@ -207,10 +206,6 @@ interface IPegoutManager is IPausable {
 
     // ===================== Errors =====================
 
-    /// @notice Thrown when trying to process a peg-out for a peg-in that hasn't been requested
-    /// @param btcTxid The Bitcoin transaction id that wasn't requested
-    error PeginNotRequested(bytes32 btcTxid);
-
     /// @notice Thrown when peg-out request amount exceeds uint64 limit
     /// @param amount The amount that exceeded the limit
     error PegoutRequestAmountExceedsUint64Limit(uint256 amount);
@@ -257,10 +252,6 @@ interface IPegoutManager is IPausable {
     /// @notice Thrown when an invalid timeout value is provided (zero timeout)
     /// @param timeout The invalid timeout value that was provided
     error InvalidTimeout(uint256 timeout);
-
-    /// @notice Thrown when the peg status is not valid for the current operation
-    /// @param actual The actual peg status that was found
-    error InvalidPegStatus(PegStatus actual);
 
     /// @notice Thrown when trying to trigger operator take before user take timeout has expired
     /// @param createdAt The timestamp when the user take was created

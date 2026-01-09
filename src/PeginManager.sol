@@ -329,15 +329,12 @@ contract PeginManager is IPeginManager, PegManagerBase {
         bytes32 requestPeginTxid = _userReimbursementTxSPVProof.btcTx.inputs[_reimbursementPeginVin].txId;
 
         // Validate the peg in request tx exists and the status
-        StreamPosition memory streamInfo = _getStreamPositionByRequestPegin(requestPeginTxid);
-        if (streamInfo.pegStatus != PegStatus.REGISTERED) {
-            revert InvalidPegStatus(requestPeginTxid, streamInfo.pegStatus, PegStatus.REGISTERED);
-        }
+        bytes32 acceptPeginTxid = acceptPegins[requestPeginTxid];
+        StreamPosition memory streamInfo = _validatePegStatus(acceptPeginTxid, PegStatus.REGISTERED);
 
         // Calculate userReimbursementTxid from BtcTransaction
         bytes32 userReimbursementTxid = bitcoinManager.getBtcTxid(_userReimbursementTxSPVProof.btcTx);
 
-        bytes32 acceptPeginTxid = acceptPegins[requestPeginTxid];
         // Validate the txid is NOT the same as the accept peg-in txid
         if (acceptPeginTxid == userReimbursementTxid) {
             revert InvalidUserReimbursementTx(userReimbursementTxid);
@@ -414,15 +411,12 @@ contract PeginManager is IPeginManager, PegManagerBase {
         bytes32 requestPeginTxid = _rejectPeginTxSPVProof.btcTx.inputs[Constants.REJECT_PEGIN_VIN_ENABLER].txId;
 
         // Validate the peg in request tx exists and the status
-        StreamPosition memory streamInfo = _getStreamPositionByRequestPegin(requestPeginTxid);
-        if (streamInfo.pegStatus != PegStatus.REGISTERED) {
-            revert InvalidPegStatus(requestPeginTxid, streamInfo.pegStatus, PegStatus.REGISTERED);
-        }
+        bytes32 acceptPeginTxid = acceptPegins[requestPeginTxid];
+        StreamPosition memory streamInfo = _validatePegStatus(acceptPeginTxid, PegStatus.REGISTERED);
 
         // Calculate userReimbursementTxid from BtcTransaction
         bytes32 rejectPeginTxid = bitcoinManager.getBtcTxid(_rejectPeginTxSPVProof.btcTx);
 
-        bytes32 acceptPeginTxid = acceptPegins[requestPeginTxid];
         // Validate the txid is NOT the same as the accept peg-in txid
         if (acceptPeginTxid == rejectPeginTxid) {
             revert InvalidAcceptPeginTxid(acceptPeginTxid, rejectPeginTxid);
@@ -590,9 +584,5 @@ contract PeginManager is IPeginManager, PegManagerBase {
     {
         bytes32 acceptPeginTxid = acceptPegins[_requestPeginTxid];
         return streamManager.getStreamPosition(acceptPeginTxid);
-    }
-
-    function _getBlockNumberFromConfirmations(int256 _confirmations) internal view returns (int256) {
-        return bridge.getBtcBlockchainBestChainHeight() - _confirmations;
     }
 }
