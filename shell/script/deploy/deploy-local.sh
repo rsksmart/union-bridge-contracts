@@ -20,6 +20,7 @@ if [[ -z "${MNEMONIC}" ]]; then
   exit 1
 fi
 echo "================ DEPLOY CONTRACTS TO $RPC ================"
+echo "=== IS TEST: $IS_TEST ==="
 # deploy to local anvil
 forge script \
     script/deploy/DeployScript.s.sol \
