@@ -26,6 +26,8 @@ SCRIPT_DIR="$CURRENT_PATH/.."
 bash "$SCRIPT_DIR/integration-test/packet-creation-flow.sh"
 
 echo "================ RUN PEGIN FLOW ================"
+echo "=== IS TEST: $IS_TEST ==="
+
 bash "$SCRIPT_DIR/get-temporary-address.sh"
 
 # Request pegin - this reserves a slot in RESERVED state

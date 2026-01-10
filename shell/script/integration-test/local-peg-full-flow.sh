@@ -27,7 +27,7 @@ done
 echo "================ ANVIL STARTED ================"
 
 # set IS_TEST to true for the integration test
-IS_TEST=true
+export IS_TEST=true
 echo "================ IS TEST: $IS_TEST ================"
 
 # Get the directory where this script is located
