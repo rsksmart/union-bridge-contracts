@@ -6,6 +6,7 @@ import {
     Role,
     CommitteeMember,
     Committee,
+    CommitteeRegistrySettings,
     ICommitteeRegistry,
     PendingCommitteeStatus,
     PendingCommitteeData,
@@ -53,15 +54,15 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy {
 
     /// @notice Initializes the CommitteeRegistry contract
     /// @param _initialOwner The initial owner of the contract
-    function initialize(address _initialOwner) public virtual initializer {
+    function initialize(address _initialOwner, CommitteeRegistrySettings memory _settings) public virtual initializer {
         __BaseProxy_init(_initialOwner);
-        pendingCommitteeTimeout = 1 days; // Default timeout for pending committees
+        pendingCommitteeTimeout = _settings.pendingCommitteeTimeout; // Default timeout for pending committees
         for (uint64 i = 0; i < uint64(StreamDenomination.LENGTH); i++) {
             shouldCreateCommittee[i] = true;
         }
-        minCommitteeWatchtowers = 2;
-        minCommitteeOperators = 2;
-        committeeMemberCount = 4;
+        minCommitteeWatchtowers = _settings.minCommitteeWatchtowers;
+        minCommitteeOperators = _settings.minCommitteeOperators;
+        committeeMemberCount = _settings.committeeMemberCount;
     }
 
     function _revertIfZero(uint256 _value) internal pure {

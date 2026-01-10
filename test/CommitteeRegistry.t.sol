@@ -18,6 +18,7 @@ import {StreamDenomination, IStreamManager, Stream} from "src/interfaces/IStream
 import {HelperContract} from "test/helpers/HelperContract.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Constants} from "src/libraries/Constants.sol";
+import {console} from "forge-std/console.sol";
 
 contract TestCommitteeRegistry is Test, HelperContract {
     uint256 constant MAX_GAS_PER_COMMITTEE_CREATION = 1500 * 1000; // Max gas per block in RSK is 6M8
@@ -564,6 +565,7 @@ contract TestCommitteeRegistry is Test, HelperContract {
     function test_getPendingCommittee_Success() external {
         // Arrange
         (Committee memory expectedCommittee,) = setup_pendingCommittee();
+        console.log("finished setup_pendingCommittee");
 
         // Act
         Committee memory committee = registry.getPendingCommittee(expectedCommittee.streamId);

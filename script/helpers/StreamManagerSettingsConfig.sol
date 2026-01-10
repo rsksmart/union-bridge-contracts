@@ -5,7 +5,7 @@ import {StreamManagerSettings} from "src/interfaces/IStreamManager.sol";
 import {ChainIds} from "src/libraries/Network.sol";
 
 library StreamManagerSettingsConfig {
-    function getSettings(uint256 chainId) internal pure returns (StreamManagerSettings memory) {
+    function getSettings(uint256 chainId, bool isTest) internal pure returns (StreamManagerSettings memory) {
         if (chainId == ChainIds.RSK_MAINNET) {
             return StreamManagerSettings({
                 peginConfirmations: 12,
@@ -25,14 +25,27 @@ library StreamManagerSettingsConfig {
                 disablementPaymentsPerChallenge: 2500000 gwei // 250 USD
             });
         } else if (chainId == ChainIds.LOCAL || chainId == ChainIds.RSK_REGTEST) {
-            return StreamManagerSettings({
-                peginConfirmations: 2,
-                pegoutConfirmations: 2,
-                securityBondPercentageOperator: 1000, // 10 percent
-                securityBondPercentageWatchtower: 200, // 2 percent
-                minimumSecurityDeposit: 22500000 gwei, // 2250 USD
-                disablementPaymentsPerChallenge: 2500000 gwei // 250 USD
-            });
+            if (isTest) {
+                // Default values for unit tests
+                return StreamManagerSettings({
+                    peginConfirmations: 2,
+                    pegoutConfirmations: 2,
+                    securityBondPercentageOperator: 1000, // 10 percent
+                    securityBondPercentageWatchtower: 200, // 2 percent
+                    minimumSecurityDeposit: 22500000 gwei, // 2250 USD
+                    disablementPaymentsPerChallenge: 2500000 gwei // 250 USD
+                });
+            } else {
+                // Default values for local anvil or rsk regtest
+                return StreamManagerSettings({
+                    peginConfirmations: 2,
+                    pegoutConfirmations: 2,
+                    securityBondPercentageOperator: 1000, // 10 percent
+                    securityBondPercentageWatchtower: 200, // 2 percent
+                    minimumSecurityDeposit: 22500000 gwei, // 2250 USD
+                    disablementPaymentsPerChallenge: 2500000 gwei // 250 USD
+                });
+            }
         } else {
             revert("Unsupported chainId");
         }

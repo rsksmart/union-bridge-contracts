@@ -110,7 +110,6 @@ abstract contract HelperContract is Test, TestUtils {
                 generateRegistrationPublicKeys(uint256(uint160(user))); // Generate public keys based on the address
             // First numWatchtowers members are watchtowers, the rest are operators
             Role role = memberIndex < numWatchtowers ? Role.WATCHTOWER : Role.OPERATOR;
-
             setup_applyToStream(denomination, user, memberRegistrationKeys, role);
         }
 
@@ -531,7 +530,6 @@ abstract contract HelperContract is Test, TestUtils {
             streamId: SETUP_PENDING_COMMITTEE_STREAM_ID,
             fundingUTXOs: new UTXO[](registry.committeeMemberCount())
         });
-
         for (uint256 i = 0; i < committee.members.length; i++) {
             committee.fundingUTXOs[i] = generateDefaultUTXO();
         }
