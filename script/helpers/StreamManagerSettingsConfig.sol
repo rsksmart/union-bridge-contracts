@@ -32,7 +32,7 @@ library StreamManagerSettingsConfig {
     /// @param _streamId The index of the stream to get the settings for
     /// @param _denomination The denomination of the stream to get the settings for
     /// @return streamSettings The default settings for the stream
-    function getStreamSettings(uint256 _chainId, uint64 _streamId, uint64 _denomination)
+    function getStreamSettings(uint256 _chainId, uint64 _streamId, uint64 _denomination, bool isTest)
         internal
         pure
         returns (StreamSettings memory streamSettings)
@@ -65,11 +65,19 @@ library StreamManagerSettingsConfig {
             streamSettings.peginConfirmations = 1;
             streamSettings.pegoutConfirmations = 1;
         } else if (_chainId == ChainIds.LOCAL || _chainId == ChainIds.RSK_REGTEST) {
-            // reduce pegin confirmations to 2 for faster testing
-            streamSettings.peginConfirmations = 2;
-            streamSettings.pegoutConfirmations = 2;
-            // We use 1 block timelock for user reimbursement for tests as it was the previous default value to avoid changing lots of tests
-            streamSettings.timelockSettings.requestPeginTimelock = 1;
+            if (isTest) {
+                // reduce pegin confirmations to 2 for faster testing
+                streamSettings.peginConfirmations = 2;
+                streamSettings.pegoutConfirmations = 2;
+                // We use 1 block timelock for user reimbursement for tests as it was the previous default value to avoid changing lots of tests
+                streamSettings.timelockSettings.requestPeginTimelock = 1;
+            } else {
+                // Default values for local anvil or rsk regtest
+                streamSettings.peginConfirmations = 2;
+                streamSettings.pegoutConfirmations = 2;
+                // We use 1 block timelock for user reimbursement for tests as it was the previous default value to avoid changing lots of tests
+                streamSettings.timelockSettings.requestPeginTimelock = 1;
+            }
         } else {
             revert("Unsupported chainId");
         }
@@ -81,7 +89,11 @@ library StreamManagerSettingsConfig {
     /// @dev this functions does not return the streamSettings, because copying of type struct StreamSettings memory[] memory to storage is not supported
     /// @param _chainId The chain id
     /// @return settings The stream manager settings without streamSettings
-    function getStreamManagerSettings(uint256 _chainId) internal pure returns (StreamManagerSettings memory settings) {
+    function getStreamManagerSettings(uint256 _chainId, bool isTest)
+        internal
+        pure
+        returns (StreamManagerSettings memory settings)
+    {
         // Default settings for each denomination
 
         // Current default values are the same for all denominations but this may change in the future
@@ -101,6 +113,13 @@ library StreamManagerSettingsConfig {
             settings.securityBondPercentageWatchtower = 100;
         } else if (_chainId == ChainIds.LOCAL || _chainId == ChainIds.RSK_REGTEST) {
             // Currently local settings are the same except for the confirmations inside stream settings
+            if (isTest) {
+                // Default values for unit tests
+                settings.securityBondPercentageOperator = 1000;
+                settings.securityBondPercentageWatchtower = 200;
+            } else {
+                // Default values for local anvil or rsk regtest
+            }
         } else {
             revert("Unsupported _chainId");
         }

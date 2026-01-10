@@ -13,6 +13,17 @@ uint8 constant COMMUNICATION_DATA_CHUNKS = 8;
 /// @dev Amount of bytes32 chunks for DER-encoded RSA public key
 uint8 constant RSA_PUBLIC_KEY_CHUNKS = 10;
 
+struct CommitteeRegistrySettings {
+    /// @notice Timeout in seconds for pending committee formation
+    uint256 pendingCommitteeTimeout;
+    /// @notice Minimum number of watchtowers required for a committee
+    uint256 minCommitteeWatchtowers;
+    /// @notice Minimum number of operators required for a committee
+    uint256 minCommitteeOperators;
+    /// @notice Minimum number of members required for a committee
+    uint256 committeeMemberCount;
+}
+
 /// @notice Represents a Bitcoin UTXO used for committee member funding
 struct UTXO {
     /// @notice The Bitcoin transaction ID containing the UTXO

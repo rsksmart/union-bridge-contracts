@@ -6,13 +6,19 @@ import {PegoutManagerSettings} from "src/interfaces/IPegoutManager.sol";
 import {ChainIds} from "src/libraries/Network.sol";
 
 library PegManagerSettingsConfig {
-    function getSettingsForChain(uint256 chainId) internal pure returns (PegoutManagerSettings memory) {
+    function getSettings(uint256 chainId, bool isTest) internal pure returns (PegoutManagerSettings memory) {
         if (chainId == ChainIds.RSK_MAINNET) {
             return PegoutManagerSettings({userTakeTimeout: 2 hours, operatorTakeTimeout: 2 hours});
         } else if (chainId == ChainIds.RSK_TESTNET) {
             return PegoutManagerSettings({userTakeTimeout: 10 minutes, operatorTakeTimeout: 10 minutes});
         } else if (chainId == ChainIds.LOCAL || chainId == ChainIds.RSK_REGTEST) {
-            return PegoutManagerSettings({userTakeTimeout: 30 seconds, operatorTakeTimeout: 30 seconds});
+            if (isTest) {
+                // Default values for unit tests
+                return PegoutManagerSettings({userTakeTimeout: 2 hours, operatorTakeTimeout: 2 hours});
+            } else {
+                // Default values for local anvil or rsk regtest
+                return PegoutManagerSettings({userTakeTimeout: 10 minutes, operatorTakeTimeout: 10 minutes});
+            }
         } else {
             revert("Unsupported chainId");
         }
