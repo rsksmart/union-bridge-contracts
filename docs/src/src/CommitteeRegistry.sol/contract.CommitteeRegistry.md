@@ -1,5 +1,5 @@
 # CommitteeRegistry
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/2c7f90ba21d83a98b646123c60d27a00fe0644fd/src/CommitteeRegistry.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/71daf3bfeba3a077e1d33188a46c6e2cfea30519/src/CommitteeRegistry.sol)
 
 **Inherits:**
 [ICommitteeRegistry](/src/interfaces/ICommitteeRegistry.sol/interface.ICommitteeRegistry.md), [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md)
@@ -116,13 +116,14 @@ Initializes the CommitteeRegistry contract
 
 
 ```solidity
-function initialize(address _initialOwner) public virtual initializer;
+function initialize(address _initialOwner, CommitteeRegistrySettings memory _settings) public virtual initializer;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
 |`_initialOwner`|`address`|The initial owner of the contract|
+|`_settings`|`CommitteeRegistrySettings`||
 
 
 ### _revertIfZero
@@ -487,7 +488,7 @@ function getOperatorDisputeData(uint128 _committeeId, SignatureData[] calldata _
 |Name|Type|Description|
 |----|----|-----------|
 |`operatorAddress`|`address`|The address of the next available operator for take operations|
-|`disputePubKey`|`bytes32`|The operator's dispute public key|
+|`disputePubKey`|`bytes32`|The operator's dispute public key (covenantPubKey)|
 
 
 ### setStreamManager

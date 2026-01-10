@@ -11,6 +11,7 @@
     - [IBitcoinManager](src/interfaces/IBitcoinManager.sol/interface.IBitcoinManager.md)
     - [IBridge](src/interfaces/IBridge.sol/interface.IBridge.md)
     - [IBridge constants](src/interfaces/IBridge.sol/constants.IBridge.md)
+    - [CommitteeRegistrySettings](src/interfaces/ICommitteeRegistry.sol/struct.CommitteeRegistrySettings.md)
     - [UTXO](src/interfaces/ICommitteeRegistry.sol/struct.UTXO.md)
     - [Role](src/interfaces/ICommitteeRegistry.sol/enum.Role.md)
     - [PendingCommitteeStatus](src/interfaces/ICommitteeRegistry.sol/enum.PendingCommitteeStatus.md)

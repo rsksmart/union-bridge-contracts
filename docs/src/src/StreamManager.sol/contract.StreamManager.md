@@ -1,5 +1,5 @@
 # StreamManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/2c7f90ba21d83a98b646123c60d27a00fe0644fd/src/StreamManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/71daf3bfeba3a077e1d33188a46c6e2cfea30519/src/StreamManager.sol)
 
 **Inherits:**
 [IStreamManager](/src/interfaces/IStreamManager.sol/interface.IStreamManager.md), [AccessControl](/src/AccessControl.sol/contract.AccessControl.md)
