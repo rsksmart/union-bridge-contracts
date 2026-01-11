@@ -377,11 +377,6 @@ interface ICommitteeRegistry {
     /// @return Array of dispute keys for all members
     function getCommitteeDisputeKeys(uint128 _committeeId) external view returns (bytes32[] memory);
 
-    /// @notice Gets the dispute keys (covenant public keys) for operator committee members only
-    /// @param _committeeId The committee ID
-    /// @return Array of dispute keys for operator members only
-    function getOperatorDisputeKeys(uint128 _committeeId) external view returns (bytes32[] memory);
-
     // ===================== Events =====================
     /// @notice Event emitted when a new committee is created
     /// @param committeeId The ID of the newly created committee

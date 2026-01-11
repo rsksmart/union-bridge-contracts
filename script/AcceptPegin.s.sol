@@ -69,14 +69,14 @@ contract AcceptPeginScript is ScriptUtils, ContractAddressManager {
         // Pegin P2TR output
         Stream memory stream = streamManager.getStreamById(streamPosition.streamId);
         btcTransaction.outputs[0] = BtcTxOut({
-            amount: stream.denomination - Constants.P2TR_FEE - Constants.ENABLER_AMOUNT - Constants.SPEED_UP_AMOUNT,
+            amount: stream.denomination - Constants.P2TR_FEE - Constants.SPEED_UP_AMOUNT,
             scriptPubKey: getAcceptPeginP2TRScriptPub(committeePubKey)
         });
 
         // Enabler output
         uint128 committeeId = streamManager.getCommitteeId(streamPosition.streamId, streamPosition.packetNumber);
-        bytes32[] memory operatorDisputeKeys = committeeRegistry.getOperatorDisputeKeys(committeeId);
-        bytes memory enablerScript = bitcoinManager.getEnablerOutputP2TRScriptPub(committeePubKey, operatorDisputeKeys);
+        bytes32[] memory disputeKeys = committeeRegistry.getCommitteeDisputeKeys(committeeId);
+        bytes memory enablerScript = bitcoinManager.getEnablerOutputP2TRScriptPub(committeePubKey, disputeKeys);
         btcTransaction.outputs[1] = BtcTxOut({amount: Constants.ENABLER_AMOUNT, scriptPubKey: enablerScript});
 
         // Speed up output (child pays for parent)

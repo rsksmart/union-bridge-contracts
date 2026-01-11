@@ -671,32 +671,4 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
         }
         return disputeKeys;
     }
-
-    /// @notice Gets the dispute keys (covenant public keys) for operator committee members only
-    /// @param _committeeId The committee ID
-    /// @return Array of dispute keys for operator members only
-    function getOperatorDisputeKeys(uint128 _committeeId) external view returns (bytes32[] memory) {
-        CommitteeMember[] memory committeeMembers = _getCommitteeMembers(_committeeId);
-
-        // TODO: consider having an operator count stored in Committee
-        uint256 operatorCount = 0;
-        for (uint256 i = 0; i < committeeMembers.length; i++) {
-            if (committeeMembers[i].role == Role.OPERATOR) {
-                operatorCount++;
-            }
-        }
-
-        // Create array of the correct size and populate with operator keys only
-        bytes32[] memory operatorDisputeKeys = new bytes32[](operatorCount);
-        uint256 index = 0;
-        for (uint256 i = 0; i < committeeMembers.length; i++) {
-            if (committeeMembers[i].role == Role.OPERATOR) {
-                // slither-disable-next-line calls-loop
-                MemberKeys memory keys = memberRegistry.getMemberPublicKeys(committeeMembers[i].memberAddress);
-                operatorDisputeKeys[index] = keys.covenantPubKey;
-                index++;
-            }
-        }
-        return operatorDisputeKeys;
-    }
 }

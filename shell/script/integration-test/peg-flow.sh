@@ -11,8 +11,8 @@
 
 set -e  # exit on error
 
-PEGIN_TXID="0x7edd5873b3737806dce2a3287302c25719776227e943b236e7b9aece5486f2e9"
-PEGOUT_TXID="0xabde0bec8ef14d5ac6aadb98dd09d13ac0dd45abadc8e7adc0207923b2cb5459"
+PEGIN_TXID="0x8c7ac99690001ba50f5ffc9b774fa96fdcf1b391a8e62b7fb89c415886e8b9eb"
+PEGOUT_TXID="0xe79b796c054aee1c83dd576391a1c9d007db6f5d835219b5d337ba439c86078f"
 
 # Slot parameters for monitoring (using defaults from test setup)
 STREAM_ID=0

@@ -284,12 +284,8 @@ abstract contract HelperContract is Test, TestUtils {
         // Get committee members and dispute keys
         Stream memory stream = streamManager.getStream(VALUE);
         uint128 committeeId = streamManager.getCommitteeId(stream.streamId, stream.peginPacketPointer);
-        CommitteeMember[] memory committeeMembers = registry.getCommitteeMembers(committeeId);
 
-        bytes32[] memory disputeKeys = new bytes32[](committeeMembers.length);
-        for (uint256 i = 0; i < committeeMembers.length; i++) {
-            disputeKeys[i] = memberRegistry.getMemberPublicKeys(committeeMembers[i].memberAddress).covenantPubKey;
-        }
+        bytes32[] memory disputeKeys = registry.getCommitteeDisputeKeys(committeeId);
 
         // Get the enabler output script using the BitcoinManager
         bytes memory enablerScript = bitcoinManager.getEnablerOutputP2TRScriptPub(COMMITTEE_PUB_KEY(), disputeKeys);
@@ -371,8 +367,9 @@ abstract contract HelperContract is Test, TestUtils {
 
     function getAcceptPeginP2TROut() internal pure returns (BtcTxOut memory) {
         return BtcTxOut({
-            // we subtract the fee, speed up amount, and enabler amount from the value
-            amount: VALUE - (Constants.P2TR_FEE + Constants.SPEED_UP_AMOUNT + Constants.ENABLER_AMOUNT),
+            // we subtract the fee, speed up amount from the value
+            // the enabler amount cancels out between the input and the output
+            amount: VALUE - (Constants.P2TR_FEE + Constants.SPEED_UP_AMOUNT),
             scriptPubKey: hex"51209687ca13c4fb3fa3ba05c2f9119dda026bfe66f0098dcf9b896a98ecb2e96702"
         });
     }
@@ -383,9 +380,9 @@ abstract contract HelperContract is Test, TestUtils {
             bitcoinManager.getPeginOpReturnData(_requestTx.outputs[Constants.REQUEST_PEGIN_VOUT_OP_RETURN]);
 
         uint128 committeeId = streamManager.getCommitteeId(uint64(DEFAULT_STREAM), packetNumber);
-        bytes32[] memory operatorDisputeKeys = registry.getCommitteeDisputeKeys(committeeId);
+        bytes32[] memory disputeKeys = registry.getCommitteeDisputeKeys(committeeId);
         bytes memory committeePubKey = streamManager.getCommitteePubKey(uint64(DEFAULT_STREAM), packetNumber);
-        bytes memory enablerScript = bitcoinManager.getEnablerOutputP2TRScriptPub(committeePubKey, operatorDisputeKeys);
+        bytes memory enablerScript = bitcoinManager.getEnablerOutputP2TRScriptPub(committeePubKey, disputeKeys);
 
         return BtcTxOut({amount: Constants.ENABLER_AMOUNT, scriptPubKey: enablerScript});
     }
