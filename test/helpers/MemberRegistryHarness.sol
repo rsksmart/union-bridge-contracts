@@ -31,4 +31,12 @@ contract MemberRegistryHarness is MemberRegistry {
         address[] storage candidates = committeesCandidates[_denomination][_role];
         candidates.pop();
     }
+
+    /// @notice Forcefully sets a member's covenant key for testing purposes
+    /// @dev Bypasses all validation - USE ONLY IN TESTS
+    /// @param _memberAddress The member whose covenant key to set
+    /// @param _covenantKey The covenant public key (x-coordinate only)
+    function setMemberCovenantKeyHarness(address _memberAddress, bytes32 _covenantKey) public {
+        members[_memberAddress].publicKeys.covenantPubKey = _covenantKey;
+    }
 }

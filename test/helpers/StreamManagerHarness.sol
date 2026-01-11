@@ -90,6 +90,17 @@ contract StreamManagerHarness is StreamManager {
         return securityBondPercentage[_role];
     }
 
+    /// @notice Forcefully sets a committee's aggregated key for testing purposes
+    /// @dev Bypasses all validation - USE ONLY IN TESTS
+    /// @param _streamId The stream ID
+    /// @param _packetNumber The packet number
+    /// @param _aggregatedKey The aggregated public key to set
+    function setCommitteeAggregatedKeyHarness(uint64 _streamId, uint64 _packetNumber, bytes memory _aggregatedKey)
+        public
+    {
+        packets[_streamId][_packetNumber].committeePubKey = _aggregatedKey;
+    }
+
     error NoSlotsHarness(uint64 streamId, uint64 packet, uint64 slot);
     error NoPacketsHarness(uint64 streamId, uint64 packet);
 }

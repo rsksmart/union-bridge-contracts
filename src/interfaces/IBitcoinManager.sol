@@ -167,14 +167,14 @@ interface IBitcoinManager {
     /// @param _userXOnlyPubKey The user's public key (x-coordinate only, 32 bytes)
     /// @param _registerPeginTx The transaction id of the peg-in request being spent
     /// @param _prevoutDatas Array of prevout data for all inputs being spent (taptree + enabler outputs)
-    /// @param _operatorDisputeKeys The dispute keys (covenant public keys) for OPERATOR members only
+    /// @param _disputeKeys The dispute keys (covenant public keys) for all members
     /// @return BitcoinSignatureData containing txid, signatureHash, and signatureMessage
     function getAcceptPeginSignatureHash(
         bytes memory _committeePubKey,
         bytes32 _userXOnlyPubKey,
         bytes32 _registerPeginTx,
         PrevoutData[] memory _prevoutDatas,
-        bytes32[] memory _operatorDisputeKeys
+        bytes32[] memory _disputeKeys
     ) external view returns (BitcoinSignatureData memory);
 
     /// @notice Generates the enabler output P2TR script pub key

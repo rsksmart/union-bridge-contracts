@@ -31,6 +31,14 @@ contract CommitteeRegistryHarness is CommitteeRegistry {
         );
     }
 
+    function setMinCommitteeWatchtowersHarness(uint256 _minCommitteeWatchtowers) public {
+        minCommitteeWatchtowers = _minCommitteeWatchtowers;
+    }
+
+    function setMinCommitteeOperatorsHarness(uint256 _minCommitteeOperators) public {
+        minCommitteeOperators = _minCommitteeOperators;
+    }
+
     function createCommitteeAfterApplyToStreamHarness(StreamDenomination _denomination) public {
         _createCommitteeAfterApplyToStream(_denomination);
     }

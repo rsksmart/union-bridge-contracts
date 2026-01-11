@@ -383,7 +383,7 @@ abstract contract HelperContract is Test, TestUtils {
             bitcoinManager.getPeginOpReturnData(_requestTx.outputs[Constants.REQUEST_PEGIN_VOUT_OP_RETURN]);
 
         uint128 committeeId = streamManager.getCommitteeId(uint64(DEFAULT_STREAM), packetNumber);
-        bytes32[] memory operatorDisputeKeys = registry.getOperatorDisputeKeys(committeeId);
+        bytes32[] memory operatorDisputeKeys = registry.getCommitteeDisputeKeys(committeeId);
         bytes memory committeePubKey = streamManager.getCommitteePubKey(uint64(DEFAULT_STREAM), packetNumber);
         bytes memory enablerScript = bitcoinManager.getEnablerOutputP2TRScriptPub(committeePubKey, operatorDisputeKeys);
 

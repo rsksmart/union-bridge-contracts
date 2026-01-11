@@ -311,14 +311,14 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
     /// @param _userXOnlyPubKey The user's public key (x-only) for speed-up output
     /// @param _registerPeginTx The hash of the register peg-in transaction
     /// @param _prevoutDatas Array of prevout data for all inputs being spent (taptree + enabler outputs)
-    /// @param _operatorDisputeKeys The dispute keys (covenant public keys) for OPERATOR members only
+    /// @param _disputeKeys The dispute keys (covenant public keys) for all members
     /// @return The transaction id, signature hash, and signature message
     function getAcceptPeginSignatureHash(
         bytes memory _committeePubKey,
         bytes32 _userXOnlyPubKey,
         bytes32 _registerPeginTx,
         PrevoutData[] memory _prevoutDatas,
-        bytes32[] memory _operatorDisputeKeys
+        bytes32[] memory _disputeKeys
     ) external view onlyPeginManager returns (BitcoinSignatureData memory) {
         // Prepare the inputs
         BtcTxIn[] memory btcInputs = new BtcTxIn[](Constants.ACCEPT_PEGIN_INPUT_COUNT);
@@ -343,17 +343,17 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
         // TODO: atm is returning hardcoded values, should be calculated
         (uint64 fee, uint64 speedUpAmount) = BtcHelper.calculateFeeAndSpeedUp();
 
-        // Committee accept pegin (using value from first input - request pegin taptree output)
-        // Deduct fee, SPEED_UP_AMOUNT, and ENABLER_AMOUNT for the enabler output
+        // Committee accept pegin (using value from first input - fee - speedup)
+        // we should also subtract the enabler amount but since we also have the enabler amount from the request pegin
+        // they cancel out
         bytes memory scriptPubKey = getAcceptPeginP2TRScriptPub(_committeePubKey);
         btcOutputs[Constants.ACCEPT_PEGIN_VOUT_TAPTREE] = BtcTxOut({
-            amount: _prevoutDatas[Constants.REQUEST_PEGIN_VOUT_TAPTREE].value - fee - speedUpAmount
-                - Constants.ENABLER_AMOUNT,
+            amount: _prevoutDatas[Constants.REQUEST_PEGIN_VOUT_TAPTREE].value - fee - speedUpAmount,
             scriptPubKey: scriptPubKey
         });
 
         // Enabler output with operator-only dispute keys
-        bytes memory enablerScriptPubKey = getEnablerOutputP2TRScriptPub(_committeePubKey, _operatorDisputeKeys);
+        bytes memory enablerScriptPubKey = getEnablerOutputP2TRScriptPub(_committeePubKey, _disputeKeys);
         btcOutputs[Constants.ACCEPT_PEGIN_VOUT_ENABLER] =
             BtcTxOut({amount: Constants.ENABLER_AMOUNT, scriptPubKey: enablerScriptPubKey});
 
