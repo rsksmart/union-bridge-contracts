@@ -430,7 +430,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
 
         // Validate that the first output pays to the operator's dispute key
         bitcoinManager.validatePegoutMemberOutput(
-            _pegoutTxSPVProof.btcTx.outputs[Constants.OPERATOR_TAKE_VOUT_USER], pegoutInfo.operatorDisputePubKey
+            _pegoutTxSPVProof.btcTx.outputs[Constants.OPERATOR_TAKE_VOUT_OPERATOR], pegoutInfo.operatorDisputePubKey
         );
 
         // Calculate the transaction id for verification

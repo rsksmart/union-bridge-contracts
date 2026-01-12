@@ -337,7 +337,7 @@ abstract contract HelperContract is Test, TestUtils {
         BtcTxOut[] memory btcOutputs = new BtcTxOut[](Constants.ACCEPT_PEGIN_OUTPUT_COUNT);
         btcOutputs[0] = getAcceptPeginP2TROut();
         btcOutputs[1] = getAcceptPeginEnablerOut(_tx);
-        btcOutputs[2] = getBtcSpeedUpOut();
+        btcOutputs[2] = getUserSpeedUpOut();
         // Locktime
         return BtcTransaction({
             version: Constants.BTC_TX_VERSION,
@@ -360,7 +360,7 @@ abstract contract HelperContract is Test, TestUtils {
         });
     }
 
-    function getBtcSpeedUpOut() internal pure returns (BtcTxOut memory) {
+    function getUserSpeedUpOut() internal pure returns (BtcTxOut memory) {
         return BtcTxOut({
             amount: Constants.SPEED_UP_AMOUNT,
             // TODO we consider the btc reimbursement public key as even
@@ -393,33 +393,6 @@ abstract contract HelperContract is Test, TestUtils {
     // ========================== User Reimbursement ==========================
     function getBtcUserReimbursementTx(bytes32 _requestPeginTxid) internal pure returns (BtcTransaction memory) {
         return createBtcUserReimbursementTx(_requestPeginTxid, VALUE, BTC_REIMBURSEMENT_PUBKEY);
-    }
-
-    // ========================== Reject Peg-in ==========================
-    function getBtcRejectPeginTx(bytes32 _requestPeginTxid) internal pure returns (BtcTransaction memory) {
-        BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
-        // Input spends the request pegin enabler output (vout 2)
-        btcInputs[0] = BtcTxIn({
-            txId: _requestPeginTxid,
-            vout: Constants.REQUEST_PEGIN_VOUT_ENABLER,
-            sequence: Constants.SEQUENCE,
-            scriptSig: hex""
-        });
-
-        // Output: P2WPKH to user's reimbursement pubkey
-        BtcTxOut[] memory btcOutputs = new BtcTxOut[](1);
-        btcOutputs[0] = BtcTxOut({
-            // Amount minus fees (simplified - in reality would be more precise)
-            amount: Constants.ENABLER_AMOUNT - Constants.P2TR_FEE,
-            scriptPubKey: BtcScriptParser.getP2WPKHScript(BtcHelper.pubKeyXonlyToCompact(BTC_REIMBURSEMENT_PUBKEY))
-        });
-
-        return BtcTransaction({
-            version: Constants.BTC_TX_VERSION,
-            inputs: btcInputs,
-            outputs: btcOutputs,
-            locktime: Constants.LOCKTIME
-        });
     }
 
     function satoshiToWei(uint256 _amount) internal pure returns (uint256) {
@@ -1095,5 +1068,14 @@ abstract contract HelperContract is Test, TestUtils {
         // Calculate expected PegoutId using mock block hash
         bytes32 mockBlockHash = 0x0000000000000000000049b460f18614380a01b8709d2c3a8ddf451d08d862b8;
         return keccak256(abi.encode(_streamId, _packetNumber, _slotId, _userAddress, mockBlockHash));
+    }
+
+    /// @notice Gets the dispute key 33 bytes compact format for a member by address
+    /// @param _memberAddress The address of the member
+    /// @return disputeKey The dispute key 33 bytes compact format for the member
+    function getDisputeKeyByAddress(address _memberAddress) internal view returns (bytes memory disputeKey) {
+        bytes32 operatorXOnlyPubKey = memberRegistry.getMemberPublicKeys(_memberAddress).covenantPubKey;
+        disputeKey = BtcHelper.pubKeyXonlyToCompact(operatorXOnlyPubKey);
+        return disputeKey;
     }
 }

@@ -425,15 +425,14 @@ contract PeginManager is IPeginManager, PegManagerBase {
         // Verify the pegin rejected transaction
         _verifyRejectPeginTransaction(_rejectPeginTxSPVProof, rejectPeginTxid, streamInfo.streamId);
 
-        // Block slot as it has already been reimbursted to the user.
-        // slither-disable-next-line reentrancy-no-eth reentrancy-benign
-        streamManager.blockSlot(streamInfo.streamId, streamInfo.packetNumber, streamInfo.slotId);
-        streamManager.setPegStatus(acceptPeginTxid, PegStatus.BLOCKED);
-
         // Set user reimbursement txid as rejected peg-in txid
         peginTempInfo[requestPeginTxid].rejectPeginTxid = rejectPeginTxid;
 
         emit RejectPeginRegistered(rejectPeginTxid, requestPeginTxid, streamInfo);
+
+        // Block slot as it has already been reimbursted to the user.
+        streamManager.blockSlot(streamInfo.streamId, streamInfo.packetNumber, streamInfo.slotId);
+        streamManager.setPegStatus(acceptPeginTxid, PegStatus.BLOCKED);
     }
 
     function _verifyRejectPeginTransaction(
