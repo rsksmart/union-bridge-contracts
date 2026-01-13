@@ -50,7 +50,7 @@ echo "================ ADVANCE BITCOIN BLOCKS ON $RPC ================"
 echo "Blocks to advance: $BLOCKS_TO_ADVANCE"
 
 forge script \
-    script/AdvanceBitcoinBlocks.s.sol \
+    script/tools/AdvanceBitcoinBlocks.s.sol \
     --sig "run(int256)" \
     "$BLOCKS_TO_ADVANCE" \
     --rpc-url $RPC \
