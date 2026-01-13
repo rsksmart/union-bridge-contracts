@@ -1,5 +1,8 @@
 #!/bin/sh
 set -eux
+# set IS_TEST to true for the integration test
+export IS_TEST=true
+echo "================ IS TEST: $IS_TEST ================"
 # simulate deploy against rsk testnet
 bash shell/script/deploy/simulate-deploy.sh
 # gas report (Is also runs tests)
