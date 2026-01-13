@@ -392,24 +392,7 @@ abstract contract HelperContract is Test, TestUtils {
 
     // ========================== User Reimbursement ==========================
     function getBtcUserReimbursementTx(bytes32 _requestPeginTxid) internal pure returns (BtcTransaction memory) {
-        BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
-        // Input spends the request pegin taptree output (vout 0)
-        btcInputs[0] = BtcTxIn({txId: _requestPeginTxid, vout: 0, sequence: Constants.SEQUENCE, scriptSig: hex""});
-
-        // Output: P2WPKH to user's reimbursement pubkey
-        BtcTxOut[] memory btcOutputs = new BtcTxOut[](1);
-        btcOutputs[0] = BtcTxOut({
-            // Amount minus fees (simplified - in reality would be more precise)
-            amount: VALUE - Constants.P2TR_FEE,
-            scriptPubKey: BtcScriptParser.getP2WPKHScript(BtcHelper.pubKeyXonlyToCompact(BTC_REIMBURSEMENT_PUBKEY))
-        });
-
-        return BtcTransaction({
-            version: Constants.BTC_TX_VERSION,
-            inputs: btcInputs,
-            outputs: btcOutputs,
-            locktime: Constants.LOCKTIME
-        });
+        return createBtcUserReimbursementTx(_requestPeginTxid, VALUE, BTC_REIMBURSEMENT_PUBKEY);
     }
 
     // ========================== Reject Peg-in ==========================

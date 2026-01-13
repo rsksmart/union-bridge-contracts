@@ -39,5 +39,5 @@ jobs:
       - name: Run peg-flow
         run: bash shell/script/integration-test/peg-flow.sh
 
-      - name: Run user-reimbursement-demo
-        run: bash shell/script/integration-test/user-reimbursement-demo.sh
+      - name: Run user-reimbursement-flow
+        run: bash shell/script/integration-test/user-reimbursement-flow.sh

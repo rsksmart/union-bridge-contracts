@@ -55,7 +55,7 @@ bash "$SCRIPT_DIR/request-pegin.sh" $ALPHANET_FLAG
 
 echo "================ CHECK SLOT STATE AFTER REQUEST ================"
 echo "After request pegin, slot should be in RESERVED state:"
-bash "$SCRIPT_DIR/get-slot-info.sh" -s "$STREAM_ID" -p "$PACKET_NUMBER" -l "$SLOT_ID" $ALPHANET_FLAG
+bash "$SCRIPT_DIR/tools/get-slot-info.sh" -s "$STREAM_ID" -p "$PACKET_NUMBER" -l "$SLOT_ID" $ALPHANET_FLAG
 
 bash "$SCRIPT_DIR/operator-take/add-every-operator-take-txid.sh" -a "$PEGIN_TXID" $ALPHANET_FLAG
 bash "$SCRIPT_DIR/signatures/add-every-member-nonce-and-signature.sh" -h "$PEGIN_TXID" $ALPHANET_FLAG
@@ -65,18 +65,18 @@ bash "$SCRIPT_DIR/accept-pegin.sh" $ALPHANET_FLAG
 
 echo "================ CHECK SLOT STATE AFTER ACCEPT ================"
 echo "After accept pegin, slot should be in FILLED state:"
-bash "$SCRIPT_DIR/get-slot-info.sh" -s "$STREAM_ID" -p "$PACKET_NUMBER" -l "$SLOT_ID" $ALPHANET_FLAG
+bash "$SCRIPT_DIR/tools/get-slot-info.sh" -s "$STREAM_ID" -p "$PACKET_NUMBER" -l "$SLOT_ID" $ALPHANET_FLAG
 
 echo "================ RUN PEGOUT FLOW ================"
 echo "Before pegout, slot should still be in FILLED state:"
-bash "$SCRIPT_DIR/get-slot-info.sh" -s "$STREAM_ID" -p "$PACKET_NUMBER" -l "$SLOT_ID" $ALPHANET_FLAG
+bash "$SCRIPT_DIR/tools/get-slot-info.sh" -s "$STREAM_ID" -p "$PACKET_NUMBER" -l "$SLOT_ID" $ALPHANET_FLAG
 
 # Try pegout - this locks the slot to LOCKED state
 bash "$SCRIPT_DIR/try-pegout.sh" $ALPHANET_FLAG
 
 echo "================ CHECK SLOT STATE AFTER PEGOUT ================"
 echo "After try pegout, slot should be in LOCKED state:"
-bash "$SCRIPT_DIR/get-slot-info.sh" -s "$STREAM_ID" -p "$PACKET_NUMBER" -l "$SLOT_ID" $ALPHANET_FLAG
+bash "$SCRIPT_DIR/tools/get-slot-info.sh" -s "$STREAM_ID" -p "$PACKET_NUMBER" -l "$SLOT_ID" $ALPHANET_FLAG
 
 bash "$SCRIPT_DIR/signatures/add-every-member-nonce-and-signature.sh" -h "$PEGOUT_TXID" $ALPHANET_FLAG
 
@@ -85,7 +85,7 @@ bash "$SCRIPT_DIR/register-user-take.sh" $ALPHANET_FLAG
 
 echo "================ CHECK SLOT STATE AFTER USER TAKE ================"
 echo "After user take, slot should be in COMPLETED state:"
-bash "$SCRIPT_DIR/get-slot-info.sh" -s "$STREAM_ID" -p "$PACKET_NUMBER" -l "$SLOT_ID" $ALPHANET_FLAG
+bash "$SCRIPT_DIR/tools/get-slot-info.sh" -s "$STREAM_ID" -p "$PACKET_NUMBER" -l "$SLOT_ID" $ALPHANET_FLAG
 
 # Note: operator-take-flow.sh is a separate standalone test for operator advancing funds
 # It should be run independently, not as part of the main peg-flow

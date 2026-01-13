@@ -5,11 +5,8 @@ import {console} from "forge-std/console.sol";
 import {PeginManager} from "src/PeginManager.sol";
 import {RequestPeginTempInfo} from "src/interfaces/IPeginManager.sol";
 import {BtcTxSPVProof, StreamPosition, PegStatus} from "src/interfaces/IPegCommonTypes.sol";
-import {IBitcoinManager, BtcTransaction, BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
+import {IBitcoinManager, BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
 import {Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
-import {Constants} from "src/libraries/Constants.sol";
-import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
-import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
 
@@ -35,42 +32,13 @@ contract UserReimbursementScript is ScriptUtils, ContractAddressManager {
         // Get the stream to determine the denomination
         Stream memory stream = streamManager.getStreamById(streamPosition.streamId);
 
-        // BtcTransaction to verify
-        BtcTransaction memory btcTransaction = BtcTransaction({
-            version: Constants.BTC_TX_VERSION,
-            inputs: new BtcTxIn[](1),
-            outputs: new BtcTxOut[](1),
-            locktime: 0
-        });
+        // Create the user reimbursement transaction
+        BtcTransaction memory userReimbursementTx = createBtcUserReimbursementTx(
+            _requestPeginTxid, stream.denomination, requestPeginTempInfo.btcReimbursementPubKey
+        );
 
-        // Input: spend the request peg-in taptree output (vout 0)
-        // This uses the timelock path after the timelock expires
-        btcTransaction.inputs[0] = BtcTxIn({
-            txId: _requestPeginTxid,
-            vout: Constants.REQUEST_PEGIN_VOUT_TAPTREE,
-            scriptSig: hex"",
-            sequence: Constants.SEQUENCE
-        });
-
-        // Output: Dummy return BTC to user's reimbursement address
-        // Convert the x-only pubkey to compressed format for P2WPKH
-        bytes memory userReimbursementPubKey =
-            BtcHelper.pubKeyXonlyToCompact(requestPeginTempInfo.btcReimbursementPubKey);
-
-        btcTransaction.outputs[0] = BtcTxOut({
-            amount: stream.denomination - Constants.P2TR_FEE,
-            scriptPubKey: BtcScriptParser.getP2WPKHScript(userReimbursementPubKey)
-        });
-
-        // SPV proof to verify with the bridge.getBtcTransactionConfirmations
-        userReimbursementTxSPVProof = BtcTxSPVProof({
-            blockHash: 0x0000000000000000000282fa21665766e58eb6cb94e458c3ef6d4af1121e38d9,
-            btcTx: btcTransaction,
-            merkleBranchPath: 4285202432,
-            merkleBranchHashes: new bytes32[](1)
-        });
-        userReimbursementTxSPVProof.merkleBranchHashes[0] =
-            0x3fcef4a1ddf759a858190b89ecbd1ff3dffb49704e110b68baf5b5de7021910f;
+        // Create the SPV proof for the user reimbursement transaction
+        userReimbursementTxSPVProof = createBtcTxSPVProof(userReimbursementTx);
     }
 
     function run(bytes32 _requestPeginTxid) public {

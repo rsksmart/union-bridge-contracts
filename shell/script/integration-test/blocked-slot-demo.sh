@@ -60,13 +60,13 @@ bash "$SCRIPT_DIR/request-pegin.sh"
 
 echo "================ STEP 2: CHECK SLOT STATE (SHOULD BE RESERVED) ================"
 echo "After request pegin, slot should be in RESERVED state:"
-bash "$SCRIPT_DIR/get-slot-info.sh" -s "$STREAM_ID" -p "$PACKET_NUMBER" -l "$SLOT_ID"
+bash "$SCRIPT_DIR/tools/get-slot-info.sh" -s "$STREAM_ID" -p "$PACKET_NUMBER" -l "$SLOT_ID"
 
 echo "================ STEP 3: BLOCK THE SLOT ================"
 bash "$SCRIPT_DIR/block-slot.sh" -s "$STREAM_ID" -p "$PACKET_NUMBER" -l "$SLOT_ID"
 
 echo "================ STEP 4: CHECK SLOT STATE (SHOULD BE BLOCKED) ================"
 echo "After blocking, slot should be in BLOCKED state:"
-bash "$SCRIPT_DIR/get-slot-info.sh" -s "$STREAM_ID" -p "$PACKET_NUMBER" -l "$SLOT_ID"
+bash "$SCRIPT_DIR/tools/get-slot-info.sh" -s "$STREAM_ID" -p "$PACKET_NUMBER" -l "$SLOT_ID"
 
 echo "================ BLOCKED SLOT DEMO COMPLETE ================"

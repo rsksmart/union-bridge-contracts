@@ -321,4 +321,34 @@ abstract contract ScriptUtils is Script {
             outputs: btcOutputs
         });
     }
+
+    // ========================== User Reimbursement ==========================
+    function createBtcUserReimbursementTx(bytes32 _requestPeginTxid, uint64 _amount, bytes32 _btcReimbursementPubKey)
+        internal
+        pure
+        returns (BtcTransaction memory)
+    {
+        BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
+        // Input spends the request pegin taptree output (vout 0)
+        btcInputs[0] = BtcTxIn({
+            txId: _requestPeginTxid,
+            vout: Constants.REQUEST_PEGIN_VOUT_TAPTREE,
+            sequence: Constants.SEQUENCE,
+            scriptSig: hex""
+        });
+
+        // Output: P2WPKH to user's reimbursement pubkey
+        BtcTxOut[] memory btcOutputs = new BtcTxOut[](1);
+        btcOutputs[0] = BtcTxOut({
+            amount: _amount - Constants.P2TR_FEE,
+            scriptPubKey: BtcScriptParser.getP2WPKHScript(BtcHelper.pubKeyXonlyToCompact(_btcReimbursementPubKey))
+        });
+
+        return BtcTransaction({
+            version: Constants.BTC_TX_VERSION,
+            inputs: btcInputs,
+            outputs: btcOutputs,
+            locktime: Constants.LOCKTIME
+        });
+    }
 }

@@ -24,7 +24,7 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 echo "================ USER REIMBURSEMENT DEMONSTRATION ================"
-echo "This demo shows how users can reclaim their BTC after timelock expiry"
+echo "This flow shows how users can reclaim their BTC after timelock expiry"
 
 # Start anvil in the background
 anvil > /dev/null &
@@ -60,7 +60,7 @@ bash "$SCRIPT_DIR/request-pegin.sh"
 
 echo "================ STEP 2: CHECK SLOT STATE (SHOULD BE RESERVED) ================"
 echo "After request pegin, slot should be in RESERVED state:"
-bash "$SCRIPT_DIR/get-slot-info.sh" -s "$STREAM_ID" -p "$PACKET_NUMBER" -l "$SLOT_ID"
+bash "$SCRIPT_DIR/tools/get-slot-info.sh" -s "$STREAM_ID" -p "$PACKET_NUMBER" -l "$SLOT_ID"
 
 # Use the default request pegin txid RequestPegin.s.sol
 REQUEST_PEGIN_TXID="0x0f1c151f3fb74f0020f06c40975e7d1dceb12162666bfdee42c10caf6f8aecba"
@@ -69,7 +69,7 @@ echo "================ STEP 3: ADVANCE BITCOIN BLOCKS PAST TIMELOCK ============
 echo "Advancing blocks to simulate timelock expiry..."
 
 # Advance by 1 block to pass the timelock period
-bash "$SCRIPT_DIR/advance-bitcoin-blocks.sh" -b 1
+bash "$SCRIPT_DIR/tools/advance-bitcoin-blocks.sh" -b 1
 
 echo "Bitcoin blocks advanced. Timelock should now be expired."
 
@@ -78,6 +78,6 @@ bash "$SCRIPT_DIR/user-reimbursement.sh" -r "$REQUEST_PEGIN_TXID"
 
 echo "================ STEP 5: CHECK SLOT STATE (SHOULD BE BLOCKED) ================"
 echo "After user reimbursement, slot should be in BLOCKED state:"
-bash "$SCRIPT_DIR/get-slot-info.sh" -s "$STREAM_ID" -p "$PACKET_NUMBER" -l "$SLOT_ID"
+bash "$SCRIPT_DIR/tools/get-slot-info.sh" -s "$STREAM_ID" -p "$PACKET_NUMBER" -l "$SLOT_ID"
 
-echo "================ USER REIMBURSEMENT DEMO COMPLETE ================"
+echo "================ USER REIMBURSEMENT FLOW COMPLETE ================"
