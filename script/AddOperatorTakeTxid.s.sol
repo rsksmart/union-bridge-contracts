@@ -34,7 +34,7 @@ contract addOperatorTakeTxidsScript is ScriptUtils, ContractAddressManager {
         pegoutManager = PegoutManager(getPegoutManager());
         signatureManager = ISignatureManager(pegoutManager.signatureManager());
 
-        ICommitteeRegistry registry = ICommitteeRegistry(getCommitteeRegistry());
+        ICommitteeRegistry registry = getCommitteeRegistry();
         IMemberRegistry memberRegistry = registry.memberRegistry();
 
         bytes32 operatorXOnlyPubKey = memberRegistry.getMemberPublicKeys(getDeployerAddress()).covenantPubKey;

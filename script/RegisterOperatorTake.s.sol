@@ -30,7 +30,7 @@ contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
     function setUp(bytes32 _acceptPeginTxid) internal {
         pegoutManager = PegoutManager(getPegoutManager());
 
-        ICommitteeRegistry registry = ICommitteeRegistry(getCommitteeRegistry());
+        ICommitteeRegistry registry = getCommitteeRegistry();
         IMemberRegistry memberRegistry = registry.memberRegistry();
 
         bytes32 operatorXOnlyPubKey = memberRegistry.getMemberPublicKeys(getDeployerAddress()).covenantPubKey;

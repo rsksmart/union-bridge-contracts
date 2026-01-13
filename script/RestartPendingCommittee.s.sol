@@ -4,16 +4,16 @@ pragma solidity ^0.8.20;
 import {console} from "forge-std/console.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
-import {CommitteeRegistry} from "src/CommitteeRegistry.sol";
+import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {Vm} from "forge-std/Vm.sol";
 
 contract RestartPendingCommitteeScript is ScriptUtils, ContractAddressManager {
-    CommitteeRegistry committeeRegistry;
+    ICommitteeRegistry committeeRegistry;
     uint64 streamId;
 
     function setUp() internal {
         // ====== Arguments ======
-        committeeRegistry = CommitteeRegistry(getCommitteeRegistry());
+        committeeRegistry = getCommitteeRegistry();
         streamId = 1;
     }
 

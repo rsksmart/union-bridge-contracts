@@ -17,7 +17,7 @@ contract GetCommunicationDataForOneMemberScript is ScriptUtils, ContractAddressM
     bytes32 comPubKey;
 
     function setUp(uint16 _mnemonicIndex, uint64 _streamIndex) internal {
-        committeeRegistry = ICommitteeRegistry(getCommitteeRegistry());
+        committeeRegistry = getCommitteeRegistry();
 
         // Read args from command line / env
         mnemonicIndex = _mnemonicIndex;
