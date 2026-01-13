@@ -37,14 +37,14 @@ contract TryPegoutScript is ScriptUtils, ContractAddressManager {
         pegoutManager.tryPegout{value: amountInWei}(userPubKey);
         vm.stopBroadcast();
 
-        bytes32 pegoutSignatureHash = pegoutManager.getPegoutTxid(stream.streamId, packetNumber, slotId);
-        if (pegoutSignatureHash == bytes32(0)) {
+        bytes32 pegoutTxid = pegoutManager.getPegoutTxid(stream.streamId, packetNumber, slotId);
+        if (pegoutTxid == bytes32(0)) {
             revert("Pegout not accepted");
         }
 
         console.log("=== Pegout accepted successfully ===");
-        console.log("pegoutSignatureHash");
-        console.logBytes32(pegoutSignatureHash);
+        console.log("pegoutTxid");
+        console.logBytes32(pegoutTxid);
         console.log("Stream, Slot, Packet");
         console.log(stream.streamId, slotId, packetNumber);
     }

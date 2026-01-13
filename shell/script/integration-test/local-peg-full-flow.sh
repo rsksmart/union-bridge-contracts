@@ -26,10 +26,6 @@ done
 
 echo "================ ANVIL STARTED ================"
 
-# set IS_TEST to true for the integration test
-export IS_TEST=true
-echo "================ IS TEST: $IS_TEST ================"
-
 # Get the directory where this script is located
 CURRENT_PATH=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 SCRIPT_DIR="$CURRENT_PATH/.."

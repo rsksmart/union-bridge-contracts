@@ -41,7 +41,7 @@ contract RequestPeginScript is ScriptUtils, ContractAddressManager {
             version: Constants.BTC_TX_VERSION,
             inputs: new BtcTxIn[](1),
             outputs: new BtcTxOut[](Constants.REQUEST_PEGIN_OUTPUT_COUNT),
-            locktime: 0
+            locktime: Constants.LOCKTIME
         });
         // User funding tx
         btcTransaction.inputs[0] = BtcTxIn({
@@ -82,15 +82,10 @@ contract RequestPeginScript is ScriptUtils, ContractAddressManager {
         }
         bytes memory enablerScript = bitcoinManager.getEnablerOutputP2TRScriptPub(committeePubKey, disputeKeys);
         btcTransaction.outputs[2] = BtcTxOut({amount: Constants.ENABLER_AMOUNT, scriptPubKey: enablerScript});
+
         // SPV proof to verify with the bridge.getBtcTransactionConfirmations
-        requestPeginTxSPVProof = BtcTxSPVProof({
-            blockHash: 0x0000000000000000000282fa21665766e58eb6cb94e458c3ef6d4af1121e38d9,
-            btcTx: btcTransaction,
-            merkleBranchPath: 4285202432,
-            merkleBranchHashes: new bytes32[](1)
-        });
-        requestPeginTxSPVProof.merkleBranchHashes[0] =
-            0x3fcef4a1ddf759a858190b89ecbd1ff3dffb49704e110b68baf5b5de7021910f;
+        requestPeginTxSPVProof = createBtcTxSPVProof(btcTransaction);
+        return requestPeginTxSPVProof;
     }
 
     function run(address _rskDestinationAddress) public {

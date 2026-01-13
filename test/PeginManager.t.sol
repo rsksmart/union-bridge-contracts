@@ -1112,8 +1112,7 @@ contract TestPeginManager is Test, HelperContract {
         // Keep BEST_CHAIN_HEIGHT at current value (1001 after setup_requestPeginFlow)
         int256 currentBestChainHeight = bridgeMock.getBtcBlockchainBestChainHeight();
         // Calculate expected blocksElapsed
-        int256 userReimbursementBlockNumber =
-            bridgeMock.getBtcBlockchainBestChainHeight() - userReimbursementConfirmations;
+        int256 userReimbursementBlockNumber = currentBestChainHeight - userReimbursementConfirmations;
         // blocksElapsed = (1001 - 11) - 990 = 0 < 1 ✓
         int256 blocksElapsedSinceRequestPegin = userReimbursementBlockNumber - requestPeginBlockNumber;
 
@@ -1141,7 +1140,10 @@ contract TestPeginManager is Test, HelperContract {
         CommitteeMember[] memory committeeMembers = registry.getCommitteeMembers(committeeId);
         address memberAddress = committeeMembers[0].memberAddress;
 
-        BtcTransaction memory rejectPeginTx = getBtcRejectPeginTx(requestPeginTxid);
+        // Get operator dispute key used for the speed up output
+        bytes memory operatorPubKey = getDisputeKeyByAddress(memberAddress);
+
+        BtcTransaction memory rejectPeginTx = createRejectPeginTx(requestPeginTxid, operatorPubKey);
         bytes32 rejectPeginTxid = getBtcTxid(rejectPeginTx);
         BtcTxSPVProof memory rejectPeginTxSPVProof = createBtcTxSPVProof(rejectPeginTx);
 
@@ -1177,15 +1179,19 @@ contract TestPeginManager is Test, HelperContract {
 
     function test_rejectPegin_Revert_PeginNotRequested() external {
         // Arrange
-        (BtcTransaction memory requestPeginTx,) = getBtcRequestPeginTx();
-        bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
-        BtcTransaction memory rejectPeginTx = getBtcRejectPeginTx(requestPeginTxid);
-        BtcTxSPVProof memory rejectPeginTxSPVProof = createBtcTxSPVProof(rejectPeginTx);
-
         // Get a committee member address
         uint128 committeeId = streamManager.getCommitteeId(setupStreamId, PACKET_NUMBER);
         CommitteeMember[] memory committeeMembers = registry.getCommitteeMembers(committeeId);
         address memberAddress = committeeMembers[0].memberAddress;
+
+        // Get operator dispute key used for the speed up output
+        bytes memory operatorPubKey = getDisputeKeyByAddress(memberAddress);
+
+        // Create reject pegin tx with invalid request pegin txid (should fail)
+        (BtcTransaction memory requestPeginTx,) = getBtcRequestPeginTx();
+        bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
+        BtcTransaction memory rejectPeginTx = createRejectPeginTx(requestPeginTxid, operatorPubKey);
+        BtcTxSPVProof memory rejectPeginTxSPVProof = createBtcTxSPVProof(rejectPeginTx);
 
         // Assert - expect revert
         vm.expectRevert(abi.encodeWithSelector(IPegManagerBase.PeginNotRequested.selector, bytes32(0)));
@@ -1210,8 +1216,11 @@ contract TestPeginManager is Test, HelperContract {
         CommitteeMember[] memory committeeMembers = registry.getCommitteeMembers(committeeId);
         address memberAddress = committeeMembers[0].memberAddress;
 
+        // Get operator dispute key used for the speed up output
+        bytes memory operatorPubKey = getDisputeKeyByAddress(memberAddress);
+
         // Now try to register reject pegin
-        BtcTransaction memory rejectPeginTx = getBtcRejectPeginTx(requestPeginTxid);
+        BtcTransaction memory rejectPeginTx = createRejectPeginTx(requestPeginTxid, operatorPubKey);
         BtcTxSPVProof memory rejectPeginTxSPVProof = createBtcTxSPVProof(rejectPeginTx);
 
         // Assert - expect revert with InvalidPegStatus
@@ -1257,7 +1266,10 @@ contract TestPeginManager is Test, HelperContract {
         CommitteeMember[] memory committeeMembers = registry.getCommitteeMembers(committeeId);
         address memberAddress = committeeMembers[0].memberAddress;
 
-        BtcTransaction memory rejectPeginTx = getBtcRejectPeginTx(requestPeginTxid);
+        // Get operator dispute key used for the speed up output
+        bytes memory operatorPubKey = getDisputeKeyByAddress(memberAddress);
+
+        BtcTransaction memory rejectPeginTx = createRejectPeginTx(requestPeginTxid, operatorPubKey);
         int256 actualConfirmations = 0;
         bridgeMock.setBtcTransactionConfirmations(actualConfirmations);
         BtcTxSPVProof memory rejectPeginTxSPVProof = createBtcTxSPVProof(rejectPeginTx);
@@ -1281,13 +1293,18 @@ contract TestPeginManager is Test, HelperContract {
         // Arrange
         (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
         bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
-        BtcTransaction memory rejectPeginTx = getBtcRejectPeginTx(requestPeginTxid);
-        BtcTxSPVProof memory rejectPeginTxSPVProof = createBtcTxSPVProof(rejectPeginTx);
 
         // Get a committee member address
         uint128 committeeId = streamManager.getCommitteeId(setupStreamId, PACKET_NUMBER);
         CommitteeMember[] memory committeeMembers = registry.getCommitteeMembers(committeeId);
         address memberAddress = committeeMembers[0].memberAddress;
+
+        // Get operator dispute key used for the speed up output
+        bytes memory operatorPubKey = getDisputeKeyByAddress(memberAddress);
+
+        // Create reject pegin tx
+        BtcTransaction memory rejectPeginTx = createRejectPeginTx(requestPeginTxid, operatorPubKey);
+        BtcTxSPVProof memory rejectPeginTxSPVProof = createBtcTxSPVProof(rejectPeginTx);
 
         pauseContracts();
 
@@ -1303,13 +1320,18 @@ contract TestPeginManager is Test, HelperContract {
         // Arrange
         (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
         bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
-        BtcTransaction memory rejectPeginTx = getBtcRejectPeginTx(requestPeginTxid);
-        bytes32 rejectPeginTxid = getBtcTxid(rejectPeginTx);
 
         // Get a committee member address
         uint128 committeeId = streamManager.getCommitteeId(setupStreamId, PACKET_NUMBER);
         CommitteeMember[] memory committeeMembers = registry.getCommitteeMembers(committeeId);
         address memberAddress = committeeMembers[0].memberAddress;
+
+        // Get operator dispute key used for the speed up output
+        bytes memory operatorPubKey = getDisputeKeyByAddress(memberAddress);
+
+        // Create reject pegin tx
+        BtcTransaction memory rejectPeginTx = createRejectPeginTx(requestPeginTxid, operatorPubKey);
+        bytes32 rejectPeginTxid = getBtcTxid(rejectPeginTx);
 
         // Set Mock Bridge state to invalid merkle branch
         bridgeMock.setBtcTransactionConfirmations(BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE);
@@ -1334,13 +1356,18 @@ contract TestPeginManager is Test, HelperContract {
         // Arrange
         (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
         bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
-        BtcTransaction memory rejectPeginTx = getBtcRejectPeginTx(requestPeginTxid);
-        BtcTxSPVProof memory rejectPeginTxSPVProof = createBtcTxSPVProof(rejectPeginTx);
 
         // Get a committee member address
         uint128 committeeId = streamManager.getCommitteeId(setupStreamId, PACKET_NUMBER);
         CommitteeMember[] memory committeeMembers = registry.getCommitteeMembers(committeeId);
         address memberAddress = committeeMembers[0].memberAddress;
+
+        // Get operator dispute key used for the speed up output
+        bytes memory operatorPubKey = getDisputeKeyByAddress(memberAddress);
+
+        // Create reject pegin tx
+        BtcTransaction memory rejectPeginTx = createRejectPeginTx(requestPeginTxid, operatorPubKey);
+        BtcTxSPVProof memory rejectPeginTxSPVProof = createBtcTxSPVProof(rejectPeginTx);
 
         // Register first time
         vm.prank(memberAddress);
@@ -1365,8 +1392,11 @@ contract TestPeginManager is Test, HelperContract {
         CommitteeMember[] memory committeeMembers = registry.getCommitteeMembers(committeeId);
         address memberAddress = committeeMembers[0].memberAddress;
 
+        // Get operator dispute key used for the speed up output
+        bytes memory operatorPubKey = getDisputeKeyByAddress(memberAddress);
+
         // Create a reject pegin tx with incorrect vout (using vout 0 instead of 2)
-        BtcTransaction memory rejectPeginTx = getBtcRejectPeginTx(requestPeginTxid);
+        BtcTransaction memory rejectPeginTx = createRejectPeginTx(requestPeginTxid, operatorPubKey);
         uint32 correctVout = Constants.REQUEST_PEGIN_VOUT_ENABLER;
         uint32 incorrectVout = 0;
         rejectPeginTx.inputs[0].vout = incorrectVout;

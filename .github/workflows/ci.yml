@@ -42,3 +42,6 @@ jobs:
 
       - name: Run user-reimbursement-flow
         run: bash shell/script/integration-test/user-reimbursement-flow.sh
+
+      - name: Run reject-pegin-flow
+        run: bash shell/script/integration-test/reject-pegin-flow.sh

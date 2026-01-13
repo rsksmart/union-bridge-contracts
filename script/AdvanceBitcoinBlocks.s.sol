@@ -10,7 +10,7 @@ contract AdvanceBitcoinBlocksScript is ScriptUtils, ContractAddressManager {
     BridgeMock bridgeMock;
 
     function setUp() internal {
-        bridgeMock = BridgeMock(getBridge());
+        bridgeMock = BridgeMock(payable(address(getBridge())));
     }
 
     function run(int256 _blocksToAdvance) public {

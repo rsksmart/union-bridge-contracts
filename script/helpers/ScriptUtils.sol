@@ -249,7 +249,7 @@ abstract contract ScriptUtils is Script {
         bytes memory operatorScriptPubKey = BtcScriptParser.getP2WPKHScript(_operatorPubKey);
 
         // pay to operator's P2WPKH
-        btcOutputs[Constants.OPERATOR_TAKE_VOUT_USER] =
+        btcOutputs[Constants.OPERATOR_TAKE_VOUT_OPERATOR] =
             BtcTxOut({amount: operatorAmount, scriptPubKey: operatorScriptPubKey});
 
         // speedup
@@ -336,13 +336,39 @@ abstract contract ScriptUtils is Script {
             sequence: Constants.SEQUENCE,
             scriptSig: hex""
         });
-
         // Output: P2WPKH to user's reimbursement pubkey
         BtcTxOut[] memory btcOutputs = new BtcTxOut[](1);
         btcOutputs[0] = BtcTxOut({
             amount: _amount - Constants.P2TR_FEE,
             scriptPubKey: BtcScriptParser.getP2WPKHScript(BtcHelper.pubKeyXonlyToCompact(_btcReimbursementPubKey))
         });
+        return BtcTransaction({
+            version: Constants.BTC_TX_VERSION,
+            inputs: btcInputs,
+            outputs: btcOutputs,
+            locktime: Constants.LOCKTIME
+        });
+    }
+
+    // ========================== Reject Peg-in ==========================
+    function createRejectPeginTx(bytes32 _requestPeginTxid, bytes memory _operatorPubKey)
+        internal
+        pure
+        returns (BtcTransaction memory)
+    {
+        BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
+        // Input spends the request pegin enabler output (vout 2)
+        btcInputs[0] = BtcTxIn({
+            txId: _requestPeginTxid,
+            vout: Constants.REQUEST_PEGIN_VOUT_ENABLER,
+            sequence: Constants.SEQUENCE,
+            scriptSig: hex""
+        });
+
+        // Speed up Output: P2WPKH to operator's dispute key
+        BtcTxOut[] memory btcOutputs = new BtcTxOut[](1);
+        bytes memory speedUpScriptPubKey = BtcScriptParser.getP2WPKHScript(_operatorPubKey);
+        btcOutputs[0] = BtcTxOut({amount: Constants.SPEED_UP_AMOUNT, scriptPubKey: speedUpScriptPubKey});
 
         return BtcTransaction({
             version: Constants.BTC_TX_VERSION,

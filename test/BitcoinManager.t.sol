@@ -247,7 +247,7 @@ contract TestBtcHelper is Test, HelperContract {
 
     function test_validateSpeedUpOutput_Success() external view {
         // Arrange
-        BtcTxOut memory btcTxOut = getBtcSpeedUpOut();
+        BtcTxOut memory btcTxOut = getUserSpeedUpOut();
         bytes32 speedUpPubKey = BTC_REIMBURSEMENT_PUBKEY;
         // Act
         bitcoinManager.validateSpeedUpOutput(speedUpPubKey, btcTxOut);
@@ -256,7 +256,7 @@ contract TestBtcHelper is Test, HelperContract {
 
     function test_validateSpeedUpOutput_Revert_InvalidOutputAmount() external {
         // Arrange
-        BtcTxOut memory btcTxOut = getBtcSpeedUpOut();
+        BtcTxOut memory btcTxOut = getUserSpeedUpOut();
         btcTxOut.amount = Constants.SPEED_UP_AMOUNT - 1;
         bytes32 speedUpPubKey = BTC_REIMBURSEMENT_PUBKEY;
         // Assert
@@ -269,7 +269,7 @@ contract TestBtcHelper is Test, HelperContract {
 
     function test_validateSpeedUpOutput_Revert_IncorrectOutputScript() external {
         // Arrange
-        BtcTxOut memory btcTxOut = getBtcSpeedUpOut();
+        BtcTxOut memory btcTxOut = getUserSpeedUpOut();
         bytes memory expectedScriptPubKey = btcTxOut.scriptPubKey;
         btcTxOut.scriptPubKey = hex"0014d3b4045c40a133ee361f766ceae4d82398fc5058";
         bytes32 speedUpPubKey = BTC_REIMBURSEMENT_PUBKEY;
