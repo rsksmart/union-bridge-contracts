@@ -7,6 +7,7 @@ import {
     Role,
     CommitteeMember,
     Committee,
+    CommitteeRegistrySettings,
     ICommitteeRegistry,
     PendingCommitteeStatus,
     PendingCommitteeData,
@@ -55,8 +56,13 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
     /// @notice Initializes the CommitteeRegistry contract
     /// @param _initialOwner The initial owner of the contract
     /// @param _memberRegistry The member registry contract address
+    /// @param _settings The settings for the committee registry
     /// @dev PeginManager and PegoutManager addresses can be set later via setPeginManager/setPegoutManager
-    function initialize(address _initialOwner, IMemberRegistry _memberRegistry) public virtual initializer {
+    function initialize(
+        address _initialOwner,
+        IMemberRegistry _memberRegistry,
+        CommitteeRegistrySettings memory _settings
+    ) public virtual initializer {
         __AccessControl_init_without_peg_managers(_initialOwner);
         __ReentrancyGuard_init();
         __Pauser_init();
@@ -64,13 +70,13 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
             revert MemberRegistryAddressZero();
         }
         memberRegistry = _memberRegistry;
-        pendingCommitteeTimeout = 1 days; // Default timeout for pending committees
+        pendingCommitteeTimeout = _settings.pendingCommitteeTimeout; // Default timeout for pending committees
         for (uint64 i = 0; i < uint64(StreamDenomination.LENGTH); i++) {
             shouldCreateCommittee[i] = true;
         }
-        minCommitteeWatchtowers = 3;
-        minCommitteeOperators = 3;
-        committeeMemberCount = 10;
+        minCommitteeWatchtowers = _settings.minCommitteeWatchtowers;
+        minCommitteeOperators = _settings.minCommitteeOperators;
+        committeeMemberCount = _settings.committeeMemberCount;
     }
 
     function _revertIfZero(uint256 _value) internal pure {

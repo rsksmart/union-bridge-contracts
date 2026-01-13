@@ -739,7 +739,6 @@ abstract contract HelperContract is Test, TestUtils {
             streamId: SETUP_PENDING_COMMITTEE_STREAM_ID,
             fundingUTXOs: new UTXO[](registry.committeeMemberCount())
         });
-
         for (uint256 i = 0; i < committee.members.length; i++) {
             committee.fundingUTXOs[i] = generateDefaultUTXO();
         }

@@ -17,7 +17,8 @@ import {BtcNetwork} from "src/libraries/Network.sol";
 import {BridgeMock} from "test/helpers/BridgeMock.sol";
 import {ChainIds} from "src/libraries/Network.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
-import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
+import {ICommitteeRegistry, CommitteeRegistrySettings} from "src/interfaces/ICommitteeRegistry.sol";
+import {CommitteeRegistrySettingsConfig} from "script/helpers/CommitteeRegistrySettingsConfig.sol";
 import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
 import {PegoutManagerSettings} from "src/interfaces/IPegoutManager.sol";
 import {StreamManagerSettings, StreamSettings, StreamDenomination} from "src/interfaces/IStreamManager.sol";
@@ -52,25 +53,30 @@ contract DeployImplAndProxy is ScriptUtils {
     StreamManagerSettings public streamManagerSettings;
     StreamSettings[] public streamSettings;
     PegoutManagerSettings public pegoutManagerSettings;
+    CommitteeRegistrySettings public committeeRegistrySettings;
 
     function setUp() internal {
         bridgeAddress = RSK_BRIDGE_ADDRESS;
         upgradableOwner = getDeployerAddress();
         pauser = getPauserAddress();
         uint64[] memory denominations = StreamManagerSettingsConfig.getDenominations();
-        streamManagerSettings = StreamManagerSettingsConfig.getStreamManagerSettings(block.chainid);
-
+        // Get configurations for the chain and test group
+        bool isTest = vm.isContext(VmSafe.ForgeContext.TestGroup) || vm.envOr("IS_TEST", false);
+        streamManagerSettings = StreamManagerSettingsConfig.getStreamManagerSettings(block.chainid, isTest);
         for (uint64 i = 0; i < denominations.length; i++) {
-            streamSettings.push(StreamManagerSettingsConfig.getStreamSettings(block.chainid, i, denominations[i]));
+            streamSettings.push(
+                StreamManagerSettingsConfig.getStreamSettings(block.chainid, i, denominations[i], isTest)
+            );
         }
-        pegoutManagerSettings = PegManagerSettingsConfig.getSettingsForChain(block.chainid);
+        pegoutManagerSettings = PegManagerSettingsConfig.getSettings(block.chainid, isTest);
+        committeeRegistrySettings = CommitteeRegistrySettingsConfig.getSettings(block.chainid, isTest);
         // RSK Mainnet
         if (block.chainid == ChainIds.RSK_MAINNET) {
             btcBtcNetwork = BtcNetwork.MAINNET;
         } else if (block.chainid == ChainIds.RSK_TESTNET) {
             // RSK Testnet
             btcBtcNetwork = BtcNetwork.TESTNET;
-        } else if (block.chainid == ChainIds.LOCAL) {
+        } else if (block.chainid == ChainIds.LOCAL || block.chainid == ChainIds.RSK_REGTEST) {
             // Foundry local chainid
             btcBtcNetwork = BtcNetwork.REGTEST;
             // Set Bridge Mock
@@ -94,7 +100,8 @@ contract DeployImplAndProxy is ScriptUtils {
         if (memberRegistry.owner() != upgradableOwner) {
             revert("MemberRegistry owner is not the upgradable owner");
         }
-        CommitteeRegistry committeeRegistry = deployCommitteeRegistry(upgradableOwner, memberRegistry);
+        CommitteeRegistry committeeRegistry =
+            deployCommitteeRegistry(upgradableOwner, memberRegistry, committeeRegistrySettings);
         if (committeeRegistry.owner() != upgradableOwner) {
             revert("CommitteeRegistry owner is not the upgradable owner");
         }
@@ -244,16 +251,17 @@ contract DeployImplAndProxy is ScriptUtils {
         });
     }
 
-    function deployCommitteeRegistry(address _upgradableOwner, IMemberRegistry _memberRegistry)
-        public
-        returns (CommitteeRegistry)
-    {
+    function deployCommitteeRegistry(
+        address _upgradableOwner,
+        IMemberRegistry _memberRegistry,
+        CommitteeRegistrySettings memory _settings
+    ) public returns (CommitteeRegistry) {
         string memory contractName = "CommitteeRegistry.sol";
         if (vm.isContext(VmSafe.ForgeContext.TestGroup)) {
             contractName = "CommitteeRegistryHarness.sol";
         }
         (, address proxyAdddress) = deployContractAndUUPSProxy(
-            contractName, abi.encodeCall(CommitteeRegistry.initialize, (_upgradableOwner, _memberRegistry))
+            contractName, abi.encodeCall(CommitteeRegistry.initialize, (_upgradableOwner, _memberRegistry, _settings))
         );
         return CommitteeRegistry(proxyAdddress);
     }

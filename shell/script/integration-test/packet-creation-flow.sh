@@ -48,7 +48,7 @@ done
 TOTAL=$((OPERATOR_AMOUNT + WATCHTOWER_AMOUNT))
 
 # Enforce constraints
-if [ "$TOTAL" -ne "$MAX_MNEMONIC_INDEX"+1 ]; then
+if [ "$TOTAL" -ne $((MAX_MNEMONIC_INDEX + 1)) ]; then
   echo "Error: Total number of members must be exactly 10 (you passed $TOTAL)."
   exit 1
 fi
