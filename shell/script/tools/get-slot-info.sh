@@ -53,7 +53,7 @@ echo "================ GET SLOT INFO FROM $RPC ================"
 echo "Stream ID: $STREAM_ID, Packet: $PACKET_NUMBER, Slot: $SLOT_ID"
 
 forge script \
-    script/GetSlotInfo.s.sol \
+    script/tools/GetSlotInfo.s.sol \
     --sig "run(uint64,uint64,uint64)" \
     "$STREAM_ID" "$PACKET_NUMBER" "$SLOT_ID" \
     --rpc-url $RPC \

@@ -40,7 +40,7 @@ fi
 # Run Forge script
 #echo "================ ADD MEMBER NONCE TO $RPC ================"
 forge script \
-  script/AddMemberNonce.s.sol \
+  script/signatures/AddMemberNonce.s.sol \
   --sig "run(uint16,bytes32,bytes)" \
   "$MNEMONIC_INDEX" "$TXID" "$NONCE" \
   --rpc-url "$RPC" \
