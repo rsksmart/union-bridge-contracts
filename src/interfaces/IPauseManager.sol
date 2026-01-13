@@ -19,6 +19,18 @@ interface IPauseManager {
         address _memberRegistry
     ) external;
 
+    /// @notice Pauses all pausable contracts
+    /// @dev Only callable by the contract owner
+    function pause() external;
+
+    /// @notice Unpauses all pausable contracts
+    /// @dev Only callable by the contract owner
+    function unpause() external;
+
+    /// @notice Returns true if any of the contracts is paused
+    /// @dev Returns true if at least one contract is paused
+    function areContractsPaused() external view returns (bool);
+
     /// @notice Emitted when a pausable contract address is updated
     /// @param contractName The name of the contract that was updated
     /// @param newAddress The new address of the contract
