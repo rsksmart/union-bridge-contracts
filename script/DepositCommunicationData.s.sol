@@ -24,7 +24,7 @@ contract DepositCommunicationDataScript is ScriptUtils, ContractAddressManager {
     RSAPublicKey comPubKey;
 
     function setUp(uint16 _mnemonicIndex, uint64 _streamIndex) internal {
-        committeeRegistry = ICommitteeRegistry(getCommitteeRegistry());
+        committeeRegistry = getCommitteeRegistry();
         memberRegistry = committeeRegistry.memberRegistry();
 
         // Read args from command line / env

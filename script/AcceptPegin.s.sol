@@ -27,7 +27,7 @@ contract AcceptPeginScript is ScriptUtils, ContractAddressManager {
         // Smart contract addresses
         streamManager = IStreamManager(peginManager.streamManager());
         bitcoinManager = IBitcoinManager(peginManager.bitcoinManager());
-        committeeRegistry = ICommitteeRegistry(getCommitteeRegistry());
+        committeeRegistry = ICommitteeRegistry(peginManager.committeeRegistry());
 
         // Check if the peg-in request exists and is in REGISTERED status
         StreamPosition memory streamPosition = peginManager.getStreamPositionByRequestPegin(_requestPeginTxid);

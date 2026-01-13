@@ -31,7 +31,7 @@ contract ApplyToStreamScript is ScriptUtils, ContractAddressManager {
         uint32 _outputIndex,
         uint64 _amount
     ) internal {
-        committeeRegistry = ICommitteeRegistry(getCommitteeRegistry());
+        committeeRegistry = getCommitteeRegistry();
         memberRegistry = committeeRegistry.memberRegistry();
         streamManager = IStreamManager(getStreamManager());
         // Read args from command line / env

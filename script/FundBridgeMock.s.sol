@@ -7,7 +7,7 @@ import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 
 contract FundBridgeMockScript is Script, ContractAddressManager, ScriptUtils {
     function run() public {
-        address payable bridgeAddress = getBridge();
+        address payable bridgeAddress = payable(address(getBridge()));
 
         vm.startBroadcast(getDeployerKey());
         // Send RBTC to the bridge from the deployer account

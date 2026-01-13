@@ -15,7 +15,7 @@ contract DepositAggregatedKeyScript is ScriptUtils, ContractAddressManager {
     address user;
 
     function setUp(uint16 _mnemonicIndex, uint64 _streamIndex, bytes memory _committeePubKey) internal {
-        committeeRegistry = ICommitteeRegistry(getCommitteeRegistry());
+        committeeRegistry = getCommitteeRegistry();
         streamManager = IStreamManager(getStreamManager());
 
         // Read args from command line / env

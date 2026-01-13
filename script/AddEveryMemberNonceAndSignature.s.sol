@@ -3,14 +3,14 @@ pragma solidity ^0.8.20;
 
 import {console} from "forge-std/console.sol";
 import {PegoutManager} from "src/PegoutManager.sol";
-import {CommitteeRegistry} from "src/CommitteeRegistry.sol";
+import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {ISignatureManager} from "src/interfaces/ISignatureManager.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
 
 contract AddEveryMemberSignatureScript is ScriptUtils, ContractAddressManager {
     PegoutManager pegoutManager;
-    CommitteeRegistry committeeRegistry;
+    ICommitteeRegistry committeeRegistry;
     ISignatureManager signatureManager;
     bytes32 signature;
     bytes nonce;
@@ -20,7 +20,7 @@ contract AddEveryMemberSignatureScript is ScriptUtils, ContractAddressManager {
     function setUp() internal {
         // ====== Arguments ======
         pegoutManager = PegoutManager(getPegoutManager());
-        committeeRegistry = CommitteeRegistry(getCommitteeRegistry());
+        committeeRegistry = getCommitteeRegistry();
         minCommitteMembers = committeeRegistry.committeeMemberCount();
         signatureManager = pegoutManager.signatureManager();
         signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";

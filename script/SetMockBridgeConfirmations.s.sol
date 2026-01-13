@@ -13,7 +13,7 @@ contract SetMockBridgeConfirmationsScript is ScriptUtils, ContractAddressManager
     function setUp() internal {
         // ====== Arguments ======
         confirmations = -1;
-        bridgeMock = BridgeMock(getBridge());
+        bridgeMock = BridgeMock(payable(address(getBridge())));
     }
 
     function run() public {
