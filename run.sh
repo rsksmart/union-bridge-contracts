@@ -5,4 +5,5 @@ bash shell/script/deploy/simulate-deploy.sh
 bash shell/gas-report.sh
 # packet creation flow is running in the peg flow
 bash shell/script/integration-test/local-peg-full-flow.sh
+bash shell/script/integration-test/user-reimbursement-flow.sh
 bash shell/slither.sh

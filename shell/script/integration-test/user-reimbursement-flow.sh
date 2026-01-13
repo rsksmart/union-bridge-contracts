@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# This script sets up a local Ethereum node using Anvil, deploys contracts and demonstrates the blocked slot functionality:
+# This script demonstrates the user reimbursement flow:
 # 1. Sets up anvil and deploys contracts
 # 2. Sets up a committee and packet
 # 3. Requests a pegin (slot goes to RESERVED state)
-# 4. Checks slot state (should be RESERVED)
-# 5. Blocks the reserved slot (slot goes to BLOCKED state)
-# 6. Checks slot state again (should be BLOCKED)
+# 4. Advances Bitcoin blocks past the timelock period
+# 5. Registers user reimbursement (slot goes to BLOCKED state)
+# 6. Verifies the final state
 
 # Make sure to kill any existing anvil process
 kill -9 $(lsof -ti :8545) 2>/dev/null || true
@@ -23,8 +23,8 @@ cleanup() {
 # Set trap to cleanup on exit
 trap cleanup EXIT INT TERM
 
-echo "================ BLOCKED SLOT DEMONSTRATION ================"
-echo "This demo shows how blocked slots are handled in the peg flow"
+echo "================ USER REIMBURSEMENT DEMONSTRATION ================"
+echo "This flow shows how users can reclaim their BTC after timelock expiry"
 
 # Start anvil in the background
 anvil > /dev/null &
@@ -49,7 +49,7 @@ echo "================ CONTRACTS DEPLOYED ================"
 # Slot parameters for monitoring
 STREAM_ID=0
 PACKET_NUMBER=0
-SLOT_ID=0  # The slot we'll block
+SLOT_ID=0
 
 # Setup committee and packet
 bash "$SCRIPT_DIR/integration-test/packet-creation-flow.sh"
@@ -62,11 +62,22 @@ echo "================ STEP 2: CHECK SLOT STATE (SHOULD BE RESERVED) ===========
 echo "After request pegin, slot should be in RESERVED state:"
 bash "$SCRIPT_DIR/tools/get-slot-info.sh" -s "$STREAM_ID" -p "$PACKET_NUMBER" -l "$SLOT_ID"
 
-echo "================ STEP 3: BLOCK THE SLOT ================"
-bash "$SCRIPT_DIR/block-slot.sh" -s "$STREAM_ID" -p "$PACKET_NUMBER" -l "$SLOT_ID"
+# Use the default request pegin txid RequestPegin.s.sol
+REQUEST_PEGIN_TXID="0x0f1c151f3fb74f0020f06c40975e7d1dceb12162666bfdee42c10caf6f8aecba"
 
-echo "================ STEP 4: CHECK SLOT STATE (SHOULD BE BLOCKED) ================"
-echo "After blocking, slot should be in BLOCKED state:"
+echo "================ STEP 3: ADVANCE BITCOIN BLOCKS PAST TIMELOCK ================"
+echo "Advancing blocks to simulate timelock expiry..."
+
+# Advance by 1 block to pass the timelock period
+bash "$SCRIPT_DIR/tools/advance-bitcoin-blocks.sh" -b 1
+
+echo "Bitcoin blocks advanced. Timelock should now be expired."
+
+echo "================ STEP 4: REGISTER USER REIMBURSEMENT ================"
+bash "$SCRIPT_DIR/user-reimbursement.sh" -r "$REQUEST_PEGIN_TXID"
+
+echo "================ STEP 5: CHECK SLOT STATE (SHOULD BE BLOCKED) ================"
+echo "After user reimbursement, slot should be in BLOCKED state:"
 bash "$SCRIPT_DIR/tools/get-slot-info.sh" -s "$STREAM_ID" -p "$PACKET_NUMBER" -l "$SLOT_ID"
 
-echo "================ BLOCKED SLOT DEMO COMPLETE ================"
+echo "================ USER REIMBURSEMENT FLOW COMPLETE ================"
