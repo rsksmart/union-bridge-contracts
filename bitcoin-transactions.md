@@ -7,7 +7,7 @@ This document describes the Bitcoin transactions created by the Union Bridge pro
 - [Union Bridge Context](#union-bridge-context)
 - [Overview](#overview)
   - [User Transaction](#user-transaction)
-  - [Optional - Reject Pegin](#optional---reject-pegin)
+  - [Reject Pegin](#reject-pegin)
   - [Accept PegIn Protocol](#accept-pegin-protocol)
   - [User Take Protocol](#user-take-protocol)
   - [Advance Funds Protocol](#advance-funds-protocol)
