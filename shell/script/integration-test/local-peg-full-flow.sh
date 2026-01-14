@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export IS_TEST=true
+
 # This script sets up a local Ethereum node using Anvil, deploy contracts and runs the peg-in/peg-out flow.
 
 # Make sure to kill any existing anvil process
