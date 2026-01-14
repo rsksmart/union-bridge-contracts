@@ -1,5 +1,5 @@
 # IBitcoinManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/96535706e496364789ce242b18e17052bb6e424e/src/interfaces/IBitcoinManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/interfaces/IBitcoinManager.sol)
 
 Interface for managing Bitcoin transaction operations in the union bridge
 
@@ -35,6 +35,7 @@ Obtains a temporary Bitcoin address for request peg-in operations
 
 ```solidity
 function getTemporaryPeginAddress(
+    uint32 _timelockBlocks,
     address _rskDestinationAddress,
     uint64 _value,
     bytes32 _btcReimbursementPubKey,
@@ -45,6 +46,7 @@ function getTemporaryPeginAddress(
 
 |Name|Type|Description|
 |----|----|-----------|
+|`_timelockBlocks`|`uint32`|The timelock blocks for the Bitcoin transaction|
 |`_rskDestinationAddress`|`address`|The RSK address that will receive the RBTC|
 |`_value`|`uint64`|The amount in satoshis to peg in (must match stream denomination)|
 |`_btcReimbursementPubKey`|`bytes32`|The user's Bitcoin public key (x-coordinate only, 32 bytes)|
@@ -93,6 +95,7 @@ Validates a P2TR output for request peg-in transactions
 
 ```solidity
 function validateRequestPeginP2TROutput(
+    uint32 _timelockBlocks,
     address _rskDestinationAddress,
     uint64 _streamDenomination,
     bytes32 _btcReimbursementPubKey,
@@ -104,11 +107,33 @@ function validateRequestPeginP2TROutput(
 
 |Name|Type|Description|
 |----|----|-----------|
+|`_timelockBlocks`|`uint32`|The timelock blocks for the Bitcoin transaction|
 |`_rskDestinationAddress`|`address`|The RSK address that should receive the RBTC|
 |`_streamDenomination`|`uint64`|The expected amount in satoshis|
 |`_btcReimbursementPubKey`|`bytes32`|The user's Bitcoin public key (x-coordinate only)|
 |`_committeePubKey`|`bytes`|The committee's public key|
 |`_p2trOut`|`BtcTxOut`|The Bitcoin transaction output to validate|
+
+
+### validateRequestPeginEnablerOutput
+
+Validates the enabler output in a request peg-in transaction
+
+
+```solidity
+function validateRequestPeginEnablerOutput(
+    bytes memory _committeePubKey,
+    bytes32[] memory _disputeKeys,
+    BtcTxOut calldata _enablerOut
+) external view;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_committeePubKey`|`bytes`|The committee's public key|
+|`_disputeKeys`|`bytes32[]`|The dispute keys (covenant public keys) for the committee|
+|`_enablerOut`|`BtcTxOut`|The enabler output to validate|
 
 
 ### getBtcTxid
@@ -148,7 +173,8 @@ function getAcceptPeginSignatureHash(
     bytes memory _committeePubKey,
     bytes32 _userXOnlyPubKey,
     bytes32 _registerPeginTx,
-    PrevoutData memory _prevoutData
+    PrevoutData[] memory _prevoutDatas,
+    bytes32[] memory _operatorDisputeKeys
 ) external view returns (BitcoinSignatureData memory);
 ```
 **Parameters**
@@ -158,13 +184,41 @@ function getAcceptPeginSignatureHash(
 |`_committeePubKey`|`bytes`|The committee's public key (x-coordinate only)|
 |`_userXOnlyPubKey`|`bytes32`|The user's public key (x-coordinate only, 32 bytes)|
 |`_registerPeginTx`|`bytes32`|The transaction id of the peg-in request being spent|
-|`_prevoutData`|`PrevoutData`|Data about the previous output being spent (amount and scriptPubKey)|
+|`_prevoutDatas`|`PrevoutData[]`|Array of prevout data for all inputs being spent (taptree + enabler outputs)|
+|`_operatorDisputeKeys`|`bytes32[]`|The dispute keys (covenant public keys) for OPERATOR members only|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
 |`<none>`|`BitcoinSignatureData`|BitcoinSignatureData containing txid, signatureHash, and signatureMessage|
+
+
+### getEnablerOutputP2TRScriptPub
+
+Generates the enabler output P2TR script pub key
+
+*Creates a Taproot script for the enabler output with dispute keys in the merkle tree*
+
+
+```solidity
+function getEnablerOutputP2TRScriptPub(bytes memory _committeePubKey, bytes32[] memory _disputeKeys)
+    external
+    pure
+    returns (bytes memory);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_committeePubKey`|`bytes`|The committee's aggregated public key (33 bytes compressed)|
+|`_disputeKeys`|`bytes32[]`|Array of dispute keys for committee members (x-only, 32 bytes each)|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`bytes`|The P2TR script pub key bytes|
 
 
 ### getSpeedUpScriptPub
@@ -216,7 +270,7 @@ Calculates the signature hash for Bitcoin peg-out transactions
 
 
 ```solidity
-function getPegoutTxData(bytes memory _userPubKey, bytes32 _acceptPeginTx, PrevoutData memory _prevoutData)
+function getPegoutTxData(bytes memory _userPubKey, bytes32 _acceptPeginTx, PrevoutData[] memory _prevoutDatas)
     external
     pure
     returns (BitcoinSignatureData memory);
@@ -227,7 +281,7 @@ function getPegoutTxData(bytes memory _userPubKey, bytes32 _acceptPeginTx, Prevo
 |----|----|-----------|
 |`_userPubKey`|`bytes`|The user's public key in compressed format that will receive the funds|
 |`_acceptPeginTx`|`bytes32`|The transaction id of the accept peg-in tx being spent|
-|`_prevoutData`|`PrevoutData`|Data about the previous output being spent (amount and scriptPubKey)|
+|`_prevoutDatas`|`PrevoutData[]`|Array of prevout data for all inputs being spent (taptree + enabler outputs)|
 
 **Returns**
 
@@ -270,6 +324,24 @@ function validatePegoutMemberOutput(BtcTxOut calldata _pegoutOutput, bytes32 _me
 |----|----|-----------|
 |`_pegoutOutput`|`BtcTxOut`|The Bitcoin transaction output to validate|
 |`_memberPubKey`|`bytes32`|The committee member's public key that should receive the funds|
+
+
+### validatePegoutIdOutput
+
+Validates that a peg-out transaction output encodes the correct peg-out id in OP_RETURN
+
+*Ensures the OP_RETURN output contains the expected peg-out id for tracking*
+
+
+```solidity
+function validatePegoutIdOutput(BtcTxOut calldata _pegoutIdOutput, bytes32 _pegoutId) external pure;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_pegoutIdOutput`|`BtcTxOut`|The Bitcoin transaction output containing OP_RETURN data|
+|`_pegoutId`|`bytes32`|The expected peg-out id to validate against|
 
 
 ## Events
@@ -345,6 +417,20 @@ error InvalidPublicKey(bytes32 publicKey);
 |Name|Type|Description|
 |----|----|-----------|
 |`publicKey`|`bytes32`|The invalid public key that was provided|
+
+### InvalidTimelockBlocks
+Thrown when a timelock blocks is invalid or zero
+
+
+```solidity
+error InvalidTimelockBlocks(uint32 timelockBlocks);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`timelockBlocks`|`uint32`|The invalid timelock blocks that was provided|
 
 ### InvalidPublicKeyLength
 Thrown when a public key has invalid length

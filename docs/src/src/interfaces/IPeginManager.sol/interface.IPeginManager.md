@@ -1,8 +1,5 @@
 # IPeginManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/96535706e496364789ce242b18e17052bb6e424e/src/interfaces/IPeginManager.sol)
-
-**Inherits:**
-[IPausable](/src/interfaces/IPausable.sol/interface.IPausable.md)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/interfaces/IPeginManager.sol)
 
 Interface for managing peg-in operations
 
@@ -149,6 +146,50 @@ function acceptPegin(BtcTxSPVProof calldata _peginAcceptedTxSPVProof) external;
 |`_peginAcceptedTxSPVProof`|`BtcTxSPVProof`|The BTC SPV proof of the accept peg-in transaction|
 
 
+### userReimbursement
+
+Registers a user reimbursement transaction from Bitcoin
+
+*Validates the SPV proof and completes the user reimbursement process*
+
+*Emits UserReimbursementRegistered event upon successful registration*
+
+*Slot state is set to BLOCKED*
+
+
+```solidity
+function userReimbursement(BtcTxSPVProof calldata _userReimbursementTxSPVProof, uint32 _reimbursementPeginVin)
+    external;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_userReimbursementTxSPVProof`|`BtcTxSPVProof`|The BTC SPV proof of the user reimbursement transaction|
+|`_reimbursementPeginVin`|`uint32`|The input index of the reimbursement peg-in transaction|
+
+
+### rejectPegin
+
+Registers a reject peg-in transaction from Bitcoin
+
+*Validates the SPV proof and registers the reject peg-in transaction*
+
+*Emits RejectPeginRegistered event upon successful registration*
+
+*Slot state is set to BLOCKED*
+
+
+```solidity
+function rejectPegin(BtcTxSPVProof calldata _rejectPeginTxSPVProof) external;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_rejectPeginTxSPVProof`|`BtcTxSPVProof`|The BTC SPV proof of the reject peg-in transaction|
+
+
 ## Events
 ### PeginRequested
 Event emitted when a peg-in request is successfully registered
@@ -159,10 +200,8 @@ event PeginRequested(
     uint128 indexed committeeId,
     bytes32 indexed requestPeginTxid,
     bytes32 indexed acceptPeginTxid,
-    uint64 vout,
     StreamPosition streamPosition,
     RequestPeginTempInfo requestPeginInfo,
-    PrevoutData prevoutData,
     bytes acceptPeginSignatureMessage
 );
 ```
@@ -174,10 +213,8 @@ event PeginRequested(
 |`committeeId`|`uint128`|The ID of the committee responsible for this peg-in|
 |`requestPeginTxid`|`bytes32`|The hash of the peg-in request transaction|
 |`acceptPeginTxid`|`bytes32`|The hash of the accept peg-in transaction|
-|`vout`|`uint64`|The output index of the transaction|
 |`streamPosition`|`StreamPosition`|The struct with the position information (stream, packet, slot, status)|
 |`requestPeginInfo`|`RequestPeginTempInfo`|Temporary information needed for the accept phase|
-|`prevoutData`|`PrevoutData`|Data about the previous output being spent|
 |`acceptPeginSignatureMessage`|`bytes`|The signature message for committee signing|
 
 ### PeginAccepted
@@ -231,6 +268,42 @@ event PacketClosed(uint64 indexed streamId, uint64 indexed packetNumber);
 |`streamId`|`uint64`|The ID of the stream where the packet was closed|
 |`packetNumber`|`uint64`|The number of the packet that was closed|
 
+### UserReimbursementRegistered
+Event emitted when a user reimbursement is successfully registered
+
+
+```solidity
+event UserReimbursementRegistered(
+    bytes32 indexed userReimbursementTxid, bytes32 indexed requestPeginTxid, StreamPosition streamInfo
+);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`userReimbursementTxid`|`bytes32`|The hash of the user reimbursement btc transaction|
+|`requestPeginTxid`|`bytes32`|The hash of the request peg-in btc transaction|
+|`streamInfo`|`StreamPosition`|The stream position information where the user reimbursement was registered|
+
+### RejectPeginRegistered
+Event emitted when a reject peg-in is successfully registered
+
+
+```solidity
+event RejectPeginRegistered(
+    bytes32 indexed rejectPeginTxid, bytes32 indexed requestPeginTxid, StreamPosition streamInfo
+);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`rejectPeginTxid`|`bytes32`|The hash of the reject peg-in btc transaction|
+|`requestPeginTxid`|`bytes32`|The hash of the request peg-in btc transaction|
+|`streamInfo`|`StreamPosition`|The stream position information where the reject peg-in was registered|
+
 ## Errors
 ### PeginAlreadyRequested
 Thrown when a peg-in has already been requested for the given transaction
@@ -245,20 +318,6 @@ error PeginAlreadyRequested(bytes32 btcTxid);
 |Name|Type|Description|
 |----|----|-----------|
 |`btcTxid`|`bytes32`|The Bitcoin transaction id that was already requested|
-
-### PeginNotRequested
-Thrown when trying to process a peg-in that hasn't been requested
-
-
-```solidity
-error PeginNotRequested(bytes32 btcTxid);
-```
-
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`btcTxid`|`bytes32`|The Bitcoin transaction id that wasn't requested|
 
 ### InvalidAcceptPeginTxid
 Thrown when the accept peg-in transaction id doesn't match the expected value
@@ -348,4 +407,62 @@ error BridgeExceededLockingCap(uint256 value, uint256 lockingCap);
 |----|----|-----------|
 |`value`|`uint256`|The input amount that exceeded the locking cap|
 |`lockingCap`|`uint256`|The locking cap of the pow-peg bridge|
+
+### IncorrectVout
+Thrown when the output index (vout) doesn't match the expected value
+
+
+```solidity
+error IncorrectVout(uint32 actual, uint32 expected);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`actual`|`uint32`|The actual vout value|
+|`expected`|`uint32`|The expected vout value|
+
+### InvalidUserReimbursementTx
+Thrown when the user reimbursement transaction id is the same as the accept peg-in txid
+
+
+```solidity
+error InvalidUserReimbursementTx(bytes32 userReimbursementTxid);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`userReimbursementTxid`|`bytes32`|The user reimbursement transaction id that is the same as the accept peg-in txid|
+
+### UserReimbursementBeforeTimelock
+Thrown when the user reimbursement transaction is mined before the timelock period
+
+
+```solidity
+error UserReimbursementBeforeTimelock(int256 blocksElapsedSinceRequestPegin, uint256 timelockBlocks);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`blocksElapsedSinceRequestPegin`|`int256`|The number of blocks elapsed since the request peg-in transaction|
+|`timelockBlocks`|`uint256`|The timelock period in blocks|
+
+### InvalidRejectPeginTxid
+Thrown when the reject peg-in transaction id is the same as the accept peg-in txid
+
+
+```solidity
+error InvalidRejectPeginTxid(bytes32 rejectPeginTxid);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`rejectPeginTxid`|`bytes32`|The reject peg-in transaction id that is the same as the accept peg-in txid|
 

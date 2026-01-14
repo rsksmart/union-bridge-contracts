@@ -13,6 +13,21 @@ This repository contains the specifications and Solidity code for the Union Brid
 ### Project Documentation
 
 - [How it Works](#how-it-works)
+  - [Key Concepts](#key-concepts)
+  - [Streams Configuration](#streams-configuration)
+  - [Packet Creation Flow](#packet-creation-flow)
+- [Peg-In Process (Bitcoin → RSK)](#peg-in-process-bitcoin--rsk)
+  - [Phase 1: Request Peg-In](#phase-1-request-peg-in)
+  - [Phase 2: Committee Signatures for Peg-In](#phase-2-committee-signatures-for-peg-in)
+  - [Phase 3: Accept or Reject Peg-In](#phase-3-accept-or-reject-peg-in)
+    - [Normal Case: Accept Peg-In - All Members Signed](#normal-case-accept-peg-in---all-members-signed)
+    - [Alternative Case: Reject Pegin - Not all members signed](#alternative-case-reject-pegin---not-all-members-signed)
+- [Peg-Out Process (RSK → Bitcoin)](#peg-out-process-rsk--bitcoin)
+  - [Phase 1: Peg-Out Request](#phase-1-peg-out-request)
+  - [Phase 2: Committee Signatures for Peg-Out](#phase-2-committee-signatures-for-peg-out)
+  - [Phase 3: Register Peg-Out](#phase-3-register-peg-out)
+    - [Normal Case: UserTake (Take0) - All Members Signed](#normal-case-usertake-take0---all-members-signed)
+    - [Alternative Case: Operator Take (Take1) - Not all members signed](#alternative-case-operator-take-take1---not-all-members-signed)
 - [Smart Contracts Architecture](#smart-contracts-architecture)
 - [Bitcoin Transactions](./bitcoin-transactions.md)
 - [Musig2](#musig2---multi-signatures-on-bitcoin)
@@ -26,7 +41,7 @@ This repository contains the specifications and Solidity code for the Union Brid
 ### Pre requisites
 
 - You'll need the [Rust](https://www.rust-lang.org/) compiler and Cargo, Rust's package manager. The easiest way to install both is by using [rustup.rs.](https://rustup.rs/)
-- [Foundry v1.3.0](https://book.getfoundry.sh/getting-started/installation) running `foundryup -v v1.3.0`
+- [Foundry v1.3.0](https://book.getfoundry.sh/getting-started/installation) running `foundryup -i v1.3.0` It's important that is this version, otherwise the Alloy version released for the rust crate can change.
 - [Node.js LTS (22)](https://nodejs.org/en/download)
 
 ### Install dependencies
@@ -36,12 +51,12 @@ This repository contains the specifications and Solidity code for the Union Brid
 
 ### Best Practices
 
-We are following [Foundry introduction](https://getfoundry.sh/introduction/overview) and here are the sections of:  
-[best practices - writing contracts](https://getfoundry.sh/guides/best-practices/writing-contracts)  
-[best practices - writing tests](https://getfoundry.sh/guides/best-practices/writing-tests)  
-[best practices - writing scripts](https://getfoundry.sh/guides/best-practices/writing-scripts)  
-[best practices - security](https://getfoundry.sh/guides/best-practices/security)  
-[best practices - key management](https://getfoundry.sh/guides/best-practices/key-management)  
+We are following [Foundry introduction](https://getfoundry.sh/introduction/overview) and here are the sections of:
+[best practices - writing contracts](https://getfoundry.sh/guides/best-practices/writing-contracts)
+[best practices - writing tests](https://getfoundry.sh/guides/best-practices/writing-tests)
+[best practices - writing scripts](https://getfoundry.sh/guides/best-practices/writing-scripts)
+[best practices - security](https://getfoundry.sh/guides/best-practices/security)
+[best practices - key management](https://getfoundry.sh/guides/best-practices/key-management)
 [best practices - commenting](https://getfoundry.sh/guides/best-practices/commenting)
 
 ### NatSpec
@@ -63,26 +78,27 @@ RSKIP-502 requires that the PowPeg Bridge authorize **only ONE contract address*
 
 **Architecture:**
 
-```
-┌─────────────────┐
-│  PowPeg Bridge  │ (authorizes only ONE address)
-└────────┬────────┘
-         │ authorizes
-         ▼
-┌─────────────────┐
-│   RbtcBridge    │ (single authorized intermediary)
-│  - mintRbtc()   │ ← Called by PeginManager during pegin acceptance
-│  - burnRbtc()   │ ← Called by PegoutManager during pegout request
-└────────┬────────┘
-         │ authorized callers
-    ┌────┴────┐
-    ▼         ▼
+```asci
+        ┌─────────────────┐
+        │  PowPeg Bridge  │ (authorizes only ONE address)
+        └───────┬─────────┘
+                │ authorizes
+                ▼
+        ┌─────────────────┐
+        │   RbtcBridge    │ (single authorized intermediary)
+        │  - mintRbtc()   │ ← Called by PeginManager during pegin acceptance
+        │  - burnRbtc()   │ ← Called by PegoutManager during pegout request
+        └────────┬────────┘
+                 │ authorized callers
+            ┌────┴────┐
+            ▼         ▼
 ┌──────────────┐  ┌──────────────┐
 │ PeginManager │  │PegoutManager │
 └──────────────┘  └──────────────┘
 ```
 
 **Key Features:**
+
 - **Access Control**: Only `PeginManager` can call `mintRbtc()`, only `PegoutManager` can call `burnRbtc()`
 - **Gas Limit Protection**: RBTC transfers use a 100k gas limit to prevent DoS attacks
 - **Upgradeable**: Uses UUPS pattern for future improvements
@@ -230,12 +246,14 @@ cast send 0x0000000000000000000000000000000001000006 \
 ```
 
 **Important:** RSKIP-502 enforces that cap increases:
+
 - Must be greater than the current total cap (available + locked)
 - Cannot exceed 2x the current total cap (security measure)
 
 #### Local Testing (Anvil/Regtest)
 
 For local testing with Anvil or Regtest, the deployment script automatically:
+
 - Configures BridgeMock with RbtcBridge as the authorized union bridge
 - Funds BridgeMock with 400 RBTC for testing
 - Sets appropriate confirmations for fast testing
@@ -299,12 +317,66 @@ The Union Bridge system uses a trust minimized committee approach to manage Bitc
 A slot can have the following states:
 
 - `Prepared`, when all the dispute resolution information is linked to the slot (setup completed). In this state the slot is ready to be assigned to a request peg-in operation.
+- `Blocked`, when pegin is not accepted by committee (Reject Pegin TX) or time window for the committee to sign has passed and the user recover the funds (User Reimbursement TX). The slot becomes blocked and cannot be used.
 - `Filled`, when the Committee members have confirmed and registered a peg-in. In this state the slot is ready for peg-out.
 - `Locked`, when the slot is assigned to a peg-out operation.
-- `Advanced`: when the operator advanced funds.
-- `Completed`: when the peg-out is processed (happy path) or the operator receives the reimbursement after advance.
+- `OP Selected`, when the timewindow for all memebers to sign the pegout (User Take TX) has passed and not all members signed. An operator is selected to send the funds to the user.
+- `Advanced`: when the selected operator advanced funds. If no funds advanced we go back to select an operator
+- `Kickoff`: when the selected operator presents the reimbursement kickoff tx. If the reimbursement kickoff tx is not presented after some time we go back to select an operator.
+- `Challenged`: when a member (operator or watchtower) does not think reimbursement is valid it sends a Challenge Tx. After this point the selected operator can't receive the reimbursement (Operator Take TX), and needs to win the challenge.
+- `Revealed`: when the selected operator reveals the inputs (Reveal Slot ID TX) to be presented to BitVMX dispute. If it does not present the reveal tx we go back to select an operator.
+- `Completed`: when the peg-out is processed (happy path) or the operator presents the reimbursement after advance the funds without challenge, or operator receives the funds after winning the challenge.
 
 <img src="./specs/imgs/slots_transitions.png" alt="Slots transitions" width="400">
+
+### Streams Configuration
+
+The StreamManager contract requires specific configuration parameters during initialization. These parameters are defined in the `StreamManagerSettingsConfig` library (`script/helpers/StreamManagerSettingsConfig.sol`) and are used by the deployment script (`script/deploy/01_DeployImplAndProxy.s.sol`) to initialize the StreamManager contract.
+
+#### Stream Manager Settings
+
+The `StreamManagerSettings` struct configures global settings for the StreamManager:
+
+- **`securityBondPercentageOperator`** (uint16): Security bond percentage for operators in 10_000 format (e.g., 1000 = 10%). Default: 1000 (10%) for mainnet, 800 (8%) for testnet.
+- **`securityBondPercentageWatchtower`** (uint16): Security bond percentage for watchtowers in 10_000 format (e.g., 200 = 2%). Default: 200 (2%) for mainnet, 100 (1%) for testnet.
+- **`minimumSecurityDeposit`** (uint256): Minimum security deposit required for committee members in wei. Default: 22,500,000 gwei (2,250 USD).
+- **`disablementPaymentsPerChallenge`** (uint256): Amount of disablement payments per challenge in wei. Default: 2,500,000 gwei (250 USD).
+
+#### Stream Settings
+
+Each stream requires a `StreamSettings` struct that defines:
+
+- **`denomination`** (uint64): The Bitcoin denomination in satoshis. Five streams are created by default:
+  - 0.001 BTC: 100,000 satoshis
+  - 0.01 BTC: 1,000,000 satoshis
+  - 0.1 BTC: 10,000,000 satoshis
+  - 1 BTC: 100,000,000 satoshis
+  - 10 BTC: 1,000,000,000 satoshis
+
+- **`peginConfirmations`** (uint8): Number of Bitcoin confirmations required for peg-in transactions. Default: 12 blocks for mainnet, 1 block for testnet, 2 blocks for local development.
+
+- **`pegoutConfirmations`** (uint8): Number of Bitcoin confirmations required for peg-out transactions. Default: 12 blocks for mainnet, 1 block for testnet, 2 blocks for local development.
+
+- **`timelockSettings`** (TimelockSettings): Bitcoin timelock settings in blocks for dispute resolution and protocol operations.
+
+#### Timelock Settings
+
+The `TimelockSettings` struct configures various timelocks used in the Union protocol:
+
+- **`shortTimelock`** (uint8): Short timelock in Bitcoin blocks. Default: 6 blocks.
+- **`longTimelock`** (uint8): Long timelock in Bitcoin blocks. Default: 12 blocks.
+- **`requestPeginTimelock`** (uint8): Request peg-in timelock in Bitcoin blocks. Used for user fund recovery if the request peg-in timelock expires. Default: 12 blocks (1 block for local test groups).
+- **`opWonTimelock`** (uint8): Operator won timelock in Bitcoin blocks. After this time, if no one challenges the operator, the operator wins the challenge. Default: 150 blocks.
+- **`claimGateTimelock`** (uint8): Claim gate timelock in Bitcoin blocks when claim gate is triggered. Default: 6 blocks.
+- **`inputNotRevealedTimelock`** (uint8): Input not revealed timelock in Bitcoin blocks. Time the operator has to reveal the input in the challenge; if not, the watchtower wins. Default: 8 blocks.
+- **`opNoCosignTimelock`** (uint8): Operator no cosign timelock in Bitcoin blocks when operator does not cosign. Default: 12 blocks.
+- **`wtNoChallengeTimelock`** (uint8): Watchtower no challenge timelock in Bitcoin blocks. Time the watchtower has to choose interval for the operator inputs (Challenger Tx); if not, the watchtower is punished. Default: 12 blocks.
+
+#### BitVMX Integration
+
+These configuration values are used with `set var` commands in BitVMX to initialize the Union protocol. The values defined in `StreamManagerSettingsConfig.sol` should match the environment variables set in BitVMX to ensure consistent behavior between the smart contract deployment and the BitVMX client initialization.
+
+The deployment script (`01_DeployImplAndProxy.s.sol`) automatically retrieves the appropriate settings based on the chain ID and test context, ensuring that the StreamManager is initialized with the correct parameters for each environment.
 
 ### Packet Creation Flow
 
@@ -529,7 +601,9 @@ sequenceDiagram
     Note right of SM: Signed transaction is ready for broadcast to Bitcoin network
 ```
 
-### Phase 3: Accept Peg-In
+### Phase 3: Accept or Reject Peg-In
+
+#### Normal Case: Accept Peg-In - All Members Signed
 
 1. **Member submits accept**: A committee member who monitors the Bitcoin network calls `acceptPegin()` with the broadcasted transaction and SPV proof
 2. **System validates**: System validates the accept transaction and proof
@@ -555,15 +629,22 @@ sequenceDiagram
     Note right of PIM: BTC is now pegged-in to RSK, RBTC minted to user's address
 ```
 
+#### Alternative Case: Reject Pegin - Not all members signed
+
+- **User Reimbursement**: After a time window the user can spend the request pegin transaction to recover the funds. If this is the case someone who monitors the Bitcoin network calls `userReimbursement()` with the broadcasted [USER_REIMBUSEMENT_TX](./bitcoin-transactions.md#1-user_reimbursment_tx-user-reimbursement-transaction) and SPV proof to mark that slot as BLOCKED.
+
+- **Reject Pegin**: For some reason the committee does not accept the request pegin. A member brodcast a [REJECT_PEGIN_TX](./bitcoin-transactions.md#1-reject_pegin_tx-reject-pegin-transaction) to consume the enabler and calls `rejectPegin()` with the SPV proof of that transaction and mark the slot as BLOCKED.
+
 ## Peg-Out Process (RSK → Bitcoin)
 
 ### Phase 1: Peg-Out Request
 
 1. **User requests pegout**: User calls `tryPegout()` with the Bitcoin public key where they want to receive funds and sends RBTC equal to the stream denomination
 2. **Validate request**: System validates the Bitcoin compressed public key format and amount limits
-3. **Store request**: Peg-out request is stored with all the necessary data
-4. **Generate user take transaction**: System generates the Bitcoin user take transaction using the stored UTXO from the previous accept peg-in and emits an event with the signature hash for committee members to sign
-5. **Burn RBTC**: PegoutManager calls `RbtcBridge.burnRbtc()` which releases RBTC back to the PowPeg Bridge, preparing for the Bitcoin peg-out
+3. **Lock slot**: System finds a filled slot and marks it as locked. Reverts if no filled slot is available or if there is a pegout in process
+4. **Store request**: Peg-out request is stored with all the necessary data
+5. **Generate user take transaction**: System generates the Bitcoin user take transaction using the stored UTXO from the previous accept peg-in and emits an event with the signature hash for committee members to sign
+6. **Burn RBTC**: PegoutManager calls `RbtcBridge.burnRbtc()` which releases RBTC back to the PowPeg Bridge, preparing for the Bitcoin peg-out
 
 ```mermaid
 sequenceDiagram
@@ -577,6 +658,8 @@ sequenceDiagram
     U->>+POM: tryPegout(userPubKey)
     Note right of U: Provides Bitcoin public key and sends RBTC
     POM->>POM: Validate request
+    POM->>POM: Lock slot
+    Note right of POM: Find filled slot and mark as locked<br/>Reverts if no filled slot available<br/>or pegout in process
     POM->>POM: Store pegout request data
     POM->>POM: Generate user take transaction
     POM->>POM: Burn RBTC via RbtcBridge
@@ -675,9 +758,17 @@ sequenceDiagram
 
     M->>M: Bitcoin user funds advancement
     Note right of M: Operator advances BTC to user's Bitcoin address
+    M->>+POM: registerAdvanceFunds(btcTxSPVProof)
+    Note right of M: Operator calls `registerAdvanceFunds()` with the advancement tx and SPV proof
+    POM->>POM: Validate BTC transaction and SPV proof
+    POM-->>-ENV: AdvanceFundsRegistered event
 
     M->>M: Bitcoin Reimbursement Kickoff
     Note right of M: Operator broadcasts Reimbursement Kickoff Bitcoin transaction
+    M->>+POM: registerReimbursementKickoff(btcTxSPVProof)
+    Note right of M: Operator calls `registerReimbursementKickoff()` with the kickoff tx and SPV proof
+    POM->>POM: Validate BTC transaction and SPV proof
+    POM-->>-ENV: ReimbursementKickoffRegistered event
 
     Note over M,ENV: Challenge period timeout
     Note over M,ENV: If no one challenges within timeout period
@@ -1082,3 +1173,5 @@ Then recompile all contracts with the following commands and try again:
 ```sh
 forge clean && forge build
 ```
+
+If you still get the error delete the `out` folder

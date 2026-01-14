@@ -1,5 +1,5 @@
 # SignatureManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/96535706e496364789ce242b18e17052bb6e424e/src/SignatureManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/SignatureManager.sol)
 
 **Inherits:**
 [ISignatureManager](/src/interfaces/ISignatureManager.sol/interface.ISignatureManager.md), [AccessControl](/src/AccessControl.sol/contract.AccessControl.md)
@@ -26,7 +26,7 @@ ICommitteeRegistry public committeeRegistry;
 ### committeeSignatures
 
 ```solidity
-mapping(bytes32 hashToSign => Signatures signatures) internal committeeSignatures;
+mapping(bytes32 txid => Signatures signatures) internal committeeSignatures;
 ```
 
 
@@ -87,13 +87,13 @@ Adds a nonce for a committee member to the signature collection
 
 
 ```solidity
-function addMemberNonce(bytes32 _hashToSign, bytes memory _nonce) external returns (bool);
+function addMemberNonce(bytes32 _txid, bytes memory _nonce) external returns (bool);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_hashToSign`|`bytes32`|The hash that needs to be signed by the committee|
+|`_txid`|`bytes32`|The txid that needs to be signed by the committee|
 |`_nonce`|`bytes`|The 66-byte nonce for the Musig2 protocol|
 
 **Returns**
@@ -156,7 +156,15 @@ Gets all partial signatures for a given hash
 
 
 ```solidity
-function getPartialSignatures(bytes32 _txid) external view returns (SignatureData[] memory);
+function getPartialSignatures(bytes32 _txid)
+    external
+    view
+    returns (
+        SignatureData[] memory partialSignaturesData,
+        uint8 missingSignatures,
+        uint8 missingNonces,
+        uint128 committeeId
+    );
 ```
 **Parameters**
 
@@ -168,30 +176,10 @@ function getPartialSignatures(bytes32 _txid) external view returns (SignatureDat
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`SignatureData[]`|Array of signature data for all committee members|
-
-
-### getSignaturesStatus
-
-Gets the status of the signatures for a given hash
-
-
-```solidity
-function getSignaturesStatus(bytes32 _txid) external view returns (uint8, uint8, uint128);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_txid`|`bytes32`|The hash to get status for|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`<none>`|`uint8`|missingSignatures Number of missing signatures|
-|`<none>`|`uint8`|missingNonces Number of missing nonces|
-|`<none>`|`uint128`|committeeId The committee ID for this signature collection|
+|`partialSignaturesData`|`SignatureData[]`|Array of signature data for all committee members|
+|`missingSignatures`|`uint8`|Number of missing signatures|
+|`missingNonces`|`uint8`|Number of missing nonces|
+|`committeeId`|`uint128`|The committee ID for this signature collection|
 
 
 ### _getSignatures
@@ -244,15 +232,15 @@ function initOperatorTakeTxids(bytes32 _acceptPeginTxid, uint128 _committeeId) e
 function _getOperatorTakeTxids(bytes32 _acceptPeginTxid) internal view returns (OperatorTakeTxids storage);
 ```
 
-### addOperatorTakeTxid
+### addOperatorTakeTxids
 
-Adds a OperatorTake transaction id for an operator
+Adds a OperatorTake and OperatorWon transaction id for an operator
 
 *Only operators can add OperatorTake transaction id's*
 
 
 ```solidity
-function addOperatorTakeTxid(bytes32 _acceptPeginTxid, bytes32 _takeTxid) external;
+function addOperatorTakeTxids(bytes32 _acceptPeginTxid, bytes32 _takeTxid, bytes32 _wonTxid) external;
 ```
 **Parameters**
 
@@ -260,6 +248,7 @@ function addOperatorTakeTxid(bytes32 _acceptPeginTxid, bytes32 _takeTxid) extern
 |----|----|-----------|
 |`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction id|
 |`_takeTxid`|`bytes32`|The OperatorTake transaction id to add|
+|`_wonTxid`|`bytes32`||
 
 
 ### checkAllOperatorTakesHashesReady

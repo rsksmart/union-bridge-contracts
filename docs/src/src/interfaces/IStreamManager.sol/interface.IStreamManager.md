@@ -1,5 +1,5 @@
 # IStreamManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/96535706e496364789ce242b18e17052bb6e424e/src/interfaces/IStreamManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/interfaces/IStreamManager.sol)
 
 **Inherits:**
 [IAccessControl](/src/interfaces/IAccessControl.sol/interface.IAccessControl.md)
@@ -139,6 +139,8 @@ function getPacket(uint64 _streamId, uint64 _packetNumber) external view returns
 
 Locks the first filled slot in a stream for peg-out processing
 
+Reverts if a pegout is already in progress for the same stream
+
 *Returns the slot information and packet number for the locked slot*
 
 
@@ -218,7 +220,8 @@ function fillSlot(
     StreamPosition memory _stream,
     uint64 _acceptPeginAmount,
     bytes32 _acceptPeginTx,
-    bytes memory _scriptPubKey
+    bytes memory _scriptPubKey,
+    bytes memory _enablerScriptPubKey
 ) external;
 ```
 **Parameters**
@@ -228,7 +231,8 @@ function fillSlot(
 |`_stream`|`StreamPosition`|The struct containing the stream, packet, and slot information|
 |`_acceptPeginAmount`|`uint64`|The amount of the accept peg-in transaction in satoshis|
 |`_acceptPeginTx`|`bytes32`|The transaction ID of the accept peg-in transaction|
-|`_scriptPubKey`|`bytes`|The scriptPubKey of the accept peg-in transaction|
+|`_scriptPubKey`|`bytes`|The scriptPubKey of the accept peg-in taptree output|
+|`_enablerScriptPubKey`|`bytes`|The scriptPubKey of the accept peg-in enabler output|
 
 
 ### blockSlot
@@ -743,6 +747,21 @@ event PegoutConfirmationsUpdated(uint64 _streamId, uint8 _confirmations);
 |`_streamId`|`uint64`|The ID of the stream|
 |`_confirmations`|`uint8`|The number of confirmations required|
 
+### TimelockSettingsUpdated
+Event emitted when the timelock settings are updated
+
+
+```solidity
+event TimelockSettingsUpdated(uint64 _streamId, TimelockSettings _timelockSettings);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_streamId`|`uint64`|The ID of the stream|
+|`_timelockSettings`|`TimelockSettings`|The timelock settings that were updated|
+
 ## Errors
 ### StreamNotFoundByDenomination
 Thrown when a stream is not found for the given denomination
@@ -821,6 +840,20 @@ Thrown when there are no filled slots available for a given stream
 
 ```solidity
 error NoFilledSlot(uint256 streamId);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`streamId`|`uint256`|The stream ID|
+
+### PegoutInProcess
+Thrown when there is already a pegout in process for a given stream
+
+
+```solidity
+error PegoutInProcess(uint256 streamId);
 ```
 
 **Parameters**
@@ -1058,4 +1091,49 @@ error SlotNotBlockable(uint256 streamId, uint256 packetNumber, uint256 slotId, S
 |`packetNumber`|`uint256`|The packet number|
 |`slotId`|`uint256`|The slot ID|
 |`currentState`|`SlotState`|The current state of the slot|
+
+### InvalidTimelockSettings
+Thrown when the timelock settings are invalid
+
+
+```solidity
+error InvalidTimelockSettings(TimelockSettings timelockSettings);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`timelockSettings`|`TimelockSettings`|The invalid timelock settings|
+
+### InvalidStreamSettings
+Thrown when the stream settings confirmations are invalid
+
+
+```solidity
+error InvalidStreamSettings(uint64 streamId, uint64 denomination, uint8 peginConfirmations, uint8 pegoutConfirmations);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`streamId`|`uint64`|The stream ID|
+|`denomination`|`uint64`|The denomination of the stream|
+|`peginConfirmations`|`uint8`|The number of peg-in confirmations|
+|`pegoutConfirmations`|`uint8`|The number of peg-out confirmations|
+
+### InvalidStreamSettingsLength
+Thrown when the stream settings length is invalid
+
+
+```solidity
+error InvalidStreamSettingsLength(uint256 streamSettingsLength);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`streamSettingsLength`|`uint256`|The number of stream settings|
 

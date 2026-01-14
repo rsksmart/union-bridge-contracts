@@ -1,18 +1,10 @@
-# Stream
+# StreamSettings
 [Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/interfaces/IStreamManager.sol)
-
-Represents a stream that manages funds of a specific denomination
-
-*Each stream handles a specific Bitcoin amount for efficient fund management*
 
 
 ```solidity
-struct Stream {
-    uint64 streamId;
+struct StreamSettings {
     uint64 denomination;
-    uint64 peginPacketPointer;
-    uint64 pegoutPacketPointer;
-    uint16 pegoutSlotPointer;
     uint8 peginConfirmations;
     uint8 pegoutConfirmations;
     TimelockSettings timelockSettings;

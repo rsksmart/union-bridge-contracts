@@ -1,5 +1,5 @@
 # PegoutManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/96535706e496364789ce242b18e17052bb6e424e/src/PegoutManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/PegoutManager.sol)
 
 **Inherits:**
 [IPegoutManager](/src/interfaces/IPegoutManager.sol/interface.IPegoutManager.md), [PegManagerBase](/src/PegManagerBase.sol/abstract.PegManagerBase.md)
@@ -9,7 +9,7 @@ Manages peg-out operations from Rootstock to Bitcoin
 
 ## State Variables
 ### userTakeTimeout
-Timeout for user take operations
+Timeout in seconds for user take operations
 
 
 ```solidity
@@ -18,7 +18,7 @@ uint256 public userTakeTimeout;
 
 
 ### operatorTakeTimeout
-Timeout for operator take operations
+Timeout in seconds for operator take operations
 
 
 ```solidity
@@ -210,6 +210,44 @@ function triggerOperatorTake(bytes32 _pegoutTxid) external nonReentrant whenNotP
 |`_pegoutTxid`|`bytes32`|The transaction id of the peg-out request|
 
 
+### registerAdvanceFunds
+
+
+```solidity
+function registerAdvanceFunds(bytes32 acceptPeginTxid, BtcTxSPVProof calldata _advanceFunds)
+    external
+    nonReentrant
+    whenNotPaused;
+```
+
+### _verifyAdvanceFundsTx
+
+
+```solidity
+function _verifyAdvanceFundsTx(
+    BtcTxSPVProof calldata _advanceFunds,
+    PegoutTempInfo memory _pegoutInfo,
+    uint64 _streamId
+) internal view returns (bytes32 txid, int256 confirmations);
+```
+
+### _validateOperatorTakeAddress
+
+
+```solidity
+function _validateOperatorTakeAddress(bytes32 _acceptPeginTxid) internal view returns (PegoutTempInfo storage);
+```
+
+### registerReimbursementKickoff
+
+
+```solidity
+function registerReimbursementKickoff(bytes32 acceptPeginTxid, BtcTxSPVProof calldata _kickoffSPV)
+    external
+    nonReentrant
+    whenNotPaused;
+```
+
 ### registerOperatorTake
 
 Deposits an operator take proof for a peg-out transaction
@@ -276,5 +314,12 @@ function setOperatorTakeTimeout(uint256 _timeout) external onlyOwner;
 
 ```solidity
 function _closePacketIfLastSlot(StreamPosition memory streamInfo) internal;
+```
+
+### _preparePegoutPrevoutDatas
+
+
+```solidity
+function _preparePegoutPrevoutDatas(Slot memory _slot) internal pure returns (PrevoutData[] memory);
 ```
 

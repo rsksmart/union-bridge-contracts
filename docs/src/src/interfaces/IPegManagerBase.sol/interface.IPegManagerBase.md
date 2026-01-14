@@ -1,5 +1,5 @@
 # IPegManagerBase
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/96535706e496364789ce242b18e17052bb6e424e/src/interfaces/IPegManagerBase.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/interfaces/IPegManagerBase.sol)
 
 Interface for shared functionality between PeginManager and PegoutManager
 
@@ -125,6 +125,34 @@ event SignatureManagerUpdated(ISignatureManager _signatureManager);
 |`_signatureManager`|`ISignatureManager`|The new signature manager address|
 
 ## Errors
+### PeginNotRequested
+Thrown when trying to process a peg-out for a peg-in that hasn't been requested
+
+
+```solidity
+error PeginNotRequested(bytes32 btcTxid);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`btcTxid`|`bytes32`|The Bitcoin transaction id that wasn't requested|
+
+### InvalidPegStatus
+Thrown when the peg status is not valid for the current operation
+
+
+```solidity
+error InvalidPegStatus(PegStatus actual);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`actual`|`PegStatus`|The actual peg status that was found|
+
 ### BitcoinManagerAddressZero
 Error thrown when bitcoin manager address is zero
 
