@@ -13,6 +13,21 @@ This repository contains the specifications and Solidity code for the Union Brid
 ### Project Documentation
 
 - [How it Works](#how-it-works)
+  - [Key Concepts](#key-concepts)
+  - [Streams Configuration](#streams-configuration)
+  - [Packet Creation Flow](#packet-creation-flow)
+- [Peg-In Process (Bitcoin → RSK)](#peg-in-process-bitcoin--rsk)
+  - [Phase 1: Request Peg-In](#phase-1-request-peg-in)
+  - [Phase 2: Committee Signatures for Peg-In](#phase-2-committee-signatures-for-peg-in)
+  - [Phase 3: Accept or Reject Peg-In](#phase-3-accept-or-reject-peg-in)
+    - [Normal Case: Accept Peg-In - All Members Signed](#normal-case-accept-peg-in---all-members-signed)
+    - [Alternative Case: Reject Pegin - Not all members signed](#alternative-case-reject-pegin---not-all-members-signed)
+- [Peg-Out Process (RSK → Bitcoin)](#peg-out-process-rsk--bitcoin)
+  - [Phase 1: Peg-Out Request](#phase-1-peg-out-request)
+  - [Phase 2: Committee Signatures for Peg-Out](#phase-2-committee-signatures-for-peg-out)
+  - [Phase 3: Register Peg-Out](#phase-3-register-peg-out)
+    - [Normal Case: UserTake (Take0) - All Members Signed](#normal-case-usertake-take0---all-members-signed)
+    - [Alternative Case: Operator Take (Take1) - Not all members signed](#alternative-case-operator-take-take1---not-all-members-signed)
 - [Smart Contracts Architecture](#smart-contracts-architecture)
 - [Bitcoin Transactions](./bitcoin-transactions.md)
 - [Musig2](#musig2---multi-signatures-on-bitcoin)
@@ -314,7 +329,7 @@ A slot can have the following states:
 
 <img src="./specs/imgs/slots_transitions.png" alt="Slots transitions" width="400">
 
-### Streams Initialization
+### Streams Configuration
 
 The StreamManager contract requires specific configuration parameters during initialization. These parameters are defined in the `StreamManagerSettingsConfig` library (`script/helpers/StreamManagerSettingsConfig.sol`) and are used by the deployment script (`script/deploy/01_DeployImplAndProxy.s.sol`) to initialize the StreamManager contract.
 
@@ -1158,3 +1173,5 @@ Then recompile all contracts with the following commands and try again:
 ```sh
 forge clean && forge build
 ```
+
+If you still get the error delete the `out` folder

@@ -419,7 +419,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
 
         // Validate the txid is NOT the same as the accept peg-in txid
         if (acceptPeginTxid == rejectPeginTxid) {
-            revert InvalidAcceptPeginTxid(acceptPeginTxid, rejectPeginTxid);
+            revert InvalidRejectPeginTxid(rejectPeginTxid);
         }
 
         // Verify the pegin rejected transaction

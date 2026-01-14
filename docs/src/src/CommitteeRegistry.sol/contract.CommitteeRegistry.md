@@ -1,5 +1,5 @@
 # CommitteeRegistry
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/96535706e496364789ce242b18e17052bb6e424e/src/CommitteeRegistry.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/CommitteeRegistry.sol)
 
 **Inherits:**
 [ICommitteeRegistry](/src/interfaces/ICommitteeRegistry.sol/interface.ICommitteeRegistry.md), [AccessControl](/src/AccessControl.sol/contract.AccessControl.md), ReentrancyGuardUpgradeable, [Pausable](/src/Pausable.sol/contract.Pausable.md)
@@ -109,7 +109,10 @@ Initializes the CommitteeRegistry contract
 
 
 ```solidity
-function initialize(address _initialOwner, IMemberRegistry _memberRegistry) public virtual initializer;
+function initialize(address _initialOwner, IMemberRegistry _memberRegistry, CommitteeRegistrySettings memory _settings)
+    public
+    virtual
+    initializer;
 ```
 **Parameters**
 
@@ -117,6 +120,7 @@ function initialize(address _initialOwner, IMemberRegistry _memberRegistry) publ
 |----|----|-----------|
 |`_initialOwner`|`address`|The initial owner of the contract|
 |`_memberRegistry`|`IMemberRegistry`|The member registry contract address|
+|`_settings`|`CommitteeRegistrySettings`|The settings for the committee registry|
 
 
 ### _revertIfZero
@@ -496,7 +500,7 @@ Gets the operator dispute data (address and dispute public key) for operator-tak
 
 
 ```solidity
-function getOperatorDisputeData(uint128 _committeeId, SignatureData[] calldata _signatureData)
+function getOperatorDisputeData(uint128 _committeeId, SignatureData[] calldata _signatureData, uint8 _missingNonces)
     external
     onlyPegManager
     returns (address operatorAddress, bytes32 disputePubKey);
@@ -507,6 +511,7 @@ function getOperatorDisputeData(uint128 _committeeId, SignatureData[] calldata _
 |----|----|-----------|
 |`_committeeId`|`uint128`|The committee ID to get the operator from|
 |`_signatureData`|`SignatureData[]`|Array of signature data for committee members|
+|`_missingNonces`|`uint8`|Number of missing nonces|
 
 **Returns**
 
@@ -689,5 +694,47 @@ function releaseCommittee(uint64 _streamId, uint64 _packetNumber) external onlyP
 |----|----|-----------|
 |`_streamId`|`uint64`|The stream ID for the committee|
 |`_packetNumber`|`uint64`|The packet number where the committee was active|
+
+
+### getCommitteeDisputeKeys
+
+Gets the dispute keys (covenant public keys) for all committee members
+
+
+```solidity
+function getCommitteeDisputeKeys(uint128 _committeeId) external view returns (bytes32[] memory);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_committeeId`|`uint128`|The committee ID|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`bytes32[]`|Array of dispute keys for all members|
+
+
+### getOperatorDisputeKeys
+
+Gets the dispute keys (covenant public keys) for operator committee members only
+
+
+```solidity
+function getOperatorDisputeKeys(uint128 _committeeId) external view returns (bytes32[] memory);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_committeeId`|`uint128`|The committee ID|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`bytes32[]`|Array of dispute keys for operator members only|
 
 

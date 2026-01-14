@@ -1,8 +1,5 @@
 # IPegoutManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/96535706e496364789ce242b18e17052bb6e424e/src/interfaces/IPegoutManager.sol)
-
-**Inherits:**
-[IPausable](/src/interfaces/IPausable.sol/interface.IPausable.md)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/interfaces/IPegoutManager.sol)
 
 Interface for managing peg-out operations
 
@@ -32,6 +29,8 @@ function getPegoutTempInfo(bytes32 acceptPeginTxid) external view returns (Pegou
 ### tryPegout
 
 Initiates a peg-out request to Bitcoin
+
+Reverts if a pegout is already in progress for the same stream
 
 *Requires payment in RBTC and will revert if no filled slot is available*
 
@@ -162,6 +161,42 @@ function operatorTakeTimeout() external view returns (uint256);
 |`<none>`|`uint256`|The timeout duration in seconds|
 
 
+### registerAdvanceFunds
+
+Registers the advance funds transaction submitted by the operator
+
+*Validates the SPV proof and updated the peg-out status accordingly*
+
+
+```solidity
+function registerAdvanceFunds(bytes32 acceptPeginTxid, BtcTxSPVProof calldata _advanceFunds) external;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`acceptPeginTxid`|`bytes32`|The accept peg-in transaction id that it's being advanced|
+|`_advanceFunds`|`BtcTxSPVProof`|The BTC SPV proof of the advance funds transaction|
+
+
+### registerReimbursementKickoff
+
+Registers the reimbursement kickoff transaction submitted by the operator
+
+*Validates the SPV proof and updates the peg-out status accordingly*
+
+
+```solidity
+function registerReimbursementKickoff(bytes32 acceptPeginTxid, BtcTxSPVProof calldata _kickoffSPV) external;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`acceptPeginTxid`|`bytes32`|The accept peg-in transaction id that it's being reimbursed|
+|`_kickoffSPV`|`BtcTxSPVProof`|The BTC SPV proof of the reimbursement kickoff transaction|
+
+
 ### registerOperatorTake
 
 Registers the Bitcoin peg-out transaction to the operator account
@@ -263,6 +298,40 @@ event PegoutRegistered(
 |`committeeId`|`uint128`|The ID of the committee responsible for this peg-out|
 |`streamInfo`|`StreamPosition`|The stream position information related to this peg-out|
 
+### AdvanceFundsRegistered
+Event emitted when advance funds are successfully registered
+
+
+```solidity
+event AdvanceFundsRegistered(
+    bytes32 indexed blockHash,
+    bytes32 indexed txid,
+    bytes32 indexed acceptPeginTxid,
+    bytes32 pegoutId,
+    uint128 committeeId,
+    StreamPosition streamInfo
+);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`blockHash`|`bytes32`|The Bitcoin block hash containing the advance funds transaction|
+|`txid`|`bytes32`|The hash of the advance funds transaction|
+|`acceptPeginTxid`|`bytes32`|The hash of the original accept peg-in transaction|
+|`pegoutId`|`bytes32`|The unique identifier for this peg-out operation|
+|`committeeId`|`uint128`|The ID of the committee responsible for this advance funds|
+|`streamInfo`|`StreamPosition`|The stream position information related to this advance funds|
+
+### ReimbursementKickoffRegistered
+
+```solidity
+event ReimbursementKickoffRegistered(
+    bytes32 indexed txid, bytes32 indexed acceptPeginTxid, uint128 committeeId, StreamPosition streamInfo
+);
+```
+
 ### UserTakeTimeoutUpdated
 Event emitted when the user take timeout is updated
 
@@ -331,20 +400,6 @@ event PacketClosed(uint64 indexed streamId, uint64 indexed packetNumber);
 |`packetNumber`|`uint64`|The number of the packet that was closed|
 
 ## Errors
-### PeginNotRequested
-Thrown when trying to process a peg-out for a peg-in that hasn't been requested
-
-
-```solidity
-error PeginNotRequested(bytes32 btcTxid);
-```
-
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`btcTxid`|`bytes32`|The Bitcoin transaction id that wasn't requested|
-
 ### PegoutRequestAmountExceedsUint64Limit
 Thrown when peg-out request amount exceeds uint64 limit
 
@@ -492,20 +547,6 @@ error InvalidTimeout(uint256 timeout);
 |----|----|-----------|
 |`timeout`|`uint256`|The invalid timeout value that was provided|
 
-### InvalidPegStatus
-Thrown when the peg status is not valid for the current operation
-
-
-```solidity
-error InvalidPegStatus(PegStatus actual);
-```
-
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`actual`|`PegStatus`|The actual peg status that was found|
-
 ### UserTakeTimeoutNotExpired
 Thrown when trying to trigger operator take before user take timeout has expired
 
@@ -578,4 +619,79 @@ error OperatorTakeAddressNotMatch(address expectedOperator, address actualOperat
 |----|----|-----------|
 |`expectedOperator`|`address`|The expected operator address that should take the pegout|
 |`actualOperator`|`address`|The actual operator address that was provided|
+
+### ReimbursementKickoffBeforeAdvanceFunds
+Thrown when the reimbursement kickoff transaction is mined before the advance funds transaction
+
+
+```solidity
+error ReimbursementKickoffBeforeAdvanceFunds(int256 advanceFundsBlockNumber, int256 reimbursementKickoffBlockNumber);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`advanceFundsBlockNumber`|`int256`|The block number when advance funds was mined|
+|`reimbursementKickoffBlockNumber`|`int256`|The block number when reimbursement kickoff was mined|
+
+### WrongUserAmount
+Thrown when the advance funds amount is lower than the expected peg-out amount
+
+
+```solidity
+error WrongUserAmount(uint256 actual, uint256 expected);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`actual`|`uint256`|The actual amount in satoshis of the advance funds transaction|
+|`expected`|`uint256`|The expected amount in satoshis that should be advanced|
+
+### ReimbursementKickoffTxidNotMatch
+Thrown when the reimbursement kickoff txid does not match the expected value
+
+
+```solidity
+error ReimbursementKickoffTxidNotMatch(bytes32 expected, bytes32 actual);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`expected`|`bytes32`|The expected reimbursement kickoff txid|
+|`actual`|`bytes32`|The actual reimbursement kickoff txid provided|
+
+### OperatorTakeDataNotFound
+Thrown when operator take data is not found for a given accept peg-in txid and operator address
+
+
+```solidity
+error OperatorTakeDataNotFound(bytes32 acceptPeginTxid, address operatorAddress);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`acceptPeginTxid`|`bytes32`|The accept peg-in transaction id|
+|`operatorAddress`|`address`|The operator address for which the data was not found|
+
+### OperatorTakeTxidNotMatch
+Thrown when the operator take transaction id does not match the expected value
+
+
+```solidity
+error OperatorTakeTxidNotMatch(bytes32 expected, bytes32 actual);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`expected`|`bytes32`|The expected operator take transaction id|
+|`actual`|`bytes32`|The actual operator take transaction id provided|
 

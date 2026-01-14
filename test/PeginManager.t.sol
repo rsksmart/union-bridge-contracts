@@ -1231,10 +1231,9 @@ contract TestPeginManager is Test, HelperContract {
         peginManager.rejectPegin(rejectPeginTxSPVProof);
     }
 
-    function test_rejectPegin_Revert_InvalidAcceptPeginTxid() external {
+    function test_rejectPegin_Revert_InvalidRejectPeginTxid() external {
         // Arrange
         (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
-        bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
 
         // Get a committee member address
         uint128 committeeId = streamManager.getCommitteeId(setupStreamId, PACKET_NUMBER);
@@ -1246,10 +1245,8 @@ contract TestPeginManager is Test, HelperContract {
         bytes32 acceptPeginTxid = getBtcTxid(acceptPeginTx);
         BtcTxSPVProof memory acceptPeginTxSPVProof = createBtcTxSPVProof(acceptPeginTx);
 
-        // Assert - expect revert
-        vm.expectRevert(
-            abi.encodeWithSelector(IPeginManager.InvalidAcceptPeginTxid.selector, acceptPeginTxid, acceptPeginTxid)
-        );
+        // Assert - expect revert with InvalidRejectPeginTxid
+        vm.expectRevert(abi.encodeWithSelector(IPeginManager.InvalidRejectPeginTxid.selector, acceptPeginTxid));
 
         // Act - try to register accept pegin as reject pegin (should fail because txids match)
         vm.prank(memberAddress);

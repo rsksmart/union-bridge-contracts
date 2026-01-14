@@ -1,5 +1,5 @@
 # OperatorTakeData
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/96535706e496364789ce242b18e17052bb6e424e/src/interfaces/ISignatureManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/interfaces/ISignatureManager.sol)
 
 Represents OperatorTake transaction data for a committee member
 
@@ -8,7 +8,8 @@ Represents OperatorTake transaction data for a committee member
 
 ```solidity
 struct OperatorTakeData {
-    bytes32 txid;
+    bytes32 takeTxid;
+    bytes32 wonTxid;
     address memberAddress;
 }
 ```

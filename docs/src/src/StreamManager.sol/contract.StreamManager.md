@@ -1,5 +1,5 @@
 # StreamManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/96535706e496364789ce242b18e17052bb6e424e/src/StreamManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/StreamManager.sol)
 
 **Inherits:**
 [IStreamManager](/src/interfaces/IStreamManager.sol/interface.IStreamManager.md), [AccessControl](/src/AccessControl.sol/contract.AccessControl.md)
@@ -94,8 +94,8 @@ function initialize(
     address _peginManager,
     address _pegoutManager,
     ICommitteeRegistry _committeeRegistry,
-    uint64[] memory _denominations,
-    StreamManagerSettings memory _settings
+    StreamManagerSettings memory _settings,
+    StreamSettings[] memory _streamSettings
 ) public virtual initializer;
 ```
 **Parameters**
@@ -106,9 +106,16 @@ function initialize(
 |`_peginManager`|`address`|The address of the PeginManager contract|
 |`_pegoutManager`|`address`|The address of the PegoutManager contract|
 |`_committeeRegistry`|`ICommitteeRegistry`|The CommitteeRegistry contract address|
-|`_denominations`|`uint64[]`|Array of Bitcoin denominations in satoshis for each stream|
-|`_settings`|`StreamManagerSettings`|The settings for the StreamManager including confirmation counts and security bond percentages|
+|`_settings`|`StreamManagerSettings`|Struct with the settings for the StreamManager including security bond percentages|
+|`_streamSettings`|`StreamSettings[]`|Array of structs with the settings for each stream including confirmation counts and timelock settings|
 
+
+### _validateTimelockSettings
+
+
+```solidity
+function _validateTimelockSettings(TimelockSettings memory _timelockSettings) internal pure;
+```
 
 ### createNewPacket
 
@@ -277,6 +284,8 @@ function _findNextFilledSlot(uint64 _streamId) internal returns (Slot storage);
 
 Returns the first filled slot, locks it, and updates the peg-out pointers
 
+Reverts if a pegout is already in progress for the same stream
+
 *Can only be called by the PegManager*
 
 
@@ -294,7 +303,7 @@ function lockSlot(uint64 _streamId) external onlyPegManager returns (Slot memory
 |Name|Type|Description|
 |----|----|-----------|
 |`<none>`|`Slot`|slot The locked slot data|
-|`<none>`|`uint64`|packetNumber The packet number containing the slot|
+|`<none>`|`uint64`|packet The packet number containing the slot|
 
 
 ### getSlot
@@ -400,7 +409,8 @@ function fillSlot(
     StreamPosition memory _stream,
     uint64 _acceptPeginAmount,
     bytes32 _acceptPeginTx,
-    bytes memory _scriptPubKey
+    bytes memory _scriptPubKey,
+    bytes memory _enablerScriptPubKey
 ) external onlyPegManager;
 ```
 **Parameters**
@@ -410,7 +420,8 @@ function fillSlot(
 |`_stream`|`StreamPosition`|The struct containing the stream, packet, and slot information|
 |`_acceptPeginAmount`|`uint64`|The amount of the accept peg-in transaction|
 |`_acceptPeginTx`|`bytes32`|The hash of the accept peg-in transaction|
-|`_scriptPubKey`|`bytes`|The script pub key for the transaction|
+|`_scriptPubKey`|`bytes`|The script pub key for the taptree output|
+|`_enablerScriptPubKey`|`bytes`|The script pub key for the enabler output|
 
 
 ### blockSlot
@@ -421,7 +432,7 @@ Blocks a reserved slot due to timeout or refund proof
 
 
 ```solidity
-function blockSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) external onlyOwner;
+function blockSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) external onlyPegManager;
 ```
 **Parameters**
 
@@ -482,6 +493,8 @@ Marks a slot as completed and stores the UserTake transaction id
 
 *Can only be called by the PegManager*
 
+*Moves the pegout slot pointer to the next slot*
+
 
 ```solidity
 function completeSlot(
@@ -523,6 +536,27 @@ function advanceSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) ext
 ```solidity
 function getMinimumDeposit(StreamDenomination _denomination, Role _role) public view returns (uint256);
 ```
+
+### setTimelockSettings
+
+Sets the timelock settings for a stream
+
+*Can only be called by the owner*
+
+
+```solidity
+function setTimelockSettings(uint64 _streamId, TimelockSettings memory _timelockSettings)
+    external
+    streamExists(_streamId)
+    onlyOwner;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_streamId`|`uint64`|The ID of the stream|
+|`_timelockSettings`|`TimelockSettings`|The timelock settings to set|
+
 
 ### setPeginConfirmations
 
@@ -577,6 +611,13 @@ function setCommitteeRegistry(ICommitteeRegistry _committeeRegistry) external on
 |`_committeeRegistry`|`ICommitteeRegistry`|The new committee registry contract address|
 
 
+### _setCommitteeRegistry
+
+
+```solidity
+function _setCommitteeRegistry(ICommitteeRegistry _committeeRegistry) internal;
+```
+
 ### setSecurityBondPercentage
 
 Reverts if the role is NONE or if the percentage is 0 or greater than 10_000
@@ -595,6 +636,13 @@ function setSecurityBondPercentage(Role _role, uint16 _percentage) external only
 |`_percentage`|`uint16`|The security bond percentage in 10_000 format (e.g. 1000 = 10%)|
 
 
+### _setSecurityBondPercentage
+
+
+```solidity
+function _setSecurityBondPercentage(Role _role, uint16 _percentage) internal;
+```
+
 ### setMinimumSecurityDeposit
 
 
@@ -602,11 +650,37 @@ function setSecurityBondPercentage(Role _role, uint16 _percentage) external only
 function setMinimumSecurityDeposit(uint256 _cost) external onlyOwner;
 ```
 
+### _setMinimumSecurityDeposit
+
+
+```solidity
+function _setMinimumSecurityDeposit(uint256 _cost) internal;
+```
+
 ### setDisablementPaymentsPerChallenge
+
+Sets the disablement payments cost per challenge, this is used to calculate the minimum deposit for a role
+
+*Can only be called by the owner*
+
+*Emits a DisablementPaymentsPerChallengeUpdated event on success*
 
 
 ```solidity
 function setDisablementPaymentsPerChallenge(uint256 _cost) external onlyOwner;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_cost`|`uint256`|The new disablement payments per challenge in wei|
+
+
+### _setDisablementPaymentsPerChallenge
+
+
+```solidity
+function _setDisablementPaymentsPerChallenge(uint256 _cost) internal;
 ```
 
 ### setStreamPosition
@@ -673,10 +747,24 @@ function setPegStatus(bytes32 _acceptPeginTxid, PegStatus _newStatus) external o
 modifier streamExists(uint64 _streamId);
 ```
 
+### _streamExists
+
+
+```solidity
+function _streamExists(uint64 _streamId) internal view;
+```
+
 ### onlyCommitteeRegistry
 
 
 ```solidity
 modifier onlyCommitteeRegistry();
+```
+
+### _onlyCommitteeRegistry
+
+
+```solidity
+function _onlyCommitteeRegistry() internal view;
 ```
 

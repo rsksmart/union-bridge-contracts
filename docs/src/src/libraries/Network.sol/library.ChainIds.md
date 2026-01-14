@@ -1,5 +1,5 @@
 # ChainIds
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/96535706e496364789ce242b18e17052bb6e424e/src/libraries/Network.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/libraries/Network.sol)
 
 Library containing chain ID constants for different RSK networks
 
@@ -22,6 +22,15 @@ RSK testnet - the public test network
 
 ```solidity
 uint256 constant RSK_TESTNET = 31;
+```
+
+
+### RSK_REGTEST
+RSK Regtest
+
+
+```solidity
+uint256 constant RSK_REGTEST = 33;
 ```
 
 

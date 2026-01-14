@@ -1,5 +1,5 @@
 # PegManagerBase
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/96535706e496364789ce242b18e17052bb6e424e/src/PegManagerBase.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/PegManagerBase.sol)
 
 **Inherits:**
 [IPegManagerBase](/src/interfaces/IPegManagerBase.sol/interface.IPegManagerBase.md), [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md), [ProofValidator](/src/ProofValidator.sol/abstract.ProofValidator.md), ReentrancyGuardUpgradeable, [Pausable](/src/Pausable.sol/contract.Pausable.md)
@@ -133,4 +133,14 @@ function setPauser(address _newPauser) public override onlyOwner;
 |----|----|-----------|
 |`_newPauser`|`address`|The new pauser address|
 
+
+### _validatePegStatus
+
+
+```solidity
+function _validatePegStatus(bytes32 _acceptPeginTxid, PegStatus _expectedStatus)
+    internal
+    view
+    returns (StreamPosition memory);
+```
 

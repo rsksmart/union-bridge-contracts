@@ -1,5 +1,5 @@
 # IPauseManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/96535706e496364789ce242b18e17052bb6e424e/src/interfaces/IPauseManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/interfaces/IPauseManager.sol)
 
 Interface for the centralized pause manager contract
 
@@ -31,6 +31,39 @@ function initialize(
 |`_committeeRegistry`|`address`|The address of the CommitteeRegistry contract|
 |`_memberRegistry`|`address`|The address of the MemberRegistry contract|
 
+
+### pause
+
+Pauses all pausable contracts
+
+*Only callable by the contract owner*
+
+
+```solidity
+function pause() external;
+```
+
+### unpause
+
+Unpauses all pausable contracts
+
+*Only callable by the contract owner*
+
+
+```solidity
+function unpause() external;
+```
+
+### areContractsPaused
+
+Returns true if any of the contracts is paused
+
+*Returns true if at least one contract is paused*
+
+
+```solidity
+function areContractsPaused() external view returns (bool);
+```
 
 ## Events
 ### PausableContractUpdated

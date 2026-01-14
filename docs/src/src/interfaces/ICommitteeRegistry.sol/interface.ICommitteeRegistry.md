@@ -1,8 +1,5 @@
 # ICommitteeRegistry
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/96535706e496364789ce242b18e17052bb6e424e/src/interfaces/ICommitteeRegistry.sol)
-
-**Inherits:**
-[IPausable](/src/interfaces/IPausable.sol/interface.IPausable.md)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/interfaces/ICommitteeRegistry.sol)
 
 Interface for managing committee registration and formation in the union bridge
 
@@ -405,7 +402,7 @@ Gets the operator dispute data (address and dispute public key) for operator-tak
 
 
 ```solidity
-function getOperatorDisputeData(uint128 committeeId, SignatureData[] calldata signatureData)
+function getOperatorDisputeData(uint128 committeeId, SignatureData[] calldata signatureData, uint8 missingNonces)
     external
     returns (address operatorAddress, bytes32 disputePubKey);
 ```
@@ -415,6 +412,7 @@ function getOperatorDisputeData(uint128 committeeId, SignatureData[] calldata si
 |----|----|-----------|
 |`committeeId`|`uint128`|The ID of the committee|
 |`signatureData`|`SignatureData[]`|The signature data for the committee members|
+|`missingNonces`|`uint8`|Number of missing nonces|
 
 **Returns**
 
@@ -506,6 +504,48 @@ function pendingCommitteeTimeout() external view returns (uint256);
 |Name|Type|Description|
 |----|----|-----------|
 |`<none>`|`uint256`|The pending committee timeout|
+
+
+### getCommitteeDisputeKeys
+
+Gets the dispute keys (covenant public keys) for all committee members
+
+
+```solidity
+function getCommitteeDisputeKeys(uint128 _committeeId) external view returns (bytes32[] memory);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_committeeId`|`uint128`|The committee ID|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`bytes32[]`|Array of dispute keys for all members|
+
+
+### getOperatorDisputeKeys
+
+Gets the dispute keys (covenant public keys) for operator committee members only
+
+
+```solidity
+function getOperatorDisputeKeys(uint128 _committeeId) external view returns (bytes32[] memory);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_committeeId`|`uint128`|The committee ID|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`bytes32[]`|Array of dispute keys for operator members only|
 
 
 ## Events

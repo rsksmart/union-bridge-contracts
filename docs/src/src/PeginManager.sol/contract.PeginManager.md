@@ -1,5 +1,5 @@
 # PeginManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/96535706e496364789ce242b18e17052bb6e424e/src/PeginManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/PeginManager.sol)
 
 **Inherits:**
 [IPeginManager](/src/interfaces/IPeginManager.sol/interface.IPeginManager.md), [PegManagerBase](/src/PegManagerBase.sol/abstract.PegManagerBase.md)
@@ -144,7 +144,7 @@ Requests a peg-in operation by providing an SPV proof of the Bitcoin transaction
 
 
 ```solidity
-function requestPegin(BtcTxSPVProof calldata _requestPeginTxSPVProof) external nonReentrant whenNotPaused;
+function requestPegin(BtcTxSPVProof memory _requestPeginTxSPVProof) external nonReentrant whenNotPaused;
 ```
 **Parameters**
 
@@ -157,17 +157,17 @@ function requestPegin(BtcTxSPVProof calldata _requestPeginTxSPVProof) external n
 
 
 ```solidity
-function _validateRequestPeginProof(BtcTxSPVProof calldata _requestPeginTxSPVProof)
+function _validateRequestPeginProof(BtcTxSPVProof memory _requestPeginTxSPVProof)
     internal
     view
     returns (bytes32 requestPeginTxid);
 ```
 
-### _extractPeginData
+### _validatePeginP2TRAndOpReturn
 
 
 ```solidity
-function _extractPeginData(BtcTxSPVProof calldata _requestPeginTxSPVProof)
+function _validatePeginP2TRAndOpReturn(BtcTxSPVProof memory _requestPeginTxSPVProof)
     internal
     view
     returns (
@@ -179,17 +179,110 @@ function _extractPeginData(BtcTxSPVProof calldata _requestPeginTxSPVProof)
     );
 ```
 
-### _validatePeginTransaction
+### _validatePeginEnablerAndConfirmations
 
 
 ```solidity
-function _validatePeginTransaction(
-    BtcTxSPVProof calldata _requestPeginTxSPVProof,
-    address rskDestinationAddress,
-    bytes32 btcReimbursementPubKey,
-    bytes memory committeePubKey,
-    Stream memory stream,
-    bytes32 requestPeginTxid
+function _validatePeginEnablerAndConfirmations(
+    BtcTxSPVProof memory _requestPeginTxSPVProof,
+    bytes32 _btcReimbursementPubKey,
+    bytes memory _committeePubKey,
+    Stream memory _stream,
+    bytes32 _requestPeginTxid,
+    uint128 _committeeId
+) internal view returns (int256 confirmations, BitcoinSignatureData memory acceptPeginSignatureData);
+```
+
+### _calculateAcceptPeginSignatureData
+
+
+```solidity
+function _calculateAcceptPeginSignatureData(
+    bytes32 _btcReimbursementPubKey,
+    uint128 _committeeId,
+    bytes32 _requestPeginTxid,
+    BtcTxSPVProof memory _requestPeginTxSPVProof,
+    bytes32[] memory _disputeKeys,
+    bytes memory _committeePubKey
+) internal view returns (BitcoinSignatureData memory acceptPeginSignatureData);
+```
+
+### _reserveSlot
+
+
+```solidity
+function _reserveSlot(uint64 _streamId, uint64 packetNumber, bytes32 _txid)
+    internal
+    returns (StreamPosition memory streamPos);
+```
+
+### userReimbursement
+
+Registers a user reimbursement transaction from Bitcoin
+
+*This function validates the user reimbursement transaction and completes the user reimbursement process*
+
+*Emits the UserReimbursementRegistered event*
+
+*Only callable when contract is unpaused*
+
+
+```solidity
+function userReimbursement(BtcTxSPVProof memory _userReimbursementTxSPVProof, uint32 _reimbursementPeginVin)
+    external
+    nonReentrant
+    whenNotPaused;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_userReimbursementTxSPVProof`|`BtcTxSPVProof`|The BTC SPV proof of the user reimbursement transaction|
+|`_reimbursementPeginVin`|`uint32`|The input index of the request peg-in btc transaction that was spent|
+
+
+### _verifyUserReimbursementTransaction
+
+
+```solidity
+function _verifyUserReimbursementTransaction(
+    BtcTxSPVProof memory _userReimbursementTxSPVProof,
+    bytes32 _requestPeginTxid,
+    bytes32 _userReimbursementTxid,
+    uint64 _streamId,
+    uint32 _reimbursementPeginVin
+) internal view;
+```
+
+### rejectPegin
+
+Registers a reject peg-in transaction from Bitcoin
+
+*Validates the SPV proof and registers the reject peg-in transaction*
+
+*Emits RejectPeginRegistered event upon successful registration*
+
+*Slot state is set to BLOCKED*
+
+
+```solidity
+function rejectPegin(BtcTxSPVProof memory _rejectPeginTxSPVProof) external nonReentrant whenNotPaused;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_rejectPeginTxSPVProof`|`BtcTxSPVProof`|The BTC SPV proof of the reject peg-in transaction|
+
+
+### _verifyRejectPeginTransaction
+
+
+```solidity
+function _verifyRejectPeginTransaction(
+    BtcTxSPVProof memory _rejectPeginTxSPVProof,
+    bytes32 _rejectPeginTxid,
+    uint64 _streamId
 ) internal view;
 ```
 
@@ -207,7 +300,7 @@ Accepts a peg-in operation by providing an SPV proof of the accept peg-in transa
 
 
 ```solidity
-function acceptPegin(BtcTxSPVProof calldata _peginAcceptedTxSPVProof) external nonReentrant whenNotPaused;
+function acceptPegin(BtcTxSPVProof memory _peginAcceptedTxSPVProof) external nonReentrant whenNotPaused;
 ```
 **Parameters**
 
@@ -223,8 +316,9 @@ function acceptPegin(BtcTxSPVProof calldata _peginAcceptedTxSPVProof) external n
 function _storePegin(
     bytes32 _requestPeginTxid,
     bytes32 _blockHash,
-    bytes32 _acceptPegintxid,
-    BtcTxOut memory _acceptPeginTxOutput
+    bytes32 _acceptPeginTxid,
+    BtcTxOut memory _acceptPeginTxOutput,
+    BtcTxOut memory _enablerOutput
 ) internal;
 ```
 

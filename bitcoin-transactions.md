@@ -363,7 +363,7 @@ graph LR
 
 #### USER_REIMBURSMENT_TX Inputs
 
-##### Input 0: From REQUEST_PEGIN_TX Output 0
+##### USER_REIMBURSMENT_TX Input 0: From REQUEST_PEGIN_TX Output 0
 
 - **Type**: Taproot (P2TR)
 - **Spend Mode**: Script path (timelock)
@@ -423,7 +423,7 @@ graph LR
 
 #### REJECT_PEGIN_TX Inputs
 
-##### Input 0: From REQUEST_PEGIN_TX Output 2 (Enabler Output)
+##### REJECT_PEGIN_TX Input 0: From REQUEST_PEGIN_TX Output 2 (Enabler Output)
 
 - **Type**: Taproot (P2TR)
 - **Spend Mode**: Script path (dispute key)
@@ -477,7 +477,7 @@ graph LR
 
 #### ACCEPT_PEGIN_TX Inputs
 
-##### Input 0: From REQUEST_PEGIN_TX Output 0
+##### ACCEPT_PEGIN_TX Input 0: From REQUEST_PEGIN_TX Output 0
 
 - **Type**: Taproot (P2TR)
 - **Spend Mode**: KeyOnly with Aggregate signature
@@ -510,7 +510,7 @@ graph LR
         style E fill:#fff3e0
     ```
 
-##### Input 1: From REQUEST_PEGIN_TX Output 2
+##### ACCEPT_PEGIN_TX Input 1: From REQUEST_PEGIN_TX Output 2 (Enabler Output)
 
 - **Type**: Taproot (P2TR)
 - **Spend Mode**: KeyOnly with Aggregate signature

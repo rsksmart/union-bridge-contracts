@@ -1,5 +1,5 @@
 # BtcScriptParser
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/96535706e496364789ce242b18e17052bb6e424e/src/libraries/BtcScriptParser.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/libraries/BtcScriptParser.sol)
 
 **Author:**
 Fairgate
@@ -69,6 +69,13 @@ function getP2WSHScript(bytes memory _script) internal pure returns (bytes memor
 |----|----|-----------|
 |`<none>`|`bytes`|The P2WSH script bytes|
 
+
+### getPegoutIdScript
+
+
+```solidity
+function getPegoutIdScript(bytes32 _pegoutId) internal pure returns (bytes memory);
+```
 
 ### pushNumberToStack
 

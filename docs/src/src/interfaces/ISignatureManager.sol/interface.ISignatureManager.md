@@ -1,5 +1,5 @@
 # ISignatureManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/96535706e496364789ce242b18e17052bb6e424e/src/interfaces/ISignatureManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/interfaces/ISignatureManager.sol)
 
 **Inherits:**
 [IAccessControl](/src/interfaces/IAccessControl.sol/interface.IAccessControl.md)
@@ -14,19 +14,19 @@ Interface for managing multi-signature operations in the union bridge
 ## Functions
 ### initSignatures
 
-Initializes signature collection for a specific hash
+Initializes signature collection for a specific txid
 
 *Sets up the signature tracking structure for committee members*
 
 
 ```solidity
-function initSignatures(bytes32 _hashToSign, uint128 _committeeId) external;
+function initSignatures(bytes32 _txid, uint128 _committeeId) external;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_hashToSign`|`bytes32`|The hash that committee members need to sign|
+|`_txid`|`bytes32`|The txid that committee members need to sign|
 |`_committeeId`|`uint128`|The ID of the committee responsible for signing|
 
 
@@ -38,13 +38,13 @@ Adds a nonce for a committee member
 
 
 ```solidity
-function addMemberNonce(bytes32 _hashToSign, bytes memory _nonce) external returns (bool);
+function addMemberNonce(bytes32 _txid, bytes memory _nonce) external returns (bool);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_hashToSign`|`bytes32`|The hash being signed|
+|`_txid`|`bytes32`|The txid being signed|
 |`_nonce`|`bytes`|The nonce provided by the member (should be 66 bytes)|
 
 **Returns**
@@ -62,13 +62,13 @@ Adds a signature for a committee member
 
 
 ```solidity
-function addMemberSignature(bytes32 _hashToSign, bytes32 _signature) external returns (bool);
+function addMemberSignature(bytes32 _txid, bytes32 _signature) external returns (bool);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_hashToSign`|`bytes32`|The hash being signed|
+|`_txid`|`bytes32`|The txid being signed|
 |`_signature`|`bytes32`|The signature provided by the member|
 
 **Returns**
@@ -80,17 +80,17 @@ function addMemberSignature(bytes32 _hashToSign, bytes32 _signature) external re
 
 ### checkAllSignaturesReady
 
-Checks if all signatures are ready for a specific hash
+Checks if all signatures are ready for a specific txid
 
 
 ```solidity
-function checkAllSignaturesReady(bytes32 _hashToSign) external view returns (bool);
+function checkAllSignaturesReady(bytes32 _txid) external view returns (bool);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_hashToSign`|`bytes32`|The hash to check signatures for|
+|`_txid`|`bytes32`|The txid to check signatures for|
 
 **Returns**
 
@@ -101,56 +101,43 @@ function checkAllSignaturesReady(bytes32 _hashToSign) external view returns (boo
 
 ### getPartialSignatures
 
-Retrieves all partial signatures for a specific hash
+Gets all partial signatures for a given txid
+
+*Returns signatures in the same order as committee members for Musig2 compatibility*
 
 
 ```solidity
-function getPartialSignatures(bytes32 _hashToSign) external view returns (SignatureData[] memory);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_hashToSign`|`bytes32`|The hash to get signatures for|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`<none>`|`SignatureData[]`|Array of signature data from all committee members|
-
-
-### getSignaturesStatus
-
-Gets the status of signatures for a specific hash
-
-
-```solidity
-function getSignaturesStatus(bytes32 _hashToSign)
+function getPartialSignatures(bytes32 _txid)
     external
     view
-    returns (uint8 missingSignatures, uint8 missingNonces, uint128 committeeId);
+    returns (
+        SignatureData[] memory partialSignaturesData,
+        uint8 missingSignatures,
+        uint8 missingNonces,
+        uint128 committeeId
+    );
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_hashToSign`|`bytes32`|The hash to check status for|
+|`_txid`|`bytes32`|The txid to get signatures for|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
+|`partialSignaturesData`|`SignatureData[]`|Array of signature data for all committee members|
 |`missingSignatures`|`uint8`|Number of missing signatures|
 |`missingNonces`|`uint8`|Number of missing nonces|
-|`committeeId`|`uint128`|The committee ID responsible for these signatures|
+|`committeeId`|`uint128`|The committee ID for this signature collection|
 
 
 ### initOperatorTakeTxids
 
 Initializes OperatorTake transaction id collection for a specific accept peg-in
 
-*Sets up the OperatorTake hash tracking structure for committee members*
+*Sets up the OperatorTake txid tracking structure for committee members*
 
 
 ```solidity
@@ -164,7 +151,7 @@ function initOperatorTakeTxids(bytes32 _acceptPeginTxid, uint128 _committeeId) e
 |`_committeeId`|`uint128`|The ID of the committee responsible for OperatorTake operations|
 
 
-### addOperatorTakeTxid
+### addOperatorTakeTxids
 
 Adds a OperatorTake transaction id for a committee member
 
@@ -172,7 +159,7 @@ Adds a OperatorTake transaction id for a committee member
 
 
 ```solidity
-function addOperatorTakeTxid(bytes32 _acceptPeginTxid, bytes32 _takeTxid) external;
+function addOperatorTakeTxids(bytes32 _acceptPeginTxid, bytes32 _takeTxid, bytes32 _wonTxid) external;
 ```
 **Parameters**
 
@@ -180,6 +167,7 @@ function addOperatorTakeTxid(bytes32 _acceptPeginTxid, bytes32 _takeTxid) extern
 |----|----|-----------|
 |`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction id|
 |`_takeTxid`|`bytes32`|The OperatorTake transaction id provided by the member|
+|`_wonTxid`|`bytes32`||
 
 
 ### checkAllOperatorTakesHashesReady
@@ -251,14 +239,14 @@ Event emitted when a nonce is added by a committee member
 
 
 ```solidity
-event NonceAdded(bytes32 indexed hashToSign, address indexed memberAddress, bytes nonce);
+event NonceAdded(bytes32 indexed txid, address indexed memberAddress, bytes nonce);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`hashToSign`|`bytes32`|The hash being signed|
+|`txid`|`bytes32`|The txid being signed|
 |`memberAddress`|`address`|The member's RSK address|
 |`nonce`|`bytes`|The nonce provided by the member|
 
@@ -267,28 +255,28 @@ Event emitted when all nonces are ready for a hash
 
 
 ```solidity
-event AllNoncesReady(bytes32 indexed hashToSign);
+event AllNoncesReady(bytes32 indexed txid);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`hashToSign`|`bytes32`|The hash for which all nonces are ready|
+|`txid`|`bytes32`|The txid for which all nonces are ready|
 
 ### SignatureAdded
 Event emitted when a signature is added by a committee member
 
 
 ```solidity
-event SignatureAdded(bytes32 indexed hashToSign, address indexed memberAddress, bytes32 signature);
+event SignatureAdded(bytes32 indexed txid, address indexed memberAddress, bytes32 signature);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`hashToSign`|`bytes32`|The hash being signed|
+|`txid`|`bytes32`|The txid being signed|
 |`memberAddress`|`address`|The member's RSK address|
 |`signature`|`bytes32`|The signature provided by the member|
 
@@ -297,21 +285,21 @@ Event emitted when all signatures are ready for a hash
 
 
 ```solidity
-event AllSignaturesReady(bytes32 indexed hashToSign);
+event AllSignaturesReady(bytes32 indexed txid);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`hashToSign`|`bytes32`|The hash for which all signatures are ready|
+|`txid`|`bytes32`|The txid for which all signatures are ready|
 
-### OperatorTakeTxidAdded
-Event emitted when a OperatorTake transaction id is added
+### OperatorTakeTxidsAdded
+Event emitted when OperatorTake and OperatorWon transaction id are added for a member
 
 
 ```solidity
-event OperatorTakeTxidAdded(bytes32 acceptPeginTxid, address memberAddress, bytes32 hash);
+event OperatorTakeTxidsAdded(bytes32 acceptPeginTxid, address memberAddress, bytes32 takeTxid, bytes32 wonTxid);
 ```
 
 **Parameters**
@@ -320,10 +308,11 @@ event OperatorTakeTxidAdded(bytes32 acceptPeginTxid, address memberAddress, byte
 |----|----|-----------|
 |`acceptPeginTxid`|`bytes32`|The accept peg-in transaction id|
 |`memberAddress`|`address`|The member's address|
-|`hash`|`bytes32`|The OperatorTake transaction id provided by the member|
+|`takeTxid`|`bytes32`|The OperatorTake transaction id provided by the member|
+|`wonTxid`|`bytes32`|The OperatorWon transaction id provided by the member|
 
 ### AllOperatorTakeTxidsAdded
-Event emitted when all OperatorTake transaction id's are added
+Event emitted when all OperatorTake and OperatorWon transaction id's are added
 
 
 ```solidity
@@ -345,19 +334,19 @@ Thrown when the committee registry address is set to zero
 error CommitteeRegistryAddressZero();
 ```
 
-### HashToSignNotFound
-Thrown when a hash to sign is not found
+### TxidToSignNotFound
+Thrown when a txid to sign is not found
 
 
 ```solidity
-error HashToSignNotFound(bytes32 hashToSign);
+error TxidToSignNotFound(bytes32 txid);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`hashToSign`|`bytes32`|The hash that was not found|
+|`txid`|`bytes32`|The txid that was not found|
 
 ### InvalidNonceLength
 Thrown when the nonce length is invalid
@@ -394,14 +383,14 @@ Thrown when all nonces are not present
 
 
 ```solidity
-error AllNoncesAreNotPresent(bytes32 hashToSign);
+error AllNoncesAreNotPresent(bytes32 txid);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`hashToSign`|`bytes32`|The hash for which nonces are missing|
+|`txid`|`bytes32`|The txid for which nonces are missing|
 
 ### InvalidSignature
 Thrown when a signature is invalid
@@ -455,33 +444,33 @@ error MemberNotFoundInCommittee(uint128 committeeId, address memberAddress);
 |`committeeId`|`uint128`|The committee ID|
 |`memberAddress`|`address`|The member's address|
 
-### InvalidHashToSign
+### InvalidTxidToSign
 Thrown when the hash to sign is invalid
 
 
 ```solidity
-error InvalidHashToSign(bytes32 hashToSign);
+error InvalidTxidToSign(bytes32 txid);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`hashToSign`|`bytes32`|The invalid hash|
+|`txid`|`bytes32`|The invalid txid|
 
 ### SignaturesAlreadyInitialized
 Thrown when signatures are already initialized
 
 
 ```solidity
-error SignaturesAlreadyInitialized(bytes32 hashToSign);
+error SignaturesAlreadyInitialized(bytes32 txid);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`hashToSign`|`bytes32`|The hash for which signatures are already initialized|
+|`txid`|`bytes32`|The txid for which signatures are already initialized|
 
 ### InvalidAcceptPeginTxid
 Thrown when the accept peg-in transaction id is invalid
@@ -568,12 +557,14 @@ error MemberIsNotOperator(uint128 committeeId, address memberAddress);
 |`committeeId`|`uint128`|The committee ID|
 |`memberAddress`|`address`|The member's address|
 
-### MemberAlreadyAddedOperatorTakeTxid
-Thrown when a member has already added a OperatorTake transaction id
+### MemberAlreadyAddedOperatorTakeTxids
+Thrown when a member has already added OperatorTake and OperatorWon transaction ids
 
 
 ```solidity
-error MemberAlreadyAddedOperatorTakeTxid(bytes32 acceptPeginTxid, address memberAddress, bytes32 hash);
+error MemberAlreadyAddedOperatorTakeTxids(
+    bytes32 acceptPeginTxid, address memberAddress, bytes32 takeTxid, bytes32 wonTxid
+);
 ```
 
 **Parameters**
@@ -582,5 +573,6 @@ error MemberAlreadyAddedOperatorTakeTxid(bytes32 acceptPeginTxid, address member
 |----|----|-----------|
 |`acceptPeginTxid`|`bytes32`|The accept peg-in transaction id|
 |`memberAddress`|`address`|The member's address|
-|`hash`|`bytes32`|The OperatorTake transaction id that was already added|
+|`takeTxid`|`bytes32`|The OperatorTake transaction id that was already added|
+|`wonTxid`|`bytes32`|The OperatorWon transaction id that was already added|
 

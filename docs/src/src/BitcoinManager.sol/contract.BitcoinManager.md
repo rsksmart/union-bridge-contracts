@@ -1,5 +1,5 @@
 # BitcoinManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/96535706e496364789ce242b18e17052bb6e424e/src/BitcoinManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/BitcoinManager.sol)
 
 **Inherits:**
 [IBitcoinManager](/src/interfaces/IBitcoinManager.sol/interface.IBitcoinManager.md), Initializable, [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md)
@@ -109,6 +109,7 @@ Generates a temporary peg-in address for a peg-in request
 
 ```solidity
 function getTemporaryPeginAddress(
+    uint32 _timelockBlocks,
     address _rskDestinationAddress,
     uint64 _value,
     bytes32 _btcReimbursementPubKey,
@@ -119,6 +120,7 @@ function getTemporaryPeginAddress(
 
 |Name|Type|Description|
 |----|----|-----------|
+|`_timelockBlocks`|`uint32`|The timelock blocks for the Bitcoin transaction|
 |`_rskDestinationAddress`|`address`|The RSK address that will receive the RBTC|
 |`_value`|`uint64`|The amount in satoshis for the peg-in request|
 |`_btcReimbursementPubKey`|`bytes32`|The user's Bitcoin public key for reimbursement (x-only)|
@@ -138,6 +140,7 @@ function getTemporaryPeginAddress(
 
 ```solidity
 function getRequestPeginTweakedPublicKey(
+    uint32 _timelockBlocks,
     address _rskDestinationAddress,
     uint64 _value,
     bytes32 _btcReimbursementPubKey,
@@ -152,6 +155,7 @@ function getRequestPeginTweakedPublicKey(
 
 ```solidity
 function _validateRequestPeginInputs(
+    uint32 _timelockBlocks,
     bytes32 _btcReimbursementPubKey,
     bytes memory _committeePubKey,
     address _rskDestinationAddress,
@@ -205,6 +209,7 @@ Validates output against a Taproot script with both key spend and script spend p
 
 ```solidity
 function validateRequestPeginP2TROutput(
+    uint32 _timelockBlocks,
     address _rskDestinationAddress,
     uint64 _streamDenomination,
     bytes32 _btcReimbursementPubKey,
@@ -216,11 +221,33 @@ function validateRequestPeginP2TROutput(
 
 |Name|Type|Description|
 |----|----|-----------|
+|`_timelockBlocks`|`uint32`|The timelock blocks for the Bitcoin transaction|
 |`_rskDestinationAddress`|`address`|Address that will get the RBTC|
 |`_streamDenomination`|`uint64`|The expected amount in satoshis|
 |`_btcReimbursementPubKey`|`bytes32`|The user's public key (x-only, 32 bytes)|
 |`_committeePubKey`|`bytes`|The committee's public key (x-only, 32 bytes)|
 |`_p2trOut`|`BtcTxOut`|The P2TR output of the peg-in request|
+
+
+### validateRequestPeginEnablerOutput
+
+Validates the enabler output in a request peg-in transaction
+
+
+```solidity
+function validateRequestPeginEnablerOutput(
+    bytes memory _committeePubKey,
+    bytes32[] memory _disputeKeys,
+    BtcTxOut calldata _enablerOut
+) external view onlyPeginManager;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_committeePubKey`|`bytes`|The committee's public key|
+|`_disputeKeys`|`bytes32[]`|The dispute keys (covenant public keys) for the committee|
+|`_enablerOut`|`BtcTxOut`|The enabler output to validate|
 
 
 ### getRequestPeginP2TRScriptPub
@@ -230,6 +257,7 @@ Generates the RequestPegin Taproot output script pub key with both key spend and
 
 ```solidity
 function getRequestPeginP2TRScriptPub(
+    uint32 _timelockBlocks,
     address _rskDestinationAddress,
     uint64 _value,
     bytes32 _btcReimbursementPubKey,
@@ -240,6 +268,7 @@ function getRequestPeginP2TRScriptPub(
 
 |Name|Type|Description|
 |----|----|-----------|
+|`_timelockBlocks`|`uint32`|The timelock blocks for the Bitcoin transaction|
 |`_rskDestinationAddress`|`address`|The RSK address that will receive the RBTC|
 |`_value`|`uint64`|The amount in satoshis for the peg-in request|
 |`_btcReimbursementPubKey`|`bytes32`|The user's Bitcoin public key for reimbursement (x-only)|
@@ -282,6 +311,13 @@ function validatePegoutUserOutput(BtcTxOut calldata _userOutput, bytes memory _u
 function validatePegoutMemberOutput(BtcTxOut calldata _userOutput, bytes32 _memberPubKey) external pure;
 ```
 
+### validatePegoutIdOutput
+
+
+```solidity
+function validatePegoutIdOutput(BtcTxOut calldata _pegoutIdOutput, bytes32 _pegoutId) external pure;
+```
+
 ### getAcceptPeginSignatureHash
 
 Gets the signature hash for a peg-in accept transaction
@@ -292,7 +328,8 @@ function getAcceptPeginSignatureHash(
     bytes memory _committeePubKey,
     bytes32 _userXOnlyPubKey,
     bytes32 _registerPeginTx,
-    PrevoutData memory _prevoutData
+    PrevoutData[] memory _prevoutDatas,
+    bytes32[] memory _operatorDisputeKeys
 ) external view onlyPeginManager returns (BitcoinSignatureData memory);
 ```
 **Parameters**
@@ -302,7 +339,8 @@ function getAcceptPeginSignatureHash(
 |`_committeePubKey`|`bytes`|The committee's public key (x-only)|
 |`_userXOnlyPubKey`|`bytes32`|The user's public key (x-only) for speed-up output|
 |`_registerPeginTx`|`bytes32`|The hash of the register peg-in transaction|
-|`_prevoutData`|`PrevoutData`|The previous output data for the input|
+|`_prevoutDatas`|`PrevoutData[]`|Array of prevout data for all inputs being spent (taptree + enabler outputs)|
+|`_operatorDisputeKeys`|`bytes32[]`|The dispute keys (covenant public keys) for OPERATOR members only|
 
 **Returns**
 
@@ -319,6 +357,78 @@ function getAcceptPeginSignatureHash(
 ```solidity
 function getAcceptPeginTweakedPublicKey(bytes memory _committeePubKey) internal pure returns (bytes32);
 ```
+
+### _getVerifyKeyScript
+
+
+```solidity
+function _getVerifyKeyScript(bytes32 _disputeKey) internal pure returns (bytes memory);
+```
+
+### _getVerifyKeyLeaves
+
+
+```solidity
+function _getVerifyKeyLeaves(bytes32[] memory _keys) internal pure returns (bytes32[] memory);
+```
+
+### _buildMerkleTreeFromLeaves
+
+Builds a balanced Taproot merkle tree from leaves
+
+*Implements the same balanced tree algorithm as Bitcoin's TaprootBuilder*
+
+
+```solidity
+function _buildMerkleTreeFromLeaves(bytes32[] memory _leaves) internal pure returns (bytes32);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_leaves`|`bytes32[]`|Array of leaf hashes to build the tree from|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`bytes32`|The merkle root hash|
+
+
+### _getEnablerOutputTweakedPublicKey
+
+
+```solidity
+function _getEnablerOutputTweakedPublicKey(bytes memory _committeePubKey, bytes32[] memory _disputeKeys)
+    internal
+    pure
+    returns (bytes32);
+```
+
+### getEnablerOutputP2TRScriptPub
+
+Generates the enabler output P2TR script pub key
+
+
+```solidity
+function getEnablerOutputP2TRScriptPub(bytes memory _committeePubKey, bytes32[] memory _disputeKeys)
+    public
+    pure
+    returns (bytes memory);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_committeePubKey`|`bytes`|The committee's aggregated public key (33 bytes compressed)|
+|`_disputeKeys`|`bytes32[]`|Array of dispute keys for committee members (x-only, 32 bytes each)|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`bytes`|The P2TR script pub key bytes|
+
 
 ### getAcceptPeginP2TRScriptPub
 
@@ -384,7 +494,7 @@ Generates the signature hash for a peg-out transaction
 
 
 ```solidity
-function getPegoutTxData(bytes memory _userPubKey, bytes32 _acceptPeginTx, PrevoutData memory _prevoutData)
+function getPegoutTxData(bytes memory _userPubKey, bytes32 _acceptPeginTx, PrevoutData[] memory _prevoutDatas)
     external
     pure
     returns (BitcoinSignatureData memory);
@@ -395,7 +505,7 @@ function getPegoutTxData(bytes memory _userPubKey, bytes32 _acceptPeginTx, Prevo
 |----|----|-----------|
 |`_userPubKey`|`bytes`|The user's public key for the peg-out|
 |`_acceptPeginTx`|`bytes32`|The hash of the accept peg-in transaction|
-|`_prevoutData`|`PrevoutData`|The previous output data for the input|
+|`_prevoutDatas`|`PrevoutData[]`|Array of prevout data for all inputs being spent (taptree + enabler outputs)|
 
 **Returns**
 

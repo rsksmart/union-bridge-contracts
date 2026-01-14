@@ -1,5 +1,5 @@
 # ProofValidator
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/96535706e496364789ce242b18e17052bb6e424e/src/ProofValidator.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/ProofValidator.sol)
 
 **Inherits:**
 Initializable
@@ -65,7 +65,7 @@ function _verifyTxConfirmations(
     bytes32 _blockHash,
     uint256 _merkleBranchPath,
     bytes32[] memory _merkleBranchHashes
-) internal view;
+) internal view returns (int256);
 ```
 **Parameters**
 
@@ -77,6 +77,13 @@ function _verifyTxConfirmations(
 |`_merkleBranchPath`|`uint256`|The path in the merkle tree to verify the transaction|
 |`_merkleBranchHashes`|`bytes32[]`|The hashes needed to verify the merkle proof|
 
+
+### _getBlockNumberFromConfirmations
+
+
+```solidity
+function _getBlockNumberFromConfirmations(int256 _confirmations) internal view returns (int256);
+```
 
 ## Errors
 ### BridgeBtcInexistantBlockHash
