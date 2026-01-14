@@ -4,10 +4,6 @@
 CURRENT_PATH=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 cd "$CURRENT_PATH/../.."
 
-
-# Defaults
-REQUEST_PEGIN_TXID="0x0f1c151f3fb74f0020f06c40975e7d1dceb12162666bfdee42c10caf6f8aecba"
-
 # set up environment variables
 source .env
 RPC=$LOCAL_RPC

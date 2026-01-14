@@ -451,7 +451,9 @@ abstract contract HelperContract is Test, TestUtils {
         peginManager.requestPegin(requestPeginTxSPVProof);
 
         // Update the best chain for timelock verifications
-        bridgeMock.setBtcBlockchainBestChainHeight(BEST_CHAIN_HEIGHT + 1);
+        bridgeMock.setBtcBlockchainBestChainHeight(
+            BEST_CHAIN_HEIGHT + int256(uint256(stream.timelockSettings.requestPeginTimelock))
+        );
         // Assert
         Slot memory slot = streamManager.getSlot(stream.streamId, stream.peginPacketPointer, slotId);
         assertEq(uint256(slot.state), uint256(SlotState.RESERVED), "Slot state should be RESERVED after pegin request");
