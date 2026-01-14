@@ -1932,7 +1932,7 @@ contract TestPegoutManager is Test, HelperContract {
         bytes32 wrongAcceptPeginTxid = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegoutManager.PeginNotRequested.selector, wrongAcceptPeginTxid));
+        vm.expectRevert(abi.encodeWithSelector(IPegManagerBase.PeginNotRequested.selector, wrongAcceptPeginTxid));
 
         // Act
         pegoutManager.registerChallenge(wrongAcceptPeginTxid, setup.challengeSPV);
@@ -1947,7 +1947,7 @@ contract TestPegoutManager is Test, HelperContract {
         streamManager.setPegStatus(setup.acceptPeginTxid, PegStatus.COMPLETED);
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegoutManager.InvalidPegStatus.selector, PegStatus.COMPLETED));
+        vm.expectRevert(abi.encodeWithSelector(IPegManagerBase.InvalidPegStatus.selector, PegStatus.COMPLETED));
 
         // Act
         pegoutManager.registerChallenge(setup.acceptPeginTxid, setup.challengeSPV);
@@ -2073,7 +2073,7 @@ contract TestPegoutManager is Test, HelperContract {
         bytes32 wrongAcceptPeginTxid = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegoutManager.PeginNotRequested.selector, wrongAcceptPeginTxid));
+        vm.expectRevert(abi.encodeWithSelector(IPegManagerBase.PeginNotRequested.selector, wrongAcceptPeginTxid));
 
         // Act
         vm.prank(opAddress);
@@ -2089,7 +2089,7 @@ contract TestPegoutManager is Test, HelperContract {
         streamManager.setPegStatus(setup.acceptPeginTxid, PegStatus.COMPLETED);
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegoutManager.InvalidPegStatus.selector, PegStatus.COMPLETED));
+        vm.expectRevert(abi.encodeWithSelector(IPegManagerBase.InvalidPegStatus.selector, PegStatus.COMPLETED));
 
         // Act
         vm.prank(opAddress);

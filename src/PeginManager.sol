@@ -287,10 +287,10 @@ contract PeginManager is IPeginManager, PegManagerBase {
             value: Constants.SPEED_UP_AMOUNT,
             scriptPubKey: bitcoinManager.getEnablerOutputP2TRScriptPub(_committeePubKey, _disputeKeys)
         });
-        // Get the operators dispute keys of the committee
-        bytes32[] memory operatorDisputeKeys = committeeRegistry.getOperatorDisputeKeys(_committeeId);
+        // Get the members dispute keys of the committee
+        bytes32[] memory membersDisputeKeys = committeeRegistry.getCommitteeDisputeKeys(_committeeId);
         acceptPeginSignatureData = bitcoinManager.getAcceptPeginSignatureHash(
-            _committeePubKey, _btcReimbursementPubKey, _requestPeginTxid, prevoutDatas, operatorDisputeKeys
+            _committeePubKey, _btcReimbursementPubKey, _requestPeginTxid, prevoutDatas, membersDisputeKeys
         );
     }
 

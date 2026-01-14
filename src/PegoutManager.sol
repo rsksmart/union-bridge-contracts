@@ -501,7 +501,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         nonReentrant
         whenNotPaused
     {
-        StreamPosition memory streamInfo = _validatePegoutStatus(_acceptPeginTxid, PegStatus.KICKOFF);
+        StreamPosition memory streamInfo = _validatePegStatus(_acceptPeginTxid, PegStatus.KICKOFF);
 
         if (_challenge.btcTx.inputs.length != Constants.CHALLENGE_INPUT_COUNT) {
             revert InvalidChallengeInputCount(_challenge.btcTx.inputs.length, Constants.CHALLENGE_INPUT_COUNT);
@@ -540,7 +540,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         nonReentrant
         whenNotPaused
     {
-        StreamPosition memory streamInfo = _validatePegoutStatus(_acceptPeginTxid, PegStatus.CHALLENGE);
+        StreamPosition memory streamInfo = _validatePegStatus(_acceptPeginTxid, PegStatus.CHALLENGE);
 
         if (_inputRevealed.btcTx.inputs.length != Constants.INPUT_REVEALED_INPUT_COUNT) {
             revert InvalidRevealedInputCount(_inputRevealed.btcTx.inputs.length, Constants.INPUT_REVEALED_INPUT_COUNT);

@@ -8,6 +8,7 @@
 - `StreamManager.setTimelockSettings` to modify the timelocks of a strream.
 - `PegoutManager.registerChallenge` to register a challenge SPV proof.
 - `PegoutManager.registerInputRevealed` to register an input revealed SPV proof.
+- `CommitteRegistry.getOperatorDisputeKeys` was replaced by `getCommitteeDisputeKeys` as we use all memebers of the committee for enablers and not just operators
 
 ## [v0.3.0-alpha]
 

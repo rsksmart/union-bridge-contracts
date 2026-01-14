@@ -69,14 +69,10 @@ library StreamManagerSettingsConfig {
                 // reduce pegin confirmations to 2 for faster testing
                 streamSettings.peginConfirmations = 2;
                 streamSettings.pegoutConfirmations = 2;
-                // We use 1 block timelock for user reimbursement for tests as it was the previous default value to avoid changing lots of tests
-                streamSettings.timelockSettings.requestPeginTimelock = 1;
             } else {
                 // Default values for local anvil or rsk regtest
                 streamSettings.peginConfirmations = 2;
                 streamSettings.pegoutConfirmations = 2;
-                // We use 1 block timelock for user reimbursement for tests as it was the previous default value to avoid changing lots of tests
-                streamSettings.timelockSettings.requestPeginTimelock = 1;
             }
         } else {
             revert("Unsupported chainId");

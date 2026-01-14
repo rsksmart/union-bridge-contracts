@@ -325,6 +325,7 @@ abstract contract ScriptUtils is Script {
 
     // ========================== User Reimbursement ==========================
     function createBtcUserReimbursementTx(bytes32 _requestPeginTxid, uint64 _amount, bytes32 _btcReimbursementPubKey)
+        internal
         pure
         returns (BtcTransaction memory)
     {
@@ -352,6 +353,7 @@ abstract contract ScriptUtils is Script {
 
     // ========================== Challenge ==========================
     function createChallengeTx(bytes32 _reimbursementKickoffTxid, bytes memory _committeePubKey)
+        internal
         pure
         returns (BtcTransaction memory)
     {
