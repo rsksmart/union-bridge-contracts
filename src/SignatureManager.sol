@@ -22,7 +22,7 @@ contract SignatureManager is ISignatureManager, AccessControl {
     ICommitteeRegistry public committeeRegistry;
 
     // Signatures waiting for the committee to sign
-    mapping(bytes32 hashToSign => Signatures signatures) internal committeeSignatures;
+    mapping(bytes32 txid => Signatures signatures) internal committeeSignatures;
     mapping(bytes32 acceptPeginTxid => OperatorTakeTxids operatorTakeTxids) internal operatorTakeTxidsMap;
 
     /// @notice Initializes the SignatureManager contract
@@ -177,7 +177,7 @@ contract SignatureManager is ISignatureManager, AccessControl {
         // Check if the signature hash exists
         // slither-disable-next-line incorrect-equality timestamp
         if (committeeSignatures[_txid].committeeId == 0) {
-            revert HashToSignNotFound(_txid);
+            revert TxidToSignNotFound(_txid);
         }
         return committeeSignatures[_txid];
     }
@@ -189,7 +189,7 @@ contract SignatureManager is ISignatureManager, AccessControl {
     function initSignatures(bytes32 _txid, uint128 _committeeId) external onlyPegManager {
         // Check if the signature hash is not empty
         if (_txid == "") {
-            revert InvalidHashToSign(_txid);
+            revert InvalidTxidToSign(_txid);
         }
         // Check if the signatures are already initialized
         Signatures storage signatures = committeeSignatures[_txid];
