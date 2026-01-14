@@ -28,10 +28,10 @@ contract RequestPeginScript is ScriptUtils, ContractAddressManager {
         peginManager = PeginManager(getPeginManager());
         // =======================
         // Smart contract addresses
-        streamManager = IStreamManager(peginManager.streamManager());
-        bitcoinManager = IBitcoinManager(peginManager.bitcoinManager());
-        committeeRegistry = ICommitteeRegistry(peginManager.committeeRegistry());
-        memberRegistry = IMemberRegistry(committeeRegistry.memberRegistry());
+        streamManager = getStreamManager();
+        bitcoinManager = getBitcoinManager();
+        committeeRegistry = getCommitteeRegistry();
+        memberRegistry = getMemberRegistry();
         // Committee public key
         Stream memory stream = streamManager.getStream(value);
         uint64 packetNumber = stream.peginPacketPointer;
