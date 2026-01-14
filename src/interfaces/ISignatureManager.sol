@@ -125,24 +125,24 @@ interface ISignatureManager is IAccessControl {
 
     // Events
     /// @notice Event emitted when a nonce is added by a committee member
-    /// @param hashToSign The hash being signed
+    /// @param txid The txid being signed
     /// @param memberAddress The member's RSK address
     /// @param nonce The nonce provided by the member
-    event NonceAdded(bytes32 indexed hashToSign, address indexed memberAddress, bytes nonce);
+    event NonceAdded(bytes32 indexed txid, address indexed memberAddress, bytes nonce);
 
     /// @notice Event emitted when all nonces are ready for a hash
-    /// @param hashToSign The hash for which all nonces are ready
-    event AllNoncesReady(bytes32 indexed hashToSign);
+    /// @param txid The txid for which all nonces are ready
+    event AllNoncesReady(bytes32 indexed txid);
 
     /// @notice Event emitted when a signature is added by a committee member
-    /// @param hashToSign The hash being signed
+    /// @param txid The txid being signed
     /// @param memberAddress The member's RSK address
     /// @param signature The signature provided by the member
-    event SignatureAdded(bytes32 indexed hashToSign, address indexed memberAddress, bytes32 signature);
+    event SignatureAdded(bytes32 indexed txid, address indexed memberAddress, bytes32 signature);
 
     /// @notice Event emitted when all signatures are ready for a hash
-    /// @param hashToSign The hash for which all signatures are ready
-    event AllSignaturesReady(bytes32 indexed hashToSign);
+    /// @param txid The txid for which all signatures are ready
+    event AllSignaturesReady(bytes32 indexed txid);
 
     /// @notice Event emitted when OperatorTake and OperatorWon transaction id are added for a member
     /// @param acceptPeginTxid The accept peg-in transaction id
