@@ -353,13 +353,13 @@ contract TestPegoutManager is Test, HelperContract {
     // we only check the revert case since the success cases are being checked in the _addMemberSignaturePegout tests
     function test_checkAllSignaturesReady_Revert_PegoutRequestNotFound() external {
         // Arrange
-        bytes32 pegoutSignatureHash = 0x0000000000000000000000000000000000000000000000000000000000000001;
+        bytes32 pegoutTxId = 0x0000000000000000000000000000000000000000000000000000000000000001;
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(ISignatureManager.HashToSignNotFound.selector, pegoutSignatureHash));
+        vm.expectRevert(abi.encodeWithSelector(ISignatureManager.TxidToSignNotFound.selector, pegoutTxId));
 
         // Act
-        signatureManager.checkAllSignaturesReady(pegoutSignatureHash);
+        signatureManager.checkAllSignaturesReady(pegoutTxId);
     }
 
     function test_registerUserTake_Success() external {

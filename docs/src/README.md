@@ -486,7 +486,7 @@ sequenceDiagram
 
 ### Phase 2: Committee Signatures for Peg-In
 
-1. **Operators register take tx hash**: Committee members with the operator role call `addOperatorTakeTxHash()` to register the operator take transaction hash before signatures are collected. For detailed information about the [OPERATOR_TAKE_TX](./bitcoin-transactions.md#2-operator_take_tx-operator-take-transaction) transaction structure, inputs/outputs, and spending conditions.
+1. **Operators register take and won tx hashes**: Committee members with the operator role call `addOperatorTakeTxids()` to register the operator take and won transactions hashes before signatures are collected. For detailed information see the [OPERATOR_TAKE_TX](./bitcoin-transactions.md#2-operator_take_tx-operator-take-transaction) and [OPERATOR_WON_TX](./bitcoin-transactions.md#3-operator_won_tx-operator-won-transaction) transaction structure, inputs/outputs, and spending conditions.
 2. **Create accept pegin transaction**: System creates the ACCEPT_PEGIN_TX transaction that will spend the REQUEST_PEGIN_TX output. For detailed information about the [ACCEPT_PEGIN_TX](./bitcoin-transactions.md#1-accept_pegin_tx-accept-pegin-transaction) transaction structure, inputs/outputs, and committee signature requirements.
 3. **Committee members sign**: Each committee member signs the accept peg-in transaction using `addMemberNonce()` and `addMemberSignature()` from SignatureManager
 4. **Signature collection**: Signatures are collected and validated by the SignatureManager
@@ -500,28 +500,31 @@ sequenceDiagram
     participant ENV as Environment
 
     Note over O,ENV: Phase 2: Committee Signatures for Peg-In
-    Note over O,ENV: Operators register the operator take transaction hash before signatures
+    Note over O,ENV: Operators register the operator take and won transaction hashes before signatures
 
     loop For each operator
-        O->>+SM: addOperatorTakeTxHash(acceptPeginTxid, operatorTakeTxid)
-        Note right of O: Operator registers the operator take transaction hash
-        SM-->>-ENV: OperatorTakeTxHashAdded event
+        O->>+SM: addOperatorTakeTxids(acceptPeginTxid, operatorTakeTxid, operatorWonTxid)
+        Note right of O: Operator registers the operator take and won transaction hashes
+        SM-->>-ENV: OperatorTakeTxidsAdded event
     end
+
+    SM-->>ENV: AllOperatorTakeTxidsAdded event
+    Note right of SM: Event emitted when all operators have registered their hashes
 
     Note over M,ENV: Committee members sign the accept peg-in transaction
 
     loop For each committee member
-        M->>+SM: addMemberNonce(hashToSign, nonce)
+        M->>+SM: addMemberNonce(txid, nonce)
         Note right of M: Member provides their nonce
         SM->>SM: Store member nonce
         SM-->>-M: Nonce stored
-        M->>+SM: addMemberSignature(hashToSign, signature)
-        Note right of M: Member signs the accept peg-in transaction hash
+        M->>+SM: addMemberSignature(txid, signature)
+        Note right of M: Member signs the accept peg-in transaction
         SM->>SM: Validate and store signature
-        SM-->>-ENV: MemberSignatureAdded event
+        SM-->>-ENV: SignatureAdded event
     end
 
-    SM-->>ENV: AllSignaturesCollected event
+    SM-->>ENV: AllSignaturesReady event
     Note right of SM: Event emitted when all members have signed
     Note right of SM: Signed transaction is ready for broadcast to Bitcoin network
 ```
@@ -584,7 +587,7 @@ sequenceDiagram
 
 ### Phase 2: Committee Signatures for Peg-Out
 
-1. **Committee members sign**: Each committee member signs the user take pegout hash and registers their signature with the SignatureManager using `addMemberNonce()` and `addMemberSignature()`
+1. **Committee members sign**: Each committee member signs the user take pegout transaction and registers their signature with the SignatureManager using `addMemberNonce()` and `addMemberSignature()`
 2. **Signature validation**: System tracks when all signatures are collected
 3. **Emit completion event**: System emits an event when all committee members have signed
 
@@ -598,18 +601,18 @@ sequenceDiagram
     Note over M,ENV: Committee members sign the user take pegout
 
     loop For each committee member
-        M->>+SM: addMemberNonce(hashToSign, nonce)
+        M->>+SM: addMemberNonce(txid, nonce)
         Note right of M: Member provides their nonce
         SM->>SM: Store member nonce
         SM-->>-M: Nonce stored
-        M->>+SM: addMemberSignature(hashToSign, signature)
-        Note right of M: Member signs user take pegout hash
+        M->>+SM: addMemberSignature(txid, signature)
+        Note right of M: Member signs user take pegout transaction
         SM->>SM: Validate and store signature
-        SM-->>-ENV: MemberSignatureAdded event
+        SM-->>-ENV: SignatureAdded event
     end
 
     SM->>SM: Signature validation - The system controls that all signatures are collected.
-    SM-->>ENV: AllSignaturesCollected event
+    SM-->>ENV: AllSignaturesReady event
     Note right of SM: Event emitted when all members have signed
 ```
 

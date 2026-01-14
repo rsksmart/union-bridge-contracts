@@ -53,34 +53,34 @@ struct OperatorTakeTxids {
 /// @dev This interface provides functions for collecting and validating committee signatures
 /// @dev Handles member signatures for both pegin and pegout transactions
 interface ISignatureManager is IAccessControl {
-    /// @notice Initializes signature collection for a specific hash
+    /// @notice Initializes signature collection for a specific txid
     /// @dev Sets up the signature tracking structure for committee members
-    /// @param _hashToSign The hash that committee members need to sign
+    /// @param _txid The txid that committee members need to sign
     /// @param _committeeId The ID of the committee responsible for signing
-    function initSignatures(bytes32 _hashToSign, uint128 _committeeId) external;
+    function initSignatures(bytes32 _txid, uint128 _committeeId) external;
 
     /// @notice Adds a nonce for a committee member
     /// @dev Called by committee members to provide their nonce for signature generation
-    /// @param _hashToSign The hash being signed
+    /// @param _txid The txid being signed
     /// @param _nonce The nonce provided by the member (should be 66 bytes)
     /// @return True if the nonce was successfully added
-    function addMemberNonce(bytes32 _hashToSign, bytes memory _nonce) external returns (bool);
+    function addMemberNonce(bytes32 _txid, bytes memory _nonce) external returns (bool);
 
     /// @notice Adds a signature for a committee member
     /// @dev Called by committee members to provide their signature
-    /// @param _hashToSign The hash being signed
+    /// @param _txid The txid being signed
     /// @param _signature The signature provided by the member
     /// @return True if the signature was successfully added
-    function addMemberSignature(bytes32 _hashToSign, bytes32 _signature) external returns (bool);
+    function addMemberSignature(bytes32 _txid, bytes32 _signature) external returns (bool);
 
-    /// @notice Checks if all signatures are ready for a specific hash
-    /// @param _hashToSign The hash to check signatures for
+    /// @notice Checks if all signatures are ready for a specific txid
+    /// @param _txid The txid to check signatures for
     /// @return True if all required signatures have been collected
-    function checkAllSignaturesReady(bytes32 _hashToSign) external view returns (bool);
+    function checkAllSignaturesReady(bytes32 _txid) external view returns (bool);
 
-    /// @notice Gets all partial signatures for a given hash
+    /// @notice Gets all partial signatures for a given txid
     /// @dev Returns signatures in the same order as committee members for Musig2 compatibility
-    /// @param _txid The hash to get signatures for
+    /// @param _txid The txid to get signatures for
     /// @return partialSignaturesData Array of signature data for all committee members
     /// @return missingSignatures Number of missing signatures
     /// @return missingNonces Number of missing nonces
@@ -96,7 +96,7 @@ interface ISignatureManager is IAccessControl {
         );
 
     /// @notice Initializes OperatorTake transaction id collection for a specific accept peg-in
-    /// @dev Sets up the OperatorTake hash tracking structure for committee members
+    /// @dev Sets up the OperatorTake txid tracking structure for committee members
     /// @param _acceptPeginTxid The accept peg-in transaction id
     /// @param _committeeId The ID of the committee responsible for OperatorTake operations
 
@@ -125,24 +125,24 @@ interface ISignatureManager is IAccessControl {
 
     // Events
     /// @notice Event emitted when a nonce is added by a committee member
-    /// @param hashToSign The hash being signed
+    /// @param txid The txid being signed
     /// @param memberAddress The member's RSK address
     /// @param nonce The nonce provided by the member
-    event NonceAdded(bytes32 indexed hashToSign, address indexed memberAddress, bytes nonce);
+    event NonceAdded(bytes32 indexed txid, address indexed memberAddress, bytes nonce);
 
     /// @notice Event emitted when all nonces are ready for a hash
-    /// @param hashToSign The hash for which all nonces are ready
-    event AllNoncesReady(bytes32 indexed hashToSign);
+    /// @param txid The txid for which all nonces are ready
+    event AllNoncesReady(bytes32 indexed txid);
 
     /// @notice Event emitted when a signature is added by a committee member
-    /// @param hashToSign The hash being signed
+    /// @param txid The txid being signed
     /// @param memberAddress The member's RSK address
     /// @param signature The signature provided by the member
-    event SignatureAdded(bytes32 indexed hashToSign, address indexed memberAddress, bytes32 signature);
+    event SignatureAdded(bytes32 indexed txid, address indexed memberAddress, bytes32 signature);
 
     /// @notice Event emitted when all signatures are ready for a hash
-    /// @param hashToSign The hash for which all signatures are ready
-    event AllSignaturesReady(bytes32 indexed hashToSign);
+    /// @param txid The txid for which all signatures are ready
+    event AllSignaturesReady(bytes32 indexed txid);
 
     /// @notice Event emitted when OperatorTake and OperatorWon transaction id are added for a member
     /// @param acceptPeginTxid The accept peg-in transaction id
@@ -159,9 +159,9 @@ interface ISignatureManager is IAccessControl {
     /// @notice Thrown when the committee registry address is set to zero
     error CommitteeRegistryAddressZero();
 
-    /// @notice Thrown when a hash to sign is not found
-    /// @param hashToSign The hash that was not found
-    error HashToSignNotFound(bytes32 hashToSign);
+    /// @notice Thrown when a txid to sign is not found
+    /// @param txid The txid that was not found
+    error TxidToSignNotFound(bytes32 txid);
 
     /// @notice Thrown when the nonce length is invalid
     /// @param actual The actual nonce length
@@ -174,8 +174,8 @@ interface ISignatureManager is IAccessControl {
     error MemberAlreadyAddedNonce(address memberAddress, bytes nonce);
 
     /// @notice Thrown when all nonces are not present
-    /// @param hashToSign The hash for which nonces are missing
-    error AllNoncesAreNotPresent(bytes32 hashToSign);
+    /// @param txid The txid for which nonces are missing
+    error AllNoncesAreNotPresent(bytes32 txid);
 
     /// @notice Thrown when a signature is invalid
     error InvalidSignature();
@@ -195,12 +195,12 @@ interface ISignatureManager is IAccessControl {
     error MemberNotFoundInCommittee(uint128 committeeId, address memberAddress);
 
     /// @notice Thrown when the hash to sign is invalid
-    /// @param hashToSign The invalid hash
-    error InvalidHashToSign(bytes32 hashToSign);
+    /// @param txid The invalid txid
+    error InvalidTxidToSign(bytes32 txid);
 
     /// @notice Thrown when signatures are already initialized
-    /// @param hashToSign The hash for which signatures are already initialized
-    error SignaturesAlreadyInitialized(bytes32 hashToSign);
+    /// @param txid The txid for which signatures are already initialized
+    error SignaturesAlreadyInitialized(bytes32 txid);
 
     /// @notice Thrown when the accept peg-in transaction id is invalid
     /// @param acceptPeginTxid The invalid accept peg-in transaction id

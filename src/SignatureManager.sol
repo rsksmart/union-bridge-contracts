@@ -22,7 +22,7 @@ contract SignatureManager is ISignatureManager, AccessControl {
     ICommitteeRegistry public committeeRegistry;
 
     // Signatures waiting for the committee to sign
-    mapping(bytes32 hashToSign => Signatures signatures) internal committeeSignatures;
+    mapping(bytes32 txid => Signatures signatures) internal committeeSignatures;
     mapping(bytes32 acceptPeginTxid => OperatorTakeTxids operatorTakeTxids) internal operatorTakeTxidsMap;
 
     /// @notice Initializes the SignatureManager contract
@@ -63,17 +63,17 @@ contract SignatureManager is ISignatureManager, AccessControl {
 
     /// @notice Adds a nonce for a committee member to the signature collection
     /// @dev Nonces are required for Musig2 signature aggregation
-    /// @param _hashToSign The hash that needs to be signed by the committee
+    /// @param _txid The txid that needs to be signed by the committee
     /// @param _nonce The 66-byte nonce for the Musig2 protocol
     /// @return true if all nonces are now present, false otherwise
-    function addMemberNonce(bytes32 _hashToSign, bytes memory _nonce) external returns (bool) {
+    function addMemberNonce(bytes32 _txid, bytes memory _nonce) external returns (bool) {
         address sender = _msgSender();
         // Check that nonce is 66 bytes
         if (_nonce.length != Constants.SIGNATURE_NONCE_LENGTH) {
             revert InvalidNonceLength(_nonce.length, Constants.SIGNATURE_NONCE_LENGTH);
         }
 
-        Signatures storage signatures = _getSignatures(_hashToSign);
+        Signatures storage signatures = _getSignatures(_txid);
         // Check if the member is in the committee
         if (!_isMemberInCommittee(signatures.committeeId, sender)) {
             revert MemberNotFoundInCommittee(signatures.committeeId, sender);
@@ -86,14 +86,14 @@ contract SignatureManager is ISignatureManager, AccessControl {
         }
         // Store the  nonce for the member
         memberSignatureData.nonce = _nonce;
-        emit NonceAdded(_hashToSign, sender, _nonce);
+        emit NonceAdded(_txid, sender, _nonce);
 
         // Check if all nonces are present
         signatures.missingNonces -= 1;
         if (signatures.missingNonces != 0) {
             return false;
         }
-        emit AllNoncesReady(_hashToSign);
+        emit AllNoncesReady(_txid);
         return true;
     }
 
@@ -177,7 +177,7 @@ contract SignatureManager is ISignatureManager, AccessControl {
         // Check if the signature hash exists
         // slither-disable-next-line incorrect-equality timestamp
         if (committeeSignatures[_txid].committeeId == 0) {
-            revert HashToSignNotFound(_txid);
+            revert TxidToSignNotFound(_txid);
         }
         return committeeSignatures[_txid];
     }
@@ -189,7 +189,7 @@ contract SignatureManager is ISignatureManager, AccessControl {
     function initSignatures(bytes32 _txid, uint128 _committeeId) external onlyPegManager {
         // Check if the signature hash is not empty
         if (_txid == "") {
-            revert InvalidHashToSign(_txid);
+            revert InvalidTxidToSign(_txid);
         }
         // Check if the signatures are already initialized
         Signatures storage signatures = committeeSignatures[_txid];

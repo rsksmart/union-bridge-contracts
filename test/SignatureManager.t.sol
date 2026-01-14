@@ -37,18 +37,18 @@ contract TestSignatureManager is Test, HelperContract {
     // we only check the revert case since the success cases are being checked in the _addMemberSignaturePegout tests
     function test_checkAllSignaturesReady_Revert_PegoutRequestNotFound() external {
         // Arrange
-        bytes32 hashToSign = 0x0000000000000000000000000000000000000000000000000000000000000001;
+        bytes32 txid = 0x0000000000000000000000000000000000000000000000000000000000000001;
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(ISignatureManager.HashToSignNotFound.selector, hashToSign));
+        vm.expectRevert(abi.encodeWithSelector(ISignatureManager.TxidToSignNotFound.selector, txid));
 
         // Act
-        signatureManager.checkAllSignaturesReady(hashToSign);
+        signatureManager.checkAllSignaturesReady(txid);
     }
 
     function test_addMemberNonce_Success() external {
         // Arrange
-        bytes32 hashToSign = setup_initSignatures();
+        bytes32 txid = setup_initSignatures();
         // The nonce values are dummy values
         bytes memory nonce =
             hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
@@ -57,11 +57,11 @@ contract TestSignatureManager is Test, HelperContract {
         // Assert
         // We emit the event we expect to see.
         vm.expectEmit(address(signatureManager));
-        emit ISignatureManager.NonceAdded(hashToSign, committeeMember0adr, nonce);
+        emit ISignatureManager.NonceAdded(txid, committeeMember0adr, nonce);
 
         // Act
         vm.prank(committeeMember0adr);
-        bool allNoncesReady = signatureManager.addMemberNonce(hashToSign, nonce);
+        bool allNoncesReady = signatureManager.addMemberNonce(txid, nonce);
 
         // Assert
         assertEq(allNoncesReady, false, "Not all nonces should be ready at this point");
@@ -69,26 +69,26 @@ contract TestSignatureManager is Test, HelperContract {
 
     function test_addMemberNonce_Success_AllNoncesReady() external {
         // Arrange
-        bytes32 hashToSign = setup_initSignatures();
+        bytes32 txid = setup_initSignatures();
         // The nonce values are dummy values
         bytes memory nonce =
             hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
-        setup_addMemberNonce_MultipleMembers(hashToSign, 0, registry.committeeMemberCount() - 1);
+        setup_addMemberNonce_MultipleMembers(txid, 0, registry.committeeMemberCount() - 1);
         uint256 lastMemberIndex = registry.committeeMemberCount() - 1;
         address lastMemberAddress = vm.addr(lastMemberIndex + 1);
 
         // Assert
         // We emit the event we expect to see.
         vm.expectEmit(address(signatureManager));
-        emit ISignatureManager.NonceAdded(hashToSign, lastMemberAddress, nonce);
+        emit ISignatureManager.NonceAdded(txid, lastMemberAddress, nonce);
 
         // We emit the event we expect to see.
         vm.expectEmit(address(signatureManager));
-        emit ISignatureManager.AllNoncesReady(hashToSign);
+        emit ISignatureManager.AllNoncesReady(txid);
 
         // Act
         vm.prank(lastMemberAddress);
-        bool allNoncesReady = signatureManager.addMemberNonce(hashToSign, nonce);
+        bool allNoncesReady = signatureManager.addMemberNonce(txid, nonce);
 
         // Assert
         assertEq(allNoncesReady, true, "Not all nonces should be ready at this point");
@@ -203,41 +203,41 @@ contract TestSignatureManager is Test, HelperContract {
         }
     }
 
-    function test_addMemberNonce_Revert_HashToSignNotFound() external {
+    function test_addMemberNonce_Revert_TxidToSignNotFound() external {
         // Arrange
-        bytes32 hashToSign = 0x0000000000000000000000000000000000000000000000000000000000000001;
+        bytes32 txid = 0x0000000000000000000000000000000000000000000000000000000000000001;
 
         // The signature an nonce values are dummy values
         bytes memory nonce =
             hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(ISignatureManager.HashToSignNotFound.selector, hashToSign));
+        vm.expectRevert(abi.encodeWithSelector(ISignatureManager.TxidToSignNotFound.selector, txid));
 
         // Act
         vm.prank(vm.addr(1));
-        signatureManager.addMemberNonce(hashToSign, nonce);
+        signatureManager.addMemberNonce(txid, nonce);
     }
 
-    function test_addMemberSignature_Revert_HashToSignNotFound() external {
+    function test_addMemberSignature_Revert_TxidToSignNotFound() external {
         // Arrange
-        bytes32 hashToSign = 0x0000000000000000000000000000000000000000000000000000000000000001;
+        bytes32 txid = 0x0000000000000000000000000000000000000000000000000000000000000001;
         address memberAddress = vm.addr(registry.committeeMemberCount() + 1);
         // The signature an nonce values are dummy values
         bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(ISignatureManager.HashToSignNotFound.selector, hashToSign));
+        vm.expectRevert(abi.encodeWithSelector(ISignatureManager.TxidToSignNotFound.selector, txid));
 
         // Act
         vm.prank(memberAddress);
-        signatureManager.addMemberSignature(hashToSign, signature);
+        signatureManager.addMemberSignature(txid, signature);
     }
 
     function test_addMemberNonce_Revert_MemberHasAlreadySigned() external {
         // Arrange
         // Init signatures
-        bytes32 hashToSign = setup_initSignatures();
+        bytes32 txid = setup_initSignatures();
         // The nonce values are dummy values
         bytes memory nonce =
             hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
@@ -245,7 +245,7 @@ contract TestSignatureManager is Test, HelperContract {
 
         // First time adding the nonce
         vm.prank(committeeMember0adr);
-        signatureManager.addMemberNonce(hashToSign, nonce);
+        signatureManager.addMemberNonce(txid, nonce);
 
         // Assert
         vm.expectRevert(
@@ -254,13 +254,13 @@ contract TestSignatureManager is Test, HelperContract {
 
         // Act add nonce a second time with the same committee member
         vm.prank(committeeMember0adr);
-        signatureManager.addMemberNonce(hashToSign, nonce);
+        signatureManager.addMemberNonce(txid, nonce);
     }
 
     function test_addMemberSignature_Revert_MemberHasAlreadySigned() external {
         // Init signatures and add all nonces
-        bytes32 hashToSign = setup_initSignatures();
-        setup_addAllNonces(hashToSign);
+        bytes32 txid = setup_initSignatures();
+        setup_addAllNonces(txid);
         // Arrange
         // The signature values are dummy values
         bytes32 signature = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
@@ -268,21 +268,21 @@ contract TestSignatureManager is Test, HelperContract {
 
         // Sign the first time
         vm.prank(committeeMember0adr);
-        signatureManager.addMemberSignature(hashToSign, signature);
+        signatureManager.addMemberSignature(txid, signature);
 
         // Assert
         vm.expectRevert(
-            abi.encodeWithSelector(ISignatureManager.MemberHasAlreadySigned.selector, committeeMember0adr, hashToSign)
+            abi.encodeWithSelector(ISignatureManager.MemberHasAlreadySigned.selector, committeeMember0adr, txid)
         );
 
         // Act sign a second time with the same committee member
         vm.prank(committeeMember0adr);
-        signatureManager.addMemberSignature(hashToSign, signature);
+        signatureManager.addMemberSignature(txid, signature);
     }
 
     function test_addMemberNonce_Revert_MemberNotFoundInCommittee() external {
         // Arrange
-        bytes32 hashToSign = setup_initSignatures();
+        bytes32 txid = setup_initSignatures();
         address nonCommitteeMember = vm.addr(registry.committeeMemberCount() + 1);
         MemberRegistrationKeys memory nonCommitteeMemberPubKeysRegistration =
             generateRegistrationPublicKeys(uint256(uint160(nonCommitteeMember)));
@@ -304,14 +304,14 @@ contract TestSignatureManager is Test, HelperContract {
 
         // Act
         vm.prank(nonCommitteeMember);
-        signatureManager.addMemberNonce(hashToSign, nonce);
+        signatureManager.addMemberNonce(txid, nonce);
     }
 
     function test_addMemberSignature_Revert_MemberNotFoundInCommittee() external {
         // Arrange
         // Init signatures and add all nonces
-        bytes32 hashToSign = setup_initSignatures();
-        setup_addAllNonces(hashToSign);
+        bytes32 txid = setup_initSignatures();
+        setup_addAllNonces(txid);
 
         address nonCommitteeMember = vm.addr(registry.committeeMemberCount() + 1);
         MemberRegistrationKeys memory nonCommitteeMemberPubKeysRegistration =
@@ -332,11 +332,11 @@ contract TestSignatureManager is Test, HelperContract {
 
         // Act
         vm.prank(nonCommitteeMember);
-        signatureManager.addMemberSignature(hashToSign, signature);
+        signatureManager.addMemberSignature(txid, signature);
     }
 
     function test_addMemberSignature_Revert_InvalidNonceLength() external {
-        bytes32 hashToSign = setup_initSignatures();
+        bytes32 txid = setup_initSignatures();
 
         // Arrange
         // The signature an nonce values are dummy values
@@ -354,7 +354,7 @@ contract TestSignatureManager is Test, HelperContract {
 
         // Act
         vm.prank(memberAddress);
-        signatureManager.addMemberNonce(hashToSign, nonce);
+        signatureManager.addMemberNonce(txid, nonce);
     }
 
     function test_initSignatures_Success() external {
@@ -391,33 +391,33 @@ contract TestSignatureManager is Test, HelperContract {
         }
     }
 
-    function test_initSignatures_Revert_InvalidHashToSign() external {
+    function test_initSignatures_Revert_InvalidTxidToSign() external {
         // Arrange
-        bytes32 hashToSign = 0x0000000000000000000000000000000000000000000000000000000000000000;
+        bytes32 txid = 0x0000000000000000000000000000000000000000000000000000000000000000;
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(ISignatureManager.InvalidHashToSign.selector, hashToSign));
+        vm.expectRevert(abi.encodeWithSelector(ISignatureManager.InvalidTxidToSign.selector, txid));
 
         // Act
         vm.prank(address(pegoutManager));
-        signatureManager.initSignatures(hashToSign, COMMITTEE_ID_STREAM_1_COMMITTEE_1);
+        signatureManager.initSignatures(txid, COMMITTEE_ID_STREAM_1_COMMITTEE_1);
     }
 
     function test_initSignatures_Revert_SignaturesAlreadyInitialized() external {
         // Arrange
         uint128 committeeId = COMMITTEE_ID_STREAM_1_COMMITTEE_1;
-        bytes32 hashToSign = 0x1000000000000000000000000000000000000000000000000000000000000001;
+        bytes32 txid = 0x1000000000000000000000000000000000000000000000000000000000000001;
 
         // First time initializing the signatures
         vm.prank(address(pegoutManager));
-        signatureManager.initSignatures(hashToSign, committeeId);
+        signatureManager.initSignatures(txid, committeeId);
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(ISignatureManager.SignaturesAlreadyInitialized.selector, hashToSign));
+        vm.expectRevert(abi.encodeWithSelector(ISignatureManager.SignaturesAlreadyInitialized.selector, txid));
 
         // Act second time initializing the signatures
         vm.prank(address(pegoutManager));
-        signatureManager.initSignatures(hashToSign, committeeId);
+        signatureManager.initSignatures(txid, committeeId);
     }
 
     function test_initSignatures_Revert_CommitteeNotFound() external {
@@ -454,8 +454,8 @@ contract TestSignatureManager is Test, HelperContract {
         return txid;
     }
 
-    function setup_addAllNonces(bytes32 hashToSign) internal {
-        setup_addMemberNonce_MultipleMembers(hashToSign, 0, registry.committeeMemberCount());
+    function setup_addAllNonces(bytes32 txid) internal {
+        setup_addMemberNonce_MultipleMembers(txid, 0, registry.committeeMemberCount());
     }
 
     function setup_initOperatorTakeTxids() internal returns (bytes32) {
