@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import {IPegManagerBase} from "./IPegManagerBase.sol";
 import {BtcTxSPVProof, StreamPosition} from "./IPegCommonTypes.sol";
 
 /// @notice Temporary information stored during peg-in request processing
@@ -204,4 +203,8 @@ interface IPeginManager {
     /// @param blocksElapsedSinceRequestPegin The number of blocks elapsed since the request peg-in transaction
     /// @param timelockBlocks The timelock period in blocks
     error UserReimbursementBeforeTimelock(int256 blocksElapsedSinceRequestPegin, uint256 timelockBlocks);
+
+    /// @notice Thrown when the reject peg-in transaction id is the same as the accept peg-in txid
+    /// @param rejectPeginTxid The reject peg-in transaction id that is the same as the accept peg-in txid
+    error InvalidRejectPeginTxid(bytes32 rejectPeginTxid);
 }
