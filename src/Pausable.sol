@@ -7,7 +7,7 @@ import {IPausable} from "./interfaces/IPausable.sol";
 /// @title Pausable
 /// @notice Base contract that provides pause/unpause functionality with a dedicated pauser role
 /// @dev Inherits from OpenZeppelin's PausableUpgradeable and adds a pauser role
-contract Pausable is IPausable, PausableUpgradeable {
+abstract contract Pausable is IPausable, PausableUpgradeable {
     /// @notice The address that can pause and unpause the contract
     address public pauser;
 

@@ -8,7 +8,7 @@ import {IAccessControl} from "./interfaces/IAccessControl.sol";
 /// @dev Provides role-based access control with PeginManager and PegoutManager as the primary authorized accounts
 /// @dev Inherits from IAccessControl and BaseProxy for interface compliance and proxy functionality
 
-contract AccessControl is IAccessControl, BaseProxy {
+abstract contract AccessControl is IAccessControl, BaseProxy {
     /// @notice The address of the PeginManager contract that has administrative privileges
     /// @dev This address is authorized to call protected functions in contracts that inherit from AccessControl
     address public peginManager;
