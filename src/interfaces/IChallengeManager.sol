@@ -16,6 +16,11 @@ struct ChallengeTempInfo {
 /// @title IChallengeManager
 /// @notice Interface for managing challenge operations
 interface IChallengeManager {
+    /// @notice Gets the temporary challenge information for a given accept peg-in transaction id
+    /// @param _acceptPeginTxid The accept peg-in transaction id
+    /// @return The temporary challenge information
+    function getChallengeTempInfo(bytes32 _acceptPeginTxid) external view returns (ChallengeTempInfo memory);
+
     /// @notice Registers a challenge for a peg-out transaction
     /// @dev Validates the SPV proof and updates the peg-out status accordingly
     /// @param acceptPeginTxid The accept peg-in transaction id that is being challenged

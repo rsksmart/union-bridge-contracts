@@ -266,6 +266,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
                 revert OperatorTakeTimeoutNotExpired(operatorTakeUpdatedAt, operatorTakeUpdatedAt + operatorTakeTimeout);
             }
             // TODO: Handle other PegStatus like ADVANCED and KICKOFF.
+            // TODO: would this go here? or in challengeManager now that we have it?
         } else {
             revert InvalidPegStatus(streamInfo.pegStatus);
         }

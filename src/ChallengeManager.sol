@@ -21,6 +21,13 @@ contract ChallengeManager is IChallengeManager, PegManagerBase {
     /// @dev Contains data needed for challenge transaction validation
     mapping(bytes32 acceptPeginTxid => ChallengeTempInfo tempInfo) internal challengeTempInfo;
 
+    /// @notice Gets the temporary challenge information for a given accept peg-in transaction id
+    /// @param _acceptPeginTxid The accept peg-in transaction id
+    /// @return The temporary challenge information
+    function getChallengeTempInfo(bytes32 _acceptPeginTxid) external view returns (ChallengeTempInfo memory) {
+        return challengeTempInfo[_acceptPeginTxid];
+    }
+
     /// @notice Initializes the ChallengeManager contract
     /// @param _initialOwner The initial owner of the contract
     /// @param _bridgeAddress The address of the pow-peg bridge contract

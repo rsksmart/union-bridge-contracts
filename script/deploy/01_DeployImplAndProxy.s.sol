@@ -198,6 +198,7 @@ contract DeployImplAndProxy is ScriptUtils {
             pauser,
             address(peginManager),
             address(pegoutManager),
+            address(challengeManager),
             address(committeeRegistry),
             address(memberRegistry),
             address(rbtcBridge)
@@ -210,6 +211,9 @@ contract DeployImplAndProxy is ScriptUtils {
         }
         if (address(pauseManager.pegoutManager()) != address(pegoutManager)) {
             revert("PauseManager pegoutManager is not the pegoutManager address");
+        }
+        if (address(pauseManager.challengeManager()) != address(challengeManager)) {
+            revert("PauseManager challengeManager is not the challengeManager address");
         }
         if (address(pauseManager.committeeRegistry()) != address(committeeRegistry)) {
             revert("PauseManager committeeRegistry is not the committeeRegistry address");
@@ -459,6 +463,7 @@ contract DeployImplAndProxy is ScriptUtils {
         address _upgradableOwner,
         address _peginManager,
         address _pegoutManager,
+        address _challengeManager,
         address _committeeRegistry,
         address _memberRegistry,
         address _rbtcBridge
@@ -467,7 +472,15 @@ contract DeployImplAndProxy is ScriptUtils {
             "PauseManager.sol",
             abi.encodeCall(
                 PauseManager.initialize,
-                (_upgradableOwner, _peginManager, _pegoutManager, _committeeRegistry, _memberRegistry, _rbtcBridge)
+                (
+                    _upgradableOwner,
+                    _peginManager,
+                    _pegoutManager,
+                    _challengeManager,
+                    _committeeRegistry,
+                    _memberRegistry,
+                    _rbtcBridge
+                )
             )
         );
         return PauseManager(proxyAdddress);
