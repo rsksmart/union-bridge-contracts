@@ -775,6 +775,17 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
         emit PegoutManagerUpdated(address(_pegoutManager));
     }
 
+    /// @notice Sets the Pegout Manager contract address
+    /// @dev Only callable by the contract owner
+    /// @param _challengeManager The address of the Challenge Manager contract
+    function setChallengeManager(address _challengeManager) external onlyOwner {
+        if (_challengeManager == address(0)) {
+            revert InvalidZeroAddress();
+        }
+        challengeManager = _challengeManager;
+        emit ChallengeManagerUpdated(_challengeManager);
+    }
+
     /// @notice Sets the Member Registry contract address
     /// @dev Only callable by the contract owner
     /// @param _memberRegistry The address of the Member Registry contract

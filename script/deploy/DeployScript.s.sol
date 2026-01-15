@@ -10,7 +10,8 @@ import {PegoutManager} from "src/PegoutManager.sol";
 import {StreamManager} from "src/StreamManager.sol";
 import {SignatureManager} from "src/SignatureManager.sol";
 import {PauseManager} from "src/PauseManager.sol";
-import {IRbtcBridge} from "src/interfaces/IRbtcBridge.sol";
+import {RbtcBridge} from "src/RbtcBridge.sol";
+import {ChallengeManager} from "src/ChallengeManager.sol";
 import {DeployImplAndProxy, DeployedContracts} from "./01_DeployImplAndProxy.s.sol";
 
 contract DeployScript is Script {
@@ -18,12 +19,13 @@ contract DeployScript is Script {
     CommitteeRegistry public committeeRegistry;
     MemberRegistry public memberRegistry;
     BitcoinManager public bitcoinManager;
-    IRbtcBridge public rbtcBridge;
+    RbtcBridge public rbtcBridge;
     PeginManager public peginManager;
     PegoutManager public pegoutManager;
     StreamManager public streamManager;
     SignatureManager public signatureManager;
     PauseManager public pauseManager;
+    ChallengeManager public challengeManager;
     address public upgradableOwner;
     address payable public bridgeAddress;
 
@@ -46,5 +48,6 @@ contract DeployScript is Script {
         pauseManager = deployResults.pauseManager;
         upgradableOwner = deployResults.upgradableOwner;
         bridgeAddress = deployResults.bridgeAddress;
+        challengeManager = deployResults.challengeManager;
     }
 }

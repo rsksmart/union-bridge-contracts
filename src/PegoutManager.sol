@@ -119,9 +119,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
             operatorDisputePubKey: bytes32(0),
             pegoutId: pegoutId,
             advanceFundsBlockNumber: 0,
-            reimbursementKickoffTxid: bytes32(0),
-            challengeTxid: bytes32(0),
-            revealTxid: bytes32(0)
+            reimbursementKickoffTxid: bytes32(0)
         });
 
         // slither-disable-next-line reentrancy-events
@@ -364,14 +362,6 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         return pegoutInfo;
     }
 
-    function _validateMemberInCommittee(uint128 _committeeId) internal view {
-        address _memberAddress = _msgSender();
-        bool inCommittee = committeeRegistry.isMemberInCommittee(_committeeId, _memberAddress);
-        if (!inCommittee) {
-            revert ICommitteeRegistry.MemberNotInCommittee(_committeeId, _memberAddress);
-        }
-    }
-
     function registerReimbursementKickoff(bytes32 acceptPeginTxid, BtcTxSPVProof memory _kickoffSPV)
         external
         nonReentrant
@@ -494,84 +484,6 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
 
         // If it's the last slot in the package, close and release the committee
         _closePacketIfLastSlot(streamInfo);
-    }
-
-    function registerChallenge(bytes32 _acceptPeginTxid, BtcTxSPVProof memory _challenge)
-        external
-        nonReentrant
-        whenNotPaused
-    {
-        StreamPosition memory streamInfo = _validatePegStatus(_acceptPeginTxid, PegStatus.KICKOFF);
-
-        if (_challenge.btcTx.inputs.length != Constants.CHALLENGE_INPUT_COUNT) {
-            revert InvalidChallengeInputCount(_challenge.btcTx.inputs.length, Constants.CHALLENGE_INPUT_COUNT);
-        }
-
-        PegoutTempInfo storage pegoutInfo = pegoutTempInfo[_acceptPeginTxid];
-        _validateMemberInCommittee(pegoutInfo.committeeId);
-
-        bytes32 kickoffTxid = _challenge.btcTx.inputs[Constants.CHALLENGE_VIN_REIMBURSEMENT_KICKOFF].txId;
-        if (pegoutInfo.reimbursementKickoffTxid != kickoffTxid) {
-            revert ReimbursementKickoffTxidNotMatch(kickoffTxid, pegoutInfo.reimbursementKickoffTxid);
-        }
-
-        // Calculate the transaction id for verification
-        bytes32 txid = bitcoinManager.getBtcTxid(_challenge.btcTx);
-
-        Stream memory stream = streamManager.getStreamById(streamInfo.streamId);
-
-        // Verify the txid is part of the Merkle Root and has enough confirmations
-        _verifyTxConfirmations(
-            stream.pegoutConfirmations,
-            txid,
-            _challenge.blockHash,
-            _challenge.merkleBranchPath,
-            _challenge.merkleBranchHashes
-        );
-
-        emit ChallengeRegistered(txid, _acceptPeginTxid, pegoutInfo.committeeId, streamInfo);
-
-        pegoutInfo.challengeTxid = txid;
-        streamManager.setPegStatus(_acceptPeginTxid, PegStatus.CHALLENGE);
-    }
-
-    function registerInputRevealed(bytes32 _acceptPeginTxid, BtcTxSPVProof memory _inputRevealed)
-        external
-        nonReentrant
-        whenNotPaused
-    {
-        StreamPosition memory streamInfo = _validatePegStatus(_acceptPeginTxid, PegStatus.CHALLENGE);
-
-        if (_inputRevealed.btcTx.inputs.length != Constants.INPUT_REVEALED_INPUT_COUNT) {
-            revert InvalidRevealedInputCount(_inputRevealed.btcTx.inputs.length, Constants.INPUT_REVEALED_INPUT_COUNT);
-        }
-
-        PegoutTempInfo storage pegoutInfo = pegoutTempInfo[_acceptPeginTxid];
-        _validateMemberInCommittee(pegoutInfo.committeeId);
-
-        bytes32 challengeTxid = _inputRevealed.btcTx.inputs[Constants.INPUT_REVEALED_VIN_CHALLENGE].txId;
-        if (pegoutInfo.challengeTxid != challengeTxid) {
-            revert ChallengeTxidNotMatch(challengeTxid, pegoutInfo.challengeTxid);
-        }
-
-        // Calculate the transaction id for verification
-        bytes32 txid = bitcoinManager.getBtcTxid(_inputRevealed.btcTx);
-
-        Stream memory stream = streamManager.getStreamById(streamInfo.streamId);
-
-        // Verify the txid is part of the Merkle Root and has enough confirmations
-        _verifyTxConfirmations(
-            stream.pegoutConfirmations,
-            txid,
-            _inputRevealed.blockHash,
-            _inputRevealed.merkleBranchPath,
-            _inputRevealed.merkleBranchHashes
-        );
-
-        emit RevealRegistered(txid, _acceptPeginTxid, pegoutInfo.committeeId, streamInfo);
-
-        pegoutInfo.revealTxid = txid;
-        streamManager.setPegStatus(_acceptPeginTxid, PegStatus.REVEALED);
     }
 
     /// @notice Sets the timeout duration for user take operations

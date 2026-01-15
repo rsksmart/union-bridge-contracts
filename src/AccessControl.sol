@@ -17,6 +17,10 @@ abstract contract AccessControl is IAccessControl, BaseProxy {
     /// @dev This address is authorized to call protected functions in contracts that inherit from AccessControl
     address public pegoutManager;
 
+    /// @notice The address of the ChallengeManager contract that has administrative privileges
+    /// @dev This address is authorized to call protected functions in contracts that inherit from AccessControl
+    address public challengeManager;
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
@@ -28,18 +32,24 @@ abstract contract AccessControl is IAccessControl, BaseProxy {
     /// @param _initialOwner The address that will be set as the initial owner
     /// @param _peginManager The address of the PeginManager contract
     /// @param _pegoutManager The address of the PegoutManager contract
-    function __AccessControl_init(address _initialOwner, address _peginManager, address _pegoutManager)
-        public
-        initializer
-    {
+    function __AccessControl_init(
+        address _initialOwner,
+        address _peginManager,
+        address _pegoutManager,
+        address _challengeManager
+    ) public initializer {
         if (_peginManager == address(0)) {
             revert PeginManagerAddressZero();
         }
         if (_pegoutManager == address(0)) {
             revert PegoutManagerAddressZero();
         }
+        if (_challengeManager == address(0)) {
+            revert ChallengeManagerAddressZero();
+        }
         peginManager = _peginManager;
         pegoutManager = _pegoutManager;
+        challengeManager = _challengeManager;
         __BaseProxy_init(_initialOwner);
     }
 
@@ -59,7 +69,8 @@ abstract contract AccessControl is IAccessControl, BaseProxy {
     /// @dev Reverts if the sender is neither the peginManager nor the pegoutManager
     function _checkPegManager() internal view virtual {
         address sender = _msgSender();
-        if (peginManager != sender && pegoutManager != sender) {
+        // TODO: do we need to add challengeManager for all onlyPegManager modifiers?
+        if (peginManager != sender && pegoutManager != sender && challengeManager != sender) {
             revert UnauthorizedAccount(sender);
         }
     }

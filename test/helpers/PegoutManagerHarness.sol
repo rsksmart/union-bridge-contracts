@@ -34,9 +34,7 @@ contract PegoutManagerHarness is PegoutManager {
             operatorDisputePubKey: bytes32(0),
             pegoutId: bytes32(0),
             advanceFundsBlockNumber: 0,
-            reimbursementKickoffTxid: bytes32(0),
-            challengeTxid: bytes32(0),
-            revealTxid: bytes32(0)
+            reimbursementKickoffTxid: bytes32(0)
         });
     }
 }
