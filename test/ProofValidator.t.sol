@@ -6,7 +6,7 @@ import {ProofValidatorHarness} from "./helpers/ProofValidatorHarness.sol";
 import {HelperContract} from "./helpers/HelperContract.sol";
 import {ProofValidator} from "src/ProofValidator.sol";
 
-contract TestProofValidator is Test, HelperContract {
+contract ProofValidatorTest is Test, HelperContract {
     ProofValidatorHarness proofValidator;
 
     function setUp() external {

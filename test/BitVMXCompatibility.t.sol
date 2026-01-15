@@ -77,7 +77,7 @@ import {BtcTxSPVProof} from "src/interfaces/IPegCommonTypes.sol";
 import {Role, Committee} from "src/interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
 
-contract BitVMXCompatibility is Test, HelperContract {
+contract BitVMXCompatibilityTest is Test, HelperContract {
     uint8 constant BITVMX_OP_COUNT = 2;
     uint8 constant BITVMX_WT_COUNT = 2;
 

@@ -15,7 +15,7 @@ import {SignatureData, ISignatureManager, OperatorTakeData} from "src/interfaces
 import {Constants} from "src/libraries/Constants.sol";
 import {Committee} from "src/interfaces/ICommitteeRegistry.sol";
 
-contract TestSignatureManager is Test, HelperContract {
+contract SignatureManagerTest is Test, HelperContract {
     uint128 internal setupCommitteeId;
     Committee internal setupExpectedCommittee;
     bytes32 constant ACCEPT_PEGIN_TXID = hex"14fdaad7499abf1ef94b3705749fad1d3979cce2dc636e978b83e756bd6ad23a";

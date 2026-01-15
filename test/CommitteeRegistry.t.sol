@@ -25,7 +25,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {SignatureData} from "src/interfaces/ISignatureManager.sol";
 
-contract TestCommitteeRegistry is Test, HelperContract {
+contract CommitteeRegistryTest is Test, HelperContract {
     uint256 constant MAX_GAS_PER_COMMITTEE_CREATION = 1500 * 1000; // Max gas per block in RSK is 6M8
 
     function setUp() external {

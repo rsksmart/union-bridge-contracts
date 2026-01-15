@@ -19,7 +19,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Role, ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {Committee} from "src/interfaces/ICommitteeRegistry.sol";
 
-contract TestStreamManager is Test, HelperContract {
+contract StreamManagerTest is Test, HelperContract {
     uint64 internal setupStreamId;
 
     function setUp() external {

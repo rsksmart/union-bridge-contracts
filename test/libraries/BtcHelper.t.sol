@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import {Test} from "forge-std/Test.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 
-contract TestBtcHelper is Test {
+contract BtcHelperTest is Test {
     function setUp() external {}
 
     function test_reverseBytes32_Success() external pure {
