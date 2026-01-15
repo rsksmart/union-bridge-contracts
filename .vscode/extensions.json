@@ -1,6 +1,6 @@
 {
     "recommendations": [
-        "JuanBlanco.solidity",
+        "nomicfoundation.hardhat-solidity",
         "tamasfe.even-better-toml",
         "bierner.markdown-mermaid"
     ]
