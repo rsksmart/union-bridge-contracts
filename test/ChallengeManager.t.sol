@@ -3,19 +3,15 @@ pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
-import {ChallengeTempInfo, ChallengeManager} from "src/ChallengeManager.sol";
 import {BtcTxSPVProof, StreamPosition} from "src/interfaces/IPegCommonTypes.sol";
 import {PegStatus} from "src/interfaces/IPegCommonTypes.sol";
-import {IChallengeManager} from "src/interfaces/IChallengeManager.sol";
+import {ChallengeTempInfo, IChallengeManager} from "src/interfaces/IChallengeManager.sol";
 import {IPegManagerBase} from "src/interfaces/IPegManagerBase.sol";
 import {Committee, ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
-import {IBitcoinManager} from "src/interfaces/IBitcoinManager.sol";
-import {IRbtcBridge} from "src/interfaces/IRbtcBridge.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
-import {Pausable} from "src/Pausable.sol";
 import {SlotState} from "src/interfaces/IStreamManager.sol";
 
-contract TestChallengeManager is Test, HelperContract {
+contract ChallengeManagerTest is Test, HelperContract {
     uint64 internal setupStreamId;
     uint128 internal setupCommitteeId;
 

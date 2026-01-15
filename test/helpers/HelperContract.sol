@@ -977,8 +977,7 @@ abstract contract HelperContract is Test, TestUtils {
         setup.inputRevealedSPV = createBtcTxSPVProof(createRevealTx(challengeTxid, committeePubKey));
 
         vm.prank(operatorAddress);
-        // TODO: Uncomment this when the challenge manager is implemented
-        // pegoutManager.registerChallenge(setup.acceptPeginTxid, setup.challengeSPV);
+        challengeManager.registerChallenge(setup.acceptPeginTxid, setup.challengeSPV);
     }
 
     function setup_reimbursementKickoff()

@@ -6,7 +6,7 @@ import {PegManagerBase} from "./PegManagerBase.sol";
 import {BtcTxSPVProof, StreamPosition} from "./interfaces/IPegCommonTypes.sol";
 import {Constants} from "./libraries/Constants.sol";
 import {IPegoutManager, PegoutTempInfo} from "./interfaces/IPegoutManager.sol";
-import {IStreamManager, PegStatus, Stream} from "./interfaces/IStreamManager.sol";
+import {PegStatus, Stream} from "./interfaces/IStreamManager.sol";
 import {ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
 import {IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
 import {IRbtcBridge} from "./interfaces/IRbtcBridge.sol";
