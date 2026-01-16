@@ -6,7 +6,7 @@ import {BtcTxEncoder} from "src/libraries/BtcTxEncoder.sol";
 import {BtcTxIn, BtcTxOut, BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
 import {Constants} from "src/libraries/Constants.sol";
 
-contract TestBtcTxEncoder is Test {
+contract BtcTxEncoderTest is Test {
     function setUp() external {}
 
     function test_encodeTxIn_Success() external pure {

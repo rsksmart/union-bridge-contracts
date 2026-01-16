@@ -5,7 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {Bech32m} from "src/libraries/Bech32m.sol";
 import {BtcNetwork} from "src/libraries/Network.sol";
 
-contract TestBech32m is Test {
+contract Bech32mTest is Test {
     function test_encodeTaprootAddress_testnet() public pure {
         // Obtained from https://blockstream.info/testnet/address/tb1pn3q7tv78u5sqyu6ngr7w82krtdfuf4a5tv3udkgy4ners2znxehsse5urx
         // ScriptPubKey without the 5120 prefix

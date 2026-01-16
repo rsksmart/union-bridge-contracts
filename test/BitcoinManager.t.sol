@@ -16,7 +16,7 @@ import {Constants} from "src/libraries/Constants.sol";
 import {BtcTaproot} from "src/libraries/BtcTaproot.sol";
 import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
 
-contract TestBtcHelper is Test, HelperContract {
+contract BitcoinManagerTest is Test, HelperContract {
     function setUp() external {
         runTestDeployScript();
 

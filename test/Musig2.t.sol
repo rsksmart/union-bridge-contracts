@@ -5,12 +5,12 @@ import {Test} from "forge-std/Test.sol";
 import {IMusig2, Point, Nonce} from "src/interfaces/IMusig2.sol";
 import {Musig2Harness} from "test/helpers/Musig2Harness.sol";
 
-/// @title TestMusig2
+/// @title Musig2Test
 /// @notice Test contract for the Musig2 library
 /// @dev All values are obtained from the key manager test for musig2 at test_verify_signatures: https://github.com/FairgateLabs/rust-bitvmx-key-manager/pull/48/files#diff-da35d3b654d6bdc960c0b4e4724a605d564caf7ff4b5ad1468e0a79932e1a1b1R123
 /// @dev Point is the x and y coordinates of the public key.
 /// @dev it can be obtained from the unncompressed public key removing the 0x04 prefix, first 32 bytes are the x coordinate and the last 32 bytes are the y coordinate.
-contract TestMusig2 is Test {
+contract Musig2Test is Test {
     Musig2Harness internal musig2;
 
     function setUp() external {

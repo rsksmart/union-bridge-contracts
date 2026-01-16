@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import {Test} from "forge-std/Test.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-contract TestECDSA is Test {
+contract ECDSATest is Test {
     function test_pubKeyToAddress_Success() public pure {
         // Arrange
         // Data obtained form e2e test and keymanager

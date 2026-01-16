@@ -19,7 +19,7 @@ import {ISignatureManager} from "src/interfaces/ISignatureManager.sol";
 import {IRbtcBridge} from "src/interfaces/IRbtcBridge.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract TestPeginManager is Test, HelperContract {
+contract PeginManagerTest is Test, HelperContract {
     // Arrange
     // https://www.blockchain.com/explorer/blocks/btc/879500
     uint64 internal constant PACKET_NUMBER = 0;

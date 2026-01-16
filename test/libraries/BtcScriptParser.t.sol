@@ -8,7 +8,7 @@ import {BytesHelper} from "src/libraries/BytesHelper.sol";
 import {OpCodes} from "src/libraries/OpCodes.sol";
 import {TestUtils} from "test/helpers/TestUtils.sol";
 
-contract TestBtcScriptParser is Test, TestUtils {
+contract BtcScriptParserTest is Test, TestUtils {
     bytes32 internal pubKey;
 
     constructor() {

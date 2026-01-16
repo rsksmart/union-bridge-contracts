@@ -23,7 +23,7 @@ import {HelperContract, StreamManagerHarness} from "test/helpers/HelperContract.
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {Secp256k1} from "src/libraries/Secp256k1.sol";
 
-contract TestMemberRegistry is Test, HelperContract {
+contract MemberRegistryTest is Test, HelperContract {
     MemberRegistrationKeys internal memberRegistrationKeys;
 
     constructor() {

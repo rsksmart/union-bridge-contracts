@@ -6,7 +6,7 @@ import {BtcTaproot} from "src/libraries/BtcTaproot.sol";
 import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
 import {Secp256k1} from "src/libraries/Secp256k1.sol";
 
-contract TestBtcTaproot is Test {
+contract BtcTaprootTest is Test {
     function setUp() external {}
 
     function test_taggedHash_Success() external pure {
