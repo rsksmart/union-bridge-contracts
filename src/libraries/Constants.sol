@@ -169,4 +169,9 @@ library Constants {
 
     /// @dev Maximum number of candidates to a committee for a particular role and stream denominations
     uint256 constant MAX_CANDIDATES_SIZE_PER_ROLE = 100;
+
+    /// @dev Maximum number of members allowed in a committee
+    /// @dev Based on gas consumption analysis: 100 members consume ~70% of block limit
+    /// @dev This prevents DoS attacks and ensures operations stay within safe gas limits
+    uint256 constant MAX_COMMITTEE_MEMBER_COUNT = 100;
 }

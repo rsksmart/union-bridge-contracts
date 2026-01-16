@@ -495,6 +495,11 @@ interface ICommitteeRegistry {
     /// @param minCommitteOperators The minimum operators requirement
     error InvalidMinMembers(uint256 minMembers, uint256 minCommitteWatchtowers, uint256 minCommitteOperators);
 
+    /// @notice Thrown when committee member count exceeds the maximum allowed
+    /// @param maxCommitteeMemberCount The maximum allowed committee member count
+    /// @param committeeMemberCount The requested committee member count
+    error InvalidMaxMembers(uint256 maxCommitteeMemberCount, uint256 committeeMemberCount);
+
     /// @notice Thrown when minimum operators requirement is invalid
     /// @param minMembers The minimum members requirement
     /// @param minCommitteWatchtowers The minimum watchtowers requirement

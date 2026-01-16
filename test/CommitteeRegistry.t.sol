@@ -568,6 +568,45 @@ contract CommitteeRegistryTest is Test, HelperContract {
         registry.setCommitteeMemberCount(invalidMinMembers);
     }
 
+    function test_setCommitteeMemberCount_Success_AtMaximum() external {
+        // Arrange
+        address owner = registry.owner();
+        uint256 maxCommitteeMemberCount = Constants.MAX_COMMITTEE_MEMBER_COUNT;
+
+        // Assert
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.CommitteeMemberCountUpdated(maxCommitteeMemberCount);
+
+        // Act
+        vm.prank(address(owner));
+        registry.setCommitteeMemberCount(maxCommitteeMemberCount);
+
+        // Assert
+        assertEq(
+            registry.committeeMemberCount(),
+            maxCommitteeMemberCount,
+            "Committee member count should be set to maximum allowed value"
+        );
+    }
+
+    function test_setCommitteeMemberCount_Revert_InvalidMaxMembers() external {
+        // Arrange
+        address owner = registry.owner();
+        uint256 maxCommitteeMemberCount = Constants.MAX_COMMITTEE_MEMBER_COUNT;
+        uint256 exceedingCount = maxCommitteeMemberCount + 1;
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ICommitteeRegistry.InvalidMaxMembers.selector, maxCommitteeMemberCount, exceedingCount
+            )
+        );
+
+        // Act
+        vm.prank(address(owner));
+        registry.setCommitteeMemberCount(exceedingCount);
+    }
+
     function test_setPeginManager_Success() external {
         // Arrange
         uint256 privKey = uint256(1);

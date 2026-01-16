@@ -21,6 +21,7 @@ import {IPegoutManager} from "./interfaces/IPegoutManager.sol";
 import {SignatureData} from "./interfaces/ISignatureManager.sol";
 import {IMemberRegistry, MemberKeys} from "./interfaces/IMemberRegistry.sol";
 import {BytesHelper} from "./libraries/BytesHelper.sol";
+import {Constants} from "./libraries/Constants.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 /// @title CommitteeRegistry
@@ -638,6 +639,9 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
         _revertIfZero(_committeeMemberCount);
         if (_committeeMemberCount < minCommitteeWatchtowers + minCommitteeOperators) {
             revert InvalidMinMembers(_committeeMemberCount, minCommitteeWatchtowers, minCommitteeOperators);
+        }
+        if (_committeeMemberCount > Constants.MAX_COMMITTEE_MEMBER_COUNT) {
+            revert InvalidMaxMembers(Constants.MAX_COMMITTEE_MEMBER_COUNT, _committeeMemberCount);
         }
         committeeMemberCount = _committeeMemberCount;
         emit CommitteeMemberCountUpdated(_committeeMemberCount);

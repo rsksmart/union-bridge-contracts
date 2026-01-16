@@ -617,13 +617,18 @@ abstract contract HelperContract is Test, TestUtils {
         }
     }
 
+    /// @notice Internal helper to register members for a pending committee
+    /// @param _size The committee size to register members for
+    function _registerMembersForPendingCommittee(uint256 _size) private {
+        uint256 numOperators = _size / 2;
+        uint256 numWatchtowers = _size - numOperators;
+        setup_registerNewMembers(numWatchtowers, numOperators, SETUP_PENDING_COMMITTEE_DENOMINATION);
+    }
+
     function setup_pendingCommittee() internal returns (Committee memory expectedCommittee, uint128 committeeId) {
-        StreamDenomination denomination = SETUP_PENDING_COMMITTEE_DENOMINATION;
         vm.warp(BLOCK_COMMITTEE_1);
         vm.roll(BLOCK_COMMITTEE_1);
-        uint256 numOperators = registry.committeeMemberCount() / 2;
-        uint256 numWatchtowers = registry.committeeMemberCount() - numOperators;
-        setup_registerNewMembers(numWatchtowers, numOperators, denomination);
+        _registerMembersForPendingCommittee(registry.committeeMemberCount());
         return (setup_getExpectedCommitteeBeforeExpire(), COMMITTEE_ID_STREAM_1_COMMITTEE_1);
     }
 
@@ -646,6 +651,83 @@ abstract contract HelperContract is Test, TestUtils {
         expectedCommittee.missingData = 0;
 
         return (expectedCommittee, committeeId);
+    }
+
+    /// @notice Sets up a pending committee with a specific size
+    /// @param _size The desired committee size
+    /// @return committeeId The ID of the created committee
+    /// @return members The array of committee members
+    function setup_pendingCommitteeWithSize(uint256 _size)
+        internal
+        returns (uint128 committeeId, CommitteeMember[] memory members)
+    {
+        vm.prank(registry.owner());
+        registry.setCommitteeMemberCount(_size);
+
+        uint64 streamId = uint64(SETUP_PENDING_COMMITTEE_DENOMINATION);
+
+        _registerMembersForPendingCommittee(_size);
+
+        vm.roll(block.number + 1);
+
+        vm.prank(address(peginManager));
+        registry.createCommittee(streamId);
+
+        committeeId = registry.getPendingCommitteeId(streamId);
+
+        members = registry.getCommitteeMembers(committeeId);
+
+        return (committeeId, members);
+    }
+
+    /// @notice Sets up a complete committee with a specific size (all aggregated keys deposited)
+    /// @param _size The desired committee size
+    /// @return committeeId The ID of the created committee
+    /// @return members The array of committee members
+    function setup_completeCommitteeWithSize(uint256 _size)
+        internal
+        returns (uint128 committeeId, CommitteeMember[] memory members)
+    {
+        (committeeId, members) = setup_pendingCommitteeWithSize(_size);
+
+        // Complete the committee by depositing aggregated keys
+        for (uint256 i = 0; i < members.length; i++) {
+            setup_depositAggregatedKey(committeeId, members[i].memberAddress);
+        }
+
+        return (committeeId, members);
+    }
+
+    /// @notice Registers candidates to a stream using harness functions without triggering automatic committee creation
+    /// @dev This function uses harness methods (registerMemberHarness and registerCandidateToStreamHarness) which bypass
+    ///      the normal applyToStream flow. This allows candidates to accumulate without automatically creating a committee,
+    ///      which is necessary for testing selectCommittee functionality that requires multiple candidates to be available.
+    /// @param numWatchtowers The number of watchtower candidates to register
+    /// @param numOperators The number of operator candidates to register
+    /// @param denomination The stream denomination to register candidates for
+    function setup_registerCandidatesForStream(
+        uint256 numWatchtowers,
+        uint256 numOperators,
+        StreamDenomination denomination
+    ) internal {
+        uint256 startingMemberIndex = registeredMembersCounter;
+        uint256 totalMembers = numWatchtowers + numOperators;
+
+        for (uint256 i = 0; i < totalMembers; i++) {
+            Role roleForPosition = _roleForMemberIndex(i, numWatchtowers);
+            address memberAddress = _addressForIndex(startingMemberIndex, i);
+            MemberRegistrationKeys memory keys = _deriveRegistrationKeysFromAddress(memberAddress);
+            uint256 minimumDeposit = streamManager.getMinimumDeposit(denomination, roleForPosition);
+            vm.deal(memberAddress, minimumDeposit);
+
+            memberRegistry.registerMemberHarness(memberAddress, keys);
+
+            vm.prank(address(registry));
+            memberRegistry.registerCandidateToStreamHarness(
+                memberAddress, denomination, roleForPosition, minimumDeposit, generateDefaultUTXO()
+            );
+        }
+        registeredMembersCounter = startingMemberIndex + totalMembers;
     }
 
     function setup_completeCommitteeAndNewMembers()
@@ -774,6 +856,11 @@ abstract contract HelperContract is Test, TestUtils {
     function setup_addMemberNonce(address _memberAddress, bytes32 _txid, bytes memory _nonce) internal {
         vm.prank(_memberAddress);
         signatureManager.addMemberNonce(_txid, _nonce);
+    }
+
+    function setup_initOperatorTakeTxids(bytes32 _acceptPeginTxid, uint128 _committeeId) internal {
+        vm.prank(address(peginManager));
+        signatureManager.initOperatorTakeTxids(_acceptPeginTxid, _committeeId);
     }
 
     function setup_addOperatorTakeTxids(
@@ -1094,5 +1181,16 @@ abstract contract HelperContract is Test, TestUtils {
         bytes32 operatorXOnlyPubKey = memberRegistry.getMemberPublicKeys(_memberAddress).covenantPubKey;
         disputeKey = BtcHelper.pubKeyXonlyToCompact(operatorXOnlyPubKey);
         return disputeKey;
+    }
+
+    // ========================== Gas Calculation Helper ==========================
+
+    /// @notice Helper function to calculate gas price and cost in wei
+    /// @param gasUsed Amount of gas used
+    /// @return gasPrice The gas price in wei (set via vm.txGasPrice())
+    /// @return costInWei Total cost in wei (gasUsed * gasPrice)
+    function calculateGasCost(uint256 gasUsed) internal view returns (uint256 gasPrice, uint256 costInWei) {
+        gasPrice = tx.gasprice;
+        costInWei = gasUsed * gasPrice;
     }
 }
