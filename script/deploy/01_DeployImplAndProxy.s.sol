@@ -142,9 +142,8 @@ contract DeployImplAndProxy is ScriptUtils {
             revert("PegoutManager bridge is not the bridge address");
         }
 
-        ChallengeManager challengeManager = deployChallengeManager(
-            upgradableOwner, bridgeAddress, committeeRegistry, bitcoinManager, rbtcBridge, pegoutManager
-        );
+        ChallengeManager challengeManager =
+            deployChallengeManager(upgradableOwner, bridgeAddress, committeeRegistry, bitcoinManager, pegoutManager);
         if (challengeManager.owner() != upgradableOwner) {
             revert("ChallengeManager owner is not the upgradable owner");
         }
@@ -227,20 +226,25 @@ contract DeployImplAndProxy is ScriptUtils {
 
         // Set contracts references
         vm.startBroadcast(getDeployerKey());
+        // set contracts references for rbtcBridge
         rbtcBridge.setPeginManager(address(peginManager));
         rbtcBridge.setPegoutManager(address(pegoutManager));
+        // set contracts references for peginManager
         peginManager.setStreamManager(streamManager);
         peginManager.setSignatureManager(signatureManager);
+        // set contracts references for pegoutManager
         pegoutManager.setStreamManager(streamManager);
         pegoutManager.setSignatureManager(signatureManager);
+        // set contracts references for challengeManager
         challengeManager.setStreamManager(streamManager);
-        // TODO: do we need to set the signature manager for challengeManager?
-        challengeManager.setSignatureManager(signatureManager);
+        // set contracts references for bitcoinManager
         bitcoinManager.setPeginManager(peginManager);
+        // set contracts references for committeeRegistry
         committeeRegistry.setStreamManager(streamManager);
         committeeRegistry.setPeginManager(peginManager);
         committeeRegistry.setPegoutManager(pegoutManager);
         committeeRegistry.setChallengeManager(address(challengeManager));
+        // set contracts references for memberRegistry
         memberRegistry.setStreamManager(streamManager);
         memberRegistry.setCommitteeRegistry(address(committeeRegistry));
         memberRegistry.setBridge(IBridge(bridgeAddress));
@@ -386,7 +390,6 @@ contract DeployImplAndProxy is ScriptUtils {
         address payable _bridgeAddress,
         CommitteeRegistry _committeeRegistry,
         BitcoinManager _bitcoinManager,
-        RbtcBridge _rbtcBridge,
         PegoutManager _pegoutManager
     ) public returns (ChallengeManager) {
         string memory contractName = "ChallengeManager.sol";
@@ -397,7 +400,7 @@ contract DeployImplAndProxy is ScriptUtils {
             contractName,
             abi.encodeCall(
                 ChallengeManager.initialize,
-                (_upgradableOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager, _rbtcBridge, _pegoutManager)
+                (_upgradableOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager, _pegoutManager)
             )
         );
         return ChallengeManager(proxyAdddress);

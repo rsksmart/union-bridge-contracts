@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {ChallengeTempInfo, IChallengeManager} from "./interfaces/IChallengeManager.sol";
-import {PegManagerBase} from "./PegManagerBase.sol";
+import {PegBase} from "./PegBase.sol";
 import {BtcTxSPVProof, StreamPosition} from "./interfaces/IPegCommonTypes.sol";
 import {Constants} from "./libraries/Constants.sol";
 import {IPegoutManager, PegoutTempInfo} from "./interfaces/IPegoutManager.sol";
@@ -13,7 +13,7 @@ import {IRbtcBridge} from "./interfaces/IRbtcBridge.sol";
 
 /// @title ChallengeManager
 /// @notice Manages challenge operations
-contract ChallengeManager is IChallengeManager, PegManagerBase {
+contract ChallengeManager is IChallengeManager, PegBase {
     /// @notice The PegoutManager contract
     IPegoutManager public pegoutManager;
 
@@ -33,16 +33,14 @@ contract ChallengeManager is IChallengeManager, PegManagerBase {
     /// @param _bridgeAddress The address of the pow-peg bridge contract
     /// @param _committeeRegistry The committee registry contract address
     /// @param _bitcoinManager The Bitcoin manager contract address
-    /// @param _rbtcBridge The RbtcBridge contract address
     function initialize(
         address _initialOwner,
         address payable _bridgeAddress,
         ICommitteeRegistry _committeeRegistry,
         IBitcoinManager _bitcoinManager,
-        IRbtcBridge _rbtcBridge,
         IPegoutManager _pegoutManager
     ) public initializer {
-        __PegManagerBase_init(_initialOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager, _rbtcBridge);
+        __PegBase_init(_initialOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager);
         pegoutManager = _pegoutManager;
     }
 
