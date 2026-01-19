@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {ChallengeTempInfo, IChallengeManager} from "./interfaces/IChallengeManager.sol";
-import {PegBase} from "./PegBase.sol";
+import {PegCommon} from "./PegCommon.sol";
 import {BtcTxSPVProof, StreamPosition} from "./interfaces/IPegCommonTypes.sol";
 import {Constants} from "./libraries/Constants.sol";
 import {IPegoutManager, PegoutTempInfo} from "./interfaces/IPegoutManager.sol";
@@ -13,7 +13,7 @@ import {IRbtcBridge} from "./interfaces/IRbtcBridge.sol";
 
 /// @title ChallengeManager
 /// @notice Manages challenge operations
-contract ChallengeManager is IChallengeManager, PegBase {
+contract ChallengeManager is IChallengeManager, PegCommon {
     /// @notice The PegoutManager contract
     IPegoutManager public pegoutManager;
 
@@ -40,7 +40,7 @@ contract ChallengeManager is IChallengeManager, PegBase {
         IBitcoinManager _bitcoinManager,
         IPegoutManager _pegoutManager
     ) public initializer {
-        __PegBase_init(_initialOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager);
+        __PegCommon_init(_initialOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager);
         pegoutManager = _pegoutManager;
     }
 

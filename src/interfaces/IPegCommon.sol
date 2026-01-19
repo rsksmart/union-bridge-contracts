@@ -7,8 +7,8 @@ import {ICommitteeRegistry} from "./ICommitteeRegistry.sol";
 import {PegStatus} from "./IPegCommonTypes.sol";
 
 /// @title IPegManagerBase
-/// @notice Interface for shared functionality between PeginManager and PegoutManager
-interface IPegBase {
+/// @notice Interface for shared functionality between PeginManager, PegoutManager and ChallengeManager
+interface IPegCommon {
     /// @notice Emitted when the stream manager is updated
     /// @param _streamManager The new stream manager address
     event StreamManagerUpdated(IStreamManager _streamManager);

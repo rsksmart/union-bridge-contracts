@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import {IPegBase} from "./IPegBase.sol";
+import {IPegCommon} from "./IPegCommon.sol";
 import {ISignatureManager} from "./ISignatureManager.sol";
 import {IRbtcBridge} from "./IRbtcBridge.sol";
 
 /// @title IPegManagerBase
 /// @notice Interface for shared functionality between PeginManager and PegoutManager
-interface IPegManagerBase is IPegBase {
+interface IPegManagerBase is IPegCommon {
     /// @notice Emitted when the signature manager is updated
     /// @param _signatureManager The new signature manager address
     event SignatureManagerUpdated(ISignatureManager _signatureManager);

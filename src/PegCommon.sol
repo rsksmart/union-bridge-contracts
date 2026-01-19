@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import {IPegBase} from "./interfaces/IPegBase.sol";
+import {IPegCommon} from "./interfaces/IPegCommon.sol";
 import {BaseProxy} from "./BaseProxy.sol";
 import {Pausable} from "./Pausable.sol";
 import {ProofValidator} from "./ProofValidator.sol";
@@ -14,7 +14,7 @@ import {PegStatus, StreamPosition} from "./interfaces/IPegCommonTypes.sol";
 /// @title PegManagerBase
 /// @notice Abstract base contract for shared functionality between PeginManager and PegoutManager
 /// @dev Contains common state variables, initialization logic, and setter functions
-abstract contract PegBase is IPegBase, BaseProxy, ProofValidator, ReentrancyGuardUpgradeable, Pausable {
+abstract contract PegCommon is IPegCommon, BaseProxy, ProofValidator, ReentrancyGuardUpgradeable, Pausable {
     /// @notice Bitcoin manager contract for Bitcoin transaction validation and address generation
     IBitcoinManager public bitcoinManager;
 
@@ -30,7 +30,7 @@ abstract contract PegBase is IPegBase, BaseProxy, ProofValidator, ReentrancyGuar
     /// @param _committeeRegistry The committee registry contract address
     /// @param _bitcoinManager The Bitcoin manager contract address
     /// @dev This function should be called by child contracts during their initialization
-    function __PegBase_init(
+    function __PegCommon_init(
         address _initialOwner,
         address payable _bridgeAddress,
         ICommitteeRegistry _committeeRegistry,

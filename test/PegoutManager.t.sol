@@ -20,7 +20,7 @@ import {Committee} from "src/interfaces/ICommitteeRegistry.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
 import {IRbtcBridge} from "src/interfaces/IRbtcBridge.sol";
-import {IPegBase} from "src/interfaces/IPegBase.sol";
+import {IPegCommon} from "src/interfaces/IPegCommon.sol";
 
 contract PegoutManagerTest is Test, HelperContract {
     // Arrange
@@ -944,7 +944,7 @@ contract PegoutManagerTest is Test, HelperContract {
         BtcTxSPVProof memory operatorTakeSPV = createBtcTxSPVProof(operatorTakeTx);
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegBase.PeginNotRequested.selector, wrongAcceptPeginTxid));
+        vm.expectRevert(abi.encodeWithSelector(IPegCommon.PeginNotRequested.selector, wrongAcceptPeginTxid));
 
         // Act
         vm.prank(operatorAddress);
@@ -964,7 +964,7 @@ contract PegoutManagerTest is Test, HelperContract {
         );
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegBase.InvalidPegStatus.selector, PegStatus.COMPLETED));
+        vm.expectRevert(abi.encodeWithSelector(IPegCommon.InvalidPegStatus.selector, PegStatus.COMPLETED));
 
         // Act
         vm.prank(operatorAddress);
@@ -1306,7 +1306,7 @@ contract PegoutManagerTest is Test, HelperContract {
 
         // Assert
         vm.expectEmit(address(pegoutManager));
-        emit IPegBase.StreamManagerUpdated(newStreamManager);
+        emit IPegCommon.StreamManagerUpdated(newStreamManager);
 
         // Act
         vm.prank(owner);
@@ -1326,7 +1326,7 @@ contract PegoutManagerTest is Test, HelperContract {
         // Assert
         vm.prank(pegoutManager.owner());
         vm.expectEmit(address(pegoutManager));
-        emit IPegBase.StreamManagerUpdated(newStreamManager);
+        emit IPegCommon.StreamManagerUpdated(newStreamManager);
 
         // Act
         pegoutManager.setStreamManager(newStreamManager);
@@ -1341,7 +1341,7 @@ contract PegoutManagerTest is Test, HelperContract {
         IStreamManager zeroStreamManager = IStreamManager(address(0));
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegBase.StreamManagerAddressZero.selector));
+        vm.expectRevert(abi.encodeWithSelector(IPegCommon.StreamManagerAddressZero.selector));
 
         // Act
         vm.prank(owner);
@@ -1668,7 +1668,7 @@ contract PegoutManagerTest is Test, HelperContract {
         bytes32 wrongAcceptPeginTxid = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegBase.PeginNotRequested.selector, wrongAcceptPeginTxid));
+        vm.expectRevert(abi.encodeWithSelector(IPegCommon.PeginNotRequested.selector, wrongAcceptPeginTxid));
 
         // Act
         vm.prank(opAddress);
@@ -1763,7 +1763,7 @@ contract PegoutManagerTest is Test, HelperContract {
         streamManager.setPegStatus(setup.acceptPeginTxid, PegStatus.COMPLETED);
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegBase.InvalidPegStatus.selector, PegStatus.COMPLETED));
+        vm.expectRevert(abi.encodeWithSelector(IPegCommon.InvalidPegStatus.selector, PegStatus.COMPLETED));
 
         // Act
         vm.prank(opAddress);
@@ -1820,7 +1820,7 @@ contract PegoutManagerTest is Test, HelperContract {
         bytes32 wrongAcceptPeginTxid = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegBase.PeginNotRequested.selector, wrongAcceptPeginTxid));
+        vm.expectRevert(abi.encodeWithSelector(IPegCommon.PeginNotRequested.selector, wrongAcceptPeginTxid));
 
         // Act
         vm.prank(opAddress);
@@ -1836,7 +1836,7 @@ contract PegoutManagerTest is Test, HelperContract {
         streamManager.setPegStatus(setup.acceptPeginTxid, PegStatus.COMPLETED);
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegBase.InvalidPegStatus.selector, PegStatus.COMPLETED));
+        vm.expectRevert(abi.encodeWithSelector(IPegCommon.InvalidPegStatus.selector, PegStatus.COMPLETED));
 
         // Act
         vm.prank(opAddress);
