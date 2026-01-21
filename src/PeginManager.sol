@@ -124,12 +124,21 @@ contract PeginManager is IPeginManager, PegManagerBase {
             bytes memory committeePubKey
         ) = _validatePeginP2TRAndOpReturn(_requestPeginTxSPVProof);
 
-        // Get committee ID and dispute keys before validation
+        // Get committee ID for later use
         uint128 committeeId = streamManager.getCommitteeId(stream.streamId, packetNumber);
+
+        // Fetch the enabler scriptPubKey from the packet (calculated during packet creation)
+        bytes memory enablerScriptPubKey = streamManager.getEnablerScriptPubKey(stream.streamId, packetNumber);
 
         (int256 confirmations, BitcoinSignatureData memory acceptPeginSignatureData) =
         _validatePeginEnablerAndConfirmations(
-            _requestPeginTxSPVProof, btcReimbursementPubKey, committeePubKey, stream, requestPeginTxid, committeeId
+            _requestPeginTxSPVProof,
+            btcReimbursementPubKey,
+            committeePubKey,
+            enablerScriptPubKey,
+            stream,
+            requestPeginTxid,
+            committeeId
         );
 
         // Store temp info before external calls
@@ -231,16 +240,14 @@ contract PeginManager is IPeginManager, PegManagerBase {
         BtcTxSPVProof memory _requestPeginTxSPVProof,
         bytes32 _btcReimbursementPubKey,
         bytes memory _committeePubKey,
+        bytes memory _enablerScriptPubKey,
         Stream memory _stream,
         bytes32 _requestPeginTxid,
         uint128 _committeeId
     ) internal view returns (int256 confirmations, BitcoinSignatureData memory acceptPeginSignatureData) {
-        // Get the dispute keys of all members of the committee
-        bytes32[] memory disputeKeys = committeeRegistry.getCommitteeDisputeKeys(_committeeId);
-
         // Validates the enabler output (vout 2) with the correct amount and scriptPubKey
         bitcoinManager.validateRequestPeginEnablerOutput(
-            _committeePubKey, disputeKeys, _requestPeginTxSPVProof.btcTx.outputs[Constants.REQUEST_PEGIN_VOUT_ENABLER]
+            _enablerScriptPubKey, _requestPeginTxSPVProof.btcTx.outputs[Constants.REQUEST_PEGIN_VOUT_ENABLER]
         );
 
         // Verifies the requestPeginTxid part of the Merkle Root of Tx of a Block
@@ -261,8 +268,8 @@ contract PeginManager is IPeginManager, PegManagerBase {
                 _committeeId,
                 _requestPeginTxid,
                 _requestPeginTxSPVProof,
-                disputeKeys,
-                _committeePubKey
+                _committeePubKey,
+                _enablerScriptPubKey
             )
         );
     }
@@ -272,8 +279,8 @@ contract PeginManager is IPeginManager, PegManagerBase {
         uint128 _committeeId,
         bytes32 _requestPeginTxid,
         BtcTxSPVProof memory _requestPeginTxSPVProof,
-        bytes32[] memory _disputeKeys,
-        bytes memory _committeePubKey
+        bytes memory _committeePubKey,
+        bytes memory _enablerScriptPubKey
     ) internal view returns (BitcoinSignatureData memory acceptPeginSignatureData) {
         // Pre-compute prevout data for both inputs before external calls to follow checks-effects-interactions
         PrevoutData[] memory prevoutDatas = new PrevoutData[](2);
@@ -283,10 +290,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
             scriptPubKey: _requestPeginTxSPVProof.btcTx.outputs[Constants.REQUEST_PEGIN_VOUT_TAPTREE].scriptPubKey
         });
         // Second input: enabler output from request peg-in
-        prevoutDatas[1] = PrevoutData({
-            value: Constants.SPEED_UP_AMOUNT,
-            scriptPubKey: bitcoinManager.getEnablerOutputP2TRScriptPub(_committeePubKey, _disputeKeys)
-        });
+        prevoutDatas[1] = PrevoutData({value: Constants.SPEED_UP_AMOUNT, scriptPubKey: _enablerScriptPubKey});
         // Get the members dispute keys of the committee
         bytes32[] memory membersDisputeKeys = committeeRegistry.getCommitteeDisputeKeys(_committeeId);
         acceptPeginSignatureData = bitcoinManager.getAcceptPeginSignatureHash(
@@ -509,8 +513,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
             requestPeginTxid,
             _peginAcceptedTxSPVProof.blockHash,
             acceptPeginTxid,
-            _peginAcceptedTxSPVProof.btcTx.outputs[Constants.ACCEPT_PEGIN_VOUT_TAPTREE],
-            _peginAcceptedTxSPVProof.btcTx.outputs[Constants.ACCEPT_PEGIN_VOUT_ENABLER]
+            _peginAcceptedTxSPVProof.btcTx.outputs[Constants.ACCEPT_PEGIN_VOUT_TAPTREE]
         );
     }
 
@@ -518,21 +521,14 @@ contract PeginManager is IPeginManager, PegManagerBase {
         bytes32 _requestPeginTxid,
         bytes32 _blockHash,
         bytes32 _acceptPeginTxid,
-        BtcTxOut memory _acceptPeginTxOutput,
-        BtcTxOut memory _enablerOutput
+        BtcTxOut memory _acceptPeginTxOutput
     ) internal {
         // Update the peg in request status to ACCEPTED to avoid processing it again
         streamManager.setPegStatus(_acceptPeginTxid, PegStatus.ACCEPTED);
         StreamPosition memory stream = streamManager.getStreamPosition(_acceptPeginTxid);
 
         // Fill the reserved slot with accept peg-in transaction details
-        streamManager.fillSlot(
-            stream,
-            _acceptPeginTxOutput.amount,
-            _acceptPeginTxid,
-            _acceptPeginTxOutput.scriptPubKey,
-            _enablerOutput.scriptPubKey
-        );
+        streamManager.fillSlot(stream, _acceptPeginTxOutput.amount, _acceptPeginTxid, _acceptPeginTxOutput.scriptPubKey);
 
         uint256 rbtcAmount = BtcHelper.satoshiToWei(_acceptPeginTxOutput.amount);
         RequestPeginTempInfo storage requestTempInfo = peginTempInfo[_requestPeginTxid];

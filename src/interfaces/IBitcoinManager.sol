@@ -145,14 +145,11 @@ interface IBitcoinManager {
     ) external view;
 
     /// @notice Validates the enabler output in a request peg-in transaction
-    /// @param _committeePubKey The committee's public key
-    /// @param _disputeKeys The dispute keys (covenant public keys) for the committee
+    /// @param _expectedEnablerScriptPubKey The expected enabler script pub key (from packet storage)
     /// @param _enablerOut The enabler output to validate
-    function validateRequestPeginEnablerOutput(
-        bytes memory _committeePubKey,
-        bytes32[] memory _disputeKeys,
-        BtcTxOut calldata _enablerOut
-    ) external view;
+    function validateRequestPeginEnablerOutput(bytes memory _expectedEnablerScriptPubKey, BtcTxOut calldata _enablerOut)
+        external
+        pure;
 
     /// @notice Calculates the Bitcoin transaction id (txid) for a given transaction
     /// @dev Encodes the transaction into Bitcoin's raw format and performs double SHA256 hash

@@ -67,8 +67,8 @@ contract PegoutManagerTest is Test, HelperContract {
         BitcoinSignatureData memory expectedSignatureData = BitcoinSignatureData({
             tx: BtcTransaction({version: 2, inputs: inputs, outputs: outputs, locktime: 0}),
             txid: 0xabfb8bf949dbb4c3cb6d3915b2bef8a143b70fce3b9fd4b4fe9be37f068248ce,
-            signatureHash: 0xdd29c8f66fa383866201b7b3f03da54ba426f0da1b14594df99e8eaaa32d520a,
-            signatureMessage: hex"000102000000000000002b8084abbfc6f1a5fe96508cb072809c2d082150a6c62d95f8080f7ec35e4cce17685862d673aaad7a4904f7eb4c397f372737f0476a1b1af21e168466de61de2c5f3653a318908b90809fa9dcebdcb183de87e4551b25545400edc916887bc982d397cbbcff87bc5d0c4c70e424f9b830efbad7bf0be479da5d1d1bafdb9798bfd84e32f90f61452c95235739095ef9347def223e2b2a49d799abe42099e5850000000000"
+            signatureHash: 0x361082764f790b0b5a524bfe10dd640a14fb4b4d94575d9f2bd07bf9c426b646,
+            signatureMessage: hex"000102000000000000002b8084abbfc6f1a5fe96508cb072809c2d082150a6c62d95f8080f7ec35e4cce17685862d673aaad7a4904f7eb4c397f372737f0476a1b1af21e168466de61deea85cbbfedfe2883dcc21cac6471b428c9cb053e470ac9c7de61c2a2e2ab9c4782d397cbbcff87bc5d0c4c70e424f9b830efbad7bf0be479da5d1d1bafdb9798bfd84e32f90f61452c95235739095ef9347def223e2b2a49d799abe42099e5850000000000"
         });
 
         bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
@@ -1516,8 +1516,8 @@ contract PegoutManagerTest is Test, HelperContract {
         BitcoinSignatureData memory expectedSignatureData = BitcoinSignatureData({
             tx: BtcTransaction({version: 2, inputs: inputs, outputs: outputs, locktime: 0}),
             txid: 0xabfb8bf949dbb4c3cb6d3915b2bef8a143b70fce3b9fd4b4fe9be37f068248ce,
-            signatureHash: 0xdd29c8f66fa383866201b7b3f03da54ba426f0da1b14594df99e8eaaa32d520a,
-            signatureMessage: hex"000102000000000000002b8084abbfc6f1a5fe96508cb072809c2d082150a6c62d95f8080f7ec35e4cce17685862d673aaad7a4904f7eb4c397f372737f0476a1b1af21e168466de61de2c5f3653a318908b90809fa9dcebdcb183de87e4551b25545400edc916887bc982d397cbbcff87bc5d0c4c70e424f9b830efbad7bf0be479da5d1d1bafdb9798bfd84e32f90f61452c95235739095ef9347def223e2b2a49d799abe42099e5850000000000"
+            signatureHash: 0x361082764f790b0b5a524bfe10dd640a14fb4b4d94575d9f2bd07bf9c426b646,
+            signatureMessage: hex"000102000000000000002b8084abbfc6f1a5fe96508cb072809c2d082150a6c62d95f8080f7ec35e4cce17685862d673aaad7a4904f7eb4c397f372737f0476a1b1af21e168466de61deea85cbbfedfe2883dcc21cac6471b428c9cb053e470ac9c7de61c2a2e2ab9c4782d397cbbcff87bc5d0c4c70e424f9b830efbad7bf0be479da5d1d1bafdb9798bfd84e32f90f61452c95235739095ef9347def223e2b2a49d799abe42099e5850000000000"
         });
 
         bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";

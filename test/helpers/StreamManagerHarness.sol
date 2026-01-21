@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import {SlotState, Slot, StreamManager} from "src/StreamManager.sol";
 import {ICommitteeRegistry, Role} from "src/interfaces/ICommitteeRegistry.sol";
+import {IBitcoinManager} from "src/interfaces/IBitcoinManager.sol";
 import {StreamManagerSettings, StreamSettings} from "src/interfaces/IStreamManager.sol";
 
 /// @notice Wrapper for testing StreamManager
@@ -12,11 +13,18 @@ contract StreamManagerHarness is StreamManager {
         address _peginManager,
         address _pegoutManager,
         ICommitteeRegistry _committeeRegistry,
+        IBitcoinManager _bitcoinManager,
         StreamManagerSettings memory _settings,
         StreamSettings[] memory _streamSettings
     ) public override initializer {
         StreamManager.initialize(
-            _initialOwner, _peginManager, _pegoutManager, _committeeRegistry, _settings, _streamSettings
+            _initialOwner,
+            _peginManager,
+            _pegoutManager,
+            _committeeRegistry,
+            _bitcoinManager,
+            _settings,
+            _streamSettings
         );
     }
 
@@ -36,8 +44,7 @@ contract StreamManagerHarness is StreamManager {
                 acceptPeginTx: _txId,
                 acceptPeginAmount: _amount,
                 scriptPubKey: _scriptPubKey,
-                takeTx: "",
-                enablerScriptPubKey: ""
+                takeTx: ""
             })
         );
 
@@ -49,6 +56,12 @@ contract StreamManagerHarness is StreamManager {
         streams[_streamId].pegoutSlotPointer = _slot;
     }
 
+    function setPacketEnablerScriptHarness(uint64 _streamId, uint64 _packetNumber, bytes memory _enablerScriptPubKey)
+        external
+    {
+        packets[_streamId][_packetNumber].enablerScriptPubKey = _enablerScriptPubKey;
+    }
+
     function pushSlotsHarness(uint64 _streamId, uint64 _packet, uint64 _slotsAmount, SlotState _slotState) external {
         for (uint64 i = 0; i < _slotsAmount; i++) {
             slots[_streamId][_packet].push(
@@ -58,8 +71,7 @@ contract StreamManagerHarness is StreamManager {
                     scriptPubKey: hex"00",
                     acceptPeginTx: bytes32(0),
                     acceptPeginAmount: 0,
-                    takeTx: "",
-                    enablerScriptPubKey: ""
+                    takeTx: ""
                 })
             );
         }

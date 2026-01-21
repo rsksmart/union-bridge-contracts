@@ -204,6 +204,14 @@ contract BitVMXCompatibilityTest is Test, HelperContract {
             }
         }
 
+        // Recalculate the packet's enabler scriptPubKey with the updated BitVMX keys
+        // This is necessary because the packet was created with default keys, but we've now
+        // overridden both the committee aggregated key and the covenant keys.
+        bytes32[] memory updatedDisputeKeys = registry.getCommitteeDisputeKeys(committeeId);
+        bytes memory updatedEnablerScript =
+            bitcoinManager.getEnablerOutputP2TRScriptPub(committeeAggregatedKey, updatedDisputeKeys);
+        streamManager.setPacketEnablerScriptHarness(0, 0, updatedEnablerScript);
+
         return committeeId;
     }
 

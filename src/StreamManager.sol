@@ -16,6 +16,7 @@ import {AccessControl} from "./AccessControl.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {ICommitteeRegistry, Role} from "src/interfaces/ICommitteeRegistry.sol";
+import {IBitcoinManager} from "src/interfaces/IBitcoinManager.sol";
 import {StreamPosition, PegStatus} from "src/interfaces/IPegCommonTypes.sol";
 
 /// @title Stream Manager
@@ -34,6 +35,9 @@ contract StreamManager is IStreamManager, AccessControl {
     /// @notice The committee registry contract that manages committee membership
     /// @dev Used to create new packets when committees are formed
     ICommitteeRegistry public committeeRegistry;
+    /// @notice The Bitcoin manager contract that handles Bitcoin transaction operations
+    /// @dev Used to calculate enabler output scripts for packets
+    IBitcoinManager public bitcoinManager;
 
     // Security bond percentage in 10_000 format (e.g. 1000 = 10%)
     mapping(Role role => uint16 percentage) public securityBondPercentage;
@@ -46,6 +50,7 @@ contract StreamManager is IStreamManager, AccessControl {
     /// @param _peginManager The address of the PeginManager contract
     /// @param _pegoutManager The address of the PegoutManager contract
     /// @param _committeeRegistry The CommitteeRegistry contract address
+    /// @param _bitcoinManager The BitcoinManager contract address
     /// @param _settings Struct with the settings for the StreamManager including security bond percentages
     /// @param _streamSettings Array of structs with the settings for each stream including confirmation counts and timelock settings
     function initialize(
@@ -53,6 +58,7 @@ contract StreamManager is IStreamManager, AccessControl {
         address _peginManager,
         address _pegoutManager,
         ICommitteeRegistry _committeeRegistry,
+        IBitcoinManager _bitcoinManager,
         StreamManagerSettings memory _settings,
         StreamSettings[] memory _streamSettings
     ) public virtual initializer {
@@ -61,6 +67,12 @@ contract StreamManager is IStreamManager, AccessControl {
 
         // Set the committee registry
         _setCommitteeRegistry(_committeeRegistry);
+
+        // Set and validate the Bitcoin manager
+        if (address(_bitcoinManager) == address(0)) {
+            revert InvalidZeroAddress();
+        }
+        bitcoinManager = _bitcoinManager;
 
         // Set the Stream Manager settings
         _setSecurityBondPercentage(Role.WATCHTOWER, _settings.securityBondPercentageWatchtower);
@@ -130,9 +142,18 @@ contract StreamManager is IStreamManager, AccessControl {
     }
 
     function _createNewPacket(uint64 _streamId, uint128 _committeeId, bytes memory _committeePubKey) internal {
+        // Calculate enabler script once for the whole packet
+        bytes32[] memory disputeKeys = committeeRegistry.getCommitteeDisputeKeys(_committeeId);
+        bytes memory enablerScriptPubKey = bitcoinManager.getEnablerOutputP2TRScriptPub(_committeePubKey, disputeKeys);
+
         uint64 packetNumber = uint64(packets[_streamId].length);
         packets[_streamId].push(
-            Packet({packetNumber: packetNumber, committeeId: _committeeId, committeePubKey: _committeePubKey})
+            Packet({
+                packetNumber: packetNumber,
+                committeeId: _committeeId,
+                committeePubKey: _committeePubKey,
+                enablerScriptPubKey: enablerScriptPubKey
+            })
         );
         emit PacketCreated(_streamId, packetNumber);
     }
@@ -316,8 +337,7 @@ contract StreamManager is IStreamManager, AccessControl {
                 acceptPeginTx: bytes32(0),
                 acceptPeginAmount: 0,
                 scriptPubKey: "",
-                takeTx: "",
-                enablerScriptPubKey: ""
+                takeTx: ""
             })
         );
         emit SlotReserved(_streamId, _packetNumber, slotId);
@@ -340,13 +360,11 @@ contract StreamManager is IStreamManager, AccessControl {
     /// @param _acceptPeginAmount The amount of the accept peg-in transaction
     /// @param _acceptPeginTx The hash of the accept peg-in transaction
     /// @param _scriptPubKey The script pub key for the taptree output
-    /// @param _enablerScriptPubKey The script pub key for the enabler output
     function fillSlot(
         StreamPosition memory _stream,
         uint64 _acceptPeginAmount,
         bytes32 _acceptPeginTx,
-        bytes memory _scriptPubKey,
-        bytes memory _enablerScriptPubKey
+        bytes memory _scriptPubKey
     ) external onlyPegManager {
         Slot storage slot = _getSlot(_stream.streamId, _stream.packetNumber, _stream.slotId);
 
@@ -358,7 +376,6 @@ contract StreamManager is IStreamManager, AccessControl {
         slot.acceptPeginTx = _acceptPeginTx;
         slot.acceptPeginAmount = _acceptPeginAmount;
         slot.scriptPubKey = _scriptPubKey;
-        slot.enablerScriptPubKey = _enablerScriptPubKey;
 
         emit SlotFilled(_stream.streamId, _stream.packetNumber, _stream.slotId, _acceptPeginTx, _acceptPeginAmount);
     }
@@ -392,6 +409,14 @@ contract StreamManager is IStreamManager, AccessControl {
     /// @return bytes The committee public key for the packet
     function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes memory) {
         return getPacket(_streamId, _packetNumber).committeePubKey;
+    }
+
+    /// @notice Gets the enabler script public key for a specific packet
+    /// @param _streamId The ID of the stream
+    /// @param _packetNumber The packet number
+    /// @return bytes The enabler script public key for the packet
+    function getEnablerScriptPubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes memory) {
+        return getPacket(_streamId, _packetNumber).enablerScriptPubKey;
     }
 
     /// @notice Marks a slot as completed and stores the UserTake transaction id

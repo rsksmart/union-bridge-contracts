@@ -526,10 +526,13 @@ abstract contract HelperContract is Test, TestUtils {
         assertEq(slot.acceptPeginTx, setup.acceptPeginTxid, "Slot should reference the correct accept peg-in tx");
 
         // Prepare prevout data for both inputs: taptree and enabler outputs
-        // Read both from slot (matching production code in _preparePegoutPrevoutDatas)
+        // Read taptree from slot, enabler from packet (matching production code in _preparePegoutPrevoutDatas)
         PrevoutData[] memory prevoutDatas = new PrevoutData[](2);
         prevoutDatas[0] = PrevoutData({value: slot.acceptPeginAmount, scriptPubKey: slot.scriptPubKey});
-        prevoutDatas[1] = PrevoutData({value: Constants.ENABLER_AMOUNT, scriptPubKey: slot.enablerScriptPubKey});
+        prevoutDatas[1] = PrevoutData({
+            value: Constants.ENABLER_AMOUNT,
+            scriptPubKey: streamManager.getEnablerScriptPubKey(stream.streamId, setup.packetNumber)
+        });
 
         BitcoinSignatureData memory pegoutSignatureData =
             bitcoinManager.getPegoutTxData(setup.userPubKey, setup.acceptPeginTxid, prevoutDatas);

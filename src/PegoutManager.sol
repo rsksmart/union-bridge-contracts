@@ -81,7 +81,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         // slither-disable-next-line reentrancy-benign
         (Slot memory slot, uint64 packetNumber) = streamManager.lockSlot(stream.streamId);
 
-        PrevoutData[] memory prevoutDatas = _preparePegoutPrevoutDatas(slot);
+        PrevoutData[] memory prevoutDatas = _preparePegoutPrevoutDatas(stream.streamId, packetNumber, slot);
 
         // Compute the Bitcoin peg-out signature hash
         BitcoinSignatureData memory pegoutSignatureData =
@@ -606,14 +606,21 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         }
     }
 
-    function _preparePegoutPrevoutDatas(Slot memory _slot) internal pure returns (PrevoutData[] memory) {
+    function _preparePegoutPrevoutDatas(uint64 _streamId, uint64 _packetNumber, Slot memory _slot)
+        internal
+        view
+        returns (PrevoutData[] memory)
+    {
         PrevoutData[] memory prevoutDatas = new PrevoutData[](2);
 
         // Taptree prevout - read from slot
         prevoutDatas[0] = PrevoutData({value: _slot.acceptPeginAmount, scriptPubKey: _slot.scriptPubKey});
 
-        // Enabler prevout - read from slot
-        prevoutDatas[1] = PrevoutData({value: Constants.ENABLER_AMOUNT, scriptPubKey: _slot.enablerScriptPubKey});
+        // Enabler prevout - read from packet
+        prevoutDatas[1] = PrevoutData({
+            value: Constants.ENABLER_AMOUNT,
+            scriptPubKey: streamManager.getEnablerScriptPubKey(_streamId, _packetNumber)
+        });
 
         return prevoutDatas;
     }

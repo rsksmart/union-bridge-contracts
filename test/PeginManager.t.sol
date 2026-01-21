@@ -8,7 +8,6 @@ import {Pausable} from "src/Pausable.sol";
 import {BtcTransaction, BtcTxSPVProof, StreamPosition, PegStatus} from "src/interfaces/IPegCommonTypes.sol";
 import {IPeginManager, RequestPeginTempInfo} from "src/interfaces/IPeginManager.sol";
 import {IPegManagerBase} from "src/interfaces/IPegManagerBase.sol";
-import {PrevoutData} from "src/interfaces/IBitcoinManager.sol";
 import {Slot, SlotState, Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE} from "src/interfaces/IBridge.sol";
 import {ProofValidator} from "src/ProofValidator.sol";

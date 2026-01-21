@@ -235,25 +235,19 @@ contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
     }
 
     /// @notice Validates the enabler output in a request peg-in transaction
-    /// @param _committeePubKey The committee's public key
-    /// @param _disputeKeys The dispute keys (covenant public keys) for the committee
+    /// @param _expectedEnablerScriptPubKey The expected enabler script pub key (from packet storage)
     /// @param _enablerOut The enabler output to validate
-    function validateRequestPeginEnablerOutput(
-        bytes memory _committeePubKey,
-        bytes32[] memory _disputeKeys,
-        BtcTxOut calldata _enablerOut
-    ) external view onlyPeginManager {
+    function validateRequestPeginEnablerOutput(bytes memory _expectedEnablerScriptPubKey, BtcTxOut calldata _enablerOut)
+        external
+        pure
+    {
         // Validate that the amount matches the expected enabler amount
         if (_enablerOut.amount != Constants.ENABLER_AMOUNT) {
             revert InvalidOutputAmount(_enablerOut.amount, Constants.ENABLER_AMOUNT);
         }
 
-        // Generate expected enabler output script pub key
-        // TODO: this could be optimized by keeping the result saved in storage per committee/packet
-        bytes memory expectedScriptPubKey = getEnablerOutputP2TRScriptPub(_committeePubKey, _disputeKeys);
-
-        // Validate the script pub key matches
-        _compareOutputPubKey(_enablerOut.scriptPubKey, expectedScriptPubKey);
+        // Validate the script pub key matches the one stored in the packet
+        _compareOutputPubKey(_enablerOut.scriptPubKey, _expectedEnablerScriptPubKey);
     }
 
     /// @notice Generates the RequestPegin Taproot output script pub key with both key spend and script spend paths

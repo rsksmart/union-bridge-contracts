@@ -7,6 +7,7 @@ import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 import {CommitteeRegistry} from "src/CommitteeRegistry.sol";
 import {MemberRegistry} from "src/MemberRegistry.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
+import {IBitcoinManager} from "src/interfaces/IBitcoinManager.sol";
 import {PeginManager} from "src/PeginManager.sol";
 import {PegoutManager} from "src/PegoutManager.sol";
 import {StreamManager} from "src/StreamManager.sol";
@@ -142,6 +143,7 @@ contract DeployImplAndProxy is ScriptUtils {
             address(peginManager),
             address(pegoutManager),
             committeeRegistry,
+            bitcoinManager,
             streamManagerSettings,
             streamSettings
         );
@@ -341,6 +343,7 @@ contract DeployImplAndProxy is ScriptUtils {
         address _peginManager,
         address _pegoutManager,
         ICommitteeRegistry _committeeRegistry,
+        IBitcoinManager _bitcoinManager,
         StreamManagerSettings memory _settings,
         StreamSettings[] memory _streamSettings
     ) public returns (StreamManager) {
@@ -358,7 +361,15 @@ contract DeployImplAndProxy is ScriptUtils {
             contractName,
             abi.encodeCall(
                 StreamManager.initialize,
-                (_upgradableOwner, _peginManager, _pegoutManager, _committeeRegistry, _settings, _streamSettings)
+                (
+                    _upgradableOwner,
+                    _peginManager,
+                    _pegoutManager,
+                    _committeeRegistry,
+                    _bitcoinManager,
+                    _settings,
+                    _streamSettings
+                )
             )
         );
         return StreamManager(proxyAdddress);

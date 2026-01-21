@@ -91,13 +91,17 @@ contract StreamManagerTest is Test, HelperContract {
         emit IStreamManager.PacketCreated(setupStreamId, expectedPacketNumber);
 
         // Act
+        // Use the first committee that was already set up in setUp()
         vm.prank(address(registry));
-        streamManager.createNewPacket(setupStreamId, COMMITTEE_ID_STREAM_1_COMMITTEE_2, committeePubKey);
+        streamManager.createNewPacket(setupStreamId, COMMITTEE_ID_STREAM_1_COMMITTEE_1, committeePubKey);
 
         // Assert
         Packet memory packet = streamManager.getPacket(setupStreamId, expectedPacketNumber);
         assertEq(packet.packetNumber, expectedPacketNumber, "packetNumber was not set correctly");
         assertEq(packet.committeePubKey, committeePubKey, "committeePubKey was not set correctly");
+        bytes memory expectedEnablerScriptPubKey =
+            hex"51201cbeafdb8fa122bf71ea817df2ed9131bfa165952d63ba5841313f918a0f86c9";
+        assertEq(packet.enablerScriptPubKey, expectedEnablerScriptPubKey, "enablerScriptPubKey was not set correctly");
     }
 
     function test_setPeginConfirmations_Success() external {
@@ -971,7 +975,6 @@ contract StreamManagerTest is Test, HelperContract {
         bytes32 acceptPeginTx = bytes32(uint256(0x123456789abcdef));
         uint64 acceptPeginAmount = 100000000; // 1 BTC in satoshis
         bytes memory scriptPubKey = hex"5120abc123def456789012345678901234567890123456789012345678901234567890";
-        bytes memory enablerScriptPubKey = hex"5120fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210";
 
         // Create StreamPosition struct
         StreamPosition memory streamPos = StreamPosition({
@@ -987,7 +990,7 @@ contract StreamManagerTest is Test, HelperContract {
 
         // Act
         vm.prank(address(peginManager));
-        streamManager.fillSlot(streamPos, acceptPeginAmount, acceptPeginTx, scriptPubKey, enablerScriptPubKey);
+        streamManager.fillSlot(streamPos, acceptPeginAmount, acceptPeginTx, scriptPubKey);
 
         // Assert
         Slot memory filledSlot = streamManager.getSlot(streamId, packetNumber, slotId);
@@ -995,7 +998,6 @@ contract StreamManagerTest is Test, HelperContract {
         assertEq(filledSlot.acceptPeginTx, acceptPeginTx, "acceptPeginTx should match");
         assertEq(filledSlot.acceptPeginAmount, acceptPeginAmount, "acceptPeginAmount should match");
         assertEq(filledSlot.scriptPubKey, scriptPubKey, "scriptPubKey should match");
-        assertEq(filledSlot.enablerScriptPubKey, enablerScriptPubKey, "enablerScriptPubKey should match");
         assertEq(filledSlot.slotId, slotId, "slotId should remain unchanged");
     }
 
@@ -1007,7 +1009,6 @@ contract StreamManagerTest is Test, HelperContract {
         bytes32 acceptPeginTx = bytes32(uint256(0x123456789abcdef));
         uint64 acceptPeginAmount = 100000000;
         bytes memory scriptPubKey = hex"5120abc123def456789012345678901234567890123456789012345678901234567890";
-        bytes memory enablerScriptPubKey = hex"5120fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210";
 
         // Create StreamPosition struct
         StreamPosition memory streamPos = StreamPosition({
@@ -1021,7 +1022,7 @@ contract StreamManagerTest is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(IAccessControl.UnauthorizedAccount.selector, address(this)));
 
         // Act - try to call fillSlot from non-PegManager address (this test contract)
-        streamManager.fillSlot(streamPos, acceptPeginAmount, acceptPeginTx, scriptPubKey, enablerScriptPubKey);
+        streamManager.fillSlot(streamPos, acceptPeginAmount, acceptPeginTx, scriptPubKey);
     }
 
     function test_fillSlot_Revert_SlotNotReserved() external {
@@ -1037,7 +1038,6 @@ contract StreamManagerTest is Test, HelperContract {
         bytes32 acceptPeginTx = bytes32(uint256(0x123456789abcdef));
         uint64 acceptPeginAmount = 100000000;
         bytes memory scriptPubKey = hex"5120abc123def456789012345678901234567890123456789012345678901234567890";
-        bytes memory enablerScriptPubKey = hex"5120fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210";
 
         // Create StreamPosition struct
         StreamPosition memory streamPos = StreamPosition({
@@ -1056,7 +1056,7 @@ contract StreamManagerTest is Test, HelperContract {
 
         // Act - try to fill slot that's not in RESERVED state
         vm.prank(address(peginManager));
-        streamManager.fillSlot(streamPos, acceptPeginAmount, acceptPeginTx, scriptPubKey, enablerScriptPubKey);
+        streamManager.fillSlot(streamPos, acceptPeginAmount, acceptPeginTx, scriptPubKey);
     }
 
     function test_fillSlot_Revert_SlotNotReserved_BLOCKED() external {
@@ -1075,7 +1075,6 @@ contract StreamManagerTest is Test, HelperContract {
         bytes32 acceptPeginTx = bytes32(uint256(0x123456789abcdef));
         uint64 acceptPeginAmount = 100000000;
         bytes memory scriptPubKey = hex"5120abc123def456789012345678901234567890123456789012345678901234567890";
-        bytes memory enablerScriptPubKey = hex"5120fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210";
 
         // Create StreamPosition struct
         StreamPosition memory streamPos = StreamPosition({
@@ -1094,7 +1093,7 @@ contract StreamManagerTest is Test, HelperContract {
 
         // Act - try to fill blocked slot
         vm.prank(address(peginManager));
-        streamManager.fillSlot(streamPos, acceptPeginAmount, acceptPeginTx, scriptPubKey, enablerScriptPubKey);
+        streamManager.fillSlot(streamPos, acceptPeginAmount, acceptPeginTx, scriptPubKey);
     }
 
     function test_fillSlot_Revert_NonExistentSlot() external {
@@ -1107,7 +1106,6 @@ contract StreamManagerTest is Test, HelperContract {
         bytes32 acceptPeginTx = bytes32(uint256(0x123456789abcdef));
         uint64 acceptPeginAmount = 100000000;
         bytes memory scriptPubKey = hex"5120abc123def456789012345678901234567890123456789012345678901234567890";
-        bytes memory enablerScriptPubKey = hex"5120fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210";
 
         // Create StreamPosition struct with invalid slotId
         StreamPosition memory streamPos = StreamPosition({
@@ -1124,7 +1122,7 @@ contract StreamManagerTest is Test, HelperContract {
 
         // Act - try to fill non-existent slot
         vm.prank(address(peginManager));
-        streamManager.fillSlot(streamPos, acceptPeginAmount, acceptPeginTx, scriptPubKey, enablerScriptPubKey);
+        streamManager.fillSlot(streamPos, acceptPeginAmount, acceptPeginTx, scriptPubKey);
     }
 
     // ==================== SLOT BLOCKING TESTS ====================
@@ -1142,13 +1140,7 @@ contract StreamManagerTest is Test, HelperContract {
         });
 
         vm.prank(address(peginManager));
-        streamManager.fillSlot(
-            streamPos,
-            100000000,
-            bytes32(uint256(0x123)),
-            hex"5120abc123",
-            hex"5120fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210"
-        );
+        streamManager.fillSlot(streamPos, 100000000, bytes32(uint256(0x123)), hex"5120abc123");
 
         // Verify slot is FILLED
         Slot memory filledSlot = streamManager.getSlot(streamId, packetNumber, slotId);
@@ -1372,10 +1364,11 @@ contract StreamManagerTest is Test, HelperContract {
         // Fill first packet with blocked/completed slots
         streamManager.pushSlotsHarness(streamId, firstPacketNumber, Constants.SLOTS_PER_PACKET, SlotState.BLOCKED);
 
-        // Create second packet and add filled slot
+        // Create a new packet and add one filled slot
+        // For the pourpose of this test we can reuse the existing committee that was created during the setup
         bytes memory committeePubKey = COMMITTEE_PUB_KEY();
         vm.prank(address(registry));
-        streamManager.createNewPacket(streamId, 999, committeePubKey);
+        streamManager.createNewPacket(streamId, COMMITTEE_ID_STREAM_1_COMMITTEE_1, committeePubKey);
 
         streamManager.pushSlotsHarness(streamId, secondPacketNumber, 1, SlotState.FILLED);
 
@@ -1450,7 +1443,6 @@ contract StreamManagerTest is Test, HelperContract {
         bytes32 acceptPeginTx = bytes32(uint256(0x123));
         uint64 acceptPeginAmount = 100000000;
         bytes memory scriptPubKey = hex"5120abc123";
-        bytes memory enablerScriptPubKey = hex"5120fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210";
         bytes32 userTakeTx = bytes32(uint256(0x456));
 
         // 1. Reserve slot
@@ -1465,7 +1457,7 @@ contract StreamManagerTest is Test, HelperContract {
             pegStatus: PegStatus.REGISTERED
         });
         vm.prank(address(peginManager));
-        streamManager.fillSlot(streamPos, acceptPeginAmount, acceptPeginTx, scriptPubKey, enablerScriptPubKey);
+        streamManager.fillSlot(streamPos, acceptPeginAmount, acceptPeginTx, scriptPubKey);
 
         // 3. Lock slot
         vm.prank(address(pegoutManager));
@@ -1483,5 +1475,41 @@ contract StreamManagerTest is Test, HelperContract {
         Slot memory completedSlot = streamManager.getSlot(streamId, packetNumber, slotId);
         assertEq(uint256(completedSlot.state), uint256(SlotState.COMPLETED), "Slot should be COMPLETED");
         assertEq(completedSlot.takeTx, userTakeTx, "userTakeTx should be stored");
+    }
+
+    function test_getEnablerScriptPubKey_Success() external view {
+        // Arrange
+        uint64 packetNumber = 0; // First packet created during setUp
+
+        // Act
+        bytes memory enablerScriptPubKey = streamManager.getEnablerScriptPubKey(setupStreamId, packetNumber);
+
+        // Assert
+        bytes memory expectedEnablerScriptPubKey =
+            hex"51201cbeafdb8fa122bf71ea817df2ed9131bfa165952d63ba5841313f918a0f86c9";
+        assertEq(enablerScriptPubKey, expectedEnablerScriptPubKey, "enablerScriptPubKey should match expected value");
+    }
+
+    function test_getEnablerScriptPubKey_Revert_StreamNotFound() external {
+        // Arrange
+        uint64 invalidStreamId = 999;
+        uint64 packetNumber = 0;
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.StreamNotFoundById.selector, invalidStreamId));
+
+        // Act
+        streamManager.getEnablerScriptPubKey(invalidStreamId, packetNumber);
+    }
+
+    function test_getEnablerScriptPubKey_Revert_PacketOutOfBound() external {
+        // Arrange
+        uint64 invalidPacketNumber = 999;
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.PacketOutOfBound.selector, invalidPacketNumber));
+
+        // Act
+        streamManager.getEnablerScriptPubKey(setupStreamId, invalidPacketNumber);
     }
 }

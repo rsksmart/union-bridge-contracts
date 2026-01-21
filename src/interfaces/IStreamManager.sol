@@ -61,9 +61,6 @@ struct Slot {
     /// @notice Transaction ID of the peg-out transaction to the user account.
     /// @dev The tx where the user is given the funds is stored there, which can be take 0 or take 1.
     bytes32 takeTx;
-    /// @notice The scriptPubKey of the Accept Peg-in enabler output
-    /// @dev This is the locking script for the enabler output that will be consumed by the peg-out transaction
-    bytes enablerScriptPubKey;
 }
 
 /// @notice Represents a packet within a stream that contains multiple slots
@@ -77,6 +74,9 @@ struct Packet {
     /// @notice The internal key of the committee for this packet
     /// @dev This is the public key used for committee operations
     bytes committeePubKey;
+    /// @notice The enabler output script for the packet
+    /// @dev All slots in a packet share the same enabler script based on the committee
+    bytes enablerScriptPubKey;
 }
 
 /// @notice Represents a stream that manages funds of a specific denomination
@@ -220,13 +220,11 @@ interface IStreamManager is IAccessControl {
     /// @param _acceptPeginAmount The amount of the accept peg-in transaction in satoshis
     /// @param _acceptPeginTx The transaction ID of the accept peg-in transaction
     /// @param _scriptPubKey The scriptPubKey of the accept peg-in taptree output
-    /// @param _enablerScriptPubKey The scriptPubKey of the accept peg-in enabler output
     function fillSlot(
         StreamPosition memory _stream,
         uint64 _acceptPeginAmount,
         bytes32 _acceptPeginTx,
-        bytes memory _scriptPubKey,
-        bytes memory _enablerScriptPubKey
+        bytes memory _scriptPubKey
     ) external;
 
     /// @notice Blocks a reserved slot due to timeout or refund proof
@@ -247,6 +245,12 @@ interface IStreamManager is IAccessControl {
     /// @param _packetNumber The index of the packet within the stream
     /// @return bytes The committee public key for this packet (33 bytes)
     function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes memory);
+
+    /// @notice Retrieves the enabler script public key for a specific packet
+    /// @param _streamId The index of the stream
+    /// @param _packetNumber The index of the packet within the stream
+    /// @return bytes The enabler script public key for this packet
+    function getEnablerScriptPubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes memory);
 
     /// @notice Marks a slot as paid and updates its state
     /// @dev Updates the slot state to COMPLETED and stores the peg-out transaction ID
