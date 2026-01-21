@@ -37,6 +37,20 @@ contract PeginManagerTest is Test, HelperContract {
         setupCommitteeId = committeeId;
     }
 
+    // ============ Initialization Tests ============
+
+    function test_initialize_Success() external view {
+        // Assert - verify initialization state
+        assertTrue(peginManager.owner() != address(0)); // Owner should be set
+        assertEq(peginManager.pauser(), address(accessManager)); // Pauser should be set to accessManager
+        assertEq(address(peginManager.committeeRegistry()), address(registry));
+        assertEq(address(peginManager.bitcoinManager()), address(bitcoinManager));
+        assertEq(address(peginManager.rbtcBridge()), address(rbtcBridge));
+        assertEq(address(peginManager.streamManager()), address(streamManager));
+        assertEq(address(peginManager.signatureManager()), address(signatureManager));
+        assertEq(address(peginManager.bridge()), address(bridgeMock));
+    }
+
     function test_getRequestPeginData_Success() external view {
         address dummyRskAddress = 0x7Ac5496aee77c1bA1F0854206A26DdA82A81d6d8;
         // Address is different according to amount and destination address

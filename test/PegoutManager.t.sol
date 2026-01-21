@@ -38,6 +38,22 @@ contract PegoutManagerTest is Test, HelperContract {
         }
     }
 
+    // ============ Initialization Tests ============
+
+    function test_initialize_Success() external view {
+        // Assert - verify initialization state
+        assertTrue(pegoutManager.owner() != address(0)); // Owner should be set
+        assertEq(pegoutManager.pauser(), address(accessManager)); // Pauser should be set to accessManager
+        assertEq(address(pegoutManager.committeeRegistry()), address(registry));
+        assertEq(address(pegoutManager.bitcoinManager()), address(bitcoinManager));
+        assertEq(address(pegoutManager.rbtcBridge()), address(rbtcBridge));
+        assertEq(address(pegoutManager.streamManager()), address(streamManager));
+        assertEq(address(pegoutManager.signatureManager()), address(signatureManager));
+        assertEq(address(pegoutManager.bridge()), address(bridgeMock));
+        assertTrue(pegoutManager.userTakeTimeout() > 0); // Timeout should be set
+        assertTrue(pegoutManager.operatorTakeTimeout() > 0); // Timeout should be set
+    }
+
     function test_tryPegout_Success() external {
         // Arrange
         BtcTxIn[] memory inputs = new BtcTxIn[](2);
