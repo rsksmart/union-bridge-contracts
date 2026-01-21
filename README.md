@@ -1080,7 +1080,7 @@ graph TB
 #### Access Control
 
 - **BaseProxy** provides ownership functionality through OpenZeppelin's Ownable2StepUpgradeable
-- **AccessControl** contract provides role-based access control
+- **AccessManager** contract provides role-based access control
 - **PegManager** has administrative privileges over other contracts
 
 #### Reentrancy Protection

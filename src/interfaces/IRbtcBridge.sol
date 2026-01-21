@@ -33,6 +33,9 @@ interface IRbtcBridge {
     /// @notice Thrown when the PowPeg bridge rejects the request due to unauthorized caller (error code -1)
     error BridgeUnauthorizedCaller();
 
+    /// @notice Thrown when the access manager address is set to zero during initialization
+    error AccessManagerAddressZero();
+
     /// @notice Thrown when the requested amount exceeds the PowPeg bridge locking cap (error code -2)
     /// @param amount The amount that exceeded the cap
     error BridgeExceededLockingCap(uint256 amount);
@@ -51,28 +54,7 @@ interface IRbtcBridge {
     /// @notice Thrown when the bridge address is set to zero during initialization
     error BridgeAddressZero();
 
-    /// @notice Thrown when the peginManager address is set to zero during initialization
-    error PeginManagerAddressZero();
-
-    /// @notice Thrown when the pegoutManager address is set to zero during initialization
-    error PegoutManagerAddressZero();
-
     // ===================== Functions =====================
-
-    /// @notice Initializes the RbtcBridge contract
-    /// @param _initialOwner The initial owner of the contract
-    /// @param _bridge The RSK PowPeg Bridge contract address
-    function initialize(address _initialOwner, address _bridge) external;
-
-    /// @notice Sets the PeginManager contract address
-    /// @param _peginManager The PeginManager contract address
-    /// @dev Only callable by owner
-    function setPeginManager(address _peginManager) external;
-
-    /// @notice Sets the PegoutManager contract address
-    /// @param _pegoutManager The PegoutManager contract address
-    /// @dev Only callable by owner
-    function setPegoutManager(address _pegoutManager) external;
 
     /// @notice Mints RBTC from the PowPeg bridge and sends it to the specified address
     /// @param _to The address to receive the minted RBTC

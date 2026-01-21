@@ -19,10 +19,4 @@ interface IPegManagerBase is IPegBase {
 
     /// @notice Error thrown when RbtcBridge address is zero
     error RbtcBridgeAddressZero();
-
-    // ===================== External Functions =====================
-
-    /// @notice Sets the signature manager contract address
-    /// @param _signatureManager The signature manager contract address
-    function setSignatureManager(ISignatureManager _signatureManager) external;
 }

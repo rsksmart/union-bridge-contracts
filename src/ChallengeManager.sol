@@ -6,7 +6,7 @@ import {PegBase} from "./PegBase.sol";
 import {BtcTxSPVProof, StreamPosition} from "./interfaces/IPegCommonTypes.sol";
 import {Constants} from "./libraries/Constants.sol";
 import {IPegoutManager, PegoutTempInfo} from "./interfaces/IPegoutManager.sol";
-import {PegStatus, Stream} from "./interfaces/IStreamManager.sol";
+import {IStreamManager, PegStatus, Stream} from "./interfaces/IStreamManager.sol";
 import {ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
 import {IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
 
@@ -30,16 +30,23 @@ contract ChallengeManager is IChallengeManager, PegBase {
     /// @notice Initializes the ChallengeManager contract
     /// @param _initialOwner The initial owner of the contract
     /// @param _bridgeAddress The address of the pow-peg bridge contract
+    /// @param _accessManager The access manager contract address
     /// @param _committeeRegistry The committee registry contract address
     /// @param _bitcoinManager The Bitcoin manager contract address
+    /// @param _pegoutManager The pegout manager contract address
+    /// @param _streamManager The stream manager contract address
     function initialize(
         address _initialOwner,
         address payable _bridgeAddress,
+        address _accessManager,
         ICommitteeRegistry _committeeRegistry,
         IBitcoinManager _bitcoinManager,
-        IPegoutManager _pegoutManager
+        IPegoutManager _pegoutManager,
+        IStreamManager _streamManager
     ) public initializer {
-        __PegBase_init(_initialOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager);
+        __PegBase_init(
+            _initialOwner, _bridgeAddress, _accessManager, _committeeRegistry, _bitcoinManager, _streamManager
+        );
         if (address(_pegoutManager) == address(0)) {
             revert PegoutManagerAddressZero();
         }

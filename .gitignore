@@ -5,7 +5,8 @@ dry-run/
 31337/
 cache/
 out/
-broadcast/**/run-latest.json
+broadcast/*
+!broadcast/DeployScript.s.sol/
 # macOS
 .DS_Store
 #rust

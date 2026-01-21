@@ -7,6 +7,7 @@ import {IPegManagerBase} from "./interfaces/IPegManagerBase.sol";
 import {ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
 import {ISignatureManager} from "./interfaces/ISignatureManager.sol";
 import {IRbtcBridge} from "./interfaces/IRbtcBridge.sol";
+import {IStreamManager} from "./interfaces/IStreamManager.sol";
 
 /// @title PegManagerBase
 /// @notice Abstract base contract for shared functionality between PeginManager and PegoutManager
@@ -21,33 +22,34 @@ abstract contract PegManagerBase is IPegManagerBase, PegBase {
     /// @notice Initializes the base PegManager contract
     /// @param _initialOwner The initial owner of the contract
     /// @param _bridgeAddress The address of the pow-peg bridge contract
+    /// @param _accessManager The access manager contract address
     /// @param _committeeRegistry The committee registry contract address
     /// @param _bitcoinManager The Bitcoin manager contract address
     /// @param _rbtcBridge The RbtcBridge contract address
+    /// @param _streamManager The stream manager contract address
     /// @dev This function should be called by child contracts during their initialization
     function __PegManagerBase_init(
         address _initialOwner,
         address payable _bridgeAddress,
+        address _accessManager,
         ICommitteeRegistry _committeeRegistry,
         IBitcoinManager _bitcoinManager,
-        IRbtcBridge _rbtcBridge
+        IRbtcBridge _rbtcBridge,
+        IStreamManager _streamManager,
+        ISignatureManager _signatureManager
     ) internal onlyInitializing {
         if (address(_rbtcBridge) == address(0)) {
             revert RbtcBridgeAddressZero();
         }
         rbtcBridge = _rbtcBridge;
 
-        __PegBase_init(_initialOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager);
-    }
-
-    /// @notice Sets the signature manager contract address
-    /// @param _signatureManager The signature manager contract address
-    /// @dev Only callable by the contract owner
-    function setSignatureManager(ISignatureManager _signatureManager) external onlyOwner {
         if (address(_signatureManager) == address(0)) {
             revert SignatureManagerAddressZero();
         }
         signatureManager = _signatureManager;
-        emit SignatureManagerUpdated(_signatureManager);
+
+        __PegBase_init(
+            _initialOwner, _bridgeAddress, _accessManager, _committeeRegistry, _bitcoinManager, _streamManager
+        );
     }
 }

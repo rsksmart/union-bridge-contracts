@@ -29,10 +29,4 @@ interface IPegBase {
 
     /// @notice Error thrown when stream manager address is zero
     error StreamManagerAddressZero();
-
-    // ===================== External Functions =====================
-
-    /// @notice Sets the stream manager contract address
-    /// @param _streamManager The stream manager contract address
-    function setStreamManager(IStreamManager _streamManager) external;
 }

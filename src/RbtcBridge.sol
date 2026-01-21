@@ -6,6 +6,7 @@ import {Pausable} from "./Pausable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {IRbtcBridge} from "./interfaces/IRbtcBridge.sol";
 import {IBridge} from "./interfaces/IBridge.sol";
+import {IAccessManager} from "./interfaces/IAccessManager.sol";
 
 /// @title RbtcBridge
 /// @notice Intermediary contract that acts as the single authorized address for RBTC minting/burning
@@ -18,63 +19,33 @@ contract RbtcBridge is IRbtcBridge, BaseProxy, ReentrancyGuardUpgradeable, Pausa
     /// @notice The RSK PowPeg Bridge contract
     IBridge public bridge;
 
-    /// @notice The PeginManager contract address (authorized to mint RBTC)
-    address public peginManager;
-
-    /// @notice The PegoutManager contract address (authorized to burn RBTC)
-    address public pegoutManager;
-
-    /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {
-        _disableInitializers();
-    }
+    /// @notice The access manager contract that manages access control
+    /// @dev Used to check access control for sensitive operations
+    IAccessManager public accessManager;
 
     /// @notice Initializes the RbtcBridge contract
     /// @param _initialOwner The initial owner of the contract
     /// @param _bridge The RSK PowPeg Bridge contract address
-    /// @dev Manager addresses must be set after initialization via setPeginManager/setPegoutManager
-    function initialize(address _initialOwner, address _bridge) external initializer {
+    /// @param _accessManager The access manager contract address
+    function initialize(address _initialOwner, address _bridge, IAccessManager _accessManager) external initializer {
         if (_bridge == address(0)) {
             revert BridgeAddressZero();
         }
+        if (address(_accessManager) == address(0)) {
+            revert IAccessManager.AccessManagerAddressZero();
+        }
 
+        accessManager = _accessManager;
         bridge = IBridge(_bridge);
 
         __BaseProxy_init(_initialOwner);
         __ReentrancyGuard_init();
-        __Pauser_init();
+        __Pauser_init(address(accessManager));
     }
 
     /// @notice Allows the contract to receive RBTC from the PowPeg bridge
     /// @dev This function is called when the PowPeg bridge mints RBTC to this contract
     receive() external payable {}
-
-    /// @notice Sets the PeginManager contract address
-    /// @param _peginManager The PeginManager contract address
-    /// @dev Only callable by owner
-    function setPeginManager(address _peginManager) external onlyOwner {
-        if (_peginManager == address(0)) {
-            revert PeginManagerAddressZero();
-        }
-        peginManager = _peginManager;
-    }
-
-    /// @notice Sets the PegoutManager contract address
-    /// @param _pegoutManager The PegoutManager contract address
-    /// @dev Only callable by owner
-    function setPegoutManager(address _pegoutManager) external onlyOwner {
-        if (_pegoutManager == address(0)) {
-            revert PegoutManagerAddressZero();
-        }
-        pegoutManager = _pegoutManager;
-    }
-
-    /// @notice Sets a new pauser address
-    /// @param _newPauser The new pauser address
-    /// @dev Only callable by the contract owner
-    function setPauser(address _newPauser) public override onlyOwner {
-        super.setPauser(_newPauser);
-    }
 
     /// @notice Mints RBTC from the PowPeg bridge and sends it to the specified address
     /// @param _to The address to receive the minted RBTC
@@ -82,10 +53,8 @@ contract RbtcBridge is IRbtcBridge, BaseProxy, ReentrancyGuardUpgradeable, Pausa
     /// @dev Only callable by peginManager when contract is not paused
     /// @dev Follows checks-effects-interactions pattern
     function mintRbtc(address payable _to, uint256 _amount) external nonReentrant whenNotPaused {
-        //TODO: update to use AccessControl
-        if (msg.sender != peginManager) {
-            revert UnauthorizedCaller(msg.sender);
-        }
+        // Verify that the caller has permission to mint RBTC
+        accessManager.requireCanMintRbtc(_msgSender());
 
         _mintRbtc(_to, _amount);
 
@@ -96,10 +65,8 @@ contract RbtcBridge is IRbtcBridge, BaseProxy, ReentrancyGuardUpgradeable, Pausa
     /// @dev Only callable by pegoutManager when contract is not paused
     /// @dev The pegoutManager must send the RBTC amount via msg.value
     function burnRbtc() external payable nonReentrant whenNotPaused {
-        //TODO: update to use AccessControl
-        if (msg.sender != pegoutManager) {
-            revert UnauthorizedCaller(msg.sender);
-        }
+        // Verify that the caller has permission to burn RBTC
+        accessManager.requireCanBurnRbtc(_msgSender());
 
         _releaseRbtc(msg.value);
 

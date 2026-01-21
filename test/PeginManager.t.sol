@@ -2,21 +2,17 @@
 pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
-import {HelperContract, StreamManagerHarness} from "test/helpers/HelperContract.sol";
+import {HelperContract} from "test/helpers/HelperContract.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
-import {Pausable} from "src/Pausable.sol";
 import {BtcTransaction, BtcTxSPVProof, StreamPosition, PegStatus} from "src/interfaces/IPegCommonTypes.sol";
 import {IPeginManager, RequestPeginTempInfo} from "src/interfaces/IPeginManager.sol";
-import {IPegManagerBase} from "src/interfaces/IPegManagerBase.sol";
 import {Slot, SlotState, Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE} from "src/interfaces/IBridge.sol";
 import {ProofValidator} from "src/ProofValidator.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {ICommitteeRegistry, Committee, CommitteeMember} from "src/interfaces/ICommitteeRegistry.sol";
 import {IMemberRegistry, MemberKeys} from "src/interfaces/IMemberRegistry.sol";
-import {ISignatureManager} from "src/interfaces/ISignatureManager.sol";
 import {IRbtcBridge} from "src/interfaces/IRbtcBridge.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IPegBase} from "src/interfaces/IPegBase.sol";
 
 contract PeginManagerTest is Test, HelperContract {
@@ -579,185 +575,6 @@ contract PeginManagerTest is Test, HelperContract {
             )
         );
         peginManager.acceptPegin(acceptPeginTxSPVProof);
-    }
-
-    function test_setStreamManager_Success() external {
-        // Arrange
-        uint256 privKey = uint256(1);
-        address newStreamManagerAddress = vm.addr(privKey);
-        IStreamManager newStreamManager = IStreamManager(newStreamManagerAddress);
-        address owner = peginManager.owner();
-
-        // Assert
-        vm.expectEmit(address(peginManager));
-        emit IPegBase.StreamManagerUpdated(newStreamManager);
-
-        // Act
-        vm.prank(owner);
-        peginManager.setStreamManager(newStreamManager);
-
-        // Assert
-        assertEq(address(peginManager.streamManager()), newStreamManagerAddress);
-    }
-
-    function test_setStreamManager_Success_PausedContract() external {
-        // Arrange
-        uint256 privKey = uint256(1);
-        address newStreamManagerAddress = vm.addr(privKey);
-        StreamManagerHarness newStreamManager = StreamManagerHarness(newStreamManagerAddress);
-        pauseContracts();
-
-        // Assert
-        vm.prank(peginManager.owner());
-        vm.expectEmit(address(peginManager));
-        emit IPegBase.StreamManagerUpdated(newStreamManager);
-
-        // Act
-        peginManager.setStreamManager(newStreamManager);
-
-        // Assert
-        assertEq(address(peginManager.streamManager()), newStreamManagerAddress);
-    }
-
-    function test_setStreamManager_Revert_AddressZero() external {
-        // Arrange
-        address owner = peginManager.owner();
-        IStreamManager zeroStreamManager = IStreamManager(address(0));
-
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegBase.StreamManagerAddressZero.selector));
-
-        // Act
-        vm.prank(owner);
-        peginManager.setStreamManager(zeroStreamManager);
-    }
-
-    function test_setStreamManager_Revert_OwnableUnauthorizedAccount() external {
-        // Arrange
-        uint256 privKey = uint256(1);
-        address newStreamManagerAddress = vm.addr(privKey);
-        IStreamManager newStreamManager = IStreamManager(newStreamManagerAddress);
-
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
-
-        // Act
-        peginManager.setStreamManager(newStreamManager);
-    }
-
-    function test_setSignatureManager_Success() external {
-        // Arrange
-        uint256 privKey = uint256(1);
-        address newSignatureManagerAddress = vm.addr(privKey);
-        ISignatureManager newSignatureManager = ISignatureManager(newSignatureManagerAddress);
-        address owner = peginManager.owner();
-
-        // Assert
-        vm.expectEmit(address(peginManager));
-        emit IPegManagerBase.SignatureManagerUpdated(newSignatureManager);
-
-        // Act
-        vm.prank(owner);
-        peginManager.setSignatureManager(newSignatureManager);
-
-        // Assert
-        assertEq(address(peginManager.signatureManager()), newSignatureManagerAddress);
-    }
-
-    function test_setSignatureManager_Success_PausedContract() external {
-        // Arrange
-        uint256 privKey = uint256(1);
-        address newSignatureManagerAddress = vm.addr(privKey);
-        ISignatureManager newSignatureManager = ISignatureManager(newSignatureManagerAddress);
-
-        pauseContracts();
-
-        // Assert
-        vm.prank(peginManager.owner());
-        vm.expectEmit(address(peginManager));
-        emit IPegManagerBase.SignatureManagerUpdated(newSignatureManager);
-
-        // Act
-        peginManager.setSignatureManager(newSignatureManager);
-
-        // Assert
-        assertEq(address(peginManager.signatureManager()), newSignatureManagerAddress);
-    }
-
-    function test_setSignatureManager_Revert_AddressZero() external {
-        // Arrange
-        address owner = peginManager.owner();
-        ISignatureManager zeroSignatureManager = ISignatureManager(address(0));
-
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegManagerBase.SignatureManagerAddressZero.selector));
-
-        // Act
-        vm.prank(owner);
-        peginManager.setSignatureManager(zeroSignatureManager);
-    }
-
-    function test_setSignatureManager_Revert_OwnableUnauthorizedAccount() external {
-        // Arrange
-        uint256 privKey = uint256(1);
-        address newSignatureManagerAddress = vm.addr(privKey);
-        ISignatureManager newSignatureManager = ISignatureManager(newSignatureManagerAddress);
-
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
-
-        // Act
-        peginManager.setSignatureManager(newSignatureManager);
-    }
-
-    function test_setPauser_Success() external {
-        // Arrange
-        uint256 privKey = uint256(1);
-        address newPauser = vm.addr(privKey);
-        address owner = peginManager.owner();
-
-        // Assert
-        vm.expectEmit(address(peginManager));
-        emit Pausable.PauserUpdated(newPauser);
-
-        // Act
-        vm.prank(owner);
-        peginManager.setPauser(newPauser);
-
-        // Assert
-        assertEq(peginManager.pauser(), newPauser);
-    }
-
-    function test_setPauser_Success_PausedContract() external {
-        // Arrange
-        pauseContracts();
-
-        uint256 privKey = uint256(1);
-        address newPauser = vm.addr(privKey);
-        address owner = peginManager.owner();
-
-        // Assert
-        vm.expectEmit(address(peginManager));
-        emit Pausable.PauserUpdated(newPauser);
-
-        // Act
-        vm.prank(owner);
-        peginManager.setPauser(newPauser);
-
-        // Assert
-        assertEq(peginManager.pauser(), newPauser);
-    }
-
-    function test_setPauser_Revert_OwnableUnauthorizedAccount() external {
-        // Arrange
-        uint256 privKey = uint256(1);
-        address newPauser = vm.addr(privKey);
-
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
-
-        // Act
-        peginManager.setPauser(newPauser);
     }
 
     function test_requestPegin_Revert_EnforcedPause_PausedContract() external {

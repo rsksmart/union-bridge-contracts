@@ -11,7 +11,6 @@ import {
     IBitcoinManager,
     BitcoinSignatureData
 } from "./interfaces/IBitcoinManager.sol";
-import {IPeginManager} from "./interfaces/IPeginManager.sol";
 import {BytesHelper} from "./libraries/BytesHelper.sol";
 import {BtcHelper} from "./libraries/BtcHelper.sol";
 import {BtcTxEncoder} from "./libraries/BtcTxEncoder.sol";
@@ -31,9 +30,6 @@ contract BitcoinManager is IBitcoinManager, BaseProxy {
     /// @dev Determines the address format and network-specific parameters
     BtcNetwork public network;
 
-    /// @notice Peg manager contract for peg-in/peg-out coordination
-    IPeginManager peginManager;
-
     /// @notice Initializes the BitcoinManager contract
     /// @dev Sets up the Bitcoin network and initial owner
     /// @dev Can only be called once during contract deployment
@@ -42,17 +38,6 @@ contract BitcoinManager is IBitcoinManager, BaseProxy {
     function initialize(address _initialOwner, BtcNetwork _network) public initializer {
         network = _network;
         __BaseProxy_init(_initialOwner);
-    }
-
-    /// @notice Sets the Peg Manager contract address
-    /// @dev Only callable by the contract owner
-    /// @param _peginManager The address of the Pegin Manager contract
-    function setPeginManager(IPeginManager _peginManager) external onlyOwner {
-        if (address(_peginManager) == address(0)) {
-            revert InvalidZeroAddress();
-        }
-        peginManager = _peginManager;
-        emit PeginManagerUpdated(address(_peginManager));
     }
 
     /// @notice Converts a Bitcoin transaction to raw hex format and calculates its hash
@@ -212,6 +197,7 @@ contract BitcoinManager is IBitcoinManager, BaseProxy {
     /// @param _btcReimbursementPubKey The user's public key (x-only, 32 bytes)
     /// @param _committeePubKey The committee's public key (x-only, 32 bytes)
     /// @param _p2trOut The P2TR output of the peg-in request
+    /// @dev we don't check the inputs as this function is called by the pegin manager
     function validateRequestPeginP2TROutput(
         uint32 _timelockBlocks,
         address _rskDestinationAddress,
@@ -219,7 +205,7 @@ contract BitcoinManager is IBitcoinManager, BaseProxy {
         bytes32 _btcReimbursementPubKey,
         bytes memory _committeePubKey,
         BtcTxOut calldata _p2trOut
-    ) external view onlyPeginManager {
+    ) external pure {
         // Validate that the amount is enough for the stream
         if (_p2trOut.amount < _streamDenomination) {
             revert InvalidOutputAmount(_p2trOut.amount, _streamDenomination);
@@ -234,6 +220,7 @@ contract BitcoinManager is IBitcoinManager, BaseProxy {
     }
 
     /// @notice Validates the enabler output in a request peg-in transaction
+    /// @dev We don't check the inputs as this function is called by the pegin manager that already validated the inputs
     /// @param _expectedEnablerScriptPubKey The expected enabler script pub key (from packet storage)
     /// @param _enablerOut The enabler output to validate
     function validateRequestPeginEnablerOutput(bytes memory _expectedEnablerScriptPubKey, BtcTxOut calldata _enablerOut)
@@ -306,13 +293,14 @@ contract BitcoinManager is IBitcoinManager, BaseProxy {
     /// @param _prevoutDatas Array of prevout data for all inputs being spent (taptree + enabler outputs)
     /// @param _disputeKeys The dispute keys (covenant public keys) for all members
     /// @return The transaction id, signature hash, and signature message
+    /// @dev we don't check the inputs as this function is called by the pegin manager
     function getAcceptPeginSignatureHash(
         bytes memory _committeePubKey,
         bytes32 _userXOnlyPubKey,
         bytes32 _registerPeginTx,
         PrevoutData[] memory _prevoutDatas,
         bytes32[] memory _disputeKeys
-    ) external view onlyPeginManager returns (BitcoinSignatureData memory) {
+    ) external pure returns (BitcoinSignatureData memory) {
         // Prepare the inputs
         BtcTxIn[] memory btcInputs = new BtcTxIn[](Constants.ACCEPT_PEGIN_INPUT_COUNT);
         btcInputs[Constants.ACCEPT_PEGIN_VIN_TAPTREE] = BtcTxIn({
@@ -616,19 +604,5 @@ contract BitcoinManager is IBitcoinManager, BaseProxy {
 
         // Return the tagged hash and the encoded data before hashing
         return (BtcTaproot.getSighash(encodedData), encodedData);
-    }
-
-    // ===================== Modifiers =====================
-
-    /// @notice Modifier to restrict access to the PeginManager contract
-    modifier onlyPeginManager() {
-        _onlyPeginManager(_msgSender());
-        _;
-    }
-
-    function _onlyPeginManager(address _account) internal view {
-        if (address(peginManager) != _account) {
-            revert UnauthorizedAccount(_account);
-        }
     }
 }

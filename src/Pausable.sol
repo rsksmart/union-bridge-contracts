@@ -19,7 +19,12 @@ abstract contract Pausable is IPausable, PausableUpgradeable {
 
     /// @notice Initializes the Pausable contract
     /// @dev Can only be called once during contract deployment
-    function __Pauser_init() internal initializer {
+    /// @param _newPauser The new pauser address
+    function __Pauser_init(address _newPauser) internal initializer {
+        if (_newPauser == address(0)) {
+            revert ZeroAddress();
+        }
+        pauser = _newPauser;
         __Pausable_init_unchained();
     }
 
@@ -46,17 +51,6 @@ abstract contract Pausable is IPausable, PausableUpgradeable {
     /// @dev Returns true if the contract is paused, and false otherwise.
     function isPaused() public view returns (bool) {
         return paused();
-    }
-
-    /// @notice Sets a new pauser address
-    /// @param _newPauser The new pauser address
-    /// @dev Should be overridden by child contracts to add access control (e.g., onlyOwner)
-    function setPauser(address _newPauser) public virtual {
-        if (_newPauser == address(0)) {
-            revert ZeroAddress();
-        }
-        pauser = _newPauser;
-        emit PauserUpdated(_newPauser);
     }
 
     /// @notice Internal function to check if an account is the pauser

@@ -2,32 +2,21 @@
 pragma solidity ^0.8.20;
 
 import {SlotState, Slot, StreamManager} from "src/StreamManager.sol";
-import {ICommitteeRegistry, Role} from "src/interfaces/ICommitteeRegistry.sol";
+import {Role} from "src/interfaces/ICommitteeRegistry.sol";
 import {IBitcoinManager} from "src/interfaces/IBitcoinManager.sol";
 import {StreamManagerSettings, StreamSettings} from "src/interfaces/IStreamManager.sol";
+import {IAccessManager} from "src/interfaces/IAccessManager.sol";
 
 /// @notice Wrapper for testing StreamManager
 contract StreamManagerHarness is StreamManager {
     function initialize(
         address _initialOwner,
-        address _peginManager,
-        address _pegoutManager,
-        address _challengeManager,
-        ICommitteeRegistry _committeeRegistry,
+        IAccessManager _accessManager,
         IBitcoinManager _bitcoinManager,
         StreamManagerSettings memory _settings,
         StreamSettings[] memory _streamSettings
     ) public override initializer {
-        StreamManager.initialize(
-            _initialOwner,
-            _peginManager,
-            _pegoutManager,
-            _challengeManager,
-            _committeeRegistry,
-            _bitcoinManager,
-            _settings,
-            _streamSettings
-        );
+        StreamManager.initialize(_initialOwner, _accessManager, _bitcoinManager, _settings, _streamSettings);
     }
 
     function setSlotHarness(

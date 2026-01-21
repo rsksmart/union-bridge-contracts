@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import {IAccessControl} from "./IAccessControl.sol";
-
 /// @notice Represents signature data for a committee member
 /// @dev Contains the member's public key, signature, and nonce for multi-signature operations
 struct SignatureData {
@@ -52,7 +50,7 @@ struct OperatorTakeTxids {
 /// @notice Interface for managing multi-signature operations in the union bridge
 /// @dev This interface provides functions for collecting and validating committee signatures
 /// @dev Handles member signatures for both pegin and pegout transactions
-interface ISignatureManager is IAccessControl {
+interface ISignatureManager {
     /// @notice Initializes signature collection for a specific txid
     /// @dev Sets up the signature tracking structure for committee members
     /// @param _txid The txid that committee members need to sign

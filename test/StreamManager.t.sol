@@ -12,12 +12,11 @@ import {
     StreamDenomination,
     TimelockSettings
 } from "src/interfaces/IStreamManager.sol";
-import {IAccessControl} from "src/interfaces/IAccessControl.sol";
+import {IAccessManager} from "src/interfaces/IAccessManager.sol";
 import {StreamPosition, PegStatus} from "src/interfaces/IPegCommonTypes.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {Role, ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
-import {Committee} from "src/interfaces/ICommitteeRegistry.sol";
+import {Committee, Role} from "src/interfaces/ICommitteeRegistry.sol";
 
 contract StreamManagerTest is Test, HelperContract {
     uint64 internal setupStreamId;
@@ -83,8 +82,10 @@ contract StreamManagerTest is Test, HelperContract {
     function test_createNewPacket_Success() external {
         // Arrange
         // we expect the packet number to be 1 since the first packet is being created in the test setup function
+        uint128 committeeId = COMMITTEE_ID_STREAM_1_COMMITTEE_1;
         uint64 expectedPacketNumber = 1;
         bytes memory committeePubKey = COMMITTEE_PUB_KEY();
+        bytes32[] memory disputeKeys = registry.getCommitteeDisputeKeys(committeeId);
 
         // Assert
         vm.expectEmit(address(streamManager));
@@ -93,7 +94,7 @@ contract StreamManagerTest is Test, HelperContract {
         // Act
         // Use the first committee that was already set up in setUp()
         vm.prank(address(registry));
-        streamManager.createNewPacket(setupStreamId, COMMITTEE_ID_STREAM_1_COMMITTEE_1, committeePubKey);
+        streamManager.createNewPacket(setupStreamId, committeeId, committeePubKey, disputeKeys);
 
         // Assert
         Packet memory packet = streamManager.getPacket(setupStreamId, expectedPacketNumber);
@@ -562,26 +563,6 @@ contract StreamManagerTest is Test, HelperContract {
         streamManager.setTimelockSettings(streamId, invalidSettings);
     }
 
-    function test_setCommitteeRegistry_Success() external {
-        // Arrange
-        uint256 privKey = uint256(1);
-        address newCommitteeRegistryAddress = vm.addr(privKey);
-        ICommitteeRegistry newCommitteeRegistry = ICommitteeRegistry(newCommitteeRegistryAddress);
-
-        // Act & Assert
-        vm.expectEmit(address(streamManager));
-        emit IStreamManager.CommitteeRegistryUpdated(newCommitteeRegistry);
-        vm.prank(streamManager.owner());
-        streamManager.setCommitteeRegistry(newCommitteeRegistry);
-
-        // Assert
-        assertEq(
-            address(streamManager.committeeRegistry()),
-            newCommitteeRegistryAddress,
-            "Committee registry was not set correctly"
-        );
-    }
-
     function test_StreamCreated_EventEmittedDuringInitialization() external view {
         // This test verifies that StreamCreated events were emitted during contract initialization
         // The streams are created in the constructor/initializer, so we can only verify they exist
@@ -872,7 +853,7 @@ contract StreamManagerTest is Test, HelperContract {
         uint64 packetNumber = 0;
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IAccessControl.UnauthorizedAccount.selector, address(this)));
+        vm.expectRevert(abi.encodeWithSelector(IAccessManager.UnauthorizedToModifyPegStatus.selector, address(this)));
 
         // Act - try to call reserveSlot from non-PegManager address (this test contract)
         streamManager.reserveSlot(streamId, packetNumber);
@@ -1019,7 +1000,7 @@ contract StreamManagerTest is Test, HelperContract {
         });
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IAccessControl.UnauthorizedAccount.selector, address(this)));
+        vm.expectRevert(abi.encodeWithSelector(IAccessManager.UnauthorizedToModifyPegStatus.selector, address(this)));
 
         // Act - try to call fillSlot from non-PegManager address (this test contract)
         streamManager.fillSlot(streamPos, acceptPeginAmount, acceptPeginTx, scriptPubKey);
@@ -1195,7 +1176,7 @@ contract StreamManagerTest is Test, HelperContract {
         (uint64 streamId, uint64 packetNumber, uint64 slotId) = setup_fillSlot();
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IAccessControl.UnauthorizedAccount.selector, address(this)));
+        vm.expectRevert(abi.encodeWithSelector(IAccessManager.UnauthorizedToModifyPegStatus.selector, address(this)));
 
         // Act - try to call blockSlot from non-owner address (this test contract)
         streamManager.blockSlot(streamId, packetNumber, slotId);
@@ -1366,9 +1347,11 @@ contract StreamManagerTest is Test, HelperContract {
 
         // Create a new packet and add one filled slot
         // For the pourpose of this test we can reuse the existing committee that was created during the setup
+        uint128 committeeId = COMMITTEE_ID_STREAM_1_COMMITTEE_1;
         bytes memory committeePubKey = COMMITTEE_PUB_KEY();
+        bytes32[] memory disputeKeys = registry.getCommitteeDisputeKeys(committeeId);
         vm.prank(address(registry));
-        streamManager.createNewPacket(streamId, COMMITTEE_ID_STREAM_1_COMMITTEE_1, committeePubKey);
+        streamManager.createNewPacket(streamId, committeeId, committeePubKey, disputeKeys);
 
         streamManager.pushSlotsHarness(streamId, secondPacketNumber, 1, SlotState.FILLED);
 

@@ -8,7 +8,7 @@ import {MemberRegistryHarness} from "test/helpers/MemberRegistryHarness.sol";
 import {PeginManagerHarness} from "test/helpers/PeginManagerHarness.sol";
 import {PegoutManagerHarness} from "test/helpers/PegoutManagerHarness.sol";
 import {SignatureManager} from "src/SignatureManager.sol";
-import {PauseManager} from "src/PauseManager.sol";
+import {AccessManager} from "src/AccessManager.sol";
 import {Role, CommitteeMember, Committee, MemberRegistrationKeys, UTXO} from "src/CommitteeRegistry.sol";
 import {CommunicationData, COMMUNICATION_DATA_CHUNKS} from "src/interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination, Slot} from "src/interfaces/IStreamManager.sol";
@@ -72,7 +72,7 @@ abstract contract HelperContract is Test, TestUtils {
     RbtcBridge internal rbtcBridge;
     PeginManagerHarness internal peginManager;
     PegoutManagerHarness internal pegoutManager;
-    PauseManager internal pauseManager;
+    AccessManager internal accessManager;
     ChallengeManager internal challengeManager;
 
     // Arrange
@@ -92,7 +92,7 @@ abstract contract HelperContract is Test, TestUtils {
         rbtcBridge = RbtcBridge(payable(address(deployScript.rbtcBridge())));
         peginManager = PeginManagerHarness(address(deployScript.peginManager()));
         pegoutManager = PegoutManagerHarness(address(deployScript.pegoutManager()));
-        pauseManager = PauseManager(deployScript.pauseManager());
+        accessManager = AccessManager(deployScript.accessManager());
         signatureManager = SignatureManager(deployScript.signatureManager());
         challengeManager = ChallengeManager(deployScript.challengeManager());
         // Set up bridge mock at bridge precompiled address
@@ -1163,14 +1163,14 @@ abstract contract HelperContract is Test, TestUtils {
     }
 
     function pauseContracts() internal {
-        vm.prank(pauseManager.owner());
-        pauseManager.pause();
+        vm.prank(accessManager.owner());
+        accessManager.pause();
     }
 
     function pauseAndUnpauseContracts() internal {
-        vm.startPrank(pauseManager.owner());
-        pauseManager.pause();
-        pauseManager.unpause();
+        vm.startPrank(accessManager.owner());
+        accessManager.pause();
+        accessManager.unpause();
         vm.stopPrank();
     }
 

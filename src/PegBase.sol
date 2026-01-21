@@ -27,14 +27,18 @@ abstract contract PegBase is IPegBase, BaseProxy, ProofValidator, ReentrancyGuar
     /// @notice Initializes the base PegBase contract
     /// @param _initialOwner The initial owner of the contract
     /// @param _bridgeAddress The address of the pow-peg bridge contract
+    /// @param _accessManager The access manager contract address
     /// @param _committeeRegistry The committee registry contract address
     /// @param _bitcoinManager The Bitcoin manager contract address
+    /// @param _streamManager The stream manager contract address
     /// @dev This function should be called by child contracts during their initialization
     function __PegBase_init(
         address _initialOwner,
         address payable _bridgeAddress,
+        address _accessManager,
         ICommitteeRegistry _committeeRegistry,
-        IBitcoinManager _bitcoinManager
+        IBitcoinManager _bitcoinManager,
+        IStreamManager _streamManager
     ) internal onlyInitializing {
         // Validate that the bitcoin manager is not zero address
         if (address(_bitcoinManager) == address(0)) {
@@ -47,28 +51,15 @@ abstract contract PegBase is IPegBase, BaseProxy, ProofValidator, ReentrancyGuar
         }
         committeeRegistry = _committeeRegistry;
 
-        __BaseProxy_init(_initialOwner);
-        __ProofValidator_init(_bridgeAddress);
-        __ReentrancyGuard_init();
-        __Pauser_init();
-    }
-
-    /// @notice Sets the stream manager contract address
-    /// @param _streamManager The stream manager contract address
-    /// @dev Only callable by the contract owner
-    function setStreamManager(IStreamManager _streamManager) external onlyOwner {
         if (address(_streamManager) == address(0)) {
             revert StreamManagerAddressZero();
         }
         streamManager = _streamManager;
-        emit StreamManagerUpdated(_streamManager);
-    }
 
-    /// @notice Sets a new pauser address
-    /// @param _newPauser The new pauser address
-    /// @dev Only callable by the contract owner
-    function setPauser(address _newPauser) public override onlyOwner {
-        super.setPauser(_newPauser);
+        __BaseProxy_init(_initialOwner);
+        __ProofValidator_init(_bridgeAddress);
+        __ReentrancyGuard_init();
+        __Pauser_init(_accessManager);
     }
 
     function _validatePegStatus(bytes32 _acceptPeginTxid, PegStatus _expectedStatus)

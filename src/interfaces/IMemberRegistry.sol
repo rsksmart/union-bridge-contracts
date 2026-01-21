@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import {StreamDenomination, IStreamManager} from "./IStreamManager.sol";
+import {StreamDenomination} from "./IStreamManager.sol";
 import {
     Role,
     CommitteeMember,
@@ -14,7 +14,6 @@ import {
     PendingCommitteeStatus
 } from "./ICommitteeRegistry.sol";
 import {IPausable} from "./IPausable.sol";
-import {IBridge} from "./IBridge.sol";
 
 /// @title IMemberRegistry
 /// @notice Interface for managing committee member registration, applications, and balance tracking
@@ -176,23 +175,6 @@ interface IMemberRegistry is IPausable {
         uint64 _packetNumber
     ) external;
 
-    // ===================== Administrative =====================
-
-    /// @notice Sets the CommitteeRegistry contract address
-    /// @dev Only callable by the contract owner
-    /// @param _committeeRegistry The address of the CommitteeRegistry contract
-    function setCommitteeRegistry(address _committeeRegistry) external;
-
-    /// @notice Sets the Stream Manager contract address
-    /// @dev Only callable by the contract owner
-    /// @param _streamManager The address of the Stream Manager contract
-    function setStreamManager(IStreamManager _streamManager) external;
-
-    /// @notice Sets the Bridge contract address
-    /// @dev Only callable by the contract owner
-    /// @param _bridge The address of the Bridge contract
-    function setBridge(IBridge _bridge) external;
-
     // ===================== Events =====================
 
     /// @notice Event emitted when a new member is registered
@@ -257,10 +239,6 @@ interface IMemberRegistry is IPausable {
     /// @param required Number of members required
     /// @param missing Number of members missing
     event MissingMembers(StreamDenomination denomination, uint256 required, uint256 missing);
-
-    /// @notice Event emitted when the committee registry address is updated
-    /// @param newCommitteeRegistry The new committee registry address
-    event CommitteeRegistryUpdated(address indexed newCommitteeRegistry);
 
     /// @notice Event emitted when the bridge address is updated
     /// @param newBridge The new bridge address
