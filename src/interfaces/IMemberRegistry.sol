@@ -4,7 +4,6 @@ pragma solidity ^0.8.20;
 import {StreamDenomination, IStreamManager} from "./IStreamManager.sol";
 import {
     Role,
-    Committee,
     CommitteeMember,
     MemberRegistrationKeys,
     MemberKeys,
@@ -71,7 +70,11 @@ interface IMemberRegistry is IPausable {
     function releaseCommitteeMembers(CommitteeMember[] memory _committeeMembers, uint64 _streamId, uint64 _packetNumber)
         external;
 
-    function reAddCommitteeMembers(Committee memory _discardedCommittee) external;
+    /// @notice External function to handle re-addition of members as candidates
+    /// @dev Called by CommitteeRegistry after pending committee reset
+    /// @param _denomination The stream of the pending committee
+    /// @param _member The member to re-add as candidate
+    function reAddCandidateToStream(StreamDenomination _denomination, CommitteeMember memory _member) external;
 
     /// @notice Sets the reapply flag for a member in a specific stream
     /// @dev Controls whether the member will automatically reapply after committee release
@@ -79,7 +82,18 @@ interface IMemberRegistry is IPausable {
     /// @param _reApply True to automatically reapply, false to receive balance as available
     function setReApplyForStream(StreamDenomination _denomination, bool _reApply) external;
 
+    /// @notice Sets the reapply flag as false for a member in a specific stream
+    /// @dev Controls that the member will not automatically reapply after committee release
+    /// @param _memberAddress The member adress
+    /// @param _denomination The stream denomination to set the flag for
+    function disableMemberReApplyForStream(address _memberAddress, StreamDenomination _denomination) external;
+
     // ===================== Member Queries =====================
+
+    /// @notice Returns whether the address belongs to a member
+    /// @param _address The address
+    /// @return True when address was ever a member, false otherwise
+    function isMember(address _address) external view returns (bool);
 
     /// @notice Gets the TAKE public key for a specific member
     /// @param _address The member's address

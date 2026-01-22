@@ -28,6 +28,9 @@ import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/ut
 /// @notice Manages committee formation, selection, and lifecycle for the union bridge system
 /// @dev Handles committee creation, pending committee management, and coordination with MemberRegistry
 contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuardUpgradeable, Pausable {
+    /// @notice Mapping of whitelisted addresses
+    mapping(address => bool) internal whitelisted;
+
     /// @notice Minimum number of watchtowers required for a committee
     uint256 public minCommitteeWatchtowers;
     /// @notice Minimum number of operators required for a committee
@@ -35,7 +38,9 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
     /// @notice Minimum number of members required for a committee
     uint256 public committeeMemberCount;
 
-    /// @notice Mapping of streamId to the committee id
+    /// @notice Mapping of streamId to the active committees ids
+    mapping(uint64 streamId => uint128[] activeCommitteesIds) internal activeCommittees;
+    /// @notice Mapping of streamId to the pending committee id
     mapping(uint64 streamId => uint128) internal pendingCommittees;
     /// @notice Mapping of committeeId to committee data
     mapping(uint128 committeeId => Committee) internal committeesById;
@@ -46,6 +51,8 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
     /// @notice Mapping of streamId to flag indicating if a committee should be created
     mapping(uint64 streamId => bool createCommittee) public shouldCreateCommittee;
 
+    /// @notice Whitelister for managing whitelisted addresses
+    address public whitelister;
     /// @notice Stream manager contract for managing streams and packets
     IStreamManager streamManager;
     /// @notice Member registry contract for member management
@@ -67,6 +74,9 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
         __AccessControl_init_without_peg_managers(_initialOwner);
         __ReentrancyGuard_init();
         __Pauser_init();
+
+        // slither-disable-next-line missing-zero-check
+        whitelister = _initialOwner;
         if (address(_memberRegistry) == address(0)) {
             revert MemberRegistryAddressZero();
         }
@@ -85,6 +95,108 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
             revert InvalidZeroValue();
         }
     }
+
+    function isWhitelisted(address _address) external view returns (bool) {
+        return whitelisted[_address];
+    }
+
+    function whitelistAddress(address _addressToWhitelist) external onlyWhitelister {
+        address[] memory addressesToWhitelist = new address[](1);
+        addressesToWhitelist[0] = _addressToWhitelist;
+
+        _whitelistAddresses(addressesToWhitelist);
+    }
+
+    function whitelistAddresses(address[] memory _addressesToWhitelist) external onlyWhitelister {
+        _whitelistAddresses(_addressesToWhitelist);
+    }
+
+    function _whitelistAddresses(address[] memory _addressesToWhitelist) internal {
+        for (uint256 i = 0; i < _addressesToWhitelist.length; i++) {
+            _whitelistAddress(_addressesToWhitelist[i]);
+        }
+    }
+
+    function _whitelistAddress(address _addressToWhitelist) internal {
+        if (whitelisted[_addressToWhitelist]) {
+            return;
+        }
+        whitelisted[_addressToWhitelist] = true;
+        emit AddressWhitelisted(_addressToWhitelist);
+    }
+
+    function unwhitelistAddress(address _addressToUnwhitelist) external onlyWhitelister {
+        address[] memory addressesToUnwhitelist = new address[](1);
+        addressesToUnwhitelist[0] = _addressToUnwhitelist;
+
+        _unwhitelistAddresses(addressesToUnwhitelist);
+    }
+
+    function unwhitelistAddresses(address[] memory _addressesToUnwhitelist) external onlyWhitelister {
+        _unwhitelistAddresses(_addressesToUnwhitelist);
+    }
+
+    function _unwhitelistAddresses(address[] memory _addressesToUnwhitelist) internal {
+        uint256 denominationsLength = uint256(StreamDenomination.LENGTH);
+        bool[] memory pendingCommitteesRestarted = new bool[](denominationsLength);
+
+        for (uint256 i = 0; i < _addressesToUnwhitelist.length; i++) {
+            _processUnwhitelisting(_addressesToUnwhitelist[i], pendingCommitteesRestarted);
+        }
+    }
+
+    function _processUnwhitelisting(address _addressToUnwhitelist, bool[] memory _pendingCommitteesRestarted)
+        internal
+    {
+        if (!whitelisted[_addressToUnwhitelist]) {
+            return;
+        }
+        whitelisted[_addressToUnwhitelist] = false;
+        emit AddressUnwhitelisted(_addressToUnwhitelist);
+
+        _cleanupAfterUnwhitelisting(_addressToUnwhitelist, _pendingCommitteesRestarted);
+    }
+
+    function _cleanupAfterUnwhitelisting(address _addressToUnwhitelist, bool[] memory _pendingCommitteesRestarted)
+        internal
+    {
+        _restartPendingCommitteesAfterUnwhitelisting(_addressToUnwhitelist, _pendingCommitteesRestarted);
+        _cleanUpMembershipAfterUnwhitelisting(_addressToUnwhitelist);
+    }
+
+    function _restartPendingCommitteesAfterUnwhitelisting(
+        address _addressToUnwhitelist,
+        bool[] memory _pendingCommitteesRestarted
+    ) internal {
+        uint256 denominationsLength = uint256(StreamDenomination.LENGTH);
+
+        for (uint256 j = 0; j < denominationsLength; j++) {
+            StreamDenomination denomination = StreamDenomination(j);
+            if (_isInPendingCommittee(_addressToUnwhitelist, denomination)) {
+                uint64 streamId = uint64(denomination);
+                if (!_pendingCommitteesRestarted[streamId]) {
+                    _restartPendingCommittee(streamId);
+                    _pendingCommitteesRestarted[streamId] = true;
+                }
+            }
+        }
+    }
+
+    function _cleanUpMembershipAfterUnwhitelisting(address _addressToUnwhitelist) internal {
+        uint256 denominationsLength = uint256(StreamDenomination.LENGTH);
+
+        for (uint256 i = 0; i < denominationsLength; i++) {
+            StreamDenomination denomination = StreamDenomination(i);
+            if (_isSubscribedToStream(_addressToUnwhitelist, denomination)) {
+                _unsubscribeFromStream(_addressToUnwhitelist, denomination);
+            }
+            if (_isInActiveCommittee(_addressToUnwhitelist, denomination)) {
+                // slither-disable-next-line calls-loop
+                memberRegistry.disableMemberReApplyForStream(_addressToUnwhitelist, denomination);
+            }
+        }
+    }
+
     /// @notice Applies to participate in a stream with a specific role
     /// @dev Registers public keys, deposits required bond, and provides funding UTXO for the requested role
     /// @dev Only callable when contract is unpaused
@@ -100,7 +212,7 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
         Role _role,
         MemberRegistrationKeys calldata _publicKeys,
         UTXO calldata _fundingUTXO
-    ) external payable nonReentrant whenNotPaused {
+    ) external payable nonReentrant whenNotPaused onlyWhitelistedAddress {
         // Delegate member registration to MemberRegistry
         memberRegistry.applyToStream{value: msg.value}(_msgSender(), _stream, _role, _publicKeys, _fundingUTXO);
 
@@ -113,21 +225,61 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
     /// @param _denomination The stream denomination to unsubscribe from
     function unsubscribeFromStream(StreamDenomination _denomination) external whenNotPaused {
         address sender = _msgSender();
-        if (_isInPendingCommittee(sender, uint64(_denomination))) {
+        if (_isInPendingCommittee(sender, _denomination)) {
             revert MemberIsInPendingCommittee(sender, _denomination);
         }
 
-        // Delegate to MemberRegistry for the actual unsubscription logic
-        memberRegistry.unsubscribeFromStream(sender, _denomination);
+        _unsubscribeFromStream(sender, _denomination);
     }
 
-    function _isInPendingCommittee(address _memberAddress, uint64 _streamId) internal view returns (bool) {
-        uint128 committeeId = pendingCommittees[_streamId];
+    function _unsubscribeFromStream(address _sender, StreamDenomination _denomination) internal {
+        // Delegate to MemberRegistry for the actual unsubscription logic
+        // slither-disable-next-line calls-loop
+        memberRegistry.unsubscribeFromStream(_sender, _denomination);
+    }
+
+    function _isSubscribedToStream(address _userAddress, StreamDenomination _denomination)
+        internal
+        view
+        returns (bool)
+    {
+        // slither-disable-next-line calls-loop
+        if (!memberRegistry.isMember(_userAddress)) {
+            return false;
+        }
+        // slither-disable-next-line calls-loop
+        Role role = memberRegistry.getMemberRequestedRole(_userAddress, _denomination);
+        return role != Role.NONE;
+    }
+
+    function _isInPendingCommittee(address _memberAddress, StreamDenomination _denomination)
+        internal
+        view
+        returns (bool)
+    {
+        uint64 streamId = uint64(_denomination);
+        uint128 committeeId = pendingCommittees[streamId];
         // NOTE: Slither flags this as dangerous-strict-equalities, but this is a false positive.
         if (committeeId == 0) {
             return false; // No pending committee
         }
         return committeesData[committeeId][_memberAddress].inCommittee;
+    }
+
+    function _isInActiveCommittee(address _memberAddress, StreamDenomination _denomination)
+        internal
+        view
+        returns (bool)
+    {
+        uint64 streamId = uint64(_denomination);
+        for (uint256 i = 0; i < activeCommittees[streamId].length; i++) {
+            uint128 committeeId = activeCommittees[streamId][i];
+            if (committeesData[committeeId][_memberAddress].inCommittee) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// @notice Gets a committee by its ID
@@ -165,6 +317,10 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
             revert PendingCommitteeNotExpired(_streamId, createdAt, createdAt + pendingCommitteeTimeout);
         }
 
+        _restartPendingCommittee(_streamId);
+    }
+
+    function _restartPendingCommittee(uint64 _streamId) internal {
         // slither-disable-next-line reentrancy-no-eth reentrancy-benign
         _discardPendingCommittee(_streamId);
         _createCommittee(_streamId);
@@ -231,7 +387,7 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
     // controlled by the same owner, making reentrancy attacks impossible.
     // slither-disable-next-line reentrancy-benign,reentrancy-events
     function _createCommittee(uint64 _streamId) internal returns (PendingCommitteeStatus) {
-        // slither-disable-next-line reentrancy-benign
+        // slither-disable-next-line reentrancy-benign,calls-loop
         (CommitteeMember[] memory committeeMembers, PendingCommitteeStatus status) = memberRegistry.selectCommittee(
             _streamId, minCommitteeWatchtowers, minCommitteeOperators, committeeMemberCount
         );
@@ -326,8 +482,10 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
         }
 
         // Follow checks-effects-interactions pattern: state changes before external calls
-        _resetPendingCommittee(pendingCommittee.streamId);
+        uint64 streamId = pendingCommittee.streamId;
+        _resetPendingCommittee(streamId);
         emit NewCommittee(_committeeId, pendingCommittee);
+        activeCommittees[streamId].push(_committeeId);
 
         // External calls last to prevent reentrancy
         memberRegistry.stakePreStakedCandidatesBalance(
@@ -432,7 +590,7 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
     }
 
     /// @notice Returns the pending committee for the stream
-    /// @dev This function will revert if  there is no pending committee or if it's expired
+    /// @dev This function will revert if there is no pending committee or if it's expired
     /// @param _streamId The stream ID to get the pending committee for
     /// @return committee The pending committee (contains createdAt and missingData fields)
     function getPendingCommittee(uint64 _streamId) external view returns (Committee memory) {
@@ -498,8 +656,16 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
 
     function _discardPendingCommittee(uint64 _streamId) internal {
         Committee storage pendingCommittee = committeesById[pendingCommittees[_streamId]];
-        // slither-disable-next-line reentrancy-no-eth reentrancy-benign
-        memberRegistry.reAddCommitteeMembers(pendingCommittee);
+        CommitteeMember[] memory committeeMembers = pendingCommittee.members;
+
+        StreamDenomination denomination = StreamDenomination(_streamId);
+        for (uint256 i = 0; i < committeeMembers.length; i++) {
+            CommitteeMember memory member = committeeMembers[i];
+            if (whitelisted[member.memberAddress]) {
+                // slither-disable-next-line reentrancy-no-eth,reentrancy-benign,calls-loop
+                memberRegistry.reAddCandidateToStream(denomination, member);
+            }
+        }
         _resetPendingCommittee(_streamId);
     }
 
@@ -547,6 +713,34 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
 
         revert TakeOperatorNotFound(_committeeId);
     }
+
+    // ===================== Modifiers =====================
+
+    /// @notice Modifier to restrict access to the whitelister
+    /// @dev Reverts if the caller is not the whitelister
+    modifier onlyWhitelister() {
+        _onlyWhitelister(_msgSender());
+        _;
+    }
+
+    function _onlyWhitelister(address _sender) internal view virtual {
+        if (whitelister != _sender) {
+            revert UnauthorizedAccount(_sender);
+        }
+    }
+
+    modifier onlyWhitelistedAddress() {
+        _onlyWhitelistedAddress(_msgSender());
+        _;
+    }
+
+    function _onlyWhitelistedAddress(address _sender) internal view virtual {
+        if (!whitelisted[_sender]) {
+            revert NonWhitelistedAddress(_sender);
+        }
+    }
+
+    // ===================== Administrative Functions =====================
 
     /// @notice Sets the Stream Manager contract address
     /// @dev Only callable by the contract owner
@@ -597,6 +791,17 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
     /// @dev Only callable by the contract owner
     function setPauser(address _newPauser) public override onlyOwner {
         super.setPauser(_newPauser);
+    }
+
+    /// @notice Sets a new whitelister address
+    /// @param _newWhitelister The new whitelister address
+    /// @dev Only callable by the contract owner
+    function setWhitelister(address _newWhitelister) public onlyOwner {
+        if (_newWhitelister == address(0)) {
+            revert InvalidZeroAddress();
+        }
+        whitelister = _newWhitelister;
+        emit WhitelisterUpdated(_newWhitelister);
     }
 
     /// @notice Sets the pending committee timeout
@@ -657,9 +862,19 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
         uint128 committeeId = streamManager.getCommitteeId(_streamId, _packetNumber);
         CommitteeMember[] memory committeeMembers = _getCommitteeMembers(committeeId);
 
+        _removeCommitteeAsActive(_streamId, committeeId);
         emit CommitteeMembersReleased(_streamId, _packetNumber);
         // Delegate member release operations to MemberRegistry
         memberRegistry.releaseCommitteeMembers(committeeMembers, _streamId, _packetNumber);
+    }
+
+    function _removeCommitteeAsActive(uint64 _streamId, uint128 _committeeId) internal {
+        for (uint256 i = 0; i < activeCommittees[_streamId].length; i++) {
+            if (activeCommittees[_streamId][i] == _committeeId) {
+                activeCommittees[_streamId][i] = 0;
+                return;
+            }
+        }
     }
 
     /// @notice Gets the dispute keys (covenant public keys) for all committee members

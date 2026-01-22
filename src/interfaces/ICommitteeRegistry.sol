@@ -215,6 +215,11 @@ struct CommunicationData {
 /// @dev This interface provides functions for member registration, committee formation,
 /// @dev and balance management for the committee system
 interface ICommitteeRegistry {
+    /// @notice Whitelists an address to enable it to apply to a stream
+    /// @dev Only callable by the contract whitelister
+    /// @param _address The address to whitelist
+    function whitelistAddress(address _address) external;
+
     /// @notice Applies to participate in a stream with a specific role
     /// @dev Registers public keys, deposits required bond, and provides funding UTXO for the requested role
     /// @param _requestedStream The stream denomination to apply for
@@ -318,6 +323,11 @@ interface ICommitteeRegistry {
     /// @param _streamManager The address of the Stream Manager contract
     function setStreamManager(IStreamManager _streamManager) external;
 
+    /// @notice Sets the Whitelister address
+    /// @dev Only callable by the contract owner
+    /// @param _whitelister The address of the whitelister
+    function setWhitelister(address _whitelister) external;
+
     /// @notice Sets the pending committee timeout
     /// @dev Only callable by the contract owner
     /// @param _timeout The timeout in seconds for the pending committee
@@ -416,6 +426,18 @@ interface ICommitteeRegistry {
     /// @param minMembers The new minimum members requirement
     event CommitteeMemberCountUpdated(uint256 minMembers);
 
+    /// @notice Event emitted when the whitelister address is updated
+    /// @param newWhitelister The new whitelister address
+    event WhitelisterUpdated(address indexed newWhitelister);
+
+    /// @notice Event emitted when an address is whitelisted
+    /// @param whitelistedAddress The address that is now whitelisted
+    event AddressWhitelisted(address indexed whitelistedAddress);
+
+    /// @notice Event emitted when an address is unwhitelisted
+    /// @param unwhitelistedAddress The address that is now unwhitelisted
+    event AddressUnwhitelisted(address indexed unwhitelistedAddress);
+
     /// @notice Event emitted when member info is deposited for committee formation
     /// @param committeeId The ID of the pending committee
     /// @param member The member's address
@@ -448,6 +470,7 @@ interface ICommitteeRegistry {
     /// @param packetNumber The packet number where the committee was active
     event CommitteeMembersReleased(uint64 streamId, uint64 packetNumber);
 
+    // ===================== Errors =====================
     /// @notice Thrown when a committee is not in pending state
     /// @param committeeId The ID of the committee that is not pending
     error CommitteeIsNotPending(uint128 committeeId);
@@ -457,6 +480,10 @@ interface ICommitteeRegistry {
     /// @param createdAt The creation timestamp
     /// @param expireAt The expiration timestamp
     error PendingCommitteeNotExpired(uint64 streamId, uint256 createdAt, uint256 expireAt);
+
+    /// @notice Thrown when non-whitelisted address tries to apply to stream
+    /// @param nonWhitelistedAddress The non-whitelisted address
+    error NonWhitelistedAddress(address nonWhitelistedAddress);
 
     /// @notice Error thrown when the aggregated key has an invalid length
     /// @param length The actual length provided

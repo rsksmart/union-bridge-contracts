@@ -292,6 +292,52 @@ contract CommitteeRegistryTest is Test, HelperContract {
         registry.setPegoutManager(newPegoutManager);
     }
 
+    function test_whitelisterDefaultIsOwner() external view {
+        // Act & Assert
+        assertEq(registry.whitelister(), registry.owner());
+    }
+
+    function test_setWhitelister_Revert_OwnableUnauthorizedAccount() external {
+        // Arrange
+        address newWhitelisterAddress = address(0x123);
+        address unauthorizedCaller = address(0x12345);
+
+        // Assert
+        vm.prank(unauthorizedCaller);
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, unauthorizedCaller));
+
+        // Act
+        registry.setWhitelister(newWhitelisterAddress);
+    }
+
+    function test_setWhitelister_Success() external {
+        // Arrange
+        address newWhitelisterAddress = address(0x123);
+
+        // Assert
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.WhitelisterUpdated(newWhitelisterAddress);
+
+        // Act
+        vm.prank(registry.owner());
+        registry.setWhitelister(newWhitelisterAddress);
+
+        // Assert
+        assertEq(registry.whitelister(), newWhitelisterAddress);
+    }
+
+    function test_setWhitelister_Revert_InvalidZeroAddress() external {
+        // Arrange
+        address zeroAddress = address(0);
+        vm.startPrank(registry.owner());
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.InvalidZeroAddress.selector));
+
+        // Act
+        registry.setWhitelister(zeroAddress);
+    }
+
     function test_setMemberRegistry_Success_PausedContract() external {
         // Arrange
         pauseContracts();
@@ -744,6 +790,498 @@ contract CommitteeRegistryTest is Test, HelperContract {
 
         // Act
         registry.setPauser(newPauser);
+    }
+
+    function assertAddressesAreWhitelisted(address[] memory _addresses) private view {
+        for (uint256 i = 0; i < _addresses.length; i++) {
+            assertAddressIsWhitelisted(_addresses[i]);
+        }
+    }
+
+    function assertAddressIsWhitelisted(address _address) private view {
+        assertTrue(registry.isWhitelisted(_address));
+    }
+
+    function assertAddressesAreUnwhitelisted(address[] memory _addresses) private view {
+        for (uint256 i = 0; i < _addresses.length; i++) {
+            assertAddressIsUnwhitelisted(_addresses[i]);
+        }
+    }
+
+    function assertAddressIsUnwhitelisted(address _address) private view {
+        assertFalse(registry.isWhitelisted(_address));
+    }
+
+    function assertMemberIsNotStreamCandidateForRole(StreamDenomination _denomination, Role _role, address _address)
+        private
+        view
+    {
+        address[] memory streamCandidates = memberRegistry.getCommitteeCandidates(_denomination, _role);
+        bool isCandidate;
+        for (uint256 i = 0; i < streamCandidates.length; i++) {
+            if (streamCandidates[i] == _address) {
+                isCandidate = true;
+            }
+        }
+        assertFalse(isCandidate);
+    }
+
+    function assertMembersReApplyDisabledForStream(StreamDenomination _denomination, address[] memory _addresses)
+        private
+    {
+        for (uint256 i = 0; i < _addresses.length; i++) {
+            assertMemberReApplyDisabledForStream(_denomination, _addresses[i]);
+        }
+    }
+
+    function assertMemberReApplyDisabledForStream(StreamDenomination _denomination, address _address) private {
+        vm.prank(_address);
+        assertFalse(memberRegistry.getReApplyForStream(_denomination));
+    }
+
+    function test_whitelistAddress_Success() external {
+        // Arrange
+        address addressToWhitelist = address(0x123);
+
+        // Assert
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.AddressWhitelisted(addressToWhitelist);
+
+        // Act
+        vm.prank(registry.whitelister());
+        registry.whitelistAddress(addressToWhitelist);
+
+        // Assert
+        assertAddressIsWhitelisted(addressToWhitelist);
+    }
+
+    function test_whitelistAddress_Revert_UnauthorizedAccount() external {
+        // Arrange
+        address addressToWhitelist = address(0x123);
+        address unauthorizedCaller = address(0x12345);
+
+        // Assert
+        vm.prank(unauthorizedCaller);
+        vm.expectRevert(abi.encodeWithSelector(IAccessControl.UnauthorizedAccount.selector, unauthorizedCaller));
+
+        // Act
+        registry.whitelistAddress(addressToWhitelist);
+    }
+
+    function test_whitelistAddresses_Success() external {
+        // Arrange
+        address addressToWhitelist1 = address(0x123);
+        address addressToWhitelist2 = address(0x456);
+        address[] memory addressesToWhitelist = new address[](2);
+        addressesToWhitelist[0] = addressToWhitelist1;
+        addressesToWhitelist[1] = addressToWhitelist2;
+
+        // Assert
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.AddressWhitelisted(addressToWhitelist1);
+
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.AddressWhitelisted(addressToWhitelist2);
+
+        // Act
+        vm.prank(registry.whitelister());
+        registry.whitelistAddresses(addressesToWhitelist);
+
+        // Assert
+        assertAddressesAreWhitelisted(addressesToWhitelist);
+    }
+
+    function test_whitelistAddresses_Revert_UnauthorizedAccount() external {
+        // Arrange
+        address addressToWhitelist1 = address(0x123);
+        address addressToWhitelist2 = address(0x456);
+        address[] memory addressesToWhitelist = new address[](2);
+        addressesToWhitelist[0] = addressToWhitelist1;
+        addressesToWhitelist[1] = addressToWhitelist2;
+
+        address unauthorizedCaller = address(0x12345);
+
+        // Assert
+        vm.prank(unauthorizedCaller);
+        vm.expectRevert(abi.encodeWithSelector(IAccessControl.UnauthorizedAccount.selector, unauthorizedCaller));
+
+        // Act
+        registry.whitelistAddresses(addressesToWhitelist);
+    }
+
+    function test_unwhitelistAddress_Success() external {
+        // Arrange
+        address addressToUnwhitelist = address(0x123);
+        vm.prank(registry.whitelister());
+        registry.whitelistAddress(addressToUnwhitelist);
+
+        // Assert
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.AddressUnwhitelisted(addressToUnwhitelist);
+
+        // Act
+        vm.prank(registry.whitelister());
+        registry.unwhitelistAddress(addressToUnwhitelist);
+
+        // Assert
+        assertAddressIsUnwhitelisted(addressToUnwhitelist);
+    }
+
+    function test_unwhitelistAddress_Success_whenIsInActiveCommittee() external {
+        // Arrange
+        setup_completeCommittee();
+        CommitteeMember[] memory committeeMembers = registry.getCommitteeMembers(COMMITTEE_ID_STREAM_1_COMMITTEE_1);
+        address addressToUnwhitelist = committeeMembers[0].memberAddress;
+
+        // Assert
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.AddressUnwhitelisted(addressToUnwhitelist);
+        vm.expectEmit(address(memberRegistry));
+        emit IMemberRegistry.MemberReApplyUpdated(addressToUnwhitelist, DEFAULT_STREAM, false);
+
+        // Act
+        vm.prank(registry.whitelister());
+        registry.unwhitelistAddress(addressToUnwhitelist);
+
+        // Assert
+        assertAddressIsUnwhitelisted(addressToUnwhitelist);
+        assertMemberReApplyDisabledForStream(DEFAULT_STREAM, addressToUnwhitelist);
+    }
+
+    function test_unwhitelistAddress_Success_whenIsInPendingCommittee() external {
+        // Arrange
+        setup_pendingCommittee();
+        CommitteeMember[] memory allMembers = registry.getCommitteeMembers(COMMITTEE_ID_STREAM_1_COMMITTEE_1);
+        address addressToUnwhitelist = allMembers[0].memberAddress;
+
+        // Assert
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.AddressUnwhitelisted(addressToUnwhitelist);
+        vm.expectEmit(address(memberRegistry));
+        emit IMemberRegistry.NewAvailableBalance(addressToUnwhitelist, uint256(25000000 gwei), uint256(25000000 gwei));
+        vm.expectEmit(address(memberRegistry));
+        emit IMemberRegistry.MemberUnsubscribedFromStream(addressToUnwhitelist, DEFAULT_STREAM);
+
+        // Act
+        vm.prank(registry.whitelister());
+        registry.unwhitelistAddress(addressToUnwhitelist);
+
+        // Assert
+        assertAddressIsUnwhitelisted(addressToUnwhitelist);
+        assertMemberIsNotStreamCandidateForRole(DEFAULT_STREAM, DEFAULT_ROLE, addressToUnwhitelist);
+
+        // after removing the address, we dont have enough members to create a new pending committee
+        uint128 expectedCommitteeId = 0;
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.CommitteeIsNotPending.selector, expectedCommitteeId));
+        registry.getPendingCommittee(uint64(DEFAULT_STREAM));
+    }
+
+    function test_unwhitelistAddress_Success_whenIsJustSubscribedToStream() external {
+        // Arrange
+        address addressToUnwhitelist = address(0x123);
+        MemberRegistrationKeys memory memberRegistrationKeys =
+            generateRegistrationPublicKeys(uint256(uint160(addressToUnwhitelist)));
+        setup_applyToStream(DEFAULT_STREAM, addressToUnwhitelist, memberRegistrationKeys, DEFAULT_ROLE);
+
+        // Assert
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.AddressUnwhitelisted(addressToUnwhitelist);
+        vm.expectEmit(address(memberRegistry));
+        emit IMemberRegistry.NewAvailableBalance(addressToUnwhitelist, uint256(25000000 gwei), uint256(25000000 gwei));
+        vm.expectEmit(address(memberRegistry));
+        emit IMemberRegistry.MemberUnsubscribedFromStream(addressToUnwhitelist, DEFAULT_STREAM);
+
+        // Act
+        vm.prank(registry.whitelister());
+        registry.unwhitelistAddress(addressToUnwhitelist);
+
+        // Assert
+        assertAddressIsUnwhitelisted(addressToUnwhitelist);
+        assertMemberIsNotStreamCandidateForRole(DEFAULT_STREAM, DEFAULT_ROLE, addressToUnwhitelist);
+    }
+
+    function test_unwhitelistAddress_Revert_UnauthorizedAccount() external {
+        // Arrange
+        address addressToUnwhitelist = address(0x123);
+        address unauthorizedCaller = address(0x12345);
+
+        // Assert
+        vm.prank(unauthorizedCaller);
+        vm.expectRevert(abi.encodeWithSelector(IAccessControl.UnauthorizedAccount.selector, unauthorizedCaller));
+
+        // Act
+        registry.unwhitelistAddress(addressToUnwhitelist);
+    }
+
+    function test_unwhitelistAddresses_Success() external {
+        // Arrange
+        address[] memory addressesToUnwhitelist = new address[](2);
+        address addressToUnwhitelist1 = address(0x123);
+        address addressToUnwhitelist2 = address(0x456);
+        addressesToUnwhitelist[0] = addressToUnwhitelist1;
+        addressesToUnwhitelist[1] = addressToUnwhitelist2;
+
+        // whitelist the addresses
+        vm.prank(registry.whitelister());
+        registry.whitelistAddresses(addressesToUnwhitelist);
+
+        // Assert
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.AddressUnwhitelisted(addressToUnwhitelist1);
+
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.AddressUnwhitelisted(addressToUnwhitelist2);
+
+        // Act
+        vm.prank(registry.whitelister());
+        registry.unwhitelistAddresses(addressesToUnwhitelist);
+
+        // Assert
+        assertAddressesAreUnwhitelisted(addressesToUnwhitelist);
+    }
+
+    function test_unwhitelistAddresses_Success_whenAreInSameActiveCommittee() external {
+        // Arrange
+        setup_completeCommittee();
+        CommitteeMember[] memory members = registry.getCommitteeMembers(COMMITTEE_ID_STREAM_1_COMMITTEE_1);
+        address[] memory addressesToUnwhitelist = new address[](2);
+        addressesToUnwhitelist[0] = members[0].memberAddress;
+        addressesToUnwhitelist[1] = members[1].memberAddress;
+
+        // Assert
+        // logs when unwhitelisting first address
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.AddressUnwhitelisted(addressesToUnwhitelist[0]);
+        vm.expectEmit(address(memberRegistry));
+        emit IMemberRegistry.MemberReApplyUpdated(addressesToUnwhitelist[0], DEFAULT_STREAM, false);
+
+        // logs when unwhitelisting second address
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.AddressUnwhitelisted(addressesToUnwhitelist[1]);
+        vm.expectEmit(address(memberRegistry));
+        emit IMemberRegistry.MemberReApplyUpdated(addressesToUnwhitelist[1], DEFAULT_STREAM, false);
+
+        // Act
+        vm.prank(registry.whitelister());
+        registry.unwhitelistAddresses(addressesToUnwhitelist);
+
+        // Assert
+        assertAddressesAreUnwhitelisted(addressesToUnwhitelist);
+        assertMembersReApplyDisabledForStream(DEFAULT_STREAM, addressesToUnwhitelist);
+    }
+
+    function test_unwhitelistAddresses_Success_whenAreInSamePendingCommittee() external {
+        // Arrange
+        // register more candidates than minimum required
+        // so new pending committee is created after restart
+        uint256 numOperators = registry.committeeMemberCount();
+        uint256 numWatchtowers = registry.committeeMemberCount();
+        setup_registerNewMembers(numWatchtowers, numOperators, SETUP_PENDING_COMMITTEE_DENOMINATION);
+
+        uint128 committeeId = registry.getPendingCommitteeId(SETUP_PENDING_COMMITTEE_STREAM_ID);
+        CommitteeMember[] memory members = registry.getCommitteeMembers(committeeId);
+        address[] memory addressesToUnwhitelist = new address[](2);
+        addressesToUnwhitelist[0] = members[0].memberAddress;
+        addressesToUnwhitelist[1] = members[1].memberAddress;
+
+        // Assert
+        // logs when unwhitelisting first address
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.AddressUnwhitelisted(addressesToUnwhitelist[0]);
+
+        // values of new pending committee log cannot be checked since it does not exist yet
+        Committee memory dummyNewPendingCommittee;
+        uint128 dummyNewPendingCommitteeId;
+        vm.expectEmit(false, false, false, false, address(registry));
+
+        emit ICommitteeRegistry.NewPendingCommittee(dummyNewPendingCommitteeId, dummyNewPendingCommittee);
+        vm.expectEmit(address(memberRegistry));
+        emit IMemberRegistry.NewAvailableBalance(
+            addressesToUnwhitelist[0], uint256(25000000 gwei), uint256(25000000 gwei)
+        );
+        vm.expectEmit(address(memberRegistry));
+        emit IMemberRegistry.MemberUnsubscribedFromStream(addressesToUnwhitelist[0], DEFAULT_STREAM);
+
+        // logs when unwhitelisting second address
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.AddressUnwhitelisted(addressesToUnwhitelist[1]);
+        // new pending committee will not be reset again,
+        // so no NewPendingCommittee log should be emitted again
+        vm.expectEmit(address(memberRegistry));
+        emit IMemberRegistry.NewAvailableBalance(
+            addressesToUnwhitelist[1], uint256(25000000 gwei), uint256(25000000 gwei)
+        );
+        vm.expectEmit(address(memberRegistry));
+        emit IMemberRegistry.MemberUnsubscribedFromStream(addressesToUnwhitelist[1], DEFAULT_STREAM);
+
+        // Act
+        vm.prank(registry.whitelister());
+        registry.unwhitelistAddresses(addressesToUnwhitelist);
+
+        // Assert
+        assertAddressesAreUnwhitelisted(addressesToUnwhitelist);
+        for (uint256 i = 0; i < addressesToUnwhitelist.length; i++) {
+            assertMemberIsNotStreamCandidateForRole(DEFAULT_STREAM, members[i].role, addressesToUnwhitelist[i]);
+        }
+    }
+
+    function test_unwhitelistAddresses_Success_whenAreInDifferentPendingCommittees() external {
+        // Arrange
+        // register more candidates than minimum required
+        // so new pending committees are created after restart
+        uint256 numOperators = registry.committeeMemberCount();
+        uint256 numWatchtowers = registry.committeeMemberCount();
+        // register members for two different streams
+        setup_registerNewMembers(numWatchtowers, numOperators, SETUP_PENDING_COMMITTEE_DENOMINATION);
+        StreamDenomination anotherDenomination = StreamDenomination._0_1BTC;
+        setup_registerNewMembers(numWatchtowers, numOperators, anotherDenomination);
+
+        uint128 firstCommitteeId = registry.getPendingCommitteeId(SETUP_PENDING_COMMITTEE_STREAM_ID);
+        CommitteeMember[] memory firstCommitteeMembers = registry.getCommitteeMembers(firstCommitteeId);
+        CommitteeMember memory memberOfFirstCommittee = firstCommitteeMembers[0];
+
+        uint128 secondCommitteeId = registry.getPendingCommitteeId(uint64(anotherDenomination));
+        CommitteeMember[] memory secondCommitteeMembers = registry.getCommitteeMembers(secondCommitteeId);
+        CommitteeMember memory memberOfSecondCommittee = secondCommitteeMembers[0];
+
+        address[] memory addressesToUnwhitelist = new address[](2);
+        addressesToUnwhitelist[0] = memberOfFirstCommittee.memberAddress;
+        addressesToUnwhitelist[1] = memberOfSecondCommittee.memberAddress;
+
+        // Assert
+        // logs when unwhitelisting address that belong to first stream
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.AddressUnwhitelisted(addressesToUnwhitelist[0]);
+        // values of new pending committee log cannot be checked since it does not exist yet
+        Committee memory dummyNewPendingCommittee;
+        uint128 dummyNewPendingCommitteeId;
+        vm.expectEmit(false, false, false, false, address(registry));
+        emit ICommitteeRegistry.NewPendingCommittee(dummyNewPendingCommitteeId, dummyNewPendingCommittee);
+        vm.expectEmit(address(memberRegistry));
+        emit IMemberRegistry.NewAvailableBalance(
+            addressesToUnwhitelist[0], uint256(25000000 gwei), uint256(25000000 gwei)
+        );
+        vm.expectEmit(address(memberRegistry));
+        emit IMemberRegistry.MemberUnsubscribedFromStream(addressesToUnwhitelist[0], DEFAULT_STREAM);
+
+        // logs when unwhitelisting address that belong to second stream
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.AddressUnwhitelisted(addressesToUnwhitelist[1]);
+        // values of new pending committee log cannot be checked since it does not exist yet
+        vm.expectEmit(false, false, false, false, address(registry));
+        emit ICommitteeRegistry.NewPendingCommittee(dummyNewPendingCommitteeId, dummyNewPendingCommittee);
+        vm.expectEmit(address(memberRegistry));
+        emit IMemberRegistry.NewAvailableBalance(
+            addressesToUnwhitelist[1], uint256(25000000 gwei), uint256(25000000 gwei)
+        );
+        vm.expectEmit(address(memberRegistry));
+        emit IMemberRegistry.MemberUnsubscribedFromStream(addressesToUnwhitelist[1], anotherDenomination);
+
+        // Act
+        vm.prank(registry.whitelister());
+        registry.unwhitelistAddresses(addressesToUnwhitelist);
+
+        // Assert
+        assertAddressesAreUnwhitelisted(addressesToUnwhitelist);
+        assertMemberIsNotStreamCandidateForRole(DEFAULT_STREAM, memberOfFirstCommittee.role, addressesToUnwhitelist[0]);
+        assertMemberIsNotStreamCandidateForRole(
+            anotherDenomination, memberOfSecondCommittee.role, addressesToUnwhitelist[1]
+        );
+    }
+
+    function test_unwhitelistAddresses_Success_whenAreJustSubscribedToStream() external {
+        address address1 = address(0x123);
+        MemberRegistrationKeys memory registrationKeys1 = generateRegistrationPublicKeys(uint256(uint160(address1)));
+        setup_applyToStream(DEFAULT_STREAM, address1, registrationKeys1, DEFAULT_ROLE);
+        address address2 = address(0x456);
+        MemberRegistrationKeys memory registrationKeys2 = generateRegistrationPublicKeys(uint256(uint160(address2)));
+        setup_applyToStream(DEFAULT_STREAM, address2, registrationKeys2, DEFAULT_ROLE);
+
+        address[] memory addressesToUnwhitelist = new address[](2);
+        addressesToUnwhitelist[0] = address1;
+        addressesToUnwhitelist[1] = address2;
+
+        // Assert
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.AddressUnwhitelisted(addressesToUnwhitelist[0]);
+        vm.expectEmit(address(memberRegistry));
+        emit IMemberRegistry.MemberUnsubscribedFromStream(addressesToUnwhitelist[0], DEFAULT_STREAM);
+
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.AddressUnwhitelisted(addressesToUnwhitelist[1]);
+        vm.expectEmit(address(memberRegistry));
+        emit IMemberRegistry.MemberUnsubscribedFromStream(addressesToUnwhitelist[1], DEFAULT_STREAM);
+
+        // Act
+        vm.prank(registry.whitelister());
+        registry.unwhitelistAddresses(addressesToUnwhitelist);
+
+        // Assert
+        assertAddressesAreUnwhitelisted(addressesToUnwhitelist);
+        for (uint256 i = 0; i < addressesToUnwhitelist.length; i++) {
+            assertMemberIsNotStreamCandidateForRole(DEFAULT_STREAM, DEFAULT_ROLE, addressesToUnwhitelist[i]);
+        }
+    }
+
+    function test_unwhitelistAddresses_Revert_UnauthorizedAccount() external {
+        // Arrange
+        address[] memory addressesToUnwhitelist = new address[](2);
+        address addressToUnwhitelist1 = address(0x123);
+        address addressToUnwhitelist2 = address(0x456);
+
+        // whitelist the addresses
+        vm.prank(registry.whitelister());
+        registry.whitelistAddress(addressToUnwhitelist1);
+        vm.prank(registry.whitelister());
+        registry.whitelistAddress(addressToUnwhitelist2);
+
+        addressesToUnwhitelist[0] = addressToUnwhitelist1;
+        addressesToUnwhitelist[1] = addressToUnwhitelist2;
+        address unauthorizedCaller = address(0x12345);
+
+        // Assert
+        vm.prank(unauthorizedCaller);
+        vm.expectRevert(abi.encodeWithSelector(IAccessControl.UnauthorizedAccount.selector, unauthorizedCaller));
+
+        // Act
+        registry.unwhitelistAddresses(addressesToUnwhitelist);
+    }
+
+    function test_applyToStream_Revert_NonWhitelistedAddress() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        address userAddress = vm.addr(privKey);
+        MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
+        uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, DEFAULT_ROLE);
+        vm.deal(userAddress, 1 ether);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.NonWhitelistedAddress.selector, userAddress));
+
+        // Act
+        vm.prank(userAddress);
+        registry.applyToStream{value: minimumDeposit}(
+            DEFAULT_STREAM, DEFAULT_ROLE, memberRegistrationKeys, generateDefaultUTXO()
+        );
+    }
+
+    function test_applyToStream_Success_WhitelistedAddress() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        address userAddress = vm.addr(privKey);
+        MemberRegistrationKeys memory memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
+
+        uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, DEFAULT_ROLE);
+        vm.deal(userAddress, 1 ether);
+
+        vm.prank(registry.whitelister());
+        registry.whitelistAddress(userAddress);
+
+        // Act
+        vm.prank(userAddress);
+        registry.applyToStream{value: minimumDeposit}(
+            DEFAULT_STREAM, DEFAULT_ROLE, memberRegistrationKeys, generateDefaultUTXO()
+        );
     }
 
     function test_getCommittee_Success() external {
@@ -1645,17 +2183,21 @@ contract CommitteeRegistryTest is Test, HelperContract {
         StreamDenomination denomination = StreamDenomination._0_01BTC;
         Role role = Role.OPERATOR;
         setup_registerNewMembers(0, Constants.MAX_CANDIDATES_SIZE_PER_ROLE, denomination);
-        address memberAddress = vm.addr(Constants.MAX_CANDIDATES_SIZE_PER_ROLE + 1);
+
+        address extraMemberAddress = vm.addr(Constants.MAX_CANDIDATES_SIZE_PER_ROLE + 1);
+        // manually whitelist the extra address
+        setup_whitelistAddress(extraMemberAddress);
+
         MemberRegistrationKeys memory publicKeysRegistration =
-            generateRegistrationPublicKeys(uint256(uint160(memberAddress)));
+            generateRegistrationPublicKeys(uint256(uint160(extraMemberAddress)));
         uint256 minimumDeposit = streamManager.getMinimumDeposit(denomination, role);
-        vm.deal(memberAddress, minimumDeposit);
+        vm.deal(extraMemberAddress, minimumDeposit);
 
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IMemberRegistry.TooManyCandidatesForStream.selector, denomination, role));
 
         // Act
-        vm.prank(memberAddress);
+        vm.prank(extraMemberAddress);
         registry.applyToStream{value: minimumDeposit}(denomination, role, publicKeysRegistration, generateDefaultUTXO());
     }
 
@@ -1664,17 +2206,21 @@ contract CommitteeRegistryTest is Test, HelperContract {
         StreamDenomination denomination = StreamDenomination._0_01BTC;
         Role role = Role.WATCHTOWER;
         setup_registerNewMembers(Constants.MAX_CANDIDATES_SIZE_PER_ROLE, 0, denomination);
-        address memberAddress = vm.addr(Constants.MAX_CANDIDATES_SIZE_PER_ROLE + 1);
+
+        address extraMemberAddress = vm.addr(Constants.MAX_CANDIDATES_SIZE_PER_ROLE + 1);
+        // manually whitelist the extra address
+        setup_whitelistAddress(extraMemberAddress);
+
         MemberRegistrationKeys memory publicKeysRegistration =
-            generateRegistrationPublicKeys(uint256(uint160(memberAddress)));
+            generateRegistrationPublicKeys(uint256(uint160(extraMemberAddress)));
         uint256 minimumDeposit = streamManager.getMinimumDeposit(denomination, role);
-        vm.deal(memberAddress, minimumDeposit);
+        vm.deal(extraMemberAddress, minimumDeposit);
 
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IMemberRegistry.TooManyCandidatesForStream.selector, denomination, role));
 
         // Act
-        vm.prank(memberAddress);
+        vm.prank(extraMemberAddress);
         registry.applyToStream{value: minimumDeposit}(denomination, role, publicKeysRegistration, generateDefaultUTXO());
     }
 
@@ -1864,8 +2410,9 @@ contract CommitteeRegistryTest is Test, HelperContract {
         registry.depositCommunicationData(committeeId, communicationData);
 
         // Assert - verify data was stored correctly using harness
+        StreamDenomination expectedDenomination = StreamDenomination(expectedCommittee.streamId);
         CommunicationData[] memory storedData =
-            registry.getStoredCommunicationDataHarness(expectedCommittee.streamId, memberAddress);
+            registry.getStoredCommunicationDataHarness(expectedDenomination, memberAddress);
 
         assertCommunicationDataEqual(communicationData, storedData, "Stored data should match deposited data");
     }
@@ -1885,8 +2432,9 @@ contract CommitteeRegistryTest is Test, HelperContract {
         registry.depositCommunicationData(committeeId, communicationData);
 
         // Assert - verify minimal data was stored correctly
+        StreamDenomination expectedDenomination = StreamDenomination(expectedCommittee.streamId);
         CommunicationData[] memory storedData =
-            registry.getStoredCommunicationDataHarness(expectedCommittee.streamId, memberAddress);
+            registry.getStoredCommunicationDataHarness(expectedDenomination, memberAddress);
 
         assertCommunicationDataEqual(communicationData, storedData, "Minimal data should be stored correctly");
     }

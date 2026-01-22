@@ -1,10 +1,11 @@
 #!/bin/bash
 
 # This script runs the packet creation flow, including:
-# 1. Applying members to a stream
-# 2. Which triggers the creation of a pending committee
-# 3. Depositing member info for each member of the committee
-# 4. Which in turn triggers the completion of the creation of the committee and a packet with it
+# 1. Whitelisting addresses that will apply to be members
+# 2. Applying members to a stream
+# 3. Which triggers the creation of a pending committee
+# 4. Depositing member info for each member of the committee
+# 5. Which in turn triggers the completion of the creation of the committee and a packet with it
 
 
 set -e  # exit on error
@@ -69,6 +70,11 @@ if [ "$STREAM" -gt 4 ]; then
 fi
 
 echo "=== APPLYING $OPERATOR_AMOUNT OPERATORS AND $WATCHTOWER_AMOUNT WATCHTOWERS TO STREAM $STREAM ==="
+
+# Whitelist the addresses before applying to stream
+for ((i=0; i<=MAX_MNEMONIC_INDEX; i++)); do
+  bash "$SCRIPT_DIR/whitelist-address.sh" -m "$i"
+done
 
 # Apply to stream
 for ((i=0; i<=MAX_MNEMONIC_INDEX; i++)); do

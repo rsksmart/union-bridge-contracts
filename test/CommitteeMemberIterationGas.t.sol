@@ -3,13 +3,7 @@ pragma solidity ^0.8.20;
 
 import {Test, console} from "forge-std/Test.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
-import {
-    Role,
-    CommitteeMember,
-    SignatureData,
-    CommunicationData,
-    MemberRegistrationKeys
-} from "src/interfaces/ICommitteeRegistry.sol";
+import {CommitteeMember, SignatureData, CommunicationData} from "src/interfaces/ICommitteeRegistry.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
 import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
 

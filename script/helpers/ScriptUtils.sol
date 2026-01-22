@@ -41,6 +41,20 @@ abstract contract ScriptUtils is Script {
         }
     }
 
+    function getWhitelisterKey() public view returns (uint256) {
+        // Try to get WHITELISTER_KEY from environment
+        // If not set, default to deployer key
+        try vm.envUint("WHITELISTER_KEY") returns (uint256 whitelisterKey) {
+            return whitelisterKey;
+        } catch {
+            return getDeployerKey();
+        }
+    }
+
+    function getWhitelisterAddress() public returns (address) {
+        return vm.rememberKey(getWhitelisterKey());
+    }
+
     function getMemberKey(uint32 index) public view returns (uint256) {
         // The deploy contracts scripts use members from 1 to 10 we map them to 0 to 9
         return vm.deriveKey(vm.envString("MNEMONIC"), index);

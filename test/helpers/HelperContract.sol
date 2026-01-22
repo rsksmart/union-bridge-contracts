@@ -58,7 +58,7 @@ abstract contract HelperContract is Test, TestUtils {
 
     int256 constant BEST_CHAIN_HEIGHT = 1000;
 
-    // Dummy requested roles and streams for the members
+    // Default requested roles and streams for the members
     StreamDenomination internal constant DEFAULT_STREAM = StreamDenomination._0_01BTC;
     Role internal constant DEFAULT_ROLE = Role.OPERATOR;
 
@@ -130,13 +130,20 @@ abstract contract HelperContract is Test, TestUtils {
         MemberRegistrationKeys memory _publicKeysRegistration,
         Role _role
     ) internal {
+        setup_whitelistAddress(_address); // to be able to apply to stream
+
         uint256 minimumDeposit = streamManager.getMinimumDeposit(_denomination, _role);
         vm.deal(_address, minimumDeposit);
 
-        vm.prank(_address); // Use a different address for each member
+        vm.prank(_address);
         registry.applyToStream{value: minimumDeposit}(
             _denomination, _role, _publicKeysRegistration, generateDefaultUTXO()
         );
+    }
+
+    function setup_whitelistAddress(address _address) internal {
+        vm.prank(registry.whitelister());
+        registry.whitelistAddress(_address);
     }
 
     /**

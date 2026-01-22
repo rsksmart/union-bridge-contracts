@@ -49,6 +49,7 @@ contract DeployImplAndProxy is ScriptUtils {
     // Contracts to be deployed
     address public upgradableOwner;
     address public pauser;
+    address public whitelister;
     BtcNetwork public btcBtcNetwork;
     address payable public bridgeAddress;
     StreamManagerSettings public streamManagerSettings;
@@ -60,6 +61,7 @@ contract DeployImplAndProxy is ScriptUtils {
         bridgeAddress = RSK_BRIDGE_ADDRESS;
         upgradableOwner = getDeployerAddress();
         pauser = getPauserAddress();
+        whitelister = getWhitelisterAddress();
         uint64[] memory denominations = StreamManagerSettingsConfig.getDenominations();
         // Get configurations for the chain and test group
         bool isTest = vm.isContext(VmSafe.ForgeContext.TestGroup) || vm.envOr("IS_TEST", false);
@@ -94,6 +96,7 @@ contract DeployImplAndProxy is ScriptUtils {
         setUp();
         printAddress(upgradableOwner, "upgradableOwner");
         printAddress(pauser, "pauser");
+        printAddress(whitelister, "whitelister");
         printAddress(bridgeAddress, "Bridge");
 
         // Deploy contracts
@@ -211,6 +214,8 @@ contract DeployImplAndProxy is ScriptUtils {
         pegoutManager.setPauser(address(pauseManager));
         committeeRegistry.setPauser(address(pauseManager));
         memberRegistry.setPauser(address(pauseManager));
+        // Set whitelister for CommitteeRegistry contract
+        committeeRegistry.setWhitelister(whitelister);
         vm.stopBroadcast();
 
         if (block.chainid == ChainIds.LOCAL) {

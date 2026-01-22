@@ -82,19 +82,20 @@ contract CommitteeRegistryHarness is CommitteeRegistry {
     }
 
     /// @notice Harness function to directly access stored communication data for testing
-    /// @param _streamId The stream ID
+    /// @param _denomination The stream denomination
     /// @param _memberAddress The address of the member who deposited the data
     /// @return communicationData The communication data stored by this member
-    function getStoredCommunicationDataHarness(uint64 _streamId, address _memberAddress)
+    function getStoredCommunicationDataHarness(StreamDenomination _denomination, address _memberAddress)
         external
         view
         returns (CommunicationData[] memory communicationData)
     {
-        if (!_isInPendingCommittee(_memberAddress, _streamId)) {
-            revert MemberNotInCommittee(_streamId, _memberAddress);
+        uint64 streamId = uint64(_denomination);
+        if (!_isInPendingCommittee(_memberAddress, _denomination)) {
+            revert MemberNotInCommittee(streamId, _memberAddress);
         }
 
-        return committeesData[pendingCommittees[_streamId]][_memberAddress].communicationData;
+        return committeesData[pendingCommittees[streamId]][_memberAddress].communicationData;
     }
 
     /// @notice Harness function to directly set communication data for testing getMemberCommunicationData

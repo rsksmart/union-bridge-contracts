@@ -7,7 +7,6 @@ import {Pausable} from "./Pausable.sol";
 import {
     Role,
     Member,
-    Committee,
     CommitteeMember,
     ApplicationData,
     Balance,
@@ -162,7 +161,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         committeesCandidates[_denomination][_role].push(_memberAddress);
     }
 
-    /// @notice Internal function to handle member unsubscription from stream
+    /// @notice External function to handle member unsubscription from stream
     /// @dev Called by CommitteeRegistry after pending committee checks
     /// @dev Only callable by CommitteeRegistry contract
     /// @param _memberAddress The address of the member unsubscribing
@@ -196,13 +195,11 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         }
     }
 
-    function reAddCommitteeMembers(Committee memory _discardedCommittee) external onlyCommitteeRegistry {
-        StreamDenomination denomination = StreamDenomination(_discardedCommittee.streamId);
-        CommitteeMember[] memory committeeMembers = _discardedCommittee.members;
-        for (uint256 i = 0; i < committeeMembers.length; i++) {
-            CommitteeMember memory member = committeeMembers[i];
-            committeesCandidates[denomination][member.role].push(member.memberAddress);
-        }
+    function reAddCandidateToStream(StreamDenomination _denomination, CommitteeMember memory _member)
+        external
+        onlyCommitteeRegistry
+    {
+        committeesCandidates[_denomination][_member.role].push(_member.memberAddress);
     }
 
     /// @notice Internal function to handle committee member release operations
@@ -495,6 +492,10 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         return _getMemberApplicationData(_memberAddress, StreamDenomination(_streamId)).fundingUTXO;
     }
 
+    function isMember(address _address) external view returns (bool) {
+        return members[_address].publicKeys.takePubKey != bytes32(0);
+    }
+
     function _getMember(address _address) internal view returns (Member storage member) {
         member = members[_address];
         if (member.publicKeys.takePubKey == bytes32(0)) {
@@ -522,10 +523,22 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
     /// @param _reApply True to automatically reapply, false to receive balance as available
     function setReApplyForStream(StreamDenomination _denomination, bool _reApply) external override whenNotPaused {
         address sender = _msgSender();
-        ApplicationData storage applicationData = _getMemberApplicationData(sender, _denomination);
+        _setReApplyForStream(sender, _denomination, _reApply);
+    }
+
+    function disableMemberReApplyForStream(address _memberAddress, StreamDenomination _denomination)
+        external
+        onlyCommitteeRegistry
+    {
+        bool reApply = false;
+        _setReApplyForStream(_memberAddress, _denomination, reApply);
+    }
+
+    function _setReApplyForStream(address _memberAddress, StreamDenomination _denomination, bool _reApply) internal {
+        ApplicationData storage applicationData = _getMemberApplicationData(_memberAddress, _denomination);
         applicationData.reApply = _reApply;
 
-        emit MemberReApplyUpdated(sender, _denomination, _reApply);
+        emit MemberReApplyUpdated(_memberAddress, _denomination, _reApply);
     }
 
     /// @notice Gets the reapply flag for a member in a specific stream

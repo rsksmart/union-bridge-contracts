@@ -25,14 +25,17 @@ import {Secp256k1} from "src/libraries/Secp256k1.sol";
 
 contract MemberRegistryTest is Test, HelperContract {
     MemberRegistrationKeys internal memberRegistrationKeys;
+    address internal memberAddress;
 
     constructor() {
         uint256 privKey = uint256(1);
+        memberAddress = vm.addr(privKey);
         memberRegistrationKeys = generateRegistrationPublicKeys(privKey);
     }
 
     function setUp() external {
         runTestDeployScript();
+        setup_whitelistAddress(memberAddress);
     }
 
     function test_setCommitteeRegistry_Success_PausedContract() external {
@@ -204,14 +207,18 @@ contract MemberRegistryTest is Test, HelperContract {
         memberRegistry.releaseCommitteeMembers(members, streamId, packetNumber);
     }
 
-    function test_reAddCommitteeMembers() external {
+    function test_reAddCandidateToStream_Success() external {
         // arrange
         setup_pendingCommittee();
-        Committee memory pendingCommittee = registry.getPendingCommittee(SETUP_PENDING_COMMITTEE_STREAM_ID);
+        uint128 committeeId = registry.getPendingCommitteeId(SETUP_PENDING_COMMITTEE_STREAM_ID);
+        CommitteeMember[] memory committeeMembers = registry.getCommitteeMembers(committeeId);
 
         // act
         vm.startPrank(address(registry));
-        memberRegistry.reAddCommitteeMembers(pendingCommittee);
+        for (uint256 i = 0; i < committeeMembers.length; i++) {
+            CommitteeMember memory member = committeeMembers[i];
+            memberRegistry.reAddCandidateToStream(SETUP_PENDING_COMMITTEE_DENOMINATION, member);
+        }
 
         // assert
         uint256 expectedOperators = registry.committeeMemberCount() / 2;
@@ -648,6 +655,32 @@ contract MemberRegistryTest is Test, HelperContract {
         // Act
         vm.prank(user);
         registry.applyToStream{value: minimumDeposit}(DEFAULT_STREAM, DEFAULT_ROLE, memberRegistrationKeys, invalidUTXO);
+    }
+
+    function test_disableReApplyForStream_Revert_UnauthorizedAccount() external {
+        // Arrange
+        address unauthorizedAccount = address(0x1234);
+        vm.startPrank(unauthorizedAccount);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IAccessControl.UnauthorizedAccount.selector, unauthorizedAccount));
+
+        // Act
+        memberRegistry.disableMemberReApplyForStream(unauthorizedAccount, DEFAULT_STREAM);
+    }
+
+    function test_disableReApplyForStream_Success() external {
+        // Arrange
+        setup_applyToStream(memberAddress, memberRegistrationKeys, DEFAULT_STREAM, DEFAULT_ROLE);
+        bool reApply = false;
+
+        // Assert
+        vm.expectEmit(address(memberRegistry));
+        emit IMemberRegistry.MemberReApplyUpdated(memberAddress, DEFAULT_STREAM, reApply);
+
+        // Act
+        vm.prank(address(registry));
+        memberRegistry.disableMemberReApplyForStream(memberAddress, DEFAULT_STREAM);
     }
 
     function test_unsubscribeFromStream_Success_Operator() external {
@@ -1265,6 +1298,7 @@ contract MemberRegistryTest is Test, HelperContract {
         // Determine the minimum bond required (getMinimumDeposit(stream))
         uint256 minimumDeposit = streamManager.getMinimumDeposit(_stream, _requestedRole);
         vm.deal(_user, minimumDeposit);
+        setup_whitelistAddress(_user);
 
         // Act
         vm.prank(_user);
@@ -1390,9 +1424,6 @@ contract MemberRegistryTest is Test, HelperContract {
     }
 
     function test_getMemberTakePubKey_Revert_MemberNotRegistered() external {
-        // Arrange
-        address memberAddress = vm.addr(1);
-
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IMemberRegistry.MemberNotRegistered.selector, memberAddress));
         // Act
@@ -1924,15 +1955,11 @@ contract MemberRegistryTest is Test, HelperContract {
 
     function test_getMemberComPubKey_Success() public {
         // Arrange
-        uint256 privKey = 1;
-        address memberAddress = vm.addr(privKey);
-        MemberRegistrationKeys memory publicKeysRegistration = memberRegistrationKeys;
-
         // Register the member by applying to a stream
-        setup_applyToStream(StreamDenomination._0_01BTC, memberAddress, publicKeysRegistration, Role.OPERATOR);
+        setup_applyToStream(StreamDenomination._0_01BTC, memberAddress, memberRegistrationKeys, Role.OPERATOR);
 
         // Get expected communication public key from registration
-        RSAPublicKey memory expectedComPubKey = publicKeysRegistration.communicationKey;
+        RSAPublicKey memory expectedComPubKey = memberRegistrationKeys.communicationKey;
 
         // Act
         RSAPublicKey memory actualComPubKey = memberRegistry.getMemberComPubKey(memberAddress);
