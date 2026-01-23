@@ -12,14 +12,9 @@ import {SlotState} from "src/interfaces/IStreamManager.sol";
 import {IPegBase} from "src/interfaces/IPegBase.sol";
 
 contract ChallengeManagerTest is Test, HelperContract {
-    uint64 internal setupStreamId;
-    uint128 internal setupCommitteeId;
-
     function setUp() external {
         runTestDeployScript();
-        (, Committee memory expectedCommittee, uint128 committeeId) = setup_completeCommitteeAndNewMembers();
-        setupStreamId = expectedCommittee.streamId;
-        setupCommitteeId = committeeId;
+        setup_completeCommitteeAndNewMembers();
     }
 
     function test_registerChallenge_Success_OperatorCall() external {

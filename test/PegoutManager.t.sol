@@ -27,8 +27,6 @@ contract PegoutManagerTest is Test, HelperContract {
     // https://www.blockchain.com/explorer/blocks/btc/879500
     uint64 internal constant PACKET_NUMBER = 0;
     address internal constant RSK_DESTINATION_ADDRESS = 0x7Ac5496aee77c1bA1F0854206A26DdA82A81d6d8;
-    uint64 internal setupStreamId;
-    uint128 internal setupCommitteeId;
     Committee internal setupExpectedCommittee;
 
     function setUp() external {
@@ -40,8 +38,6 @@ contract PegoutManagerTest is Test, HelperContract {
         for (uint64 i = 0; i < expectedCommittee.members.length; i++) {
             setupExpectedCommittee.members.push(expectedCommittee.members[i]);
         }
-        setupStreamId = expectedCommittee.streamId;
-        setupCommitteeId = committeeId;
     }
 
     function test_tryPegout_Success() external {
