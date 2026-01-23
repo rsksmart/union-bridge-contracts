@@ -393,9 +393,7 @@ contract DeployImplAndProxy is ScriptUtils {
         PegoutManager _pegoutManager
     ) public returns (ChallengeManager) {
         string memory contractName = "ChallengeManager.sol";
-        // if (vm.isContext(VmSafe.ForgeContext.TestGroup)) {
-        //     contractName = "ChallengeManagerHarness.sol";
-        // }
+
         (, address proxyAdddress) = deployContractAndUUPSProxy(
             contractName,
             abi.encodeCall(

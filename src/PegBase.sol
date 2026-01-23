@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import {IPegCommon} from "./interfaces/IPegCommon.sol";
+import {IPegBase} from "./interfaces/IPegBase.sol";
 import {BaseProxy} from "./BaseProxy.sol";
 import {Pausable} from "./Pausable.sol";
 import {ProofValidator} from "./ProofValidator.sol";
@@ -11,10 +11,10 @@ import {IStreamManager} from "./interfaces/IStreamManager.sol";
 import {ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
 import {PegStatus, StreamPosition} from "./interfaces/IPegCommonTypes.sol";
 
-/// @title PegManagerBase
-/// @notice Abstract base contract for shared functionality between PeginManager and PegoutManager
+/// @title PegBase
+/// @notice Abstract base contract for shared functionality between PeginManager, PegoutManager and ChallengeManager
 /// @dev Contains common state variables, initialization logic, and setter functions
-abstract contract PegCommon is IPegCommon, BaseProxy, ProofValidator, ReentrancyGuardUpgradeable, Pausable {
+abstract contract PegBase is IPegBase, BaseProxy, ProofValidator, ReentrancyGuardUpgradeable, Pausable {
     /// @notice Bitcoin manager contract for Bitcoin transaction validation and address generation
     IBitcoinManager public bitcoinManager;
 
@@ -24,13 +24,13 @@ abstract contract PegCommon is IPegCommon, BaseProxy, ProofValidator, Reentrancy
     /// @notice Committee registry contract for managing committee and members
     ICommitteeRegistry public committeeRegistry;
 
-    /// @notice Initializes the base PegManager contract
+    /// @notice Initializes the base PegBase contract
     /// @param _initialOwner The initial owner of the contract
     /// @param _bridgeAddress The address of the pow-peg bridge contract
     /// @param _committeeRegistry The committee registry contract address
     /// @param _bitcoinManager The Bitcoin manager contract address
     /// @dev This function should be called by child contracts during their initialization
-    function __PegCommon_init(
+    function __PegBase_init(
         address _initialOwner,
         address payable _bridgeAddress,
         ICommitteeRegistry _committeeRegistry,

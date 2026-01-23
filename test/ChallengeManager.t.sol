@@ -9,7 +9,7 @@ import {ChallengeTempInfo, IChallengeManager} from "src/interfaces/IChallengeMan
 import {Committee, ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {SlotState} from "src/interfaces/IStreamManager.sol";
-import {IPegCommon} from "src/interfaces/IPegCommon.sol";
+import {IPegBase} from "src/interfaces/IPegBase.sol";
 
 contract ChallengeManagerTest is Test, HelperContract {
     uint64 internal setupStreamId;
@@ -43,6 +43,7 @@ contract ChallengeManagerTest is Test, HelperContract {
         vm.prank(opAddress);
         challengeManager.registerChallenge(setup.acceptPeginTxid, setup.challengeSPV);
 
+        // Assert
         streamInfo = streamManager.getStreamPosition(setup.acceptPeginTxid);
         assertEq(uint256(streamInfo.pegStatus), uint256(PegStatus.CHALLENGE), "PegStatus should be CHALLENGE");
         assertTrue(
@@ -77,6 +78,7 @@ contract ChallengeManagerTest is Test, HelperContract {
         vm.prank(memberAddress);
         challengeManager.registerChallenge(setup.acceptPeginTxid, setup.challengeSPV);
 
+        // Assert
         streamInfo = streamManager.getStreamPosition(setup.acceptPeginTxid);
         assertEq(uint256(streamInfo.pegStatus), uint256(PegStatus.CHALLENGE), "PegStatus should be CHALLENGE");
         assertTrue(
@@ -105,7 +107,7 @@ contract ChallengeManagerTest is Test, HelperContract {
         bytes32 wrongAcceptPeginTxid = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegCommon.PeginNotRequested.selector, wrongAcceptPeginTxid));
+        vm.expectRevert(abi.encodeWithSelector(IPegBase.PeginNotRequested.selector, wrongAcceptPeginTxid));
 
         // Act
         challengeManager.registerChallenge(wrongAcceptPeginTxid, setup.challengeSPV);
@@ -120,7 +122,7 @@ contract ChallengeManagerTest is Test, HelperContract {
         streamManager.setPegStatus(setup.acceptPeginTxid, PegStatus.COMPLETED);
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegCommon.InvalidPegStatus.selector, PegStatus.COMPLETED));
+        vm.expectRevert(abi.encodeWithSelector(IPegBase.InvalidPegStatus.selector, PegStatus.COMPLETED));
 
         // Act
         challengeManager.registerChallenge(setup.acceptPeginTxid, setup.challengeSPV);
@@ -183,6 +185,7 @@ contract ChallengeManagerTest is Test, HelperContract {
         vm.prank(opAddress);
         challengeManager.registerInputRevealed(setup.acceptPeginTxid, setup.inputRevealedSPV);
 
+        // Assert
         streamInfo = streamManager.getStreamPosition(setup.acceptPeginTxid);
         assertEq(uint256(streamInfo.pegStatus), uint256(PegStatus.REVEALED), "PegStatus should be REVEALED");
 
@@ -219,6 +222,7 @@ contract ChallengeManagerTest is Test, HelperContract {
         vm.prank(memberAddress);
         challengeManager.registerInputRevealed(setup.acceptPeginTxid, setup.inputRevealedSPV);
 
+        // Assert
         streamInfo = streamManager.getStreamPosition(setup.acceptPeginTxid);
         assertEq(uint256(streamInfo.pegStatus), uint256(PegStatus.REVEALED), "PegStatus should be REVEALED");
 
@@ -250,7 +254,7 @@ contract ChallengeManagerTest is Test, HelperContract {
         bytes32 wrongAcceptPeginTxid = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegCommon.PeginNotRequested.selector, wrongAcceptPeginTxid));
+        vm.expectRevert(abi.encodeWithSelector(IPegBase.PeginNotRequested.selector, wrongAcceptPeginTxid));
 
         // Act
         vm.prank(opAddress);
@@ -266,7 +270,7 @@ contract ChallengeManagerTest is Test, HelperContract {
         streamManager.setPegStatus(setup.acceptPeginTxid, PegStatus.COMPLETED);
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegCommon.InvalidPegStatus.selector, PegStatus.COMPLETED));
+        vm.expectRevert(abi.encodeWithSelector(IPegBase.InvalidPegStatus.selector, PegStatus.COMPLETED));
 
         // Act
         vm.prank(opAddress);

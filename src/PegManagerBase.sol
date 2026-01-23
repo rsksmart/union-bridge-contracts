@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import {PegCommon} from "./PegCommon.sol";
+import {PegBase} from "./PegBase.sol";
 import {IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
 import {IPegManagerBase} from "./interfaces/IPegManagerBase.sol";
 import {ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
@@ -11,7 +11,7 @@ import {IRbtcBridge} from "./interfaces/IRbtcBridge.sol";
 /// @title PegManagerBase
 /// @notice Abstract base contract for shared functionality between PeginManager and PegoutManager
 /// @dev Contains common state variables, initialization logic, and setter functions
-abstract contract PegManagerBase is IPegManagerBase, PegCommon {
+abstract contract PegManagerBase is IPegManagerBase, PegBase {
     /// @notice Signature manager contract for handling multi-signature operations
     ISignatureManager public signatureManager;
 
@@ -37,7 +37,7 @@ abstract contract PegManagerBase is IPegManagerBase, PegCommon {
         }
         rbtcBridge = _rbtcBridge;
 
-        __PegCommon_init(_initialOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager);
+        __PegBase_init(_initialOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager);
     }
 
     /// @notice Sets the signature manager contract address

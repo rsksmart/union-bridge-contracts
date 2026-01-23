@@ -2,13 +2,11 @@
 pragma solidity ^0.8.20;
 
 import {IStreamManager} from "./IStreamManager.sol";
-import {IBitcoinManager} from "./IBitcoinManager.sol";
-import {ICommitteeRegistry} from "./ICommitteeRegistry.sol";
 import {PegStatus} from "./IPegCommonTypes.sol";
 
-/// @title IPegManagerBase
-/// @notice Interface for shared functionality between PeginManager, PegoutManager and ChallengeManager
-interface IPegCommon {
+/// @title IPegBase
+/// @notice Interface for the base contract for PeginManager, PegoutManager and ChallengeManager
+interface IPegBase {
     /// @notice Emitted when the stream manager is updated
     /// @param _streamManager The new stream manager address
     event StreamManagerUpdated(IStreamManager _streamManager);
@@ -33,18 +31,6 @@ interface IPegCommon {
     error StreamManagerAddressZero();
 
     // ===================== External Functions =====================
-
-    /// @notice Returns the bitcoin manager contract
-    /// @return The bitcoin manager contract
-    function bitcoinManager() external view returns (IBitcoinManager);
-
-    /// @notice Returns the stream manager contract
-    /// @return The stream manager contract
-    function streamManager() external view returns (IStreamManager);
-
-    /// @notice Returns the committee registry contract
-    /// @return The committee registry contract
-    function committeeRegistry() external view returns (ICommitteeRegistry);
 
     /// @notice Sets the stream manager contract address
     /// @param _streamManager The stream manager contract address

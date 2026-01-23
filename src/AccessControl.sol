@@ -69,7 +69,6 @@ abstract contract AccessControl is IAccessControl, BaseProxy {
     /// @dev Reverts if the sender is neither the peginManager nor the pegoutManager
     function _checkPegManager() internal view virtual {
         address sender = _msgSender();
-        // TODO: do we need to add challengeManager for all onlyPegManager modifiers?
         if (peginManager != sender && pegoutManager != sender && challengeManager != sender) {
             revert UnauthorizedAccount(sender);
         }

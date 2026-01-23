@@ -54,15 +54,18 @@ interface IChallengeManager {
 
     // ===================== Errors =====================
 
+    /// @notice Thrown when the pegout manager address is zero
+    error PegoutManagerAddressZero();
+
     /// @notice Thrown when the reimbursement kickoff txid does not match the expected value
     /// @param actual The actual reimbursement kickoff txid provided
     /// @param expected The expected reimbursement kickoff txid
     error ReimbursementKickoffTxidNotMatch(bytes32 actual, bytes32 expected);
 
     /// @notice Thrown when the challenge transaction id does not match the expected value
-    /// @param expected The expected transaction id
     /// @param actual The actual transaction id
-    error ChallengeTxidNotMatch(bytes32 expected, bytes32 actual);
+    /// @param expected The expected transaction id
+    error ChallengeTxidNotMatch(bytes32 actual, bytes32 expected);
 
     /// @notice Thrown when the number of inputs in a challenge transaction is incorrect
     /// @param actual The actual number of inputs found

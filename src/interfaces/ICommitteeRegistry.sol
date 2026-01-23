@@ -318,7 +318,7 @@ interface ICommitteeRegistry {
     /// @param _pegoutManager The address of the Pegout Manager contract
     function setPegoutManager(IPegoutManager _pegoutManager) external;
 
-    /// @notice Sets the Pegout Manager contract address
+    /// @notice Sets the Challenge Manager contract address
     /// @dev Only callable by the contract owner
     /// @param _challengeManager The address of the Challenge Manager contract
     function setChallengeManager(address _challengeManager) external;
