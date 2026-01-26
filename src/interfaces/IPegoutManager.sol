@@ -26,10 +26,6 @@ struct PegoutTempInfo {
     int256 advanceFundsBlockNumber;
     /// @notice The transaction id of the reimbursement kickoff transaction
     bytes32 reimbursementKickoffTxid;
-    /// @notice The transaction id of the challenge transaction
-    bytes32 challengeTxid;
-    /// @notice The transaction id of the input reveal transaction
-    bytes32 revealTxid;
 }
 
 /// @notice Settings for the PegoutManager contract
@@ -72,6 +68,58 @@ interface IPegoutManager {
     /// @param slotId The slot identifier within the packet
     /// @return The peg-out signature hash
     function getPegoutTxid(uint64 streamId, uint64 packetNumber, uint64 slotId) external view returns (bytes32);
+
+    /// @notice Sets User Take Timeout
+    /// @dev Allows the contract owner to update the timeout for user take actions
+    /// @param _timeout The new timeout value in seconds
+    /// @dev Emits UserTakeTimeoutUpdated event upon successful update
+    /// @dev Reverts if the timeout is zero
+    function setUserTakeTimeout(uint256 _timeout) external;
+
+    /// @notice Sets Operator Take Timeout
+    /// @dev Allows the contract owner to update the timeout for operator take actions
+    /// @param _timeout The new timeout value in seconds
+    /// @dev Emits OperatorTakeTimeoutUpdated event upon successful update
+    /// @dev Reverts if the timeout is zero
+    function setOperatorTakeTimeout(uint256 _timeout) external;
+
+    /// @notice Gets the current timeout duration for user take operations
+    /// @return The timeout duration in seconds
+    function userTakeTimeout() external view returns (uint256);
+
+    /// @notice Gets the current timeout duration for operator take operations
+    /// @return The timeout duration in seconds
+    function operatorTakeTimeout() external view returns (uint256);
+
+    /// @notice Registers the advance funds transaction submitted by the operator
+    /// @dev Validates the SPV proof and updated the peg-out status accordingly
+    /// @param acceptPeginTxid The accept peg-in transaction id that it's being advanced
+    /// @param _advanceFunds The BTC SPV proof of the advance funds transaction
+    function registerAdvanceFunds(bytes32 acceptPeginTxid, BtcTxSPVProof calldata _advanceFunds) external;
+
+    /// @notice Registers the reimbursement kickoff transaction submitted by the operator
+    /// @dev Validates the SPV proof and updates the peg-out status accordingly
+    /// @param acceptPeginTxid The accept peg-in transaction id that it's being reimbursed
+    /// @param _kickoffSPV The BTC SPV proof of the reimbursement kickoff transaction
+    function registerReimbursementKickoff(bytes32 acceptPeginTxid, BtcTxSPVProof calldata _kickoffSPV) external;
+
+    /// @notice Registers the Bitcoin peg-out transaction to the operator account
+    /// @dev Validates the SPV proof and marks the slot as paid when operator takes over
+    /// @dev Only callable when the peg status is OPERATOR_TAKE
+    /// @dev Emits PegoutRegistered event upon successful deposit
+    /// @param _pegoutTxSPVProof The BTC SPV proof of the operator take peg-out transaction
+    function registerOperatorTake(BtcTxSPVProof calldata _pegoutTxSPVProof) external;
+
+    /// @notice Triggers the operator take process for a peg-out when not all committee members sign within timeout
+    /// @dev This function can be called after a User Take expiration or after an Operator Take expiration
+    /// @dev Each case has its own timeout and before triggering the operator take (after a User Take expiration)
+    /// @dev signatures should be checked to see if the User Take was already signed
+    /// @dev Partial signatures are used to skip those operators that have not signed the User Take
+    /// @dev Emits OperatorTakeTriggered event upon successful triggering
+    /// @param _pegoutTxid The transaction id of the peg-out request
+    function triggerOperatorTake(bytes32 _pegoutTxid) external;
+
+    // ===================== Events =====================
 
     /// @notice Event emitted when a peg-out is successfully requested
     /// @param userPubKey The user's public key that will receive the Bitcoin funds
@@ -131,82 +179,6 @@ interface IPegoutManager {
     event ReimbursementKickoffRegistered(
         bytes32 indexed txid, bytes32 indexed acceptPeginTxid, uint128 committeeId, StreamPosition streamInfo
     );
-
-    /// @notice Event emitted when a challenge is registered for a peg-out
-    /// @param txid The hash of the challenge transaction
-    /// @param acceptPeginTxid The hash of the original accept peg-in transaction
-    /// @param committeeId The ID of the committee responsible for this challenge
-    /// @param streamInfo The stream position information related to this challenge
-    event ChallengeRegistered(
-        bytes32 indexed txid, bytes32 indexed acceptPeginTxid, uint128 committeeId, StreamPosition streamInfo
-    );
-
-    /// @notice Event emitted when an input is revealed for a challenge
-    /// @param txid The hash of the reveal transaction
-    /// @param acceptPeginTxid The hash of the original accept peg-in transaction
-    /// @param committeeId The ID of the committee responsible for this pegout
-    /// @param streamInfo The stream position information related to this pegout
-    event RevealRegistered(
-        bytes32 indexed txid, bytes32 indexed acceptPeginTxid, uint128 committeeId, StreamPosition streamInfo
-    );
-
-    /// @notice Sets User Take Timeout
-    /// @dev Allows the contract owner to update the timeout for user take actions
-    /// @param _timeout The new timeout value in seconds
-    /// @dev Emits UserTakeTimeoutUpdated event upon successful update
-    /// @dev Reverts if the timeout is zero
-    function setUserTakeTimeout(uint256 _timeout) external;
-
-    /// @notice Sets Operator Take Timeout
-    /// @dev Allows the contract owner to update the timeout for operator take actions
-    /// @param _timeout The new timeout value in seconds
-    /// @dev Emits OperatorTakeTimeoutUpdated event upon successful update
-    /// @dev Reverts if the timeout is zero
-    function setOperatorTakeTimeout(uint256 _timeout) external;
-
-    /// @notice Gets the current timeout duration for user take operations
-    /// @return The timeout duration in seconds
-    function userTakeTimeout() external view returns (uint256);
-
-    /// @notice Gets the current timeout duration for operator take operations
-    /// @return The timeout duration in seconds
-    function operatorTakeTimeout() external view returns (uint256);
-
-    /// @notice Registers the advance funds transaction submitted by the operator
-    /// @dev Validates the SPV proof and updated the peg-out status accordingly
-    /// @param acceptPeginTxid The accept peg-in transaction id that it's being advanced
-    /// @param _advanceFunds The BTC SPV proof of the advance funds transaction
-    function registerAdvanceFunds(bytes32 acceptPeginTxid, BtcTxSPVProof calldata _advanceFunds) external;
-
-    /// @notice Registers the reimbursement kickoff transaction submitted by the operator
-    /// @dev Validates the SPV proof and updates the peg-out status accordingly
-    /// @param acceptPeginTxid The accept peg-in transaction id that it's being reimbursed
-    /// @param _kickoffSPV The BTC SPV proof of the reimbursement kickoff transaction
-    function registerReimbursementKickoff(bytes32 acceptPeginTxid, BtcTxSPVProof calldata _kickoffSPV) external;
-
-    /// @notice Registers the Bitcoin peg-out transaction to the operator account
-    /// @dev Validates the SPV proof and marks the slot as paid when operator takes over
-    /// @dev Only callable when the peg status is OPERATOR_TAKE
-    /// @dev Emits PegoutRegistered event upon successful deposit
-    /// @param _pegoutTxSPVProof The BTC SPV proof of the operator take peg-out transaction
-    function registerOperatorTake(BtcTxSPVProof calldata _pegoutTxSPVProof) external;
-
-    /// @notice Registers a challenge for a peg-out transaction
-    /// @dev Validates the SPV proof and updates the peg-out status accordingly
-    /// @param acceptPeginTxid The accept peg-in transaction id that is being challenged
-    /// @param _challenge The BTC SPV proof of the challenge transaction
-    function registerChallenge(bytes32 acceptPeginTxid, BtcTxSPVProof calldata _challenge) external;
-
-    /// @notice Triggers the operator take process for a peg-out when not all committee members sign within timeout
-    /// @dev This function can be called after a User Take expiration or after an Operator Take expiration
-    /// @dev Each case has its own timeout and before triggering the operator take (after a User Take expiration)
-    /// @dev signatures should be checked to see if the User Take was already signed
-    /// @dev Partial signatures are used to skip those operators that have not signed the User Take
-    /// @dev Emits OperatorTakeTriggered event upon successful triggering
-    /// @param _pegoutTxid The transaction id of the peg-out request
-    function triggerOperatorTake(bytes32 _pegoutTxid) external;
-
-    // ===================== Events =====================
 
     /// @notice Event emitted when the user take timeout is updated
     /// @param newTimeout The new timeout duration in seconds
@@ -324,11 +296,6 @@ interface IPegoutManager {
     /// @param expected The expected reimbursement kickoff txid
     error ReimbursementKickoffTxidNotMatch(bytes32 actual, bytes32 expected);
 
-    /// @notice Thrown when the challenge txid does not match the expected value
-    /// @param actual The actual challenge txid provided
-    /// @param expected The expected challenge txid
-    error ChallengeTxidNotMatch(bytes32 actual, bytes32 expected);
-
     /// @notice Thrown when operator take data is not found for a given accept peg-in txid and operator address
     /// @param acceptPeginTxid The accept peg-in transaction id
     /// @param operatorAddress The operator address for which the data was not found
@@ -338,14 +305,4 @@ interface IPegoutManager {
     /// @param actual The actual operator take transaction id provided
     /// @param expected The expected operator take transaction id
     error OperatorTakeTxidNotMatch(bytes32 actual, bytes32 expected);
-
-    /// @notice Thrown when the number of inputs in a challenge transaction is incorrect
-    /// @param actual The actual number of inputs found
-    /// @param expected The expected number of inputs
-    error InvalidChallengeInputCount(uint256 actual, uint256 expected);
-
-    /// @notice Thrown when the number of inputs in a input reveal transaction is incorrect
-    /// @param actual The actual number of inputs found
-    /// @param expected The expected number of inputs
-    error InvalidRevealedInputCount(uint256 actual, uint256 expected);
 }

@@ -17,6 +17,7 @@ import {IMemberRegistry, MemberKeys} from "src/interfaces/IMemberRegistry.sol";
 import {ISignatureManager} from "src/interfaces/ISignatureManager.sol";
 import {IRbtcBridge} from "src/interfaces/IRbtcBridge.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {IPegBase} from "src/interfaces/IPegBase.sol";
 
 contract PeginManagerTest is Test, HelperContract {
     // Arrange
@@ -270,9 +271,7 @@ contract PeginManagerTest is Test, HelperContract {
         BtcTxSPVProof memory peginAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
 
         // Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(IPegManagerBase.PeginNotRequested.selector, btcTransaction.inputs[0].txId)
-        );
+        vm.expectRevert(abi.encodeWithSelector(IPegBase.PeginNotRequested.selector, btcTransaction.inputs[0].txId));
 
         // Act
         peginManager.acceptPegin(peginAcceptedTxSPVProof);
@@ -591,7 +590,7 @@ contract PeginManagerTest is Test, HelperContract {
 
         // Assert
         vm.expectEmit(address(peginManager));
-        emit IPegManagerBase.StreamManagerUpdated(newStreamManager);
+        emit IPegBase.StreamManagerUpdated(newStreamManager);
 
         // Act
         vm.prank(owner);
@@ -611,7 +610,7 @@ contract PeginManagerTest is Test, HelperContract {
         // Assert
         vm.prank(peginManager.owner());
         vm.expectEmit(address(peginManager));
-        emit IPegManagerBase.StreamManagerUpdated(newStreamManager);
+        emit IPegBase.StreamManagerUpdated(newStreamManager);
 
         // Act
         peginManager.setStreamManager(newStreamManager);
@@ -626,7 +625,7 @@ contract PeginManagerTest is Test, HelperContract {
         IStreamManager zeroStreamManager = IStreamManager(address(0));
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegManagerBase.StreamManagerAddressZero.selector));
+        vm.expectRevert(abi.encodeWithSelector(IPegBase.StreamManagerAddressZero.selector));
 
         // Act
         vm.prank(owner);
@@ -931,7 +930,7 @@ contract PeginManagerTest is Test, HelperContract {
         BtcTxSPVProof memory userReimbursementTxSPVProof = createBtcTxSPVProof(userReimbursementTx);
 
         // Assert - expect revert
-        vm.expectRevert(abi.encodeWithSelector(IPegManagerBase.PeginNotRequested.selector, bytes32(0)));
+        vm.expectRevert(abi.encodeWithSelector(IPegBase.PeginNotRequested.selector, bytes32(0)));
 
         // Act
         peginManager.userReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
@@ -953,7 +952,7 @@ contract PeginManagerTest is Test, HelperContract {
         BtcTxSPVProof memory userReimbursementTxSPVProof = createBtcTxSPVProof(userReimbursementTx);
 
         // Assert - expect revert with PeginInvalidStatus
-        vm.expectRevert(abi.encodeWithSelector(IPegManagerBase.InvalidPegStatus.selector, PegStatus.ACCEPTED));
+        vm.expectRevert(abi.encodeWithSelector(IPegBase.InvalidPegStatus.selector, PegStatus.ACCEPTED));
 
         // Act
         peginManager.userReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
@@ -1059,7 +1058,7 @@ contract PeginManagerTest is Test, HelperContract {
 
         // Try to register again - should revert because slot is already blocked
         // Assert - expect revert with InvalidPegStatus (since slot is now BLOCKED, not RESERVED)
-        vm.expectRevert(abi.encodeWithSelector(IPegManagerBase.InvalidPegStatus.selector, PegStatus.BLOCKED));
+        vm.expectRevert(abi.encodeWithSelector(IPegBase.InvalidPegStatus.selector, PegStatus.BLOCKED));
 
         // Act
         peginManager.userReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
@@ -1194,7 +1193,7 @@ contract PeginManagerTest is Test, HelperContract {
         BtcTxSPVProof memory rejectPeginTxSPVProof = createBtcTxSPVProof(rejectPeginTx);
 
         // Assert - expect revert
-        vm.expectRevert(abi.encodeWithSelector(IPegManagerBase.PeginNotRequested.selector, bytes32(0)));
+        vm.expectRevert(abi.encodeWithSelector(IPegBase.PeginNotRequested.selector, bytes32(0)));
 
         // Act
         vm.prank(memberAddress);
@@ -1224,7 +1223,7 @@ contract PeginManagerTest is Test, HelperContract {
         BtcTxSPVProof memory rejectPeginTxSPVProof = createBtcTxSPVProof(rejectPeginTx);
 
         // Assert - expect revert with InvalidPegStatus
-        vm.expectRevert(abi.encodeWithSelector(IPegManagerBase.InvalidPegStatus.selector, PegStatus.ACCEPTED));
+        vm.expectRevert(abi.encodeWithSelector(IPegBase.InvalidPegStatus.selector, PegStatus.ACCEPTED));
 
         // Act
         vm.prank(memberAddress);
@@ -1372,7 +1371,7 @@ contract PeginManagerTest is Test, HelperContract {
 
         // Try to register again - should revert because slot is already blocked
         // Assert - expect revert with InvalidPegStatus (since slot is now BLOCKED, not REGISTERED)
-        vm.expectRevert(abi.encodeWithSelector(IPegManagerBase.InvalidPegStatus.selector, PegStatus.BLOCKED));
+        vm.expectRevert(abi.encodeWithSelector(IPegBase.InvalidPegStatus.selector, PegStatus.BLOCKED));
 
         // Act
         vm.prank(memberAddress);

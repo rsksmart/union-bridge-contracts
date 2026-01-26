@@ -812,6 +812,7 @@ The Union Bridge employs a fee mechanism to cover Bitcoin network transaction co
 ### Why This Design?
 
 Users effectively pay BTC transaction fees twice:
+
 - **Once in BTC** during the pegin (deducted from their Bitcoin deposit)
 - **Once in RBTC** during the pegout (paid as part of the full denomination requirement)
 
@@ -824,6 +825,7 @@ This ensures the bridge system has funds to cover Bitcoin network fees for both 
 Currently, accumulated fees remain in the `PegoutManager` contract and can only be withdrawn by the contract owner.
 
 **Future implementation:** Fees will be distributed to operators and watchtowers as compensation for their services in running the bridge, including:
+
 - Operating committee members who sign transactions
 - Watchtowers who monitor for disputes
 - Operators who advance funds in timeout scenarios
@@ -831,6 +833,7 @@ Currently, accumulated fees remain in the `PegoutManager` contract and can only 
 ### Fee Constants
 
 Fee amounts are defined in `src/libraries/Constants.sol`:
+
 - `P2TR_FEE = 335` satoshis
 - `SPEED_UP_AMOUNT = 540` satoshis
 
@@ -841,11 +844,13 @@ Fee amounts are defined in `src/libraries/Constants.sol`:
 Using the 0.001 BTC (100,000 satoshis) stream denomination:
 
 **Pegin:**
+
 - User sends: **100,000 sats** in BTC
 - Pegin BTC tx fees deducted: **875 sats** (335 P2TR + 540 speed-up)
 - User receives: **99,125 sats worth of RBTC**
 
 **Pegout:**
+
 - User sends: **100,000 sats worth of RBTC** (full denomination required)
 - RBTC burned: **99,125 sats worth** (only what was minted)
 - Fees kept in contract: **875 sats worth of RBTC**
@@ -854,6 +859,7 @@ Using the 0.001 BTC (100,000 satoshis) stream denomination:
 - User receives: **~98,250 sats in BTC** (99,125 - 875)
 
 **Total User Cost:**
+
 - Lost to pegin fees: **875 sats** (paid in BTC during pegin)
 - Lost to pegout RBTC fees: **875 sats** (paid in RBTC, kept by contract)
 - Lost to pegout BTC network fees: **~875 sats** (deducted from the 99,125 sat UTXO)

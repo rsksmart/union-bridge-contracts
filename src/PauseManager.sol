@@ -24,6 +24,9 @@ contract PauseManager is IPauseManager, BaseProxy {
     /// @notice The RbtcBridge contract
     IPausable public rbtcBridge;
 
+    /// @notice The ChallengeManager contract
+    IPausable public challengeManager;
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
@@ -33,6 +36,7 @@ contract PauseManager is IPauseManager, BaseProxy {
     /// @param _initialOwner The initial owner of the contract who can pause/unpause
     /// @param _peginManager The address of the PeginManager contract
     /// @param _pegoutManager The address of the PegoutManager contract
+    /// @param _challengeManager The address of the ChallengeManager contract
     /// @param _committeeRegistry The address of the CommitteeRegistry contract
     /// @param _memberRegistry The address of the MemberRegistry contract
     /// @param _rbtcBridge The address of the RbtcBridge contract
@@ -40,6 +44,7 @@ contract PauseManager is IPauseManager, BaseProxy {
         address _initialOwner,
         address _peginManager,
         address _pegoutManager,
+        address _challengeManager,
         address _committeeRegistry,
         address _memberRegistry,
         address _rbtcBridge
@@ -59,6 +64,9 @@ contract PauseManager is IPauseManager, BaseProxy {
         if (_rbtcBridge == address(0)) {
             revert ZeroAddress();
         }
+        if (_challengeManager == address(0)) {
+            revert ZeroAddress();
+        }
 
         peginManager = IPausable(_peginManager);
         pegoutManager = IPausable(_pegoutManager);
@@ -66,6 +74,7 @@ contract PauseManager is IPauseManager, BaseProxy {
         memberRegistry = IPausable(_memberRegistry);
         rbtcBridge = IPausable(_rbtcBridge);
 
+        challengeManager = IPausable(_challengeManager);
         __BaseProxy_init(_initialOwner);
     }
 
@@ -77,6 +86,7 @@ contract PauseManager is IPauseManager, BaseProxy {
         committeeRegistry.pause();
         memberRegistry.pause();
         rbtcBridge.pause();
+        challengeManager.pause();
     }
 
     /// @notice Unpauses all pausable contracts
@@ -87,6 +97,7 @@ contract PauseManager is IPauseManager, BaseProxy {
         committeeRegistry.unpause();
         memberRegistry.unpause();
         rbtcBridge.unpause();
+        challengeManager.unpause();
     }
 
     /// @notice Returns true if all contracts are paused, false if all are unpaused
@@ -98,11 +109,13 @@ contract PauseManager is IPauseManager, BaseProxy {
         bool committeeRegistryPaused = committeeRegistry.isPaused();
         bool memberRegistryPaused = memberRegistry.isPaused();
         bool rbtcBridgePaused = rbtcBridge.isPaused();
+        bool challengeManagerPaused = challengeManager.isPaused();
 
         // Check if all contracts have the same pause state
         bool referenceState = peginManagerPaused;
         bool allStatesMatch = pegoutManagerPaused == referenceState && committeeRegistryPaused == referenceState
-            && memberRegistryPaused == referenceState && rbtcBridgePaused == referenceState;
+            && memberRegistryPaused == referenceState && rbtcBridgePaused == referenceState
+            && challengeManagerPaused == referenceState;
 
         if (!allStatesMatch) {
             revert _InconsistentPauseState();

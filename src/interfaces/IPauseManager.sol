@@ -9,6 +9,7 @@ interface IPauseManager {
     /// @param _initialOwner The initial owner of the contract who can pause/unpause
     /// @param _peginManager The address of the PeginManager contract
     /// @param _pegoutManager The address of the PegoutManager contract
+    /// @param _challengeManager The address of the ChallengeManager contract
     /// @param _committeeRegistry The address of the CommitteeRegistry contract
     /// @param _memberRegistry The address of the MemberRegistry contract
     /// @param _rbtcBridge The address of the RbtcBridge contract
@@ -16,6 +17,7 @@ interface IPauseManager {
         address _initialOwner,
         address _peginManager,
         address _pegoutManager,
+        address _challengeManager,
         address _committeeRegistry,
         address _memberRegistry,
         address _rbtcBridge

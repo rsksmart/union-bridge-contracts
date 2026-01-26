@@ -26,10 +26,8 @@ gas_reports_ignore = [
     "BridgeMock",
     "HelperContract",
     "ProofValidatorHarness",
+    "BitcoinManagerHarness",
     "TestUtils",
-    "TestPeginManager",
-    "TestPegoutManager",
-    "TestSignatureManager",
 ]
 
 # Verbosity level usefull for debugging same as -vvv

@@ -25,20 +25,21 @@ import {PegoutManagerSettings} from "src/interfaces/IPegoutManager.sol";
 import {StreamManagerSettings, StreamSettings, StreamDenomination} from "src/interfaces/IStreamManager.sol";
 import {StreamManagerSettingsConfig} from "script/helpers/StreamManagerSettingsConfig.sol";
 import {PegManagerSettingsConfig} from "script/helpers/PegManagerSettingsConfig.sol";
-import {IRbtcBridge} from "src/interfaces/IRbtcBridge.sol";
 import {RbtcBridge} from "src/RbtcBridge.sol";
+import {ChallengeManager} from "src/ChallengeManager.sol";
 
 /// @notice Struct to return deployed contracts and avoid stack too deep error
 struct DeployedContracts {
     CommitteeRegistry committeeRegistry;
     MemberRegistry memberRegistry;
     BitcoinManager bitcoinManager;
-    IRbtcBridge rbtcBridge;
+    RbtcBridge rbtcBridge;
     PeginManager peginManager;
     PegoutManager pegoutManager;
     StreamManager streamManager;
     SignatureManager signatureManager;
     PauseManager pauseManager;
+    ChallengeManager challengeManager;
     address upgradableOwner;
     address pauser;
     address payable bridgeAddress;
@@ -141,10 +142,20 @@ contract DeployImplAndProxy is ScriptUtils {
             revert("PegoutManager bridge is not the bridge address");
         }
 
+        ChallengeManager challengeManager =
+            deployChallengeManager(upgradableOwner, bridgeAddress, committeeRegistry, bitcoinManager, pegoutManager);
+        if (challengeManager.owner() != upgradableOwner) {
+            revert("ChallengeManager owner is not the upgradable owner");
+        }
+        if (payable(address(challengeManager.bridge())) != bridgeAddress) {
+            revert("ChallengeManager bridge is not the bridge address");
+        }
+
         StreamManager streamManager = deployStreamManager(
             upgradableOwner,
             address(peginManager),
             address(pegoutManager),
+            address(challengeManager),
             committeeRegistry,
             bitcoinManager,
             streamManagerSettings,
@@ -159,9 +170,13 @@ contract DeployImplAndProxy is ScriptUtils {
         if (streamManager.pegoutManager() != address(pegoutManager)) {
             revert("StreamManager pegoutManager is not the pegoutManager address");
         }
+        if (streamManager.challengeManager() != address(challengeManager)) {
+            revert("StreamManager challengeManager is not the challengeManager address");
+        }
 
-        SignatureManager signatureManager =
-            deploySignatureManager(upgradableOwner, address(peginManager), address(pegoutManager), committeeRegistry);
+        SignatureManager signatureManager = deploySignatureManager(
+            upgradableOwner, address(peginManager), address(pegoutManager), address(challengeManager), committeeRegistry
+        );
         if (signatureManager.owner() != upgradableOwner) {
             revert("SignatureManager owner is not the upgradable owner");
         }
@@ -171,6 +186,9 @@ contract DeployImplAndProxy is ScriptUtils {
         if (signatureManager.pegoutManager() != address(pegoutManager)) {
             revert("SignatureManager pegoutManager is not the pegoutManager address");
         }
+        if (signatureManager.challengeManager() != address(challengeManager)) {
+            revert("SignatureManager challengeManager is not the challengeManager address");
+        }
         if (address(signatureManager.committeeRegistry()) != address(committeeRegistry)) {
             revert("SignatureManager committeeRegistry is not the committeeRegistry address");
         }
@@ -179,6 +197,7 @@ contract DeployImplAndProxy is ScriptUtils {
             pauser,
             address(peginManager),
             address(pegoutManager),
+            address(challengeManager),
             address(committeeRegistry),
             address(memberRegistry),
             address(rbtcBridge)
@@ -192,6 +211,9 @@ contract DeployImplAndProxy is ScriptUtils {
         if (address(pauseManager.pegoutManager()) != address(pegoutManager)) {
             revert("PauseManager pegoutManager is not the pegoutManager address");
         }
+        if (address(pauseManager.challengeManager()) != address(challengeManager)) {
+            revert("PauseManager challengeManager is not the challengeManager address");
+        }
         if (address(pauseManager.committeeRegistry()) != address(committeeRegistry)) {
             revert("PauseManager committeeRegistry is not the committeeRegistry address");
         }
@@ -204,22 +226,32 @@ contract DeployImplAndProxy is ScriptUtils {
 
         // Set contracts references
         vm.startBroadcast(getDeployerKey());
+        // set contracts references for rbtcBridge
         rbtcBridge.setPeginManager(address(peginManager));
         rbtcBridge.setPegoutManager(address(pegoutManager));
+        // set contracts references for peginManager
         peginManager.setStreamManager(streamManager);
         peginManager.setSignatureManager(signatureManager);
+        // set contracts references for pegoutManager
         pegoutManager.setStreamManager(streamManager);
         pegoutManager.setSignatureManager(signatureManager);
+        // set contracts references for challengeManager
+        challengeManager.setStreamManager(streamManager);
+        // set contracts references for bitcoinManager
         bitcoinManager.setPeginManager(peginManager);
+        // set contracts references for committeeRegistry
         committeeRegistry.setStreamManager(streamManager);
         committeeRegistry.setPeginManager(peginManager);
         committeeRegistry.setPegoutManager(pegoutManager);
+        committeeRegistry.setChallengeManager(address(challengeManager));
+        // set contracts references for memberRegistry
         memberRegistry.setStreamManager(streamManager);
         memberRegistry.setCommitteeRegistry(address(committeeRegistry));
         memberRegistry.setBridge(IBridge(bridgeAddress));
         // Set PauseManager as the pauser for all pausable contracts
         peginManager.setPauser(address(pauseManager));
         pegoutManager.setPauser(address(pauseManager));
+        challengeManager.setPauser(address(pauseManager));
         committeeRegistry.setPauser(address(pauseManager));
         memberRegistry.setPauser(address(pauseManager));
         rbtcBridge.setPauser(address(pauseManager));
@@ -263,7 +295,8 @@ contract DeployImplAndProxy is ScriptUtils {
             pauseManager: pauseManager,
             upgradableOwner: upgradableOwner,
             pauser: pauser,
-            bridgeAddress: bridgeAddress
+            bridgeAddress: bridgeAddress,
+            challengeManager: challengeManager
         });
     }
 
@@ -314,7 +347,7 @@ contract DeployImplAndProxy is ScriptUtils {
         address payable _bridgeAddress,
         CommitteeRegistry _committeeRegistry,
         BitcoinManager _bitcoinManager,
-        IRbtcBridge _rbtcBridge
+        RbtcBridge _rbtcBridge
     ) public returns (PeginManager) {
         string memory contractName = "PeginManager.sol";
         if (vm.isContext(VmSafe.ForgeContext.TestGroup)) {
@@ -336,7 +369,7 @@ contract DeployImplAndProxy is ScriptUtils {
         CommitteeRegistry _committeeRegistry,
         BitcoinManager _bitcoinManager,
         PegoutManagerSettings memory _settings,
-        IRbtcBridge _rbtcBridge
+        RbtcBridge _rbtcBridge
     ) public returns (PegoutManager) {
         string memory contractName = "PegoutManager.sol";
         if (vm.isContext(VmSafe.ForgeContext.TestGroup)) {
@@ -352,10 +385,30 @@ contract DeployImplAndProxy is ScriptUtils {
         return PegoutManager(proxyAdddress);
     }
 
+    function deployChallengeManager(
+        address _upgradableOwner,
+        address payable _bridgeAddress,
+        CommitteeRegistry _committeeRegistry,
+        BitcoinManager _bitcoinManager,
+        PegoutManager _pegoutManager
+    ) public returns (ChallengeManager) {
+        string memory contractName = "ChallengeManager.sol";
+
+        (, address proxyAdddress) = deployContractAndUUPSProxy(
+            contractName,
+            abi.encodeCall(
+                ChallengeManager.initialize,
+                (_upgradableOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager, _pegoutManager)
+            )
+        );
+        return ChallengeManager(proxyAdddress);
+    }
+
     function deployStreamManager(
         address _upgradableOwner,
         address _peginManager,
         address _pegoutManager,
+        address _challengeManager,
         ICommitteeRegistry _committeeRegistry,
         IBitcoinManager _bitcoinManager,
         StreamManagerSettings memory _settings,
@@ -379,6 +432,7 @@ contract DeployImplAndProxy is ScriptUtils {
                     _upgradableOwner,
                     _peginManager,
                     _pegoutManager,
+                    _challengeManager,
                     _committeeRegistry,
                     _bitcoinManager,
                     _settings,
@@ -393,12 +447,14 @@ contract DeployImplAndProxy is ScriptUtils {
         address _upgradableOwner,
         address _peginManager,
         address _pegoutManager,
+        address _challengeManager,
         CommitteeRegistry _committeeRegistry
     ) public returns (SignatureManager) {
         (, address proxyAdddress) = deployContractAndUUPSProxy(
             "SignatureManager.sol",
             abi.encodeCall(
-                SignatureManager.initialize, (_upgradableOwner, _peginManager, _pegoutManager, _committeeRegistry)
+                SignatureManager.initialize,
+                (_upgradableOwner, _peginManager, _pegoutManager, _challengeManager, _committeeRegistry)
             )
         );
         return SignatureManager(proxyAdddress);
@@ -408,6 +464,7 @@ contract DeployImplAndProxy is ScriptUtils {
         address _upgradableOwner,
         address _peginManager,
         address _pegoutManager,
+        address _challengeManager,
         address _committeeRegistry,
         address _memberRegistry,
         address _rbtcBridge
@@ -416,7 +473,15 @@ contract DeployImplAndProxy is ScriptUtils {
             "PauseManager.sol",
             abi.encodeCall(
                 PauseManager.initialize,
-                (_upgradableOwner, _peginManager, _pegoutManager, _committeeRegistry, _memberRegistry, _rbtcBridge)
+                (
+                    _upgradableOwner,
+                    _peginManager,
+                    _pegoutManager,
+                    _challengeManager,
+                    _committeeRegistry,
+                    _memberRegistry,
+                    _rbtcBridge
+                )
             )
         );
         return PauseManager(proxyAdddress);

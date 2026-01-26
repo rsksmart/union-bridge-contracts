@@ -11,6 +11,9 @@ interface IAccessControl {
     /// @notice Thrown when the Pegout Manager address is set to zero
     error PegoutManagerAddressZero();
 
+    /// @notice Thrown when the Challenge Manager address is set to zero
+    error ChallengeManagerAddressZero();
+
     /// @notice Thrown when an account is not authorized to perform an operation
     /// @param sender The address of the unauthorized account
     error UnauthorizedAccount(address sender);

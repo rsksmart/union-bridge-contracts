@@ -36,13 +36,14 @@ contract SignatureManager is ISignatureManager, AccessControl {
         address _initialOwner,
         address _peginManager,
         address _pegoutManager,
+        address _challengeManager,
         ICommitteeRegistry _committeeRegistry
     ) public initializer {
         if (address(_committeeRegistry) == address(0)) {
             revert CommitteeRegistryAddressZero();
         }
         committeeRegistry = _committeeRegistry;
-        __AccessControl_init(_initialOwner, _peginManager, _pegoutManager);
+        __AccessControl_init(_initialOwner, _peginManager, _pegoutManager, _challengeManager);
     }
 
     function _isMemberInCommittee(uint128 _committeeId, address _memberAddress) internal view returns (bool) {

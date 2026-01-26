@@ -30,6 +30,7 @@ import {Stream, SlotState} from "src/interfaces/IStreamManager.sol";
 import {CommitteeRegistryHarness} from "./CommitteeRegistryHarness.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {RbtcBridge} from "src/RbtcBridge.sol";
+import {ChallengeManager} from "src/ChallengeManager.sol";
 
 abstract contract HelperContract is Test, TestUtils {
     bytes32 internal constant BTC_REIMBURSEMENT_PUBKEY =
@@ -72,6 +73,7 @@ abstract contract HelperContract is Test, TestUtils {
     PeginManagerHarness internal peginManager;
     PegoutManagerHarness internal pegoutManager;
     PauseManager internal pauseManager;
+    ChallengeManager internal challengeManager;
 
     // Arrange
     uint64 internal constant VALUE = 1_000_000; // 0.01 BTC
@@ -91,10 +93,10 @@ abstract contract HelperContract is Test, TestUtils {
         peginManager = PeginManagerHarness(address(deployScript.peginManager()));
         pegoutManager = PegoutManagerHarness(address(deployScript.pegoutManager()));
         pauseManager = PauseManager(deployScript.pauseManager());
+        signatureManager = SignatureManager(deployScript.signatureManager());
+        challengeManager = ChallengeManager(deployScript.challengeManager());
         // Set up bridge mock at bridge precompiled address
         bridgeMock = BridgeMock(deployScript.bridgeAddress());
-        signatureManager = SignatureManager(deployScript.signatureManager());
-
         globalUserAddress = address(this);
     }
 
@@ -975,7 +977,7 @@ abstract contract HelperContract is Test, TestUtils {
         setup.inputRevealedSPV = createBtcTxSPVProof(createRevealTx(challengeTxid, committeePubKey));
 
         vm.prank(operatorAddress);
-        pegoutManager.registerChallenge(setup.acceptPeginTxid, setup.challengeSPV);
+        challengeManager.registerChallenge(setup.acceptPeginTxid, setup.challengeSPV);
     }
 
     function setup_reimbursementKickoff()
@@ -1026,9 +1028,7 @@ abstract contract HelperContract is Test, TestUtils {
             operatorDisputePubKey: getMemberDisputePubKey(operatorAddress),
             pegoutId: setup.pegoutId,
             advanceFundsBlockNumber: 0,
-            reimbursementKickoffTxid: bytes32(0),
-            challengeTxid: bytes32(0),
-            revealTxid: bytes32(0)
+            reimbursementKickoffTxid: bytes32(0)
         });
 
         StreamPosition memory expectedStreamPosition = StreamPosition({
@@ -1191,6 +1191,16 @@ abstract contract HelperContract is Test, TestUtils {
         bytes32 operatorXOnlyPubKey = memberRegistry.getMemberPublicKeys(_memberAddress).covenantPubKey;
         disputeKey = BtcHelper.pubKeyXonlyToCompact(operatorXOnlyPubKey);
         return disputeKey;
+    }
+
+    /// @notice Gets the committee member address by index
+    /// @param committeeId The committee ID
+    /// @param index The index of the member
+    /// @return memberAddress The address of the member
+    function getCommitteeMemberAddressByIndex(uint128 committeeId, uint256 index) internal view returns (address) {
+        Committee memory committee = registry.getCommittee(committeeId);
+        require(index < committee.members.length, "Index out of bounds");
+        return committee.members[index].memberAddress;
     }
 
     // ========================== Gas Calculation Helper ==========================

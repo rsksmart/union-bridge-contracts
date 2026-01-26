@@ -318,6 +318,11 @@ interface ICommitteeRegistry {
     /// @param _pegoutManager The address of the Pegout Manager contract
     function setPegoutManager(IPegoutManager _pegoutManager) external;
 
+    /// @notice Sets the Challenge Manager contract address
+    /// @dev Only callable by the contract owner
+    /// @param _challengeManager The address of the Challenge Manager contract
+    function setChallengeManager(address _challengeManager) external;
+
     /// @notice Sets the Stream Manager contract address
     /// @dev Only callable by the contract owner
     /// @param _streamManager The address of the Stream Manager contract
@@ -413,6 +418,10 @@ interface ICommitteeRegistry {
     /// @notice Event emitted when pegout manager address is updated
     /// @param pegoutManager The new pegout manager address
     event PegoutManagerUpdated(address pegoutManager);
+
+    /// @notice Event emitted when challenge manager address is updated
+    /// @param challengeManager The new challenge manager address
+    event ChallengeManagerUpdated(address challengeManager);
 
     /// @notice Event emitted when minimum watchtowers requirement is updated
     /// @param minWatchtowers The new minimum watchtowers requirement

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {BaseProxy} from "./BaseProxy.sol";
 import {
@@ -27,7 +26,7 @@ import {Constants} from "./libraries/Constants.sol";
 /// @notice Manages Bitcoin addresses and scripts for the union bridge
 /// @dev Provides functionality for creating and validating Bitcoin transactions, addresses, and scripts
 /// @dev Handles peg-in requests, peg-in acceptance, speed-up transactions, and peg-out operations
-contract BitcoinManager is IBitcoinManager, Initializable, BaseProxy {
+contract BitcoinManager is IBitcoinManager, BaseProxy {
     /// @notice The Bitcoin network this contract operates on (mainnet, testnet, or regtest)
     /// @dev Determines the address format and network-specific parameters
     BtcNetwork public network;

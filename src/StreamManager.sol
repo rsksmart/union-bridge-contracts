@@ -57,13 +57,14 @@ contract StreamManager is IStreamManager, AccessControl {
         address _initialOwner,
         address _peginManager,
         address _pegoutManager,
+        address _challengeManager,
         ICommitteeRegistry _committeeRegistry,
         IBitcoinManager _bitcoinManager,
         StreamManagerSettings memory _settings,
         StreamSettings[] memory _streamSettings
     ) public virtual initializer {
         // Initialize the AccessControl contract
-        __AccessControl_init(_initialOwner, address(_peginManager), address(_pegoutManager));
+        __AccessControl_init(_initialOwner, _peginManager, _pegoutManager, _challengeManager);
 
         // Set the committee registry
         _setCommitteeRegistry(_committeeRegistry);
