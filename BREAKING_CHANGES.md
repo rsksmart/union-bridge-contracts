@@ -5,6 +5,8 @@
 - `PegoutManager.registerChallenge` to register a challenge SPV proof.
 - `PegoutManager.registerInputRevealed` to register an input revealed SPV proof.
 - `CommitteRegistry.getOperatorDisputeKeys` was replaced by `getCommitteeDisputeKeys` as we use all memebers of the committee for enablers and not just operators
+- PegoutManager was splitted as it reached 24 kb size, `Pegout.registerChallenge` and `registerInputRevealed` were moved to ChallengeManager.
+- `AccessControl` was moved to it's own contract similar to an Autorization service, the new contract name is `AccessManager` and inherits from `PausaManager`.
 
 ## [v0.3.0-alpha]
 
