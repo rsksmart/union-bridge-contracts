@@ -176,7 +176,12 @@ contract DeployImplAndProxy is ScriptUtils {
         }
 
         PauseManager pauseManager = deployPauseManager(
-            pauser, address(peginManager), address(pegoutManager), address(committeeRegistry), address(memberRegistry)
+            pauser,
+            address(peginManager),
+            address(pegoutManager),
+            address(committeeRegistry),
+            address(memberRegistry),
+            address(rbtcBridge)
         );
         if (pauseManager.owner() != pauser) {
             revert("PauseManager owner is not the pauser owner");
@@ -192,6 +197,9 @@ contract DeployImplAndProxy is ScriptUtils {
         }
         if (address(pauseManager.memberRegistry()) != address(memberRegistry)) {
             revert("PauseManager memberRegistry is not the memberRegistry address");
+        }
+        if (address(pauseManager.rbtcBridge()) != address(rbtcBridge)) {
+            revert("PauseManager rbtcBridge is not the rbtcBridge address");
         }
 
         // Set contracts references
@@ -214,6 +222,7 @@ contract DeployImplAndProxy is ScriptUtils {
         pegoutManager.setPauser(address(pauseManager));
         committeeRegistry.setPauser(address(pauseManager));
         memberRegistry.setPauser(address(pauseManager));
+        rbtcBridge.setPauser(address(pauseManager));
         // Set whitelister for CommitteeRegistry contract
         committeeRegistry.setWhitelister(whitelister);
         vm.stopBroadcast();
@@ -400,13 +409,14 @@ contract DeployImplAndProxy is ScriptUtils {
         address _peginManager,
         address _pegoutManager,
         address _committeeRegistry,
-        address _memberRegistry
+        address _memberRegistry,
+        address _rbtcBridge
     ) public returns (PauseManager) {
         (, address proxyAdddress) = deployContractAndUUPSProxy(
             "PauseManager.sol",
             abi.encodeCall(
                 PauseManager.initialize,
-                (_upgradableOwner, _peginManager, _pegoutManager, _committeeRegistry, _memberRegistry)
+                (_upgradableOwner, _peginManager, _pegoutManager, _committeeRegistry, _memberRegistry, _rbtcBridge)
             )
         );
         return PauseManager(proxyAdddress);

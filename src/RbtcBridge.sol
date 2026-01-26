@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {BaseProxy} from "./BaseProxy.sol";
+import {Pausable} from "./Pausable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {IRbtcBridge} from "./interfaces/IRbtcBridge.sol";
 import {IBridge} from "./interfaces/IBridge.sol";
@@ -13,7 +14,7 @@ import {IBridge} from "./interfaces/IBridge.sol";
 ///      for minting and burning RBTC. Since PegManager was split into PeginManager and PegoutManager,
 ///      this bridge serves as the single authorized intermediary.
 /// @dev Implements RSKIP-502: https://github.com/rsksmart/RSKIPs/blob/master/IPs/RSKIP502.md
-contract RbtcBridge is IRbtcBridge, BaseProxy, ReentrancyGuardUpgradeable {
+contract RbtcBridge is IRbtcBridge, BaseProxy, ReentrancyGuardUpgradeable, Pausable {
     /// @notice The RSK PowPeg Bridge contract
     IBridge public bridge;
 
@@ -41,6 +42,7 @@ contract RbtcBridge is IRbtcBridge, BaseProxy, ReentrancyGuardUpgradeable {
 
         __BaseProxy_init(_initialOwner);
         __ReentrancyGuard_init();
+        __Pauser_init();
     }
 
     /// @notice Allows the contract to receive RBTC from the PowPeg bridge
@@ -67,12 +69,19 @@ contract RbtcBridge is IRbtcBridge, BaseProxy, ReentrancyGuardUpgradeable {
         pegoutManager = _pegoutManager;
     }
 
+    /// @notice Sets a new pauser address
+    /// @param _newPauser The new pauser address
+    /// @dev Only callable by the contract owner
+    function setPauser(address _newPauser) public override onlyOwner {
+        super.setPauser(_newPauser);
+    }
+
     /// @notice Mints RBTC from the PowPeg bridge and sends it to the specified address
     /// @param _to The address to receive the minted RBTC
     /// @param _amount The amount of RBTC to mint in wei
-    /// @dev Only callable by peginManager
+    /// @dev Only callable by peginManager when contract is not paused
     /// @dev Follows checks-effects-interactions pattern
-    function mintRbtc(address payable _to, uint256 _amount) external nonReentrant {
+    function mintRbtc(address payable _to, uint256 _amount) external nonReentrant whenNotPaused {
         //TODO: update to use AccessControl
         if (msg.sender != peginManager) {
             revert UnauthorizedCaller(msg.sender);
@@ -84,9 +93,9 @@ contract RbtcBridge is IRbtcBridge, BaseProxy, ReentrancyGuardUpgradeable {
     }
 
     /// @notice Burns RBTC back to the PowPeg bridge
-    /// @dev Only callable by pegoutManager
+    /// @dev Only callable by pegoutManager when contract is not paused
     /// @dev The pegoutManager must send the RBTC amount via msg.value
-    function burnRbtc() external payable nonReentrant {
+    function burnRbtc() external payable nonReentrant whenNotPaused {
         //TODO: update to use AccessControl
         if (msg.sender != pegoutManager) {
             revert UnauthorizedCaller(msg.sender);

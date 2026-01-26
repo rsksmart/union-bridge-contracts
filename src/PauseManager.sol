@@ -21,6 +21,9 @@ contract PauseManager is IPauseManager, BaseProxy {
     /// @notice The MemberRegistry contract
     IPausable public memberRegistry;
 
+    /// @notice The RbtcBridge contract
+    IPausable public rbtcBridge;
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
@@ -32,12 +35,14 @@ contract PauseManager is IPauseManager, BaseProxy {
     /// @param _pegoutManager The address of the PegoutManager contract
     /// @param _committeeRegistry The address of the CommitteeRegistry contract
     /// @param _memberRegistry The address of the MemberRegistry contract
+    /// @param _rbtcBridge The address of the RbtcBridge contract
     function initialize(
         address _initialOwner,
         address _peginManager,
         address _pegoutManager,
         address _committeeRegistry,
-        address _memberRegistry
+        address _memberRegistry,
+        address _rbtcBridge
     ) external initializer {
         if (_peginManager == address(0)) {
             revert ZeroAddress();
@@ -51,11 +56,15 @@ contract PauseManager is IPauseManager, BaseProxy {
         if (_memberRegistry == address(0)) {
             revert ZeroAddress();
         }
+        if (_rbtcBridge == address(0)) {
+            revert ZeroAddress();
+        }
 
         peginManager = IPausable(_peginManager);
         pegoutManager = IPausable(_pegoutManager);
         committeeRegistry = IPausable(_committeeRegistry);
         memberRegistry = IPausable(_memberRegistry);
+        rbtcBridge = IPausable(_rbtcBridge);
 
         __BaseProxy_init(_initialOwner);
     }
@@ -67,6 +76,7 @@ contract PauseManager is IPauseManager, BaseProxy {
         pegoutManager.pause();
         committeeRegistry.pause();
         memberRegistry.pause();
+        rbtcBridge.pause();
     }
 
     /// @notice Unpauses all pausable contracts
@@ -76,19 +86,28 @@ contract PauseManager is IPauseManager, BaseProxy {
         pegoutManager.unpause();
         committeeRegistry.unpause();
         memberRegistry.unpause();
+        rbtcBridge.unpause();
     }
 
-    /// @notice Returns true if any of the contracts is paused
-    /// @dev Returns true if at least one contract is paused
+    /// @notice Returns true if all contracts are paused, false if all are unpaused
+    /// @dev Reverts if contracts have inconsistent pause states
+    /// @return True if all contracts are paused, false if all are unpaused
     function areContractsPaused() external view returns (bool) {
-        bool pimState = peginManager.isPaused();
-        bool pomState = pegoutManager.isPaused();
-        bool crState = committeeRegistry.isPaused();
-        bool mrState = memberRegistry.isPaused();
+        bool peginManagerPaused = peginManager.isPaused();
+        bool pegoutManagerPaused = pegoutManager.isPaused();
+        bool committeeRegistryPaused = committeeRegistry.isPaused();
+        bool memberRegistryPaused = memberRegistry.isPaused();
+        bool rbtcBridgePaused = rbtcBridge.isPaused();
 
-        if (pimState != pomState || pimState != crState || pimState != mrState) {
+        // Check if all contracts have the same pause state
+        bool referenceState = peginManagerPaused;
+        bool allStatesMatch = pegoutManagerPaused == referenceState && committeeRegistryPaused == referenceState
+            && memberRegistryPaused == referenceState && rbtcBridgePaused == referenceState;
+
+        if (!allStatesMatch) {
             revert _InconsistentPauseState();
         }
-        return pimState;
+
+        return referenceState;
     }
 }

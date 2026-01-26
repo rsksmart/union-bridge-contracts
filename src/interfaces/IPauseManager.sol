@@ -11,12 +11,14 @@ interface IPauseManager {
     /// @param _pegoutManager The address of the PegoutManager contract
     /// @param _committeeRegistry The address of the CommitteeRegistry contract
     /// @param _memberRegistry The address of the MemberRegistry contract
+    /// @param _rbtcBridge The address of the RbtcBridge contract
     function initialize(
         address _initialOwner,
         address _peginManager,
         address _pegoutManager,
         address _committeeRegistry,
-        address _memberRegistry
+        address _memberRegistry,
+        address _rbtcBridge
     ) external;
 
     /// @notice Pauses all pausable contracts
@@ -27,8 +29,9 @@ interface IPauseManager {
     /// @dev Only callable by the contract owner
     function unpause() external;
 
-    /// @notice Returns true if any of the contracts is paused
-    /// @dev Returns true if at least one contract is paused
+    /// @notice Returns true if all contracts are paused, false if all are unpaused
+    /// @dev Reverts if contracts have inconsistent pause states
+    /// @return True if all contracts are paused, false if all are unpaused
     function areContractsPaused() external view returns (bool);
 
     /// @notice Emitted when a pausable contract address is updated

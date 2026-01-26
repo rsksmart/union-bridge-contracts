@@ -2,8 +2,11 @@
 pragma solidity ^0.8.20;
 
 import {HelperContract} from "test/helpers/HelperContract.sol";
+import {Pausable} from "src/Pausable.sol";
 import {IRbtcBridge} from "src/interfaces/IRbtcBridge.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 
 // Helper contract that rejects RBTC (no receive/fallback function)
 contract RejectRBTC {
@@ -56,6 +59,20 @@ contract RbtcBridgeTest is HelperContract {
         assertEq(rbtcBridge.peginManager(), newPeginManager);
     }
 
+    function test_setPeginManager_Success_PausedContract() external {
+        // Arrange
+        pauseContracts();
+        address newPeginManager = address(0x5678);
+        address owner = rbtcBridge.owner();
+
+        // Act
+        vm.prank(owner);
+        rbtcBridge.setPeginManager(newPeginManager);
+
+        // Assert
+        assertEq(rbtcBridge.peginManager(), newPeginManager);
+    }
+
     function test_setPeginManager_Revert_UnauthorizedAccount_CallFromNotOwner() external {
         // Arrange
         address notOwner = address(0x123);
@@ -96,6 +113,20 @@ contract RbtcBridgeTest is HelperContract {
         assertEq(rbtcBridge.pegoutManager(), newPegoutManager);
     }
 
+    function test_setPegoutManager_Success_PausedContract() external {
+        // Arrange
+        pauseContracts();
+        address newPegoutManager = address(0x9ABC);
+        address owner = rbtcBridge.owner();
+
+        // Act
+        vm.prank(owner);
+        rbtcBridge.setPegoutManager(newPegoutManager);
+
+        // Assert
+        assertEq(rbtcBridge.pegoutManager(), newPegoutManager);
+    }
+
     function test_setPegoutManager_Revert_UnauthorizedAccount_CallFromNotOwner() external {
         // Arrange
         address notOwner = address(0x123);
@@ -119,6 +150,70 @@ contract RbtcBridgeTest is HelperContract {
         // Act
         vm.prank(owner);
         rbtcBridge.setPegoutManager(address(0));
+    }
+
+    // ============ setPauser Tests ============
+
+    function test_setPauser_Success_CallFromOwner() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        address newPauser = vm.addr(privKey);
+        address owner = rbtcBridge.owner();
+
+        // Assert
+        vm.expectEmit(address(rbtcBridge));
+        emit Pausable.PauserUpdated(newPauser);
+
+        // Act
+        vm.prank(owner);
+        rbtcBridge.setPauser(newPauser);
+
+        // Assert
+        assertEq(rbtcBridge.pauser(), newPauser);
+    }
+
+    function test_setPauser_Success_PausedContract() external {
+        // Arrange
+        pauseContracts();
+
+        uint256 privKey = uint256(1);
+        address newPauser = vm.addr(privKey);
+        address owner = rbtcBridge.owner();
+
+        // Assert
+        vm.expectEmit(address(rbtcBridge));
+        emit Pausable.PauserUpdated(newPauser);
+
+        // Act
+        vm.prank(owner);
+        rbtcBridge.setPauser(newPauser);
+
+        // Assert
+        assertEq(rbtcBridge.pauser(), newPauser);
+    }
+
+    function test_setPauser_Revert_OwnableUnauthorizedAccount() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        address newPauser = vm.addr(privKey);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+
+        // Act
+        rbtcBridge.setPauser(newPauser);
+    }
+
+    function test_setPauser_Revert_ZeroAddress() external {
+        // Arrange
+        address owner = rbtcBridge.owner();
+
+        // Assert
+        vm.expectRevert(Pausable.ZeroAddress.selector);
+
+        // Act
+        vm.prank(owner);
+        rbtcBridge.setPauser(address(0));
     }
 
     // ============ mintRbtc Tests ============
@@ -190,6 +285,19 @@ contract RbtcBridgeTest is HelperContract {
 
         // Assert
         vm.expectRevert(IRbtcBridge.BridgeUnauthorizedCaller.selector);
+
+        // Act
+        vm.prank(address(peginManager));
+        rbtcBridge.mintRbtc(testRecipient, amount);
+    }
+
+    function test_mintRbtc_Revert_EnforcedPause_PausedContract() external {
+        // Arrange
+        pauseContracts();
+        uint256 amount = 1 ether;
+
+        // Assert
+        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
 
         // Act
         vm.prank(address(peginManager));
@@ -354,6 +462,25 @@ contract RbtcBridgeTest is HelperContract {
         rbtcBridge.burnRbtc{value: amount}();
     }
 
+    function test_burnRbtc_Revert_EnforcedPause_PausedContract() external {
+        // Arrange
+        pauseContracts();
+        uint256 amount = 1 ether;
+
+        // Set up mock (even though this test reverts early)
+        bridgeMock.setWeisTransferredToUnionBridge(amount);
+
+        // Fund pegoutManager to send RBTC
+        vm.deal(address(pegoutManager), amount);
+
+        // Assert
+        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
+
+        // Act
+        vm.prank(address(pegoutManager));
+        rbtcBridge.burnRbtc{value: amount}();
+    }
+
     // ============ receive() Tests ============
 
     function test_receive_Success_AcceptsRBTC() external {
@@ -381,6 +508,18 @@ contract RbtcBridgeTest is HelperContract {
 
         // Assert
         assertEq(lockingCap, expectedLockingCap, "Locking cap should match default value");
+    }
+
+    function test_getUnionBridgeLockingCap_Success_PausedContract() external {
+        // Arrange
+        pauseContracts();
+        uint256 expectedLockingCap = 400 ether;
+
+        // Act - view function should work even when paused
+        uint256 lockingCap = rbtcBridge.getUnionBridgeLockingCap();
+
+        // Assert
+        assertEq(lockingCap, expectedLockingCap, "Locking cap should be accessible when paused");
     }
 
     function test_getUnionBridgeLockingCap_Success_ReturnsUpdatedValueAfterTransfers() external {

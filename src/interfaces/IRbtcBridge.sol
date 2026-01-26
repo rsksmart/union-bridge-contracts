@@ -77,13 +77,13 @@ interface IRbtcBridge {
     /// @notice Mints RBTC from the PowPeg bridge and sends it to the specified address
     /// @param _to The address to receive the minted RBTC
     /// @param _amount The amount of RBTC to mint in wei
-    /// @dev Only callable by the peginManager
+    /// @dev Only callable by the peginManager when contract is not paused
     /// @dev Requests RBTC from PowPeg bridge via requestUnionBridgeRbtc
     /// @dev Transfers RBTC to recipient with 100k gas limit
     function mintRbtc(address payable _to, uint256 _amount) external;
 
     /// @notice Burns RBTC back to the PowPeg bridge
-    /// @dev Only callable by the pegoutManager
+    /// @dev Only callable by the pegoutManager when contract is not paused
     /// @dev The pegoutManager must send the RBTC amount via msg.value
     /// @dev Returns RBTC to PowPeg bridge via releaseUnionBridgeRbtc
     function burnRbtc() external payable;
