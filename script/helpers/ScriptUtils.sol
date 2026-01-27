@@ -31,16 +31,6 @@ abstract contract ScriptUtils is Script {
         return vm.rememberKey(getDeployerKey());
     }
 
-    function getPauserAddress() public returns (address) {
-        // Try to get PAUSER_ADDRESS from environment
-        // If not set, default to deployer address
-        try vm.envAddress("PAUSER_ADDRESS") returns (address pauserAddr) {
-            return pauserAddr;
-        } catch {
-            return getDeployerAddress();
-        }
-    }
-
     function getWhitelisterKey() public view returns (uint256) {
         // Try to get WHITELISTER_KEY from environment
         // If not set, default to deployer key

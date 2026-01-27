@@ -10,7 +10,7 @@ import {
     CommitteeMember,
     MemberRegistrationKeys
 } from "src/interfaces/ICommitteeRegistry.sol";
-import {IAccessControl} from "src/interfaces/IAccessControl.sol";
+import {IAccessManager} from "src/interfaces/IAccessManager.sol";
 import {SignatureData, ISignatureManager, OperatorTakeData} from "src/interfaces/ISignatureManager.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {Committee} from "src/interfaces/ICommitteeRegistry.sol";
@@ -438,7 +438,7 @@ contract SignatureManagerTest is Test, HelperContract {
         bytes32 txid = 0x1000000000000000000000000000000000000000000000000000000000000001;
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IAccessControl.UnauthorizedAccount.selector, address(this)));
+        vm.expectRevert(abi.encodeWithSelector(IAccessManager.UnauthorizedToInitSignatures.selector, address(this)));
 
         // Act
         signatureManager.initSignatures(txid, COMMITTEE_ID_STREAM_1_COMMITTEE_1);
@@ -508,7 +508,7 @@ contract SignatureManagerTest is Test, HelperContract {
         bytes32 acceptPeginTxid = ACCEPT_PEGIN_TXID;
 
         // Act
-        vm.prank(address(pegoutManager));
+        vm.prank(address(peginManager));
         signatureManager.initOperatorTakeTxids(acceptPeginTxid, COMMITTEE_ID_STREAM_1_COMMITTEE_1);
 
         // Assert

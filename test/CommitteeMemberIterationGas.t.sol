@@ -261,7 +261,7 @@ contract CommitteeMemberIterationGasTest is Test, HelperContract {
 
         // Act
         uint256 gasStart = gasleft();
-        vm.prank(address(peginManager));
+        vm.prank(address(pegoutManager));
         registry.getOperatorDisputeData(committeeId, signatureData, 1);
         uint256 gasUsed = gasStart - gasleft();
         (uint256 gasPrice, uint256 costInWei) = calculateGasCost(gasUsed);

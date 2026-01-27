@@ -48,31 +48,7 @@ interface IRbtcBridge {
     /// @param errorCode The error code returned by the bridge
     error BridgeBtcUnknownError(int256 errorCode);
 
-    /// @notice Thrown when the bridge address is set to zero during initialization
-    error BridgeAddressZero();
-
-    /// @notice Thrown when the peginManager address is set to zero during initialization
-    error PeginManagerAddressZero();
-
-    /// @notice Thrown when the pegoutManager address is set to zero during initialization
-    error PegoutManagerAddressZero();
-
     // ===================== Functions =====================
-
-    /// @notice Initializes the RbtcBridge contract
-    /// @param _initialOwner The initial owner of the contract
-    /// @param _bridge The RSK PowPeg Bridge contract address
-    function initialize(address _initialOwner, address _bridge) external;
-
-    /// @notice Sets the PeginManager contract address
-    /// @param _peginManager The PeginManager contract address
-    /// @dev Only callable by owner
-    function setPeginManager(address _peginManager) external;
-
-    /// @notice Sets the PegoutManager contract address
-    /// @param _pegoutManager The PegoutManager contract address
-    /// @dev Only callable by owner
-    function setPegoutManager(address _pegoutManager) external;
 
     /// @notice Mints RBTC from the PowPeg bridge and sends it to the specified address
     /// @param _to The address to receive the minted RBTC

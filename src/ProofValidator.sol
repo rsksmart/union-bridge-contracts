@@ -10,18 +10,19 @@ import {
     BTC_TRANSACTION_CONFIRMATION_BLOCK_TOO_OLD_ERROR_CODE,
     BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE
 } from "./interfaces/IBridge.sol";
-import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {Pausable} from "./Pausable.sol";
 
 /// @title Proof Validator
 /// @notice Simple proof validator for proving Bitcoin transactions in RSK
 /// @dev Provides functionality to verify Bitcoin transaction confirmations using the RSK Bridge
 /// @dev Uses the RSK Bridge precompiled contract to validate transaction proofs
-abstract contract ProofValidator is Initializable {
+abstract contract ProofValidator is Pausable {
     /// @notice The RSK Bridge contract used for Bitcoin transaction verification
     /// @dev This contract provides access to Bitcoin transaction confirmation data
     IBridge public bridge;
 
-    // Errors
+    // ===================== Errors =====================
+
     /// @notice Error thrown when the provided Bitcoin block hash doesn't exist
     /// @param blockHash The non-existent block hash that was provided
     error BridgeBtcInexistantBlockHash(bytes32 blockHash);
@@ -53,18 +54,20 @@ abstract contract ProofValidator is Initializable {
     /// @param expected The minimum number of confirmations required
     error NotEnoughConfirmations(int256 actual, uint256 expected);
 
-    /// @notice Error thrown when the bridge address is set to zero
-    error BridgeAddressZero();
+    // ===================== Functions =====================
 
     /// @notice Initializes the ProofValidator contract
     /// @dev Sets up the RSK Bridge address for Bitcoin transaction verification
     /// @dev Can only be called once during contract deployment
     /// @param _bridgeAddress The address of the RSK Bridge contract
-    function __ProofValidator_init(address payable _bridgeAddress) internal initializer {
-        if (_bridgeAddress == address(0)) {
-            revert BridgeAddressZero();
+    /// @param _pauser The address of the pauser
+    function __ProofValidator_init(address payable _bridgeAddress, address _pauser) internal onlyInitializing {
+        // Validate that the bridge address is not zero
+        if (address(_bridgeAddress) == address(0)) {
+            revert InvalidZeroAddress();
         }
         bridge = IBridge(_bridgeAddress);
+        __Pauser_init(_pauser);
     }
 
     /// @notice Verifies that a Bitcoin transaction exists in a block and has enough confirmations

@@ -4,9 +4,10 @@ pragma solidity ^0.8.20;
 import {CommitteeRegistry} from "src/CommitteeRegistry.sol";
 import {Role, CommitteeMember, CommitteeRegistrySettings} from "src/interfaces/ICommitteeRegistry.sol";
 import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
-import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
+import {IStreamManager, StreamDenomination} from "src/interfaces/IStreamManager.sol";
 import {PendingCommitteeStatus, CommunicationData} from "src/interfaces/ICommitteeRegistry.sol";
 import {MemberRegistryHarness} from "./MemberRegistryHarness.sol";
+import {IAccessManager} from "src/interfaces/IAccessManager.sol";
 
 /// @notice Wrapper for testing CommitteeRegistry
 contract CommitteeRegistryHarness is CommitteeRegistry {
@@ -17,10 +18,12 @@ contract CommitteeRegistryHarness is CommitteeRegistry {
 
     function initialize(
         address _initialOwner,
+        IAccessManager _accessManager,
         IMemberRegistry _memberRegistryHarness,
+        IStreamManager _streamManager,
         CommitteeRegistrySettings memory _settings
     ) public override initializer {
-        CommitteeRegistry.initialize(_initialOwner, _memberRegistryHarness, _settings);
+        CommitteeRegistry.initialize(_initialOwner, _accessManager, _memberRegistryHarness, _streamManager, _settings);
 
         memberRegistryHarness = MemberRegistryHarness(address(_memberRegistryHarness));
     }

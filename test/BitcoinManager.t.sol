@@ -11,7 +11,6 @@ import {
     PrevoutData,
     BitcoinSignatureData
 } from "src/interfaces/IBitcoinManager.sol";
-import {IPeginManager} from "src/interfaces/IPeginManager.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {BtcTaproot} from "src/libraries/BtcTaproot.sol";
 import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
@@ -327,30 +326,6 @@ contract BitcoinManagerTest is Test, HelperContract {
 
         // Assert
         assertEq(result, expectedHash, "Encoded data does not match expectedHash value");
-    }
-
-    // ========================== PEG MANAGER SETTER ==========================
-    function test_setPeginManager_EmitsPeginManagerUpdatedEvent() external {
-        // Arrange
-        address newPeginManager = address(0x1234567890123456789012345678901234567890);
-
-        // Assert
-        vm.expectEmit(address(bitcoinManager));
-        emit IBitcoinManager.PeginManagerUpdated(newPeginManager);
-
-        // Act
-        vm.prank(bitcoinManager.owner());
-        bitcoinManager.setPeginManager(IPeginManager(newPeginManager));
-    }
-
-    function test_setPeginManager_Revert_InvalidZeroAddress() external {
-        // Arrange
-        address zeroAddress = address(0);
-        vm.prank(bitcoinManager.owner());
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(IBitcoinManager.InvalidZeroAddress.selector));
-        // Act
-        bitcoinManager.setPeginManager(IPeginManager(zeroAddress));
     }
 
     function test_validatePegoutIdOutput_Success() external view {

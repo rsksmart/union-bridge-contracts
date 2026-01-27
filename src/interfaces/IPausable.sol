@@ -12,4 +12,19 @@ interface IPausable {
      * @dev Returns true if the contract is paused, and false otherwise.
      */
     function isPaused() external view returns (bool);
+
+    // ===================== Events =====================
+
+    /// @notice Event emitted when the pauser is updated
+    /// @param newPauser The new pauser address
+    event PauserUpdated(address newPauser);
+
+    // ===================== Errors =====================
+
+    /// @notice Thrown when an address is zero
+    error InvalidZeroAddress();
+
+    /// @notice Error thrown when an account is not authorized as pauser
+    /// @param account The unauthorized account
+    error UnauthorizedPauser(address account);
 }

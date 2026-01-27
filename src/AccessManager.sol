@@ -1,0 +1,79 @@
+// SPDX-License-Identifier: Unlicense
+pragma solidity ^0.8.20;
+
+import {IAccessManager} from "./interfaces/IAccessManager.sol";
+import {PauseManager} from "./PauseManager.sol";
+
+/// @title AccessManager
+/// @notice Manages access control for the union bridge system
+/// @dev Provides access control with pause manager contracts as the authorized accounts
+/// @dev Inherits from PauseManager to inherit the pause manager functionality
+contract AccessManager is IAccessManager, PauseManager {
+    /// @notice Initializes the AccessManager contract
+    /// @dev Sets up the initial owner
+    /// @dev Can only be called once during contract deployment
+    /// @param _initialOwner The address that will be set as the initial owner
+    function initialize(address _initialOwner) public initializer {
+        __PauseManager_init(_initialOwner);
+    }
+
+    function canModifyPegStatus(address _caller) external view {
+        if (_caller != peginManager && _caller != pegoutManager && _caller != challengeManager) {
+            revert UnauthorizedToModifyPegStatus(_caller);
+        }
+    }
+
+    function canCreateCommittee(address _caller) external view {
+        if (_caller != peginManager) {
+            revert UnauthorizedToCreateCommittee(_caller);
+        }
+    }
+
+    function canReleaseCommittee(address _caller) external view {
+        if (_caller != pegoutManager) {
+            revert UnauthorizedToReleaseCommittee(_caller);
+        }
+    }
+
+    function canSelectTakeOperator(address _caller) external view {
+        if (_caller != pegoutManager) {
+            revert UnauthorizedToSelectTakeOperator(_caller);
+        }
+    }
+
+    function canCreatePacket(address _caller) external view {
+        if (_caller != committeeRegistry) {
+            revert UnauthorizedToCreatePacket(_caller);
+        }
+    }
+
+    function canMintRbtc(address _caller) external view {
+        if (_caller != peginManager) {
+            revert UnauthorizedToMintRbtc(_caller);
+        }
+    }
+
+    function canBurnRbtc(address _caller) external view {
+        if (_caller != pegoutManager) {
+            revert UnauthorizedToBurnRbtc(_caller);
+        }
+    }
+
+    function canInitSignatures(address _caller) external view {
+        if (_caller != peginManager && _caller != pegoutManager) {
+            revert UnauthorizedToInitSignatures(_caller);
+        }
+    }
+
+    function canInitOperatorTakeTxids(address _caller) external view {
+        if (_caller != peginManager) {
+            revert UnauthorizedToInitOperatorTakeTxids(_caller);
+        }
+    }
+
+    function canModifyCandidatesForStream(address _caller) external view {
+        if (_caller != committeeRegistry) {
+            revert UnauthorizedToModifyCandidatesForStream(_caller);
+        }
+    }
+}

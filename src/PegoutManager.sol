@@ -4,8 +4,8 @@ pragma solidity ^0.8.20;
 import {PegManagerBase} from "./PegManagerBase.sol";
 import {IPegoutManager, PegoutManagerSettings, PegoutTempInfo} from "./interfaces/IPegoutManager.sol";
 import {ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
-import {SignatureData, OperatorTakeData} from "./interfaces/ISignatureManager.sol";
-import {Stream, Slot} from "./interfaces/IStreamManager.sol";
+import {ISignatureManager, SignatureData, OperatorTakeData} from "./interfaces/ISignatureManager.sol";
+import {IStreamManager, Stream, Slot} from "./interfaces/IStreamManager.sol";
 import {IBitcoinManager, PrevoutData, BitcoinSignatureData} from "./interfaces/IBitcoinManager.sol";
 import {BtcTxSPVProof, StreamPosition, PegStatus} from "./interfaces/IPegCommonTypes.sol";
 import {BtcHelper} from "./libraries/BtcHelper.sol";
@@ -31,20 +31,40 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
     /// @notice Initializes the PegManager contract
     /// @param _initialOwner The initial owner of the contract
     /// @param _bridgeAddress The address of the pow-peg bridge contract
+    /// @param _accessManager The access manager contract address
     /// @param _committeeRegistry The committee registry contract address
     /// @param _bitcoinManager The Bitcoin manager contract address
-    /// @param _settings The peg manager settings including timeouts
     /// @param _rbtcBridge The RbtcBridge contract for burning RBTC
+    /// @param _streamManager The stream manager contract address
+    /// @param _signatureManager The signature manager contract address
+    /// @param _settings The peg manager settings including timeouts
     /// @dev This function can only be called once during contract deployment
     function initialize(
         address _initialOwner,
         address payable _bridgeAddress,
+        address _accessManager,
         ICommitteeRegistry _committeeRegistry,
         IBitcoinManager _bitcoinManager,
-        PegoutManagerSettings memory _settings,
-        IRbtcBridge _rbtcBridge
+        IRbtcBridge _rbtcBridge,
+        IStreamManager _streamManager,
+        ISignatureManager _signatureManager,
+        PegoutManagerSettings memory _settings
     ) public virtual initializer {
-        __PegManagerBase_init(_initialOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager, _rbtcBridge);
+        __PegManagerBase_init(
+            _initialOwner,
+            _bridgeAddress,
+            _accessManager,
+            _committeeRegistry,
+            _bitcoinManager,
+            _rbtcBridge,
+            _streamManager,
+            _signatureManager
+        );
+
+        // Validate that the settings are not zero
+        if (_settings.userTakeTimeout == 0 || _settings.operatorTakeTimeout == 0) {
+            revert InvalidTimeout(0);
+        }
 
         userTakeTimeout = _settings.userTakeTimeout;
         operatorTakeTimeout = _settings.operatorTakeTimeout;

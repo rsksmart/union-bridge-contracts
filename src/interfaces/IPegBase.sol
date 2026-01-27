@@ -3,10 +3,11 @@ pragma solidity ^0.8.20;
 
 import {IStreamManager} from "./IStreamManager.sol";
 import {PegStatus} from "./IPegCommonTypes.sol";
+import {IPausable} from "./IPausable.sol";
 
 /// @title IPegBase
 /// @notice Interface for the base contract for PeginManager, PegoutManager and ChallengeManager
-interface IPegBase {
+interface IPegBase is IPausable {
     /// @notice Emitted when the stream manager is updated
     /// @param _streamManager The new stream manager address
     event StreamManagerUpdated(IStreamManager _streamManager);
@@ -20,19 +21,4 @@ interface IPegBase {
     /// @notice Thrown when the peg status is not valid for the current operation
     /// @param actual The actual peg status that was found
     error InvalidPegStatus(PegStatus actual);
-
-    /// @notice Error thrown when bitcoin manager address is zero
-    error BitcoinManagerAddressZero();
-
-    /// @notice Error thrown when committee registry address is zero
-    error CommitteeRegistryAddressZero();
-
-    /// @notice Error thrown when stream manager address is zero
-    error StreamManagerAddressZero();
-
-    // ===================== External Functions =====================
-
-    /// @notice Sets the stream manager contract address
-    /// @param _streamManager The stream manager contract address
-    function setStreamManager(IStreamManager _streamManager) external;
 }

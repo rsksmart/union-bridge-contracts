@@ -2,14 +2,12 @@
 pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
-import {HelperContract, StreamManagerHarness} from "test/helpers/HelperContract.sol";
+import {HelperContract} from "test/helpers/HelperContract.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
-import {Pausable} from "src/Pausable.sol";
 import {BtcTransaction, BtcTxSPVProof, StreamPosition, PegStatus} from "src/interfaces/IPegCommonTypes.sol";
 import {BitcoinSignatureData} from "src/interfaces/IBitcoinManager.sol";
-import {IPegoutManager, PegoutTempInfo} from "src/interfaces/IPegoutManager.sol";
+import {IPegoutManager, PegoutManagerSettings, PegoutTempInfo} from "src/interfaces/IPegoutManager.sol";
 import {IPeginManager} from "src/interfaces/IPeginManager.sol";
-import {IPegManagerBase} from "src/interfaces/IPegManagerBase.sol";
 import {Slot, SlotState, Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {ISignatureManager} from "src/interfaces/ISignatureManager.sol";
 import {ProofValidator} from "src/ProofValidator.sol";
@@ -21,6 +19,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
 import {IRbtcBridge} from "src/interfaces/IRbtcBridge.sol";
 import {IPegBase} from "src/interfaces/IPegBase.sol";
+import {PegManagerSettingsConfig} from "script/helpers/PegManagerSettingsConfig.sol";
 
 contract PegoutManagerTest is Test, HelperContract {
     // Arrange
@@ -31,13 +30,36 @@ contract PegoutManagerTest is Test, HelperContract {
 
     function setUp() external {
         runTestDeployScript();
-        (, Committee memory expectedCommittee, uint128 committeeId) = setup_completeCommitteeAndNewMembers();
+        (, Committee memory expectedCommittee,) = setup_completeCommitteeAndNewMembers();
 
         setupExpectedCommittee.aggregatedKey = expectedCommittee.aggregatedKey;
         setupExpectedCommittee.leaderAddress = expectedCommittee.leaderAddress;
         for (uint64 i = 0; i < expectedCommittee.members.length; i++) {
             setupExpectedCommittee.members.push(expectedCommittee.members[i]);
         }
+    }
+
+    // ============ Initialization Tests ============
+
+    function test_initialize_Success() external {
+        // Arrenge
+        PegoutManagerSettings memory settings = PegManagerSettingsConfig.getSettings(block.chainid, true);
+
+        // Assert - verify initialization state
+        assertEq(pegoutManager.owner(), getDeployerAddress(), "Owner should be set"); // Owner should be set
+        assertEq(pegoutManager.pauser(), address(accessManager), "Pauser should be set to accessManager"); // Pauser should be set to accessManager
+        assertEq(address(pegoutManager.committeeRegistry()), address(registry), "Committee registry should be set");
+        assertEq(address(pegoutManager.bitcoinManager()), address(bitcoinManager), "Bitcoin manager should be set");
+        assertEq(address(pegoutManager.rbtcBridge()), address(rbtcBridge), "Rbtc bridge should be set");
+        assertEq(address(pegoutManager.streamManager()), address(streamManager), "Stream manager should be set");
+        assertEq(
+            address(pegoutManager.signatureManager()), address(signatureManager), "Signature manager should be set"
+        );
+        assertEq(address(pegoutManager.bridge()), address(bridgeMock), "Bridge should be set");
+        assertEq(pegoutManager.userTakeTimeout(), settings.userTakeTimeout, "User take timeout should be set");
+        assertEq(
+            pegoutManager.operatorTakeTimeout(), settings.operatorTakeTimeout, "Operator take timeout should be set"
+        );
     }
 
     function test_tryPegout_Success() external {
@@ -1270,10 +1292,10 @@ contract PegoutManagerTest is Test, HelperContract {
         streamManager.pushSlotsHarness(stream.streamId, 0, Constants.SLOTS_PER_PACKET, SlotState.BLOCKED);
 
         // 2. Create second packet with the existing committee setup
+        uint128 committeeId = COMMITTEE_ID_STREAM_1_COMMITTEE_1;
+        bytes32[] memory disputeKeys = registry.getCommitteeDisputeKeys(committeeId);
         vm.prank(address(registry));
-        streamManager.createNewPacket(
-            stream.streamId, COMMITTEE_ID_STREAM_1_COMMITTEE_1, setupExpectedCommittee.aggregatedKey
-        );
+        streamManager.createNewPacket(stream.streamId, committeeId, setupExpectedCommittee.aggregatedKey, disputeKeys);
         streamManager.setSlotHarness(stream.streamId, 1, scriptPubKey, txId, amount, SlotState.FILLED);
 
         // Set up mock to allow burning this amount
@@ -1291,185 +1313,6 @@ contract PegoutManagerTest is Test, HelperContract {
         Stream memory updatedStream = streamManager.getStreamById(stream.streamId);
         assertEq(updatedStream.pegoutPacketPointer, 1, "Should advance packet pointer");
         assertEq(updatedStream.pegoutSlotPointer, 0, "Should be up to the locked slot");
-    }
-
-    function test_setStreamManager_Success() external {
-        // Arrange
-        uint256 privKey = uint256(1);
-        address newStreamManagerAddress = vm.addr(privKey);
-        IStreamManager newStreamManager = IStreamManager(newStreamManagerAddress);
-        address owner = pegoutManager.owner();
-
-        // Assert
-        vm.expectEmit(address(pegoutManager));
-        emit IPegBase.StreamManagerUpdated(newStreamManager);
-
-        // Act
-        vm.prank(owner);
-        pegoutManager.setStreamManager(newStreamManager);
-
-        // Assert
-        assertEq(address(pegoutManager.streamManager()), newStreamManagerAddress);
-    }
-
-    function test_setStreamManager_Success_PausedContract() external {
-        // Arrange
-        uint256 privKey = uint256(1);
-        address newStreamManagerAddress = vm.addr(privKey);
-        StreamManagerHarness newStreamManager = StreamManagerHarness(newStreamManagerAddress);
-        pauseContracts();
-
-        // Assert
-        vm.prank(pegoutManager.owner());
-        vm.expectEmit(address(pegoutManager));
-        emit IPegBase.StreamManagerUpdated(newStreamManager);
-
-        // Act
-        pegoutManager.setStreamManager(newStreamManager);
-
-        // Assert
-        assertEq(address(pegoutManager.streamManager()), newStreamManagerAddress);
-    }
-
-    function test_setStreamManager_Revert_AddressZero() external {
-        // Arrange
-        address owner = pegoutManager.owner();
-        IStreamManager zeroStreamManager = IStreamManager(address(0));
-
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegBase.StreamManagerAddressZero.selector));
-
-        // Act
-        vm.prank(owner);
-        pegoutManager.setStreamManager(zeroStreamManager);
-    }
-
-    function test_setStreamManager_Revert_OwnableUnauthorizedAccount() external {
-        // Arrange
-        uint256 privKey = uint256(1);
-        address newStreamManagerAddress = vm.addr(privKey);
-        IStreamManager newStreamManager = IStreamManager(newStreamManagerAddress);
-
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
-
-        // Act
-        pegoutManager.setStreamManager(newStreamManager);
-    }
-
-    function test_setSignatureManager_Success() external {
-        // Arrange
-        uint256 privKey = uint256(1);
-        address newSignatureManagerAddress = vm.addr(privKey);
-        ISignatureManager newSignatureManager = ISignatureManager(newSignatureManagerAddress);
-        address owner = pegoutManager.owner();
-
-        // Assert
-        vm.expectEmit(address(pegoutManager));
-        emit IPegManagerBase.SignatureManagerUpdated(newSignatureManager);
-
-        // Act
-        vm.prank(owner);
-        pegoutManager.setSignatureManager(newSignatureManager);
-
-        // Assert
-        assertEq(address(pegoutManager.signatureManager()), newSignatureManagerAddress);
-    }
-
-    function test_setSignatureManager_Success_PausedContract() external {
-        // Arrange
-        uint256 privKey = uint256(1);
-        address newSignatureManagerAddress = vm.addr(privKey);
-        ISignatureManager newSignatureManager = ISignatureManager(newSignatureManagerAddress);
-
-        pauseContracts();
-
-        // Assert
-        vm.prank(pegoutManager.owner());
-        vm.expectEmit(address(pegoutManager));
-        emit IPegManagerBase.SignatureManagerUpdated(newSignatureManager);
-
-        // Act
-        pegoutManager.setSignatureManager(newSignatureManager);
-
-        // Assert
-        assertEq(address(pegoutManager.signatureManager()), newSignatureManagerAddress);
-    }
-
-    function test_setSignatureManager_Revert_AddressZero() external {
-        // Arrange
-        address owner = pegoutManager.owner();
-        ISignatureManager zeroSignatureManager = ISignatureManager(address(0));
-
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegManagerBase.SignatureManagerAddressZero.selector));
-
-        // Act
-        vm.prank(owner);
-        pegoutManager.setSignatureManager(zeroSignatureManager);
-    }
-
-    function test_setSignatureManager_Revert_OwnableUnauthorizedAccount() external {
-        // Arrange
-        uint256 privKey = uint256(1);
-        address newSignatureManagerAddress = vm.addr(privKey);
-        ISignatureManager newSignatureManager = ISignatureManager(newSignatureManagerAddress);
-
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
-
-        // Act
-        pegoutManager.setSignatureManager(newSignatureManager);
-    }
-
-    function test_setPauser_Success() external {
-        // Arrange
-        uint256 privKey = uint256(1);
-        address newPauser = vm.addr(privKey);
-        address owner = pegoutManager.owner();
-
-        // Assert
-        vm.expectEmit(address(pegoutManager));
-        emit Pausable.PauserUpdated(newPauser);
-
-        // Act
-        vm.prank(owner);
-        pegoutManager.setPauser(newPauser);
-
-        // Assert
-        assertEq(pegoutManager.pauser(), newPauser);
-    }
-
-    function test_setPauser_Success_PausedContract() external {
-        // Arrange
-        pauseContracts();
-
-        uint256 privKey = uint256(1);
-        address newPauser = vm.addr(privKey);
-        address owner = pegoutManager.owner();
-
-        // Assert
-        vm.expectEmit(address(pegoutManager));
-        emit Pausable.PauserUpdated(newPauser);
-
-        // Act
-        vm.prank(owner);
-        pegoutManager.setPauser(newPauser);
-
-        // Assert
-        assertEq(pegoutManager.pauser(), newPauser);
-    }
-
-    function test_setPauser_Revert_OwnableUnauthorizedAccount() external {
-        // Arrange
-        uint256 privKey = uint256(1);
-        address newPauser = vm.addr(privKey);
-
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
-
-        // Act
-        pegoutManager.setPauser(newPauser);
     }
 
     function test_tryPegout_Revert_EnforcedPause_PausedContract() external {

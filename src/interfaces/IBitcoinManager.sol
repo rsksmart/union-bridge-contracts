@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import {IPeginManager} from "./IPeginManager.sol";
-
 /// @notice Represents a Bitcoin transaction input that references a previous UTXO
 /// @dev This struct follows Bitcoin's transaction input format as defined in BIP-141
 /// @dev All multi-byte fields are stored in little-endian format (Bitcoin's native format)
@@ -97,11 +95,6 @@ struct BitcoinSignatureData {
 /// @dev This interface provides functions for generating addresses, validating transactions,
 /// @dev and calculating signature hashes for Bitcoin operations in the RSK union bridge
 interface IBitcoinManager {
-    /// @notice Sets the Pegin Manager contract address
-    /// @dev Only callable by the contract owner
-    /// @param _peginManager The address of the Pegin Manager contract
-    function setPeginManager(IPeginManager _peginManager) external;
-
     /// @notice Obtains a temporary Bitcoin address for request peg-in operations
     /// @dev Creates a Taproot address with committee and user key paths for secure peg-in
     /// @param _timelockBlocks The timelock blocks for the Bitcoin transaction
@@ -135,6 +128,7 @@ interface IBitcoinManager {
     /// @param _btcReimbursementPubKey The user's Bitcoin public key (x-coordinate only)
     /// @param _committeePubKey The committee's public key
     /// @param _p2trOut The Bitcoin transaction output to validate
+    /// @dev we don't check the inputs as this function is called by the pegin manager
     function validateRequestPeginP2TROutput(
         uint32 _timelockBlocks,
         address _rskDestinationAddress,
@@ -142,9 +136,10 @@ interface IBitcoinManager {
         bytes32 _btcReimbursementPubKey,
         bytes memory _committeePubKey,
         BtcTxOut calldata _p2trOut
-    ) external view;
+    ) external pure;
 
     /// @notice Validates the enabler output in a request peg-in transaction
+    /// @dev We don't check the inputs as this function is called by the pegin manager that already validated the inputs
     /// @param _expectedEnablerScriptPubKey The expected enabler script pub key (from packet storage)
     /// @param _enablerOut The enabler output to validate
     function validateRequestPeginEnablerOutput(bytes memory _expectedEnablerScriptPubKey, BtcTxOut calldata _enablerOut)
@@ -166,13 +161,14 @@ interface IBitcoinManager {
     /// @param _prevoutDatas Array of prevout data for all inputs being spent (taptree + enabler outputs)
     /// @param _disputeKeys The dispute keys (covenant public keys) for all members
     /// @return BitcoinSignatureData containing txid, signatureHash, and signatureMessage
+    /// @dev we don't check the inputs as this function is called by the pegin manager
     function getAcceptPeginSignatureHash(
         bytes memory _committeePubKey,
         bytes32 _userXOnlyPubKey,
         bytes32 _registerPeginTx,
         PrevoutData[] memory _prevoutDatas,
         bytes32[] memory _disputeKeys
-    ) external view returns (BitcoinSignatureData memory);
+    ) external pure returns (BitcoinSignatureData memory);
 
     /// @notice Generates the enabler output P2TR script pub key
     /// @dev Creates a Taproot script for the enabler output with dispute keys in the merkle tree
@@ -277,15 +273,4 @@ interface IBitcoinManager {
     /// @param actual The actual output amount
     /// @param expected The expected output amount
     error InvalidOutputAmount(uint64 actual, uint64 expected);
-
-    /// @notice Error thrown when an account is not authorized
-    /// @param account The unauthorized account
-    error UnauthorizedAccount(address account);
-
-    /// @notice Thrown when an address is zero
-    error InvalidZeroAddress();
-
-    /// @notice Event emitted when pegin manager address is updated
-    /// @param peginManager The new peg manager address
-    event PeginManagerUpdated(address peginManager);
 }

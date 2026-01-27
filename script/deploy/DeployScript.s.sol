@@ -9,7 +9,7 @@ import {PeginManager} from "src/PeginManager.sol";
 import {PegoutManager} from "src/PegoutManager.sol";
 import {StreamManager} from "src/StreamManager.sol";
 import {SignatureManager} from "src/SignatureManager.sol";
-import {PauseManager} from "src/PauseManager.sol";
+import {AccessManager} from "src/AccessManager.sol";
 import {RbtcBridge} from "src/RbtcBridge.sol";
 import {ChallengeManager} from "src/ChallengeManager.sol";
 import {DeployImplAndProxy, DeployedContracts} from "./01_DeployImplAndProxy.s.sol";
@@ -24,7 +24,7 @@ contract DeployScript is Script {
     PegoutManager public pegoutManager;
     StreamManager public streamManager;
     SignatureManager public signatureManager;
-    PauseManager public pauseManager;
+    AccessManager public accessManager;
     ChallengeManager public challengeManager;
     address public upgradableOwner;
     address payable public bridgeAddress;
@@ -45,7 +45,7 @@ contract DeployScript is Script {
         pegoutManager = deployResults.pegoutManager;
         streamManager = deployResults.streamManager;
         signatureManager = deployResults.signatureManager;
-        pauseManager = deployResults.pauseManager;
+        accessManager = deployResults.accessManager;
         upgradableOwner = deployResults.upgradableOwner;
         bridgeAddress = deployResults.bridgeAddress;
         challengeManager = deployResults.challengeManager;

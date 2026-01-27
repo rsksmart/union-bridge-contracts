@@ -6,7 +6,7 @@ import {HelperContract} from "test/helpers/HelperContract.sol";
 import {BtcTxSPVProof, StreamPosition} from "src/interfaces/IPegCommonTypes.sol";
 import {PegStatus} from "src/interfaces/IPegCommonTypes.sol";
 import {ChallengeTempInfo, IChallengeManager} from "src/interfaces/IChallengeManager.sol";
-import {Committee, ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
+import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {SlotState} from "src/interfaces/IStreamManager.sol";
 import {IPegBase} from "src/interfaces/IPegBase.sol";
@@ -15,6 +15,19 @@ contract ChallengeManagerTest is Test, HelperContract {
     function setUp() external {
         runTestDeployScript();
         setup_completeCommitteeAndNewMembers();
+    }
+
+    // ============ Initialization Tests ============
+
+    function test_initialize_Success() external view {
+        // Assert - verify initialization state
+        assertTrue(challengeManager.owner() != address(0)); // Owner should be set
+        assertEq(challengeManager.pauser(), address(accessManager)); // Pauser should be set to accessManager
+        assertEq(address(challengeManager.committeeRegistry()), address(registry));
+        assertEq(address(challengeManager.bitcoinManager()), address(bitcoinManager));
+        assertEq(address(challengeManager.pegoutManager()), address(pegoutManager));
+        assertEq(address(challengeManager.streamManager()), address(streamManager));
+        assertEq(address(challengeManager.bridge()), address(bridgeMock));
     }
 
     function test_registerChallenge_Success_OperatorCall() external {

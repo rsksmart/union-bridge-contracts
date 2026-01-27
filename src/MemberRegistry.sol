@@ -26,6 +26,7 @@ import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/ut
 import {IBridge} from "./interfaces/IBridge.sol";
 import {BtcHelper} from "./libraries/BtcHelper.sol";
 import {Secp256k1} from "./libraries/Secp256k1.sol";
+import {IAccessManager} from "./interfaces/IAccessManager.sol";
 
 /// @title MemberRegistry
 /// @notice Manages member registration, applications, and balance tracking for the union bridge system
@@ -41,18 +42,34 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
     /// @notice Stream manager contract for managing streams and packets
     IStreamManager public streamManager;
 
-    /// @notice Committee registry contract for committee operations
-    address public committeeRegistry;
+    /// @notice Access manager contract for managing access control
+    IAccessManager public accessManager;
 
     /// @notice RSK Bridge contract for Bitcoin block hash entropy
     IBridge public bridge;
 
     /// @notice Initializes the MemberRegistry contract
     /// @param _initialOwner The initial owner of the contract
-    function initialize(address _initialOwner) public virtual initializer {
+    /// @param _accessManager The access manager contract address
+    /// @param _bridge The bridge contract address
+    function initialize(
+        address _initialOwner,
+        IAccessManager _accessManager,
+        IBridge _bridge,
+        IStreamManager _streamManager
+    ) public virtual initializer {
+        if (
+            address(_accessManager) == address(0) || address(_bridge) == address(0)
+                || address(_streamManager) == address(0)
+        ) {
+            revert InvalidZeroAddress();
+        }
+        accessManager = _accessManager;
+        bridge = _bridge;
+        streamManager = _streamManager;
         __BaseProxy_init(_initialOwner);
         __ReentrancyGuard_init();
-        __Pauser_init();
+        __Pauser_init(address(_accessManager));
     }
 
     function _validateFundingUTXO(UTXO calldata _utxo) internal pure {
@@ -113,7 +130,9 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         Role _role,
         MemberRegistrationKeys calldata _publicKeys,
         UTXO calldata _fundingUTXO
-    ) external payable onlyCommitteeRegistry {
+    ) external payable {
+        // Verify that the caller has permission to modify candidates for the stream
+        accessManager.canModifyCandidatesForStream(_msgSender());
         Member storage member = _getOrRegisterMember(_memberAddress, _publicKeys);
 
         if (_role == Role.NONE) {
@@ -166,10 +185,10 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
     /// @dev Only callable by CommitteeRegistry contract
     /// @param _memberAddress The address of the member unsubscribing
     /// @param _denomination The stream denomination to unsubscribe from
-    function unsubscribeFromStream(address _memberAddress, StreamDenomination _denomination)
-        external
-        onlyCommitteeRegistry
-    {
+    function unsubscribeFromStream(address _memberAddress, StreamDenomination _denomination) external {
+        // Verify that the caller has permission to modify candidates for the stream
+        accessManager.canModifyCandidatesForStream(_msgSender());
+
         _unsubscribeFromStream(_memberAddress, _denomination);
         emit MemberUnsubscribedFromStream(_memberAddress, _denomination);
     }
@@ -195,10 +214,10 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         }
     }
 
-    function reAddCandidateToStream(StreamDenomination _denomination, CommitteeMember memory _member)
-        external
-        onlyCommitteeRegistry
-    {
+    function reAddCandidateToStream(StreamDenomination _denomination, CommitteeMember memory _member) external {
+        // Verify that the caller has permission to modify candidates for the stream
+        accessManager.canModifyCandidatesForStream(_msgSender());
+
         committeesCandidates[_denomination][_member.role].push(_member.memberAddress);
     }
 
@@ -210,8 +229,10 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
     /// @param _packetNumber The packet number
     function releaseCommitteeMembers(CommitteeMember[] memory _committeeMembers, uint64 _streamId, uint64 _packetNumber)
         external
-        onlyCommitteeRegistry
     {
+        // Verify that the caller has permission to modify candidates for the stream
+        accessManager.canModifyCandidatesForStream(_msgSender());
+
         for (uint256 i = 0; i < _committeeMembers.length; i++) {
             Member storage member = _getMember(_committeeMembers[i].memberAddress);
             ApplicationData storage application = member.balance.applications[uint8(_streamId)];
@@ -522,14 +543,13 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
     /// @param _denomination The stream denomination to set the flag for
     /// @param _reApply True to automatically reapply, false to receive balance as available
     function setReApplyForStream(StreamDenomination _denomination, bool _reApply) external override whenNotPaused {
-        address sender = _msgSender();
-        _setReApplyForStream(sender, _denomination, _reApply);
+        _setReApplyForStream(_msgSender(), _denomination, _reApply);
     }
 
-    function disableMemberReApplyForStream(address _memberAddress, StreamDenomination _denomination)
-        external
-        onlyCommitteeRegistry
-    {
+    function disableMemberReApplyForStream(address _memberAddress, StreamDenomination _denomination) external {
+        // Verify that the caller has permission to modify candidates for the stream
+        accessManager.canModifyCandidatesForStream(_msgSender());
+
         bool reApply = false;
         _setReApplyForStream(_memberAddress, _denomination, reApply);
     }
@@ -560,7 +580,10 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         CommitteeMember[] memory _members,
         StreamDenomination _denomination,
         uint64 _packetNumber
-    ) external onlyCommitteeRegistry {
+    ) external {
+        // Verify that the caller has permission to modify candidates for the stream
+        accessManager.canModifyCandidatesForStream(_msgSender());
+
         for (uint256 i = 0; i < _members.length; i++) {
             _movePreStakedToStaked(_members[i].memberAddress, _denomination, _packetNumber);
         }
@@ -615,7 +638,10 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         uint256 _minWatchtowers,
         uint256 _minOperators,
         uint256 _totalMemberCount
-    ) external onlyCommitteeRegistry returns (CommitteeMember[] memory, PendingCommitteeStatus) {
+    ) external returns (CommitteeMember[] memory, PendingCommitteeStatus) {
+        // Verify that the caller has permission to modify candidates for the stream
+        accessManager.canModifyCandidatesForStream(_msgSender());
+
         return _selectCommittee(_streamId, _minWatchtowers, _minOperators, _totalMemberCount);
     }
 
@@ -699,58 +725,5 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         }
 
         return (selectedMembers, PendingCommitteeStatus.SUCCESS);
-    }
-
-    // ===================== Modifiers =====================
-
-    /// @notice Modifier to restrict access to the CommitteeRegistry contract
-    /// @dev Reverts if the caller is not the CommitteeRegistry
-    modifier onlyCommitteeRegistry() {
-        address sender = _msgSender();
-        if (committeeRegistry != sender) {
-            revert UnauthorizedAccount(sender);
-        }
-        _;
-    }
-
-    // ===================== Administrative Functions =====================
-
-    /// @notice Sets the CommitteeRegistry contract address
-    /// @dev Only callable by the contract owner
-    /// @param _committeeRegistry The address of the CommitteeRegistry contract
-    function setCommitteeRegistry(address _committeeRegistry) external override onlyOwner {
-        if (_committeeRegistry == address(0)) {
-            revert InvalidZeroAddress();
-        }
-        committeeRegistry = _committeeRegistry;
-        emit CommitteeRegistryUpdated(_committeeRegistry);
-    }
-
-    /// @notice Sets the Stream Manager contract address
-    /// @dev Only callable by the contract owner
-    /// @param _streamManager The address of the Stream Manager contract
-    function setStreamManager(IStreamManager _streamManager) external override onlyOwner {
-        if (address(_streamManager) == address(0)) {
-            revert InvalidZeroAddress();
-        }
-        streamManager = _streamManager;
-    }
-
-    /// @notice Sets the Bridge contract address
-    /// @dev Only callable by the contract owner
-    /// @param _bridge The address of the Bridge contract
-    function setBridge(IBridge _bridge) external override onlyOwner {
-        if (address(_bridge) == address(0)) {
-            revert InvalidZeroAddress();
-        }
-        bridge = _bridge;
-        emit BridgeUpdated(address(_bridge));
-    }
-
-    /// @notice Sets a new pauser address
-    /// @param _newPauser The new pauser address
-    /// @dev Only callable by the contract owner
-    function setPauser(address _newPauser) public override onlyOwner {
-        super.setPauser(_newPauser);
     }
 }

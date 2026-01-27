@@ -15,11 +15,11 @@ import {
 } from "src/interfaces/ICommitteeRegistry.sol";
 import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
 import {IPegoutManager} from "src/interfaces/IPegoutManager.sol";
-import {IAccessControl} from "src/interfaces/IAccessControl.sol";
+import {IAccessManager} from "src/interfaces/IAccessManager.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
 import {Constants} from "src/libraries/Constants.sol";
-import {HelperContract, StreamManagerHarness} from "test/helpers/HelperContract.sol";
+import {HelperContract} from "test/helpers/HelperContract.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {Secp256k1} from "src/libraries/Secp256k1.sol";
 
@@ -38,56 +38,11 @@ contract MemberRegistryTest is Test, HelperContract {
         setup_whitelistAddress(memberAddress);
     }
 
-    function test_setCommitteeRegistry_Success_PausedContract() external {
-        // Arrange
-        uint256 privKey = uint256(1);
-        address newCommitteeRegistryAddress = vm.addr(privKey);
-
-        pauseContracts();
-
-        // Act
-        vm.prank(memberRegistry.owner());
-        memberRegistry.setCommitteeRegistry(newCommitteeRegistryAddress);
-
-        // Assert
-        assertEq(memberRegistry.committeeRegistry(), newCommitteeRegistryAddress);
-    }
-
-    function test_setCommitteeRegistry_EmitsCommitteeRegistryUpdatedEvent() external {
-        // Arrange
-        uint256 privKey = uint256(1);
-        address newCommitteeRegistryAddress = vm.addr(privKey);
-
-        // Assert
-        vm.expectEmit(address(memberRegistry));
-        emit IMemberRegistry.CommitteeRegistryUpdated(newCommitteeRegistryAddress);
-
-        // Act
-        vm.prank(memberRegistry.owner());
-        memberRegistry.setCommitteeRegistry(newCommitteeRegistryAddress);
-    }
-
-    function test_setStreamManager_Success_PausedContract() external {
-        // Arrange
-        uint256 privKey = uint256(1);
-        address newStreamManagerAddress = vm.addr(privKey);
-        StreamManagerHarness newStreamManager = StreamManagerHarness(newStreamManagerAddress);
-
-        pauseContracts();
-
-        // Act
-        vm.prank(memberRegistry.owner());
-        memberRegistry.setStreamManager(newStreamManager);
-
-        // Assert
-        assertEq(address(memberRegistry.streamManager()), newStreamManagerAddress);
-    }
-
     function test_applyToStream_Success_PausedContract() external {
         // Arrange
         pauseContracts();
 
-        address registryAddress = memberRegistry.committeeRegistry();
+        address registryAddress = address(registry);
 
         uint256 privKey = uint256(1);
         address member = vm.addr(privKey);
@@ -119,7 +74,7 @@ contract MemberRegistryTest is Test, HelperContract {
         Role role = Role.OPERATOR;
         setup_applyToStream(denomination, member, memberRegistrationKeys, role);
 
-        address registryAddress = memberRegistry.committeeRegistry();
+        address registryAddress = address(registry);
         pauseContracts();
 
         // Assert
@@ -134,7 +89,7 @@ contract MemberRegistryTest is Test, HelperContract {
     function test_withdrawAvailableBalance_Revert_EnforcedPause_PausedContract() external {
         // Arrange
         // we have to be unsubscribed from stream to withdraw our balance
-        address registryAddress = memberRegistry.committeeRegistry();
+        address registryAddress = address(registry);
 
         uint256 privKey = uint256(1);
         address member = vm.addr(privKey);
@@ -161,7 +116,7 @@ contract MemberRegistryTest is Test, HelperContract {
     function test_withdrawAvailableBalance_Success_UnpausedContract() external {
         // Arrange
         // we have to be unsubscribed from stream to withdraw our balance
-        address registryAddress = memberRegistry.committeeRegistry();
+        address registryAddress = address(registry);
 
         uint256 privKey = uint256(1);
         address member = vm.addr(privKey);
@@ -188,16 +143,17 @@ contract MemberRegistryTest is Test, HelperContract {
 
     function test_releaseCommittee_Success_PausedContract() external {
         // Arrange
-        address registryAddress = memberRegistry.committeeRegistry();
+        address registryAddress = address(registry);
         // create committee to be released
         setup_pendingCommittee();
         uint128 committeeId = COMMITTEE_ID_STREAM_1_COMMITTEE_1;
-        bytes memory committeePubKey = new bytes(1);
+        bytes memory committeePubKey = COMMITTEE_PUB_KEY();
 
         uint64 streamId = uint64(SETUP_PENDING_COMMITTEE_DENOMINATION);
         uint64 packetNumber = 0;
+        bytes32[] memory disputeKeys = registry.getCommitteeDisputeKeys(committeeId);
         vm.prank(address(registry));
-        streamManager.createNewPacket(streamId, committeeId, committeePubKey);
+        streamManager.createNewPacket(streamId, committeeId, committeePubKey, disputeKeys);
         CommitteeMember[] memory members;
 
         pauseContracts();
@@ -278,7 +234,7 @@ contract MemberRegistryTest is Test, HelperContract {
 
     function test_stakePreStakedCandidatesBalance_Success_PausedContract() external {
         // Arrange
-        address registryAddress = memberRegistry.committeeRegistry();
+        address registryAddress = address(registry);
 
         StreamDenomination denomination = StreamDenomination._0_01BTC;
         CommitteeMember[] memory members;
@@ -301,7 +257,7 @@ contract MemberRegistryTest is Test, HelperContract {
         uint256 totalMemberCount = registry.committeeMemberCount();
 
         pauseContracts();
-        address registryAddress = memberRegistry.committeeRegistry();
+        address registryAddress = address(registry);
 
         // Act
         vm.prank(registryAddress);
@@ -663,7 +619,9 @@ contract MemberRegistryTest is Test, HelperContract {
         vm.startPrank(unauthorizedAccount);
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IAccessControl.UnauthorizedAccount.selector, unauthorizedAccount));
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessManager.UnauthorizedToModifyCandidatesForStream.selector, unauthorizedAccount)
+        );
 
         // Act
         memberRegistry.disableMemberReApplyForStream(unauthorizedAccount, DEFAULT_STREAM);
@@ -1102,7 +1060,7 @@ contract MemberRegistryTest is Test, HelperContract {
             DEFAULT_STREAM, role, memberRegistrationKeysMemory, generateDefaultUTXO()
         );
         uint256 gasUsed = gasStart - gasleft();
-        assertLe(gasUsed, 700_000, "gas used should be less than 700_000");
+        assertLe(gasUsed, 710_000, "gas used should be less than 710_000");
     }
 
     function _test_unsubscribeFromStream_Success(Role _role) internal {
@@ -1991,7 +1949,7 @@ contract MemberRegistryTest is Test, HelperContract {
         vm.deal(user, minimumDeposit);
 
         // Assert unauthorized account error when calling applyToStream directly on MemberRegistry
-        vm.expectRevert(abi.encodeWithSelector(IAccessControl.UnauthorizedAccount.selector, user));
+        vm.expectRevert(abi.encodeWithSelector(IAccessManager.UnauthorizedToModifyCandidatesForStream.selector, user));
 
         // Act - call applyToStream directly on MemberRegistry instead of through CommitteeRegistry
         vm.prank(user);
@@ -2014,7 +1972,7 @@ contract MemberRegistryTest is Test, HelperContract {
         );
 
         // Assert unauthorized account error when calling unsubscribeFromStream directly on MemberRegistry
-        vm.expectRevert(abi.encodeWithSelector(IAccessControl.UnauthorizedAccount.selector, user));
+        vm.expectRevert(abi.encodeWithSelector(IAccessManager.UnauthorizedToModifyCandidatesForStream.selector, user));
 
         // Act - call unsubscribeFromStream directly on MemberRegistry instead of through CommitteeRegistry
         vm.prank(user);

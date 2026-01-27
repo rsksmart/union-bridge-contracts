@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import {IAccessControl} from "./IAccessControl.sol";
-import {ICommitteeRegistry, Role} from "./ICommitteeRegistry.sol";
+import {Role} from "./ICommitteeRegistry.sol";
 import {StreamPosition, PegStatus} from "./IPegCommonTypes.sol";
 
 /// @notice Represents different Bitcoin denominations supported by the union bridge
@@ -157,13 +156,19 @@ struct StreamManagerSettings {
 /// @notice Interface for managing streams, packets, and slots in the union bridge
 /// @dev This interface provides functions for organizing and tracking funds through the hierarchical structure
 /// @dev Manages the lifecycle of funds from peg-in to peg-out through streams, packets, and slots
-interface IStreamManager is IAccessControl {
+interface IStreamManager {
     /// @notice Creates a new packet in a specific stream with committee assignment
     /// @dev Only callable by the CommitteeRegistry smart contract
     /// @param _streamId The index of the stream to add the packet to
     /// @param _committeeId The ID of the committee responsible for this packet
     /// @param _committeePubKey The public key of the selected committee for the packet (33 bytes)
-    function createNewPacket(uint64 _streamId, uint128 _committeeId, bytes calldata _committeePubKey) external;
+    /// @param _disputeKeys The dispute keys (covenant public keys) for the committee members
+    function createNewPacket(
+        uint64 _streamId,
+        uint128 _committeeId,
+        bytes calldata _committeePubKey,
+        bytes32[] memory _disputeKeys
+    ) external;
 
     /// @notice Retrieves stream information for a given denomination
     /// @dev Looks up the stream that handles the specified Bitcoin amount
@@ -392,10 +397,6 @@ interface IStreamManager is IAccessControl {
     /// @param newStatus The new peg status
     event PegStatusUpdated(bytes32 indexed acceptPeginTxid, PegStatus newStatus);
 
-    /// @notice Event emitted when the committee registry contract address  is updated
-    /// @param _committeeRegistry The new committee registry contract address
-    event CommitteeRegistryUpdated(ICommitteeRegistry _committeeRegistry);
-
     /// @notice Event emitted when the number of confirmations required for peg-in transactions is updated
     /// @param _streamId The ID of the stream
     /// @param _confirmations The number of confirmations required
@@ -492,9 +493,6 @@ interface IStreamManager is IAccessControl {
     /// @param actual The actual transaction id
     error InvalidAcceptPeginTxid(bytes32 expected, bytes32 actual);
 
-    /// @notice Thrown when an address is zero
-    error InvalidZeroAddress();
-
     /// @notice Thrown when a percentage value is invalid
     /// @param percentage The invalid percentage value
     /// @dev The percentage must be between 0 and 10000, where 10000 represents 100%
@@ -506,6 +504,9 @@ interface IStreamManager is IAccessControl {
 
     /// @notice Thrown when a value is zero when it shouldn't be
     error InvalidZeroValue();
+
+    /// @notice Thrown when an address is zero address
+    error InvalidZeroAddress();
 
     /// @notice Thrown when trying to fill a slot that's not reserved
     /// @param streamId The stream ID

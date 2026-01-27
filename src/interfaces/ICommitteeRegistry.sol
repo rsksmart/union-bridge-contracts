@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import {StreamDenomination, IStreamManager} from "./IStreamManager.sol";
-import {IPeginManager} from "./IPeginManager.sol";
-import {IPegoutManager} from "./IPegoutManager.sol";
-import {SignatureData} from "./ISignatureManager.sol";
+import {StreamDenomination} from "./IStreamManager.sol";
 import {IMemberRegistry} from "./IMemberRegistry.sol";
+import {SignatureData} from "./ISignatureManager.sol";
 
 /// @dev Amount of bytes32 chunks for communication data
 uint8 constant COMMUNICATION_DATA_CHUNKS = 8;
@@ -308,26 +306,6 @@ interface ICommitteeRegistry {
     /// @param _memberAddress The address of the member to check
     function isMemberInCommittee(uint128 _committeeId, address _memberAddress) external view returns (bool);
 
-    /// @notice Sets the Pegin Manager contract address
-    /// @dev Only callable by the contract owner
-    /// @param _peginManager The address of the Pegin Manager contract
-    function setPeginManager(IPeginManager _peginManager) external;
-
-    /// @notice Sets the Pegout Manager contract address
-    /// @dev Only callable by the contract owner
-    /// @param _pegoutManager The address of the Pegout Manager contract
-    function setPegoutManager(IPegoutManager _pegoutManager) external;
-
-    /// @notice Sets the Challenge Manager contract address
-    /// @dev Only callable by the contract owner
-    /// @param _challengeManager The address of the Challenge Manager contract
-    function setChallengeManager(address _challengeManager) external;
-
-    /// @notice Sets the Stream Manager contract address
-    /// @dev Only callable by the contract owner
-    /// @param _streamManager The address of the Stream Manager contract
-    function setStreamManager(IStreamManager _streamManager) external;
-
     /// @notice Sets the Whitelister address
     /// @dev Only callable by the contract owner
     /// @param _whitelister The address of the whitelister
@@ -407,22 +385,6 @@ interface ICommitteeRegistry {
     /// @param timeout The new timeout value
     event PendingCommitteeTimeoutUpdated(uint256 timeout);
 
-    /// @notice Event emitted when stream manager address is updated
-    /// @param streamManager The new stream manager address
-    event StreamManagerUpdated(address streamManager);
-
-    /// @notice Event emitted when pegin manager address is updated
-    /// @param peginManager The new pegin manager address
-    event PeginManagerUpdated(address peginManager);
-
-    /// @notice Event emitted when pegout manager address is updated
-    /// @param pegoutManager The new pegout manager address
-    event PegoutManagerUpdated(address pegoutManager);
-
-    /// @notice Event emitted when challenge manager address is updated
-    /// @param challengeManager The new challenge manager address
-    event ChallengeManagerUpdated(address challengeManager);
-
     /// @notice Event emitted when minimum watchtowers requirement is updated
     /// @param minWatchtowers The new minimum watchtowers requirement
     event CommitteeMinWatchtowersUpdated(uint256 minWatchtowers);
@@ -470,10 +432,6 @@ interface ICommitteeRegistry {
     /// @param _committeeId The ID of the committee for which all communication data is ready
     event AllCommunicationDataReady(uint128 indexed _committeeId);
 
-    /// @notice Event emitted when the member registry address is updated
-    /// @param memberRegistry The new member registry address
-    event MemberRegistryUpdated(address memberRegistry);
-
     /// @notice Event emitted when members from a packet's committee are released
     /// @param streamId The stream ID for the committee
     /// @param packetNumber The packet number where the committee was active
@@ -493,6 +451,10 @@ interface ICommitteeRegistry {
     /// @notice Thrown when non-whitelisted address tries to apply to stream
     /// @param nonWhitelistedAddress The non-whitelisted address
     error NonWhitelistedAddress(address nonWhitelistedAddress);
+
+    /// @notice Thrown when the caller is not the whitelister
+    /// @param sender The address of the caller
+    error UnauthorizedWhitelister(address sender);
 
     /// @notice Error thrown when the aggregated key has an invalid length
     /// @param length The actual length provided
@@ -516,14 +478,8 @@ interface ICommitteeRegistry {
     /// @param committeeId The committee ID
     error CommitteeNotFound(uint128 committeeId);
 
-    /// @notice Thrown when an address is zero
-    error InvalidZeroAddress();
-
     /// @notice Thrown when a value is zero
     error InvalidZeroValue();
-
-    /// @notice Thrown when the member registry address is zero
-    error MemberRegistryAddressZero();
 
     /// @notice Thrown when minimum members requirement is invalid
     /// @param minMembers The minimum members requirement

@@ -11,7 +11,7 @@ import {IBridge} from "src/interfaces/IBridge.sol";
 import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
 import {IBitcoinManager} from "src/interfaces/IBitcoinManager.sol";
 import {ISignatureManager} from "src/interfaces/ISignatureManager.sol";
-import {PauseManager} from "src/PauseManager.sol";
+import {AccessManager} from "src/AccessManager.sol";
 
 /// @title ContractAddressManager
 /// @notice Helper library to get contract addresses based on the current network
@@ -44,7 +44,7 @@ abstract contract ContractAddressManager is Script {
     /// @notice Get the PegoutManager contract address for the current network
     /// @return The PegoutManager contract
     function getPegoutManager() internal view returns (PegoutManager) {
-        return PegoutManager(getStreamManager().pegoutManager());
+        return PegoutManager(getAccesManager().pegoutManager());
     }
 
     /// @notice Get the StreamManager contract for the current network
@@ -83,9 +83,9 @@ abstract contract ContractAddressManager is Script {
         return getPegoutManager().signatureManager();
     }
 
-    /// @notice Get the PauseManager contract for the current network
-    /// @return The PauseManager contract
-    function getPauseManager() internal view returns (PauseManager) {
-        return PauseManager(address(getPeginManager().pauser()));
+    /// @notice Get the AccessManager contract for the current network
+    /// @return The AccessManager contract
+    function getAccesManager() internal view returns (AccessManager) {
+        return AccessManager(address(getPeginManager().pauser()));
     }
 }

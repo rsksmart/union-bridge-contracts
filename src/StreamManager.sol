@@ -12,18 +12,20 @@ import {
     StreamSettings,
     TimelockSettings
 } from "./interfaces/IStreamManager.sol";
-import {AccessControl} from "./AccessControl.sol";
+import {BaseProxy} from "./BaseProxy.sol";
+import {IAccessManager} from "./interfaces/IAccessManager.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
-import {ICommitteeRegistry, Role} from "src/interfaces/ICommitteeRegistry.sol";
+
 import {IBitcoinManager} from "src/interfaces/IBitcoinManager.sol";
 import {StreamPosition, PegStatus} from "src/interfaces/IPegCommonTypes.sol";
+import {Role} from "src/interfaces/ICommitteeRegistry.sol";
 
 /// @title Stream Manager
 /// @notice Manages streams for the union bridge system
 /// @dev Handles stream creation, packet management, and slot allocation for peg-in/peg-out operations
 /// @dev Each stream represents a specific Bitcoin denomination with its own packet and slot management
-contract StreamManager is IStreamManager, AccessControl {
+contract StreamManager is IStreamManager, BaseProxy {
     Stream[] internal streams;
     /// @notice Mapping from stream ID to array of packets for that stream
     /// @dev Each packet contains committee information for processing transactions
@@ -32,12 +34,13 @@ contract StreamManager is IStreamManager, AccessControl {
     /// @notice Mapping from accept peg-in transaction ID to stream position
     /// @dev Tracks the position and status of each peg operation
     mapping(bytes32 acceptPeginTxid => StreamPosition) internal streamPositions;
-    /// @notice The committee registry contract that manages committee membership
-    /// @dev Used to create new packets when committees are formed
-    ICommitteeRegistry public committeeRegistry;
+
     /// @notice The Bitcoin manager contract that handles Bitcoin transaction operations
     /// @dev Used to calculate enabler output scripts for packets
     IBitcoinManager public bitcoinManager;
+    /// @notice The access manager contract that manages access control
+    /// @dev Used to check access control for sensitive operations
+    IAccessManager public accessManager;
 
     // Security bond percentage in 10_000 format (e.g. 1000 = 10%)
     mapping(Role role => uint16 percentage) public securityBondPercentage;
@@ -47,33 +50,26 @@ contract StreamManager is IStreamManager, AccessControl {
     /// @notice Initializes the streams with their denominations and parameters
     /// @dev Creates streams for each denomination with default security bond and confirmation settings
     /// @param _initialOwner The address that will be set as the initial owner
-    /// @param _peginManager The address of the PeginManager contract
-    /// @param _pegoutManager The address of the PegoutManager contract
-    /// @param _committeeRegistry The CommitteeRegistry contract address
+    /// @param _accessManager The address of the AccessManager contract
     /// @param _bitcoinManager The BitcoinManager contract address
     /// @param _settings Struct with the settings for the StreamManager including security bond percentages
     /// @param _streamSettings Array of structs with the settings for each stream including confirmation counts and timelock settings
     function initialize(
         address _initialOwner,
-        address _peginManager,
-        address _pegoutManager,
-        address _challengeManager,
-        ICommitteeRegistry _committeeRegistry,
+        IAccessManager _accessManager,
         IBitcoinManager _bitcoinManager,
         StreamManagerSettings memory _settings,
         StreamSettings[] memory _streamSettings
     ) public virtual initializer {
-        // Initialize the AccessControl contract
-        __AccessControl_init(_initialOwner, _peginManager, _pegoutManager, _challengeManager);
-
-        // Set the committee registry
-        _setCommitteeRegistry(_committeeRegistry);
-
-        // Set and validate the Bitcoin manager
-        if (address(_bitcoinManager) == address(0)) {
+        // Validate that the addresses are not zero
+        if (address(_accessManager) == address(0) || address(_bitcoinManager) == address(0)) {
             revert InvalidZeroAddress();
         }
+        accessManager = _accessManager;
         bitcoinManager = _bitcoinManager;
+
+        // Initialize the AccessManager contract
+        __BaseProxy_init(_initialOwner);
 
         // Set the Stream Manager settings
         _setSecurityBondPercentage(Role.WATCHTOWER, _settings.securityBondPercentageWatchtower);
@@ -135,17 +131,26 @@ contract StreamManager is IStreamManager, AccessControl {
     /// @param _streamId The ID of the stream to create a packet for
     /// @param _committeeId The ID of the committee that will process this packet
     /// @param _committeePubKey The public key of the committee for Bitcoin operations
-    function createNewPacket(uint64 _streamId, uint128 _committeeId, bytes calldata _committeePubKey)
-        external
-        onlyCommitteeRegistry
-    {
-        _createNewPacket(_streamId, _committeeId, _committeePubKey);
+    /// @param _disputeKeys The dispute keys (covenant public keys) for the committee members
+    function createNewPacket(
+        uint64 _streamId,
+        uint128 _committeeId,
+        bytes calldata _committeePubKey,
+        bytes32[] memory _disputeKeys
+    ) external {
+        // Verify that the caller has permission to create a packet
+        accessManager.canCreatePacket(_msgSender());
+        _createNewPacket(_streamId, _committeeId, _committeePubKey, _disputeKeys);
     }
 
-    function _createNewPacket(uint64 _streamId, uint128 _committeeId, bytes memory _committeePubKey) internal {
+    function _createNewPacket(
+        uint64 _streamId,
+        uint128 _committeeId,
+        bytes memory _committeePubKey,
+        bytes32[] memory _disputeKeys
+    ) internal {
         // Calculate enabler script once for the whole packet
-        bytes32[] memory disputeKeys = committeeRegistry.getCommitteeDisputeKeys(_committeeId);
-        bytes memory enablerScriptPubKey = bitcoinManager.getEnablerOutputP2TRScriptPub(_committeePubKey, disputeKeys);
+        bytes memory enablerScriptPubKey = bitcoinManager.getEnablerOutputP2TRScriptPub(_committeePubKey, _disputeKeys);
 
         uint64 packetNumber = uint64(packets[_streamId].length);
         packets[_streamId].push(
@@ -282,7 +287,9 @@ contract StreamManager is IStreamManager, AccessControl {
     /// @param _streamId The ID of the stream
     /// @return slot The locked slot data
     /// @return packet The packet number containing the slot
-    function lockSlot(uint64 _streamId) external onlyPegManager returns (Slot memory, uint64) {
+    function lockSlot(uint64 _streamId) external returns (Slot memory, uint64) {
+        // Verify that the caller has permission to modify the peg status
+        accessManager.canModifyPegStatus(_msgSender());
         Stream storage stream = streams[_streamId];
 
         // Find the next filled slot, skipping blocked slots
@@ -322,7 +329,9 @@ contract StreamManager is IStreamManager, AccessControl {
     /// @param _streamId The ID of the stream
     /// @param _packetNumber The packet number
     /// @return The slot ID that was reserved
-    function reserveSlot(uint64 _streamId, uint64 _packetNumber) external onlyPegManager returns (uint64) {
+    function reserveSlot(uint64 _streamId, uint64 _packetNumber) external returns (uint64) {
+        // Verify that the caller has permission to modify the peg status
+        accessManager.canModifyPegStatus(_msgSender());
         Stream storage stream = streams[_streamId];
 
         // If packet does not match with current packet being processed
@@ -357,6 +366,7 @@ contract StreamManager is IStreamManager, AccessControl {
 
     /// @notice Fills a slot with accept peg-in transaction information
     /// @dev Updates the slot state from RESERVED to FILLED and stores transaction details
+    /// @dev This is called by PeginManager contract
     /// @param _stream The struct containing the stream, packet, and slot information
     /// @param _acceptPeginAmount The amount of the accept peg-in transaction
     /// @param _acceptPeginTx The hash of the accept peg-in transaction
@@ -366,7 +376,9 @@ contract StreamManager is IStreamManager, AccessControl {
         uint64 _acceptPeginAmount,
         bytes32 _acceptPeginTx,
         bytes memory _scriptPubKey
-    ) external onlyPegManager {
+    ) external {
+        // Verify that the caller has permission to modify the peg status
+        accessManager.canModifyPegStatus(_msgSender());
         Slot storage slot = _getSlot(_stream.streamId, _stream.packetNumber, _stream.slotId);
 
         if (slot.state != SlotState.RESERVED) {
@@ -386,7 +398,9 @@ contract StreamManager is IStreamManager, AccessControl {
     /// @param _streamId The ID of the stream
     /// @param _packetNumber The packet number
     /// @param _slotId The ID of the slot to block
-    function blockSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) external onlyPegManager {
+    function blockSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) external {
+        // Verify that the caller has permission to modify the peg status
+        accessManager.canModifyPegStatus(_msgSender());
         Slot storage slot = _getSlot(_streamId, _packetNumber, _slotId);
 
         if (slot.state != SlotState.RESERVED) {
@@ -434,7 +448,9 @@ contract StreamManager is IStreamManager, AccessControl {
         uint64 _slotId,
         bytes32 _acceptPeginTxid,
         bytes32 _userTakeTx
-    ) external onlyPegManager {
+    ) external {
+        // Verify that the caller has permission to modify the peg status
+        accessManager.canModifyPegStatus(_msgSender());
         Slot storage slot = _getSlot(_streamId, _packetNumber, _slotId);
 
         // Validate that the slot exists and is LOCKED or ADVANCED
@@ -470,7 +486,9 @@ contract StreamManager is IStreamManager, AccessControl {
         return slots[_streamId][_packetNumber][_slotId];
     }
 
-    function advanceSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) external onlyPegManager {
+    function advanceSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) external {
+        // Verify that the caller has permission to modify the peg status
+        accessManager.canModifyPegStatus(_msgSender());
         Slot storage slot = _getSlot(_streamId, _packetNumber, _slotId);
 
         // Validate that the slot exists and is in LOCKED state
@@ -539,21 +557,6 @@ contract StreamManager is IStreamManager, AccessControl {
         emit PegoutConfirmationsUpdated(_streamId, _confirmations);
     }
 
-    /// @notice Sets the committee registry contract address
-    /// @dev Can only be called by the owner
-    /// @param _committeeRegistry The new committee registry contract address
-    function setCommitteeRegistry(ICommitteeRegistry _committeeRegistry) external onlyOwner {
-        _setCommitteeRegistry(_committeeRegistry);
-    }
-
-    function _setCommitteeRegistry(ICommitteeRegistry _committeeRegistry) internal {
-        if (address(_committeeRegistry) == address(0)) {
-            revert InvalidZeroAddress();
-        }
-        committeeRegistry = _committeeRegistry;
-        emit CommitteeRegistryUpdated(_committeeRegistry);
-    }
-
     /// @dev Sets the security bond percentage for a given role
     /// @param _role The role for which to set the security bond percentage
     /// @param _percentage The security bond percentage in 10_000 format (e.g. 1000 = 10%)
@@ -607,7 +610,9 @@ contract StreamManager is IStreamManager, AccessControl {
     /// @param _acceptPeginTxid The accept peg-in transaction ID
     /// @param _position The stream position to store
     /// @dev Only callable by the PegManager contract
-    function setStreamPosition(bytes32 _acceptPeginTxid, StreamPosition memory _position) external onlyPegManager {
+    function setStreamPosition(bytes32 _acceptPeginTxid, StreamPosition memory _position) external {
+        // Verify that the caller has permission to modify the peg status
+        accessManager.canModifyPegStatus(_msgSender());
         streamPositions[_acceptPeginTxid] = _position;
         emit StreamPositionSet(_acceptPeginTxid, _position);
     }
@@ -623,7 +628,9 @@ contract StreamManager is IStreamManager, AccessControl {
     /// @param _acceptPeginTxid The accept peg-in transaction ID
     /// @param _newStatus The new peg status to set
     /// @dev Only callable by the PegManager contract
-    function setPegStatus(bytes32 _acceptPeginTxid, PegStatus _newStatus) external onlyPegManager {
+    function setPegStatus(bytes32 _acceptPeginTxid, PegStatus _newStatus) external {
+        // Verify that the caller has permission to modify the peg status
+        accessManager.canModifyPegStatus(_msgSender());
         streamPositions[_acceptPeginTxid].pegStatus = _newStatus;
         emit PegStatusUpdated(_acceptPeginTxid, _newStatus);
     }
@@ -636,18 +643,6 @@ contract StreamManager is IStreamManager, AccessControl {
     function _streamExists(uint64 _streamId) internal view {
         if (_streamId >= streams.length) {
             revert StreamNotFoundById(_streamId);
-        }
-    }
-
-    modifier onlyCommitteeRegistry() {
-        _onlyCommitteeRegistry();
-        _;
-    }
-
-    function _onlyCommitteeRegistry() internal view {
-        address sender = _msgSender();
-        if (address(committeeRegistry) != sender) {
-            revert UnauthorizedAccount(sender);
         }
     }
 }

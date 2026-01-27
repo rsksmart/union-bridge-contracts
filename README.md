@@ -880,8 +880,10 @@ graph TB
     %% Core Contracts
     PIM[PeginManager<br/>Handles Bitcoin → RSK operations]
     POM[PegoutManager<br/>Handles RSK → Bitcoin operations]
+    CM[ChallengeManager<br/>Dispute resolution management]
+    PB[PegBase<br/>Shared abstract base contract]
     PMB[PegManagerBase<br/>Shared abstract base contract]
-    PAM[PauseManager<br/>Centralized pause controller]
+    AM[AccessManager<br/>Authorization and pause controller]
     BM[BitcoinManager<br/>Bitcoin address generation and validation]
     CR[CommitteeRegistry<br/>Committee formation and management]
     MR[MemberRegistry<br/>Member registration and balance tracking]
@@ -893,8 +895,10 @@ graph TB
     Bridge[RSK PowPeg Bridge<br/>External Precompiled Contract]
 
     %% Inheritance
+    PMB -.inherits.-> PB
     PIM -.inherits.-> PMB
     POM -.inherits.-> PMB
+    CM -.inherits.-> PB
 
     %% RbtcBridge - RSKIP-502 Single Authorized Address
     Bridge -->|authorizes<br/>single address| RB
@@ -916,11 +920,26 @@ graph TB
     POM --> MR
     POM -->|calls burnRbtc| RB
 
-    %% PauseManager Relationships
-    PAM -.controls pause.-> PIM
-    PAM -.controls pause.-> POM
-    PAM -.controls pause.-> CR
-    PAM -.controls pause.-> MR
+    %% ChallengeManager Relationships
+    CM --> BM
+    CM --> CR
+    CM --> SM
+    CM --> POM
+
+    %% AccessManager Relationships - Pause Control
+    AM -.controls pause.-> PIM
+    AM -.controls pause.-> POM
+    AM -.controls pause.-> CR
+    AM -.controls pause.-> MR
+    AM -.controls pause.-> RB
+    AM -.controls pause.-> CM
+
+    %% AccessManager Relationships - Authorization Checks
+    SM -.checks authorization.-> AM
+    RB -.checks authorization.-> AM
+    CR -.checks authorization.-> AM
+    SigM -.checks authorization.-> AM
+    MR -.checks authorization.-> AM
 
     %% Other Relationships
     CR --> MR
@@ -942,13 +961,13 @@ graph TB
     %% Styling
     classDef coreContract fill:#e1f5fe,stroke:#01579b,stroke-width:2px
     classDef baseContract fill:#c5e1a5,stroke:#33691e,stroke-width:2px
-    classDef pauseContract fill:#f8bbd0,stroke:#880e4f,stroke-width:2px
+    classDef accessContract fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
     classDef bridgeContract fill:#ffe0b2,stroke:#e65100,stroke-width:3px
     classDef external fill:#fff3e0,stroke:#e65100,stroke-width:2px
 
-    class PIM,POM,BM,CR,MR,SM,SigM coreContract
-    class PMB baseContract
-    class PAM pauseContract
+    class PIM,POM,CM,BM,CR,MR,SM,SigM coreContract
+    class PB,PMB baseContract
+    class AM accessContract
     class RB bridgeContract
     class Bridge external
 ```
@@ -965,8 +984,8 @@ graph TB
   - Mints RBTC to users via RbtcBridge after successful peg-in
   - Coordinates with StreamManager for slot allocation
   - Integrates with CommitteeRegistry for committee management
-  - Inherits shared functionality from PegManagerBase
-- **Security Features**: Pausable (via PauseManager), UUPS upgradeable, non-reentrant
+  - Inherits shared functionality from PegManagerBase (which inherits from PegBase)
+- **Security Features**: Pausable (via AccessManager), UUPS upgradeable, non-reentrant
 
 #### 2. **PegoutManager**
 
@@ -977,18 +996,29 @@ graph TB
   - Handles timeout-based operator advancement
   - Coordinates committee signatures for peg-outs
   - Integrates with MemberRegistry for operator management
-  - Inherits shared functionality from PegManagerBase
-- **Security Features**: Pausable (via PauseManager), UUPS upgradeable, non-reentrant
+  - Inherits shared functionality from PegManagerBase (which inherits from PegBase)
+- **Security Features**: Pausable (via AccessManager), UUPS upgradeable, non-reentrant
 
-#### 3. **PegManagerBase**
+#### 3. **PegBase**
+
+- **Purpose**: Abstract base contract providing shared functionality for PeginManager, PegoutManager, and ChallengeManager
+- **Key Features**:
+  - Centralizes common state variables (bitcoinManager, streamManager, committeeRegistry)
+  - Provides shared initialization logic with AccessManager integration
+  - Implements common peg status validation functions
+  - Inherits from BaseProxy, ProofValidator, ReentrancyGuardUpgradeable, and Pausable
+- **Security Features**: Pausable (via AccessManager), UUPS upgradeable, non-reentrant
+
+#### 4. **PegManagerBase**
 
 - **Purpose**: Abstract base contract providing shared functionality for PeginManager and PegoutManager
 - **Key Features**:
-  - Centralizes common state variables (bitcoinManager, streamManager, committeeRegistry, signatureManager, rbtcBridge)
+  - Extends PegBase with additional manager-specific functionality
+  - Centralizes common state variables (signatureManager, rbtcBridge)
   - Provides shared initialization logic
   - Implements common setter functions (setStreamManager, setSignatureManager, setPauser)
 
-#### 4. **RbtcBridge**
+#### 5. **RbtcBridge**
 
 - **Purpose**: RSKIP-502 intermediary contract that serves as the single authorized address for RBTC minting and burning with the PowPeg Bridge
 - **Key Features**:
@@ -1001,7 +1031,7 @@ graph TB
 - **Security Features**: UUPS upgradeable, non-reentrant, owner-controlled manager address updates
 - **Critical Role**: Without RbtcBridge, both managers cannot interact with PowPeg Bridge due to single-address constraint
 
-#### 5. **BitcoinManager**
+#### 6. **BitcoinManager**
 
 - **Purpose**: Handles Bitcoin address generation and transaction validation
 - **Key Features**:
@@ -1011,7 +1041,7 @@ graph TB
   - Manages Taproot addresses with key spend and script spend paths
 - **Security Features**: UUPS upgradeable
 
-#### 6. **CommitteeRegistry**
+#### 7. **CommitteeRegistry**
 
 - **Purpose**: Manages committee formation, selection, and lifecycle
 - **Key Features**:
@@ -1019,9 +1049,9 @@ graph TB
   - Handles committee member selection and rotation
   - Manages pending committee formation with timeouts
   - Coordinates with MemberRegistry for member management
-- **Security Features**: Pausable (via PauseManager), UUPS upgradeable, non-reentrant
+- **Security Features**: Pausable (via AccessManager), UUPS upgradeable, non-reentrant
 
-#### 7. **MemberRegistry**
+#### 8. **MemberRegistry**
 
 - **Purpose**: Manages member registration, applications, and balance tracking
 - **Key Features**:
@@ -1029,9 +1059,9 @@ graph TB
   - Manages security bond deposits and withdrawals
   - Tracks member balances (available, pre-staked, staked)
   - Supports member applications to different streams
-- **Security Features**: Pausable (via PauseManager), UUPS upgradeable, non-reentrant
+- **Security Features**: Pausable (via AccessManager), UUPS upgradeable, non-reentrant
 
-#### 8. **StreamManager**
+#### 9. **StreamManager**
 
 - **Purpose**: Manages streams and packet allocation for different Bitcoin denominations
 - **Key Features**:
@@ -1041,7 +1071,7 @@ graph TB
   - Tracks stream usage and committee rotation
 - **Security Features**: UUPS upgradeable
 
-#### 9. **SignatureManager**
+#### 10. **SignatureManager**
 
 - **Purpose**: Manages multi-signature operations for committee members
 - **Key Features**:
@@ -1051,12 +1081,26 @@ graph TB
   - Coordinates with CommitteeRegistry for member verification
 - **Security Features**: UUPS upgradeable
 
-#### 10. **PauseManager**
+#### 11. **ChallengeManager**
 
-- **Purpose**: Centralized pause controller for emergency stops
+- **Purpose**: Manages challenge operations for dispute resolution in peg-out flows
 - **Key Features**:
+  - Handles challenge registration when operators present invalid reimbursement transactions
+  - Manages input revelation for BitVMX dispute resolution
+  - Validates challenge transactions and SPV proofs
+  - Coordinates with PegoutManager for challenge context
+  - Inherits shared functionality from PegBase
+- **Security Features**: Pausable (via AccessManager), UUPS upgradeable, non-reentrant
+
+#### 12. **AccessManager**
+
+- **Purpose**: Centralized authorization and pause controller for emergency stops
+- **Key Features**:
+  - Extends PauseManager with role-based access control
+  - Provides authorization checks for sensitive operations across the bridge system
+  - Enforces permissions through view functions that restrict sensitive operations (peg status modifications, committee management, packet creation, RBTC operations, signature initialization, member management) to authorized contracts only
   - Single control point for pausing all contracts
-  - Coordinates pause/unpause across PeginManager, PegoutManager, CommitteeRegistry, and MemberRegistry
+  - Coordinates pause/unpause across PeginManager, PegoutManager, CommitteeRegistry, MemberRegistry, RbtcBridge, and ChallengeManager
   - Owner-controlled with single transaction emergency stop
   - Provides system-wide pause status checking
 - **Security Features**: UUPS upgradeable, owner access control
@@ -1071,16 +1115,16 @@ graph TB
 
 #### Pausability
 
-- **PeginManager**, **PegoutManager**, **CommitteeRegistry**, and **MemberRegistry** are pausable
-- **PauseManager** provides centralized pause control for all contracts
+- **PeginManager**, **PegoutManager**, **CommitteeRegistry**, **MemberRegistry**, **RbtcBridge**, and **ChallengeManager** are pausable
+- **AccessManager** (which extends PauseManager) provides centralized pause control for all contracts
 - Pause functionality allows emergency stops of critical operations with a single transaction
-- Only PauseManager owner can pause/unpause the system
-- All pausable contracts delegate pause authority to PauseManager
+- Only AccessManager owner can pause/unpause the system
+- All pausable contracts delegate pause authority to AccessManager
 
 #### Access Control
 
 - **BaseProxy** provides ownership functionality through OpenZeppelin's Ownable2StepUpgradeable
-- **AccessControl** contract provides role-based access control
+- **AccessManager** contract provides role-based access control
 - **PegManager** has administrative privileges over other contracts
 
 #### Reentrancy Protection
@@ -1100,13 +1144,16 @@ graph TB
 
 1. **PeginManager** manages peg-in operations, coordinating with BitcoinManager, CommitteeRegistry, StreamManager, SignatureManager, and RbtcBridge for minting RBTC
 2. **PegoutManager** manages peg-out operations, coordinating with BitcoinManager, CommitteeRegistry, StreamManager, SignatureManager, MemberRegistry, and RbtcBridge for burning RBTC
-3. **RbtcBridge** serves as the single authorized intermediary between both managers and the PowPeg Bridge (RSKIP-502), handling all RBTC minting and burning operations
-4. **PauseManager** controls pause state for PeginManager, PegoutManager, CommitteeRegistry, and MemberRegistry
-5. **CommitteeRegistry** manages committee lifecycle and coordinates with MemberRegistry and StreamManager
-6. **StreamManager** handles stream and packet management, working with CommitteeRegistry
-7. **SignatureManager** processes multi-signature operations for committees
-8. **BitcoinManager** provides Bitcoin-specific functionality as a utility contract
-9. **MemberRegistry** manages member data and balances across all other contracts
+3. **ChallengeManager** manages challenge operations for dispute resolution, coordinating with PegoutManager, BitcoinManager, CommitteeRegistry, and StreamManager
+4. **RbtcBridge** serves as the single authorized intermediary between both managers and the PowPeg Bridge (RSKIP-502), handling all RBTC minting and burning operations
+5. **AccessManager** controls pause state and provides role-based access control for PeginManager, PegoutManager, CommitteeRegistry, MemberRegistry, RbtcBridge, and ChallengeManager
+6. **PegBase** provides shared base functionality for PeginManager, PegoutManager, and ChallengeManager
+7. **PegManagerBase** extends PegBase with additional manager-specific functionality for PeginManager and PegoutManager
+8. **CommitteeRegistry** manages committee lifecycle and coordinates with MemberRegistry and StreamManager
+9. **StreamManager** handles stream and packet management, working with CommitteeRegistry
+10. **SignatureManager** processes multi-signature operations for committees
+11. **BitcoinManager** provides Bitcoin-specific functionality as a utility contract
+12. **MemberRegistry** manages member data and balances across all other contracts
 
 ### Deployment Architecture
 

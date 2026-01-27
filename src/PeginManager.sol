@@ -5,12 +5,13 @@ import {PegManagerBase} from "./PegManagerBase.sol";
 import {IPeginManager, RequestPeginTempInfo} from "./interfaces/IPeginManager.sol";
 import {ICommitteeRegistry, CommitteeMember} from "./interfaces/ICommitteeRegistry.sol";
 import {IMemberRegistry, MemberKeys} from "./interfaces/IMemberRegistry.sol";
-import {Stream} from "./interfaces/IStreamManager.sol";
+import {IStreamManager, Stream} from "./interfaces/IStreamManager.sol";
 import {IBitcoinManager, PrevoutData, BitcoinSignatureData, BtcTxOut} from "./interfaces/IBitcoinManager.sol";
 import {BtcTxSPVProof, StreamPosition, PegStatus} from "./interfaces/IPegCommonTypes.sol";
 import {BtcHelper} from "./libraries/BtcHelper.sol";
 import {Constants} from "./libraries/Constants.sol";
 import {IRbtcBridge} from "./interfaces/IRbtcBridge.sol";
+import {ISignatureManager} from "./interfaces/ISignatureManager.sol";
 
 /// @title PeginManager
 /// @notice Manages peg-in operations from Bitcoin to Rootstock
@@ -22,18 +23,32 @@ contract PeginManager is IPeginManager, PegManagerBase {
     /// @notice Initializes the PeginManager contract
     /// @param _initialOwner The initial owner of the contract
     /// @param _bridgeAddress The address of the pow-peg bridge contract
+    /// @param _accessManager The access manager contract address
     /// @param _committeeRegistry The committee registry contract address
     /// @param _bitcoinManager The Bitcoin manager contract address
     /// @param _rbtcBridge The RbtcBridge contract for minting RBTC
-    /// @dev This function can only be called once during contract deployment
+    /// @param _streamManager The stream manager contract address
+    /// @param _signatureManager The signature manager contract address
     function initialize(
         address _initialOwner,
         address payable _bridgeAddress,
+        address _accessManager,
         ICommitteeRegistry _committeeRegistry,
         IBitcoinManager _bitcoinManager,
-        IRbtcBridge _rbtcBridge
+        IRbtcBridge _rbtcBridge,
+        IStreamManager _streamManager,
+        ISignatureManager _signatureManager
     ) public virtual initializer {
-        __PegManagerBase_init(_initialOwner, _bridgeAddress, _committeeRegistry, _bitcoinManager, _rbtcBridge);
+        __PegManagerBase_init(
+            _initialOwner,
+            _bridgeAddress,
+            _accessManager,
+            _committeeRegistry,
+            _bitcoinManager,
+            _rbtcBridge,
+            _streamManager,
+            _signatureManager
+        );
     }
 
     /// @notice Gets the accept peg-in transaction id for a given request peg-in transaction id

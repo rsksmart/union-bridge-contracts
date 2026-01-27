@@ -10,16 +10,20 @@ import {
     OperatorTakeData
 } from "./interfaces/ISignatureManager.sol";
 import {CommitteeMember, ICommitteeRegistry, Role} from "./interfaces/ICommitteeRegistry.sol";
-import {AccessControl} from "./AccessControl.sol";
+import {BaseProxy} from "./BaseProxy.sol";
+import {IAccessManager} from "./interfaces/IAccessManager.sol";
 
 /// @title Signature Manager
 /// @notice Manages signatures for peg-in and peg-out operations
 /// @dev Handles multi-signature operations for committee members using Musig2 protocol
 /// @dev Manages both signature collection and OperatorTake transaction id collection
-contract SignatureManager is ISignatureManager, AccessControl {
+contract SignatureManager is ISignatureManager, BaseProxy {
     /// @notice The committee registry contract that manages committee membership
     /// @dev Used to verify committee membership and get member information
     ICommitteeRegistry public committeeRegistry;
+    /// @notice The access manager contract that manages access control
+    /// @dev Used to check access control for sensitive operations
+    IAccessManager public accessManager;
 
     // Signatures waiting for the committee to sign
     mapping(bytes32 txid => Signatures signatures) internal committeeSignatures;
@@ -29,21 +33,18 @@ contract SignatureManager is ISignatureManager, AccessControl {
     /// @dev Sets up the committee registry and access control
     /// @dev Can only be called once during contract deployment
     /// @param _initialOwner The address that will be set as the initial owner
-    /// @param _peginManager The address of the PeginManager contract
-    /// @param _pegoutManager The address of the PegoutManager contract
+    /// @param _accessManager The address of the AccessManager contract
     /// @param _committeeRegistry The address of the CommitteeRegistry contract
-    function initialize(
-        address _initialOwner,
-        address _peginManager,
-        address _pegoutManager,
-        address _challengeManager,
-        ICommitteeRegistry _committeeRegistry
-    ) public initializer {
-        if (address(_committeeRegistry) == address(0)) {
-            revert CommitteeRegistryAddressZero();
+    function initialize(address _initialOwner, IAccessManager _accessManager, ICommitteeRegistry _committeeRegistry)
+        public
+        initializer
+    {
+        if (address(_accessManager) == address(0) || address(_committeeRegistry) == address(0)) {
+            revert InvalidZeroAddress();
         }
+        accessManager = _accessManager;
         committeeRegistry = _committeeRegistry;
-        __AccessControl_init(_initialOwner, _peginManager, _pegoutManager, _challengeManager);
+        __BaseProxy_init(_initialOwner);
     }
 
     function _isMemberInCommittee(uint128 _committeeId, address _memberAddress) internal view returns (bool) {
@@ -187,7 +188,10 @@ contract SignatureManager is ISignatureManager, AccessControl {
     /// @dev Can only be called by the PegManager
     /// @param _txid The hash that needs to be signed
     /// @param _committeeId The committee ID that will sign the hash
-    function initSignatures(bytes32 _txid, uint128 _committeeId) external onlyPegManager {
+    function initSignatures(bytes32 _txid, uint128 _committeeId) external {
+        // Verify that the caller has permission to initialize signatures
+        accessManager.canInitSignatures(_msgSender());
+
         // Check if the signature hash is not empty
         if (_txid == "") {
             revert InvalidTxidToSign(_txid);
@@ -212,7 +216,10 @@ contract SignatureManager is ISignatureManager, AccessControl {
     /// @dev Can only be called by the PegManager
     /// @param _acceptPeginTxid The accept peg-in transaction id
     /// @param _committeeId The committee ID that will provide OperatorTake transaction id's
-    function initOperatorTakeTxids(bytes32 _acceptPeginTxid, uint128 _committeeId) external onlyPegManager {
+    function initOperatorTakeTxids(bytes32 _acceptPeginTxid, uint128 _committeeId) external {
+        // Verify that the caller has permission to initialize operator take txids
+        accessManager.canInitOperatorTakeTxids(_msgSender());
+
         // Check if the accept pegin tx id is not empty
         if (_acceptPeginTxid == bytes32(0)) {
             revert InvalidAcceptPeginTxid(_acceptPeginTxid);

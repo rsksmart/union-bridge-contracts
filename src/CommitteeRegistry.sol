@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import {AccessControl} from "./AccessControl.sol";
+import {BaseProxy} from "./BaseProxy.sol";
 import {Pausable} from "./Pausable.sol";
+import {IAccessManager} from "./interfaces/IAccessManager.sol";
 import {
     Role,
     CommitteeMember,
@@ -16,8 +17,6 @@ import {
     UTXO
 } from "./interfaces/ICommitteeRegistry.sol";
 import {StreamDenomination, IStreamManager} from "./interfaces/IStreamManager.sol";
-import {IPeginManager} from "./interfaces/IPeginManager.sol";
-import {IPegoutManager} from "./interfaces/IPegoutManager.sol";
 import {SignatureData} from "./interfaces/ISignatureManager.sol";
 import {IMemberRegistry, MemberKeys} from "./interfaces/IMemberRegistry.sol";
 import {BytesHelper} from "./libraries/BytesHelper.sol";
@@ -27,10 +26,9 @@ import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/ut
 /// @title CommitteeRegistry
 /// @notice Manages committee formation, selection, and lifecycle for the union bridge system
 /// @dev Handles committee creation, pending committee management, and coordination with MemberRegistry
-contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuardUpgradeable, Pausable {
+contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgradeable, Pausable {
     /// @notice Mapping of whitelisted addresses
     mapping(address => bool) internal whitelisted;
-
     /// @notice Minimum number of watchtowers required for a committee
     uint256 public minCommitteeWatchtowers;
     /// @notice Minimum number of operators required for a committee
@@ -55,8 +53,12 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
     address public whitelister;
     /// @notice Stream manager contract for managing streams and packets
     IStreamManager streamManager;
+
     /// @notice Member registry contract for member management
     IMemberRegistry public memberRegistry;
+
+    /// @notice Access manager contract for access control
+    IAccessManager public accessManager;
 
     /// @notice Timeout in seconds for pending committee formation
     uint256 public pendingCommitteeTimeout;
@@ -65,22 +67,27 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
     /// @param _initialOwner The initial owner of the contract
     /// @param _memberRegistry The member registry contract address
     /// @param _settings The settings for the committee registry
-    /// @dev PeginManager and PegoutManager addresses can be set later via setPeginManager/setPegoutManager
     function initialize(
         address _initialOwner,
+        IAccessManager _accessManager,
         IMemberRegistry _memberRegistry,
+        IStreamManager _streamManager,
         CommitteeRegistrySettings memory _settings
     ) public virtual initializer {
-        __AccessControl_init_without_peg_managers(_initialOwner);
-        __ReentrancyGuard_init();
-        __Pauser_init();
-
+        if (
+            address(_accessManager) == address(0) || address(_memberRegistry) == address(0)
+                || address(_streamManager) == address(0)
+        ) {
+            revert InvalidZeroAddress();
+        }
         // slither-disable-next-line missing-zero-check
         whitelister = _initialOwner;
-        if (address(_memberRegistry) == address(0)) {
-            revert MemberRegistryAddressZero();
-        }
+        accessManager = _accessManager;
         memberRegistry = _memberRegistry;
+        streamManager = _streamManager;
+        __BaseProxy_init(_initialOwner);
+        __ReentrancyGuard_init();
+        __Pauser_init(address(_accessManager));
         pendingCommitteeTimeout = _settings.pendingCommitteeTimeout; // Default timeout for pending committees
         for (uint64 i = 0; i < uint64(StreamDenomination.LENGTH); i++) {
             shouldCreateCommittee[i] = true;
@@ -330,9 +337,11 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
     /// @dev Only callable by PegManager contract
     /// @dev This function is called when the slot usage threshold is reached
     /// @param _streamId The stream ID to create a new committee for
-    function createCommittee(uint64 _streamId) external onlyPegManager {
-        // NOTE: This method is called from the pegManager, so we should not revert.
+    function createCommittee(uint64 _streamId) external {
+        // Verify that the caller has permission to create a committee
+        accessManager.canCreateCommittee(_msgSender());
 
+        // NOTE: This method is called from the pegManager, so we should not revert.
         uint256 createdAt = committeesById[pendingCommittees[_streamId]].createdAt;
 
         if (createdAt != 0) {
@@ -493,7 +502,11 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
             StreamDenomination(pendingCommittee.streamId),
             streamManager.getPacketsLength(pendingCommittee.streamId)
         );
-        streamManager.createNewPacket(pendingCommittee.streamId, _committeeId, pendingCommittee.aggregatedKey);
+
+        bytes32[] memory disputeKeys = _getCommitteeDisputeKeys(_committeeId);
+        streamManager.createNewPacket(
+            pendingCommittee.streamId, _committeeId, pendingCommittee.aggregatedKey, disputeKeys
+        );
     }
 
     /// @notice Allows a member to deposit communication data for its respective pending committee
@@ -680,9 +693,10 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
     /// @dev Reverts with TakeOperatorNotFound if no eligible operator is found
     function getOperatorDisputeData(uint128 _committeeId, SignatureData[] calldata _signatureData, uint8 _missingNonces)
         external
-        onlyPegManager
         returns (address operatorAddress, bytes32 disputePubKey)
     {
+        // Verify that the caller has permission to select a take operator
+        accessManager.canSelectTakeOperator(_msgSender());
         Committee storage committee = _getCommittee(_committeeId);
         uint256 membersLength = committee.members.length;
 
@@ -713,7 +727,6 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
 
         revert TakeOperatorNotFound(_committeeId);
     }
-
     // ===================== Modifiers =====================
 
     /// @notice Modifier to restrict access to the whitelister
@@ -725,7 +738,7 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
 
     function _onlyWhitelister(address _sender) internal view virtual {
         if (whitelister != _sender) {
-            revert UnauthorizedAccount(_sender);
+            revert UnauthorizedWhitelister(_sender);
         }
     }
 
@@ -741,68 +754,6 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
     }
 
     // ===================== Administrative Functions =====================
-
-    /// @notice Sets the Stream Manager contract address
-    /// @dev Only callable by the contract owner
-    /// @param _streamManager The address of the Stream Manager contract
-    function setStreamManager(IStreamManager _streamManager) external onlyOwner {
-        if (address(_streamManager) == address(0)) {
-            revert InvalidZeroAddress();
-        }
-        streamManager = _streamManager;
-        emit StreamManagerUpdated(address(_streamManager));
-    }
-
-    /// @notice Sets the Pegin Manager contract address
-    /// @dev Only callable by the contract owner
-    /// @param _peginManager The address of the Pegin Manager contract
-    function setPeginManager(IPeginManager _peginManager) external onlyOwner {
-        if (address(_peginManager) == address(0)) {
-            revert InvalidZeroAddress();
-        }
-        peginManager = address(_peginManager);
-        emit PeginManagerUpdated(address(_peginManager));
-    }
-
-    /// @notice Sets the Pegout Manager contract address
-    /// @dev Only callable by the contract owner
-    /// @param _pegoutManager The address of the Pegout Manager contract
-    function setPegoutManager(IPegoutManager _pegoutManager) external onlyOwner {
-        if (address(_pegoutManager) == address(0)) {
-            revert InvalidZeroAddress();
-        }
-        pegoutManager = address(_pegoutManager);
-        emit PegoutManagerUpdated(address(_pegoutManager));
-    }
-
-    /// @notice Sets the Challenge Manager contract address
-    /// @dev Only callable by the contract owner
-    /// @param _challengeManager The address of the Challenge Manager contract
-    function setChallengeManager(address _challengeManager) external onlyOwner {
-        if (_challengeManager == address(0)) {
-            revert InvalidZeroAddress();
-        }
-        challengeManager = _challengeManager;
-        emit ChallengeManagerUpdated(_challengeManager);
-    }
-
-    /// @notice Sets the Member Registry contract address
-    /// @dev Only callable by the contract owner
-    /// @param _memberRegistry The address of the Member Registry contract
-    function setMemberRegistry(IMemberRegistry _memberRegistry) external onlyOwner {
-        if (address(_memberRegistry) == address(0)) {
-            revert InvalidZeroAddress();
-        }
-        memberRegistry = _memberRegistry;
-        emit MemberRegistryUpdated(address(_memberRegistry));
-    }
-
-    /// @notice Sets a new pauser address
-    /// @param _newPauser The new pauser address
-    /// @dev Only callable by the contract owner
-    function setPauser(address _newPauser) public override onlyOwner {
-        super.setPauser(_newPauser);
-    }
 
     /// @notice Sets a new whitelister address
     /// @param _newWhitelister The new whitelister address
@@ -869,7 +820,9 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
     /// @dev Members with reApply=true will be re-added as candidates, others get their balance as available
     /// @param _streamId The stream ID for the committee
     /// @param _packetNumber The packet number where the committee was active
-    function releaseCommittee(uint64 _streamId, uint64 _packetNumber) external onlyPegManager {
+    function releaseCommittee(uint64 _streamId, uint64 _packetNumber) external {
+        // Verify that the caller has permission to release a committee
+        accessManager.canReleaseCommittee(_msgSender());
         uint128 committeeId = streamManager.getCommitteeId(_streamId, _packetNumber);
         CommitteeMember[] memory committeeMembers = _getCommitteeMembers(committeeId);
 
@@ -892,6 +845,10 @@ contract CommitteeRegistry is ICommitteeRegistry, AccessControl, ReentrancyGuard
     /// @param _committeeId The committee ID
     /// @return Array of dispute keys for all members
     function getCommitteeDisputeKeys(uint128 _committeeId) external view returns (bytes32[] memory) {
+        return _getCommitteeDisputeKeys(_committeeId);
+    }
+
+    function _getCommitteeDisputeKeys(uint128 _committeeId) internal view returns (bytes32[] memory) {
         CommitteeMember[] memory committeeMembers = _getCommitteeMembers(_committeeId);
         bytes32[] memory disputeKeys = new bytes32[](committeeMembers.length);
         for (uint256 i = 0; i < committeeMembers.length; i++) {
