@@ -38,14 +38,11 @@ abstract contract PegManagerBase is IPegManagerBase, PegBase {
         IStreamManager _streamManager,
         ISignatureManager _signatureManager
     ) internal onlyInitializing {
-        if (address(_rbtcBridge) == address(0)) {
-            revert RbtcBridgeAddressZero();
+        // Validate that the addresses are not zero
+        if (address(_rbtcBridge) == address(0) || address(_signatureManager) == address(0)) {
+            revert InvalidZeroAddress();
         }
         rbtcBridge = _rbtcBridge;
-
-        if (address(_signatureManager) == address(0)) {
-            revert SignatureManagerAddressZero();
-        }
         signatureManager = _signatureManager;
 
         __PegBase_init(

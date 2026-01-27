@@ -58,13 +58,10 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         IBridge _bridge,
         IStreamManager _streamManager
     ) public virtual initializer {
-        if (address(_accessManager) == address(0)) {
-            revert IAccessManager.AccessManagerAddressZero();
-        }
-        if (address(_bridge) == address(0)) {
-            revert InvalidZeroAddress();
-        }
-        if (address(_streamManager) == address(0)) {
+        if (
+            address(_accessManager) == address(0) || address(_bridge) == address(0)
+                || address(_streamManager) == address(0)
+        ) {
             revert InvalidZeroAddress();
         }
         accessManager = _accessManager;

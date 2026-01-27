@@ -21,6 +21,7 @@ import {HelperContract} from "test/helpers/HelperContract.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {SignatureData} from "src/interfaces/ISignatureManager.sol";
+import {IPausable} from "src/interfaces/IPausable.sol";
 
 contract CommitteeRegistryTest is Test, HelperContract {
     // Maximum allowed gas for committee creation operations
@@ -271,14 +272,14 @@ contract CommitteeRegistryTest is Test, HelperContract {
 
     function test_setWhitelister_Revert_InvalidZeroAddress() external {
         // Arrange
-        address zeroAddress = address(0);
+        address invalidAddress = address(0);
         vm.startPrank(registry.owner());
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.InvalidZeroAddress.selector));
+        vm.expectRevert(abi.encodeWithSelector(IPausable.InvalidZeroAddress.selector));
 
         // Act
-        registry.setWhitelister(zeroAddress);
+        registry.setWhitelister(invalidAddress);
     }
 
     function test_setPendingCommitteeTimeout_Success_PausedContract() external {

@@ -61,6 +61,11 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
             _signatureManager
         );
 
+        // Validate that the settings are not zero
+        if (_settings.userTakeTimeout == 0 || _settings.operatorTakeTimeout == 0) {
+            revert InvalidTimeout(0);
+        }
+
         userTakeTimeout = _settings.userTakeTimeout;
         operatorTakeTimeout = _settings.operatorTakeTimeout;
     }

@@ -54,9 +54,6 @@ interface IChallengeManager {
 
     // ===================== Errors =====================
 
-    /// @notice Thrown when the pegout manager address is zero
-    error PegoutManagerAddressZero();
-
     /// @notice Thrown when the reimbursement kickoff txid does not match the expected value
     /// @param actual The actual reimbursement kickoff txid provided
     /// @param expected The expected reimbursement kickoff txid

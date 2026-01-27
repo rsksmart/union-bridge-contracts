@@ -39,11 +39,8 @@ contract SignatureManager is ISignatureManager, BaseProxy {
         public
         initializer
     {
-        if (address(_accessManager) == address(0)) {
-            revert IAccessManager.AccessManagerAddressZero();
-        }
-        if (address(_committeeRegistry) == address(0)) {
-            revert CommitteeRegistryAddressZero();
+        if (address(_accessManager) == address(0) || address(_committeeRegistry) == address(0)) {
+            revert InvalidZeroAddress();
         }
         accessManager = _accessManager;
         committeeRegistry = _committeeRegistry;

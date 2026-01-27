@@ -155,7 +155,7 @@ interface ISignatureManager {
 
     // Errors
     /// @notice Thrown when the committee registry address is set to zero
-    error CommitteeRegistryAddressZero();
+    error InvalidZeroAddress();
 
     /// @notice Thrown when a txid to sign is not found
     /// @param txid The txid that was not found

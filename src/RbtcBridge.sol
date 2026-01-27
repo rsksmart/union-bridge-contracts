@@ -28,13 +28,9 @@ contract RbtcBridge is IRbtcBridge, BaseProxy, ReentrancyGuardUpgradeable, Pausa
     /// @param _bridge The RSK PowPeg Bridge contract address
     /// @param _accessManager The access manager contract address
     function initialize(address _initialOwner, address _bridge, IAccessManager _accessManager) external initializer {
-        if (_bridge == address(0)) {
-            revert BridgeAddressZero();
+        if (_bridge == address(0) || address(_accessManager) == address(0)) {
+            revert InvalidZeroAddress();
         }
-        if (address(_accessManager) == address(0)) {
-            revert IAccessManager.AccessManagerAddressZero();
-        }
-
         accessManager = _accessManager;
         bridge = IBridge(_bridge);
 

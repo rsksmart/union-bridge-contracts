@@ -478,17 +478,8 @@ interface ICommitteeRegistry {
     /// @param committeeId The committee ID
     error CommitteeNotFound(uint128 committeeId);
 
-    /// @notice Thrown when an address is zero
-    error InvalidZeroAddress();
-
     /// @notice Thrown when a value is zero
     error InvalidZeroValue();
-
-    /// @notice Thrown when the member registry address is zero
-    error MemberRegistryAddressZero();
-
-    /// @notice Thrown when the stream manager address is zero
-    error StreamManagerAddressZero();
 
     /// @notice Thrown when minimum members requirement is invalid
     /// @param minMembers The minimum members requirement

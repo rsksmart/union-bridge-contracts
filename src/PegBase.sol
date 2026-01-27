@@ -2,19 +2,18 @@
 pragma solidity ^0.8.20;
 
 import {IPegBase} from "./interfaces/IPegBase.sol";
-import {BaseProxy} from "./BaseProxy.sol";
-import {Pausable} from "./Pausable.sol";
 import {ProofValidator} from "./ProofValidator.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
 import {IStreamManager} from "./interfaces/IStreamManager.sol";
 import {ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
 import {PegStatus, StreamPosition} from "./interfaces/IPegCommonTypes.sol";
+import {BaseProxy} from "./BaseProxy.sol";
 
 /// @title PegBase
 /// @notice Abstract base contract for shared functionality between PeginManager, PegoutManager and ChallengeManager
 /// @dev Contains common state variables, initialization logic, and setter functions
-abstract contract PegBase is IPegBase, BaseProxy, ProofValidator, ReentrancyGuardUpgradeable, Pausable {
+abstract contract PegBase is IPegBase, BaseProxy, ProofValidator, ReentrancyGuardUpgradeable {
     /// @notice Bitcoin manager contract for Bitcoin transaction validation and address generation
     IBitcoinManager public bitcoinManager;
 
@@ -40,26 +39,20 @@ abstract contract PegBase is IPegBase, BaseProxy, ProofValidator, ReentrancyGuar
         IBitcoinManager _bitcoinManager,
         IStreamManager _streamManager
     ) internal onlyInitializing {
-        // Validate that the bitcoin manager is not zero address
-        if (address(_bitcoinManager) == address(0)) {
-            revert BitcoinManagerAddressZero();
+        // Validate that the addresses are not zero
+        if (
+            address(_bitcoinManager) == address(0) || address(_committeeRegistry) == address(0)
+                || address(_streamManager) == address(0)
+        ) {
+            revert InvalidZeroAddress();
         }
         bitcoinManager = _bitcoinManager;
-
-        if (address(_committeeRegistry) == address(0)) {
-            revert CommitteeRegistryAddressZero();
-        }
         committeeRegistry = _committeeRegistry;
-
-        if (address(_streamManager) == address(0)) {
-            revert StreamManagerAddressZero();
-        }
         streamManager = _streamManager;
 
         __BaseProxy_init(_initialOwner);
-        __ProofValidator_init(_bridgeAddress);
+        __ProofValidator_init(_bridgeAddress, _accessManager);
         __ReentrancyGuard_init();
-        __Pauser_init(_accessManager);
     }
 
     function _validatePegStatus(bytes32 _acceptPeginTxid, PegStatus _expectedStatus)

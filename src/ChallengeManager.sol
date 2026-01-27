@@ -48,7 +48,7 @@ contract ChallengeManager is IChallengeManager, PegBase {
             _initialOwner, _bridgeAddress, _accessManager, _committeeRegistry, _bitcoinManager, _streamManager
         );
         if (address(_pegoutManager) == address(0)) {
-            revert PegoutManagerAddressZero();
+            revert InvalidZeroAddress();
         }
         pegoutManager = _pegoutManager;
     }

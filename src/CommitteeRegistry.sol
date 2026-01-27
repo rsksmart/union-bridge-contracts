@@ -74,17 +74,14 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         IStreamManager _streamManager,
         CommitteeRegistrySettings memory _settings
     ) public virtual initializer {
-        if (address(_accessManager) == address(0)) {
-            revert IAccessManager.AccessManagerAddressZero();
-        }
-        if (address(_streamManager) == address(0)) {
-            revert StreamManagerAddressZero();
+        if (
+            address(_accessManager) == address(0) || address(_memberRegistry) == address(0)
+                || address(_streamManager) == address(0)
+        ) {
+            revert InvalidZeroAddress();
         }
         // slither-disable-next-line missing-zero-check
         whitelister = _initialOwner;
-        if (address(_memberRegistry) == address(0)) {
-            revert MemberRegistryAddressZero();
-        }
         accessManager = _accessManager;
         memberRegistry = _memberRegistry;
         streamManager = _streamManager;

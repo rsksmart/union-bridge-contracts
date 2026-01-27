@@ -5,14 +5,25 @@ import {Test} from "forge-std/Test.sol";
 import {ProofValidatorHarness} from "./helpers/ProofValidatorHarness.sol";
 import {HelperContract} from "./helpers/HelperContract.sol";
 import {ProofValidator} from "src/ProofValidator.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract ProofValidatorTest is Test, HelperContract {
     ProofValidatorHarness proofValidator;
 
     function setUp() external {
         runTestDeployScript();
-        proofValidator = new ProofValidatorHarness();
-        proofValidator.initialize(payable(address(bridgeMock)));
+        address proofValidatorImplementation = address(new ProofValidatorHarness());
+        proofValidator = ProofValidatorHarness(
+            address(
+                new ERC1967Proxy(
+                    proofValidatorImplementation,
+                    abi.encodeCall(
+                        ProofValidatorHarness.initialize,
+                        (address(this), payable(address(bridgeMock)), address(accessManager))
+                    )
+                )
+            )
+        );
     }
 
     function test_verifyTxConfirmation_Success_EqualMinConfirmation() external {

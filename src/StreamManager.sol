@@ -61,14 +61,11 @@ contract StreamManager is IStreamManager, BaseProxy {
         StreamManagerSettings memory _settings,
         StreamSettings[] memory _streamSettings
     ) public virtual initializer {
-        if (address(_accessManager) == address(0)) {
-            revert IAccessManager.AccessManagerAddressZero();
-        }
-        accessManager = _accessManager;
-        // Set and validate the Bitcoin manager
-        if (address(_bitcoinManager) == address(0)) {
+        // Validate that the addresses are not zero
+        if (address(_accessManager) == address(0) || address(_bitcoinManager) == address(0)) {
             revert InvalidZeroAddress();
         }
+        accessManager = _accessManager;
         bitcoinManager = _bitcoinManager;
 
         // Initialize the AccessManager contract

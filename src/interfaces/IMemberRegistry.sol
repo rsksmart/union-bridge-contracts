@@ -13,12 +13,11 @@ import {
     UTXO,
     PendingCommitteeStatus
 } from "./ICommitteeRegistry.sol";
-import {IPausable} from "./IPausable.sol";
 
 /// @title IMemberRegistry
 /// @notice Interface for managing committee member registration, applications, and balance tracking
 /// @dev Handles member lifecycle operations including registration, candidacy, and balance management
-interface IMemberRegistry is IPausable {
+interface IMemberRegistry {
     // ===================== Member Lifecycle =====================
 
     /// @notice Internal function to handle member application to stream
@@ -297,9 +296,6 @@ interface IMemberRegistry is IPausable {
     /// @param denomination The stream denomination
     /// @param role The role for which there are too many candidates
     error TooManyCandidatesForStream(StreamDenomination denomination, Role role);
-
-    /// @notice Thrown when an address is zero
-    error InvalidZeroAddress();
 
     /// @notice Thrown when a EDCSA public key is invalid (zero or not on curve)
     /// @param keyType The type of the public key (TAKE, COVENANT, or COMMUNICATION)

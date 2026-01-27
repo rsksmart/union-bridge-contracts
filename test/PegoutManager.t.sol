@@ -29,7 +29,7 @@ contract PegoutManagerTest is Test, HelperContract {
 
     function setUp() external {
         runTestDeployScript();
-        (, Committee memory expectedCommittee, uint128 committeeId) = setup_completeCommitteeAndNewMembers();
+        (, Committee memory expectedCommittee,) = setup_completeCommitteeAndNewMembers();
 
         setupExpectedCommittee.aggregatedKey = expectedCommittee.aggregatedKey;
         setupExpectedCommittee.leaderAddress = expectedCommittee.leaderAddress;

@@ -6,7 +6,7 @@ import {HelperContract} from "test/helpers/HelperContract.sol";
 import {BtcTxSPVProof, StreamPosition} from "src/interfaces/IPegCommonTypes.sol";
 import {PegStatus} from "src/interfaces/IPegCommonTypes.sol";
 import {ChallengeTempInfo, IChallengeManager} from "src/interfaces/IChallengeManager.sol";
-import {Committee, ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
+import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {SlotState} from "src/interfaces/IStreamManager.sol";
 import {IPegBase} from "src/interfaces/IPegBase.sol";

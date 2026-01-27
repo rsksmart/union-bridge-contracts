@@ -20,9 +20,9 @@ abstract contract Pausable is IPausable, PausableUpgradeable {
     /// @notice Initializes the Pausable contract
     /// @dev Can only be called once during contract deployment
     /// @param _newPauser The new pauser address
-    function __Pauser_init(address _newPauser) internal initializer {
+    function __Pauser_init(address _newPauser) internal onlyInitializing {
         if (_newPauser == address(0)) {
-            revert ZeroAddress();
+            revert InvalidZeroAddress();
         }
         pauser = _newPauser;
         __Pausable_init_unchained();
@@ -61,15 +61,4 @@ abstract contract Pausable is IPausable, PausableUpgradeable {
             revert UnauthorizedPauser(_account);
         }
     }
-
-    /// @notice Event emitted when the pauser is updated
-    /// @param newPauser The new pauser address
-    event PauserUpdated(address newPauser);
-
-    /// @notice Error thrown when an account is not authorized as pauser
-    /// @param account The unauthorized account
-    error UnauthorizedPauser(address account);
-
-    /// @notice Error thrown when a zero address is provided
-    error ZeroAddress();
 }

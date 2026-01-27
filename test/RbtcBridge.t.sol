@@ -2,9 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {HelperContract} from "test/helpers/HelperContract.sol";
-import {Pausable} from "src/Pausable.sol";
 import {IRbtcBridge} from "src/interfaces/IRbtcBridge.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IAccessManager} from "src/interfaces/IAccessManager.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 

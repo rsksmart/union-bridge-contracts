@@ -33,9 +33,6 @@ interface IRbtcBridge {
     /// @notice Thrown when the PowPeg bridge rejects the request due to unauthorized caller (error code -1)
     error BridgeUnauthorizedCaller();
 
-    /// @notice Thrown when the access manager address is set to zero during initialization
-    error AccessManagerAddressZero();
-
     /// @notice Thrown when the requested amount exceeds the PowPeg bridge locking cap (error code -2)
     /// @param amount The amount that exceeded the cap
     error BridgeExceededLockingCap(uint256 amount);
@@ -50,9 +47,6 @@ interface IRbtcBridge {
     /// @notice Thrown when the PowPeg bridge returns an unknown error code
     /// @param errorCode The error code returned by the bridge
     error BridgeBtcUnknownError(int256 errorCode);
-
-    /// @notice Thrown when the bridge address is set to zero during initialization
-    error BridgeAddressZero();
 
     // ===================== Functions =====================
 

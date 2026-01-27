@@ -1,13 +1,10 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import {IPauseManager} from "./IPauseManager.sol";
-
 /// @notice Interface for access control in the union bridge
 /// @dev This interface provides error definitions for access control operations
 /// @dev Used to ensure proper authorization for sensitive operations
-/// @dev Inherits from IPauseManager to inherit the pause manager functionality
-interface IAccessManager is IPauseManager {
+interface IAccessManager {
     /// @notice Requires the caller to have permissions to modify the peg status
     /// @param _caller The address of the caller
     /// @dev Reverts if the caller does not have permissions to modify the peg status
@@ -61,9 +58,6 @@ interface IAccessManager is IPauseManager {
     // ===================== Events =====================
 
     // ===================== Errors =====================
-
-    /// @notice Thrown when the Access Manager address is set to zero
-    error AccessManagerAddressZero();
 
     /// @notice Thrown when an account is not authorized to create a committee
     /// @param _caller The address of the unauthorized account
