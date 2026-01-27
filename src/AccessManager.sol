@@ -17,61 +17,61 @@ contract AccessManager is IAccessManager, PauseManager {
         __PauseManager_init(_initialOwner);
     }
 
-    function requireCanModifyPegStatus(address _caller) external view {
+    function canModifyPegStatus(address _caller) external view {
         if (_caller != peginManager && _caller != pegoutManager && _caller != challengeManager) {
             revert UnauthorizedToModifyPegStatus(_caller);
         }
     }
 
-    function requireCanCreateCommittee(address _caller) external view {
+    function canCreateCommittee(address _caller) external view {
         if (_caller != peginManager) {
             revert UnauthorizedToCreateCommittee(_caller);
         }
     }
 
-    function requireCanReleaseCommittee(address _caller) external view {
+    function canReleaseCommittee(address _caller) external view {
         if (_caller != pegoutManager) {
             revert UnauthorizedToReleaseCommittee(_caller);
         }
     }
 
-    function requireCanSelectTakeOperator(address _caller) external view {
+    function canSelectTakeOperator(address _caller) external view {
         if (_caller != pegoutManager) {
             revert UnauthorizedToSelectTakeOperator(_caller);
         }
     }
 
-    function requireCanCreatePacket(address _caller) external view {
+    function canCreatePacket(address _caller) external view {
         if (_caller != committeeRegistry) {
             revert UnauthorizedToCreatePacket(_caller);
         }
     }
 
-    function requireCanMintRbtc(address _caller) external view {
+    function canMintRbtc(address _caller) external view {
         if (_caller != peginManager) {
             revert UnauthorizedToMintRbtc(_caller);
         }
     }
 
-    function requireCanBurnRbtc(address _caller) external view {
+    function canBurnRbtc(address _caller) external view {
         if (_caller != pegoutManager) {
             revert UnauthorizedToBurnRbtc(_caller);
         }
     }
 
-    function requireCanInitSignatures(address _caller) external view {
+    function canInitSignatures(address _caller) external view {
         if (_caller != peginManager && _caller != pegoutManager) {
             revert UnauthorizedToInitSignatures(_caller);
         }
     }
 
-    function requireCanInitOperatorTakeTxids(address _caller) external view {
+    function canInitOperatorTakeTxids(address _caller) external view {
         if (_caller != peginManager) {
             revert UnauthorizedToInitOperatorTakeTxids(_caller);
         }
     }
 
-    function requireCanModifyCandidatesForStream(address _caller) external view {
+    function canModifyCandidatesForStream(address _caller) external view {
         if (_caller != committeeRegistry) {
             revert UnauthorizedToModifyCandidatesForStream(_caller);
         }

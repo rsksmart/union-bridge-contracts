@@ -132,7 +132,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         UTXO calldata _fundingUTXO
     ) external payable {
         // Verify that the caller has permission to modify candidates for the stream
-        accessManager.requireCanModifyCandidatesForStream(_msgSender());
+        accessManager.canModifyCandidatesForStream(_msgSender());
         Member storage member = _getOrRegisterMember(_memberAddress, _publicKeys);
 
         if (_role == Role.NONE) {
@@ -187,7 +187,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
     /// @param _denomination The stream denomination to unsubscribe from
     function unsubscribeFromStream(address _memberAddress, StreamDenomination _denomination) external {
         // Verify that the caller has permission to modify candidates for the stream
-        accessManager.requireCanModifyCandidatesForStream(_msgSender());
+        accessManager.canModifyCandidatesForStream(_msgSender());
 
         _unsubscribeFromStream(_memberAddress, _denomination);
         emit MemberUnsubscribedFromStream(_memberAddress, _denomination);
@@ -216,7 +216,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
 
     function reAddCandidateToStream(StreamDenomination _denomination, CommitteeMember memory _member) external {
         // Verify that the caller has permission to modify candidates for the stream
-        accessManager.requireCanModifyCandidatesForStream(_msgSender());
+        accessManager.canModifyCandidatesForStream(_msgSender());
 
         committeesCandidates[_denomination][_member.role].push(_member.memberAddress);
     }
@@ -231,7 +231,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         external
     {
         // Verify that the caller has permission to modify candidates for the stream
-        accessManager.requireCanModifyCandidatesForStream(_msgSender());
+        accessManager.canModifyCandidatesForStream(_msgSender());
 
         for (uint256 i = 0; i < _committeeMembers.length; i++) {
             Member storage member = _getMember(_committeeMembers[i].memberAddress);
@@ -548,7 +548,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
 
     function disableMemberReApplyForStream(address _memberAddress, StreamDenomination _denomination) external {
         // Verify that the caller has permission to modify candidates for the stream
-        accessManager.requireCanModifyCandidatesForStream(_msgSender());
+        accessManager.canModifyCandidatesForStream(_msgSender());
 
         bool reApply = false;
         _setReApplyForStream(_memberAddress, _denomination, reApply);
@@ -582,7 +582,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         uint64 _packetNumber
     ) external {
         // Verify that the caller has permission to modify candidates for the stream
-        accessManager.requireCanModifyCandidatesForStream(_msgSender());
+        accessManager.canModifyCandidatesForStream(_msgSender());
 
         for (uint256 i = 0; i < _members.length; i++) {
             _movePreStakedToStaked(_members[i].memberAddress, _denomination, _packetNumber);
@@ -640,7 +640,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         uint256 _totalMemberCount
     ) external returns (CommitteeMember[] memory, PendingCommitteeStatus) {
         // Verify that the caller has permission to modify candidates for the stream
-        accessManager.requireCanModifyCandidatesForStream(_msgSender());
+        accessManager.canModifyCandidatesForStream(_msgSender());
 
         return _selectCommittee(_streamId, _minWatchtowers, _minOperators, _totalMemberCount);
     }

@@ -190,7 +190,7 @@ contract SignatureManager is ISignatureManager, BaseProxy {
     /// @param _committeeId The committee ID that will sign the hash
     function initSignatures(bytes32 _txid, uint128 _committeeId) external {
         // Verify that the caller has permission to initialize signatures
-        accessManager.requireCanInitSignatures(_msgSender());
+        accessManager.canInitSignatures(_msgSender());
 
         // Check if the signature hash is not empty
         if (_txid == "") {
@@ -218,7 +218,7 @@ contract SignatureManager is ISignatureManager, BaseProxy {
     /// @param _committeeId The committee ID that will provide OperatorTake transaction id's
     function initOperatorTakeTxids(bytes32 _acceptPeginTxid, uint128 _committeeId) external {
         // Verify that the caller has permission to initialize operator take txids
-        accessManager.requireCanInitOperatorTakeTxids(_msgSender());
+        accessManager.canInitOperatorTakeTxids(_msgSender());
 
         // Check if the accept pegin tx id is not empty
         if (_acceptPeginTxid == bytes32(0)) {

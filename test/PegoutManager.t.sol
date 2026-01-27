@@ -6,7 +6,7 @@ import {HelperContract} from "test/helpers/HelperContract.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {BtcTransaction, BtcTxSPVProof, StreamPosition, PegStatus} from "src/interfaces/IPegCommonTypes.sol";
 import {BitcoinSignatureData} from "src/interfaces/IBitcoinManager.sol";
-import {IPegoutManager, PegoutTempInfo} from "src/interfaces/IPegoutManager.sol";
+import {IPegoutManager, PegoutManagerSettings, PegoutTempInfo} from "src/interfaces/IPegoutManager.sol";
 import {IPeginManager} from "src/interfaces/IPeginManager.sol";
 import {Slot, SlotState, Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {ISignatureManager} from "src/interfaces/ISignatureManager.sol";
@@ -19,6 +19,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
 import {IRbtcBridge} from "src/interfaces/IRbtcBridge.sol";
 import {IPegBase} from "src/interfaces/IPegBase.sol";
+import {PegManagerSettingsConfig} from "script/helpers/PegManagerSettingsConfig.sol";
 
 contract PegoutManagerTest is Test, HelperContract {
     // Arrange
@@ -40,18 +41,25 @@ contract PegoutManagerTest is Test, HelperContract {
 
     // ============ Initialization Tests ============
 
-    function test_initialize_Success() external view {
+    function test_initialize_Success() external {
+        // Arrenge
+        PegoutManagerSettings memory settings = PegManagerSettingsConfig.getSettings(block.chainid, true);
+
         // Assert - verify initialization state
-        assertTrue(pegoutManager.owner() != address(0)); // Owner should be set
-        assertEq(pegoutManager.pauser(), address(accessManager)); // Pauser should be set to accessManager
-        assertEq(address(pegoutManager.committeeRegistry()), address(registry));
-        assertEq(address(pegoutManager.bitcoinManager()), address(bitcoinManager));
-        assertEq(address(pegoutManager.rbtcBridge()), address(rbtcBridge));
-        assertEq(address(pegoutManager.streamManager()), address(streamManager));
-        assertEq(address(pegoutManager.signatureManager()), address(signatureManager));
-        assertEq(address(pegoutManager.bridge()), address(bridgeMock));
-        assertTrue(pegoutManager.userTakeTimeout() > 0); // Timeout should be set
-        assertTrue(pegoutManager.operatorTakeTimeout() > 0); // Timeout should be set
+        assertEq(pegoutManager.owner(), getDeployerAddress(), "Owner should be set"); // Owner should be set
+        assertEq(pegoutManager.pauser(), address(accessManager), "Pauser should be set to accessManager"); // Pauser should be set to accessManager
+        assertEq(address(pegoutManager.committeeRegistry()), address(registry), "Committee registry should be set");
+        assertEq(address(pegoutManager.bitcoinManager()), address(bitcoinManager), "Bitcoin manager should be set");
+        assertEq(address(pegoutManager.rbtcBridge()), address(rbtcBridge), "Rbtc bridge should be set");
+        assertEq(address(pegoutManager.streamManager()), address(streamManager), "Stream manager should be set");
+        assertEq(
+            address(pegoutManager.signatureManager()), address(signatureManager), "Signature manager should be set"
+        );
+        assertEq(address(pegoutManager.bridge()), address(bridgeMock), "Bridge should be set");
+        assertEq(pegoutManager.userTakeTimeout(), settings.userTakeTimeout, "User take timeout should be set");
+        assertEq(
+            pegoutManager.operatorTakeTimeout(), settings.operatorTakeTimeout, "Operator take timeout should be set"
+        );
     }
 
     function test_tryPegout_Success() external {

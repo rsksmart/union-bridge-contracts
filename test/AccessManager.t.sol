@@ -25,356 +25,432 @@ contract AccessManagerTest is Test, HelperContract {
         assertEq(address(accessManager.challengeManager()), address(challengeManager));
     }
 
-    // ============ requireCanModifyPegStatus Tests ============
+    // ============ canModifyPegStatus Tests ============
 
-    function test_requireCanModifyPegStatus_Success_CallFromPeginManager() external view {
+    function test_canModifyPegStatus_Success_CallFromPeginManager() external view {
         // Act & Assert - should not revert
-        accessManager.requireCanModifyPegStatus(address(peginManager));
+        accessManager.canModifyPegStatus(address(peginManager));
     }
 
-    function test_requireCanModifyPegStatus_Success_CallFromPegoutManager() external view {
+    function test_canModifyPegStatus_Success_CallFromPegoutManager() external view {
         // Act & Assert - should not revert
-        accessManager.requireCanModifyPegStatus(address(pegoutManager));
+        accessManager.canModifyPegStatus(address(pegoutManager));
     }
 
-    function test_requireCanModifyPegStatus_Success_CallFromChallengeManager() external view {
+    function test_canModifyPegStatus_Success_CallFromChallengeManager() external view {
         // Act & Assert - should not revert
-        accessManager.requireCanModifyPegStatus(address(challengeManager));
+        accessManager.canModifyPegStatus(address(challengeManager));
     }
 
-    function test_requireCanModifyPegStatus_Revert_UnauthorizedAddress() external {
+    function test_canModifyPegStatus_Revert_UnauthorizedAddress() external {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(IAccessManager.UnauthorizedToModifyPegStatus.selector, unauthorizedAddress)
         );
 
         // Act
-        accessManager.requireCanModifyPegStatus(unauthorizedAddress);
+        accessManager.canModifyPegStatus(unauthorizedAddress);
     }
 
-    function test_requireCanModifyPegStatus_Revert_CallFromCommitteeRegistry() external {
+    function test_canModifyPegStatus_Revert_CallFromCommitteeRegistry() external {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(IAccessManager.UnauthorizedToModifyPegStatus.selector, address(registry))
         );
 
         // Act
-        accessManager.requireCanModifyPegStatus(address(registry));
+        accessManager.canModifyPegStatus(address(registry));
     }
 
-    function test_requireCanModifyPegStatus_Revert_CallFromMemberRegistry() external {
+    function test_canModifyPegStatus_Revert_CallFromMemberRegistry() external {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(IAccessManager.UnauthorizedToModifyPegStatus.selector, address(memberRegistry))
         );
 
         // Act
-        accessManager.requireCanModifyPegStatus(address(memberRegistry));
+        accessManager.canModifyPegStatus(address(memberRegistry));
     }
 
-    // ============ requireCanCreateCommittee Tests ============
+    // ============ canCreateCommittee Tests ============
 
-    function test_requireCanCreateCommittee_Success_CallFromPeginManager() external view {
+    function test_canCreateCommittee_Success_CallFromPeginManager() external view {
         // Act & Assert - should not revert
-        accessManager.requireCanCreateCommittee(address(peginManager));
+        accessManager.canCreateCommittee(address(peginManager));
     }
 
-    function test_requireCanCreateCommittee_Revert_UnauthorizedAddress() external {
+    function test_canCreateCommittee_Revert_UnauthorizedAddress() external {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(IAccessManager.UnauthorizedToCreateCommittee.selector, unauthorizedAddress)
         );
 
         // Act
-        accessManager.requireCanCreateCommittee(unauthorizedAddress);
+        accessManager.canCreateCommittee(unauthorizedAddress);
     }
 
-    function test_requireCanCreateCommittee_Revert_CallFromPegoutManager() external {
+    function test_canCreateCommittee_Revert_CallFromPegoutManager() external {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(IAccessManager.UnauthorizedToCreateCommittee.selector, address(pegoutManager))
         );
 
         // Act
-        accessManager.requireCanCreateCommittee(address(pegoutManager));
+        accessManager.canCreateCommittee(address(pegoutManager));
     }
 
-    function test_requireCanCreateCommittee_Revert_CallFromCommitteeRegistry() external {
+    function test_canCreateCommittee_Revert_CallFromCommitteeRegistry() external {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(IAccessManager.UnauthorizedToCreateCommittee.selector, address(registry))
         );
 
         // Act
-        accessManager.requireCanCreateCommittee(address(registry));
+        accessManager.canCreateCommittee(address(registry));
     }
 
-    // ============ requireCanReleaseCommittee Tests ============
+    function test_canCreateCommittee_Revert_CallFromMemberRegistry() external {
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessManager.UnauthorizedToCreateCommittee.selector, address(memberRegistry))
+        );
 
-    function test_requireCanReleaseCommittee_Success_CallFromPegoutManager() external view {
+        // Act
+        accessManager.canCreateCommittee(address(memberRegistry));
+    }
+
+    // ============ canReleaseCommittee Tests ============
+
+    function test_canReleaseCommittee_Success_CallFromPegoutManager() external view {
         // Act & Assert - should not revert
-        accessManager.requireCanReleaseCommittee(address(pegoutManager));
+        accessManager.canReleaseCommittee(address(pegoutManager));
     }
 
-    function test_requireCanReleaseCommittee_Revert_UnauthorizedAddress() external {
+    function test_canReleaseCommittee_Revert_UnauthorizedAddress() external {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(IAccessManager.UnauthorizedToReleaseCommittee.selector, unauthorizedAddress)
         );
 
         // Act
-        accessManager.requireCanReleaseCommittee(unauthorizedAddress);
+        accessManager.canReleaseCommittee(unauthorizedAddress);
     }
 
-    function test_requireCanReleaseCommittee_Revert_CallFromPeginManager() external {
+    function test_canReleaseCommittee_Revert_CallFromPeginManager() external {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(IAccessManager.UnauthorizedToReleaseCommittee.selector, address(peginManager))
         );
 
         // Act
-        accessManager.requireCanReleaseCommittee(address(peginManager));
+        accessManager.canReleaseCommittee(address(peginManager));
     }
 
-    function test_requireCanReleaseCommittee_Revert_CallFromCommitteeRegistry() external {
+    function test_canReleaseCommittee_Revert_CallFromCommitteeRegistry() external {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(IAccessManager.UnauthorizedToReleaseCommittee.selector, address(registry))
         );
 
         // Act
-        accessManager.requireCanReleaseCommittee(address(registry));
+        accessManager.canReleaseCommittee(address(registry));
     }
 
-    // ============ requireCanSelectTakeOperator Tests ============
+    function test_canReleaseCommittee_Revert_CallFromMemberRegistry() external {
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessManager.UnauthorizedToReleaseCommittee.selector, address(memberRegistry))
+        );
 
-    function test_requireCanSelectTakeOperator_Success_CallFromPegoutManager() external view {
+        // Act
+        accessManager.canReleaseCommittee(address(memberRegistry));
+    }
+
+    // ============ canSelectTakeOperator Tests ============
+
+    function test_canSelectTakeOperator_Success_CallFromPegoutManager() external view {
         // Act & Assert - should not revert
-        accessManager.requireCanSelectTakeOperator(address(pegoutManager));
+        accessManager.canSelectTakeOperator(address(pegoutManager));
     }
 
-    function test_requireCanSelectTakeOperator_Revert_UnauthorizedAddress() external {
+    function test_canSelectTakeOperator_Revert_UnauthorizedAddress() external {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(IAccessManager.UnauthorizedToSelectTakeOperator.selector, unauthorizedAddress)
         );
 
         // Act
-        accessManager.requireCanSelectTakeOperator(unauthorizedAddress);
+        accessManager.canSelectTakeOperator(unauthorizedAddress);
     }
 
-    function test_requireCanSelectTakeOperator_Revert_CallFromPeginManager() external {
+    function test_canSelectTakeOperator_Revert_CallFromPeginManager() external {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(IAccessManager.UnauthorizedToSelectTakeOperator.selector, address(peginManager))
         );
 
         // Act
-        accessManager.requireCanSelectTakeOperator(address(peginManager));
+        accessManager.canSelectTakeOperator(address(peginManager));
     }
 
-    function test_requireCanSelectTakeOperator_Revert_CallFromCommitteeRegistry() external {
+    function test_canSelectTakeOperator_Revert_CallFromCommitteeRegistry() external {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(IAccessManager.UnauthorizedToSelectTakeOperator.selector, address(registry))
         );
 
         // Act
-        accessManager.requireCanSelectTakeOperator(address(registry));
+        accessManager.canSelectTakeOperator(address(registry));
     }
 
-    // ============ requireCanCreatePacket Tests ============
+    function test_canSelectTakeOperator_Revert_CallFromMemberRegistry() external {
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessManager.UnauthorizedToSelectTakeOperator.selector, address(memberRegistry))
+        );
 
-    function test_requireCanCreatePacket_Success_CallFromCommitteeRegistry() external view {
+        // Act
+        accessManager.canSelectTakeOperator(address(memberRegistry));
+    }
+
+    // ============ canCreatePacket Tests ============
+
+    function test_canCreatePacket_Success_CallFromCommitteeRegistry() external view {
         // Act & Assert - should not revert
-        accessManager.requireCanCreatePacket(address(registry));
+        accessManager.canCreatePacket(address(registry));
     }
 
-    function test_requireCanCreatePacket_Revert_UnauthorizedAddress() external {
+    function test_canCreatePacket_Revert_UnauthorizedAddress() external {
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IAccessManager.UnauthorizedToCreatePacket.selector, unauthorizedAddress));
 
         // Act
-        accessManager.requireCanCreatePacket(unauthorizedAddress);
+        accessManager.canCreatePacket(unauthorizedAddress);
     }
 
-    function test_requireCanCreatePacket_Revert_CallFromPeginManager() external {
+    function test_canCreatePacket_Revert_CallFromPeginManager() external {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(IAccessManager.UnauthorizedToCreatePacket.selector, address(peginManager))
         );
 
         // Act
-        accessManager.requireCanCreatePacket(address(peginManager));
+        accessManager.canCreatePacket(address(peginManager));
     }
 
-    function test_requireCanCreatePacket_Revert_CallFromPegoutManager() external {
+    function test_canCreatePacket_Revert_CallFromPegoutManager() external {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(IAccessManager.UnauthorizedToCreatePacket.selector, address(pegoutManager))
         );
 
         // Act
-        accessManager.requireCanCreatePacket(address(pegoutManager));
+        accessManager.canCreatePacket(address(pegoutManager));
     }
 
-    // ============ requireCanMintRbtc Tests ============
+    function test_canCreatePacket_Revert_CallFromMemberRegistry() external {
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessManager.UnauthorizedToCreatePacket.selector, address(memberRegistry))
+        );
 
-    function test_requireCanMintRbtc_Success_CallFromPeginManager() external view {
+        // Act
+        accessManager.canCreatePacket(address(memberRegistry));
+    }
+
+    // ============ canMintRbtc Tests ============
+
+    function test_canMintRbtc_Success_CallFromPeginManager() external view {
         // Act & Assert - should not revert
-        accessManager.requireCanMintRbtc(address(peginManager));
+        accessManager.canMintRbtc(address(peginManager));
     }
 
-    function test_requireCanMintRbtc_Revert_UnauthorizedAddress() external {
+    function test_canMintRbtc_Revert_UnauthorizedAddress() external {
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IAccessManager.UnauthorizedToMintRbtc.selector, unauthorizedAddress));
 
         // Act
-        accessManager.requireCanMintRbtc(unauthorizedAddress);
+        accessManager.canMintRbtc(unauthorizedAddress);
     }
 
-    function test_requireCanMintRbtc_Revert_CallFromPegoutManager() external {
+    function test_canMintRbtc_Revert_CallFromPegoutManager() external {
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IAccessManager.UnauthorizedToMintRbtc.selector, address(pegoutManager)));
 
         // Act
-        accessManager.requireCanMintRbtc(address(pegoutManager));
+        accessManager.canMintRbtc(address(pegoutManager));
     }
 
-    function test_requireCanMintRbtc_Revert_CallFromCommitteeRegistry() external {
+    function test_canMintRbtc_Revert_CallFromCommitteeRegistry() external {
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IAccessManager.UnauthorizedToMintRbtc.selector, address(registry)));
 
         // Act
-        accessManager.requireCanMintRbtc(address(registry));
+        accessManager.canMintRbtc(address(registry));
     }
 
-    // ============ requireCanBurnRbtc Tests ============
+    function test_canMintRbtc_Revert_CallFromMemberRegistry() external {
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IAccessManager.UnauthorizedToMintRbtc.selector, address(memberRegistry)));
 
-    function test_requireCanBurnRbtc_Success_CallFromPegoutManager() external view {
+        // Act
+        accessManager.canMintRbtc(address(memberRegistry));
+    }
+
+    // ============ canBurnRbtc Tests ============
+
+    function test_canBurnRbtc_Success_CallFromPegoutManager() external view {
         // Act & Assert - should not revert
-        accessManager.requireCanBurnRbtc(address(pegoutManager));
+        accessManager.canBurnRbtc(address(pegoutManager));
     }
 
-    function test_requireCanBurnRbtc_Revert_UnauthorizedAddress() external {
+    function test_canBurnRbtc_Revert_UnauthorizedAddress() external {
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IAccessManager.UnauthorizedToBurnRbtc.selector, unauthorizedAddress));
 
         // Act
-        accessManager.requireCanBurnRbtc(unauthorizedAddress);
+        accessManager.canBurnRbtc(unauthorizedAddress);
     }
 
-    function test_requireCanBurnRbtc_Revert_CallFromPeginManager() external {
+    function test_canBurnRbtc_Revert_CallFromPeginManager() external {
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IAccessManager.UnauthorizedToBurnRbtc.selector, address(peginManager)));
 
         // Act
-        accessManager.requireCanBurnRbtc(address(peginManager));
+        accessManager.canBurnRbtc(address(peginManager));
     }
 
-    function test_requireCanBurnRbtc_Revert_CallFromCommitteeRegistry() external {
+    function test_canBurnRbtc_Revert_CallFromMemberRegistry() external {
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IAccessManager.UnauthorizedToBurnRbtc.selector, address(memberRegistry)));
+
+        // Act
+        accessManager.canBurnRbtc(address(memberRegistry));
+    }
+
+    function test_canBurnRbtc_Revert_CallFromCommitteeRegistry() external {
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IAccessManager.UnauthorizedToBurnRbtc.selector, address(registry)));
 
         // Act
-        accessManager.requireCanBurnRbtc(address(registry));
+        accessManager.canBurnRbtc(address(registry));
     }
 
-    // ============ requireCanInitSignatures Tests ============
+    // ============ canInitSignatures Tests ============
 
-    function test_requireCanInitSignatures_Success_CallFromPeginManager() external view {
+    function test_canInitSignatures_Success_CallFromPeginManager() external view {
         // Act & Assert - should not revert
-        accessManager.requireCanInitSignatures(address(peginManager));
+        accessManager.canInitSignatures(address(peginManager));
     }
 
-    function test_requireCanInitSignatures_Success_CallFromPegoutManager() external view {
+    function test_canInitSignatures_Success_CallFromPegoutManager() external view {
         // Act & Assert - should not revert
-        accessManager.requireCanInitSignatures(address(pegoutManager));
+        accessManager.canInitSignatures(address(pegoutManager));
     }
 
-    function test_requireCanInitSignatures_Revert_UnauthorizedAddress() external {
+    function test_canInitSignatures_Revert_UnauthorizedAddress() external {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(IAccessManager.UnauthorizedToInitSignatures.selector, unauthorizedAddress)
         );
 
         // Act
-        accessManager.requireCanInitSignatures(unauthorizedAddress);
+        accessManager.canInitSignatures(unauthorizedAddress);
     }
 
-    function test_requireCanInitSignatures_Revert_CallFromCommitteeRegistry() external {
+    function test_canInitSignatures_Revert_CallFromCommitteeRegistry() external {
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IAccessManager.UnauthorizedToInitSignatures.selector, address(registry)));
 
         // Act
-        accessManager.requireCanInitSignatures(address(registry));
+        accessManager.canInitSignatures(address(registry));
     }
 
-    function test_requireCanInitSignatures_Revert_CallFromChallengeManager() external {
+    function test_canInitSignatures_Revert_CallFromChallengeManager() external {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(IAccessManager.UnauthorizedToInitSignatures.selector, address(challengeManager))
         );
 
         // Act
-        accessManager.requireCanInitSignatures(address(challengeManager));
+        accessManager.canInitSignatures(address(challengeManager));
     }
 
-    // ============ requireCanInitOperatorTakeTxids Tests ============
+    function test_canInitSignatures_Revert_CallFromMemberRegistry() external {
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessManager.UnauthorizedToInitSignatures.selector, address(memberRegistry))
+        );
 
-    function test_requireCanInitOperatorTakeTxids_Success_CallFromPeginManager() external view {
+        // Act
+        accessManager.canInitSignatures(address(memberRegistry));
+    }
+
+    // ============ canInitOperatorTakeTxids Tests ============
+
+    function test_canInitOperatorTakeTxids_Success_CallFromPeginManager() external view {
         // Act & Assert - should not revert
-        accessManager.requireCanInitOperatorTakeTxids(address(peginManager));
+        accessManager.canInitOperatorTakeTxids(address(peginManager));
     }
 
-    function test_requireCanInitOperatorTakeTxids_Revert_UnauthorizedAddress() external {
+    function test_canInitOperatorTakeTxids_Revert_UnauthorizedAddress() external {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(IAccessManager.UnauthorizedToInitOperatorTakeTxids.selector, unauthorizedAddress)
         );
 
         // Act
-        accessManager.requireCanInitOperatorTakeTxids(unauthorizedAddress);
+        accessManager.canInitOperatorTakeTxids(unauthorizedAddress);
     }
 
-    function test_requireCanInitOperatorTakeTxids_Revert_CallFromPegoutManager() external {
+    function test_canInitOperatorTakeTxids_Revert_CallFromPegoutManager() external {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(IAccessManager.UnauthorizedToInitOperatorTakeTxids.selector, address(pegoutManager))
         );
 
         // Act
-        accessManager.requireCanInitOperatorTakeTxids(address(pegoutManager));
+        accessManager.canInitOperatorTakeTxids(address(pegoutManager));
     }
 
-    function test_requireCanInitOperatorTakeTxids_Revert_CallFromCommitteeRegistry() external {
+    function test_canInitOperatorTakeTxids_Revert_CallFromCommitteeRegistry() external {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(IAccessManager.UnauthorizedToInitOperatorTakeTxids.selector, address(registry))
         );
 
         // Act
-        accessManager.requireCanInitOperatorTakeTxids(address(registry));
+        accessManager.canInitOperatorTakeTxids(address(registry));
     }
 
-    // ============ requireCanModifyCandidatesForStream Tests ============
+    function test_canInitOperatorTakeTxids_Revert_CallFromMemberRegistry() external {
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessManager.UnauthorizedToInitOperatorTakeTxids.selector, address(memberRegistry))
+        );
 
-    function test_requireCanModifyCandidatesForStream_Success_CallFromCommitteeRegistry() external view {
+        // Act
+        accessManager.canInitOperatorTakeTxids(address(memberRegistry));
+    }
+
+    // ============ canModifyCandidatesForStream Tests ============
+
+    function test_canModifyCandidatesForStream_Success_CallFromCommitteeRegistry() external view {
         // Act & Assert - should not revert
-        accessManager.requireCanModifyCandidatesForStream(address(registry));
+        accessManager.canModifyCandidatesForStream(address(registry));
     }
 
-    function test_requireCanModifyCandidatesForStream_Revert_UnauthorizedAddress() external {
+    function test_canModifyCandidatesForStream_Revert_UnauthorizedAddress() external {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(IAccessManager.UnauthorizedToModifyCandidatesForStream.selector, unauthorizedAddress)
         );
 
         // Act
-        accessManager.requireCanModifyCandidatesForStream(unauthorizedAddress);
+        accessManager.canModifyCandidatesForStream(unauthorizedAddress);
     }
 
-    function test_requireCanModifyCandidatesForStream_Revert_CallFromPeginManager() external {
+    function test_canModifyCandidatesForStream_Revert_CallFromPeginManager() external {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -383,10 +459,10 @@ contract AccessManagerTest is Test, HelperContract {
         );
 
         // Act
-        accessManager.requireCanModifyCandidatesForStream(address(peginManager));
+        accessManager.canModifyCandidatesForStream(address(peginManager));
     }
 
-    function test_requireCanModifyCandidatesForStream_Revert_CallFromPegoutManager() external {
+    function test_canModifyCandidatesForStream_Revert_CallFromPegoutManager() external {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -395,6 +471,18 @@ contract AccessManagerTest is Test, HelperContract {
         );
 
         // Act
-        accessManager.requireCanModifyCandidatesForStream(address(pegoutManager));
+        accessManager.canModifyCandidatesForStream(address(pegoutManager));
+    }
+
+    function test_canModifyCandidatesForStream_Revert_CallFromMemberRegistry() external {
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessManager.UnauthorizedToModifyCandidatesForStream.selector, address(memberRegistry)
+            )
+        );
+
+        // Act
+        accessManager.canModifyCandidatesForStream(address(memberRegistry));
     }
 }

@@ -339,7 +339,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
     /// @param _streamId The stream ID to create a new committee for
     function createCommittee(uint64 _streamId) external {
         // Verify that the caller has permission to create a committee
-        accessManager.requireCanCreateCommittee(_msgSender());
+        accessManager.canCreateCommittee(_msgSender());
 
         // NOTE: This method is called from the pegManager, so we should not revert.
         uint256 createdAt = committeesById[pendingCommittees[_streamId]].createdAt;
@@ -696,7 +696,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         returns (address operatorAddress, bytes32 disputePubKey)
     {
         // Verify that the caller has permission to select a take operator
-        accessManager.requireCanSelectTakeOperator(_msgSender());
+        accessManager.canSelectTakeOperator(_msgSender());
         Committee storage committee = _getCommittee(_committeeId);
         uint256 membersLength = committee.members.length;
 
@@ -822,7 +822,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
     /// @param _packetNumber The packet number where the committee was active
     function releaseCommittee(uint64 _streamId, uint64 _packetNumber) external {
         // Verify that the caller has permission to release a committee
-        accessManager.requireCanReleaseCommittee(_msgSender());
+        accessManager.canReleaseCommittee(_msgSender());
         uint128 committeeId = streamManager.getCommitteeId(_streamId, _packetNumber);
         CommitteeMember[] memory committeeMembers = _getCommitteeMembers(committeeId);
 

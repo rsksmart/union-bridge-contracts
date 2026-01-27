@@ -50,7 +50,7 @@ contract RbtcBridge is IRbtcBridge, BaseProxy, ReentrancyGuardUpgradeable, Pausa
     /// @dev Follows checks-effects-interactions pattern
     function mintRbtc(address payable _to, uint256 _amount) external nonReentrant whenNotPaused {
         // Verify that the caller has permission to mint RBTC
-        accessManager.requireCanMintRbtc(_msgSender());
+        accessManager.canMintRbtc(_msgSender());
 
         _mintRbtc(_to, _amount);
 
@@ -62,7 +62,7 @@ contract RbtcBridge is IRbtcBridge, BaseProxy, ReentrancyGuardUpgradeable, Pausa
     /// @dev The pegoutManager must send the RBTC amount via msg.value
     function burnRbtc() external payable nonReentrant whenNotPaused {
         // Verify that the caller has permission to burn RBTC
-        accessManager.requireCanBurnRbtc(_msgSender());
+        accessManager.canBurnRbtc(_msgSender());
 
         _releaseRbtc(msg.value);
 

@@ -139,7 +139,7 @@ contract StreamManager is IStreamManager, BaseProxy {
         bytes32[] memory _disputeKeys
     ) external {
         // Verify that the caller has permission to create a packet
-        accessManager.requireCanCreatePacket(_msgSender());
+        accessManager.canCreatePacket(_msgSender());
         _createNewPacket(_streamId, _committeeId, _committeePubKey, _disputeKeys);
     }
 
@@ -289,7 +289,7 @@ contract StreamManager is IStreamManager, BaseProxy {
     /// @return packet The packet number containing the slot
     function lockSlot(uint64 _streamId) external returns (Slot memory, uint64) {
         // Verify that the caller has permission to modify the peg status
-        accessManager.requireCanModifyPegStatus(_msgSender());
+        accessManager.canModifyPegStatus(_msgSender());
         Stream storage stream = streams[_streamId];
 
         // Find the next filled slot, skipping blocked slots
@@ -331,7 +331,7 @@ contract StreamManager is IStreamManager, BaseProxy {
     /// @return The slot ID that was reserved
     function reserveSlot(uint64 _streamId, uint64 _packetNumber) external returns (uint64) {
         // Verify that the caller has permission to modify the peg status
-        accessManager.requireCanModifyPegStatus(_msgSender());
+        accessManager.canModifyPegStatus(_msgSender());
         Stream storage stream = streams[_streamId];
 
         // If packet does not match with current packet being processed
@@ -378,7 +378,7 @@ contract StreamManager is IStreamManager, BaseProxy {
         bytes memory _scriptPubKey
     ) external {
         // Verify that the caller has permission to modify the peg status
-        accessManager.requireCanModifyPegStatus(_msgSender());
+        accessManager.canModifyPegStatus(_msgSender());
         Slot storage slot = _getSlot(_stream.streamId, _stream.packetNumber, _stream.slotId);
 
         if (slot.state != SlotState.RESERVED) {
@@ -400,7 +400,7 @@ contract StreamManager is IStreamManager, BaseProxy {
     /// @param _slotId The ID of the slot to block
     function blockSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) external {
         // Verify that the caller has permission to modify the peg status
-        accessManager.requireCanModifyPegStatus(_msgSender());
+        accessManager.canModifyPegStatus(_msgSender());
         Slot storage slot = _getSlot(_streamId, _packetNumber, _slotId);
 
         if (slot.state != SlotState.RESERVED) {
@@ -450,7 +450,7 @@ contract StreamManager is IStreamManager, BaseProxy {
         bytes32 _userTakeTx
     ) external {
         // Verify that the caller has permission to modify the peg status
-        accessManager.requireCanModifyPegStatus(_msgSender());
+        accessManager.canModifyPegStatus(_msgSender());
         Slot storage slot = _getSlot(_streamId, _packetNumber, _slotId);
 
         // Validate that the slot exists and is LOCKED or ADVANCED
@@ -488,7 +488,7 @@ contract StreamManager is IStreamManager, BaseProxy {
 
     function advanceSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) external {
         // Verify that the caller has permission to modify the peg status
-        accessManager.requireCanModifyPegStatus(_msgSender());
+        accessManager.canModifyPegStatus(_msgSender());
         Slot storage slot = _getSlot(_streamId, _packetNumber, _slotId);
 
         // Validate that the slot exists and is in LOCKED state
@@ -612,7 +612,7 @@ contract StreamManager is IStreamManager, BaseProxy {
     /// @dev Only callable by the PegManager contract
     function setStreamPosition(bytes32 _acceptPeginTxid, StreamPosition memory _position) external {
         // Verify that the caller has permission to modify the peg status
-        accessManager.requireCanModifyPegStatus(_msgSender());
+        accessManager.canModifyPegStatus(_msgSender());
         streamPositions[_acceptPeginTxid] = _position;
         emit StreamPositionSet(_acceptPeginTxid, _position);
     }
@@ -630,7 +630,7 @@ contract StreamManager is IStreamManager, BaseProxy {
     /// @dev Only callable by the PegManager contract
     function setPegStatus(bytes32 _acceptPeginTxid, PegStatus _newStatus) external {
         // Verify that the caller has permission to modify the peg status
-        accessManager.requireCanModifyPegStatus(_msgSender());
+        accessManager.canModifyPegStatus(_msgSender());
         streamPositions[_acceptPeginTxid].pegStatus = _newStatus;
         emit PegStatusUpdated(_acceptPeginTxid, _newStatus);
     }

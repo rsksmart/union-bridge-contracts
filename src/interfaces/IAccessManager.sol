@@ -8,52 +8,52 @@ interface IAccessManager {
     /// @notice Requires the caller to have permissions to modify the peg status
     /// @param _caller The address of the caller
     /// @dev Reverts if the caller does not have permissions to modify the peg status
-    function requireCanModifyPegStatus(address _caller) external view;
+    function canModifyPegStatus(address _caller) external view;
 
     /// @notice Requires the caller to have permissions to create a committee
     /// @param _caller The address of the caller
     /// @dev Reverts if the caller does not have permissions to create a committee
-    function requireCanCreateCommittee(address _caller) external view;
+    function canCreateCommittee(address _caller) external view;
 
     /// @notice Requires the caller to have permissions to select a take operator
     /// @param _caller The address of the caller
     /// @dev Reverts if the caller does not have permissions to select a take operator
-    function requireCanSelectTakeOperator(address _caller) external view;
+    function canSelectTakeOperator(address _caller) external view;
 
     /// @notice Requires the caller to have permissions to release a committee
     /// @param _caller The address of the caller
     /// @dev Reverts if the caller does not have permissions to release a committee
-    function requireCanReleaseCommittee(address _caller) external view;
+    function canReleaseCommittee(address _caller) external view;
 
     /// @notice Requires the caller to have permissions to create a packet
     /// @param _caller The address of the caller
     /// @dev Reverts if the caller does not have permissions to create a packet
-    function requireCanCreatePacket(address _caller) external view;
+    function canCreatePacket(address _caller) external view;
 
     /// @notice Requires the caller to have permissions to mint RBTC
     /// @param _caller The address of the caller
     /// @dev Reverts if the caller does not have permissions to mint RBTC
-    function requireCanMintRbtc(address _caller) external view;
+    function canMintRbtc(address _caller) external view;
 
     /// @notice Requires the caller to have permissions to burn RBTC
     /// @param _caller The address of the caller
     /// @dev Reverts if the caller does not have permissions to burn RBTC
-    function requireCanBurnRbtc(address _caller) external view;
+    function canBurnRbtc(address _caller) external view;
 
     /// @notice Requires the caller to have permissions to initialize signatures
     /// @param _caller The address of the caller
     /// @dev Reverts if the caller does not have permissions to initialize signatures
-    function requireCanInitSignatures(address _caller) external view;
+    function canInitSignatures(address _caller) external view;
 
     /// @notice Requires the caller to have permissions to initialize operator take txids
     /// @param _caller The address of the caller
     /// @dev Reverts if the caller does not have permissions to initialize operator take txids
-    function requireCanInitOperatorTakeTxids(address _caller) external view;
+    function canInitOperatorTakeTxids(address _caller) external view;
 
     /// @notice Requires the caller to have permissions to modify candidates for a stream
     /// @param _caller The address of the caller
     /// @dev Reverts if the caller does not have permissions to modify candidates for a stream
-    function requireCanModifyCandidatesForStream(address _caller) external view;
+    function canModifyCandidatesForStream(address _caller) external view;
 
     // ===================== Events =====================
 
