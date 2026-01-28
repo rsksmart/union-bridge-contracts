@@ -1,20 +1,21 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import {Test} from "forge-std/Test.sol";
+import {Test, console} from "forge-std/Test.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {BtcTransaction, BtcTxSPVProof, StreamPosition, PegStatus} from "src/interfaces/IPegCommonTypes.sol";
 import {BitcoinSignatureData} from "src/interfaces/IBitcoinManager.sol";
 import {IPegoutManager, PegoutManagerSettings, PegoutTempInfo} from "src/interfaces/IPegoutManager.sol";
 import {IPeginManager} from "src/interfaces/IPeginManager.sol";
-import {Slot, SlotState, Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
+import {IPegManagerBase} from "src/interfaces/IPegManagerBase.sol";
+import {Slot, SlotState, Stream, StreamDenomination, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {ISignatureManager} from "src/interfaces/ISignatureManager.sol";
 import {ProofValidator} from "src/ProofValidator.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
-import {Committee} from "src/interfaces/ICommitteeRegistry.sol";
+import {Committee, ICommitteeRegistry, CommitteeMember} from "src/interfaces/ICommitteeRegistry.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
 import {IRbtcBridge} from "src/interfaces/IRbtcBridge.sol";
@@ -431,7 +432,16 @@ contract PegoutManagerTest is Test, HelperContract {
         // Verify we're on the last slot
         assertEq(setup.slotId, Constants.SLOTS_PER_PACKET - 1, "Should be the last slot");
 
-        // Expect both PegoutRegistered and PacketClosed events
+        // Record committee member state before release (reApply defaults to true, staked moves to preStaked)
+        CommitteeMember[] memory members = registry.getCommitteeMembers(COMMITTEE_ID_STREAM_1_COMMITTEE_1);
+        uint256[] memory stakedBefore = new uint256[](members.length);
+        for (uint256 i = 0; i < members.length; i++) {
+            stakedBefore[i] = memberRegistry.getMemberStakedBalance(
+                members[i].memberAddress, SETUP_PENDING_COMMITTEE_DENOMINATION, setup.packetNumber
+            );
+        }
+
+        // Expect PegoutRegistered, PacketClosed, and CommitteeMembersReleased events
         vm.expectEmit(address(pegoutManager));
         emit IPegoutManager.PegoutRegistered(
             setup.pegoutTxSPVProof.blockHash,
@@ -444,6 +454,9 @@ contract PegoutManagerTest is Test, HelperContract {
         vm.expectEmit(address(pegoutManager));
         emit IPegoutManager.PacketClosed(setup.stream.streamId, setup.packetNumber);
 
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.CommitteeMembersReleased(setup.stream.streamId, setup.packetNumber);
+
         // Act: Register the last slot
         pegoutManager.registerUserTake(setup.pegoutTxSPVProof);
 
@@ -455,6 +468,21 @@ contract PegoutManagerTest is Test, HelperContract {
         Stream memory updatedStream = streamManager.getStreamById(setup.stream.streamId);
         assertEq(updatedStream.pegoutPacketPointer, 1, "Should advance to second packet");
         assertEq(updatedStream.pegoutSlotPointer, 0, "Should advance slot pointer after completed");
+
+        // Assert: Committee was released
+        uint128[] memory activeCommittees = registry.getActiveCommitteesHarness(setup.stream.streamId);
+        assertEq(activeCommittees.length, 0, "Active committees should be empty after last slot");
+
+        // Assert: Member balances shifted (staked -> preStaked, since reApply defaults to true)
+        for (uint256 i = 0; i < members.length; i++) {
+            uint256 stakedAfter = memberRegistry.getMemberStakedBalance(
+                members[i].memberAddress, SETUP_PENDING_COMMITTEE_DENOMINATION, setup.packetNumber
+            );
+            uint256 preStakedAfter =
+                memberRegistry.getMemberPreStakedBalance(members[i].memberAddress, SETUP_PENDING_COMMITTEE_DENOMINATION);
+            assertEq(stakedAfter, 0, "Staked balance should be zero after release");
+            assertEq(preStakedAfter, stakedBefore[i], "PreStaked should equal former staked (reApply=true)");
+        }
     }
 
     function test_registerUserTake_Revert_InvalidSlotState() external {

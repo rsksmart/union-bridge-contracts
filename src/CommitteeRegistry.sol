@@ -833,9 +833,11 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
     }
 
     function _removeCommitteeAsActive(uint64 _streamId, uint128 _committeeId) internal {
-        for (uint256 i = 0; i < activeCommittees[_streamId].length; i++) {
-            if (activeCommittees[_streamId][i] == _committeeId) {
-                activeCommittees[_streamId][i] = 0;
+        uint128[] storage committees = activeCommittees[_streamId];
+        for (uint256 i = 0; i < committees.length; i++) {
+            if (committees[i] == _committeeId) {
+                committees[i] = committees[committees.length - 1];
+                committees.pop();
                 return;
             }
         }

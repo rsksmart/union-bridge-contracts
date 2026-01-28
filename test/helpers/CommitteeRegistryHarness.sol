@@ -177,4 +177,8 @@ contract CommitteeRegistryHarness is CommitteeRegistry {
     ) public {
         memberRegistry.stakePreStakedCandidatesBalance(_members, _denomination, _packetNumber);
     }
+
+    function getActiveCommitteesHarness(uint64 _streamId) external view returns (uint128[] memory) {
+        return activeCommittees[_streamId];
+    }
 }
