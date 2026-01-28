@@ -113,12 +113,6 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         // Store the pegout to pegin tx id mapping
         pegoutToPeginTxid[pegoutSignatureData.txid] = slot.acceptPeginTx;
 
-        // Burn RBTC back to PowPeg bridge via RbtcBridge
-        // We burn the amount that was actually minted (acceptPeginAmount), not msg.value
-        // The difference (fees) remains in the contract for future operator fee distribution
-        uint256 amountToBurn = BtcHelper.satoshiToWei(slot.acceptPeginAmount);
-        rbtcBridge.burnRbtc{value: amountToBurn}();
-
         // Compute pegout ID
         bytes32 pegoutId = keccak256(
             abi.encode(
@@ -155,6 +149,12 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         );
 
         streamManager.setPegStatus(slot.acceptPeginTx, PegStatus.USER_TAKE);
+
+        // Burn RBTC back to PowPeg bridge via RbtcBridge
+        // We burn the amount that was actually minted (acceptPeginAmount), not msg.value
+        // The difference (fees) remains in the contract for future operator fee distribution
+        uint256 amountToBurn = BtcHelper.satoshiToWei(slot.acceptPeginAmount);
+        rbtcBridge.burnRbtc{value: amountToBurn}();
     }
 
     /// @notice Register a peg-out transaction from Bitcoin
