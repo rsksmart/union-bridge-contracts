@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import {Test, console} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {BtcTransaction, BtcTxSPVProof, StreamPosition, PegStatus} from "src/interfaces/IPegCommonTypes.sol";
 import {BitcoinSignatureData} from "src/interfaces/IBitcoinManager.sol";
 import {IPegoutManager, PegoutManagerSettings, PegoutTempInfo} from "src/interfaces/IPegoutManager.sol";
 import {IPeginManager} from "src/interfaces/IPeginManager.sol";
-import {IPegManagerBase} from "src/interfaces/IPegManagerBase.sol";
-import {Slot, SlotState, Stream, StreamDenomination, IStreamManager} from "src/interfaces/IStreamManager.sol";
+import {Slot, SlotState, Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {ISignatureManager} from "src/interfaces/ISignatureManager.sol";
 import {ProofValidator} from "src/ProofValidator.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
@@ -1022,7 +1021,6 @@ contract PegoutManagerTest is Test, HelperContract {
         (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
         setup.operatorTakeSPV.btcTx.inputs[0].vout = Constants.ACCEPT_PEGIN_VOUT_TAPTREE + 1; // Set an incorrect vout
 
-        // Expect the PegoutRegistered event
         vm.expectRevert(
             abi.encodeWithSelector(
                 IPegoutManager.IncorrectVout.selector,
@@ -1054,7 +1052,6 @@ contract PegoutManagerTest is Test, HelperContract {
         );
         BtcTxSPVProof memory operatorTakeSPV = createBtcTxSPVProof(operatorTakeTx);
 
-        // Expect the PegoutRegistered event
         vm.expectRevert(
             abi.encodeWithSelector(
                 IPegoutManager.IncorrectOutputScript.selector,
@@ -1078,7 +1075,6 @@ contract PegoutManagerTest is Test, HelperContract {
         (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
         address wrongOperator = vm.addr(1);
 
-        // Expect the PegoutRegistered event
         vm.expectRevert(
             abi.encodeWithSelector(IPegoutManager.OperatorTakeAddressNotMatch.selector, operatorAddress, wrongOperator)
         );
@@ -1108,7 +1104,6 @@ contract PegoutManagerTest is Test, HelperContract {
         bytes32 wrongTakeTxid = bitcoinManager.getBtcTxid(operatorTakeTx);
         BtcTxSPVProof memory operatorTakeSPV = createBtcTxSPVProof(operatorTakeTx);
 
-        // Expect the PegoutRegistered event
         vm.expectRevert(
             abi.encodeWithSelector(IPegoutManager.OperatorTakeTxidNotMatch.selector, wrongTakeTxid, realTakeTxid)
         );
@@ -1708,6 +1703,84 @@ contract PegoutManagerTest is Test, HelperContract {
         // Act
         vm.prank(opAddress);
         pegoutManager.registerReimbursementKickoff(setup.acceptPeginTxid, setup.reimbursementKickoffSPV);
+    }
+
+    function test_registerOperatorWon_Success_UnpausedContract() external {
+        // Arrange
+        pauseAndUnpauseContracts();
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_inputRevealed();
+        bytes32 txid = bitcoinManager.getBtcTxid(setup.operatorWonSPV.btcTx);
+        StreamPosition memory streamInfo = StreamPosition({
+            streamId: setup.stream.streamId,
+            packetNumber: setup.packetNumber,
+            slotId: setup.slotId,
+            pegStatus: PegStatus.REVEALED
+        });
+
+        vm.expectEmit(address(pegoutManager));
+        emit IPegoutManager.PegoutRegistered(
+            setup.operatorWonSPV.blockHash, txid, setup.acceptPeginTxid, COMMITTEE_ID_STREAM_1_COMMITTEE_1, streamInfo
+        );
+
+        // Act
+        vm.prank(opAddress);
+        pegoutManager.registerOperatorWon(setup.operatorWonSPV);
+
+        streamInfo = streamManager.getStreamPosition(setup.acceptPeginTxid);
+        assertEq(uint256(streamInfo.pegStatus), uint256(PegStatus.COMPLETED));
+        assertTrue(
+            streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId).state == SlotState.COMPLETED,
+            "Slot state should be COMPLETED"
+        );
+    }
+
+    function test_registerOperatorWon_Revert_EnforcedPause_PausedContract() external {
+        // Arrange
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_inputRevealed();
+        pauseContracts();
+
+        // Assert
+        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
+
+        // Act
+        vm.prank(opAddress);
+        pegoutManager.registerOperatorWon(setup.operatorWonSPV);
+    }
+
+    function test_registerOperatorWon_Revert_PeginNotRequested() external {
+        // Arrange
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_inputRevealed();
+        bytes32 wrongAcceptPeginTxid = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
+        bytes32 operatorPubKey = getMemberDisputePubKey(opAddress);
+        bytes memory operatorDisputePubKeyCompact = BtcHelper.pubKeyXonlyToCompact(operatorPubKey);
+
+        bytes32 inputRevealedTxid = bitcoinManager.getBtcTxid(setup.inputRevealedSPV.btcTx);
+        BtcTxSPVProof memory wrongOperatorWonSPV = createBtcTxSPVProof(
+            createOperatorWonTx(wrongAcceptPeginTxid, inputRevealedTxid, operatorDisputePubKeyCompact, VALUE)
+        );
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IPegBase.PeginNotRequested.selector, wrongAcceptPeginTxid));
+
+        // Act
+        vm.prank(opAddress);
+        pegoutManager.registerOperatorWon(wrongOperatorWonSPV);
+    }
+
+    function test_registerOperatorWon_Revert_InvalidPegStatus() external {
+        // Arrange
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_inputRevealed();
+
+        // Set peg status to COMPLETED to trigger invalid status error
+        vm.prank(address(pegoutManager));
+        streamManager.setPegStatus(setup.acceptPeginTxid, PegStatus.COMPLETED);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IPegBase.InvalidPegStatus.selector, PegStatus.COMPLETED));
+
+        // Act
+        vm.prank(opAddress);
+        pegoutManager.registerOperatorWon(setup.operatorWonSPV);
     }
 
     function test_setUserTakeTimeout_Success_PausedContract() external {

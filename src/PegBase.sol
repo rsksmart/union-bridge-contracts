@@ -9,6 +9,7 @@ import {IStreamManager} from "./interfaces/IStreamManager.sol";
 import {ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
 import {PegStatus, StreamPosition} from "./interfaces/IPegCommonTypes.sol";
 import {BaseProxy} from "./BaseProxy.sol";
+import {AccessManager} from "./AccessManager.sol";
 
 /// @title PegBase
 /// @notice Abstract base contract for shared functionality between PeginManager, PegoutManager and ChallengeManager
@@ -22,6 +23,8 @@ abstract contract PegBase is IPegBase, BaseProxy, ProofValidator, ReentrancyGuar
 
     /// @notice Committee registry contract for managing committee and members
     ICommitteeRegistry public committeeRegistry;
+
+    AccessManager public accessManager;
 
     /// @notice Initializes the base PegBase contract
     /// @param _initialOwner The initial owner of the contract
@@ -49,6 +52,7 @@ abstract contract PegBase is IPegBase, BaseProxy, ProofValidator, ReentrancyGuar
         bitcoinManager = _bitcoinManager;
         committeeRegistry = _committeeRegistry;
         streamManager = _streamManager;
+        accessManager = AccessManager(_accessManager);
 
         __BaseProxy_init(_initialOwner);
         __ProofValidator_init(_bridgeAddress, _accessManager);

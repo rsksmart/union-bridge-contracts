@@ -86,7 +86,7 @@ abstract contract PauseManager is IPauseManager, BaseProxy {
         if (committeeRegistry != address(0)) {
             revert AlreadySet();
         }
-        if (address(_committeeRegistry) == address(0)) {
+        if (_committeeRegistry == address(0)) {
             revert InvalidZeroAddress();
         }
         committeeRegistry = _committeeRegistry;
@@ -99,7 +99,7 @@ abstract contract PauseManager is IPauseManager, BaseProxy {
         if (peginManager != address(0)) {
             revert AlreadySet();
         }
-        if (address(_peginManager) == address(0)) {
+        if (_peginManager == address(0)) {
             revert InvalidZeroAddress();
         }
         peginManager = _peginManager;
@@ -112,7 +112,7 @@ abstract contract PauseManager is IPauseManager, BaseProxy {
         if (pegoutManager != address(0)) {
             revert AlreadySet();
         }
-        if (address(_pegoutManager) == address(0)) {
+        if (_pegoutManager == address(0)) {
             revert InvalidZeroAddress();
         }
         pegoutManager = _pegoutManager;
@@ -125,7 +125,7 @@ abstract contract PauseManager is IPauseManager, BaseProxy {
         if (challengeManager != address(0)) {
             revert AlreadySet();
         }
-        if (address(_challengeManager) == address(0)) {
+        if (_challengeManager == address(0)) {
             revert InvalidZeroAddress();
         }
         challengeManager = _challengeManager;
@@ -138,7 +138,7 @@ abstract contract PauseManager is IPauseManager, BaseProxy {
         if (memberRegistry != address(0)) {
             revert AlreadySet();
         }
-        if (address(_memberRegistry) == address(0)) {
+        if (_memberRegistry == address(0)) {
             revert InvalidZeroAddress();
         }
         memberRegistry = _memberRegistry;
@@ -151,7 +151,7 @@ abstract contract PauseManager is IPauseManager, BaseProxy {
         if (rbtcBridge != address(0)) {
             revert AlreadySet();
         }
-        if (address(_rbtcBridge) == address(0)) {
+        if (_rbtcBridge == address(0)) {
             revert InvalidZeroAddress();
         }
         rbtcBridge = _rbtcBridge;

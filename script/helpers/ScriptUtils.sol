@@ -22,6 +22,8 @@ abstract contract ScriptUtils is Script {
     int256 public constant CONFIRMATIONS = 10;
     // Fake amount just for testing purposes
     uint64 constant REIMBURSEMENT_KICKOFF_AMOUNT = 5137;
+    // Fake amount just for testing purposes
+    uint64 constant INPUT_REVEALED_AMOUNT = 4000;
 
     function getDeployerKey() public view returns (uint256) {
         return getMemberKey(uint32(vm.envUint("DEPLOYER_INDEX")));
@@ -255,6 +257,47 @@ abstract contract ScriptUtils is Script {
 
         // pay to operator's P2WPKH
         btcOutputs[Constants.OPERATOR_TAKE_VOUT_OPERATOR] =
+            BtcTxOut({amount: operatorAmount, scriptPubKey: operatorScriptPubKey});
+
+        // speedup
+        btcOutputs[1] = BtcTxOut({amount: Constants.SPEED_UP_AMOUNT, scriptPubKey: operatorScriptPubKey});
+
+        return BtcTransaction({version: Constants.BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
+    }
+
+    function createOperatorWonTx(
+        bytes32 _acceptPeginTxid,
+        bytes32 _inputRevealedTxid,
+        bytes memory _operatorPubKey,
+        uint64 _streamDenomination
+    ) internal pure returns (BtcTransaction memory) {
+        // Input: spend the accept peg-in UTXO
+        BtcTxIn[] memory btcInputs = new BtcTxIn[](2);
+        btcInputs[Constants.OPERATOR_WON_VIN_ACCEPT_PEGIN] = BtcTxIn({
+            txId: _acceptPeginTxid,
+            vout: 0, // P2TR output is at index 0
+            sequence: Constants.SEQUENCE,
+            scriptSig: hex""
+        });
+
+        btcInputs[Constants.OPERATOR_WON_VIN_INPUT_REVEALED] = BtcTxIn({
+            txId: _inputRevealedTxid,
+            vout: 0, // P2TR output is at index 0
+            sequence: Constants.SEQUENCE,
+            scriptSig: hex""
+        });
+
+        // Outputs
+        BtcTxOut[] memory btcOutputs = new BtcTxOut[](2);
+
+        // operator output amount
+        // This should include fee and speedup from accept pegin and from operator take itself.
+        uint64 operatorAmount =
+            _streamDenomination + INPUT_REVEALED_AMOUNT - 2 * (Constants.P2TR_FEE + Constants.SPEED_UP_AMOUNT);
+        bytes memory operatorScriptPubKey = BtcScriptParser.getP2WPKHScript(_operatorPubKey);
+
+        // pay to operator's P2WPKH
+        btcOutputs[Constants.OPERATOR_WON_VOUT_OPERATOR] =
             BtcTxOut({amount: operatorAmount, scriptPubKey: operatorScriptPubKey});
 
         // speedup

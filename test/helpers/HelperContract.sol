@@ -493,6 +493,7 @@ abstract contract HelperContract is Test, TestUtils {
         BtcTxSPVProof operatorTakeSPV;
         BtcTxSPVProof challengeSPV;
         BtcTxSPVProof inputRevealedSPV;
+        BtcTxSPVProof operatorWonSPV;
         Stream stream;
         uint64 packetNumber;
         uint64 slotId;
@@ -597,11 +598,11 @@ abstract contract HelperContract is Test, TestUtils {
         uint256 operatorAdded = 0;
         for (uint256 i = 0; i < members.length && operatorAdded < _operatorCount; i++) {
             if (members[i].role == Role.OPERATOR) {
-                (BtcTransaction memory opTakeTx,) =
+                (BtcTransaction memory opTakeTx, BtcTransaction memory opWonTx,) =
                     setup_getOperatorTakeData(_acceptPeginTxid, members[i].memberAddress, _slotId);
 
                 bytes32 takeTxid = bitcoinManager.getBtcTxid(opTakeTx);
-                bytes32 wonTxid = hex"feedfacefeedfacefeedfacefeedfacefeedfacefeedfacefeedfacefeedface";
+                bytes32 wonTxid = bitcoinManager.getBtcTxid(opWonTx);
 
                 setup_addOperatorTakeTxids(members[i].memberAddress, _acceptPeginTxid, takeTxid, wonTxid);
                 operatorAdded++;
@@ -935,7 +936,7 @@ abstract contract HelperContract is Test, TestUtils {
         operatorAddress = actualPegoutInfo.takeOperatorAddress;
 
         BtcTransaction memory opTakeTx;
-        (opTakeTx, setup.reimbursementKickoffSPV) =
+        (opTakeTx,, setup.reimbursementKickoffSPV) =
             setup_getOperatorTakeData(setup.acceptPeginTxid, operatorAddress, uint32(setup.slotId));
         setup.operatorTakeSPV = createBtcTxSPVProof(opTakeTx);
 
@@ -947,19 +948,30 @@ abstract contract HelperContract is Test, TestUtils {
 
     function setup_getOperatorTakeData(bytes32 _acceptPeginTxid, address _operatorAddress, uint32 _slotId)
         internal
-        returns (BtcTransaction memory opTakeTx, BtcTxSPVProof memory reimbursementKickoffSPV)
+        returns (
+            BtcTransaction memory opTakeTx,
+            BtcTransaction memory opWonTx,
+            BtcTxSPVProof memory reimbursementKickoffSPV
+        )
     {
         bytes32 operatorPubKey = getMemberDisputePubKey(_operatorAddress);
         bytes memory operatorDisputePubKeyCompact = BtcHelper.pubKeyXonlyToCompact(operatorPubKey);
 
         BtcTransaction memory reimbursementKickoffTx =
             createReimbursementKickoffTx(operatorDisputePubKeyCompact, _slotId);
-
-        reimbursementKickoffSPV = createBtcTxSPVProof(reimbursementKickoffTx);
-
         bytes32 reimbursementTxid = bitcoinManager.getBtcTxid(reimbursementKickoffTx);
 
+        reimbursementKickoffSPV = createBtcTxSPVProof(reimbursementKickoffTx);
         opTakeTx = createOperatorTakeTx(_acceptPeginTxid, reimbursementTxid, operatorDisputePubKeyCompact, VALUE);
+
+        bytes memory committeePubKey = streamManager.getCommitteePubKey(uint64(DEFAULT_STREAM), 0);
+        BtcTransaction memory challengeTx = createChallengeTx(reimbursementTxid, committeePubKey);
+
+        bytes32 challengeTxid = bitcoinManager.getBtcTxid(challengeTx);
+        BtcTransaction memory inputRevealedTx = createRevealTx(challengeTxid, committeePubKey);
+        bytes32 inputRevealedTxid = bitcoinManager.getBtcTxid(inputRevealedTx);
+
+        opWonTx = createOperatorWonTx(_acceptPeginTxid, inputRevealedTxid, operatorDisputePubKeyCompact, VALUE);
     }
 
     function setup_operatorTake() internal returns (address operatorAddress, RegisterUserTakeSetup memory setup) {
@@ -978,6 +990,21 @@ abstract contract HelperContract is Test, TestUtils {
 
         vm.prank(operatorAddress);
         challengeManager.registerChallenge(setup.acceptPeginTxid, setup.challengeSPV);
+    }
+
+    function setup_inputRevealed() internal returns (address operatorAddress, RegisterUserTakeSetup memory setup) {
+        (operatorAddress, setup) = setup_challenge();
+
+        bytes32 operatorPubKey = getMemberDisputePubKey(operatorAddress);
+        bytes memory operatorDisputePubKeyCompact = BtcHelper.pubKeyXonlyToCompact(operatorPubKey);
+
+        bytes32 inputRevealedTxid = bitcoinManager.getBtcTxid(setup.inputRevealedSPV.btcTx);
+        setup.operatorWonSPV = createBtcTxSPVProof(
+            createOperatorWonTx(setup.acceptPeginTxid, inputRevealedTxid, operatorDisputePubKeyCompact, VALUE)
+        );
+
+        vm.prank(operatorAddress);
+        challengeManager.registerInputRevealed(setup.acceptPeginTxid, setup.inputRevealedSPV);
     }
 
     function setup_reimbursementKickoff()

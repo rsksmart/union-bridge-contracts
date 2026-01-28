@@ -43,9 +43,9 @@ struct PegoutManagerSettings {
 /// @notice Interface for managing peg-out operations
 interface IPegoutManager {
     /// @notice Gets temporary information stored during peg-out processing
-    /// @param acceptPeginTxid The accept peg-in transaction id
+    /// @param _acceptPeginTxid The accept peg-in transaction id
     /// @return The temporary information needed for peg-out processing
-    function getPegoutTempInfo(bytes32 acceptPeginTxid) external view returns (PegoutTempInfo memory);
+    function getPegoutTempInfo(bytes32 _acceptPeginTxid) external view returns (PegoutTempInfo memory);
 
     // ===================== Peg-out Request =====================
 
@@ -109,6 +109,14 @@ interface IPegoutManager {
     /// @dev Emits PegoutRegistered event upon successful deposit
     /// @param _pegoutTxSPVProof The BTC SPV proof of the operator take peg-out transaction
     function registerOperatorTake(BtcTxSPVProof calldata _pegoutTxSPVProof) external;
+
+    /// @notice Deposits an operator won proof for a peg-out transaction
+    /// @param _pegoutTxSPVProof The BTC SPV proof of the operator won transaction
+    /// @dev Validates the SPV proof and marks the slot as paid when operator takes over
+    /// @dev Only callable when the peg status is OPERATOR_TAKE
+    /// @dev Emits PegoutRegistered event upon successful deposit
+    /// @dev Only callable when contract is unpaused
+    function registerOperatorWon(BtcTxSPVProof memory _pegoutTxSPVProof) external;
 
     /// @notice Triggers the operator take process for a peg-out when not all committee members sign within timeout
     /// @dev This function can be called after a User Take expiration or after an Operator Take expiration
@@ -296,6 +304,11 @@ interface IPegoutManager {
     /// @param expected The expected reimbursement kickoff txid
     error ReimbursementKickoffTxidNotMatch(bytes32 actual, bytes32 expected);
 
+    /// @notice Thrown when the input txid Operator Won transaction does not match the expected value
+    /// @param actual The actual input txid provided
+    /// @param expected The expected input txid
+    error InputRevealedTxidNotMatch(bytes32 actual, bytes32 expected);
+
     /// @notice Thrown when operator take data is not found for a given accept peg-in txid and operator address
     /// @param acceptPeginTxid The accept peg-in transaction id
     /// @param operatorAddress The operator address for which the data was not found
@@ -305,4 +318,9 @@ interface IPegoutManager {
     /// @param actual The actual operator take transaction id provided
     /// @param expected The expected operator take transaction id
     error OperatorTakeTxidNotMatch(bytes32 actual, bytes32 expected);
+
+    /// @notice Thrown when the operator won transaction id does not match the expected value
+    /// @param actual The actual operator won transaction id provided
+    /// @param expected The expected operator won transaction id
+    error OperatorWonTxidNotMatch(bytes32 actual, bytes32 expected);
 }

@@ -71,13 +71,25 @@ library Constants {
     /// @dev First input (index 0) spends the accept peg-in output UTXO
     uint32 constant OPERATOR_TAKE_VIN_ACCEPT_PEGIN = 0;
 
+    /// @dev Input index for user input in operator won Bitcoin transactions
+    /// @dev First input (index 0) spends the accept peg-in output UTX
+    uint32 constant OPERATOR_WON_VIN_ACCEPT_PEGIN = 0;
+
     /// @dev Input index for reimbursement kickoff input in operator take Bitcoin transactions
     /// @dev Second input (index 1) spends the reimbursement kickoff UTXO
     uint32 constant OPERATOR_TAKE_VIN_REIMBURSEMENT_KICKOFF = 1;
 
+    /// @dev Input index for revealed input in operator won Bitcoin transactions
+    /// @dev Second input (index 1) spends the revealed input UTXO
+    uint32 constant OPERATOR_WON_VIN_INPUT_REVEALED = 1;
+
     /// @dev Output index for operator dispute key inoperator take Bitcoin transactions
     /// @dev First output (index 0) contains the payment to the operator's dispute key
     uint32 constant OPERATOR_TAKE_VOUT_OPERATOR = 0;
+
+    /// @dev Output index for operator dispute key in operator won Bitcoin transactions
+    /// @dev First output (index 0) contains the payment to the operator's dispute key
+    uint32 constant OPERATOR_WON_VOUT_OPERATOR = 0;
 
     // Pegout Transaction Input Indices
     /// @dev Input index for consuming the accept peg-in taptree output in pegout Bitcoin transactions

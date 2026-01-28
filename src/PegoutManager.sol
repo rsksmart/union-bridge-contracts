@@ -11,6 +11,7 @@ import {BtcTxSPVProof, StreamPosition, PegStatus} from "./interfaces/IPegCommonT
 import {BtcHelper} from "./libraries/BtcHelper.sol";
 import {Constants} from "./libraries/Constants.sol";
 import {IRbtcBridge} from "./interfaces/IRbtcBridge.sol";
+import {ChallengeTempInfo, IChallengeManager} from "./interfaces/IChallengeManager.sol";
 
 /// @title PegoutManager
 /// @notice Manages peg-out operations from Rootstock to Bitcoin
@@ -422,9 +423,9 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
     }
 
     /// @notice Deposits an operator take proof for a peg-out transaction
-    /// @param _pegoutTxSPVProof The BTC SPV proof of the operator take peg-out transaction
+    /// @param _pegoutTxSPVProof The BTC SPV proof of the operator take transaction
     /// @dev Validates the SPV proof and marks the slot as paid when operator takes over
-    /// @dev Only callable when the peg status is OPERATOR_TAKE
+    /// @dev Only callable when the peg status is KICKOFF
     /// @dev Emits PegoutRegistered event upon successful deposit
     /// @dev Only callable when contract is unpaused
     function registerOperatorTake(BtcTxSPVProof memory _pegoutTxSPVProof) external nonReentrant whenNotPaused {
@@ -459,25 +460,11 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         // Calculate the transaction id for verification
         bytes32 txid = bitcoinManager.getBtcTxid(_pegoutTxSPVProof.btcTx);
 
-        OperatorTakeData[] memory opTakeData = signatureManager.getOperatorTakeData(acceptPeginTxid);
-
-        uint256 memberIndex = 0;
-        bool found = false;
-        for (uint256 i = 0; i < opTakeData.length; i++) {
-            if (opTakeData[i].memberAddress == pegoutInfo.takeOperatorAddress) {
-                memberIndex = i;
-                found = true;
-                break;
-            }
-        }
-
-        if (!found || opTakeData[memberIndex].takeTxid == bytes32(0)) {
-            revert OperatorTakeDataNotFound(acceptPeginTxid, pegoutInfo.takeOperatorAddress);
-        }
+        OperatorTakeData memory opTakeData = _getOperatorTakeData(acceptPeginTxid, pegoutInfo.takeOperatorAddress);
 
         // Validate operator take txid matched the one deposited during accept pegin
-        if (txid != opTakeData[memberIndex].takeTxid) {
-            revert OperatorTakeTxidNotMatch(txid, opTakeData[memberIndex].takeTxid);
+        if (txid != opTakeData.takeTxid) {
+            revert OperatorTakeTxidNotMatch(txid, opTakeData.takeTxid);
         }
 
         // Get the stream to check confirmations
@@ -505,6 +492,96 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
 
         // If it's the last slot in the package, close and release the committee
         _closePacketIfLastSlot(streamInfo);
+    }
+
+    /// @notice Deposits an operator won proof for a peg-out transaction
+    /// @param _pegoutTxSPVProof The BTC SPV proof of the operator won transaction
+    /// @dev Validates the SPV proof and marks the slot as paid when operator takes over
+    /// @dev Only callable when the peg status is OPERATOR_TAKE
+    /// @dev Emits PegoutRegistered event upon successful deposit
+    /// @dev Only callable when contract is unpaused
+    function registerOperatorWon(BtcTxSPVProof memory _pegoutTxSPVProof) external nonReentrant whenNotPaused {
+        // Get the accept peg-in tx id from the first input (this is what gets spent)
+        bytes32 acceptPeginTxid = _pegoutTxSPVProof.btcTx.inputs[Constants.OPERATOR_TAKE_VIN_ACCEPT_PEGIN].txId;
+        uint32 vout = _pegoutTxSPVProof.btcTx.inputs[Constants.OPERATOR_TAKE_VIN_ACCEPT_PEGIN].vout;
+
+        StreamPosition memory streamInfo = _validatePegStatus(acceptPeginTxid, PegStatus.REVEALED);
+
+        // Validate that the vout is correct
+        if (vout != Constants.ACCEPT_PEGIN_VOUT_TAPTREE) {
+            revert IncorrectVout(vout, Constants.ACCEPT_PEGIN_VOUT_TAPTREE);
+        }
+
+        PegoutTempInfo storage pegoutInfo = _validateOperatorTakeAddress(acceptPeginTxid);
+
+        ChallengeTempInfo memory challengeTempInfo =
+            IChallengeManager(accessManager.challengeManager()).getChallengeTempInfo(acceptPeginTxid);
+
+        if (
+            challengeTempInfo.revealTxid
+                != _pegoutTxSPVProof.btcTx.inputs[Constants.OPERATOR_WON_VIN_INPUT_REVEALED].txId
+        ) {
+            revert InputRevealedTxidNotMatch(
+                challengeTempInfo.revealTxid,
+                _pegoutTxSPVProof.btcTx.inputs[Constants.OPERATOR_WON_VIN_INPUT_REVEALED].txId
+            );
+        }
+
+        // Validate that the first output pays to the operator's dispute key
+        bitcoinManager.validatePegoutMemberOutput(
+            _pegoutTxSPVProof.btcTx.outputs[Constants.OPERATOR_WON_VOUT_OPERATOR], pegoutInfo.operatorDisputePubKey
+        );
+
+        // Calculate the transaction id for verification
+        bytes32 txid = bitcoinManager.getBtcTxid(_pegoutTxSPVProof.btcTx);
+
+        (OperatorTakeData memory opTakeData) = _getOperatorTakeData(acceptPeginTxid, pegoutInfo.takeOperatorAddress);
+
+        // Validate operator take txid matched the one deposited during accept pegin
+        if (txid != opTakeData.wonTxid) {
+            revert OperatorWonTxidNotMatch(txid, opTakeData.wonTxid);
+        }
+
+        // Get the stream to check confirmations
+        Stream memory stream = streamManager.getStreamById(streamInfo.streamId);
+
+        // Verify the txid is part of the Merkle Root and has enough confirmations
+        _verifyTxConfirmations(
+            stream.pegoutConfirmations,
+            txid,
+            _pegoutTxSPVProof.blockHash,
+            _pegoutTxSPVProof.merkleBranchPath,
+            _pegoutTxSPVProof.merkleBranchHashes
+        );
+
+        // slither-disable-next-line reentrancy-events
+        emit PegoutRegistered(_pegoutTxSPVProof.blockHash, txid, acceptPeginTxid, pegoutInfo.committeeId, streamInfo);
+
+        // update the peg status to COMPLETED
+        streamManager.setPegStatus(acceptPeginTxid, PegStatus.COMPLETED);
+
+        // Update slot status
+        streamManager.completeSlot(
+            streamInfo.streamId, streamInfo.packetNumber, streamInfo.slotId, acceptPeginTxid, txid
+        );
+
+        // If it's the last slot in the package, close and release the committee
+        _closePacketIfLastSlot(streamInfo);
+    }
+
+    function _getOperatorTakeData(bytes32 _acceptPeginTxid, address _opAddress)
+        internal
+        view
+        returns (OperatorTakeData memory)
+    {
+        OperatorTakeData[] memory opTakeDataArray = signatureManager.getOperatorTakeData(_acceptPeginTxid);
+        for (uint256 i = 0; i < opTakeDataArray.length; i++) {
+            if (opTakeDataArray[i].memberAddress == _opAddress) {
+                return opTakeDataArray[i];
+            }
+        }
+
+        revert OperatorTakeDataNotFound(_acceptPeginTxid, _opAddress);
     }
 
     /// @notice Sets the timeout duration for user take operations
