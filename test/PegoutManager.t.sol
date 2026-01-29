@@ -469,10 +469,6 @@ contract PegoutManagerTest is Test, HelperContract {
         assertEq(updatedStream.pegoutPacketPointer, 1, "Should advance to second packet");
         assertEq(updatedStream.pegoutSlotPointer, 0, "Should advance slot pointer after completed");
 
-        // Assert: Committee was released
-        uint128[] memory activeCommittees = registry.getActiveCommitteesHarness(setup.stream.streamId);
-        assertEq(activeCommittees.length, 0, "Active committees should be empty after last slot");
-
         // Assert: Member balances shifted (staked -> preStaked, since reApply defaults to true)
         for (uint256 i = 0; i < members.length; i++) {
             uint256 stakedAfter = memberRegistry.getMemberStakedBalance(

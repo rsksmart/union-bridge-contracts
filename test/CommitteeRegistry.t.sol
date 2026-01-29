@@ -1616,9 +1616,12 @@ contract CommitteeRegistryTest is Test, HelperContract {
             "Should not have candidates after committee created"
         );
 
-        uint128[] memory activeCommitteeIds = registry.getActiveCommitteesHarness(uint64(expectedCommittee.streamId));
-        assertEq(activeCommitteeIds.length, 1, "Should have 1 active committee after completion");
-        assertEq(activeCommitteeIds[0], committeeId, "Active committee should match the completed one");
+        // Verify there is 1 active committee by checking packetsLength - pegoutPacketPointer
+        Stream memory stream = streamManager.getStreamById(expectedCommittee.streamId);
+        uint64 packetsLength = streamManager.getPacketsLength(expectedCommittee.streamId);
+        assertEq(packetsLength - stream.pegoutPacketPointer, 1, "Should have 1 active committee after completion");
+        uint128 activeCommitteeId = streamManager.getCommitteeId(expectedCommittee.streamId, stream.pegoutPacketPointer);
+        assertEq(activeCommitteeId, committeeId, "Active committee should match the completed one");
     }
 
     function test_getPendingCommittee_Revert_CommitteeIsNotPending_AfterCompleteCommittee() external {

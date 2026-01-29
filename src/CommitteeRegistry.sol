@@ -16,7 +16,7 @@ import {
     CommunicationData,
     UTXO
 } from "./interfaces/ICommitteeRegistry.sol";
-import {StreamDenomination, IStreamManager} from "./interfaces/IStreamManager.sol";
+import {StreamDenomination, IStreamManager, Stream} from "./interfaces/IStreamManager.sol";
 import {SignatureData} from "./interfaces/ISignatureManager.sol";
 import {IMemberRegistry, MemberKeys} from "./interfaces/IMemberRegistry.sol";
 import {BytesHelper} from "./libraries/BytesHelper.sol";
@@ -36,8 +36,6 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
     /// @notice Minimum number of members required for a committee
     uint256 public committeeMemberCount;
 
-    /// @notice Mapping of streamId to the active committees ids
-    mapping(uint64 streamId => uint128[] activeCommitteesIds) internal activeCommittees;
     /// @notice Mapping of streamId to the pending committee id
     mapping(uint64 streamId => uint128) internal pendingCommittees;
     /// @notice Mapping of committeeId to committee data
@@ -279,13 +277,18 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         returns (bool)
     {
         uint64 streamId = uint64(_denomination);
-        for (uint256 i = 0; i < activeCommittees[streamId].length; i++) {
-            uint128 committeeId = activeCommittees[streamId][i];
+        // slither-disable-next-line calls-loop
+        Stream memory stream = streamManager.getStreamById(streamId);
+        // slither-disable-next-line calls-loop
+        uint64 packetsLength = streamManager.getPacketsLength(streamId);
+
+        for (uint64 i = stream.pegoutPacketPointer; i < packetsLength; i++) {
+            // slither-disable-next-line calls-loop
+            uint128 committeeId = streamManager.getCommitteeId(streamId, i);
             if (committeesData[committeeId][_memberAddress].inCommittee) {
                 return true;
             }
         }
-
         return false;
     }
 
@@ -494,7 +497,6 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         uint64 streamId = pendingCommittee.streamId;
         _resetPendingCommittee(streamId);
         emit NewCommittee(_committeeId, pendingCommittee);
-        activeCommittees[streamId].push(_committeeId);
 
         // External calls last to prevent reentrancy
         memberRegistry.stakePreStakedCandidatesBalance(
@@ -826,21 +828,9 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         uint128 committeeId = streamManager.getCommitteeId(_streamId, _packetNumber);
         CommitteeMember[] memory committeeMembers = _getCommitteeMembers(committeeId);
 
-        _removeCommitteeAsActive(_streamId, committeeId);
         emit CommitteeMembersReleased(_streamId, _packetNumber);
         // Delegate member release operations to MemberRegistry
         memberRegistry.releaseCommitteeMembers(committeeMembers, _streamId, _packetNumber);
-    }
-
-    function _removeCommitteeAsActive(uint64 _streamId, uint128 _committeeId) internal {
-        uint128[] storage committees = activeCommittees[_streamId];
-        for (uint256 i = 0; i < committees.length; i++) {
-            if (committees[i] == _committeeId) {
-                committees[i] = committees[committees.length - 1];
-                committees.pop();
-                return;
-            }
-        }
     }
 
     /// @notice Gets the dispute keys (covenant public keys) for all committee members
