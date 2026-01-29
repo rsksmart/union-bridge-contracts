@@ -742,6 +742,18 @@ If not all committee members sign within the timeout period:
 7. **Validate transaction**: System validates the BTC transaction and proof
 8. **Peg-out Registered**: System emits an event PegoutRegistered informing that RBTC is now linked to Bitcoin via operator take
 
+#### Disputed Case: Operator Won (Take2) - Operator wins challenge dispute
+
+If the operator's REIMBURSEMENT_KICKOFF_TX is challenged by a watchtower:
+
+1. **Challenge registered**: A watchtower calls `registerChallenge()` after detecting incorrect behavior (e.g., invalid ADVANCE_FUNDS_TX). For detailed information about the [CHALLENGE_TX](./bitcoin-transactions.md#2-challenge_tx-challenge-transaction) transaction structure, inputs/outputs, and spending conditions.
+2. **Operator reveals input**: The operator must respond by broadcasting REVEAL_INPUT_TX to prove they advanced funds correctly. The operator signs the slot ID using their Winternitz SLOT_ID_KEY. For detailed information about the [REVEAL_INPUT_TX](./bitcoin-transactions.md#3-reveal_input_tx-reveal-input-transaction) transaction structure, inputs/outputs, and spending conditions.
+3. **Automatic dispatch**: The Dispute Core protocol automatically dispatches OPERATOR_WON_TX after REVEAL_INPUT_TX is confirmed, scheduled for execution after OP_WON_TIMELOCK blocks expire (default: 150 blocks).
+4. **Broadcast Operator Won transaction**: After the timelock expires, the operator broadcasts the Operator Won (Take2) Bitcoin transaction. For detailed information about the [OPERATOR_WON_TX](./bitcoin-transactions.md#3-operator_won_tx-operator-won-transaction) transaction structure, inputs/outputs, and spending conditions.
+5. **Submit BTC transaction**: Operator calls `registerOperatorTake()` with the Bitcoin transaction and SPV proof (same function as OPERATOR_TAKE_TX)
+6. **Validate transaction**: System validates the BTC transaction and proof
+7. **Peg-out Registered**: System emits an event PegoutRegistered informing that RBTC is now linked to Bitcoin via operator won (disputed fallback)
+
 ```mermaid
 sequenceDiagram
     participant M as Member
@@ -778,9 +790,46 @@ sequenceDiagram
 
     M->>+POM: registerOperatorTake(btcTxSPVProof)
     Note right of M: Operator calls `registerOperatorTake()` with the Bitcoin transaction and SPV proof
-    POM->>POM: Validate BTC transaction and SPV proof
+    POM->>POM: Validate BTC transaction and proof
     POM-->>-ENV: PegoutRegistered event
     Note right of POM: RBTC is now pegged-out to Bitcoin via operator take
+```
+
+**Disputed Case Flow** (when operator is challenged):
+
+```mermaid
+sequenceDiagram
+    participant WT as Watchtower
+    participant Op as Operator
+    participant BTC as Bitcoin Blockchain
+    participant POM as PegoutManager
+    participant ENV as Environment
+
+    Note over Op,ENV: Operator Take (Take1) - Challenge Dispute Flow
+    Note over Op,ENV: When operator is challenged after REIMBURSEMENT_KICKOFF_TX
+
+    WT->>BTC: 1. Dispatch CHALLENGE_TX
+    BTC-->>WT: Transaction mined
+    WT->>+POM: registerChallenge(btcTxSPVProof)
+    Note right of WT: Watchtower challenges operator actions
+    POM->>POM: Validate BTC transaction and SPV proof
+    POM-->>-ENV: ChallengeRegistered event
+    Note right of POM: Status: CHALLENGE
+
+    Op->>BTC: 2. Dispatch REVEAL_INPUT_TX
+    Note right of Op: Operator reveals slot ID signature<br/>proving correct fund advancement
+    BTC-->>Op: Transaction mined
+    Note right of Op: Dispute Core automatically schedules<br/>OPERATOR_WON_TX after OP_WON_TIMELOCK
+
+    Note over Op,BTC: Wait for OP_WON_TIMELOCK blocks (150 blocks)
+
+    Op->>BTC: 3. Dispatch OPERATOR_WON_TX
+    BTC-->>Op: Transaction mined
+    Op->>+POM: registerOperatorTake(btcTxSPVProof)
+    Note right of Op: Operator calls `registerOperatorTake()`<br/>with OPERATOR_WON_TX and SPV proof
+    POM->>POM: Validate BTC transaction and SPV proof
+    POM-->>-ENV: PegoutRegistered event
+    Note right of POM: RBTC is now pegged-out to Bitcoin<br/>via operator won (disputed fallback)
 ```
 
 ---

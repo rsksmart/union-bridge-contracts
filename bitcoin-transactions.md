@@ -717,18 +717,22 @@ graph LR
 ##### OPERATOR_WON_TX Input 1: From REVEAL_INPUT_TX
 
 - **Type**: Taproot (P2TR)
-- **Spend Mode**: KeyOnly with Aggregate signature
+- **Spend Mode**: Script path (timelock)
 - **Sighash Type**: SIGHASH_ALL
+- **Timelock**: OP_WON_TIMELOCK blocks (from StreamSettings, default: 150 blocks)
 - **Key Required**: Committee aggregated key (`take_aggregated_key`)
 - **Previous Transaction**: REVEAL_INPUT_TX (from Dispute Core protocol, indexed by slot)
 - **Description**: Spends the OPERATOR_WON_ENABLER output (output 0) from REVEAL_INPUT_TX. This output is created when the operator successfully reveals the input during dispute resolution. The operator can claim funds after winning a challenge dispute.
 - **Dispute Core Context**: The REVEAL_INPUT_TX is created as part of the dispute resolution process. When an operator is challenged and successfully reveals the input (proving they advanced funds correctly), this transaction creates the OPERATOR_WON_ENABLER output that enables OPERATOR_WON_TX execution.
 - **Taproot Script Details**:
   - **Key Path**: Uses committee aggregated key for direct spending
-  - **Script Tree**: Contains dispute resolution script leaves
-  - **Script Leaves**: Multiple script paths for dispute resolution scenarios
-  - **Spending Path**: Key path spending with committee aggregated signature
-  - **Dispute Context**: This input is only available after successful dispute resolution (operator reveals input and wait challenge timelock)
+  - **Script Path**: Uses timelock script leaf (leaf 0) for spending
+  - **Script Tree**: Contains one script leaf:
+    1. **Operator Won Script (Leaf 0)**: `OP_1 <OP_WON_TIMELOCK> OP_CHECKSEQUENCEVERIFY OP_DROP VERIFY_SIGNATURE(<take_aggregated_key>)` - Allows operator to claim funds after winning a challenge dispute, requires waiting for OP_WON_TIMELOCK blocks
+  - **Spending Conditions**: 
+    - Must wait for OP_WON_TIMELOCK blocks to expire after REVEAL_INPUT_TX confirmation
+    - Must sign with committee aggregated key (`take_aggregated_key`)
+    - The operator can only spend using the script path (leaf 0) after the timelock expires
 
 #### OPERATOR_WON_TX Outputs
 
@@ -1210,7 +1214,7 @@ The Advance Funds Protocol integrates with the **Dispute Core Protocol** to prov
 - **ACCEPT_PEGIN_TX**: Main transaction that accepts the peg-in request
 - **USER_TAKE_TX**: Common case transaction allowing users to claim their portion of peg-in funds (peg-out flow)
 - **OPERATOR_TAKE_TX**: Fallback transaction allowing operators to claim funds (peg-out flow)
-- **OPERATOR_WON_TX**: Disputed fallback transaction for operators to claim funds after winning a challenge (peg-out flow)
+- **OPERATOR_WON_TX**: Disputed fallback transaction for operators to claim funds after winning a challenge dispute. This transaction is automatically dispatched by the Dispute Core protocol after REVEAL_INPUT_TX is confirmed, scheduled for execution after OP_WON_TIMELOCK blocks expire. It requires two inputs: ACCEPT_PEGIN_TX output (key path) and REVEAL_INPUT_TX OPERATOR_WON_ENABLER output (script path with timelock). (peg-out flow)
 - **ADVANCE_FUNDS_TX**: Transaction allowing operators to advance funds to users before executing operator take transactions (peg-out flow, proof of payment)
 - **REIMBURSEMENT_KICKOFF_TX**: Dispute Core protocol transaction that enables operators to claim funds through OPERATOR_TAKE_TX
 - **CHALLENGE_TX**: Dispute Core protocol transaction that allows committee members to challenge operator actions if they detect incorrect behavior
@@ -1251,7 +1255,7 @@ The Advance Funds Protocol integrates with the **Dispute Core Protocol** to prov
 - **Timelock**: Time-based spending condition requiring specific block height or time
 - **Dispute Resolution**: Process for resolving conflicts in operator transactions
 - **OPERATOR_TAKE_ENABLER**: UTXO from REIMBURSEMENT_KICKOFF_TX output 0 that enables OPERATOR_TAKE_TX execution
-- **OPERATOR_WON_ENABLER**: UTXO from REVEAL_INPUT_TX output 0 that enables OPERATOR_WON_TX execution
+- **OPERATOR_WON_ENABLER**: UTXO from REVEAL_INPUT_TX output 0 that enables OPERATOR_WON_TX execution. This output contains a timelock script requiring OP_WON_TIMELOCK blocks to expire before OPERATOR_WON_TX can be executed. The OPERATOR_WON_TX is automatically dispatched by the Dispute Core protocol after REVEAL_INPUT_TX is confirmed.
 - **Pegout ID**: 32-byte identifier used to link peg-out requests with dispute core transactions
 - **registerAdvanceFunds**: Rootstock contract function to register ADVANCE_FUNDS_TX SPV proof and update status to ADVANCED
 - **registerReimbursementKickoff**: Rootstock contract function to register REIMBURSEMENT_KICKOFF_TX SPV proof and update status to KICKOFF
