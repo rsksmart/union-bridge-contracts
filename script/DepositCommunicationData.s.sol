@@ -115,7 +115,7 @@ contract DepositCommunicationDataScript is ScriptUtils, ContractAddressManager {
 
     function bytesToBytes32(bytes memory source) internal pure returns (bytes32 result) {
         require(source.length <= 32, "Invalid chunk size");
-        assembly {
+        assembly ("memory-safe") {
             result := mload(add(source, 32))
         }
     }

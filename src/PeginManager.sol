@@ -22,7 +22,6 @@ contract PeginManager is IPeginManager, PegManagerBase {
 
     /// @notice Initializes the PeginManager contract
     /// @param _initialOwner The initial owner of the contract
-    /// @param _bridgeAddress The address of the pow-peg bridge contract
     /// @param _accessManager The access manager contract address
     /// @param _committeeRegistry The committee registry contract address
     /// @param _bitcoinManager The Bitcoin manager contract address
@@ -31,7 +30,6 @@ contract PeginManager is IPeginManager, PegManagerBase {
     /// @param _signatureManager The signature manager contract address
     function initialize(
         address _initialOwner,
-        address payable _bridgeAddress,
         address _accessManager,
         ICommitteeRegistry _committeeRegistry,
         IBitcoinManager _bitcoinManager,
@@ -41,7 +39,6 @@ contract PeginManager is IPeginManager, PegManagerBase {
     ) public virtual initializer {
         __PegManagerBase_init(
             _initialOwner,
-            _bridgeAddress,
             _accessManager,
             _committeeRegistry,
             _bitcoinManager,
@@ -128,8 +125,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
         // Fetch the enabler scriptPubKey from the packet (calculated during packet creation)
         bytes memory enablerScriptPubKey = streamManager.getEnablerScriptPubKey(stream.streamId, packetNumber);
 
-        (int256 confirmations, BitcoinSignatureData memory acceptPeginSignatureData) =
-        _validatePeginEnablerAndConfirmations(
+        (int256 blockNumber, BitcoinSignatureData memory acceptPeginSignatureData) = _validatePeginEnablerAndBlockNumber(
             _requestPeginTxSPVProof,
             btcReimbursementPubKey,
             committeePubKey,
@@ -144,8 +140,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
             rskDestinationAddress: rskDestinationAddress,
             btcReimbursementPubKey: btcReimbursementPubKey,
             acceptPeginSignatureHash: acceptPeginSignatureData.signatureHash,
-            // Calculate the block number of the request peg-in transaction
-            btcBlockNumber: _getBlockNumberFromConfirmations(confirmations),
+            btcBlockNumber: blockNumber,
             userReimbursementTxid: bytes32(0),
             rejectPeginTxid: bytes32(0)
         });
@@ -234,7 +229,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
         );
     }
 
-    function _validatePeginEnablerAndConfirmations(
+    function _validatePeginEnablerAndBlockNumber(
         BtcTxSPVProof memory _requestPeginTxSPVProof,
         bytes32 _btcReimbursementPubKey,
         bytes memory _committeePubKey,
@@ -242,7 +237,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
         Stream memory _stream,
         bytes32 _requestPeginTxid,
         uint128 _committeeId
-    ) internal view returns (int256 confirmations, BitcoinSignatureData memory acceptPeginSignatureData) {
+    ) internal view returns (int256 blockNumber, BitcoinSignatureData memory acceptPeginSignatureData) {
         // Validates the enabler output (vout 2) with the correct amount and scriptPubKey
         bitcoinManager.validateRequestPeginEnablerOutput(
             _enablerScriptPubKey, _requestPeginTxSPVProof.btcTx.outputs[Constants.REQUEST_PEGIN_VOUT_ENABLER]
@@ -251,7 +246,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
         // Verifies the requestPeginTxid part of the Merkle Root of Tx of a Block
         // and that block is inside Bitcoin Mainchain
         // and has enough confirmations
-        confirmations = _verifyTxConfirmations(
+        blockNumber = rbtcBridge.getTxBlockNumberAndVerifyConfirmations(
             _stream.peginConfirmations,
             _requestPeginTxid,
             _requestPeginTxSPVProof.blockHash,
@@ -260,7 +255,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
         );
 
         return (
-            confirmations,
+            blockNumber,
             _calculateAcceptPeginSignatureData(
                 _btcReimbursementPubKey,
                 _committeeId,
@@ -380,7 +375,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
         // Verify the userReimbursementTxid part of the Merkle Root of Tx of a Block
         // and that block is inside Bitcoin Mainchain
         // and has enough confirmations
-        int256 btcConfirmations = _verifyTxConfirmations(
+        int256 blockNumber = rbtcBridge.getTxBlockNumberAndVerifyConfirmations(
             stream.peginConfirmations,
             _userReimbursementTxid,
             _userReimbursementTxSPVProof.blockHash,
@@ -388,8 +383,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
             _userReimbursementTxSPVProof.merkleBranchHashes
         );
 
-        int256 blocksElapsedSinceRequestPegin =
-            _getBlockNumberFromConfirmations(btcConfirmations) - peginTempInfo[_requestPeginTxid].btcBlockNumber;
+        int256 blocksElapsedSinceRequestPegin = blockNumber - peginTempInfo[_requestPeginTxid].btcBlockNumber;
 
         if (blocksElapsedSinceRequestPegin < int256(uint256(stream.timelockSettings.requestPeginTimelock))) {
             revert UserReimbursementBeforeTimelock(
@@ -449,7 +443,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
         // Verify the userReimbursementTxid part of the Merkle Root of Tx of a Block
         // and that block is inside Bitcoin Mainchain
         // and has enough confirmations
-        _verifyTxConfirmations(
+        rbtcBridge.verifyTxConfirmations(
             stream.peginConfirmations,
             _rejectPeginTxid,
             _rejectPeginTxSPVProof.blockHash,
@@ -485,7 +479,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
         // Verify the acceptPeginTxid part of the Merkle Root of Tx of a Block
         // and that block is inside Bitcoin Mainchain
         // annd has enough confirmations
-        _verifyTxConfirmations(
+        rbtcBridge.verifyTxConfirmations(
             streamManager.getStreamById(streamInfo.streamId).peginConfirmations,
             acceptPeginTxid,
             _peginAcceptedTxSPVProof.blockHash,

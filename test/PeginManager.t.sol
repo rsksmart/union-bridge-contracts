@@ -8,7 +8,6 @@ import {BtcTransaction, BtcTxSPVProof, StreamPosition, PegStatus} from "src/inte
 import {IPeginManager, RequestPeginTempInfo} from "src/interfaces/IPeginManager.sol";
 import {Slot, SlotState, Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE} from "src/interfaces/IBridge.sol";
-import {ProofValidator} from "src/ProofValidator.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {ICommitteeRegistry, Committee, CommitteeMember} from "src/interfaces/ICommitteeRegistry.sol";
 import {IMemberRegistry, MemberKeys} from "src/interfaces/IMemberRegistry.sol";
@@ -48,7 +47,7 @@ contract PeginManagerTest is Test, HelperContract {
         assertEq(address(peginManager.rbtcBridge()), address(rbtcBridge));
         assertEq(address(peginManager.streamManager()), address(streamManager));
         assertEq(address(peginManager.signatureManager()), address(signatureManager));
-        assertEq(address(peginManager.bridge()), address(bridgeMock));
+        assertEq(address(peginManager.rbtcBridge()), address(rbtcBridge));
     }
 
     function test_getRequestPeginData_Success() external view {
@@ -203,7 +202,7 @@ contract PeginManagerTest is Test, HelperContract {
         Stream memory stream = streamManager.getStream(VALUE);
         vm.expectRevert(
             abi.encodeWithSelector(
-                ProofValidator.NotEnoughConfirmations.selector, actualConfirmations, stream.peginConfirmations
+                IRbtcBridge.NotEnoughConfirmations.selector, actualConfirmations, stream.peginConfirmations
             )
         );
         // Act
@@ -221,7 +220,7 @@ contract PeginManagerTest is Test, HelperContract {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(
-                ProofValidator.BridgeBtcTxInvalidMerkleBranch.selector,
+                IRbtcBridge.BridgeBtcTxInvalidMerkleBranch.selector,
                 getBtcTxid(btcTransaction),
                 requestPeginTxSPVProof.merkleBranchPath,
                 requestPeginTxSPVProof.merkleBranchHashes
@@ -484,7 +483,7 @@ contract PeginManagerTest is Test, HelperContract {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(
-                ProofValidator.NotEnoughConfirmations.selector, actualConfirmations, stream.peginConfirmations
+                IRbtcBridge.NotEnoughConfirmations.selector, actualConfirmations, stream.peginConfirmations
             )
         );
 
@@ -825,7 +824,7 @@ contract PeginManagerTest is Test, HelperContract {
         // Assert - expect revert
         vm.expectRevert(
             abi.encodeWithSelector(
-                ProofValidator.NotEnoughConfirmations.selector, actualConfirmations, stream.peginConfirmations
+                IRbtcBridge.NotEnoughConfirmations.selector, actualConfirmations, stream.peginConfirmations
             )
         );
 
@@ -865,7 +864,7 @@ contract PeginManagerTest is Test, HelperContract {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(
-                ProofValidator.BridgeBtcTxInvalidMerkleBranch.selector,
+                IRbtcBridge.BridgeBtcTxInvalidMerkleBranch.selector,
                 userReimbursementTxid,
                 userReimbursementTxSPVProof.merkleBranchPath,
                 userReimbursementTxSPVProof.merkleBranchHashes
@@ -931,7 +930,7 @@ contract PeginManagerTest is Test, HelperContract {
         RequestPeginTempInfo memory peginTempInfo = peginManager.getRequestPeginTempInfo(requestPeginTxid);
         int256 requestPeginBlockNumber = peginTempInfo.btcBlockNumber;
 
-        // Set confirmations high enough to pass _verifyTxConfirmations but make blocksElapsed < timelock
+        // Set confirmations high enough to pass rbtcBridge.verifyTxConfirmations but make blocksElapsed < timelock
         int256 userReimbursementConfirmations = CONFIRMATIONS + 1; // 11 confirmations
         bridgeMock.setBtcTransactionConfirmations(userReimbursementConfirmations);
 
@@ -1107,7 +1106,7 @@ contract PeginManagerTest is Test, HelperContract {
         // Assert - expect revert
         vm.expectRevert(
             abi.encodeWithSelector(
-                ProofValidator.NotEnoughConfirmations.selector, actualConfirmations, stream.peginConfirmations
+                IRbtcBridge.NotEnoughConfirmations.selector, actualConfirmations, stream.peginConfirmations
             )
         );
 
@@ -1167,7 +1166,7 @@ contract PeginManagerTest is Test, HelperContract {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(
-                ProofValidator.BridgeBtcTxInvalidMerkleBranch.selector,
+                IRbtcBridge.BridgeBtcTxInvalidMerkleBranch.selector,
                 rejectPeginTxid,
                 rejectPeginTxSPVProof.merkleBranchPath,
                 rejectPeginTxSPVProof.merkleBranchHashes

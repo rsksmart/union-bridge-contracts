@@ -12,6 +12,7 @@ import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
 import {IBitcoinManager} from "src/interfaces/IBitcoinManager.sol";
 import {ISignatureManager} from "src/interfaces/ISignatureManager.sol";
 import {AccessManager} from "src/AccessManager.sol";
+import {IRbtcBridge} from "src/interfaces/IRbtcBridge.sol";
 
 /// @title ContractAddressManager
 /// @notice Helper library to get contract addresses based on the current network
@@ -62,7 +63,13 @@ abstract contract ContractAddressManager is Script {
     /// @notice Get the Bridge contract for the current network
     /// @return The RSK pow-peg Bridge  (mock for local only, real bridge for alphanet/testnet/mainnet)
     function getBridge() internal view returns (IBridge) {
-        return getPeginManager().bridge();
+        return getRbtcBridge().bridge();
+    }
+
+    /// @notice Get the Bridge contract for the current network
+    /// @return The RbtcBridge contract
+    function getRbtcBridge() internal view returns (IRbtcBridge) {
+        return getPeginManager().rbtcBridge();
     }
 
     /// @notice Get the MemberRegistry contract for the current network

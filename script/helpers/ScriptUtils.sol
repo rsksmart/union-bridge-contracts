@@ -120,7 +120,7 @@ abstract contract ScriptUtils is Script {
         // BIP340 specifies Schnorr signatures use only the x-coordinate, stored at bytes 1-32 (skipping the prefix byte).
         bytes32 committeePubKeyX;
         // slither-disable-next-line assembly
-        assembly {
+        assembly ("memory-safe") {
             committeePubKeyX := mload(add(_committeePubKey, 33))
         }
 
@@ -165,7 +165,7 @@ abstract contract ScriptUtils is Script {
         // BIP340 specifies Schnorr signatures use only the x-coordinate, stored at bytes 1-32 (skipping the prefix byte).
         bytes32 committeePubKeyX;
         // slither-disable-next-line assembly
-        assembly {
+        assembly ("memory-safe") {
             committeePubKeyX := mload(add(_committeePubKey, 33))
         }
 

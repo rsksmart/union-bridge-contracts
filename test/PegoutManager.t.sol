@@ -10,7 +10,6 @@ import {IPegoutManager, PegoutManagerSettings, PegoutTempInfo} from "src/interfa
 import {IPeginManager} from "src/interfaces/IPeginManager.sol";
 import {Slot, SlotState, Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {ISignatureManager} from "src/interfaces/ISignatureManager.sol";
-import {ProofValidator} from "src/ProofValidator.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
@@ -55,7 +54,7 @@ contract PegoutManagerTest is Test, HelperContract {
         assertEq(
             address(pegoutManager.signatureManager()), address(signatureManager), "Signature manager should be set"
         );
-        assertEq(address(pegoutManager.bridge()), address(bridgeMock), "Bridge should be set");
+        assertEq(address(pegoutManager.rbtcBridge()), address(rbtcBridge), "Rbtc bridge should be set");
         assertEq(pegoutManager.userTakeTimeout(), settings.userTakeTimeout, "User take timeout should be set");
         assertEq(
             pegoutManager.operatorTakeTimeout(), settings.operatorTakeTimeout, "Operator take timeout should be set"
@@ -560,7 +559,7 @@ contract PegoutManagerTest is Test, HelperContract {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                ProofValidator.NotEnoughConfirmations.selector, actualConfirmations, setup.stream.peginConfirmations
+                IRbtcBridge.NotEnoughConfirmations.selector, actualConfirmations, setup.stream.peginConfirmations
             )
         );
 

@@ -14,7 +14,6 @@ import {ISignatureManager} from "src/interfaces/ISignatureManager.sol";
 contract PegoutManagerHarness is PegoutManager {
     function initialize(
         address _initialOwner,
-        address payable _bridgeAddress,
         address _accessManager,
         ICommitteeRegistry _committeeRegistry,
         IBitcoinManager _bitcoinManager,
@@ -25,7 +24,6 @@ contract PegoutManagerHarness is PegoutManager {
     ) public override initializer {
         PegoutManager.initialize(
             _initialOwner,
-            _bridgeAddress,
             _accessManager,
             _committeeRegistry,
             _bitcoinManager,

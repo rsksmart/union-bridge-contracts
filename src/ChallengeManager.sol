@@ -9,6 +9,7 @@ import {IPegoutManager, PegoutTempInfo} from "./interfaces/IPegoutManager.sol";
 import {IStreamManager, PegStatus, Stream} from "./interfaces/IStreamManager.sol";
 import {ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
 import {IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
+import {IRbtcBridge} from "./interfaces/IRbtcBridge.sol";
 
 /// @title ChallengeManager
 /// @notice Manages challenge operations
@@ -27,24 +28,22 @@ contract ChallengeManager is IChallengeManager, PegBase {
 
     /// @notice Initializes the ChallengeManager contract
     /// @param _initialOwner The initial owner of the contract
-    /// @param _bridgeAddress The address of the pow-peg bridge contract
     /// @param _accessManager The access manager contract address
     /// @param _committeeRegistry The committee registry contract address
     /// @param _bitcoinManager The Bitcoin manager contract address
+    /// @param _rbtcBridge The rbtc bridge contract address for verifying Bitcoin transaction confirmations
     /// @param _pegoutManager The pegout manager contract address
     /// @param _streamManager The stream manager contract address
     function initialize(
         address _initialOwner,
-        address payable _bridgeAddress,
         address _accessManager,
         ICommitteeRegistry _committeeRegistry,
         IBitcoinManager _bitcoinManager,
+        IRbtcBridge _rbtcBridge,
         IPegoutManager _pegoutManager,
         IStreamManager _streamManager
     ) public initializer {
-        __PegBase_init(
-            _initialOwner, _bridgeAddress, _accessManager, _committeeRegistry, _bitcoinManager, _streamManager
-        );
+        __PegBase_init(_initialOwner, _accessManager, _committeeRegistry, _bitcoinManager, _rbtcBridge, _streamManager);
         if (address(_pegoutManager) == address(0)) {
             revert InvalidZeroAddress();
         }
@@ -77,7 +76,7 @@ contract ChallengeManager is IChallengeManager, PegBase {
         Stream memory stream = streamManager.getStreamById(streamInfo.streamId);
 
         // Verify the txid is part of the Merkle Root and has enough confirmations
-        _verifyTxConfirmations(
+        rbtcBridge.verifyTxConfirmations(
             stream.pegoutConfirmations,
             txid,
             _challenge.blockHash,
@@ -127,7 +126,7 @@ contract ChallengeManager is IChallengeManager, PegBase {
         Stream memory stream = streamManager.getStreamById(streamInfo.streamId);
 
         // Verify the txid is part of the Merkle Root and has enough confirmations
-        _verifyTxConfirmations(
+        rbtcBridge.verifyTxConfirmations(
             stream.pegoutConfirmations,
             txid,
             _inputRevealed.blockHash,

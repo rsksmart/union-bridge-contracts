@@ -27,7 +27,7 @@ contract ChallengeManagerTest is Test, HelperContract {
         assertEq(address(challengeManager.bitcoinManager()), address(bitcoinManager));
         assertEq(address(challengeManager.pegoutManager()), address(pegoutManager));
         assertEq(address(challengeManager.streamManager()), address(streamManager));
-        assertEq(address(challengeManager.bridge()), address(bridgeMock));
+        assertEq(address(challengeManager.rbtcBridge()), address(rbtcBridge));
     }
 
     function test_registerChallenge_Success_OperatorCall() external {

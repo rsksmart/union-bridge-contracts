@@ -91,7 +91,7 @@ contract BitcoinManager is IBitcoinManager, BaseProxy {
         // BIP340 specifies Schnorr signatures use only the x-coordinate, stored at bytes 1-32 (skipping the prefix byte).
         bytes32 committeePubKeyX;
         // slither-disable-next-line assembly
-        assembly {
+        assembly ("memory-safe") {
             committeePubKeyX := mload(add(_committeePubKey, 33))
         }
 
@@ -332,7 +332,7 @@ contract BitcoinManager is IBitcoinManager, BaseProxy {
         // BIP340 specifies Schnorr signatures use only the x-coordinate, stored at bytes 1-32 (skipping the prefix byte).
         bytes32 committeePubKeyX;
         // slither-disable-next-line assembly
-        assembly {
+        assembly ("memory-safe") {
             committeePubKeyX := mload(add(_committeePubKey, 33))
         }
 
@@ -433,7 +433,7 @@ contract BitcoinManager is IBitcoinManager, BaseProxy {
         // Extract x-coordinate from compressed public key
         bytes32 committeePubKeyX;
         // slither-disable-next-line assembly
-        assembly {
+        assembly ("memory-safe") {
             committeePubKeyX := mload(add(_committeePubKey, 33))
         }
 

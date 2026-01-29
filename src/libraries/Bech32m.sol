@@ -130,7 +130,7 @@ library Bech32m {
         }
 
         // Resize array to actual length
-        assembly {
+        assembly ("memory-safe") {
             mstore(ret, outLen)
         }
         return ret;

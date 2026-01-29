@@ -1055,7 +1055,7 @@ graph TB
   - Centralizes common state variables (bitcoinManager, streamManager, committeeRegistry)
   - Provides shared initialization logic with AccessManager integration
   - Implements common peg status validation functions
-  - Inherits from BaseProxy, ProofValidator, ReentrancyGuardUpgradeable, and Pausable
+  - Inherits from BaseProxy, ReentrancyGuardUpgradeable, and Pausable
 - **Security Features**: Pausable (via AccessManager), UUPS upgradeable, non-reentrant
 
 #### 4. **PegManagerBase**
@@ -1074,11 +1074,13 @@ graph TB
   - Acts as the single authorized contract registered with the PowPeg Bridge (RSKIP-502 requirement)
   - Provides `mintRbtc()` function exclusively for PeginManager to mint RBTC during peg-in acceptance
   - Provides `burnRbtc()` function exclusively for PegoutManager to burn RBTC during peg-out requests
+  - Provides `verifyTxConfirmations()` and `getTxBlockNumberAndVerifyConfirmations()` functions to verify Bitcoin transaction confirmations using RSK bridge precompiled contract
+  - Provides `getBestBlockHash()` function to retrieve the hash of the best Bitcoin block
   - Implements strict access control: only authorized managers can call mint/burn functions
   - Enforces 100k gas limit on RBTC transfers to prevent DoS attacks
   - Handles all PowPeg Bridge error codes (cap exceeded, transfers disabled, unauthorized caller)
 - **Security Features**: UUPS upgradeable, non-reentrant, owner-controlled manager address updates
-- **Critical Role**: Without RbtcBridge, both managers cannot interact with PowPeg Bridge due to single-address constraint
+- **Critical Role**: Without RbtcBridge, both managers cannot interact with PowPeg Bridge due to single-address constraint. Additionally, ChallengeManager, PeginManager, PegoutManager, and MemberRegistry depend on RbtcBridge's transaction verification functions (`verifyTxConfirmations`, `getTxBlockNumberAndVerifyConfirmations`, `getBestBlockHash`) to validate Bitcoin transactions and block data
 
 #### 6. **BitcoinManager**
 

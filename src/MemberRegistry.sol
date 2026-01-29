@@ -23,8 +23,7 @@ import {StreamDenomination, IStreamManager} from "./interfaces/IStreamManager.so
 import {IMemberRegistry} from "./interfaces/IMemberRegistry.sol";
 import {Constants} from "./libraries/Constants.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
-import {IBridge} from "./interfaces/IBridge.sol";
-import {BtcHelper} from "./libraries/BtcHelper.sol";
+import {IRbtcBridge} from "./interfaces/IRbtcBridge.sol";
 import {Secp256k1} from "./libraries/Secp256k1.sol";
 import {IAccessManager} from "./interfaces/IAccessManager.sol";
 
@@ -45,27 +44,27 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
     /// @notice Access manager contract for managing access control
     IAccessManager public accessManager;
 
-    /// @notice RSK Bridge contract for Bitcoin block hash entropy
-    IBridge public bridge;
+    /// @notice RbtcBridge contract for Bitcoin block hash entropy
+    IRbtcBridge public rbtcBridge;
 
     /// @notice Initializes the MemberRegistry contract
     /// @param _initialOwner The initial owner of the contract
     /// @param _accessManager The access manager contract address
-    /// @param _bridge The bridge contract address
+    /// @param _rbtcBridge The rbtc bridge contract address
     function initialize(
         address _initialOwner,
         IAccessManager _accessManager,
-        IBridge _bridge,
+        IRbtcBridge _rbtcBridge,
         IStreamManager _streamManager
     ) public virtual initializer {
         if (
-            address(_accessManager) == address(0) || address(_bridge) == address(0)
+            address(_accessManager) == address(0) || address(_rbtcBridge) == address(0)
                 || address(_streamManager) == address(0)
         ) {
             revert InvalidZeroAddress();
         }
         accessManager = _accessManager;
-        bridge = _bridge;
+        rbtcBridge = _rbtcBridge;
         streamManager = _streamManager;
         __BaseProxy_init(_initialOwner);
         __ReentrancyGuard_init();
@@ -637,7 +636,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         // Using the Bitcoin blockchain's best block hash provides better security than RSK block hash
         // because Bitcoin miners cannot manipulate the selection of RSK committee members.
         // The BTC block hash is unpredictable from the RSK network's perspective.
-        bytes32 btcBlockHash = BtcHelper.hash256(bridge.getBtcBlockchainBestBlockHeader());
+        bytes32 btcBlockHash = rbtcBridge.getBestBlockHash();
 
         // True randomness is not required here. We only need enough unpredictability to ensure
         // different committee members get selected across multiple runs.

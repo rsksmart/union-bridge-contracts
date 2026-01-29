@@ -16,21 +16,16 @@ abstract contract PegManagerBase is IPegManagerBase, PegBase {
     /// @notice Signature manager contract for handling multi-signature operations
     ISignatureManager public signatureManager;
 
-    /// @notice The RbtcBridge contract for minting RBTC
-    IRbtcBridge public rbtcBridge;
-
     /// @notice Initializes the base PegManager contract
     /// @param _initialOwner The initial owner of the contract
-    /// @param _bridgeAddress The address of the pow-peg bridge contract
     /// @param _accessManager The access manager contract address
     /// @param _committeeRegistry The committee registry contract address
     /// @param _bitcoinManager The Bitcoin manager contract address
-    /// @param _rbtcBridge The RbtcBridge contract address
+    /// @param _rbtcBridge The RbtcBridge contract for minting/burning RBTC
     /// @param _streamManager The stream manager contract address
     /// @dev This function should be called by child contracts during their initialization
     function __PegManagerBase_init(
         address _initialOwner,
-        address payable _bridgeAddress,
         address _accessManager,
         ICommitteeRegistry _committeeRegistry,
         IBitcoinManager _bitcoinManager,
@@ -39,14 +34,11 @@ abstract contract PegManagerBase is IPegManagerBase, PegBase {
         ISignatureManager _signatureManager
     ) internal onlyInitializing {
         // Validate that the addresses are not zero
-        if (address(_rbtcBridge) == address(0) || address(_signatureManager) == address(0)) {
+        if (address(_signatureManager) == address(0)) {
             revert InvalidZeroAddress();
         }
-        rbtcBridge = _rbtcBridge;
         signatureManager = _signatureManager;
 
-        __PegBase_init(
-            _initialOwner, _bridgeAddress, _accessManager, _committeeRegistry, _bitcoinManager, _streamManager
-        );
+        __PegBase_init(_initialOwner, _accessManager, _committeeRegistry, _bitcoinManager, _rbtcBridge, _streamManager);
     }
 }

@@ -31,7 +31,6 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
 
     /// @notice Initializes the PegManager contract
     /// @param _initialOwner The initial owner of the contract
-    /// @param _bridgeAddress The address of the pow-peg bridge contract
     /// @param _accessManager The access manager contract address
     /// @param _committeeRegistry The committee registry contract address
     /// @param _bitcoinManager The Bitcoin manager contract address
@@ -42,7 +41,6 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
     /// @dev This function can only be called once during contract deployment
     function initialize(
         address _initialOwner,
-        address payable _bridgeAddress,
         address _accessManager,
         ICommitteeRegistry _committeeRegistry,
         IBitcoinManager _bitcoinManager,
@@ -53,7 +51,6 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
     ) public virtual initializer {
         __PegManagerBase_init(
             _initialOwner,
-            _bridgeAddress,
             _accessManager,
             _committeeRegistry,
             _bitcoinManager,
@@ -109,13 +106,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
 
         // Compute pegout ID
         bytes32 pegoutId = keccak256(
-            abi.encode(
-                stream.streamId,
-                packetNumber,
-                slot.slotId,
-                _msgSender(),
-                BtcHelper.hash256(bridge.getBtcBlockchainBestBlockHeader())
-            )
+            abi.encode(stream.streamId, packetNumber, slot.slotId, _msgSender(), rbtcBridge.getBestBlockHash())
         );
 
         pegoutTempInfo[slot.acceptPeginTx] = PegoutTempInfo({
@@ -172,7 +163,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         Stream memory stream = streamManager.getStreamById(streamInfo.streamId);
 
         // Verify the requestPegoutTxid is part of the Merkle Root and has enough confirmations
-        _verifyTxConfirmations(
+        rbtcBridge.verifyTxConfirmations(
             stream.pegoutConfirmations,
             requestPegoutTxid,
             _pegoutTxSPVProof.blockHash,
@@ -302,13 +293,13 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
 
         PegoutTempInfo storage pegoutInfo = _validateOperatorTakeAddress(acceptPeginTxid);
 
-        (bytes32 txid, int256 confirmations) = _verifyAdvanceFundsTx(_advanceFunds, pegoutInfo, streamInfo.streamId);
+        (bytes32 txid, int256 blockNumber) = _verifyAdvanceFundsTx(_advanceFunds, pegoutInfo, streamInfo.streamId);
 
         // update the peg status to ADVANCED
         streamManager.setPegStatus(acceptPeginTxid, PegStatus.ADVANCED);
 
         // Update advance funds block number
-        pegoutInfo.advanceFundsBlockNumber = _getBlockNumberFromConfirmations(confirmations);
+        pegoutInfo.advanceFundsBlockNumber = blockNumber;
 
         // slither-disable-next-line reentrancy-events
         emit AdvanceFundsRegistered(
@@ -320,7 +311,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         BtcTxSPVProof memory _advanceFunds,
         PegoutTempInfo memory _pegoutInfo,
         uint64 _streamId
-    ) internal view returns (bytes32 txid, int256 confirmations) {
+    ) internal view returns (bytes32 txid, int256 blockNumber) {
         // Calculate the transaction id for verification
         txid = bitcoinManager.getBtcTxid(_advanceFunds.btcTx);
 
@@ -328,7 +319,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         Stream memory stream = streamManager.getStreamById(_streamId);
 
         // Verify the txid is part of the Merkle Root and has enough confirmations
-        confirmations = _verifyTxConfirmations(
+        blockNumber = rbtcBridge.getTxBlockNumberAndVerifyConfirmations(
             stream.pegoutConfirmations,
             txid,
             _advanceFunds.blockHash,
@@ -378,15 +369,13 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         Stream memory stream = streamManager.getStreamById(streamInfo.streamId);
 
         // Verify the txid is part of the Merkle Root and has enough confirmations
-        int256 confirmations = _verifyTxConfirmations(
+        int256 blockNumber = rbtcBridge.getTxBlockNumberAndVerifyConfirmations(
             stream.pegoutConfirmations,
             txid,
             _kickoffSPV.blockHash,
             _kickoffSPV.merkleBranchPath,
             _kickoffSPV.merkleBranchHashes
         );
-
-        int256 blockNumber = _getBlockNumberFromConfirmations(confirmations);
 
         if (blockNumber < pegoutInfo.advanceFundsBlockNumber) {
             revert ReimbursementKickoffBeforeAdvanceFunds(pegoutInfo.advanceFundsBlockNumber, blockNumber);
@@ -445,7 +434,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         Stream memory stream = streamManager.getStreamById(streamInfo.streamId);
 
         // Verify the txid is part of the Merkle Root and has enough confirmations
-        _verifyTxConfirmations(
+        rbtcBridge.verifyTxConfirmations(
             stream.pegoutConfirmations,
             txid,
             _pegoutTxSPVProof.blockHash,
@@ -520,7 +509,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         Stream memory stream = streamManager.getStreamById(streamInfo.streamId);
 
         // Verify the txid is part of the Merkle Root and has enough confirmations
-        _verifyTxConfirmations(
+        rbtcBridge.verifyTxConfirmations(
             stream.pegoutConfirmations,
             txid,
             _pegoutTxSPVProof.blockHash,

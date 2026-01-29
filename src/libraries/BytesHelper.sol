@@ -63,7 +63,7 @@ library BytesHelper {
             revert indexOverflow(_bytes.length, _from, upTo);
         }
         bytes32 tempBytes32;
-        assembly {
+        assembly ("memory-safe") {
             tempBytes32 := mload(add(add(_bytes, 0x20), _from))
         }
 
@@ -82,7 +82,7 @@ library BytesHelper {
             revert indexOverflow(_bytes.length, _from, upTo);
         }
         address tempAddress;
-        assembly {
+        assembly ("memory-safe") {
             tempAddress := mload(add(add(_bytes, 0x14), _from))
         }
         return tempAddress;
@@ -100,7 +100,7 @@ library BytesHelper {
             revert indexOverflow(_bytes.length, _from, upTo);
         }
         uint64 tempUint;
-        assembly {
+        assembly ("memory-safe") {
             tempUint := mload(add(add(_bytes, 0x8), _from))
         }
         return tempUint;
@@ -118,7 +118,7 @@ library BytesHelper {
             revert indexOverflow(_bytes.length, _from, upTo);
         }
         uint32 tempUint;
-        assembly {
+        assembly ("memory-safe") {
             tempUint := mload(add(add(_bytes, 0x4), _from))
         }
         return tempUint;
@@ -136,7 +136,7 @@ library BytesHelper {
             revert indexOverflow(_bytes.length, _from, upTo);
         }
         uint24 tempUint;
-        assembly {
+        assembly ("memory-safe") {
             tempUint := mload(add(add(_bytes, 0x3), _from))
         }
         return tempUint;
@@ -154,7 +154,7 @@ library BytesHelper {
             revert indexOverflow(_bytes.length, _from, upTo);
         }
         uint16 tempUint;
-        assembly {
+        assembly ("memory-safe") {
             tempUint := mload(add(add(_bytes, 0x2), _from))
         }
         return tempUint;
@@ -177,7 +177,7 @@ library BytesHelper {
         }
 
         bytes memory tempBytes;
-        assembly {
+        assembly ("memory-safe") {
             switch iszero(_length)
             case 0 {
                 // Get a location of some free memory and store it in tempBytes as

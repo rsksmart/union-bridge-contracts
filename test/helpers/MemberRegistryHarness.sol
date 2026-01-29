@@ -5,17 +5,17 @@ import {MemberRegistry} from "src/MemberRegistry.sol";
 import {Role, UTXO, MemberRegistrationKeys} from "src/interfaces/ICommitteeRegistry.sol";
 import {IStreamManager, StreamDenomination} from "src/interfaces/IStreamManager.sol";
 import {IAccessManager} from "src/interfaces/IAccessManager.sol";
-import {IBridge} from "src/interfaces/IBridge.sol";
+import {IRbtcBridge} from "src/interfaces/IRbtcBridge.sol";
 
 /// @notice Wrapper for testing MemberRegistry
 contract MemberRegistryHarness is MemberRegistry {
     function initialize(
         address _initialOwner,
         IAccessManager _accessManager,
-        IBridge _bridge,
+        IRbtcBridge _rbtcBridge,
         IStreamManager _streamManager
     ) public override initializer {
-        MemberRegistry.initialize(_initialOwner, _accessManager, _bridge, _streamManager);
+        MemberRegistry.initialize(_initialOwner, _accessManager, _rbtcBridge, _streamManager);
     }
 
     function registerCandidateToStreamHarness(

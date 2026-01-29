@@ -404,7 +404,7 @@ contract Musig2 is IMusig2 {
         bytes memory out = new bytes(64); // 2 * 32 bytes for x and y
         // we use assembly to call the precompile contract as it does not have an ABI
         // slither-disable-next-line assembly
-        assembly {
+        assembly ("memory-safe") {
             let success := staticcall(gas(), addr, add(data, 32), mload(data), add(out, 32), 64)
             // Check if staticcall was successful
             if success {

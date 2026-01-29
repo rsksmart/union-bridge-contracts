@@ -2,11 +2,21 @@
 pragma solidity ^0.8.20;
 
 import {BaseProxy} from "./BaseProxy.sol";
-import {Pausable} from "./Pausable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {IRbtcBridge} from "./interfaces/IRbtcBridge.sol";
 import {IBridge} from "./interfaces/IBridge.sol";
 import {IAccessManager} from "./interfaces/IAccessManager.sol";
+import {
+    IBridge,
+    BTC_TRANSACTION_CONFIRMATION_MAX_DEPTH,
+    BTC_TRANSACTION_CONFIRMATION_INEXISTENT_BLOCK_HASH_ERROR_CODE,
+    BTC_TRANSACTION_CONFIRMATION_BLOCK_NOT_IN_BEST_CHAIN_ERROR_CODE,
+    BTC_TRANSACTION_CONFIRMATION_INCONSISTENT_BLOCK_ERROR_CODE,
+    BTC_TRANSACTION_CONFIRMATION_BLOCK_TOO_OLD_ERROR_CODE,
+    BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE
+} from "./interfaces/IBridge.sol";
+import {Pausable} from "./Pausable.sol";
+import {BtcHelper} from "./libraries/BtcHelper.sol";
 
 /// @title RbtcBridge
 /// @notice Intermediary contract that acts as the single authorized address for RBTC minting/burning
@@ -15,8 +25,9 @@ import {IAccessManager} from "./interfaces/IAccessManager.sol";
 ///      for minting and burning RBTC. Since PegManager was split into PeginManager and PegoutManager,
 ///      this bridge serves as the single authorized intermediary.
 /// @dev Implements RSKIP-502: https://github.com/rsksmart/RSKIPs/blob/master/IPs/RSKIP502.md
-contract RbtcBridge is IRbtcBridge, BaseProxy, ReentrancyGuardUpgradeable, Pausable {
-    /// @notice The RSK PowPeg Bridge contract
+contract RbtcBridge is IRbtcBridge, ReentrancyGuardUpgradeable, BaseProxy, Pausable {
+    /// @notice The RSK Bridge contract used for Bitcoin transaction verification
+    /// @dev This contract provides access to Bitcoin transaction confirmation data
     IBridge public bridge;
 
     /// @notice The access manager contract that manages access control
@@ -27,16 +38,17 @@ contract RbtcBridge is IRbtcBridge, BaseProxy, ReentrancyGuardUpgradeable, Pausa
     /// @param _initialOwner The initial owner of the contract
     /// @param _bridge The RSK PowPeg Bridge contract address
     /// @param _accessManager The access manager contract address
-    function initialize(address _initialOwner, address _bridge, IAccessManager _accessManager) external initializer {
-        if (_bridge == address(0) || address(_accessManager) == address(0)) {
+    function initialize(address _initialOwner, IBridge _bridge, IAccessManager _accessManager) external initializer {
+        if (_initialOwner == address(0) || address(_bridge) == address(0) || address(_accessManager) == address(0)) {
             revert InvalidZeroAddress();
         }
-        accessManager = _accessManager;
-        bridge = IBridge(_bridge);
 
-        __BaseProxy_init(_initialOwner);
+        bridge = _bridge;
+        accessManager = _accessManager;
+
         __ReentrancyGuard_init();
-        __Pauser_init(address(accessManager));
+        __BaseProxy_init(_initialOwner);
+        __Pauser_init(address(_accessManager));
     }
 
     /// @notice Allows the contract to receive RBTC from the PowPeg bridge
@@ -128,5 +140,72 @@ contract RbtcBridge is IRbtcBridge, BaseProxy, ReentrancyGuardUpgradeable, Pausa
     /// @inheritdoc IRbtcBridge
     function getUnionBridgeLockingCap() external view returns (uint256) {
         return bridge.getUnionBridgeLockingCap();
+    }
+
+    /// @inheritdoc IRbtcBridge
+    function verifyTxConfirmations(
+        uint256 _minConfirmations,
+        bytes32 _txid,
+        bytes32 _blockHash,
+        uint256 _merkleBranchPath,
+        bytes32[] memory _merkleBranchHashes
+    ) external view {
+        // slither-disable-next-line unused-return
+        _verifyTxConfirmations(_minConfirmations, _txid, _blockHash, _merkleBranchPath, _merkleBranchHashes);
+    }
+
+    function _verifyTxConfirmations(
+        uint256 _minConfirmations,
+        bytes32 _txid,
+        bytes32 _blockHash,
+        uint256 _merkleBranchPath,
+        bytes32[] memory _merkleBranchHashes
+    ) internal view returns (int256) {
+        // Get tx confirmations using RSK bridge precompiled contract
+        int256 confirmations =
+            bridge.getBtcTransactionConfirmations(_txid, _blockHash, _merkleBranchPath, _merkleBranchHashes);
+        // Validate block is in the Mainchain
+        if (confirmations == BTC_TRANSACTION_CONFIRMATION_INEXISTENT_BLOCK_HASH_ERROR_CODE) {
+            revert BridgeBtcInexistantBlockHash(_blockHash);
+        }
+        if (confirmations == BTC_TRANSACTION_CONFIRMATION_BLOCK_NOT_IN_BEST_CHAIN_ERROR_CODE) {
+            revert BridgeBtcBlockNotInBestChain(_blockHash);
+        }
+        if (confirmations == BTC_TRANSACTION_CONFIRMATION_INCONSISTENT_BLOCK_ERROR_CODE) {
+            revert BridgeBtcInconsistentBlock(_blockHash);
+        }
+        // Rsk only allows to retrieve blocks up to 1 month
+        if (confirmations == BTC_TRANSACTION_CONFIRMATION_BLOCK_TOO_OLD_ERROR_CODE) {
+            revert BridgeBtcBlockTooOld(BTC_TRANSACTION_CONFIRMATION_MAX_DEPTH);
+        }
+        // Validate transaction is in the Block
+        if (confirmations == BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE) {
+            revert BridgeBtcTxInvalidMerkleBranch(_txid, _merkleBranchPath, _merkleBranchHashes);
+        }
+        if (confirmations < 0) {
+            revert BridgeBtcUnknownError(confirmations);
+        }
+        // Validate block has enough Confirmations
+        if (uint256(confirmations) < _minConfirmations) {
+            revert NotEnoughConfirmations(confirmations, _minConfirmations);
+        }
+        return confirmations;
+    }
+
+    /// @inheritdoc IRbtcBridge
+    function getTxBlockNumberAndVerifyConfirmations(
+        uint256 _minConfirmations,
+        bytes32 _txid,
+        bytes32 _blockHash,
+        uint256 _merkleBranchPath,
+        bytes32[] memory _merkleBranchHashes
+    ) external view returns (int256) {
+        int256 confirmations =
+            _verifyTxConfirmations(_minConfirmations, _txid, _blockHash, _merkleBranchPath, _merkleBranchHashes);
+        return bridge.getBtcBlockchainBestChainHeight() - confirmations;
+    }
+
+    function getBestBlockHash() external view returns (bytes32) {
+        return BtcHelper.hash256(bridge.getBtcBlockchainBestBlockHeader());
     }
 }

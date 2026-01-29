@@ -5,7 +5,7 @@ import {Musig2, Point, Nonce} from "src/Musig2.sol";
 import {Secp256k1} from "src/libraries/Secp256k1.sol";
 
 /// @title SPVHarness
-/// @notice Wrapper for testing ProofValidator
+/// @notice Wrapper for testing Musig2
 contract Musig2Harness is Musig2 {
     function ecAdd(uint256 x1, uint256 y1, uint256 x2, uint256 y2) public pure returns (uint256 rx, uint256 ry) {
         return _ecAdd(x1, y1, x2, y2);

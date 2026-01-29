@@ -130,8 +130,7 @@ contract DeployImplAndProxy is ScriptUtils {
             revert("RbtcBridge bridge is not the bridge address");
         }
 
-        MemberRegistry memberRegistry =
-            deployMemberRegistry(upgradableOwner, accessManager, IBridge(bridgeAddress), streamManager);
+        MemberRegistry memberRegistry = deployMemberRegistry(upgradableOwner, accessManager, rbtcBridge, streamManager);
         if (memberRegistry.owner() != upgradableOwner) {
             revert("MemberRegistry owner is not the upgradable owner");
         }
@@ -162,7 +161,6 @@ contract DeployImplAndProxy is ScriptUtils {
 
         PeginManager peginManager = deployPeginManager(
             upgradableOwner,
-            bridgeAddress,
             accessManager,
             committeeRegistry,
             bitcoinManager,
@@ -173,7 +171,7 @@ contract DeployImplAndProxy is ScriptUtils {
         if (peginManager.owner() != upgradableOwner) {
             revert("PeginManager owner is not the upgradable owner");
         }
-        if (payable(address(peginManager.bridge())) != bridgeAddress) {
+        if (payable(address(peginManager.rbtcBridge())) != address(rbtcBridge)) {
             revert("PeginManager bridge is not the bridge address");
         }
         if (address(peginManager.pauser()) != address(accessManager)) {
@@ -185,7 +183,6 @@ contract DeployImplAndProxy is ScriptUtils {
 
         PegoutManager pegoutManager = deployPegoutManager(
             upgradableOwner,
-            bridgeAddress,
             accessManager,
             committeeRegistry,
             bitcoinManager,
@@ -197,7 +194,7 @@ contract DeployImplAndProxy is ScriptUtils {
         if (pegoutManager.owner() != upgradableOwner) {
             revert("PegoutManager owner is not the upgradable owner");
         }
-        if (payable(address(pegoutManager.bridge())) != bridgeAddress) {
+        if (address(pegoutManager.rbtcBridge()) != address(rbtcBridge)) {
             revert("PegoutManager bridge is not the bridge address");
         }
         if (address(pegoutManager.pauser()) != address(accessManager)) {
@@ -208,18 +205,12 @@ contract DeployImplAndProxy is ScriptUtils {
         }
 
         ChallengeManager challengeManager = deployChallengeManager(
-            upgradableOwner,
-            bridgeAddress,
-            accessManager,
-            committeeRegistry,
-            bitcoinManager,
-            pegoutManager,
-            streamManager
+            upgradableOwner, accessManager, committeeRegistry, bitcoinManager, rbtcBridge, pegoutManager, streamManager
         );
         if (challengeManager.owner() != upgradableOwner) {
             revert("ChallengeManager owner is not the upgradable owner");
         }
-        if (payable(address(challengeManager.bridge())) != bridgeAddress) {
+        if (payable(address(challengeManager.rbtcBridge())) != address(rbtcBridge)) {
             revert("ChallengeManager bridge is not the bridge address");
         }
         if (address(challengeManager.pauser()) != address(accessManager)) {
@@ -328,7 +319,7 @@ contract DeployImplAndProxy is ScriptUtils {
     function deployMemberRegistry(
         address _upgradableOwner,
         AccessManager _accessManager,
-        IBridge _bridge,
+        RbtcBridge _rbtcBridge,
         StreamManager _streamManager
     ) public returns (MemberRegistry) {
         string memory contractName = "MemberRegistry.sol";
@@ -337,7 +328,7 @@ contract DeployImplAndProxy is ScriptUtils {
         }
         (, address proxyAdddress) = deployContractAndUUPSProxy(
             contractName,
-            abi.encodeCall(MemberRegistry.initialize, (_upgradableOwner, _accessManager, _bridge, _streamManager))
+            abi.encodeCall(MemberRegistry.initialize, (_upgradableOwner, _accessManager, _rbtcBridge, _streamManager))
         );
         return MemberRegistry(proxyAdddress);
     }
@@ -357,14 +348,14 @@ contract DeployImplAndProxy is ScriptUtils {
         returns (RbtcBridge)
     {
         (, address proxyAdddress) = deployContractAndUUPSProxy(
-            "RbtcBridge.sol", abi.encodeCall(RbtcBridge.initialize, (_upgradableOwner, _bridgeAddress, _accessManager))
+            "RbtcBridge.sol",
+            abi.encodeCall(RbtcBridge.initialize, (_upgradableOwner, IBridge(_bridgeAddress), _accessManager))
         );
         return RbtcBridge(payable(proxyAdddress));
     }
 
     function deployPeginManager(
         address _upgradableOwner,
-        address payable _bridgeAddress,
         AccessManager _accessManager,
         CommitteeRegistry _committeeRegistry,
         BitcoinManager _bitcoinManager,
@@ -382,7 +373,6 @@ contract DeployImplAndProxy is ScriptUtils {
                 PeginManager.initialize,
                 (
                     _upgradableOwner,
-                    _bridgeAddress,
                     address(_accessManager),
                     _committeeRegistry,
                     _bitcoinManager,
@@ -397,7 +387,6 @@ contract DeployImplAndProxy is ScriptUtils {
 
     function deployPegoutManager(
         address _upgradableOwner,
-        address payable _bridgeAddress,
         AccessManager _accessManager,
         CommitteeRegistry _committeeRegistry,
         BitcoinManager _bitcoinManager,
@@ -416,7 +405,6 @@ contract DeployImplAndProxy is ScriptUtils {
                 PegoutManager.initialize,
                 (
                     _upgradableOwner,
-                    _bridgeAddress,
                     address(_accessManager),
                     _committeeRegistry,
                     _bitcoinManager,
@@ -432,10 +420,10 @@ contract DeployImplAndProxy is ScriptUtils {
 
     function deployChallengeManager(
         address _upgradableOwner,
-        address payable _bridgeAddress,
         AccessManager _accessManager,
         CommitteeRegistry _committeeRegistry,
         BitcoinManager _bitcoinManager,
+        RbtcBridge _rbtcBridge,
         PegoutManager _pegoutManager,
         StreamManager _streamManager
     ) public returns (ChallengeManager) {
@@ -447,10 +435,10 @@ contract DeployImplAndProxy is ScriptUtils {
                 ChallengeManager.initialize,
                 (
                     _upgradableOwner,
-                    _bridgeAddress,
                     address(_accessManager),
                     _committeeRegistry,
                     _bitcoinManager,
+                    _rbtcBridge,
                     _pegoutManager,
                     _streamManager
                 )
