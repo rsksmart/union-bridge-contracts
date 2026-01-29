@@ -57,28 +57,28 @@ interface ISignatureManager {
     /// @param _committeeId The ID of the committee responsible for signing
     function initSignatures(bytes32 _txid, uint128 _committeeId) external;
 
-    /// @notice Adds a nonce for a committee member
-    /// @dev Called by committee members to provide their nonce for signature generation
-    /// @param _txid The txid being signed
-    /// @param _nonce The nonce provided by the member (should be 66 bytes)
-    /// @return True if the nonce was successfully added
+    /// @notice Adds a nonce for a committee member to the signature collection
+    /// @dev Nonces are required for Musig2 signature aggregation
+    /// @param _txid The txid that needs to be signed by the committee
+    /// @param _nonce The 66-byte nonce for the Musig2 protocol
+    /// @return true if all nonces are now present, false otherwise
     function addMemberNonce(bytes32 _txid, bytes memory _nonce) external returns (bool);
 
-    /// @notice Adds a signature for a committee member
-    /// @dev Called by committee members to provide their signature
-    /// @param _txid The txid being signed
-    /// @param _signature The signature provided by the member
-    /// @return True if the signature was successfully added
+    /// @notice Adds a signature for a committee member to the signature collection
+    /// @dev Signatures can only be added after all nonces are present
+    /// @param _txid The hash that needs to be signed by the committee
+    /// @param _signature The signature for the hash
+    /// @return true if all signatures are now present, false otherwise
     function addMemberSignature(bytes32 _txid, bytes32 _signature) external returns (bool);
 
-    /// @notice Checks if all signatures are ready for a specific txid
-    /// @param _txid The txid to check signatures for
-    /// @return True if all required signatures have been collected
+    /// @notice Checks if all signatures are ready for a given hash
+    /// @param _txid The hash to check signatures for
+    /// @return true if all signatures are present, false otherwise
     function checkAllSignaturesReady(bytes32 _txid) external view returns (bool);
 
-    /// @notice Gets all partial signatures for a given txid
+    /// @notice Gets all partial signatures for a given hash
     /// @dev Returns signatures in the same order as committee members for Musig2 compatibility
-    /// @param _txid The txid to get signatures for
+    /// @param _txid The hash to get signatures for
     /// @return partialSignaturesData Array of signature data for all committee members
     /// @return missingSignatures Number of missing signatures
     /// @return missingNonces Number of missing nonces
@@ -93,27 +93,27 @@ interface ISignatureManager {
             uint128 committeeId
         );
 
-    /// @notice Initializes OperatorTake transaction id collection for a specific accept peg-in
+    /// @notice Initializes OperatorTake transaction id collection for a given accept peg-in transaction
     /// @dev Sets up the OperatorTake txid tracking structure for committee members
+    /// @dev Can only be called by the PegManager
     /// @param _acceptPeginTxid The accept peg-in transaction id
     /// @param _committeeId The ID of the committee responsible for OperatorTake operations
-
     function initOperatorTakeTxids(bytes32 _acceptPeginTxid, uint128 _committeeId) external;
 
-    /// @notice Adds a OperatorTake transaction id for a committee member
-    /// @dev Called by committee operators to provide their OperatorTake transaction id
+    /// @notice Adds a OperatorTake and OperatorWon transaction id for an operator
+    /// @dev Only operators can add OperatorTake transaction id's
     /// @param _acceptPeginTxid The accept peg-in transaction id
-    /// @param _takeTxid The OperatorTake transaction id provided by the member
+    /// @param _takeTxid The OperatorTake transaction id to add
     function addOperatorTakeTxids(bytes32 _acceptPeginTxid, bytes32 _takeTxid, bytes32 _wonTxid) external;
 
-    /// @notice Checks if all OperatorTake transaction id's are ready
-    /// @param _acceptPeginTxid The accept peg-in transaction id
-    /// @return True if all required OperatorTake hashes have been collected
+    /// @notice Checks if all OperatorTake transaction id's are ready for a given accept peg-in transaction
+    /// @param _acceptPeginTxid The accept peg-in transaction id to check
+    /// @return true if all OperatorTake transaction id's are present, false otherwise
     function checkAllOperatorTakesHashesReady(bytes32 _acceptPeginTxid) external view returns (bool);
 
-    /// @notice Retrieves all OperatorTake data for a specific accept peg-in
+    /// @notice Gets all OperatorTake transaction data for a given accept peg-in transaction
     /// @param _acceptPeginTxid The accept peg-in transaction id
-    /// @return Array of OperatorTake data from all committee members
+    /// @return Array of OperatorTake transaction data for all operators
     function getOperatorTakeData(bytes32 _acceptPeginTxid) external view returns (OperatorTakeData[] memory);
 
     /// @notice Gets the committee ID for a specific accept peg-in transaction id

@@ -116,14 +116,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         return member;
     }
 
-    /// @notice Internal function to handle member application to stream
-    /// @dev Called by CommitteeRegistry to handle member registration and candidacy
-    /// @dev Only callable by CommitteeRegistry contract
-    /// @param _memberAddress The address of the member applying
-    /// @param _stream The stream denomination to apply for
-    /// @param _role The role requested in the committee
-    /// @param _publicKeys Member registration public keys
-    /// @param _fundingUTXO The Bitcoin UTXO that will be used for the member funding
+    /// @inheritdoc IMemberRegistry
     function applyToStream(
         address _memberAddress,
         StreamDenomination _stream,
@@ -180,11 +173,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         committeesCandidates[_denomination][_role].push(_memberAddress);
     }
 
-    /// @notice External function to handle member unsubscription from stream
-    /// @dev Called by CommitteeRegistry after pending committee checks
-    /// @dev Only callable by CommitteeRegistry contract
-    /// @param _memberAddress The address of the member unsubscribing
-    /// @param _denomination The stream denomination to unsubscribe from
+    /// @inheritdoc IMemberRegistry
     function unsubscribeFromStream(address _memberAddress, StreamDenomination _denomination) external {
         // Verify that the caller has permission to modify candidates for the stream
         accessManager.canModifyCandidatesForStream(_msgSender());
@@ -193,9 +182,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         emit MemberUnsubscribedFromStream(_memberAddress, _denomination);
     }
 
-    /// @notice Withdraws available balance to the caller's address
-    /// @dev Can only withdraw balance that is not pre-staked or staked
-    /// @dev Only callable when contract is unpaused
+    /// @inheritdoc IMemberRegistry
     function withdrawAvailableBalance() external nonReentrant whenNotPaused {
         address sender = _msgSender();
         Member storage member = _getMember(sender);
@@ -214,6 +201,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         }
     }
 
+    /// @inheritdoc IMemberRegistry
     function reAddCandidateToStream(StreamDenomination _denomination, CommitteeMember memory _member) external {
         // Verify that the caller has permission to modify candidates for the stream
         accessManager.canModifyCandidatesForStream(_msgSender());
@@ -221,12 +209,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         committeesCandidates[_denomination][_member.role].push(_member.memberAddress);
     }
 
-    /// @notice Internal function to handle committee member release operations
-    /// @dev Called by CommitteeRegistry after committee completion
-    /// @dev Only callable by CommitteeRegistry contract
-    /// @param _committeeMembers Array of committee members to release
-    /// @param _streamId The stream ID
-    /// @param _packetNumber The packet number
+    /// @inheritdoc IMemberRegistry
     function releaseCommitteeMembers(CommitteeMember[] memory _committeeMembers, uint64 _streamId, uint64 _packetNumber)
         external
     {
@@ -424,23 +407,17 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         return member;
     }
 
-    /// @notice Gets the TAKE public key for a specific member
-    /// @param _address The member's address
-    /// @return The TAKE public key (x-coordinate only)
+    /// @inheritdoc IMemberRegistry
     function getMemberTakePubKey(address _address) external view override returns (bytes32) {
         return _getMember(_address).publicKeys.takePubKey;
     }
 
-    /// @notice Gets the COMMUNICATION public key for a specific member
-    /// @param _address The member's address
-    /// @return The COMMUNICATION public key (RSA struct)
+    /// @inheritdoc IMemberRegistry
     function getMemberComPubKey(address _address) external view override returns (RSAPublicKey memory) {
         return _getMember(_address).publicKeys.communicationPubKey;
     }
 
-    /// @notice Retrieves all public keys for a specific member
-    /// @param _address The member's address
-    /// @return publicKeys Member public keys structure
+    /// @inheritdoc IMemberRegistry
     function getMemberPublicKeys(address _address) external view override returns (MemberKeys memory publicKeys) {
         return _getMember(_address).publicKeys;
     }
@@ -453,10 +430,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         return _getMember(_address).balance.applications[uint8(_denomination)];
     }
 
-    /// @notice Gets the requested role for a member in a specific stream
-    /// @param _memberAddress The member's address
-    /// @param _denomination The stream denomination
-    /// @return The requested role for the member
+    /// @inheritdoc IMemberRegistry
     function getMemberRequestedRole(address _memberAddress, StreamDenomination _denomination)
         external
         view
@@ -466,17 +440,12 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         return _getMemberApplicationData(_memberAddress, _denomination).requestedRole;
     }
 
-    /// @notice Gets the available balance for a member
-    /// @param _address The member's address
-    /// @return The available balance that can be withdrawn
+    /// @inheritdoc IMemberRegistry
     function getMemberAvailableBalance(address _address) external view override returns (uint256) {
         return _getMember(_address).balance.available;
     }
 
-    /// @notice Gets the pre-staked balance for a member in a specific stream
-    /// @param _memberAddress The member's address
-    /// @param _denomination The stream denomination
-    /// @return The pre-staked balance for the stream
+    /// @inheritdoc IMemberRegistry
     function getMemberPreStakedBalance(address _memberAddress, StreamDenomination _denomination)
         external
         view
@@ -486,11 +455,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         return _getMemberApplicationData(_memberAddress, _denomination).preStaked;
     }
 
-    /// @notice Gets the staked balance for a member in a specific stream and packet
-    /// @param _address The member's address
-    /// @param _denomination The stream denomination
-    /// @param _packetNumber The packet number
-    /// @return amount The staked amount in the packet
+    /// @inheritdoc IMemberRegistry
     function getMemberStakedBalance(address _address, StreamDenomination _denomination, uint64 _packetNumber)
         external
         view
@@ -500,10 +465,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         return _getMember(_address).balance.staked[uint8(_denomination)][_packetNumber];
     }
 
-    /// @notice Gets the funding UTXO for a member in a specific stream
-    /// @param _streamId The stream ID
-    /// @param _memberAddress The member's address
-    /// @return The funding UTXO for the member's application to the stream
+    /// @inheritdoc IMemberRegistry
     function getMemberFundingUTXO(uint64 _streamId, address _memberAddress)
         external
         view
@@ -513,6 +475,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         return _getMemberApplicationData(_memberAddress, StreamDenomination(_streamId)).fundingUTXO;
     }
 
+    /// @inheritdoc IMemberRegistry
     function isMember(address _address) external view returns (bool) {
         return members[_address].publicKeys.takePubKey != bytes32(0);
     }
@@ -524,10 +487,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         }
     }
 
-    /// @notice Gets all candidates for a specific role in a stream
-    /// @param _denomination The stream denomination
-    /// @param _role The role to get candidates for
-    /// @return Array of candidate addresses
+    /// @inheritdoc IMemberRegistry
     function getCommitteeCandidates(StreamDenomination _denomination, Role _role)
         external
         view
@@ -537,15 +497,12 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         return committeesCandidates[_denomination][_role];
     }
 
-    /// @notice Sets the reapply flag for a member in a specific stream
-    /// @dev Controls whether the member will automatically reapply after committee release
-    /// @dev Only callable when contract is unpaused
-    /// @param _denomination The stream denomination to set the flag for
-    /// @param _reApply True to automatically reapply, false to receive balance as available
+    /// @inheritdoc IMemberRegistry
     function setReApplyForStream(StreamDenomination _denomination, bool _reApply) external override whenNotPaused {
         _setReApplyForStream(_msgSender(), _denomination, _reApply);
     }
 
+    /// @inheritdoc IMemberRegistry
     function disableMemberReApplyForStream(address _memberAddress, StreamDenomination _denomination) external {
         // Verify that the caller has permission to modify candidates for the stream
         accessManager.canModifyCandidatesForStream(_msgSender());
@@ -561,21 +518,14 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         emit MemberReApplyUpdated(_memberAddress, _denomination, _reApply);
     }
 
-    /// @notice Gets the reapply flag for a member in a specific stream
-    /// @param _denomination The stream denomination to check
-    /// @return True if the member will automatically reapply, false otherwise
+    /// @inheritdoc IMemberRegistry
     function getReApplyForStream(StreamDenomination _denomination) external view override returns (bool) {
         return _getMemberApplicationData(_msgSender(), _denomination).reApply;
     }
 
     // ===================== Committee Integration Functions =====================
 
-    /// @notice Moves candidates balance from pre staked to staked
-    /// @dev Called by CommitteeRegistry during committee formation
-    /// @dev Only callable by Committee Registry contract
-    /// @param _members Array of committee members
-    /// @param _denomination The stream denomination
-    /// @param _packetNumber The packet number
+    /// @inheritdoc IMemberRegistry
     function stakePreStakedCandidatesBalance(
         CommitteeMember[] memory _members,
         StreamDenomination _denomination,
@@ -626,13 +576,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         return uint256(keccak256(abi.encode(_btcBlockHash, _arrayLength))) % _arrayLength;
     }
 
-    /// @notice Randomly selects members to form a new committee for a given stream
-    /// @dev Pseudo-randomly select at least minCommitteeWatchtowers watchtowers and minCommitteeOperators operators.
-    /// @dev reverts with notEnoughWatchtowers if there are fewer than minCommitteeWatchtowers watchtower candidates
-    /// @dev reverts with notEnoughOperators if there are fewer than minCommitteeOperators operator candidates
-    /// @dev Only callable by CommitteeRegistry contract
-    /// @param _streamId The ID of the stream to select committee members for (0-4)
-    /// @return An array of committeeMemberCount CommitteeMembers containing the selected members.
+    /// @inheritdoc IMemberRegistry
     function selectCommittee(
         uint64 _streamId,
         uint256 _minWatchtowers,

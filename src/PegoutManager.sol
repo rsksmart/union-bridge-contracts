@@ -71,9 +71,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         operatorTakeTimeout = _settings.operatorTakeTimeout;
     }
 
-    /// @notice Gets the temporary peg-out information for a given accept peg-in transaction id
-    /// @param _acceptPeginTxid The accept peg-in transaction id
-    /// @return The temporary peg-out information
+    /// @inheritdoc IPegoutManager
     function getPegoutTempInfo(bytes32 _acceptPeginTxid) external view returns (PegoutTempInfo memory) {
         return pegoutTempInfo[_acceptPeginTxid];
     }
@@ -89,12 +87,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         }
     }
 
-    /// @notice Initiates a peg-out operation by locking a slot and preparing the peg-out transaction
-    /// @param _userPubKey The user's compressed public key for the Bitcoin output
-    /// @dev This function LOCKS a slot in the appropriate stream and prepares the peg-out transaction
-    /// @dev The user must send the exact amount of RBTC they want to peg-out
-    /// @dev Emits the PegoutRequested event
-    /// @dev Only callable when contract is unpaused
+    /// @inheritdoc IPegoutManager
     function tryPegout(bytes memory _userPubKey) external payable nonReentrant whenNotPaused {
         _validatePegoutRequest(_userPubKey, msg.value);
 
@@ -158,12 +151,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         rbtcBridge.burnRbtc{value: amountToBurn}();
     }
 
-    /// @notice Register a peg-out transaction from Bitcoin
-    /// @param _pegoutTxSPVProof The BTC SPV proof of the peg-out transaction
-    /// @dev This function validates the peg-out transaction and marks the slot as COMPLETED
-    /// @dev The transaction must spend the accept peg-in output and pay to the user's address
-    /// @dev Emits the PegoutRegistered event
-    /// @dev Only callable when contract is unpaused
+    /// @inheritdoc IPegoutManager
     function registerUserTake(BtcTxSPVProof memory _pegoutTxSPVProof) external nonReentrant whenNotPaused {
         // Get the accept peg-in tx id from the first input (this is what gets spent)
         bytes32 acceptPeginTxid = _pegoutTxSPVProof.btcTx.inputs[Constants.PEGOUT_VIN_TAPTREE].txId;
@@ -218,11 +206,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         _closePacketIfLastSlot(streamInfo);
     }
 
-    /// @notice Gets the peg-out signature hash for a specific stream, packet, and slot
-    /// @param streamId The stream identifier
-    /// @param packetNumber The packet number within the stream
-    /// @param slotId The slot identifier within the packet
-    /// @return The peg-out signature hash
+    /// @inheritdoc IPegoutManager
     function getPegoutTxid(uint64 streamId, uint64 packetNumber, uint64 slotId) external view returns (bytes32) {
         bytes32 key = keccak256(abi.encodePacked(streamId, packetNumber, slotId));
         return pegoutTxids[key];
@@ -245,14 +229,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         return committeeId;
     }
 
-    /// @notice Triggers the operator take process for a peg-out when not all committee members sign within timeout
-    /// @dev This function can be called after a User Take expiration or after an Operator Take expiration
-    /// @dev Each case has its own timeout and before triggering the operator take (after a User Take expiration)
-    /// @dev signatures should be checked to see if the User Take was already signed
-    /// @dev Partial signatures are used to skip those operators that have not signed the User Take
-    /// @dev Emits OperatorTakeTriggered event upon successful triggering
-    /// @dev Only callable when contract is unpaused
-    /// @param _pegoutTxid The transaction id of the peg-out request
+    /// @inheritdoc IPegoutManager
     function triggerOperatorTake(bytes32 _pegoutTxid) external nonReentrant whenNotPaused {
         bytes32 acceptPeginTxid = pegoutToPeginTxid[_pegoutTxid];
         if (acceptPeginTxid == bytes32(0)) {
@@ -315,6 +292,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         }
     }
 
+    /// @inheritdoc IPegoutManager
     function registerAdvanceFunds(bytes32 acceptPeginTxid, BtcTxSPVProof memory _advanceFunds)
         external
         nonReentrant
@@ -384,6 +362,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         return pegoutInfo;
     }
 
+    /// @inheritdoc IPegoutManager
     function registerReimbursementKickoff(bytes32 acceptPeginTxid, BtcTxSPVProof memory _kickoffSPV)
         external
         nonReentrant
@@ -422,12 +401,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         emit ReimbursementKickoffRegistered(txid, acceptPeginTxid, pegoutInfo.committeeId, streamInfo);
     }
 
-    /// @notice Deposits an operator take proof for a peg-out transaction
-    /// @param _pegoutTxSPVProof The BTC SPV proof of the operator take transaction
-    /// @dev Validates the SPV proof and marks the slot as paid when operator takes over
-    /// @dev Only callable when the peg status is KICKOFF
-    /// @dev Emits PegoutRegistered event upon successful deposit
-    /// @dev Only callable when contract is unpaused
+    /// @inheritdoc IPegoutManager
     function registerOperatorTake(BtcTxSPVProof memory _pegoutTxSPVProof) external nonReentrant whenNotPaused {
         // Get the accept peg-in tx id from the first input (this is what gets spent)
         bytes32 acceptPeginTxid = _pegoutTxSPVProof.btcTx.inputs[Constants.OPERATOR_TAKE_VIN_ACCEPT_PEGIN].txId;
@@ -584,10 +558,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         revert OperatorTakeDataNotFound(_acceptPeginTxid, _opAddress);
     }
 
-    /// @notice Sets the timeout duration for user take operations
-    /// @param _timeout The new timeout duration in seconds
-    /// @dev Only callable by the contract owner
-    /// @dev Emits UserTakeTimeoutUpdated event upon successful update
+    /// @inheritdoc IPegoutManager
     function setUserTakeTimeout(uint256 _timeout) external onlyOwner {
         if (_timeout == 0) {
             revert InvalidTimeout(_timeout);
@@ -596,10 +567,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         emit UserTakeTimeoutUpdated(userTakeTimeout);
     }
 
-    /// @notice Sets the timeout duration for operator take operations
-    /// @param _timeout The new timeout duration in seconds
-    /// @dev Only callable by the contract owner
-    /// @dev Emits OperatorTakeTimeoutUpdated event upon successful update
+    /// @inheritdoc IPegoutManager
     function setOperatorTakeTimeout(uint256 _timeout) external onlyOwner {
         if (_timeout == 0) {
             revert InvalidTimeout(_timeout);

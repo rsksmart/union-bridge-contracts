@@ -63,11 +63,7 @@ contract SignatureManager is ISignatureManager, BaseProxy {
         return role;
     }
 
-    /// @notice Adds a nonce for a committee member to the signature collection
-    /// @dev Nonces are required for Musig2 signature aggregation
-    /// @param _txid The txid that needs to be signed by the committee
-    /// @param _nonce The 66-byte nonce for the Musig2 protocol
-    /// @return true if all nonces are now present, false otherwise
+    /// @inheritdoc ISignatureManager
     function addMemberNonce(bytes32 _txid, bytes memory _nonce) external returns (bool) {
         address sender = _msgSender();
         // Check that nonce is 66 bytes
@@ -99,11 +95,7 @@ contract SignatureManager is ISignatureManager, BaseProxy {
         return true;
     }
 
-    /// @notice Adds a signature for a committee member to the signature collection
-    /// @dev Signatures can only be added after all nonces are present
-    /// @param _txid The hash that needs to be signed by the committee
-    /// @param _signature The signature for the hash
-    /// @return true if all signatures are now present, false otherwise
+    /// @inheritdoc ISignatureManager
     function addMemberSignature(bytes32 _txid, bytes32 _signature) external returns (bool) {
         address sender = _msgSender();
         // Check if all nonces are present
@@ -139,21 +131,13 @@ contract SignatureManager is ISignatureManager, BaseProxy {
         return true;
     }
 
-    /// @notice Checks if all signatures are ready for a given hash
-    /// @param _txid The hash to check signatures for
-    /// @return true if all signatures are present, false otherwise
+    /// @inheritdoc ISignatureManager
     function checkAllSignaturesReady(bytes32 _txid) external view returns (bool) {
         Signatures storage signatures = _getSignatures(_txid);
         return signatures.committeeId != 0 && signatures.missingSignatures == 0;
     }
 
-    /// @notice Gets all partial signatures for a given hash
-    /// @dev Returns signatures in the same order as committee members for Musig2 compatibility
-    /// @param _txid The hash to get signatures for
-    /// @return partialSignaturesData Array of signature data for all committee members
-    /// @return missingSignatures Number of missing signatures
-    /// @return missingNonces Number of missing nonces
-    /// @return committeeId The committee ID for this signature collection
+    /// @inheritdoc ISignatureManager
     function getPartialSignatures(bytes32 _txid)
         external
         view
@@ -184,10 +168,7 @@ contract SignatureManager is ISignatureManager, BaseProxy {
         return committeeSignatures[_txid];
     }
 
-    /// @notice Initializes signature collection for a given hash
-    /// @dev Can only be called by the PegManager
-    /// @param _txid The hash that needs to be signed
-    /// @param _committeeId The committee ID that will sign the hash
+    /// @inheritdoc ISignatureManager
     function initSignatures(bytes32 _txid, uint128 _committeeId) external {
         // Verify that the caller has permission to initialize signatures
         accessManager.canInitSignatures(_msgSender());
@@ -212,10 +193,7 @@ contract SignatureManager is ISignatureManager, BaseProxy {
         signatures.committeeId = _committeeId;
     }
 
-    /// @notice Initializes OperatorTake transaction id collection for a given accept peg-in transaction
-    /// @dev Can only be called by the PegManager
-    /// @param _acceptPeginTxid The accept peg-in transaction id
-    /// @param _committeeId The committee ID that will provide OperatorTake transaction id's
+    /// @inheritdoc ISignatureManager
     function initOperatorTakeTxids(bytes32 _acceptPeginTxid, uint128 _committeeId) external {
         // Verify that the caller has permission to initialize operator take txids
         accessManager.canInitOperatorTakeTxids(_msgSender());
@@ -253,10 +231,7 @@ contract SignatureManager is ISignatureManager, BaseProxy {
         return operatorTakeTxidsMap[_acceptPeginTxid];
     }
 
-    /// @notice Adds a OperatorTake and OperatorWon transaction id for an operator
-    /// @dev Only operators can add OperatorTake transaction id's
-    /// @param _acceptPeginTxid The accept peg-in transaction id
-    /// @param _takeTxid The OperatorTake transaction id to add
+    /// @inheritdoc ISignatureManager
     function addOperatorTakeTxids(bytes32 _acceptPeginTxid, bytes32 _takeTxid, bytes32 _wonTxid) external {
         address sender = _msgSender();
         OperatorTakeTxids storage operatorTakeTxids = _getOperatorTakeTxids(_acceptPeginTxid);
@@ -302,17 +277,13 @@ contract SignatureManager is ISignatureManager, BaseProxy {
         }
     }
 
-    /// @notice Checks if all OperatorTake transaction id's are ready for a given accept peg-in transaction
-    /// @param _acceptPeginTxid The accept peg-in transaction id to check
-    /// @return true if all OperatorTake transaction id's are present, false otherwise
+    /// @inheritdoc ISignatureManager
     function checkAllOperatorTakesHashesReady(bytes32 _acceptPeginTxid) external view returns (bool) {
         OperatorTakeTxids storage operatorTakeTxids = _getOperatorTakeTxids(_acceptPeginTxid);
         return (operatorTakeTxids.missingHashes == 0);
     }
 
-    /// @notice Gets all OperatorTake transaction data for a given accept peg-in transaction
-    /// @param _acceptPeginTxid The accept peg-in transaction id
-    /// @return Array of OperatorTake transaction data for all operators
+    /// @inheritdoc ISignatureManager
     function getOperatorTakeData(bytes32 _acceptPeginTxid) external view returns (OperatorTakeData[] memory) {
         OperatorTakeTxids storage txids = _getOperatorTakeTxids(_acceptPeginTxid);
         uint256 operatorsCount = 0;
@@ -337,9 +308,7 @@ contract SignatureManager is ISignatureManager, BaseProxy {
         return operatorTakeData;
     }
 
-    /// @notice Gets the committee ID for a given accept peg-in transaction id
-    /// @param _acceptPeginTxid The accept peg-in transaction id
-    /// @return The committee ID associated with this transaction id
+    /// @inheritdoc ISignatureManager
     function getCommitteeIdByAcceptPeginTxid(bytes32 _acceptPeginTxid) external view returns (uint128) {
         return _getOperatorTakeTxids(_acceptPeginTxid).committeeId;
     }

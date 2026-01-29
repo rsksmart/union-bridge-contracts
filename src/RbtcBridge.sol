@@ -43,11 +43,7 @@ contract RbtcBridge is IRbtcBridge, BaseProxy, ReentrancyGuardUpgradeable, Pausa
     /// @dev This function is called when the PowPeg bridge mints RBTC to this contract
     receive() external payable {}
 
-    /// @notice Mints RBTC from the PowPeg bridge and sends it to the specified address
-    /// @param _to The address to receive the minted RBTC
-    /// @param _amount The amount of RBTC to mint in wei
-    /// @dev Only callable by peginManager when contract is not paused
-    /// @dev Follows checks-effects-interactions pattern
+    /// @inheritdoc IRbtcBridge
     function mintRbtc(address payable _to, uint256 _amount) external nonReentrant whenNotPaused {
         // Verify that the caller has permission to mint RBTC
         accessManager.canMintRbtc(_msgSender());
@@ -57,9 +53,7 @@ contract RbtcBridge is IRbtcBridge, BaseProxy, ReentrancyGuardUpgradeable, Pausa
         emit RbtcMinted(_to, _amount);
     }
 
-    /// @notice Burns RBTC back to the PowPeg bridge
-    /// @dev Only callable by pegoutManager when contract is not paused
-    /// @dev The pegoutManager must send the RBTC amount via msg.value
+    /// @inheritdoc IRbtcBridge
     function burnRbtc() external payable nonReentrant whenNotPaused {
         // Verify that the caller has permission to burn RBTC
         accessManager.canBurnRbtc(_msgSender());
@@ -131,9 +125,7 @@ contract RbtcBridge is IRbtcBridge, BaseProxy, ReentrancyGuardUpgradeable, Pausa
         }
     }
 
-    /// @notice Gets the locking cap of the Union Bridge for RBTC minting operations
-    /// @dev This method is new in RSKIP-502
-    /// @return The locking cap of the Union Bridge
+    /// @inheritdoc IRbtcBridge
     function getUnionBridgeLockingCap() external view returns (uint256) {
         return bridge.getUnionBridgeLockingCap();
     }

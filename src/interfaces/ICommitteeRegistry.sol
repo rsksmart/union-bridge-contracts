@@ -213,10 +213,30 @@ struct CommunicationData {
 /// @dev This interface provides functions for member registration, committee formation,
 /// @dev and balance management for the committee system
 interface ICommitteeRegistry {
+    /// @notice Checks if an address is whitelisted
+    /// @param _address The address to check
+    /// @return True if the address is whitelisted, false otherwise
+    function isWhitelisted(address _address) external view returns (bool);
+
     /// @notice Whitelists an address to enable it to apply to a stream
     /// @dev Only callable by the contract whitelister
     /// @param _address The address to whitelist
     function whitelistAddress(address _address) external;
+
+    /// @notice Whitelists multiple addresses to enable them to apply to a stream
+    /// @dev Only callable by the contract whitelister
+    /// @param _addresses The addresses to whitelist
+    function whitelistAddresses(address[] memory _addresses) external;
+
+    /// @notice Unwhitelists an address to disable it from applying to a stream
+    /// @dev Only callable by the contract whitelister
+    /// @param _address The address to unwhitelist
+    function unwhitelistAddress(address _address) external;
+
+    /// @notice Unwhitelists multiple addresses to disable them from applying to a stream
+    /// @dev Only callable by the contract whitelister
+    /// @param _addresses The addresses to unwhitelist
+    function unwhitelistAddresses(address[] memory _addresses) external;
 
     /// @notice Applies to participate in a stream with a specific role
     /// @dev Registers public keys, deposits required bond, and provides funding UTXO for the requested role
@@ -231,9 +251,10 @@ interface ICommitteeRegistry {
         UTXO calldata _fundingUTXO
     ) external payable;
 
-    /// @notice Unsubscribes from a stream and set as available balance the pre-staked balance
-    /// @param _stream The stream denomination to unsubscribe from
-    function unsubscribeFromStream(StreamDenomination _stream) external;
+    /// @notice Unsubscribes from a stream and sets the pre-staked balance as available
+    /// @dev Only callable when contract is unpaused
+    /// @param _denomination The stream denomination to unsubscribe from
+    function unsubscribeFromStream(StreamDenomination _denomination) external;
 
     /// @notice Gets a committee by its ID
     /// @param _committeeId The committee ID
@@ -251,6 +272,7 @@ interface ICommitteeRegistry {
 
     /// @notice Allows a member to deposit information  formation
     /// @dev Called by members to provide their aggregated key for a pending committee
+    /// @dev Only callable when contract is unpaused
     /// @param _committeeId The ID of the pending committee
     /// @param _aggregatedKey The aggregated public key provided by the member (must be exactly 33 bytes)
     function depositAggregatedKey(uint128 _committeeId, bytes memory _aggregatedKey) external;
@@ -286,6 +308,7 @@ interface ICommitteeRegistry {
 
     /// @notice Deposits encrypted communication data (IP and Port) for a member in a pending committee
     /// @dev This function is called by members to provide their encrypted communication data
+    /// @dev Only callable when contract is unpaused
     /// @param _committeeId The ID of the pending committee
     /// @param _communicationData Array of encrypted communication data (IP and Port) for the member
     function depositCommunicationData(uint128 _committeeId, CommunicationData[] memory _communicationData) external;
@@ -308,8 +331,8 @@ interface ICommitteeRegistry {
 
     /// @notice Sets the Whitelister address
     /// @dev Only callable by the contract owner
-    /// @param _whitelister The address of the whitelister
-    function setWhitelister(address _whitelister) external;
+    /// @param _newWhitelister The address of the whitelister
+    function setWhitelister(address _newWhitelister) external;
 
     /// @notice Sets the pending committee timeout
     /// @dev Only callable by the contract owner
@@ -332,19 +355,28 @@ interface ICommitteeRegistry {
     function setCommitteeMemberCount(uint256 _committeeMemberCount) external;
 
     /// @notice Gets the operator dispute data (address and dispute public key) for operator-take operations
-    /// @param committeeId The ID of the committee
-    /// @param signatureData The signature data for the committee members
-    /// @param missingNonces Number of missing nonces
-    /// @return operatorAddress The operator take address
-    /// @return disputePubKey The operator's dispute public key (covenantPubKey) used for operator-take transactions
-    function getOperatorDisputeData(uint128 committeeId, SignatureData[] calldata signatureData, uint8 missingNonces)
+    /// @dev Rotates through committee operators to distribute take responsibilities
+    /// @dev Only operators who have deposited their signatures nonces are eligible for take operations
+    /// @param _committeeId The committee ID to get the operator from
+    /// @param _signatureData Array of signature data for committee members
+    /// @param _missingNonces Number of missing nonces
+    /// @return operatorAddress The address of the next available operator for take operations
+    /// @return disputePubKey The operator's dispute public key
+    /// @dev Reverts with TakeOperatorNotFound if no eligible operator is found
+    function getOperatorDisputeData(uint128 _committeeId, SignatureData[] calldata _signatureData, uint8 _missingNonces)
         external
         returns (address operatorAddress, bytes32 disputePubKey);
 
-    /// @notice Release the committee members from a packet (return or reapply staked money)
+    /// @notice Releases committee members from a packet and handles their staked balance
+    /// @dev Called by PegManager to release committee members after packet completion
+    /// @dev Only callable by PegManager contract
+    /// @dev Members with reApply=true will be re-added as candidates, others get their balance as available
+    /// @param _streamId The stream ID for the committee
+    /// @param _packetNumber The packet number where the committee was active
     function releaseCommittee(uint64 _streamId, uint64 _packetNumber) external;
 
     /// @notice Restarts a pending committee if it has expired
+    /// @dev Only callable when contract is unpaused
     /// @param _streamId The stream ID to restart the pending committee for
     function restartPendingCommittee(uint64 _streamId) external;
 

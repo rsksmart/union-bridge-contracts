@@ -47,19 +47,7 @@ contract Musig2 is IMusig2 {
         return Secp256k1.isOnCurve(pubKey.x, pubKey.y);
     }
 
-    /// @notice Verify a partial signature for a given public key index
-    /// @dev This function expects the public keys to be in the same order and have the same length as the nonces.
-    /// @dev This function expects the public keys and nonces to be already validated.
-    /// @dev We are following the specification BIP-327: MuSig2 for BIP340-compatible Multi-Signatures https://github.com/bitcoin/bips/blob/master/bip-0327.mediawiki.
-    /// @dev We check for correctnes of the implementation against the rust musgi2 implementation: https://github.com/FairgateLabs/rust-bitvmx-key-manager/pull/48
-    /// @dev The implementation uses the RSKJ Secp256k1 precompiled contract: https://github.com/rsksmart/rskj/pull/3210/files#diff-6449788dd39d9278472df8fb3a946ef83b7d16c8452a90cc6e2a238f6615e8bf
-    /// @dev The specification can be found in RSKIP-516: https://github.com/rsksmart/RSKIPs/blob/master/IPs/RSKIP516.md.
-    /// @param _partialSignature The partial signature
-    /// @param _pubKeyIndex The index of the public key to verify
-    /// @param _participantsPubKeys The list of public keys to aggregate
-    /// @param _nonces The list of nonces
-    /// @param _message The message to sign
-    /// @return true if the partial signature is valid, false otherwise
+    /// @inheritdoc IMusig2
     function verifyPartialSignature(
         uint256 _partialSignature,
         uint256 _pubKeyIndex,

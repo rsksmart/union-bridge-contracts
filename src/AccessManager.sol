@@ -17,60 +17,70 @@ contract AccessManager is IAccessManager, PauseManager {
         __PauseManager_init(_initialOwner);
     }
 
+    /// @inheritdoc IAccessManager
     function canModifyPegStatus(address _caller) external view {
         if (_caller != peginManager && _caller != pegoutManager && _caller != challengeManager) {
             revert UnauthorizedToModifyPegStatus(_caller);
         }
     }
 
+    /// @inheritdoc IAccessManager
     function canCreateCommittee(address _caller) external view {
         if (_caller != peginManager) {
             revert UnauthorizedToCreateCommittee(_caller);
         }
     }
 
+    /// @inheritdoc IAccessManager
     function canReleaseCommittee(address _caller) external view {
         if (_caller != pegoutManager) {
             revert UnauthorizedToReleaseCommittee(_caller);
         }
     }
 
+    /// @inheritdoc IAccessManager
     function canSelectTakeOperator(address _caller) external view {
         if (_caller != pegoutManager) {
             revert UnauthorizedToSelectTakeOperator(_caller);
         }
     }
 
+    /// @inheritdoc IAccessManager
     function canCreatePacket(address _caller) external view {
         if (_caller != committeeRegistry) {
             revert UnauthorizedToCreatePacket(_caller);
         }
     }
 
+    /// @inheritdoc IAccessManager
     function canMintRbtc(address _caller) external view {
         if (_caller != peginManager) {
             revert UnauthorizedToMintRbtc(_caller);
         }
     }
 
+    /// @inheritdoc IAccessManager
     function canBurnRbtc(address _caller) external view {
         if (_caller != pegoutManager) {
             revert UnauthorizedToBurnRbtc(_caller);
         }
     }
 
+    /// @inheritdoc IAccessManager
     function canInitSignatures(address _caller) external view {
         if (_caller != peginManager && _caller != pegoutManager) {
             revert UnauthorizedToInitSignatures(_caller);
         }
     }
 
+    /// @inheritdoc IAccessManager
     function canInitOperatorTakeTxids(address _caller) external view {
         if (_caller != peginManager) {
             revert UnauthorizedToInitOperatorTakeTxids(_caller);
         }
     }
 
+    /// @inheritdoc IAccessManager
     function canModifyCandidatesForStream(address _caller) external view {
         if (_caller != committeeRegistry) {
             revert UnauthorizedToModifyCandidatesForStream(_caller);

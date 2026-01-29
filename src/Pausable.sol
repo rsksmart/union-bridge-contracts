@@ -35,20 +35,17 @@ abstract contract Pausable is IPausable, PausableUpgradeable {
         _;
     }
 
-    /// @notice Pauses the contract
-    /// @dev Only callable by the pausable
+    /// @inheritdoc IPausable
     function pause() external onlyPauser {
         _pause();
     }
 
-    /// @notice Unpauses the contract
-    /// @dev Only callable by the pausable
+    /// @inheritdoc IPausable
     function unpause() external onlyPauser {
         _unpause();
     }
 
-    /// @notice Returns true if the contract is paused, and false otherwise.
-    /// @dev Returns true if the contract is paused, and false otherwise.
+    /// @inheritdoc IPausable
     function isPaused() public view returns (bool) {
         return paused();
     }

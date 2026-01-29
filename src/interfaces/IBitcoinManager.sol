@@ -112,7 +112,14 @@ interface IBitcoinManager {
     ) external view returns (string memory temporaryPeginAddress);
 
     /// @notice Extracts data from a request peg-in Bitcoin transaction's OP_RETURN output
-    /// @dev Expected OP_RETURN format: [OP_RETURN][RSK_PEGIN][packet number][rsk address][btc address]
+    /// @dev Expected OP_RETURN format: [OP_RETURN][RSK_PEGIN][packet number][rsk destination address][btc reimbursement public key]
+    /// @dev [OP_RETURN (1 byte)]
+    /// @dev [OP_PUSHBYTES_69 (1 byte)]
+    /// @dev [RSK_PEGIN (9 bytes)]
+    /// @dev [packet number (8 bytes)]
+    /// @dev [rsk destination address (20 bytes)]
+    /// @dev [btc reimbursement public key (32 bytes)]
+    /// @dev Total expected size: 71 bytes
     /// @dev This function parses the structured data embedded in the OP_RETURN output
     /// @param _opReturnOut The Bitcoin transaction output containing OP_RETURN data
     /// @return packetNumber The packet number encoded in the OP_RETURN data

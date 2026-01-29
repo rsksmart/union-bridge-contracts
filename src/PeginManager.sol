@@ -51,29 +51,17 @@ contract PeginManager is IPeginManager, PegManagerBase {
         );
     }
 
-    /// @notice Gets the accept peg-in transaction id for a given request peg-in transaction id
-    /// @param _requestPeginTxid The request peg-in transaction id
-    /// @return The accept peg-in transaction id
+    /// @inheritdoc IPeginManager
     function getAcceptPegin(bytes32 _requestPeginTxid) external view returns (bytes32) {
         return acceptPegins[_requestPeginTxid];
     }
 
-    /// @notice Gets the temporary peg-in information for a given request peg-in transaction id
-    /// @param _btcTxid The request peg-in transaction id
-    /// @return The temporary peg-in information
+    /// @inheritdoc IPeginManager
     function getRequestPeginTempInfo(bytes32 _btcTxid) external view returns (RequestPeginTempInfo memory) {
         return peginTempInfo[_btcTxid];
     }
 
-    /// @notice Generates request peg-in data including temporary Bitcoin address and member dispute keys
-    /// @param _rootstockDepositAddress The Rootstock address where RBTC will be minted
-    /// @param _value The amount in satoshis for determining the appropriate stream
-    /// @param _btcReimbursementPubKey The Bitcoin public key for reimbursement transactions
-    /// @return bitcoinDepositAddress The generated Bitcoin deposit address
-    /// @return packetNumber The packet number for this peg-in request
-    /// @return memberDisputeKeys Array of dispute keys (covenant keys) for each committee member in order
-    /// @dev This address is used for the initial peg-in request transaction
-    /// @dev The dispute keys are returned in the same order as committee members
+    /// @inheritdoc IPeginManager
     function getRequestPeginData(address _rootstockDepositAddress, uint64 _value, bytes32 _btcReimbursementPubKey)
         external
         view
@@ -122,12 +110,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
         );
     }
 
-    /// @notice Requests a peg-in operation by providing an SPV proof of the Bitcoin transaction
-    /// @param _requestPeginTxSPVProof The SPV proof containing the Bitcoin transaction and merkle proof
-    /// @dev This function validates the peg-in request transaction and initiates the peg-in process
-    /// @dev The transaction must have at least 2 outputs: one P2TR output and one OP_RETURN output
-    /// @dev Emits the PeginRequested event
-    /// @dev Only callable when contract is unpaused
+    /// @inheritdoc IPeginManager
     function requestPegin(BtcTxSPVProof memory _requestPeginTxSPVProof) external nonReentrant whenNotPaused {
         bytes32 requestPeginTxid = _validateRequestPeginProof(_requestPeginTxSPVProof);
 
@@ -333,12 +316,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
         return streamPos;
     }
 
-    /// @notice Registers a user reimbursement transaction from Bitcoin
-    /// @param _userReimbursementTxSPVProof The BTC SPV proof of the user reimbursement transaction
-    /// @param _reimbursementPeginVin The input index of the request peg-in btc transaction that was spent
-    /// @dev This function validates the user reimbursement transaction and completes the user reimbursement process
-    /// @dev Emits the UserReimbursementRegistered event
-    /// @dev Only callable when contract is unpaused
+    /// @inheritdoc IPeginManager
     function userReimbursement(BtcTxSPVProof memory _userReimbursementTxSPVProof, uint32 _reimbursementPeginVin)
         external
         nonReentrant
@@ -420,11 +398,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
         }
     }
 
-    /// @notice Registers a reject peg-in transaction from Bitcoin
-    /// @dev Validates the SPV proof and registers the reject peg-in transaction
-    /// @dev Emits RejectPeginRegistered event upon successful registration
-    /// @dev Slot state is set to BLOCKED
-    /// @param _rejectPeginTxSPVProof The BTC SPV proof of the reject peg-in transaction
+    /// @inheritdoc IPeginManager
     function rejectPegin(BtcTxSPVProof memory _rejectPeginTxSPVProof) external nonReentrant whenNotPaused {
         // the input index should be the request peg-in txid
         bytes32 requestPeginTxid = _rejectPeginTxSPVProof.btcTx.inputs[Constants.REJECT_PEGIN_VIN_ENABLER].txId;
@@ -486,12 +460,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
         // TODO review if we should wait an amount of blocks before rejecting the peg-in
     }
 
-    /// @notice Accepts a peg-in operation by providing an SPV proof of the accept peg-in transaction
-    /// @param _peginAcceptedTxSPVProof The SPV proof containing the accept peg-in Bitcoin transaction
-    /// @dev This function validates the accept peg-in transaction, it must spend the output from the request peg-in transaction
-    /// @dev Updates the stream position to ACCEPTED and stores the peg-in transaction in the stream
-    /// @dev Emits the PeginAccepted event
-    /// @dev Only callable when contract is unpaused
+    /// @inheritdoc IPeginManager
     function acceptPegin(BtcTxSPVProof memory _peginAcceptedTxSPVProof) external nonReentrant whenNotPaused {
         // The first input consumes the the peg in request utxo
         bytes32 requestPeginTxid = _peginAcceptedTxSPVProof.btcTx.inputs[Constants.REQUEST_PEGIN_VOUT_TAPTREE].txId;
@@ -576,10 +545,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
         rbtcBridge.mintRbtc(payable(requestTempInfo.rskDestinationAddress), rbtcAmount);
     }
 
-    /// @notice Gets the stream position information for a given request peg-in transaction id
-    /// @dev Looks up the corresponding accept peg-in txid and queries the StreamManager
-    /// @param _requestPeginTxid The request peg-in Bitcoin transaction id to look up
-    /// @return The stream position information
+    /// @inheritdoc IPeginManager
     function getStreamPositionByRequestPegin(bytes32 _requestPeginTxid) external view returns (StreamPosition memory) {
         return _getStreamPositionByRequestPegin(_requestPeginTxid);
     }

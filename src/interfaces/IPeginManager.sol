@@ -50,10 +50,12 @@ interface IPeginManager {
     /// @return The stream position containing stream, packet, slot, and status information
     function getStreamPositionByRequestPegin(bytes32 requestPeginTxid) external view returns (StreamPosition memory);
 
-    /// @notice Registers a peg-in request transaction from Bitcoin
-    /// @dev Validates the SPV proof and initiates the peg-in process
-    /// @dev Emits PeginRequested event upon successful registration
-    /// @param _requestPeginTxSPVProof The BTC SPV proof of the peg-in request transaction
+    /// @notice Requests a peg-in operation by providing an SPV proof of the Bitcoin transaction
+    /// @dev This function validates the peg-in request transaction and initiates the peg-in process
+    /// @dev The transaction must have at least 2 outputs: one P2TR output and one OP_RETURN output
+    /// @dev Emits the PeginRequested event
+    /// @dev Only callable when contract is unpaused
+    /// @param _requestPeginTxSPVProof The SPV proof containing the Bitcoin transaction and merkle proof
     function requestPegin(BtcTxSPVProof calldata _requestPeginTxSPVProof) external;
 
     /// @notice Gets the accept peg-in transaction id for a given request transaction id
@@ -71,6 +73,7 @@ interface IPeginManager {
     /// @notice Accepts and registers a Bitcoin peg-in transaction to the committee account
     /// @dev Validates the SPV proof and completes the peg-in process
     /// @dev Emits PeginAccepted event upon successful acceptance
+    /// @dev Only callable when contract is unpaused
     /// @param _peginAcceptedTxSPVProof The BTC SPV proof of the accept peg-in transaction
     function acceptPegin(BtcTxSPVProof calldata _peginAcceptedTxSPVProof) external;
 
@@ -80,6 +83,7 @@ interface IPeginManager {
     /// @dev Validates the SPV proof and completes the user reimbursement process
     /// @dev Emits UserReimbursementRegistered event upon successful registration
     /// @dev Slot state is set to BLOCKED
+    /// @dev Only callable when contract is unpaused
     /// @param _userReimbursementTxSPVProof The BTC SPV proof of the user reimbursement transaction
     /// @param _reimbursementPeginVin The input index of the reimbursement peg-in transaction
     function userReimbursement(BtcTxSPVProof calldata _userReimbursementTxSPVProof, uint32 _reimbursementPeginVin)

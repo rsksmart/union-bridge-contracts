@@ -37,16 +37,21 @@ interface IMemberRegistry {
 
     /// @notice Internal function to handle member unsubscription from stream
     /// @dev Called by CommitteeRegistry after pending committee checks
+    /// @dev Only callable by CommitteeRegistry contract
     /// @param _memberAddress The address of the member unsubscribing
     /// @param _denomination The stream denomination to unsubscribe from
     function unsubscribeFromStream(address _memberAddress, StreamDenomination _denomination) external;
 
     /// @notice Withdraws available balance to the caller's address
     /// @dev Can only withdraw balance that is not pre-staked or staked
+    /// @dev Only callable when contract is unpaused
     function withdrawAvailableBalance() external;
 
-    /// @notice Internal function to select committee members
-    /// @dev Called by CommitteeRegistry to select members for a new committee
+    /// @notice Randomly selects members to form a new committee for a given stream
+    /// @dev Pseudo-randomly select at least minCommitteeWatchtowers watchtowers and minCommitteeOperators operators.
+    /// @dev reverts with notEnoughWatchtowers if there are fewer than minCommitteeWatchtowers watchtower candidates
+    /// @dev reverts with notEnoughOperators if there are fewer than minCommitteeOperators operator candidates
+    /// @dev Only callable by CommitteeRegistry contract
     /// @param _streamId The stream ID to select committee for
     /// @param _minWatchtowers Minimum number of watchtowers required
     /// @param _minOperators Minimum number of operators required
@@ -165,6 +170,7 @@ interface IMemberRegistry {
 
     /// @notice Moves candidates balance from pre staked to staked
     /// @dev Called by CommitteeRegistry during committee formation
+    /// @dev Only callable by Committee Registry contract
     /// @param _members Array of committee members
     /// @param _denomination The stream denomination
     /// @param _packetNumber The packet number

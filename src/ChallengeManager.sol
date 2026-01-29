@@ -20,9 +20,7 @@ contract ChallengeManager is IChallengeManager, PegBase {
     /// @dev Contains data needed for challenge transaction validation
     mapping(bytes32 acceptPeginTxid => ChallengeTempInfo tempInfo) internal challengeTempInfo;
 
-    /// @notice Gets the temporary challenge information for a given accept peg-in transaction id
-    /// @param _acceptPeginTxid The accept peg-in transaction id
-    /// @return The temporary challenge information
+    /// @inheritdoc IChallengeManager
     function getChallengeTempInfo(bytes32 _acceptPeginTxid) external view returns (ChallengeTempInfo memory) {
         return challengeTempInfo[_acceptPeginTxid];
     }
@@ -53,7 +51,8 @@ contract ChallengeManager is IChallengeManager, PegBase {
         pegoutManager = _pegoutManager;
     }
 
-    function registerChallenge(bytes32 _acceptPeginTxid, BtcTxSPVProof memory _challenge)
+    /// @inheritdoc IChallengeManager
+    function registerChallenge(bytes32 _acceptPeginTxid, BtcTxSPVProof calldata _challenge)
         external
         nonReentrant
         whenNotPaused
@@ -101,6 +100,7 @@ contract ChallengeManager is IChallengeManager, PegBase {
         }
     }
 
+    /// @inheritdoc IChallengeManager
     function registerInputRevealed(bytes32 _acceptPeginTxid, BtcTxSPVProof memory _inputRevealed)
         external
         nonReentrant

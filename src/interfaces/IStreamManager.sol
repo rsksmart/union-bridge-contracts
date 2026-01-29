@@ -157,11 +157,11 @@ struct StreamManagerSettings {
 /// @dev This interface provides functions for organizing and tracking funds through the hierarchical structure
 /// @dev Manages the lifecycle of funds from peg-in to peg-out through streams, packets, and slots
 interface IStreamManager {
-    /// @notice Creates a new packet in a specific stream with committee assignment
-    /// @dev Only callable by the CommitteeRegistry smart contract
-    /// @param _streamId The index of the stream to add the packet to
-    /// @param _committeeId The ID of the committee responsible for this packet
-    /// @param _committeePubKey The public key of the selected committee for the packet (33 bytes)
+    /// @notice Creates a new packet for a stream
+    /// @dev Can only be called by the CommitteeRegistry when a new committee is formed
+    /// @param _streamId The ID of the stream to create a packet for
+    /// @param _committeeId The ID of the committee that will process this packet
+    /// @param _committeePubKey The public key of the committee for Bitcoin operations
     /// @param _disputeKeys The dispute keys (covenant public keys) for the committee members
     function createNewPacket(
         uint64 _streamId,
@@ -170,16 +170,14 @@ interface IStreamManager {
         bytes32[] memory _disputeKeys
     ) external;
 
-    /// @notice Retrieves stream information for a given denomination
-    /// @dev Looks up the stream that handles the specified Bitcoin amount
-    /// @param _denomination The value in satoshis used to identify the stream
-    /// @return Stream The complete stream information
+    /// @notice Gets a stream by its denomination
+    /// @param _denomination The Bitcoin denomination in satoshis
+    /// @return The stream data for the given denomination
     function getStream(uint64 _denomination) external view returns (Stream calldata);
 
-    /// @notice Retrieves stream information for a given stream ID
-    /// @dev Direct lookup by stream index
-    /// @param _streamId The index of the stream to retrieve
-    /// @return Stream The complete stream information
+    /// @notice Gets a stream by its ID
+    /// @param _streamId The ID of the stream
+    /// @return The stream data for the given ID
     function getStreamById(uint64 _streamId) external view returns (Stream calldata);
 
     /// @notice Gets the total number of streams in the system
@@ -187,29 +185,29 @@ interface IStreamManager {
     function getStreamsLength() external view returns (uint64);
 
     /// @notice Gets the number of packets in a specific stream
-    /// @param _streamId The index of the stream
+    /// @param _streamId The ID of the stream
     /// @return uint64 The number of packets in the stream
     function getPacketsLength(uint64 _streamId) external view returns (uint64);
 
-    /// @notice Retrieves packet information for a specific packet in a stream
-    /// @param _streamId The index of the stream
-    /// @param _packetNumber The index of the packet within the stream
-    /// @return Packet The complete packet information
+    /// @notice Gets a specific packet from a stream
+    /// @param _streamId The ID of the stream
+    /// @param _packetNumber The packet number to retrieve
+    /// @return The packet data
     function getPacket(uint64 _streamId, uint64 _packetNumber) external view returns (Packet memory);
 
-    /// @notice Locks the first filled slot in a stream for peg-out processing
+    /// @notice Returns the first filled slot, locks it, and updates the peg-out pointers
     /// @notice Reverts if a pegout is already in progress for the same stream
-    /// @dev Returns the slot information and packet number for the locked slot
-    /// @param _streamId The index of the stream
-    /// @return slot The slot information for the locked slot
-    /// @return packetNumber The packet number containing the locked slot
+    /// @dev Can only be called by the PegManager
+    /// @param _streamId The ID of the stream
+    /// @return slot The locked slot data
+    /// @return packetNumber The packet number containing the slot
     function lockSlot(uint64 _streamId) external returns (Slot memory, uint64 packetNumber);
 
-    /// @notice Retrieves slot information for a specific slot in a packet
-    /// @param _streamId The index of the stream
-    /// @param _packetNumber The index of the packet within the stream
-    /// @param _slotNumber The index of the slot within the packet
-    /// @return Slot The complete slot information
+    /// @notice Gets a specific slot from a stream and packet
+    /// @param _streamId The ID of the stream
+    /// @param _packetNumber The packet number
+    /// @param _slotNumber The slot number within the packet
+    /// @return The slot data
     function getSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotNumber) external view returns (Slot memory);
 
     /// @notice Reserves a slot for a peg-in request
@@ -234,36 +232,37 @@ interface IStreamManager {
 
     /// @notice Blocks a reserved slot due to timeout or refund proof
     /// @dev Updates the slot state from RESERVED to BLOCKED
-    /// @param _streamId The index of the stream
+    /// @param _streamId The ID of the stream
     /// @param _packetNumber The index of the packet within the stream
     /// @param _slotId The ID of the slot to block
     function blockSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) external;
 
-    /// @notice Retrieves the committee ID for a specific packet
-    /// @param _streamId The index of the stream
-    /// @param _packetNumber The index of the packet within the stream
-    /// @return uint256 The committee ID responsible for this packet
+    /// @notice Gets the committee ID for a specific packet
+    /// @param _streamId The ID of the stream
+    /// @param _packetNumber The packet number
+    /// @return uint128 The committee ID for the packet
     function getCommitteeId(uint64 _streamId, uint64 _packetNumber) external view returns (uint128);
 
     /// @notice Retrieves the committee public key for a specific packet
-    /// @param _streamId The index of the stream
+    /// @param _streamId The ID of the stream
     /// @param _packetNumber The index of the packet within the stream
     /// @return bytes The committee public key for this packet (33 bytes)
     function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes memory);
 
     /// @notice Retrieves the enabler script public key for a specific packet
-    /// @param _streamId The index of the stream
+    /// @param _streamId The ID of the stream
     /// @param _packetNumber The index of the packet within the stream
     /// @return bytes The enabler script public key for this packet
     function getEnablerScriptPubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes memory);
 
-    /// @notice Marks a slot as paid and updates its state
-    /// @dev Updates the slot state to COMPLETED and stores the peg-out transaction ID
-    /// @param _streamId The index of the stream
-    /// @param _packetNumber The index of the packet within the stream
-    /// @param _slotId The index of the slot within the packet
-    /// @param _acceptPeginTxid The expected accept peg-in transaction id for validation
-    /// @param _userTakeTx The transaction ID of the normal peg-out transaction
+    /// @notice Marks a slot as completed and stores the UserTake transaction id
+    /// @dev Can only be called by the PegManager
+    /// @dev Moves the pegout slot pointer to the next slot
+    /// @param _streamId The ID of the stream
+    /// @param _packetNumber The packet number
+    /// @param _slotId The slot ID
+    /// @param _acceptPeginTxid The hash of the accept peg-in transaction
+    /// @param _userTakeTx The hash of the UserTake transaction
     function completeSlot(
         uint64 _streamId,
         uint64 _packetNumber,
@@ -281,19 +280,19 @@ interface IStreamManager {
 
     /// @notice Sets the number of confirmations required for peg-in transactions
     /// @dev Only callable by the contract owner
-    /// @param _streamId The index of the stream
+    /// @param _streamId The ID of the stream
     /// @param _confirmations The number of confirmations required for peg-in transactions
     function setPeginConfirmations(uint64 _streamId, uint8 _confirmations) external;
 
     /// @notice Sets the number of confirmations required for peg-out transactions
     /// @dev Only callable by the contract owner
-    /// @param _streamId The index of the stream
+    /// @param _streamId The ID of the stream
     /// @param _confirmations The number of confirmations required for peg-out transactions
     function setPegoutConfirmations(uint64 _streamId, uint8 _confirmations) external;
 
-    /// @notice Gets the committee ID for the current packet in a stream
-    /// @param _streamId The index of the stream
-    /// @return uint256 The committee ID for the current packet (returns 0 if no current packet)
+    /// @notice Gets the committee ID for the available pegin packet in a stream
+    /// @param _streamId The ID of the stream
+    /// @return The committee ID, or 0 if no current packet
     function getAvailablePeginCommitteeId(uint64 _streamId) external view returns (uint128);
 
     /// @notice Gets the minimum deposit required for a specific denomination and role
@@ -301,6 +300,12 @@ interface IStreamManager {
     /// @param _role The role of the user (e.g., OPERATOR, WATCHTOWER)
     /// @return uint256 The minimum deposit required in wei
     function getMinimumDeposit(StreamDenomination _denomination, Role _role) external view returns (uint256);
+
+    /// @notice Sets the timelock settings for a stream
+    /// @dev Can only be called by the owner
+    /// @param _streamId The ID of the stream
+    /// @param _timelockSettings The timelock settings to set
+    function setTimelockSettings(uint64 _streamId, TimelockSettings memory _timelockSettings) external;
 
     /// @notice Sets the security bond percentage for a specific role
     /// @param _role The role for which to set the security bond percentage
@@ -316,9 +321,9 @@ interface IStreamManager {
     /// @dev Emits a MinimumSecurityDepositUpdated event on success
     function setMinimumSecurityDeposit(uint256 _cost) external;
 
-    /// @notice Sets the disablement payments per challenge
+    /// @notice Sets the disablement payments cost per challenge, this is used to calculate the minimum deposit for a role
     /// @param _cost The new disablement payments per challenge in wei
-    /// @dev Only callable by the contract owner
+    /// @dev Can only be called by the owner
     /// @dev Emits a DisablementPaymentsPerChallengeUpdated event on success
     function setDisablementPaymentsPerChallenge(uint256 _cost) external;
 

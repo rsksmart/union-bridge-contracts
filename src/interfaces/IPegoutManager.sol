@@ -49,16 +49,21 @@ interface IPegoutManager {
 
     // ===================== Peg-out Request =====================
 
-    /// @notice Initiates a peg-out request to Bitcoin
+    /// @notice Initiates a peg-out operation by locking a slot and preparing the peg-out transaction
     /// @notice Reverts if a pegout is already in progress for the same stream
+    /// @dev This function LOCKS a slot in the appropriate stream and prepares the peg-out transaction
     /// @dev Requires payment in RBTC and will revert if no filled slot is available
+    /// @dev The user must send the exact amount of RBTC they want to peg-out
     /// @dev Emits PegoutRequested event upon successful initiation
+    /// @dev Only callable when contract is unpaused
     /// @param _userPubKey The user's compressed public key that will receive the Bitcoin funds
     function tryPegout(bytes calldata _userPubKey) external payable;
 
     /// @notice Registers the Bitcoin peg-out transaction to the user account
-    /// @dev Validates the SPV proof and completes the peg-out process
-    /// @dev Emits PegoutRegistered event upon successful registration
+    /// @dev This function validates the peg-out transaction and marks the slot as COMPLETED
+    /// @dev The transaction must spend the accept peg-in output and pay to the user's address
+    /// @dev Emits the PegoutRegistered event
+    /// @dev Only callable when contract is unpaused
     /// @param _pegoutTxSPVProof The BTC SPV proof of the peg-out transaction
     function registerUserTake(BtcTxSPVProof calldata _pegoutTxSPVProof) external;
 
@@ -69,18 +74,18 @@ interface IPegoutManager {
     /// @return The peg-out signature hash
     function getPegoutTxid(uint64 streamId, uint64 packetNumber, uint64 slotId) external view returns (bytes32);
 
-    /// @notice Sets User Take Timeout
-    /// @dev Allows the contract owner to update the timeout for user take actions
-    /// @param _timeout The new timeout value in seconds
+    /// @notice Sets the timeout duration for user take operations
+    /// @dev Only callable by the contract owner
     /// @dev Emits UserTakeTimeoutUpdated event upon successful update
     /// @dev Reverts if the timeout is zero
+    /// @param _timeout The new timeout duration in seconds
     function setUserTakeTimeout(uint256 _timeout) external;
 
-    /// @notice Sets Operator Take Timeout
-    /// @dev Allows the contract owner to update the timeout for operator take actions
-    /// @param _timeout The new timeout value in seconds
+    /// @notice Sets the timeout duration for operator take operations
+    /// @dev Only callable by the contract owner
     /// @dev Emits OperatorTakeTimeoutUpdated event upon successful update
     /// @dev Reverts if the timeout is zero
+    /// @param _timeout The new timeout duration in seconds
     function setOperatorTakeTimeout(uint256 _timeout) external;
 
     /// @notice Gets the current timeout duration for user take operations
@@ -103,11 +108,11 @@ interface IPegoutManager {
     /// @param _kickoffSPV The BTC SPV proof of the reimbursement kickoff transaction
     function registerReimbursementKickoff(bytes32 acceptPeginTxid, BtcTxSPVProof calldata _kickoffSPV) external;
 
-    /// @notice Registers the Bitcoin peg-out transaction to the operator account
+    /// @notice Deposits an operator take proof for a peg-out transaction
     /// @dev Validates the SPV proof and marks the slot as paid when operator takes over
-    /// @dev Only callable when the peg status is OPERATOR_TAKE
+    /// @dev Only callable when the peg status is KICKOFF and contract is unpaused
     /// @dev Emits PegoutRegistered event upon successful deposit
-    /// @param _pegoutTxSPVProof The BTC SPV proof of the operator take peg-out transaction
+    /// @dev Only callable when contract is unpaused
     function registerOperatorTake(BtcTxSPVProof calldata _pegoutTxSPVProof) external;
 
     /// @notice Deposits an operator won proof for a peg-out transaction
@@ -124,6 +129,7 @@ interface IPegoutManager {
     /// @dev signatures should be checked to see if the User Take was already signed
     /// @dev Partial signatures are used to skip those operators that have not signed the User Take
     /// @dev Emits OperatorTakeTriggered event upon successful triggering
+    /// @dev Only callable when contract is unpaused
     /// @param _pegoutTxid The transaction id of the peg-out request
     function triggerOperatorTake(bytes32 _pegoutTxid) external;
 

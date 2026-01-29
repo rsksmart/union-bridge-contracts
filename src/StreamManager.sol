@@ -126,12 +126,7 @@ contract StreamManager is IStreamManager, BaseProxy {
         }
     }
 
-    /// @notice Creates a new packet for a stream
-    /// @dev Can only be called by the CommitteeRegistry when a new committee is formed
-    /// @param _streamId The ID of the stream to create a packet for
-    /// @param _committeeId The ID of the committee that will process this packet
-    /// @param _committeePubKey The public key of the committee for Bitcoin operations
-    /// @param _disputeKeys The dispute keys (covenant public keys) for the committee members
+    /// @inheritdoc IStreamManager
     function createNewPacket(
         uint64 _streamId,
         uint128 _committeeId,
@@ -164,9 +159,7 @@ contract StreamManager is IStreamManager, BaseProxy {
         emit PacketCreated(_streamId, packetNumber);
     }
 
-    /// @notice Gets a stream by its denomination
-    /// @param _denomination The Bitcoin denomination in satoshis
-    /// @return The stream data for the given denomination
+    /// @inheritdoc IStreamManager
     function getStream(uint64 _denomination) external view returns (Stream memory) {
         uint256 length = streams.length;
         for (uint256 i = 0; i < length; i++) {
@@ -177,9 +170,7 @@ contract StreamManager is IStreamManager, BaseProxy {
         revert StreamNotFoundByDenomination(_denomination);
     }
 
-    /// @notice Gets a stream by its ID
-    /// @param _streamId The ID of the stream
-    /// @return The stream data for the given ID
+    /// @inheritdoc IStreamManager
     function getStreamById(uint64 _streamId) external view returns (Stream memory) {
         return _getStreamById(_streamId);
     }
@@ -191,23 +182,17 @@ contract StreamManager is IStreamManager, BaseProxy {
         return streams[_streamId];
     }
 
-    /// @notice Gets the total number of streams
-    /// @return The number of streams in the system
+    /// @inheritdoc IStreamManager
     function getStreamsLength() external view returns (uint64) {
         return uint64(streams.length);
     }
 
-    /// @notice Gets the number of packets in a stream
-    /// @param _streamId The ID of the stream
-    /// @return The number of packets in the stream
+    /// @inheritdoc IStreamManager
     function getPacketsLength(uint64 _streamId) external view returns (uint64) {
         return uint64(packets[_streamId].length);
     }
 
-    /// @notice Gets a specific packet from a stream
-    /// @param _streamId The ID of the stream
-    /// @param _packetNumber The packet number to retrieve
-    /// @return The packet data
+    /// @inheritdoc IStreamManager
     function getPacket(uint64 _streamId, uint64 _packetNumber) public view returns (Packet memory) {
         if (_streamId >= streams.length) {
             revert StreamNotFoundById(_streamId);
@@ -219,9 +204,7 @@ contract StreamManager is IStreamManager, BaseProxy {
         return packets[_streamId][_packetNumber];
     }
 
-    /// @notice Gets the committee ID for the available pegin packet in a stream
-    /// @param _streamId The ID of the stream
-    /// @return The committee ID, or 0 if no current packet
+    /// @inheritdoc IStreamManager
     function getAvailablePeginCommitteeId(uint64 _streamId) external view returns (uint128) {
         Stream memory stream = streams[_streamId];
         if (stream.peginPacketPointer >= packets[_streamId].length) {
@@ -281,12 +264,7 @@ contract StreamManager is IStreamManager, BaseProxy {
         revert NoFilledSlot(_streamId);
     }
 
-    /// @notice Returns the first filled slot, locks it, and updates the peg-out pointers
-    /// @notice Reverts if a pegout is already in progress for the same stream
-    /// @dev Can only be called by the PegManager
-    /// @param _streamId The ID of the stream
-    /// @return slot The locked slot data
-    /// @return packet The packet number containing the slot
+    /// @inheritdoc IStreamManager
     function lockSlot(uint64 _streamId) external returns (Slot memory, uint64) {
         // Verify that the caller has permission to modify the peg status
         accessManager.canModifyPegStatus(_msgSender());
@@ -299,19 +277,12 @@ contract StreamManager is IStreamManager, BaseProxy {
         return (currentSlot, stream.pegoutPacketPointer);
     }
 
-    /// @notice Gets a specific slot from a stream and packet
-    /// @param _streamId The ID of the stream
-    /// @param _packetNumber The packet number
-    /// @param _slotNumber The slot number within the packet
-    /// @return The slot data
+    /// @inheritdoc IStreamManager
     function getSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotNumber) external view returns (Slot memory) {
         return _getSlot(_streamId, _packetNumber, _slotNumber);
     }
 
-    /// @notice Gets the length of the slots in a packet
-    /// @param _streamId The ID of the stream
-    /// @param _packetNumber The packet number
-    /// @return The length of the slots in the packet
+    /// @inheritdoc IStreamManager
     function getPacketSlotsLength(uint64 _streamId, uint64 _packetNumber) external view returns (uint64) {
         return _getPacketSlotsLength(_streamId, _packetNumber);
     }
@@ -324,11 +295,7 @@ contract StreamManager is IStreamManager, BaseProxy {
         return uint64(slots[_streamId][_packetNumber].length);
     }
 
-    /// @notice Reserves a slot for a peg-in request
-    /// @dev Creates a new slot with RESERVED state during request peg-in
-    /// @param _streamId The ID of the stream
-    /// @param _packetNumber The packet number
-    /// @return The slot ID that was reserved
+    /// @inheritdoc IStreamManager
     function reserveSlot(uint64 _streamId, uint64 _packetNumber) external returns (uint64) {
         // Verify that the caller has permission to modify the peg status
         accessManager.canModifyPegStatus(_msgSender());
@@ -364,13 +331,7 @@ contract StreamManager is IStreamManager, BaseProxy {
         return slotId;
     }
 
-    /// @notice Fills a slot with accept peg-in transaction information
-    /// @dev Updates the slot state from RESERVED to FILLED and stores transaction details
-    /// @dev This is called by PeginManager contract
-    /// @param _stream The struct containing the stream, packet, and slot information
-    /// @param _acceptPeginAmount The amount of the accept peg-in transaction
-    /// @param _acceptPeginTx The hash of the accept peg-in transaction
-    /// @param _scriptPubKey The script pub key for the taptree output
+    /// @inheritdoc IStreamManager
     function fillSlot(
         StreamPosition memory _stream,
         uint64 _acceptPeginAmount,
@@ -393,11 +354,7 @@ contract StreamManager is IStreamManager, BaseProxy {
         emit SlotFilled(_stream.streamId, _stream.packetNumber, _stream.slotId, _acceptPeginTx, _acceptPeginAmount);
     }
 
-    /// @notice Blocks a reserved slot due to timeout or refund proof
-    /// @dev Updates the slot state from RESERVED to BLOCKED
-    /// @param _streamId The ID of the stream
-    /// @param _packetNumber The packet number
-    /// @param _slotId The ID of the slot to block
+    /// @inheritdoc IStreamManager
     function blockSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) external {
         // Verify that the caller has permission to modify the peg status
         accessManager.canModifyPegStatus(_msgSender());
@@ -410,38 +367,22 @@ contract StreamManager is IStreamManager, BaseProxy {
         slot.state = SlotState.BLOCKED;
     }
 
-    /// @notice Gets the committee ID for a specific packet
-    /// @param _streamId The ID of the stream
-    /// @param _packetNumber The packet number
-    /// @return The committee ID for the packet
+    /// @inheritdoc IStreamManager
     function getCommitteeId(uint64 _streamId, uint64 _packetNumber) external view returns (uint128) {
         return getPacket(_streamId, _packetNumber).committeeId;
     }
 
-    /// @notice Gets the committee public key for a specific packet
-    /// @param _streamId The ID of the stream
-    /// @param _packetNumber The packet number
-    /// @return bytes The committee public key for the packet
+    /// @inheritdoc IStreamManager
     function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes memory) {
         return getPacket(_streamId, _packetNumber).committeePubKey;
     }
 
-    /// @notice Gets the enabler script public key for a specific packet
-    /// @param _streamId The ID of the stream
-    /// @param _packetNumber The packet number
-    /// @return bytes The enabler script public key for the packet
+    /// @inheritdoc IStreamManager
     function getEnablerScriptPubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes memory) {
         return getPacket(_streamId, _packetNumber).enablerScriptPubKey;
     }
 
-    /// @notice Marks a slot as completed and stores the UserTake transaction id
-    /// @dev Can only be called by the PegManager
-    /// @dev Moves the pegout slot pointer to the next slot
-    /// @param _streamId The ID of the stream
-    /// @param _packetNumber The packet number
-    /// @param _slotId The slot ID
-    /// @param _acceptPeginTxid The hash of the accept peg-in transaction
-    /// @param _userTakeTx The hash of the UserTake transaction
+    /// @inheritdoc IStreamManager
     function completeSlot(
         uint64 _streamId,
         uint64 _packetNumber,
@@ -486,6 +427,7 @@ contract StreamManager is IStreamManager, BaseProxy {
         return slots[_streamId][_packetNumber][_slotId];
     }
 
+    /// @inheritdoc IStreamManager
     function advanceSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) external {
         // Verify that the caller has permission to modify the peg status
         accessManager.canModifyPegStatus(_msgSender());
@@ -500,6 +442,7 @@ contract StreamManager is IStreamManager, BaseProxy {
         slot.state = SlotState.ADVANCED;
     }
 
+    /// @inheritdoc IStreamManager
     function getMinimumDeposit(StreamDenomination _denomination, Role _role) public view returns (uint256) {
         if (_role == Role.NONE) {
             revert InvalidRole(_role);
@@ -513,10 +456,7 @@ contract StreamManager is IStreamManager, BaseProxy {
         return slotPercentage > challengeCost ? slotPercentage : challengeCost;
     }
 
-    /// @notice Sets the timelock settings for a stream
-    /// @dev Can only be called by the owner
-    /// @param _streamId The ID of the stream
-    /// @param _timelockSettings The timelock settings to set
+    /// @inheritdoc IStreamManager
     function setTimelockSettings(uint64 _streamId, TimelockSettings memory _timelockSettings)
         external
         streamExists(_streamId)
@@ -527,10 +467,7 @@ contract StreamManager is IStreamManager, BaseProxy {
         emit TimelockSettingsUpdated(_streamId, _timelockSettings);
     }
 
-    /// @notice Sets the number of confirmations required for peg-in transactions
-    /// @dev Can only be called by the owner
-    /// @param _streamId The ID of the stream
-    /// @param _confirmations The number of confirmations required
+    /// @inheritdoc IStreamManager
     function setPeginConfirmations(uint64 _streamId, uint8 _confirmations) external streamExists(_streamId) onlyOwner {
         if (_confirmations == 0) {
             revert InvalidPeginConfirmations(_confirmations);
@@ -540,10 +477,7 @@ contract StreamManager is IStreamManager, BaseProxy {
         emit PeginConfirmationsUpdated(_streamId, _confirmations);
     }
 
-    /// @notice Sets the number of confirmations required for peg-out transactions
-    /// @dev Can only be called by the owner
-    /// @param _streamId The ID of the stream
-    /// @param _confirmations The number of confirmations required
+    /// @inheritdoc IStreamManager
     function setPegoutConfirmations(uint64 _streamId, uint8 _confirmations)
         external
         streamExists(_streamId)
@@ -557,10 +491,7 @@ contract StreamManager is IStreamManager, BaseProxy {
         emit PegoutConfirmationsUpdated(_streamId, _confirmations);
     }
 
-    /// @dev Sets the security bond percentage for a given role
-    /// @param _role The role for which to set the security bond percentage
-    /// @param _percentage The security bond percentage in 10_000 format (e.g. 1000 = 10%)
-    /// @notice Reverts if the role is NONE or if the percentage is 0 or greater than 10_000
+    /// @inheritdoc IStreamManager
     function setSecurityBondPercentage(Role _role, uint16 _percentage) external onlyOwner {
         _setSecurityBondPercentage(_role, _percentage);
     }
@@ -578,6 +509,7 @@ contract StreamManager is IStreamManager, BaseProxy {
         emit SecurityBondPercentageUpdated(_role, _percentage);
     }
 
+    /// @inheritdoc IStreamManager
     function setMinimumSecurityDeposit(uint256 _cost) external onlyOwner {
         _setMinimumSecurityDeposit(_cost);
     }
@@ -590,10 +522,7 @@ contract StreamManager is IStreamManager, BaseProxy {
         emit MinimumSecurityDepositUpdated(_cost);
     }
 
-    /// @notice Sets the disablement payments cost per challenge, this is used to calculate the minimum deposit for a role
-    /// @param _cost The new disablement payments per challenge in wei
-    /// @dev Can only be called by the owner
-    /// @dev Emits a DisablementPaymentsPerChallengeUpdated event on success
+    /// @inheritdoc IStreamManager
     function setDisablementPaymentsPerChallenge(uint256 _cost) external onlyOwner {
         _setDisablementPaymentsPerChallenge(_cost);
     }
@@ -606,10 +535,7 @@ contract StreamManager is IStreamManager, BaseProxy {
         emit DisablementPaymentsPerChallengeUpdated(_cost);
     }
 
-    /// @notice Stores the stream position for a given accept peg-in transaction ID
-    /// @param _acceptPeginTxid The accept peg-in transaction ID
-    /// @param _position The stream position to store
-    /// @dev Only callable by the PegManager contract
+    /// @inheritdoc IStreamManager
     function setStreamPosition(bytes32 _acceptPeginTxid, StreamPosition memory _position) external {
         // Verify that the caller has permission to modify the peg status
         accessManager.canModifyPegStatus(_msgSender());
@@ -617,17 +543,12 @@ contract StreamManager is IStreamManager, BaseProxy {
         emit StreamPositionSet(_acceptPeginTxid, _position);
     }
 
-    /// @notice Retrieves the stream position for a given accept peg-in transaction ID
-    /// @param _acceptPeginTxid The accept peg-in transaction ID
-    /// @return The stream position associated with the transaction ID
+    /// @inheritdoc IStreamManager
     function getStreamPosition(bytes32 _acceptPeginTxid) external view returns (StreamPosition memory) {
         return streamPositions[_acceptPeginTxid];
     }
 
-    /// @notice Updates only the peg status of an existing stream position
-    /// @param _acceptPeginTxid The accept peg-in transaction ID
-    /// @param _newStatus The new peg status to set
-    /// @dev Only callable by the PegManager contract
+    /// @inheritdoc IStreamManager
     function setPegStatus(bytes32 _acceptPeginTxid, PegStatus _newStatus) external {
         // Verify that the caller has permission to modify the peg status
         accessManager.canModifyPegStatus(_msgSender());

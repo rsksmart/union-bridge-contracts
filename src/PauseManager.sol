@@ -33,8 +33,7 @@ abstract contract PauseManager is IPauseManager, BaseProxy {
         __BaseProxy_init(_initialOwner);
     }
 
-    /// @notice Pauses all pausable contracts
-    /// @dev Only callable by the contract owner
+    /// @inheritdoc IPauseManager
     function pause() external onlyOwner {
         IPausable(peginManager).pause();
         IPausable(pegoutManager).pause();
@@ -44,8 +43,7 @@ abstract contract PauseManager is IPauseManager, BaseProxy {
         IPausable(challengeManager).pause();
     }
 
-    /// @notice Unpauses all pausable contracts
-    /// @dev Only callable by the contract owner
+    /// @inheritdoc IPauseManager
     function unpause() external onlyOwner {
         IPausable(peginManager).unpause();
         IPausable(pegoutManager).unpause();
@@ -55,9 +53,7 @@ abstract contract PauseManager is IPauseManager, BaseProxy {
         IPausable(challengeManager).unpause();
     }
 
-    /// @notice Returns true if all contracts are paused, false if all are unpaused
-    /// @dev Reverts if contracts have inconsistent pause states
-    /// @return True if all contracts are paused, false if all are unpaused
+    /// @inheritdoc IPauseManager
     function areContractsPaused() external view returns (bool) {
         bool peginManagerPaused = IPausable(peginManager).isPaused();
         bool pegoutManagerPaused = IPausable(pegoutManager).isPaused();
@@ -79,9 +75,7 @@ abstract contract PauseManager is IPauseManager, BaseProxy {
         return referenceState;
     }
 
-    /// @notice Sets the committee registry contract address
-    /// @dev Can only be called by the owner
-    /// @param _committeeRegistry The new committee registry contract address
+    /// @inheritdoc IPauseManager
     function setCommitteeRegistry(address _committeeRegistry) external onlyOwner {
         if (committeeRegistry != address(0)) {
             revert AlreadySet();
@@ -92,9 +86,7 @@ abstract contract PauseManager is IPauseManager, BaseProxy {
         committeeRegistry = _committeeRegistry;
     }
 
-    /// @notice Sets the pegin manager contract address
-    /// @dev Can only be called by the owner
-    /// @param _peginManager The new pegin manager contract address
+    /// @inheritdoc IPauseManager
     function setPeginManager(address _peginManager) external onlyOwner {
         if (peginManager != address(0)) {
             revert AlreadySet();
@@ -105,9 +97,7 @@ abstract contract PauseManager is IPauseManager, BaseProxy {
         peginManager = _peginManager;
     }
 
-    /// @notice Sets the pegout manager contract address
-    /// @dev Can only be called by the owner
-    /// @param _pegoutManager The new pegout manager contract address
+    /// @inheritdoc IPauseManager
     function setPegoutManager(address _pegoutManager) external onlyOwner {
         if (pegoutManager != address(0)) {
             revert AlreadySet();
@@ -118,9 +108,7 @@ abstract contract PauseManager is IPauseManager, BaseProxy {
         pegoutManager = _pegoutManager;
     }
 
-    /// @notice Sets the challenge manager contract address
-    /// @dev Can only be called by the owner
-    /// @param _challengeManager The new challenge manager contract address
+    /// @inheritdoc IPauseManager
     function setChallengeManager(address _challengeManager) external onlyOwner {
         if (challengeManager != address(0)) {
             revert AlreadySet();
@@ -131,9 +119,7 @@ abstract contract PauseManager is IPauseManager, BaseProxy {
         challengeManager = _challengeManager;
     }
 
-    /// @notice Sets the member registry contract address
-    /// @dev Can only be called by the owner
-    /// @param _memberRegistry The new member registry contract address
+    /// @inheritdoc IPauseManager
     function setMemberRegistry(address _memberRegistry) external onlyOwner {
         if (memberRegistry != address(0)) {
             revert AlreadySet();
@@ -144,9 +130,7 @@ abstract contract PauseManager is IPauseManager, BaseProxy {
         memberRegistry = _memberRegistry;
     }
 
-    /// @notice Sets the rbtc bridge contract address
-    /// @dev Can only be called by the owner
-    /// @param _rbtcBridge The new rbtc bridge contract address
+    /// @inheritdoc IPauseManager
     function setRbtcBridge(address _rbtcBridge) external onlyOwner {
         if (rbtcBridge != address(0)) {
             revert AlreadySet();

@@ -101,24 +101,27 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         }
     }
 
+    /// @inheritdoc ICommitteeRegistry
     function isWhitelisted(address _address) external view returns (bool) {
         return whitelisted[_address];
     }
 
-    function whitelistAddress(address _addressToWhitelist) external onlyWhitelister {
+    /// @inheritdoc ICommitteeRegistry
+    function whitelistAddress(address _address) external onlyWhitelister {
         address[] memory addressesToWhitelist = new address[](1);
-        addressesToWhitelist[0] = _addressToWhitelist;
+        addressesToWhitelist[0] = _address;
 
         _whitelistAddresses(addressesToWhitelist);
     }
 
-    function whitelistAddresses(address[] memory _addressesToWhitelist) external onlyWhitelister {
-        _whitelistAddresses(_addressesToWhitelist);
+    /// @inheritdoc ICommitteeRegistry
+    function whitelistAddresses(address[] memory _addresses) external onlyWhitelister {
+        _whitelistAddresses(_addresses);
     }
 
-    function _whitelistAddresses(address[] memory _addressesToWhitelist) internal {
-        for (uint256 i = 0; i < _addressesToWhitelist.length; i++) {
-            _whitelistAddress(_addressesToWhitelist[i]);
+    function _whitelistAddresses(address[] memory _addresses) internal {
+        for (uint256 i = 0; i < _addresses.length; i++) {
+            _whitelistAddress(_addresses[i]);
         }
     }
 
@@ -130,15 +133,17 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         emit AddressWhitelisted(_addressToWhitelist);
     }
 
-    function unwhitelistAddress(address _addressToUnwhitelist) external onlyWhitelister {
+    /// @inheritdoc ICommitteeRegistry
+    function unwhitelistAddress(address _address) external onlyWhitelister {
         address[] memory addressesToUnwhitelist = new address[](1);
-        addressesToUnwhitelist[0] = _addressToUnwhitelist;
+        addressesToUnwhitelist[0] = _address;
 
         _unwhitelistAddresses(addressesToUnwhitelist);
     }
 
-    function unwhitelistAddresses(address[] memory _addressesToUnwhitelist) external onlyWhitelister {
-        _unwhitelistAddresses(_addressesToUnwhitelist);
+    /// @inheritdoc ICommitteeRegistry
+    function unwhitelistAddresses(address[] memory _addresses) external onlyWhitelister {
+        _unwhitelistAddresses(_addresses);
     }
 
     function _unwhitelistAddresses(address[] memory _addressesToUnwhitelist) internal {
@@ -202,16 +207,9 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         }
     }
 
-    /// @notice Applies to participate in a stream with a specific role
-    /// @dev Registers public keys, deposits required bond, and provides funding UTXO for the requested role
-    /// @dev Only callable when contract is unpaused
-    /// @param _stream The stream denomination to apply for
-    /// @param _role The role requested in the committee
-    /// @param _publicKeys Member registration public keys
-    /// @param _fundingUTXO The Bitcoin UTXO that will be used for the member funding
-
     // Note: Event emission happens in _createCommittee() after external calls to trusted memberRegistry contract.
     // This is safe because memberRegistry is a trusted contract and the event accurately reflects final state.
+    /// @inheritdoc ICommitteeRegistry
     function applyToStream(
         StreamDenomination _stream,
         Role _role,
@@ -225,9 +223,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         _createCommitteeAfterApplyToStream(_stream);
     }
 
-    /// @notice Unsubscribes from a stream and sets the pre-staked balance as available
-    /// @dev Only callable when contract is unpaused
-    /// @param _denomination The stream denomination to unsubscribe from
+    /// @inheritdoc ICommitteeRegistry
     function unsubscribeFromStream(StreamDenomination _denomination) external whenNotPaused {
         address sender = _msgSender();
         if (_isInPendingCommittee(sender, _denomination)) {
@@ -292,9 +288,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         return false;
     }
 
-    /// @notice Gets a committee by its ID
-    /// @param _committeeId The committee ID
-    /// @return Committee The complete committee information
+    /// @inheritdoc ICommitteeRegistry
     function getCommittee(uint128 _committeeId) external view returns (Committee memory) {
         return _getCommittee(_committeeId);
     }
@@ -307,9 +301,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         return committee;
     }
 
-    /// @notice Gets all members of a specific committee
-    /// @param _committeeId The committee ID
-    /// @return Array of committee members with their roles
+    /// @inheritdoc ICommitteeRegistry
     function getCommitteeMembers(uint128 _committeeId) external view returns (CommitteeMember[] memory) {
         return _getCommitteeMembers(_committeeId);
     }
@@ -318,7 +310,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         return _getCommittee(_committeeId).members;
     }
 
-    /// @dev Only callable when contract is unpaused
+    /// @inheritdoc ICommitteeRegistry
     function restartPendingCommittee(uint64 _streamId) external whenNotPaused {
         uint256 createdAt = _getPendingCommittee(_streamId).createdAt;
 
@@ -336,10 +328,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         _createCommittee(_streamId);
     }
 
-    /// @notice Triggers the creation of a new committee for a stream if the timeout has expired
-    /// @dev Only callable by PegManager contract
-    /// @dev This function is called when the slot usage threshold is reached
-    /// @param _streamId The stream ID to create a new committee for
+    /// @inheritdoc ICommitteeRegistry
     function createCommittee(uint64 _streamId) external {
         // Verify that the caller has permission to create a committee
         accessManager.canCreateCommittee(_msgSender());
@@ -445,15 +434,12 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         }
     }
 
+    /// @inheritdoc ICommitteeRegistry
     function isMemberInCommittee(uint128 _committeeId, address _memberAddress) external view returns (bool) {
         return committeesData[_committeeId][_memberAddress].inCommittee;
     }
 
-    /// @notice Allows a member to deposit information for committee formation
-    /// @dev Called by members to provide their aggregated key for a pending committee
-    /// @dev Only callable when contract is unpaused
-    /// @param _committeeId The ID of the pending committee
-    /// @param _aggregatedKey The aggregated public key provided by the member
+    /// @inheritdoc ICommitteeRegistry
     function depositAggregatedKey(uint128 _committeeId, bytes memory _aggregatedKey) external whenNotPaused {
         address sender = _msgSender();
         Committee storage pendingCommittee = _getPendingCommitteeById(_committeeId);
@@ -511,11 +497,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         );
     }
 
-    /// @notice Allows a member to deposit communication data for its respective pending committee
-    /// @dev Called by members to provide their communication data for a pending committee
-    /// @dev Only callable when contract is unpaused
-    /// @param _committeeId The ID of the pending committee
-    /// @param _communicationData The communication data to be added
+    /// @inheritdoc ICommitteeRegistry
     function depositCommunicationData(uint128 _committeeId, CommunicationData[] memory _communicationData)
         external
         whenNotPaused
@@ -571,12 +553,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         }
     }
 
-    /// @notice Gets the encrypted communication data for one member in a committee
-    /// @dev This function returns the encrypted communication data (IP and Port) deposited for a particular member
-    /// @param _committeeId The committee ID for the committee
-    /// @param _memberAddress The address of the member we are requesting data for
-    /// @return communicationData encrypted communication data (IP and Port) from the committee members
-    /// @dev The order of the data corresponds to the order of members in the committee
+    /// @inheritdoc ICommitteeRegistry
     function getMemberCommunicationData(uint128 _committeeId, address _memberAddress)
         external
         view
@@ -604,17 +581,12 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         }
     }
 
-    /// @notice Returns the pending committee for the stream
-    /// @dev This function will revert if there is no pending committee or if it's expired
-    /// @param _streamId The stream ID to get the pending committee for
-    /// @return committee The pending committee (contains createdAt and missingData fields)
+    /// @inheritdoc ICommitteeRegistry
     function getPendingCommittee(uint64 _streamId) external view returns (Committee memory) {
         return _getPendingCommittee(_streamId);
     }
 
-    /// @notice Returns the committee ID for a pending committee in the given stream
-    /// @param _streamId The stream ID to get the pending committee ID for
-    /// @return committeeId The committee ID of the pending committee
+    /// @inheritdoc ICommitteeRegistry
     function getPendingCommitteeId(uint64 _streamId) external view returns (uint128 committeeId) {
         return _getPendingCommitteeId(_streamId);
     }
@@ -628,9 +600,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         return committeeId;
     }
 
-    /// @notice Returns the number of members that have not deposited their communication data yet
-    /// @param _committeeId The committee ID to check for missing communication data
-    /// @return missingCommunicationData The number of members that have not deposited their communication data yet
+    /// @inheritdoc ICommitteeRegistry
     function getMissingCommunicationDataCount(uint128 _committeeId)
         external
         view
@@ -650,9 +620,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         return committeesById[_committeeId];
     }
 
-    /// @notice Checks if there is a pending committee for the stream and if it's expired
-    /// @param _streamId The stream ID to check for a pending committee
-    /// @return True if the pending committee exists and is expired
+    /// @inheritdoc ICommitteeRegistry
     function isPendingCommitteeExpired(uint64 _streamId) external view returns (bool) {
         uint256 createdAt = committeesById[pendingCommittees[_streamId]].createdAt;
         // If no pending committee in proccess we return false
@@ -684,15 +652,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         _resetPendingCommittee(_streamId);
     }
 
-    /// @notice Gets the operator dispute data (address and dispute public key) for operator-take operations
-    /// @dev Rotates through committee operators to distribute take responsibilities
-    /// @dev Only operators who have deposited their signatures nonces are eligible for take operations
-    /// @param _committeeId The committee ID to get the operator from
-    /// @param _signatureData Array of signature data for committee members
-    /// @param _missingNonces Number of missing nonces
-    /// @return operatorAddress The address of the next available operator for take operations
-    /// @return disputePubKey The operator's dispute public key
-    /// @dev Reverts with TakeOperatorNotFound if no eligible operator is found
+    /// @inheritdoc ICommitteeRegistry
     function getOperatorDisputeData(uint128 _committeeId, SignatureData[] calldata _signatureData, uint8 _missingNonces)
         external
         returns (address operatorAddress, bytes32 disputePubKey)
@@ -757,10 +717,8 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
 
     // ===================== Administrative Functions =====================
 
-    /// @notice Sets a new whitelister address
-    /// @param _newWhitelister The new whitelister address
-    /// @dev Only callable by the contract owner
-    function setWhitelister(address _newWhitelister) public onlyOwner {
+    /// @inheritdoc ICommitteeRegistry
+    function setWhitelister(address _newWhitelister) external onlyOwner {
         if (_newWhitelister == address(0)) {
             revert InvalidZeroAddress();
         }
@@ -768,18 +726,14 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         emit WhitelisterUpdated(_newWhitelister);
     }
 
-    /// @notice Sets the pending committee timeout
-    /// @dev Only callable by the contract owner
-    /// @param _timeout The timeout in seconds for the pending committee
+    /// @inheritdoc ICommitteeRegistry
     function setPendingCommitteeTimeout(uint256 _timeout) external onlyOwner {
         _revertIfZero(_timeout);
         pendingCommitteeTimeout = _timeout;
         emit PendingCommitteeTimeoutUpdated(_timeout);
     }
 
-    /// @notice Sets the minimum watchtowers required for a committee
-    /// @dev Only callable by the contract owner
-    /// @param _minWatchtowers The minimum watchtowers required for a committee
+    /// @inheritdoc ICommitteeRegistry
     function setCommitteeMinWatchtowers(uint256 _minWatchtowers) external onlyOwner {
         _revertIfZero(_minWatchtowers);
         if (committeeMemberCount < _minWatchtowers + minCommitteeOperators) {
@@ -789,9 +743,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         emit CommitteeMinWatchtowersUpdated(_minWatchtowers);
     }
 
-    /// @notice Sets the minimum operators required for a committee
-    /// @dev Only callable by the contract owner
-    /// @param _minOperators The minimum operators required for a committee
+    /// @inheritdoc ICommitteeRegistry
     function setCommitteeMinOperators(uint256 _minOperators) external onlyOwner {
         _revertIfZero(_minOperators);
         if (committeeMemberCount < minCommitteeWatchtowers + _minOperators) {
@@ -801,9 +753,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         emit CommitteeMinOperatorsUpdated(_minOperators);
     }
 
-    /// @notice Sets the exact number of members required for a committee
-    /// @dev Only callable by the contract owner
-    /// @param _committeeMemberCount The exact number of members required for a committee
+    /// @inheritdoc ICommitteeRegistry
     function setCommitteeMemberCount(uint256 _committeeMemberCount) external onlyOwner {
         _revertIfZero(_committeeMemberCount);
         if (_committeeMemberCount < minCommitteeWatchtowers + minCommitteeOperators) {
@@ -816,12 +766,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         emit CommitteeMemberCountUpdated(_committeeMemberCount);
     }
 
-    /// @notice Releases committee members from a packet and handles their staked balance
-    /// @dev Called by PegManager to release committee members after packet completion
-    /// @dev Only callable by PegManager contract
-    /// @dev Members with reApply=true will be re-added as candidates, others get their balance as available
-    /// @param _streamId The stream ID for the committee
-    /// @param _packetNumber The packet number where the committee was active
+    /// @inheritdoc ICommitteeRegistry
     function releaseCommittee(uint64 _streamId, uint64 _packetNumber) external {
         // Verify that the caller has permission to release a committee
         accessManager.canReleaseCommittee(_msgSender());
@@ -833,9 +778,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         memberRegistry.releaseCommitteeMembers(committeeMembers, _streamId, _packetNumber);
     }
 
-    /// @notice Gets the dispute keys (covenant public keys) for all committee members
-    /// @param _committeeId The committee ID
-    /// @return Array of dispute keys for all members
+    /// @inheritdoc ICommitteeRegistry
     function getCommitteeDisputeKeys(uint128 _committeeId) external view returns (bytes32[] memory) {
         return _getCommitteeDisputeKeys(_committeeId);
     }

@@ -5,12 +5,15 @@ pragma solidity ^0.8.20;
 /// @dev This interface provides error definitions for pauser operations
 /// @dev Used to implement open zeppelin's pauser functionality
 interface IPausable {
-    /// @notice External functions to handle pauser pauses
+    /// @notice Pauses the contract
+    /// @dev Only callable by the pauser
     function pause() external;
+
+    /// @notice Unpauses the contract
+    /// @dev Only callable by the pauser
     function unpause() external;
-    /**
-     * @dev Returns true if the contract is paused, and false otherwise.
-     */
+
+    /// @notice Returns true if the contract is paused, and false otherwise.
     function isPaused() external view returns (bool);
 
     // ===================== Events =====================
