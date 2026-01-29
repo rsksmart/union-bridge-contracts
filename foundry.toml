@@ -1,5 +1,5 @@
 [profile.default]
-solc_version = "0.8.30"
+solc_version = "0.8.33"
 # Use emv version previous to Paris in RSK to avoid prevrandao error
 # https://book.getfoundry.sh/cheatcodes/prevrandao
 evm_version = "london"
