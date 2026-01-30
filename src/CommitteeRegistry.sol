@@ -194,16 +194,20 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
 
     function _cleanUpMembershipAfterUnwhitelisting(address _addressToUnwhitelist) internal {
         uint256 denominationsLength = uint256(StreamDenomination.LENGTH);
+        // slither-disable-next-line calls-loop
+        if (!memberRegistry.isMember(_addressToUnwhitelist)) {
+            return;
+        }
 
         for (uint256 i = 0; i < denominationsLength; i++) {
             StreamDenomination denomination = StreamDenomination(i);
             if (_isSubscribedToStream(_addressToUnwhitelist, denomination)) {
                 _unsubscribeFromStream(_addressToUnwhitelist, denomination);
             }
-            if (_isInActiveCommittee(_addressToUnwhitelist, denomination)) {
-                // slither-disable-next-line calls-loop
-                memberRegistry.disableMemberReApplyForStream(_addressToUnwhitelist, denomination);
-            }
+            // Only needed if the member is in an active committee
+            // but harmless otherwise, so we skip the expensive check
+            // slither-disable-next-line calls-loop
+            memberRegistry.disableMemberReApplyForStream(_addressToUnwhitelist, denomination);
         }
     }
 
@@ -265,27 +269,6 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
             return false; // No pending committee
         }
         return committeesData[committeeId][_memberAddress].inCommittee;
-    }
-
-    function _isInActiveCommittee(address _memberAddress, StreamDenomination _denomination)
-        internal
-        view
-        returns (bool)
-    {
-        uint64 streamId = uint64(_denomination);
-        // slither-disable-next-line calls-loop
-        Stream memory stream = streamManager.getStreamById(streamId);
-        // slither-disable-next-line calls-loop
-        uint64 packetsLength = streamManager.getPacketsLength(streamId);
-
-        for (uint64 i = stream.pegoutPacketPointer; i < packetsLength; i++) {
-            // slither-disable-next-line calls-loop
-            uint128 committeeId = streamManager.getCommitteeId(streamId, i);
-            if (committeesData[committeeId][_memberAddress].inCommittee) {
-                return true;
-            }
-        }
-        return false;
     }
 
     /// @inheritdoc ICommitteeRegistry
