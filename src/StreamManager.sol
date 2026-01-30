@@ -566,4 +566,19 @@ contract StreamManager is IStreamManager, BaseProxy {
             revert StreamNotFoundById(_streamId);
         }
     }
+
+    // --- TESTNET ONLY: Force close committee functionality ---
+    // TODO: Remove before mainnet deployment
+    function invalidateStreamPointers_TESTNET(uint64 _streamId) external {
+        // Verify that the caller has permission to invalidate stream pointers
+        accessManager.canForceUpdateStreamPointers(_msgSender());
+
+        Stream storage stream = _getStreamById(_streamId);
+        uint64 futurePacket = uint64(packets[_streamId].length);
+        stream.peginPacketPointer = futurePacket;
+        stream.pegoutPacketPointer = futurePacket;
+        stream.pegoutSlotPointer = 0;
+        emit StreamPointersInvalidated(_streamId);
+    }
+    // --- END TESTNET ONLY ---
 }

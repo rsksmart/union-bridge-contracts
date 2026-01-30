@@ -666,6 +666,34 @@ abstract contract HelperContract is Test, TestUtils {
         return (expectedCommittee, committeeId);
     }
 
+    function setup_completeAdditionalCommittee(uint256 _blockTime) internal returns (uint128 committeeId) {
+        vm.warp(_blockTime);
+        vm.roll(_blockTime);
+
+        uint256 memberIndexStart = registeredMembersCounter;
+        uint256 numOperators = registry.committeeMemberCount() / 2;
+        uint256 numWatchtowers = registry.committeeMemberCount() - numOperators;
+        setup_registerNewMembers(numWatchtowers, numOperators, SETUP_PENDING_COMMITTEE_DENOMINATION);
+
+        // In a real scenario the committee (and packet) creation would be triggered automatically when
+        // a new packet is needed (i.e., when we hit the threshold of the used slots),
+        // we force the creation here to simplify the test setup and test specific things
+        vm.prank(address(peginManager));
+        registry.createCommittee(SETUP_PENDING_COMMITTEE_STREAM_ID);
+
+        committeeId = registry.getPendingCommitteeId(SETUP_PENDING_COMMITTEE_STREAM_ID);
+        setup_depositAggregatedKey_MultipleMembers(committeeId, memberIndexStart, registry.committeeMemberCount());
+    }
+
+    function setup_twoActiveCommittees()
+        internal
+        returns (uint128 firstCommitteeId, uint128 secondCommitteeId, uint64 streamId)
+    {
+        (, firstCommitteeId) = setup_completeCommittee();
+        secondCommitteeId = setup_completeAdditionalCommittee(BLOCK_COMMITTEE_2);
+        streamId = SETUP_PENDING_COMMITTEE_STREAM_ID;
+    }
+
     /// @notice Sets up a pending committee with a specific size
     /// @param _size The desired committee size
     /// @return committeeId The ID of the created committee
@@ -701,12 +729,10 @@ abstract contract HelperContract is Test, TestUtils {
         internal
         returns (uint128 committeeId, CommitteeMember[] memory members)
     {
+        uint256 memberIndexStart = registeredMembersCounter;
         (committeeId, members) = setup_pendingCommitteeWithSize(_size);
 
-        // Complete the committee by depositing aggregated keys
-        for (uint256 i = 0; i < members.length; i++) {
-            setup_depositAggregatedKey(committeeId, members[i].memberAddress);
-        }
+        setup_depositAggregatedKey_MultipleMembers(committeeId, memberIndexStart, _size);
 
         return (committeeId, members);
     }

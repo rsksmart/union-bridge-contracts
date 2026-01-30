@@ -669,4 +669,22 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
 
         return (selectedMembers, PendingCommitteeStatus.SUCCESS);
     }
+
+    // --- TESTNET ONLY: Force close committee functionality ---
+    // TODO: Remove before mainnet deployment
+    function forceReleaseCommitteeMembers_TESTNET(
+        uint64 _streamId,
+        uint64 _packetNumber,
+        CommitteeMember[] memory _committeeMembers
+    ) external {
+        // Verify that the caller has permission to force release committee
+        accessManager.canForceReleaseCommittee(_msgSender());
+
+        StreamDenomination denomination = StreamDenomination(_streamId);
+        for (uint256 i = 0; i < _committeeMembers.length; i++) {
+            // Move staked -> available (ignoring reApply flag)
+            _moveStakedToAvailable(_committeeMembers[i].memberAddress, denomination, _packetNumber);
+        }
+    }
+    // --- END TESTNET ONLY ---
 }

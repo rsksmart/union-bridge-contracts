@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import {IAccessManager} from "./interfaces/IAccessManager.sol";
 import {PauseManager} from "./PauseManager.sol";
+import {ChainIds} from "./libraries/Network.sol";
 
 /// @title AccessManager
 /// @notice Manages access control for the union bridge system
@@ -86,4 +87,34 @@ contract AccessManager is IAccessManager, PauseManager {
             revert UnauthorizedToModifyCandidatesForStream(_caller);
         }
     }
+
+    // --- TESTNET ONLY: Force close committee functionality ---
+    // TODO: Remove before mainnet deployment
+    function _revertIfNotTestnet() internal view {
+        if (
+            block.chainid != ChainIds.RSK_TESTNET && block.chainid != ChainIds.RSK_REGTEST
+                && block.chainid != ChainIds.LOCAL
+        ) {
+            revert TestnetOnlyFunction();
+        }
+    }
+
+    function revertIfNotTestnet() external view {
+        _revertIfNotTestnet();
+    }
+
+    function canForceUpdateStreamPointers(address _caller) external view {
+        _revertIfNotTestnet();
+        if (_caller != committeeRegistry) {
+            revert UnauthorizedToInvalidateStreamPointers(_caller);
+        }
+    }
+
+    function canForceReleaseCommittee(address _caller) external view {
+        _revertIfNotTestnet();
+        if (_caller != committeeRegistry) {
+            revert UnauthorizedToForceReleaseCommittee(_caller);
+        }
+    }
+    // --- END TESTNET ONLY ---
 }

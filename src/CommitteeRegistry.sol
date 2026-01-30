@@ -793,4 +793,43 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         }
         return disputeKeys;
     }
+
+    // --- TESTNET ONLY: Force close committee functionality ---
+    // TODO: Remove before mainnet deployment
+    function forceCloseCommittee_TESTNET(uint64 _streamId) external onlyOwner {
+        accessManager.revertIfNotTestnet();
+        // slither-disable-next-line calls-loop
+        Stream memory stream = streamManager.getStreamById(_streamId);
+        // slither-disable-next-line calls-loop
+        uint64 packetsLength = streamManager.getPacketsLength(_streamId);
+
+        // Check at least one active committee exists
+        if (stream.pegoutPacketPointer >= packetsLength) {
+            revert NoActiveCommittees(_streamId);
+        }
+
+        // Update state before external calls (to prevent reentrancy warnings)
+        shouldCreateCommittee[_streamId] = true;
+
+        // Process each active committee (from pegoutPacketPointer to packetsLength)
+        for (uint64 packetNumber = stream.pegoutPacketPointer; packetNumber < packetsLength; packetNumber++) {
+            // slither-disable-next-line calls-loop
+            uint128 committeeId = streamManager.getCommitteeId(_streamId, packetNumber);
+            CommitteeMember[] memory members = _getCommitteeMembers(committeeId);
+
+            // Release funds and unsubscribe members
+            // slither-disable-next-line calls-loop
+            memberRegistry.forceReleaseCommitteeMembers_TESTNET(_streamId, packetNumber, members);
+
+            // slither-disable-next-line reentrancy-events
+            emit CommitteeForceReleased(_streamId, committeeId, packetNumber);
+        }
+
+        // Invalidate stream pointers (createNewPacket will auto-correct later)
+        streamManager.invalidateStreamPointers_TESTNET(_streamId);
+
+        // slither-disable-next-line reentrancy-events
+        emit StreamForceReset(_streamId);
+    }
+    // --- END TESTNET ONLY ---
 }

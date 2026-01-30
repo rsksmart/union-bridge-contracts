@@ -574,4 +574,14 @@ interface ICommitteeRegistry {
     /// @param createdAt Timestamp committee creation
     /// @param expireAt Timestamp committee expiration
     error PendingCommitteeExpired(uint128 committeeId, uint256 currentTime, uint256 createdAt, uint256 expireAt);
+
+    // --- TESTNET ONLY: Force close committee functionality ---
+    // TODO: Remove before mainnet deployment
+    event CommitteeForceReleased(uint64 indexed streamId, uint128 indexed committeeId, uint64 packetNumber);
+    event StreamForceReset(uint64 indexed streamId);
+
+    error NoActiveCommittees(uint64 streamId);
+
+    function forceCloseCommittee_TESTNET(uint64 _streamId) external;
+    // --- END TESTNET ONLY ---
 }

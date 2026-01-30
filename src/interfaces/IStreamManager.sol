@@ -543,4 +543,11 @@ interface IStreamManager {
     /// @notice Thrown when the stream settings length is invalid
     /// @param streamSettingsLength The number of stream settings
     error InvalidStreamSettingsLength(uint256 streamSettingsLength);
+
+    // --- TESTNET ONLY: Force close committee functionality ---
+    // TODO: Remove before mainnet deployment
+    event StreamPointersInvalidated(uint64 streamId);
+
+    function invalidateStreamPointers_TESTNET(uint64 _streamId) external;
+    // --- END TESTNET ONLY ---
 }

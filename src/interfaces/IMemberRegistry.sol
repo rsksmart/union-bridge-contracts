@@ -345,4 +345,13 @@ interface IMemberRegistry {
     /// @notice Thrown when an account is not authorized to perform an operation
     /// @param account The unauthorized account address
     error UnauthorizedAccount(address account);
+
+    // --- TESTNET ONLY: Force close committee functionality ---
+    // TODO: Remove before mainnet deployment
+    function forceReleaseCommitteeMembers_TESTNET(
+        uint64 _streamId,
+        uint64 _packetNumber,
+        CommitteeMember[] memory _committeeMembers
+    ) external;
+    // --- END TESTNET ONLY ---
 }
