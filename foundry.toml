@@ -32,7 +32,8 @@ gas_reports_ignore = [
 # Ignore solc warnings
 # Known warning IDs include: "unreachable", "unused-var", "license", "code-size", etc.
 # 2424 is memory-safe-assembly
-ignored_error_codes = [2424]
+# 4591 more than 256 warnings
+ignored_error_codes = [2424, 4591]
 
 # Verbosity level usefull for debugging same as -vvv
 verbosity = 3

@@ -13,6 +13,7 @@ import {IBitcoinManager} from "src/interfaces/IBitcoinManager.sol";
 import {ISignatureManager} from "src/interfaces/ISignatureManager.sol";
 import {AccessManager} from "src/AccessManager.sol";
 import {IRbtcBridge} from "src/interfaces/IRbtcBridge.sol";
+import {IChallengeManager} from "src/interfaces/IChallengeManager.sol";
 
 /// @title ContractAddressManager
 /// @notice Helper library to get contract addresses based on the current network
@@ -46,6 +47,12 @@ abstract contract ContractAddressManager is Script {
     /// @return The PegoutManager contract
     function getPegoutManager() internal view returns (PegoutManager) {
         return PegoutManager(getAccesManager().pegoutManager());
+    }
+
+    /// @notice Get the ChallengeManager contract address for the current network
+    /// @return The ChallengeManager contract
+    function getChallengeManager() internal view returns (IChallengeManager) {
+        return IChallengeManager(getAccesManager().challengeManager());
     }
 
     /// @notice Get the StreamManager contract for the current network

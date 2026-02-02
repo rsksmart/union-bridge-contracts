@@ -17,6 +17,7 @@ import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {BtcTaproot} from "src/libraries/BtcTaproot.sol";
 import {OpCodes} from "src/libraries/OpCodes.sol";
 import {Constants} from "src/libraries/Constants.sol";
+import {BtcTxEncoder} from "src/libraries/BtcTxEncoder.sol";
 
 abstract contract ScriptUtils is Script {
     int256 public constant CONFIRMATIONS = 10;
@@ -476,5 +477,9 @@ abstract contract ScriptUtils is Script {
         btcOutputs[0] = BtcTxOut({amount: 2000, scriptPubKey: getAcceptPeginP2TRScriptPub(_committeePubKey)});
 
         return BtcTransaction({version: Constants.BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
+    }
+
+    function getTxid(BtcTransaction memory _btcTransaction) internal pure returns (bytes32) {
+        return BtcHelper.hash256(BtcTxEncoder.encodeTx(_btcTransaction));
     }
 }

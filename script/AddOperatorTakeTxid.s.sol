@@ -8,7 +8,6 @@ import {PegoutManager} from "src/PegoutManager.sol";
 import {ISignatureManager, OperatorTakeData} from "src/interfaces/ISignatureManager.sol";
 import {IStreamManager, Packet} from "src/interfaces/IStreamManager.sol";
 import {BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
-import {BtcTxEncoder} from "src/libraries/BtcTxEncoder.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
@@ -23,7 +22,6 @@ contract addOperatorTakeTxidsScript is ScriptUtils, ContractAddressManager {
 
     bytes operatorPubKey;
     bytes committeePubKey;
-    bytes userPubKey;
 
     IStreamManager streamManager;
     uint64 expectedStreamId;
@@ -40,7 +38,6 @@ contract addOperatorTakeTxidsScript is ScriptUtils, ContractAddressManager {
         bytes32 operatorXOnlyPubKey = memberRegistry.getMemberPublicKeys(getDeployerAddress()).covenantPubKey;
 
         operatorPubKey = BtcHelper.pubKeyXonlyToCompact(operatorXOnlyPubKey);
-        userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
         amount = 100_000; // 0.001 BTC
 
         // Calculate expected slot and packet numbers
@@ -71,14 +68,24 @@ contract addOperatorTakeTxidsScript is ScriptUtils, ContractAddressManager {
 
         // REIMBURSEMENT KICKOFF
         BtcTransaction memory kickoffTx = createReimbursementKickoffTx(committeePubKey, uint32(expectedSlotId));
-        bytes32 reimbursementKickoffTxid = BtcHelper.hash256(BtcTxEncoder.encodeTx(kickoffTx));
+        bytes32 reimbursementKickoffTxid = getTxid(kickoffTx);
 
         // OPERATOR TAKE
         BtcTransaction memory takeTx =
             createOperatorTakeTx(_acceptPeginTxid, reimbursementKickoffTxid, operatorPubKey, amount);
-        bytes32 takeTxid = BtcHelper.hash256(BtcTxEncoder.encodeTx(takeTx));
-        // Fake won txid for testing
-        bytes32 wonTxid = hex"1218969313e0736d427f4f1828fd9bfb2785df07053fe43baca6cb1a9438d349";
+        bytes32 takeTxid = getTxid(takeTx);
+
+        // CHALLENGE
+        BtcTransaction memory challengeTx = createChallengeTx(reimbursementKickoffTxid, committeePubKey);
+        bytes32 challengeTxid = getTxid(challengeTx);
+
+        // INPUT REVEALED
+        BtcTransaction memory inputRevealedTx = createRevealTx(challengeTxid, committeePubKey);
+        bytes32 inputRevealedTxid = getTxid(inputRevealedTx);
+
+        // OPERATOR WON
+        BtcTransaction memory wonTx = createOperatorWonTx(_acceptPeginTxid, inputRevealedTxid, operatorPubKey, amount);
+        bytes32 wonTxid = getTxid(wonTx);
 
         vm.startBroadcast(privKey);
         signatureManager.addOperatorTakeTxids(_acceptPeginTxid, takeTxid, wonTxid);

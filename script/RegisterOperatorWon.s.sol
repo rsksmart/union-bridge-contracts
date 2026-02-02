@@ -11,9 +11,12 @@ import {BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
+import {IChallengeManager} from "src/ChallengeManager.sol";
 
 contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
     PegoutManager pegoutManager;
+    IChallengeManager challengeManager;
+    IStreamManager streamManager;
 
     uint64 amount;
     bytes operatorPubKey;
@@ -21,13 +24,13 @@ contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
     bytes committeePubKey;
     bytes userPubKey;
 
-    IStreamManager streamManager;
     uint64 expectedStreamId;
     uint64 expectedPacketNumber;
     uint64 expectedSlotId;
 
     function setUp(bytes32 _acceptPeginTxid) internal {
         pegoutManager = PegoutManager(getPegoutManager());
+        challengeManager = getChallengeManager();
 
         ICommitteeRegistry registry = getCommitteeRegistry();
         IMemberRegistry memberRegistry = registry.memberRegistry();
@@ -70,19 +73,38 @@ contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
         pegoutManager.registerReimbursementKickoff(_acceptPeginTxid, kickoffTxSPVProof);
         vm.stopBroadcast();
 
-        // OPERATOR TAKE
-        BtcTransaction memory takeTx =
-            createOperatorTakeTx(_acceptPeginTxid, reimbursementKickoffTxid, operatorPubKey, amount);
-        BtcTxSPVProof memory takeTxSPVProof = createBtcTxSPVProof(takeTx);
+        // CHALLENGE
+        BtcTransaction memory challengeTx = createChallengeTx(reimbursementKickoffTxid, committeePubKey);
+        bytes32 challengeTxid = getTxid(challengeTx);
+        BtcTxSPVProof memory challengeSPVProof = createBtcTxSPVProof(challengeTx);
 
-        // Register operator take
+        // Register challenge
         vm.startBroadcast(getDeployerKey());
-        pegoutManager.registerOperatorTake(takeTxSPVProof);
+        challengeManager.registerChallenge(_acceptPeginTxid, challengeSPVProof);
+        vm.stopBroadcast();
+
+        // INPUT REVEALED
+        BtcTransaction memory inputRevealedTx = createRevealTx(challengeTxid, committeePubKey);
+        bytes32 inputRevealedTxid = getTxid(inputRevealedTx);
+        BtcTxSPVProof memory inputRevealedSPVProof = createBtcTxSPVProof(inputRevealedTx);
+
+        // Register input revealed
+        vm.startBroadcast(getDeployerKey());
+        challengeManager.registerInputRevealed(_acceptPeginTxid, inputRevealedSPVProof);
+        vm.stopBroadcast();
+
+        // OPERATOR WON
+        BtcTransaction memory wonTx = createOperatorWonTx(_acceptPeginTxid, inputRevealedTxid, operatorPubKey, amount);
+        BtcTxSPVProof memory wonTxSPVProof = createBtcTxSPVProof(wonTx);
+
+        // Register operator won
+        vm.startBroadcast(getDeployerKey());
+        pegoutManager.registerOperatorWon(wonTxSPVProof);
         vm.stopBroadcast();
 
         Slot memory slot = streamManager.getSlot(expectedStreamId, expectedPacketNumber, expectedSlotId);
         if (slot.state != SlotState.COMPLETED) {
-            revert("Slot should be marked as COMPLETED after operator take peg-out registration");
+            revert("Slot should be marked as COMPLETED after operator won peg-out registration");
         }
 
         console.log("=== Operator take Pegout registered successfully ===");

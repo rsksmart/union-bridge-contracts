@@ -93,4 +93,8 @@ bash "$SCRIPT_DIR/tools/get-slot-info.sh" -s "$STREAM_ID" -p "$PACKET_NUMBER" -l
 # It should be run independently, not as part of the main peg-flow
 bash "$SCRIPT_DIR/integration-test/operator-take-flow.sh" $ALPHANET_FLAG
 
+# Note: operator-won-flow.sh is a separate standalone test for operator advancing funds
+# It should be run independently, not as part of the main peg-flow
+bash "$SCRIPT_DIR/integration-test/operator-won-flow.sh" $ALPHANET_FLAG
+
 echo "================ PEGIN FLOW COMPLETE ================"
