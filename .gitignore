@@ -6,7 +6,15 @@ dry-run/
 cache/
 out/
 broadcast/*
-!broadcast/DeployScript.s.sol/
+!broadcast/*.sol/
+# Ignore broadcast files for local (31337) and regtest (33) networks only
+broadcast/*.sol/31337/
+broadcast/*.sol/33/
+# For testnet (31), alphanet (31), and mainnet (30), ignore timestamped run files but keep run-latest.json
+broadcast/*.sol/31/run-*.json
+!broadcast/*.sol/31/run-latest.json
+broadcast/*.sol/30/run-*.json
+!broadcast/*.sol/30/run-latest.json
 # macOS
 .DS_Store
 #rust

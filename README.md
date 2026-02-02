@@ -142,13 +142,21 @@ bash shell/size-report.sh
 
 ### Gas usage
 
-Also you can check the gas used the contracts:
+Also, you can check the gas used by the contracts:
 
 ```sh
 bash shell/gas-report.sh
 ```
 
-Contracts size needs to be lower than 24kb
+### Gas Consumption for different committee size
+
+Also, you can check the gas usage by the main functions based on the committee size:
+
+```sh
+bash shell/gas-consumption.sh
+```
+
+Gas consumption needs to be under 80% of max block size (max block size 6.8M gas)
 
 ## Release
 
@@ -166,11 +174,23 @@ Then we commit this changes and after they are merge we tag the release on githu
 Use [deployment script](https://book.getfoundry.sh/guides/scripting-with-solidity#deploying-our-contract) to deploy:
 
 ```sh
-bash shell/script/deploy/deploy.sh
+# Deploy to testnet
+bash shell/script/deploy/deploy-testnet.sh
+
+# Deploy to mainnet
+bash shell/script/deploy/deploy-mainnet.sh
+
+# Deploy to alphanet
+bash shell/script/deploy/deploy-alphanet.sh
+
+# Deploy to local network (anvil)
+bash shell/script/deploy/deploy-local.sh
+
+# Deploy to regtest
+bash shell/script/deploy/deploy-regtest.sh
 ```
 
 It will ask for a private key interactively in order to perform the deployment. The address associated with that private key must have sufficient funds to complete the deployment.
-If you want to deploy to a local network (regtest) use `deploy-local.sh`.
 
 ### RSKIP-502 PowPeg Bridge Configuration
 
@@ -260,6 +280,173 @@ For local testing with Anvil or Regtest, the deployment script automatically:
 - **Note:** BridgeMock has a default `lockingCap = 400 ether` hardcoded, so Step 2 above is not needed locally
 
 No manual configuration is required for local development. See `script/deploy/01_DeployImplAndProxy.s.sol` for implementation details.
+
+### Contract Verification
+
+Running any of the `shell/script/deploy/deploy-<testnet/mainnet>.sh` scripts will automatically attempt to verify all the contracts to the rsk explorer and rsk blockscout explorer for the selected network. You can also verify contracts directly as shown below.
+
+#### Verification Prerequisites
+
+- Deployed contracts (see Deployment section above)
+- Broadcast file from deployment (located in `broadcast/DeployScript.s.sol/<CHAIN_ID>/run-latest.json`)
+- Environment variables configured in `.env`:
+  - `BLOCKSCOUT_MAINNET_API` / `BLOCKSCOUT_TESTNET_API`
+  - `RSK_EXPLORER_MAINNET_API` / `RSK_EXPLORER_TESTNET_API` / `RSK_EXPLORER_ALPHANET_API`
+  - `RSK_EXPLORER_MAINNET_URL` / `RSK_EXPLORER_TESTNET_URL` / `RSK_EXPLORER_ALPHANET_URL`
+
+#### Verify All Contracts
+
+The easiest way to verify contracts is to use the network-specific verification scripts. You must specify which verifier to use:
+
+```bash
+# Verify on Blockscout (testnet)
+bash shell/script/deploy/verification/verify-testnet.sh blockscout
+
+# Verify on RSK Explorer (testnet)
+bash shell/script/deploy/verification/verify-testnet.sh rsk-explorer
+
+# Verify on RSK Explorer (alphanet - Blockscout not available)
+bash shell/script/deploy/verification/verify-alphanet.sh rsk-explorer
+
+# Verify on Blockscout (mainnet)
+bash shell/script/deploy/verification/verify-mainnet.sh blockscout
+
+# Verify on RSK Explorer (mainnet)
+bash shell/script/deploy/verification/verify-mainnet.sh rsk-explorer
+
+# With custom broadcast file
+bash shell/script/deploy/verification/verify-testnet.sh blockscout broadcast/DeployScript.s.sol/31/run-latest.json
+```
+
+**Available networks:**
+- `verify-testnet.sh` - Verify contracts on testnet
+- `verify-alphanet.sh` - Verify contracts on alphanet (RSK Explorer only, no Blockscout)
+- `verify-mainnet.sh` - Verify contracts on mainnet
+
+**Verifier options (required):**
+- `blockscout` - Verify on Blockscout
+- `rsk-explorer` - Verify on RSK Explorer
+
+**Note:** To verify on both Blockscout and RSK Explorer, run the script twice with different verifier parameters.
+
+These scripts will:
+
+1. Verify all implementation contracts (MemberRegistry, CommitteeRegistry, etc.)
+2. Verify all proxy contracts (ERC1967Proxy instances)
+3. Extract and format constructor arguments automatically
+
+**Note:** The verification scripts automatically source `.env` and determine the appropriate API URLs based on the network. They can be run independently without needing to run the deploy scripts first.
+
+#### Verify a Single Contract
+
+If you need to verify a single contract manually (e.g., if one contract failed during batch verification), you can use the verification functions directly.
+
+##### Verify a Single Implementation Contract
+
+For implementation contracts (non-proxy contracts):
+
+```bash
+# 1. Source .env from project root to get API URLs
+source .env
+
+# 2. Change to verification directory (to avoid directory path issues from subsequent scripts)
+cd shell/script/deploy/verification
+
+# 3. Source the verification functions
+source verify-functions.sh
+
+# 4. Verify a single implementation contract
+# Parameters: contract_name, contract_addr, chain_id, verifier, verifier_url
+verify_implementation \
+    "StreamManager" \
+    "0x0b75fc65eda9ded22f774f3c7045b52024959eb3" \
+    "31" \
+    "blockscout" \
+    "$BLOCKSCOUT_TESTNET_API"
+```
+
+
+```bash
+
+    local contract_name="$1"
+    local contract_addr="$2"
+    local chain_id="$3"
+    local verifier="$4"
+    local verifier_url="$5"
+
+verify_implementation \
+    "StreamManager" \
+    "0x0b75fc65eda9ded22f774f3c7045b52024959eb3" \
+    "31" \
+    "custom" \
+    "$RSK_EXPLORER_TESTNET_API"
+```
+
+**Note**: Ensure the contract name matches the contract address, otherwise it will not work. Same for the `verify_proxy` function.
+
+For RSK Explorer, use `"custom"` as the verifier:
+
+```bash
+verify_implementation \
+    "MemberRegistry" \
+    "0x7CE9FE52C2Dc2bdCD894310D0625187e707e1516" \
+    "31" \
+    "custom" \
+    "$RSK_EXPLORER_TESTNET_API"
+```
+
+**Note**: If anything is changed in the verification scripts, you need to `cd` back to the verification directory and run `source verify-functions.sh` again for the changes to take effect.
+
+##### Verify a Single Proxy Contract
+
+For proxy contracts (ERC1967Proxy), the function automatically extracts the implementation address and initialization data from the broadcast file:
+
+```bash
+# 1. Source .env from project root to get API URLs
+source .env
+
+# 2. Change to verification directory
+cd shell/script/deploy/verification
+
+# 3. Source the verification functions
+source verify-functions.sh
+
+# 4. Verify a single proxy contract (uses default broadcast file: broadcast/DeployScript.s.sol/<chain_id>/run-latest.json)
+# Parameters: contract_name, proxy_addr, chain_id, verifier, verifier_url, [broadcast_file]
+verify_proxy \
+    "StreamManager" \
+    "0xcd01fb1cd725e792af40b589796367157bfafe28" \
+    "31" \
+    "blockscout" \
+    "$BLOCKSCOUT_TESTNET_API"
+```
+
+For RSK Explorer:
+
+```bash
+verify_proxy \
+    "MemberRegistry" \
+    "0x7a2d268cb4502ed00f01a0f061c507da70fbf25e" \
+    "31" \
+    "custom" \
+    "$RSK_EXPLORER_TESTNET_API"
+```
+
+With a custom broadcast file (optional, last parameter):
+
+```bash
+verify_proxy \
+    "MemberRegistry" \
+    "0x7a2d268cb4502ed00f01a0f061c507da70fbf25e" \
+    "31" \
+    "blockscout" \
+    "$BLOCKSCOUT_TESTNET_API" \
+    "../../../broadcast/DeployScript.s.sol/31/custom-run.json"
+```
+
+**Note:** When using a custom broadcast file, use a relative path from the verification directory, or an absolute path.
+
+**Note:** The function automatically extracts the implementation address and initialization data from the broadcast file based on the proxy address. If no broadcast file is provided, it defaults to `broadcast/DeployScript.s.sol/<chain_id>/run-latest.json`. The initialization data is automatically processed to extract the actual `initialize()` call data by skipping the first 32 bytes (selector + padding).
 
 ### Rust crate with Bindings
 

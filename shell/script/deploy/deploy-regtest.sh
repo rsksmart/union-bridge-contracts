@@ -1,23 +1,20 @@
 #!/bin/bash
 set -e
-#https://book.getfoundry.sh/guides/scripting-with-solidity#deploying-our-contract
 
 # we go to the root of the project to avoid relative path issues
 CURRENT_PATH=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 cd "$CURRENT_PATH/../../.."
+
 # set up environment variables
 source .env
-RPC=http://node-use2-1.regtest.rskcomputing.net:4444
-echo "================ DEPLOY CONTRACTS TO REGTEST: $RPC ================"
-# deploy to regtest
-forge script \
-    script/deploy/DeployScript.s.sol \
-    --rpc-url $RPC \
-    --legacy \
-    --broadcast \
-    --gas-price 60000000 \
-    --slow \
-    -vvvv \
-    --interactives 1
-    #--etherscan-api-key <your_etherscan_api_key> \
-    #--verify \
+
+# Set network-specific variables
+export NETWORK=regtest
+export RPC=$RSK_REGTEST_RPC
+export CHAIN_ID=33
+
+# Disable verification for regtest
+SHOULD_VERIFY=false
+
+# Call the common deployment script with no verification
+"$CURRENT_PATH/deploy-common.sh" $SHOULD_VERIFY

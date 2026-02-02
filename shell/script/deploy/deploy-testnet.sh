@@ -9,12 +9,12 @@ cd "$CURRENT_PATH/../../.."
 source .env
 
 # Set network-specific variables
-export NETWORK=alphanet
-export RPC=$RSK_ALPHANET_RPC
-export RSK_EXPLORER_API=$RSK_EXPLORER_ALPHANET_API
-export RSK_EXPLORER_URL=$RSK_EXPLORER_ALPHANET_URL
+export NETWORK=testnet
+export RPC=$RSK_TESTNET_RPC
+export RSK_EXPLORER_API=$RSK_EXPLORER_TESTNET_API
+export RSK_EXPLORER_URL=$RSK_EXPLORER_TESTNET_URL
+export BLOCKSCOUT_API=$BLOCKSCOUT_TESTNET_API
 export CHAIN_ID=31
-# Note: BLOCKSCOUT_API is intentionally not set for alphanet (no Blockscout verification)
 
 # Call the common deployment script
 "$CURRENT_PATH/deploy-common.sh"

@@ -166,11 +166,23 @@ Then we commit this changes and after they are merge we tag the release on githu
 Use [deployment script](https://book.getfoundry.sh/guides/scripting-with-solidity#deploying-our-contract) to deploy:
 
 ```sh
-bash shell/script/deploy/deploy.sh
+# Deploy to testnet
+bash shell/script/deploy/deploy-testnet.sh
+
+# Deploy to mainnet
+bash shell/script/deploy/deploy-mainnet.sh
+
+# Deploy to alphanet
+bash shell/script/deploy/deploy-alphanet.sh
+
+# Deploy to local network (anvil)
+bash shell/script/deploy/deploy-local.sh
+
+# Deploy to regtest
+bash shell/script/deploy/deploy-regtest.sh
 ```
 
 It will ask for a private key interactively in order to perform the deployment. The address associated with that private key must have sufficient funds to complete the deployment.
-If you want to deploy to a local network (regtest) use `deploy-local.sh`.
 
 ### RSKIP-502 PowPeg Bridge Configuration
 
@@ -178,7 +190,7 @@ After deploying the contracts to testnet or alphanet, you must configure the Pow
 
 #### Prerequisites
 
-- Deployed contracts (see Deployment section above)
+- Deployed contracts (see [Deployment](#Deployment))
 - RbtcBridge contract address from deployment
 - Private key with authorization to configure the PowPeg Bridge
 - `cast` CLI tool from Foundry
