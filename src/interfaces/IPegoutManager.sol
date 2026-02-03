@@ -329,4 +329,14 @@ interface IPegoutManager {
     /// @param actual The actual operator won transaction id provided
     /// @param expected The expected operator won transaction id
     error OperatorWonTxidNotMatch(bytes32 actual, bytes32 expected);
+
+    /// @notice Thrown when the number of inputs in the kickoff transaction doesn't match the expected count
+    /// @param actual The actual number of inputs
+    /// @param expected The expected number of inputs
+    error InvalidKickoffInputCount(uint256 actual, uint256 expected);
+
+    /// @notice Thrown when the slot id in the kickoff transaction doesn't match the expected slot id
+    /// @param actual The actual slot id from the transaction input
+    /// @param expected The expected slot id from the stream position
+    error InvalidSlotId(uint32 actual, uint64 expected);
 }

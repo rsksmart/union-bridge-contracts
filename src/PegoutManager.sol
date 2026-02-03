@@ -360,8 +360,15 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         whenNotPaused
     {
         StreamPosition memory streamInfo = _validatePegStatus(acceptPeginTxid, PegStatus.ADVANCED);
-
         PegoutTempInfo storage pegoutInfo = _validateOperatorTakeAddress(acceptPeginTxid);
+
+        if (_kickoffSPV.btcTx.inputs.length != Constants.KICKOFF_INPUT_COUNT) {
+            revert InvalidKickoffInputCount(_kickoffSPV.btcTx.inputs.length, Constants.KICKOFF_INPUT_COUNT);
+        }
+
+        if (_kickoffSPV.btcTx.inputs[Constants.KICKOFF_VIN_SLOT_ID].vout != streamInfo.slotId) {
+            revert InvalidSlotId(_kickoffSPV.btcTx.inputs[Constants.KICKOFF_VIN_SLOT_ID].vout, streamInfo.slotId);
+        }
 
         // Calculate the transaction id for verification
         bytes32 txid = bitcoinManager.getBtcTxid(_kickoffSPV.btcTx);

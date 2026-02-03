@@ -1700,6 +1700,49 @@ contract PegoutManagerTest is Test, HelperContract {
         pegoutManager.registerReimbursementKickoff(setup.acceptPeginTxid, setup.reimbursementKickoffSPV);
     }
 
+    function test_registerReimbursementKickoff_Revert_InvalidSlotId() external {
+        // Arrange
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_reimbursementKickoff();
+        uint32 slotId = setup.reimbursementKickoffSPV.btcTx.inputs[Constants.KICKOFF_VIN_SLOT_ID].vout;
+        setup.reimbursementKickoffSPV.btcTx.inputs[Constants.KICKOFF_VIN_SLOT_ID].vout += 1; // Modify the tx to break slot id check
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IPegoutManager.InvalidSlotId.selector, slotId + 1, slotId));
+
+        // Act
+        vm.prank(opAddress);
+        pegoutManager.registerReimbursementKickoff(setup.acceptPeginTxid, setup.reimbursementKickoffSPV);
+    }
+
+    function test_registerReimbursementKickoff_Revert_InvalidKickoffInputCount() external {
+        // Arrange
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_reimbursementKickoff();
+        BtcTxIn[] memory modifiedInputs = new BtcTxIn[](setup.reimbursementKickoffSPV.btcTx.inputs.length + 1);
+        for (uint256 i = 0; i < setup.reimbursementKickoffSPV.btcTx.inputs.length; i++) {
+            modifiedInputs[i] = setup.reimbursementKickoffSPV.btcTx.inputs[i];
+        }
+        modifiedInputs[modifiedInputs.length - 1] = BtcTxIn({
+            txId: 0xabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd,
+            vout: 0,
+            sequence: 4294967295,
+            scriptSig: hex""
+        });
+        setup.reimbursementKickoffSPV.btcTx.inputs = modifiedInputs;
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IPegoutManager.InvalidKickoffInputCount.selector,
+                Constants.KICKOFF_INPUT_COUNT + 1,
+                Constants.KICKOFF_INPUT_COUNT
+            )
+        );
+
+        // Act
+        vm.prank(opAddress);
+        pegoutManager.registerReimbursementKickoff(setup.acceptPeginTxid, setup.reimbursementKickoffSPV);
+    }
+
     function test_registerOperatorWon_Success_UnpausedContract() external {
         // Arrange
         pauseAndUnpauseContracts();
