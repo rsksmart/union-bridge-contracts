@@ -476,9 +476,8 @@ interface IStreamManager {
     /// @param slotId The slot ID
     error NonExistentSlot(uint256 streamId, uint256 packetNumber, uint256 slotId);
 
-    /// @notice Thrown when a stream is already initialized
-    /// @param streamId The stream ID that is already initialized
-    error StreamAlreadyInitialized(uint256 streamId);
+    /// @notice Thrown when streams are already initialized
+    error StreamsAlreadyInitialized();
 
     /// @notice Thrown when peg-in confirmations are invalid
     /// @param confirmations The invalid number of confirmations
@@ -541,8 +540,9 @@ interface IStreamManager {
     );
 
     /// @notice Thrown when the stream settings length is invalid
-    /// @param streamSettingsLength The number of stream settings
-    error InvalidStreamSettingsLength(uint256 streamSettingsLength);
+    /// @param actualLength The number of stream settings
+    /// @param expectedLength The number of stream settings
+    error InvalidStreamSettingsLength(uint256 actualLength, uint256 expectedLength);
 
     // --- TESTNET ONLY: Force close committee functionality ---
     // TODO: Remove before mainnet deployment

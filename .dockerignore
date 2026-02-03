@@ -1,3 +1,8 @@
+
+.vscode
 cache
 out
 target
+broadcast
+docs
+crate

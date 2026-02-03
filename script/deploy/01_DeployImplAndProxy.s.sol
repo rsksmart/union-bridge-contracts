@@ -108,7 +108,7 @@ contract DeployImplAndProxy is ScriptUtils {
         }
 
         StreamManager streamManager =
-            deployStreamManager(upgradableOwner, accessManager, bitcoinManager, streamManagerSettings, streamSettings);
+            deployStreamManager(upgradableOwner, accessManager, bitcoinManager, streamManagerSettings);
         if (streamManager.owner() != upgradableOwner) {
             revert("StreamManager owner is not the upgradable owner");
         }
@@ -117,6 +117,11 @@ contract DeployImplAndProxy is ScriptUtils {
         }
         if (address(streamManager.bitcoinManager()) != address(bitcoinManager)) {
             revert("StreamManager bitcoinManager is not the bitcoinManager address");
+        }
+        // Initialize the streams
+        initializeStreams(streamManager, streamSettings);
+        if (streamManager.getStreamsLength() != streamSettings.length) {
+            revert("StreamManager streams not initialized correctly");
         }
 
         RbtcBridge rbtcBridge = deployRbtcBridge(upgradableOwner, bridgeAddress, accessManager);
@@ -451,14 +456,8 @@ contract DeployImplAndProxy is ScriptUtils {
         address _upgradableOwner,
         AccessManager _accessManager,
         BitcoinManager _bitcoinManager,
-        StreamManagerSettings memory _settings,
-        StreamSettings[] memory _streamSettings
+        StreamManagerSettings memory _settings
     ) public returns (StreamManager) {
-        uint256 length = _streamSettings.length;
-        if (length == 0 || length > uint64(StreamDenomination.LENGTH)) {
-            revert("StreamManager settings length does not match denominations length or is zero");
-        }
-
         string memory contractName = "StreamManager.sol";
         if (vm.isContext(VmSafe.ForgeContext.TestGroup)) {
             contractName = "StreamManagerHarness.sol";
@@ -466,12 +465,21 @@ contract DeployImplAndProxy is ScriptUtils {
 
         (, address proxyAdddress) = deployContractAndUUPSProxy(
             contractName,
-            abi.encodeCall(
-                StreamManager.initialize,
-                (_upgradableOwner, _accessManager, _bitcoinManager, _settings, _streamSettings)
-            )
+            abi.encodeCall(StreamManager.initialize, (_upgradableOwner, _accessManager, _bitcoinManager, _settings))
         );
         return StreamManager(proxyAdddress);
+    }
+
+    function initializeStreams(StreamManager _streamManager, StreamSettings[] memory _streamSettings) public {
+        uint256 length = _streamSettings.length;
+        if (length == 0 || length > uint64(StreamDenomination.LENGTH)) {
+            revert("StreamManager settings length does not match denominations length or is zero");
+        }
+
+        vm.startBroadcast(getDeployerKey());
+        // Set a high gas limit to avoid out of gas exception as RSK does not estimate correctly the gas needed for this transaction
+        _streamManager.initializeStreams{gas: 1200000}(_streamSettings);
+        vm.stopBroadcast();
     }
 
     function deploySignatureManager(

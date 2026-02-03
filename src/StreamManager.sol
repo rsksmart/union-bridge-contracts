@@ -53,13 +53,11 @@ contract StreamManager is IStreamManager, BaseProxy {
     /// @param _accessManager The address of the AccessManager contract
     /// @param _bitcoinManager The BitcoinManager contract address
     /// @param _settings Struct with the settings for the StreamManager including security bond percentages
-    /// @param _streamSettings Array of structs with the settings for each stream including confirmation counts and timelock settings
     function initialize(
         address _initialOwner,
         IAccessManager _accessManager,
         IBitcoinManager _bitcoinManager,
-        StreamManagerSettings memory _settings,
-        StreamSettings[] memory _streamSettings
+        StreamManagerSettings memory _settings
     ) public virtual initializer {
         // Validate that the addresses are not zero
         if (address(_accessManager) == address(0) || address(_bitcoinManager) == address(0)) {
@@ -76,21 +74,31 @@ contract StreamManager is IStreamManager, BaseProxy {
         _setSecurityBondPercentage(Role.OPERATOR, _settings.securityBondPercentageOperator);
         _setMinimumSecurityDeposit(_settings.minimumSecurityDeposit);
         _setDisablementPaymentsPerChallenge(_settings.disablementPaymentsPerChallenge);
+    }
 
-        // Validate the denominations
+    /// @notice Initializes the streams with the given settings
+    /// @param _streamSettings Array of structs with the settings for each stream including confirmation counts and timelock settings
+    function initializeStreams(StreamSettings[] memory _streamSettings) external onlyOwner {
+        // Validate the stream settings length
         uint256 length = _streamSettings.length;
-        if (length > Constants.MAX_DENOMINATIONS_SIZE) {
-            revert tooManyDenominations(Constants.MAX_DENOMINATIONS_SIZE);
+        uint256 expectedLength = uint256(StreamDenomination.LENGTH);
+        if (length != expectedLength) {
+            revert InvalidStreamSettingsLength(length, expectedLength);
         }
 
-        // Validate the stream settings
-        if (length == 0) {
-            revert InvalidStreamSettingsLength(length);
+        // Validate that the stream is not already initialized
+        if (streams.length > 0) {
+            revert StreamsAlreadyInitialized();
         }
+
         // Initialize the streams
         for (uint64 i = 0; i < length; i++) {
+            // Validate the settings
             _validateTimelockSettings(_streamSettings[i].timelockSettings);
-            if (_streamSettings[i].peginConfirmations == 0 || _streamSettings[i].pegoutConfirmations == 0) {
+            if (
+                _streamSettings[i].denomination == 0 || _streamSettings[i].peginConfirmations == 0
+                    || _streamSettings[i].pegoutConfirmations == 0
+            ) {
                 revert InvalidStreamSettings(
                     i,
                     _streamSettings[i].denomination,

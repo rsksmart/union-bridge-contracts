@@ -5,7 +5,7 @@ export IS_TEST=true
 echo "================ IS TEST: $IS_TEST ================"
 # simulate deploy against rsk testnet
 bash shell/script/deploy/simulate-deploy.sh
-# gas report (Is also runs tests)
+# gas report (It also runs tests)
 bash shell/gas-report.sh
 # packet creation flow is running in the peg flow
 bash shell/script/integration-test/local-peg-full-flow.sh

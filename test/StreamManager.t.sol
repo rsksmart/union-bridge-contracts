@@ -10,13 +10,19 @@ import {
     Stream,
     IStreamManager,
     StreamDenomination,
-    TimelockSettings
+    TimelockSettings,
+    StreamManagerSettings,
+    StreamSettings
 } from "src/interfaces/IStreamManager.sol";
 import {IAccessManager} from "src/interfaces/IAccessManager.sol";
 import {StreamPosition, PegStatus} from "src/interfaces/IPegCommonTypes.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Committee, Role} from "src/interfaces/ICommitteeRegistry.sol";
+import {StreamManagerSettingsConfig} from "script/helpers/StreamManagerSettingsConfig.sol";
+import {ChainIds} from "src/libraries/Network.sol";
+import {StreamManagerHarness} from "test/helpers/StreamManagerHarness.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract StreamManagerTest is Test, HelperContract {
     uint64 internal setupStreamId;
@@ -26,6 +32,24 @@ contract StreamManagerTest is Test, HelperContract {
         (Committee memory expectedCommittee,) = setup_completeCommittee();
 
         setupStreamId = expectedCommittee.streamId;
+    }
+
+    function setup_cleanStreamManager() internal returns (StreamManagerHarness) {
+        StreamManagerSettings memory streamManagerSettings =
+            StreamManagerSettingsConfig.getStreamManagerSettings(ChainIds.LOCAL, true);
+
+        address streamManagerImplementation = address(new StreamManagerHarness());
+        return StreamManagerHarness(
+            address(
+                new ERC1967Proxy(
+                    streamManagerImplementation,
+                    abi.encodeCall(
+                        StreamManagerHarness.initialize,
+                        (address(this), accessManager, bitcoinManager, streamManagerSettings)
+                    )
+                )
+            )
+        );
     }
 
     function test_lockSlot_Success() external {
@@ -1494,5 +1518,301 @@ contract StreamManagerTest is Test, HelperContract {
 
         // Act
         streamManager.getEnablerScriptPubKey(setupStreamId, invalidPacketNumber);
+    }
+
+    // ==================== INITIALIZE STREAMS TESTS ====================
+
+    function test_initializeStreams_Success() external {
+        // Arrange
+        StreamManagerHarness cleanStreamManager = setup_cleanStreamManager();
+        StreamSettings[] memory streamSettings = setup_streamSettings();
+        uint256 expectedLength = uint256(StreamDenomination.LENGTH);
+
+        //Act
+        cleanStreamManager.initializeStreams(streamSettings);
+
+        //Assert
+        assertEq(
+            cleanStreamManager.getStreamsLength(),
+            expectedLength,
+            "Streams length should be equal to the number of denominations"
+        );
+        for (uint64 i = 0; i < expectedLength; i++) {
+            Stream memory stream = cleanStreamManager.getStreamById(i);
+            assertEq(
+                stream.denomination,
+                streamSettings[i].denomination,
+                "Stream denomination should be equal to the denomination"
+            );
+            assertEq(
+                stream.peginConfirmations,
+                streamSettings[i].peginConfirmations,
+                "Pegin confirmations should be equal to the pegin confirmations"
+            );
+            assertEq(
+                stream.pegoutConfirmations,
+                streamSettings[i].pegoutConfirmations,
+                "Pegout confirmations should be equal to the pegout confirmations"
+            );
+        }
+    }
+
+    function test_initializeStreams_Revert_NotOwner() external {
+        // Arrange
+        StreamManagerHarness cleanStreamManager = setup_cleanStreamManager();
+        StreamSettings[] memory streamSettings = setup_streamSettings();
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(0x123)));
+
+        // Act - Try to call as non-owner
+        vm.prank(address(0x123));
+        cleanStreamManager.initializeStreams(streamSettings);
+    }
+
+    function test_initializeStreams_Revert_EmptyArray() external {
+        // Arrange
+        StreamManagerHarness cleanStreamManager = setup_cleanStreamManager();
+        StreamSettings[] memory streamSettings = new StreamSettings[](0);
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IStreamManager.InvalidStreamSettingsLength.selector, 0, uint256(StreamDenomination.LENGTH)
+            )
+        );
+
+        // Act
+        cleanStreamManager.initializeStreams(streamSettings);
+    }
+
+    function test_initializeStreams_Revert_TooManyDenominations() external {
+        // Arrange
+        StreamManagerHarness cleanStreamManager = setup_cleanStreamManager();
+        uint64[] memory denominations = StreamManagerSettingsConfig.getDenominations();
+        uint256 arraySize = uint256(StreamDenomination.LENGTH) + 1;
+        StreamSettings[] memory streamSettings = new StreamSettings[](arraySize);
+        for (uint256 i = 0; i < arraySize; i++) {
+            // Use valid streamId (modulo to stay within valid range)
+            uint64 streamId = uint64(i % uint256(StreamDenomination.LENGTH));
+            streamSettings[i] =
+                StreamManagerSettingsConfig.getStreamSettings(ChainIds.LOCAL, streamId, denominations[streamId], true);
+        }
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IStreamManager.InvalidStreamSettingsLength.selector, arraySize, uint256(StreamDenomination.LENGTH)
+            )
+        );
+
+        // Act
+        cleanStreamManager.initializeStreams(streamSettings);
+    }
+
+    function test_initializeStreams_Revert_ZeroDenomination() external {
+        // Arrange
+        StreamManagerHarness cleanStreamManager = setup_cleanStreamManager();
+        StreamSettings[] memory streamSettings = setup_streamSettings();
+        streamSettings[0].denomination = 0; // Invalid
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IStreamManager.InvalidStreamSettings.selector,
+                0,
+                0,
+                streamSettings[0].peginConfirmations,
+                streamSettings[0].pegoutConfirmations
+            )
+        );
+
+        // Act
+        cleanStreamManager.initializeStreams(streamSettings);
+    }
+
+    function test_initializeStreams_Revert_ZeroPeginConfirmations() external {
+        // Arrange
+        StreamManagerHarness cleanStreamManager = setup_cleanStreamManager();
+        StreamSettings[] memory streamSettings = setup_streamSettings();
+        streamSettings[0].peginConfirmations = 0; // Invalid
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IStreamManager.InvalidStreamSettings.selector,
+                0,
+                streamSettings[0].denomination,
+                0,
+                streamSettings[0].pegoutConfirmations
+            )
+        );
+
+        // Act
+        cleanStreamManager.initializeStreams(streamSettings);
+    }
+
+    function test_initializeStreams_Revert_ZeroPegoutConfirmations() external {
+        // Arrange
+        StreamManagerHarness cleanStreamManager = setup_cleanStreamManager();
+        StreamSettings[] memory streamSettings = setup_streamSettings();
+        streamSettings[0].pegoutConfirmations = 0; // Invalid
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IStreamManager.InvalidStreamSettings.selector,
+                0,
+                streamSettings[0].denomination,
+                streamSettings[0].peginConfirmations,
+                0
+            )
+        );
+
+        // Act
+        cleanStreamManager.initializeStreams(streamSettings);
+    }
+
+    function test_initializeStreams_Revert_InvalidTimelockSettings_ZeroShortTimelock() external {
+        // Arrange
+        StreamManagerHarness cleanStreamManager = setup_cleanStreamManager();
+        StreamSettings[] memory streamSettings = setup_streamSettings();
+        streamSettings[0].timelockSettings.shortTimelock = 0; // Invalid
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IStreamManager.InvalidTimelockSettings.selector, streamSettings[0].timelockSettings)
+        );
+
+        // Act
+        cleanStreamManager.initializeStreams(streamSettings);
+    }
+
+    function test_initializeStreams_Revert_InvalidTimelockSettings_ZeroLongTimelock() external {
+        // Arrange
+        StreamManagerHarness cleanStreamManager = setup_cleanStreamManager();
+        StreamSettings[] memory streamSettings = setup_streamSettings();
+        streamSettings[0].timelockSettings.longTimelock = 0; // Invalid
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IStreamManager.InvalidTimelockSettings.selector, streamSettings[0].timelockSettings)
+        );
+
+        // Act
+        cleanStreamManager.initializeStreams(streamSettings);
+    }
+
+    function test_initializeStreams_Revert_InvalidTimelockSettings_ZeroRequestPeginTimelock() external {
+        // Arrange
+        StreamManagerHarness cleanStreamManager = setup_cleanStreamManager();
+        StreamSettings[] memory streamSettings = setup_streamSettings();
+        streamSettings[0].timelockSettings.requestPeginTimelock = 0; // Invalid
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IStreamManager.InvalidTimelockSettings.selector, streamSettings[0].timelockSettings)
+        );
+
+        // Act
+        cleanStreamManager.initializeStreams(streamSettings);
+    }
+
+    function test_initializeStreams_Revert_InvalidTimelockSettings_ZeroOpWonTimelock() external {
+        // Arrange
+        StreamManagerHarness cleanStreamManager = setup_cleanStreamManager();
+        StreamSettings[] memory streamSettings = setup_streamSettings();
+        streamSettings[0].timelockSettings.opWonTimelock = 0; // Invalid
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IStreamManager.InvalidTimelockSettings.selector, streamSettings[0].timelockSettings)
+        );
+
+        // Act
+        cleanStreamManager.initializeStreams(streamSettings);
+    }
+
+    function test_initializeStreams_Revert_InvalidTimelockSettings_ZeroClaimGateTimelock() external {
+        // Arrange
+        StreamManagerHarness cleanStreamManager = setup_cleanStreamManager();
+        StreamSettings[] memory streamSettings = setup_streamSettings();
+        streamSettings[0].timelockSettings.claimGateTimelock = 0; // Invalid
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IStreamManager.InvalidTimelockSettings.selector, streamSettings[0].timelockSettings)
+        );
+
+        // Act
+        cleanStreamManager.initializeStreams(streamSettings);
+    }
+
+    function test_initializeStreams_Revert_InvalidTimelockSettings_ZeroInputNotRevealedTimelock() external {
+        // Arrange
+        StreamManagerHarness cleanStreamManager = setup_cleanStreamManager();
+        StreamSettings[] memory streamSettings = setup_streamSettings();
+        streamSettings[0].timelockSettings.inputNotRevealedTimelock = 0; // Invalid
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IStreamManager.InvalidTimelockSettings.selector, streamSettings[0].timelockSettings)
+        );
+
+        // Act
+        cleanStreamManager.initializeStreams(streamSettings);
+    }
+
+    function test_initializeStreams_Revert_InvalidTimelockSettings_ZeroOpNoCosignTimelock() external {
+        // Arrange
+        StreamManagerHarness cleanStreamManager = setup_cleanStreamManager();
+        StreamSettings[] memory streamSettings = setup_streamSettings();
+        streamSettings[0].timelockSettings.opNoCosignTimelock = 0; // Invalid
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IStreamManager.InvalidTimelockSettings.selector, streamSettings[0].timelockSettings)
+        );
+
+        // Act
+        cleanStreamManager.initializeStreams(streamSettings);
+    }
+
+    function test_initializeStreams_Revert_InvalidTimelockSettings_ZeroWtNoChallengeTimelock() external {
+        // Arrange
+        StreamManagerHarness cleanStreamManager = setup_cleanStreamManager();
+        StreamSettings[] memory streamSettings = setup_streamSettings();
+        streamSettings[0].timelockSettings.wtNoChallengeTimelock = 0; // Invalid
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IStreamManager.InvalidTimelockSettings.selector, streamSettings[0].timelockSettings)
+        );
+
+        // Act
+        cleanStreamManager.initializeStreams(streamSettings);
+    }
+
+    function test_initializeStreams_Revert_StreamsAlreadyInitialized() external {
+        // Arrange - Streams are already initialized in setUp, so try to initialize streams again
+        StreamSettings[] memory streamSettings = setup_streamSettings();
+        address owner = streamManager.owner();
+
+        // Assert - Should revert because streams are already initialized
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.StreamsAlreadyInitialized.selector));
+
+        // Act
+        vm.prank(owner);
+        streamManager.initializeStreams(streamSettings);
+    }
+
+    function setup_streamSettings() internal view returns (StreamSettings[] memory streamSettings) {
+        uint64[] memory denominations = StreamManagerSettingsConfig.getDenominations();
+        uint256 length = uint256(StreamDenomination.LENGTH);
+        streamSettings = new StreamSettings[](length);
+        for (uint64 i = 0; i < length; i++) {
+            streamSettings[i] = StreamManagerSettingsConfig.getStreamSettings(ChainIds.LOCAL, i, denominations[i], true);
+        }
+        return streamSettings;
     }
 }

@@ -175,10 +175,6 @@ library Constants {
     /// @dev When 80% of slots are filled, a new committee is created
     uint8 constant SLOT_USAGE_THRESHOLD = 80;
 
-    /// @dev Maximum number of stream denominations supported by the bridge
-    /// @dev Limits the number of different Bitcoin amounts that can be processed
-    uint64 constant MAX_DENOMINATIONS_SIZE = 10;
-
     /// @dev Maximum number of candidates to a committee for a particular role and stream denominations
     uint256 constant MAX_CANDIDATES_SIZE_PER_ROLE = 100;
 
