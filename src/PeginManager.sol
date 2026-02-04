@@ -151,6 +151,17 @@ contract PeginManager is IPeginManager, PegManagerBase {
 
         StreamPosition memory streamPos = _reserveSlot(stream.streamId, packetNumber, acceptPeginSignatureData.txid);
 
+        // Check if we need a new packet/committee
+        if (streamPos.slotId == Constants.SLOT_USAGE_THRESHOLD - 1) {
+            committeeRegistry.createCommittee(stream.streamId);
+        }
+
+        if (streamPos.slotId >= Constants.SLOT_USAGE_THRESHOLD) {
+            if (committeeRegistry.isPendingCommitteeExpired(stream.streamId)) {
+                committeeRegistry.createCommittee(stream.streamId);
+            }
+        }
+
         // slither-disable-next-line reentrancy-events
         emit PeginRequested(
             committeeId,
@@ -523,17 +534,6 @@ contract PeginManager is IPeginManager, PegManagerBase {
             rbtcAmount,
             _acceptPeginTxOutput.scriptPubKey
         );
-
-        // Check if we need a new packet/committee
-        if (stream.slotId == Constants.SLOT_USAGE_THRESHOLD - 1) {
-            committeeRegistry.createCommittee(stream.streamId);
-        }
-
-        if (stream.slotId >= Constants.SLOT_USAGE_THRESHOLD) {
-            if (committeeRegistry.isPendingCommitteeExpired(stream.streamId)) {
-                committeeRegistry.createCommittee(stream.streamId);
-            }
-        }
 
         // Mint RBTC to the destination address via RbtcBridge
         rbtcBridge.mintRbtc(payable(requestTempInfo.rskDestinationAddress), rbtcAmount);

@@ -170,6 +170,74 @@ contract PeginManagerTest is Test, HelperContract {
         assertEq(peginTempInfo.rejectPeginTxid, bytes32(0), "Incorrect peg in temp info rejectPeginTxid");
     }
 
+    function test_requestPegin_newPacketCreated() external {
+        // Arrange
+        // Create pegins until the new packet threshold is reached
+        setup_multipleRequestAndAcceptPeginFlows(Constants.SLOT_USAGE_THRESHOLD - 1);
+        Committee memory expectedCommittee = setup_getExpectedSecondCommittee();
+
+        // Arrange
+        (BtcTransaction memory btcTransaction,) = getBtcRequestPeginTx();
+        bridgeMock.setBtcBlockchainBestChainHeight(BEST_CHAIN_HEIGHT);
+        BtcTxSPVProof memory requestPeginTxSPVProof = createBtcTxSPVProof(btcTransaction);
+        uint128 committeeId = COMMITTEE_ID_STREAM_1_COMMITTEE_2;
+        vm.roll(BLOCK_COMMITTEE_2);
+        vm.warp(BLOCK_COMMITTEE_2);
+
+        // Assert - expect NewPendingCommittee event during requestPegin
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.NewPendingCommittee(committeeId, expectedCommittee);
+
+        // Act - requestPegin should trigger committee creation at slot 79 (SLOT_USAGE_THRESHOLD - 1)
+        peginManager.requestPegin(requestPeginTxSPVProof);
+
+        // Assert - verify committee was created
+        Committee memory pendingCommittee = registry.getPendingCommittee(setupStreamId);
+        assertEq(pendingCommittee.streamId, expectedCommittee.streamId, "Pending committee streamId should match");
+        assertTrue(pendingCommittee.isPending, "Committee should be pending");
+    }
+
+    function test_requestPegin_newPacketCreated_WithBlockedSlots() external {
+        // Arrange
+        // Create pegins until slot 78 (one before threshold)
+        setup_multipleRequestAndAcceptPeginFlows(Constants.SLOT_USAGE_THRESHOLD - 2);
+        Committee memory expectedCommittee = setup_getExpectedSecondCommittee();
+
+        // Block some slots that would be in the 79-100 range to test edge case
+        // First, request a pegin at slot 78
+        (BtcTransaction memory btcTransaction1,) = getBtcRequestPeginTx();
+        btcTransaction1.inputs[0].scriptSig = abi.encodePacked(bytes32(uint256(1)));
+        BtcTxSPVProof memory requestPeginTxSPVProof1 = createBtcTxSPVProof(btcTransaction1);
+        bridgeMock.setBtcBlockchainBestChainHeight(BEST_CHAIN_HEIGHT);
+        peginManager.requestPegin(requestPeginTxSPVProof1);
+
+        // Now request pegin at slot 79 (threshold - 1) which should trigger committee creation
+        (BtcTransaction memory btcTransaction2,) = getBtcRequestPeginTx();
+        btcTransaction2.inputs[0].scriptSig = abi.encodePacked(bytes32(uint256(2)));
+        BtcTxSPVProof memory requestPeginTxSPVProof2 = createBtcTxSPVProof(btcTransaction2);
+        uint128 committeeId = COMMITTEE_ID_STREAM_1_COMMITTEE_2;
+        vm.roll(BLOCK_COMMITTEE_2);
+        vm.warp(BLOCK_COMMITTEE_2);
+
+        // Assert - expect NewPendingCommittee event during requestPegin even if slots might get blocked later
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.NewPendingCommittee(committeeId, expectedCommittee);
+
+        // Act - requestPegin should trigger committee creation
+        peginManager.requestPegin(requestPeginTxSPVProof2);
+
+        // Now block the slot to verify committee was already created
+        bytes32 requestPeginTxid2 = getBtcTxid(btcTransaction2);
+        StreamPosition memory streamPosition = peginManager.getStreamPositionByRequestPegin(requestPeginTxid2);
+        vm.prank(address(peginManager));
+        streamManager.blockSlot(streamPosition.streamId, streamPosition.packetNumber, streamPosition.slotId);
+
+        // Assert - verify committee was created before slot was blocked
+        Committee memory pendingCommittee = registry.getPendingCommittee(setupStreamId);
+        assertEq(pendingCommittee.streamId, expectedCommittee.streamId, "Pending committee streamId should match");
+        assertTrue(pendingCommittee.isPending, "Committee should be pending");
+    }
+
     function test_requestPegin_Revert_PeginAlreadyRequested() external {
         // Arrange
         (BtcTransaction memory btcTransaction,) = getBtcRequestPeginTx();
@@ -292,11 +360,12 @@ contract PeginManagerTest is Test, HelperContract {
         setup_multipleRequestAndAcceptPeginFlows(Constants.SLOT_USAGE_THRESHOLD - 1);
         Committee memory expectedCommittee = setup_getExpectedSecondCommittee();
 
-        // Arrange
-        (BtcTransaction memory peginTx,) = setup_requestPeginFlow();
-        BtcTransaction memory btcTransaction = getBtcAcceptPeginTx(peginTx);
-        // Create Pegin accepted tx struct information
-        BtcTxSPVProof memory peginAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
+        // Arrange - prepare for requestPegin that will trigger committee creation
+        (BtcTransaction memory peginTx,) = getBtcRequestPeginTx();
+        Stream memory stream = streamManager.getStream(VALUE);
+        bridgeMock.setBtcBlockchainBestChainHeight(BEST_CHAIN_HEIGHT);
+        bridgeMock.setBtcTransactionConfirmations(CONFIRMATIONS);
+        BtcTxSPVProof memory requestPeginTxSPVProof = createBtcTxSPVProof(peginTx);
         uint128 committeeId = COMMITTEE_ID_STREAM_1_COMMITTEE_2;
         vm.roll(BLOCK_COMMITTEE_2);
         vm.warp(BLOCK_COMMITTEE_2);
@@ -304,7 +373,19 @@ contract PeginManagerTest is Test, HelperContract {
         vm.expectEmit(address(registry));
         emit ICommitteeRegistry.NewPendingCommittee(committeeId, expectedCommittee);
 
-        // Act
+        // Act - requestPegin will trigger committee creation at slot 79 (SLOT_USAGE_THRESHOLD - 1)
+        peginManager.requestPegin(requestPeginTxSPVProof);
+
+        // Update the best chain for timelock verifications
+        bridgeMock.setBtcBlockchainBestChainHeight(
+            BEST_CHAIN_HEIGHT + int256(uint256(stream.timelockSettings.requestPeginTimelock))
+        );
+
+        BtcTransaction memory btcTransaction = getBtcAcceptPeginTx(peginTx);
+        // Create Pegin accepted tx struct information
+        BtcTxSPVProof memory peginAcceptedTxSPVProof = createBtcTxSPVProof(btcTransaction);
+
+        // Act - acceptPegin (committee already created during requestPegin)
         peginManager.acceptPegin(peginAcceptedTxSPVProof);
 
         // Now we should provide members info to create the committee/packet. This works with second group of members, their indexes start at registry.committeeMemberCount()
