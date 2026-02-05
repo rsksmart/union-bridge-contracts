@@ -503,6 +503,8 @@ abstract contract HelperContract is Test, TestUtils {
         BtcTxSPVProof inputRevealedSPV;
         BtcTxSPVProof inputNotRevealedSPV;
         BtcTxSPVProof operatorWonSPV;
+        BtcTxSPVProof stopOperatorWonSPV;
+        BtcTxSPVProof acceptPeginSPV;
         Stream stream;
         uint64 packetNumber;
         uint64 slotId;
@@ -518,7 +520,8 @@ abstract contract HelperContract is Test, TestUtils {
         (bytes32 acceptPeginTxid,,) = setup_requestAndAcceptPeginFlow(COMMITTEE_ID_STREAM_1_COMMITTEE_1);
 
         // Get the accept peg-in tx id that will be spent in the peg-out
-        setup.acceptPeginTxid = acceptPeginTxid;
+        setup.acceptPeginSPV = createBtcTxSPVProof(acceptPeginTx);
+        setup.acceptPeginTxid = bitcoinManager.getBtcTxid(acceptPeginTx);
         setup.stream = streamManager.getStream(VALUE);
         setup.userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
 
@@ -1050,6 +1053,8 @@ abstract contract HelperContract is Test, TestUtils {
         setup.operatorWonSPV = createBtcTxSPVProof(
             createOperatorWonTx(setup.acceptPeginTxid, inputRevealedTxid, operatorDisputePubKeyCompact, VALUE)
         );
+
+        setup.stopOperatorWonSPV = createBtcTxSPVProof(createStopOperatorWonTx(inputRevealedTxid));
 
         vm.prank(operatorAddress);
         challengeManager.registerInputRevealed(setup.acceptPeginTxid, setup.inputRevealedSPV);

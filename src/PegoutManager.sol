@@ -276,7 +276,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
             if (block.timestamp <= operatorTakeUpdatedAt + operatorTakeTimeout) {
                 revert OperatorTakeTimeoutNotExpired(operatorTakeUpdatedAt, operatorTakeUpdatedAt + operatorTakeTimeout);
             }
-        } else if (streamInfo.pegStatus == PegStatus.CHALLENGE) {
+        } else if (streamInfo.pegStatus == PegStatus.CHALLENGE || streamInfo.pegStatus == PegStatus.REVEALED) {
             // Only challenge manager can call this function when input not revealed is registered
             accessManager.canTriggerOperatorTake(_msgSender());
             newStatus = PegStatus.OP_SELECTED;

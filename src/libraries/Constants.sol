@@ -116,12 +116,17 @@ library Constants {
     /// @dev Number of inputs in a challenge Bitcoin transaction
     uint32 constant CHALLENGE_INPUT_COUNT = 1;
 
+    /// @dev Number of inputs in an input not revealed Bitcoin transaction
     uint32 constant INPUT_NOT_REVEALED_INPUT_COUNT = 1;
 
-    /// @dev Input index for revealed vin challenge in input revealed Bitcoin transactions
+    /// @dev Input index for challenge vin in input not revealed Bitcoin transactions
     uint32 constant INPUT_NOT_REVEALED_VIN_CHALLENGE = 0;
 
+    /// @dev Input index for revealed vin challenge in input revealed Bitcoin transactions
     uint32 constant INPUT_REVEALED_VIN_CHALLENGE = 0;
+
+    /// @dev Number of inputs in a stop operator won Bitcoin transaction
+    uint32 constant STOP_OPERATOR_WON_INPUT_COUNT = 2;
 
     /// @dev Number of inputs in an input revealed Bitcoin transaction
     uint32 constant INPUT_REVEALED_INPUT_COUNT = 1;

@@ -193,4 +193,58 @@ contract ChallengeManager is IChallengeManager, PegBase {
 
         streamManager.setPegStatus(_acceptPeginTxid, PegStatus.REVEALED);
     }
+
+    /// @inheritdoc IChallengeManager
+    function registerStopOperatorWon(bytes32 _acceptPeginTxid, BtcTxSPVProof calldata _stopOperatorWon)
+        external
+        nonReentrant
+        whenNotPaused
+    {
+        StreamPosition memory streamInfo = _validatePegStatus(_acceptPeginTxid, PegStatus.REVEALED);
+
+        if (_stopOperatorWon.btcTx.inputs.length != Constants.STOP_OPERATOR_WON_INPUT_COUNT) {
+            revert InvalidRevealedInputCount(
+                _stopOperatorWon.btcTx.inputs.length, Constants.STOP_OPERATOR_WON_INPUT_COUNT
+            );
+        }
+
+        PegoutTempInfo memory pegoutInfo = pegoutManager.getPegoutTempInfo(_acceptPeginTxid);
+        _validateMemberInCommittee(pegoutInfo.committeeId);
+
+        ChallengeTempInfo storage challengeInfo = challengeTempInfo[_acceptPeginTxid];
+        bytes32 input0Txid = _stopOperatorWon.btcTx.inputs[0].txId;
+        bytes32 input1Txid = _stopOperatorWon.btcTx.inputs[1].txId;
+
+        // Validate it's not Operator Won.
+        if (input0Txid == _acceptPeginTxid) {
+            revert InvalidStopOperatorWonTxid(input0Txid);
+        }
+
+        if (challengeInfo.revealTxid != input0Txid && challengeInfo.revealTxid != input1Txid) {
+            revert RevealTxidNotMatch(input0Txid, input1Txid, challengeInfo.revealTxid);
+        }
+
+        // Calculate the transaction id for verification
+        bytes32 txid = bitcoinManager.getBtcTxid(_stopOperatorWon.btcTx);
+
+        Stream memory stream = streamManager.getStreamById(streamInfo.streamId);
+
+        // Verify the txid is part of the Merkle Root and has enough confirmations
+        rbtcBridge.verifyTxConfirmations(
+            stream.pegoutConfirmations,
+            txid,
+            _stopOperatorWon.blockHash,
+            _stopOperatorWon.merkleBranchPath,
+            _stopOperatorWon.merkleBranchHashes
+        );
+
+        // Clean up temp info as no reveal will happen
+        challengeTempInfo[_acceptPeginTxid] = ChallengeTempInfo({challengeTxid: bytes32(0), revealTxid: bytes32(0)});
+        emit StopOperatorWonRegistered(txid, _acceptPeginTxid, pegoutInfo.committeeId, streamInfo);
+
+        // Retrigger operator take. Update peg status
+        // streamManager.setPegStatus(_acceptPeginTxid, PegStatus.CHALLENGE);
+        bytes32 pegoutTxid = pegoutManager.getPegoutTxid(_acceptPeginTxid);
+        pegoutManager.triggerOperatorTake(pegoutTxid);
+    }
 }

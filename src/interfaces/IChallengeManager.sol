@@ -39,7 +39,15 @@ interface IChallengeManager {
     /// @param _inputNotRevealed The BTC SPV proof of the input not revealed transaction
     function registerInputNotRevealed(bytes32 _acceptPeginTxid, BtcTxSPVProof calldata _inputNotRevealed) external;
 
+    /// @notice Registers a stop operator won for a reveal transaction
+    /// @dev Validates the SPV proof and updates the challenge status accordingly
+    /// @param _acceptPeginTxid The accept peg-in transaction id that is being
+    /// @param _stopOperatorWon The BTC SPV proof of the stop operator won transaction
+    function registerStopOperatorWon(bytes32 _acceptPeginTxid, BtcTxSPVProof calldata _stopOperatorWon) external;
+
     // ===================== Events =====================
+    // TODO: Should we unify all the `Registered` events into a single event with a type field?
+
     /// @notice Event emitted when a challenge is registered for a peg-out
     /// @param txid The hash of the challenge transaction
     /// @param acceptPeginTxid The hash of the original accept peg-in transaction
@@ -49,7 +57,21 @@ interface IChallengeManager {
         bytes32 indexed txid, bytes32 indexed acceptPeginTxid, uint128 committeeId, StreamPosition streamInfo
     );
 
+    /// @notice Event emitted when an input is not revealed for a challenge
+    /// @param txid The hash of the input not revealed transaction
+    /// @param acceptPeginTxid The hash of the original accept peg-in transaction
+    /// @param committeeId The ID of the committee responsible for this pegout
+    /// @param streamInfo The stream position information related to this pegout
     event InputNotRevealedRegistered(
+        bytes32 indexed txid, bytes32 indexed acceptPeginTxid, uint128 committeeId, StreamPosition streamInfo
+    );
+
+    /// @notice Event emitted when a stop operator won is registered for a reveal transaction
+    /// @param txid The hash of the stop operator won transaction
+    /// @param acceptPeginTxid The hash of the original accept peg-in transaction
+    /// @param committeeId The ID of the committee responsible for this pegout
+    /// @param streamInfo The stream position information related to this pegout
+    event StopOperatorWonRegistered(
         bytes32 indexed txid, bytes32 indexed acceptPeginTxid, uint128 committeeId, StreamPosition streamInfo
     );
 
@@ -74,6 +96,12 @@ interface IChallengeManager {
     /// @param expected The expected transaction id
     error ChallengeTxidNotMatch(bytes32 actual, bytes32 expected);
 
+    /// @notice Thrown when the reveal transaction id does not match the expected value
+    /// @param input1txid The actual input 1 transaction id
+    /// @param input2txid The actual input 2 transaction id
+    /// @param expected The expected transaction id
+    error RevealTxidNotMatch(bytes32 input1txid, bytes32 input2txid, bytes32 expected);
+
     /// @notice Thrown when the number of inputs in a challenge transaction is incorrect
     /// @param actual The actual number of inputs found
     /// @param expected The expected number of inputs
@@ -92,4 +120,8 @@ interface IChallengeManager {
     /// @notice Thrown when there is no challenge registered for the given accept peg-in transaction id
     /// @param acceptPeginTxid The accept peg-in transaction id
     error NoChallengeRegistered(bytes32 acceptPeginTxid);
+
+    /// @notice Thrown when the stop operator won transaction id is invalid
+    /// @param txid The invalid transaction id
+    error InvalidStopOperatorWonTxid(bytes32 txid);
 }

@@ -429,7 +429,19 @@ contract ChallengeManagerTest is Test, HelperContract {
             scriptSig: hex""
         });
         setup.inputNotRevealedSPV.btcTx.inputs = modifiedInputs;
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IChallengeManager.InvalidInputNotRevealedInputCount.selector,
+                Constants.INPUT_NOT_REVEALED_INPUT_COUNT + 1,
+                Constants.INPUT_NOT_REVEALED_INPUT_COUNT
+            )
+        );
 
+        // Act
+        vm.prank(opAddress);
+
+        challengeManager.registerInputNotRevealed(setup.acceptPeginTxid, setup.inputNotRevealedSPV);
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -442,5 +454,121 @@ contract ChallengeManagerTest is Test, HelperContract {
         // Act
         vm.prank(opAddress);
         challengeManager.registerInputNotRevealed(setup.acceptPeginTxid, setup.inputNotRevealedSPV);
+    }
+
+    function test_registerStopOperatorWon_Success_MemberCall() external {
+        // Arrange
+        pauseAndUnpauseContracts();
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_inputRevealed();
+        bytes32 txid = bitcoinManager.getBtcTxid(setup.stopOperatorWonSPV.btcTx);
+        StreamPosition memory streamInfo = StreamPosition({
+            streamId: setup.stream.streamId,
+            packetNumber: setup.packetNumber,
+            slotId: setup.slotId,
+            pegStatus: PegStatus.REVEALED
+        });
+
+        address memberAddress = getCommitteeMemberAddressByIndex(COMMITTEE_ID_STREAM_1_COMMITTEE_1, 0);
+        assertNotEq(memberAddress, opAddress, "Member address should be different from operator address");
+
+        vm.expectEmit(address(challengeManager));
+        emit IChallengeManager.StopOperatorWonRegistered(
+            txid, setup.acceptPeginTxid, COMMITTEE_ID_STREAM_1_COMMITTEE_1, streamInfo
+        );
+
+        // Act
+        vm.prank(memberAddress);
+        challengeManager.registerStopOperatorWon(setup.acceptPeginTxid, setup.stopOperatorWonSPV);
+
+        // Assert
+        streamInfo = streamManager.getStreamPosition(setup.acceptPeginTxid);
+        assertEq(uint256(streamInfo.pegStatus), uint256(PegStatus.OP_SELECTED), "PegStatus should be OP_SELECTED");
+
+        assertTrue(
+            streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId).state == SlotState.ADVANCED,
+            "Slot state should be ADVANCED"
+        );
+
+        ChallengeTempInfo memory challengeInfo = challengeManager.getChallengeTempInfo(setup.acceptPeginTxid);
+        assertEq(challengeInfo.challengeTxid, bytes32(0), "Challenge txid should be cleaned");
+        assertEq(challengeInfo.revealTxid, bytes32(0), "Input revealed txid should be cleaned");
+    }
+
+    function test_registerStopOperatorWon_Revert_EnforcedPause_PausedContract() external {
+        // Arrange
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_inputRevealed();
+        pauseContracts();
+
+        // Assert
+        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
+
+        // Act
+        vm.prank(opAddress);
+        challengeManager.registerStopOperatorWon(setup.acceptPeginTxid, setup.stopOperatorWonSPV);
+    }
+
+    function test_registerStopOperatorWon_Revert_PeginNotRequested() external {
+        // Arrange
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_inputRevealed();
+        bytes32 wrongAcceptPeginTxid = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IPegBase.PeginNotRequested.selector, wrongAcceptPeginTxid));
+
+        // Act
+        vm.prank(opAddress);
+        challengeManager.registerStopOperatorWon(wrongAcceptPeginTxid, setup.stopOperatorWonSPV);
+    }
+
+    function test_registerStopOperatorWon_Revert_InvalidPegStatus() external {
+        // Arrange
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_inputRevealed();
+
+        // Set peg status to COMPLETED to trigger invalid status error
+        vm.prank(address(challengeManager));
+        streamManager.setPegStatus(setup.acceptPeginTxid, PegStatus.COMPLETED);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IPegBase.InvalidPegStatus.selector, PegStatus.COMPLETED));
+
+        // Act
+        vm.prank(opAddress);
+        challengeManager.registerStopOperatorWon(setup.acceptPeginTxid, setup.stopOperatorWonSPV);
+    }
+
+    function test_registerStopOperatorWon_Revert_RevealTxidNotMatch() external {
+        // Arrange
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_inputRevealed();
+        bytes32 revealTxid = bitcoinManager.getBtcTxid(setup.inputRevealedSPV.btcTx);
+        bytes32 wrongTxid = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
+        bytes memory committeePubKey = streamManager.getCommitteePubKey(uint64(DEFAULT_STREAM), setup.packetNumber);
+        BtcTxSPVProof memory wrongSPV = createBtcTxSPVProof(createStopOperatorWonTx(wrongTxid));
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IChallengeManager.RevealTxidNotMatch.selector, wrongTxid, SECOND_REVEAL_TXID, revealTxid
+            )
+        );
+
+        // Act
+        vm.prank(opAddress);
+        challengeManager.registerStopOperatorWon(setup.acceptPeginTxid, wrongSPV);
+    }
+
+    function test_registerStopOperatorWon_Revert_InvalidStopOperatorWonTxid() external {
+        // It tries to register Operator Won because input txid matches reveal TXid but it's rejected because it consumes accept pegin txid.
+        // So it's not possible to be a `STOP_OPERATOR_WON` case.
+        // Arrange
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_inputRevealed();
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IChallengeManager.InvalidStopOperatorWonTxid.selector, setup.acceptPeginTxid)
+        );
+
+        // Act
+        vm.prank(opAddress);
+        challengeManager.registerStopOperatorWon(setup.acceptPeginTxid, setup.operatorWonSPV);
     }
 }

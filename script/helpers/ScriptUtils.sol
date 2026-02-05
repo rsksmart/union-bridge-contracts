@@ -26,6 +26,8 @@ abstract contract ScriptUtils is Script {
     // Fake amount just for testing purposes
     uint64 constant INPUT_REVEALED_AMOUNT = 4000;
 
+    bytes32 constant SECOND_REVEAL_TXID = bytes32(0xabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd);
+
     function getDeployerKey() public view returns (uint256) {
         return getMemberKey(uint32(vm.envUint("DEPLOYER_INDEX")));
     }
@@ -307,7 +309,33 @@ abstract contract ScriptUtils is Script {
         return BtcTransaction({version: Constants.BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
     }
 
-    function createReimbursementKickoffTx(bytes memory _committeePubKey, uint64 _slotIndex)
+    function createStopOperatorWonTx(bytes32 _inputRevealedTxid) internal pure returns (BtcTransaction memory) {
+        // Input: spend the accept peg-in UTXO
+        BtcTxIn[] memory btcInputs = new BtcTxIn[](Constants.STOP_OPERATOR_WON_INPUT_COUNT);
+        btcInputs[0] = BtcTxIn({
+            txId: _inputRevealedTxid,
+            vout: 0, // P2TR output is at index 0
+            sequence: Constants.SEQUENCE,
+            scriptSig: hex""
+        });
+
+        btcInputs[1] = BtcTxIn({
+            txId: SECOND_REVEAL_TXID,
+            vout: 0, // P2TR output is at index 0
+            sequence: Constants.SEQUENCE,
+            scriptSig: hex""
+        });
+
+        // Outputs
+        BtcTxOut[] memory btcOutputs = new BtcTxOut[](1);
+
+        // Fake value and script. They are not checked by the contract.
+        btcOutputs[0] = BtcTxOut({amount: 10, scriptPubKey: bytes("")});
+
+        return BtcTransaction({version: Constants.BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
+    }
+
+    function createReimbursementKickoffTx(bytes memory _committeePubKey, uint32 _slotIndex)
         internal
         pure
         returns (BtcTransaction memory)
