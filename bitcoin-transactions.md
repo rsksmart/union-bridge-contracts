@@ -790,7 +790,7 @@ The **Dispute Core Protocol** is responsible for managing dispute resolution mec
 - **Sighash Type**: SIGHASH_ALL
 - **Key Required**: Operator's Winternitz key for PEGOUT_ID_KEY
 - **Previous Transaction**: OP_INITIAL_DEPOSIT_TX (from Dispute Core protocol)
-- **Description**: Spends the initial deposit output from the operator's initial deposit transaction. The operator must sign with their Winternitz key to prove knowledge of the pegout ID.
+- **Description**: Spends the initial deposit output from the operator's initial deposit transaction. The operator must sign with their Winternitz key to prove knowledge of the pegout ID. OP_INITIAL_DEPOSIT_TX vout match with `slot_id`.
 - **Taproot Script Details**:
   - **Script Path**: Uses Winternitz signature script leaf for spending
   - **Script Tree**: Contains script leaves for reimbursement kickoff and dispute validation
