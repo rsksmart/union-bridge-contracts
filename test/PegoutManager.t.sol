@@ -7,7 +7,6 @@ import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/Pau
 import {BtcTransaction, BtcTxSPVProof, StreamPosition, PegStatus} from "src/interfaces/IPegCommonTypes.sol";
 import {BitcoinSignatureData} from "src/interfaces/IBitcoinManager.sol";
 import {IPegoutManager, PegoutManagerSettings, PegoutTempInfo} from "src/interfaces/IPegoutManager.sol";
-import {IPeginManager} from "src/interfaces/IPeginManager.sol";
 import {Slot, SlotState, SlotLocation, Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {ISignatureManager} from "src/interfaces/ISignatureManager.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
@@ -476,47 +475,6 @@ contract PegoutManagerTest is Test, HelperContract {
         );
 
         pegoutManager.registerUserTake(setup.pegoutTxSPVProof);
-    }
-
-    function test_registerUserTake_Revert_InvalidAcceptPeginTxid() external {
-        // Create a peg-out transaction that spends the accept peg-in UTXO
-        bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
-        bytes32 acceptPeginTxid = 0x30b6a2cae94d89540a99e0dfa39cf88e6de40dca9142810fdce7a95c00faff47;
-        BtcTransaction memory pegoutTx = createPegoutTx(acceptPeginTxid, userPubKey, VALUE);
-
-        // Create a slot
-        Stream memory stream = streamManager.getStream(VALUE);
-        uint64 packetNumber = 0;
-        bytes32 differentTxid = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
-
-        uint64 slotId = streamManager.setSlotHarness(
-            stream.streamId,
-            packetNumber,
-            hex"00143fd2e14f4b448a071e074e1e1879318447f2a266",
-            differentTxid, // Different from what the peg-out transaction references
-            VALUE,
-            SlotState.FILLED
-        );
-
-        // Set the slot state to LOCKED
-        streamManager.setSlotStateHarness(stream.streamId, packetNumber, slotId, SlotState.LOCKED);
-
-        // Set up the pegoutTxs mapping
-        pegoutManager.setPegoutTempInfoHarness(acceptPeginTxid, userPubKey);
-        peginManager.setStreamPositionHarness(
-            acceptPeginTxid, stream.streamId, packetNumber, slotId, PegStatus.USER_TAKE
-        );
-
-        // Create SPV proof for the peg-out transaction
-        BtcTxSPVProof memory pegoutTxSPVProof = createBtcTxSPVProof(pegoutTx);
-
-        // Expect revert for invalid accept peg-in tx id
-        vm.expectRevert(
-            abi.encodeWithSelector(IPeginManager.InvalidAcceptPeginTxid.selector, differentTxid, acceptPeginTxid)
-        );
-
-        // Register the peg-out transaction
-        pegoutManager.registerUserTake(pegoutTxSPVProof);
     }
 
     function test_registerUserTake_Revert_IncorrectVout() external {

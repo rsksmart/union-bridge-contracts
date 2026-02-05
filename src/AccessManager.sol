@@ -34,7 +34,7 @@ contract AccessManager is IAccessManager, PauseManager {
 
     /// @inheritdoc IAccessManager
     function canReleaseCommittee(address _caller) external view {
-        if (_caller != pegoutManager) {
+        if (_caller != peginManager && _caller != pegoutManager) {
             revert UnauthorizedToReleaseCommittee(_caller);
         }
     }

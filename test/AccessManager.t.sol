@@ -126,6 +126,11 @@ contract AccessManagerTest is Test, HelperContract {
         accessManager.canReleaseCommittee(address(pegoutManager));
     }
 
+    function test_canReleaseCommittee_Success_CallFromPeginManager() external view {
+        // Act & Assert - should not revert
+        accessManager.canReleaseCommittee(address(peginManager));
+    }
+
     function test_canReleaseCommittee_Revert_UnauthorizedAddress() external {
         // Assert
         vm.expectRevert(
@@ -134,16 +139,6 @@ contract AccessManagerTest is Test, HelperContract {
 
         // Act
         accessManager.canReleaseCommittee(unauthorizedAddress);
-    }
-
-    function test_canReleaseCommittee_Revert_CallFromPeginManager() external {
-        // Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(IAccessManager.UnauthorizedToReleaseCommittee.selector, address(peginManager))
-        );
-
-        // Act
-        accessManager.canReleaseCommittee(address(peginManager));
     }
 
     function test_canReleaseCommittee_Revert_CallFromCommitteeRegistry() external {

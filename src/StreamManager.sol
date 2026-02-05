@@ -346,10 +346,7 @@ contract StreamManager is IStreamManager, BaseProxy {
         }
 
         slot.state = SlotState.FILLED;
-
-        SlotLocation memory newFilledSlot =
-            SlotLocation({packetId: _streamPosition.packetNumber, slotId: _streamPosition.slotId});
-        filledSlots[_streamPosition.streamId].push(newFilledSlot);
+        _pushToFilledSlotList(_streamPosition);
 
         slot.acceptPeginTx = _acceptPeginTx;
         slot.acceptPeginAmount = _acceptPeginAmount;
@@ -365,17 +362,20 @@ contract StreamManager is IStreamManager, BaseProxy {
     }
 
     /// @inheritdoc IStreamManager
-    function blockSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) external {
+    function blockSlot(bytes32 _acceptPeginTxid) external returns (bool packetClosed) {
         // Verify that the caller has permission to modify the peg status
         accessManager.canModifyPegStatus(_msgSender());
-        Slot storage slot = _getSlot(_streamId, _packetNumber, _slotId);
+
+        StreamPosition storage streamInfo = streamPositions[_acceptPeginTxid];
+        Slot storage slot = _getSlot(streamInfo.streamId, streamInfo.packetNumber, streamInfo.slotId);
 
         if (slot.state != SlotState.RESERVED) {
-            revert SlotNotBlockable(_streamId, _packetNumber, _slotId, slot.state);
+            revert SlotNotBlockable(streamInfo.streamId, streamInfo.packetNumber, streamInfo.slotId, slot.state);
         }
 
         slot.state = SlotState.BLOCKED;
-        _markSlotAsFinished(_streamId, _packetNumber);
+        _setPegStatus(_acceptPeginTxid, PegStatus.BLOCKED);
+        packetClosed = _markSlotAsFinished(streamInfo.streamId, streamInfo.packetNumber);
     }
 
     /// @inheritdoc IStreamManager
@@ -394,29 +394,24 @@ contract StreamManager is IStreamManager, BaseProxy {
     }
 
     /// @inheritdoc IStreamManager
-    function completeSlot(StreamPosition memory _streamInfo, bytes32 _acceptPeginTxid, bytes32 _userTakeTx)
-        external
-        returns (bool packetClosed)
-    {
+    function completeSlot(bytes32 _acceptPeginTxid, bytes32 _userTakeTx) external returns (bool packetClosed) {
         // Verify that the caller has permission to modify the peg status
         accessManager.canModifyPegStatus(_msgSender());
-        Slot storage slot = _getSlot(_streamInfo.streamId, _streamInfo.packetNumber, _streamInfo.slotId);
+
+        StreamPosition storage streamInfo = streamPositions[_acceptPeginTxid];
+        Slot storage slot = _getSlot(streamInfo.streamId, streamInfo.packetNumber, streamInfo.slotId);
 
         // Validate that the slot exists and is LOCKED or ADVANCED
         if (slot.state != SlotState.LOCKED && slot.state != SlotState.ADVANCED) {
             revert InvalidSlotState(slot.state, SlotState.LOCKED);
         }
 
-        // Validate that the first input references the correct accept peg-in transaction
-        if (slot.acceptPeginTx != _acceptPeginTxid) {
-            revert InvalidAcceptPeginTxid(slot.acceptPeginTx, _acceptPeginTxid);
-        }
-
         // Update the slot state to COMPLETED and store the user take tx id
         slot.state = SlotState.COMPLETED;
         slot.takeTx = _userTakeTx;
-        isPegoutInProcess[_streamInfo.streamId] = false;
-        packetClosed = _markSlotAsFinished(_streamInfo.streamId, _streamInfo.packetNumber);
+        isPegoutInProcess[streamInfo.streamId] = false;
+        _setPegStatus(_acceptPeginTxid, PegStatus.COMPLETED);
+        packetClosed = _markSlotAsFinished(streamInfo.streamId, streamInfo.packetNumber);
     }
 
     function _markSlotAsFinished(uint64 _streamId, uint64 _packetNumber) internal returns (bool packetClosed) {
@@ -424,6 +419,12 @@ contract StreamManager is IStreamManager, BaseProxy {
         packet.finishedSlots++;
 
         packetClosed = _closePacketIfLastSlot(_streamId, _packetNumber);
+    }
+
+    function _pushToFilledSlotList(StreamPosition memory _streamPosition) internal {
+        filledSlots[_streamPosition.streamId].push(
+            SlotLocation({packetId: _streamPosition.packetNumber, slotId: _streamPosition.slotId})
+        );
     }
 
     function _closePacketIfLastSlot(uint64 _streamId, uint64 _packetNumber) internal returns (bool) {
@@ -582,6 +583,10 @@ contract StreamManager is IStreamManager, BaseProxy {
     function setPegStatus(bytes32 _acceptPeginTxid, PegStatus _newStatus) external {
         // Verify that the caller has permission to modify the peg status
         accessManager.canModifyPegStatus(_msgSender());
+        _setPegStatus(_acceptPeginTxid, _newStatus);
+    }
+
+    function _setPegStatus(bytes32 _acceptPeginTxid, PegStatus _newStatus) internal {
         streamPositions[_acceptPeginTxid].pegStatus = _newStatus;
         emit PegStatusUpdated(_acceptPeginTxid, _newStatus);
     }

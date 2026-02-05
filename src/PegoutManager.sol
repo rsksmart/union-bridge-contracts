@@ -182,9 +182,6 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
             _pegoutTxSPVProof.btcTx.outputs[Constants.PEGOUT_VOUT_USER], pegoutTempInfo[acceptPeginTxid].userPubKey
         );
 
-        // update the peg status to COMPLETED
-        streamManager.setPegStatus(acceptPeginTxid, PegStatus.COMPLETED);
-
         emit PegoutRegistered(
             _pegoutTxSPVProof.blockHash,
             requestPegoutTxid,
@@ -450,8 +447,6 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         // slither-disable-next-line reentrancy-events
         emit PegoutRegistered(_pegoutTxSPVProof.blockHash, txid, acceptPeginTxid, pegoutInfo.committeeId, streamInfo);
 
-        // update the peg status to COMPLETED
-        streamManager.setPegStatus(acceptPeginTxid, PegStatus.COMPLETED);
         _completeSlot(streamInfo, acceptPeginTxid, txid);
     }
 
@@ -518,13 +513,11 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         // slither-disable-next-line reentrancy-events
         emit PegoutRegistered(_pegoutTxSPVProof.blockHash, txid, acceptPeginTxid, pegoutInfo.committeeId, streamInfo);
 
-        // update the peg status to COMPLETED
-        streamManager.setPegStatus(acceptPeginTxid, PegStatus.COMPLETED);
         _completeSlot(streamInfo, acceptPeginTxid, txid);
     }
 
     function _completeSlot(StreamPosition memory _streamInfo, bytes32 _acceptPeginTxid, bytes32 _txid) internal {
-        bool packetClosed = streamManager.completeSlot(_streamInfo, _acceptPeginTxid, _txid);
+        bool packetClosed = streamManager.completeSlot(_acceptPeginTxid, _txid);
         if (packetClosed) {
             committeeRegistry.releaseCommittee(_streamInfo.streamId, _streamInfo.packetNumber);
         }

@@ -59,6 +59,9 @@ abstract contract HelperContract is Test, TestUtils {
 
     int256 constant BEST_CHAIN_HEIGHT = 1000;
 
+    // Default accept pegin txid for testing blockSlot
+    bytes32 constant DEFAULT_ACCEPT_PEGIN_TXID = 0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef;
+
     // Default requested roles and streams for the members
     StreamDenomination internal constant DEFAULT_STREAM = StreamDenomination._0_01BTC;
     Role internal constant DEFAULT_ROLE = Role.OPERATOR;
@@ -1267,5 +1270,26 @@ abstract contract HelperContract is Test, TestUtils {
     function calculateGasCost(uint256 gasUsed) internal view returns (uint256 gasPrice, uint256 costInWei) {
         gasPrice = tx.gasprice;
         costInWei = gasUsed * gasPrice;
+    }
+
+    /// @notice Helper to create a slot in a specific state using harness, with stream position set up
+    /// @param _streamId The stream ID
+    /// @param _packetNumber The packet number
+    /// @param _state The desired slot state
+    /// @return slotId The created slot ID
+    /// @return txid The unique txid mapped to this slot's stream position
+    function setup_slotWithState(uint64 _streamId, uint64 _packetNumber, SlotState _state)
+        internal
+        returns (uint64 slotId, bytes32 txid)
+    {
+        slotId = uint64(streamManager.getSlotsLengthHarness(_streamId, _packetNumber));
+
+        // Generate unique txid based on slot parameters
+        txid = keccak256(abi.encodePacked(_streamId, _packetNumber, slotId));
+
+        streamManager.pushSlotsHarness(_streamId, _packetNumber, 1, _state);
+
+        vm.prank(address(peginManager));
+        streamManager.setStreamPosition(txid, StreamPosition(_streamId, _packetNumber, slotId, PegStatus.REGISTERED));
     }
 }

@@ -6,7 +6,7 @@ import {HelperContract} from "test/helpers/HelperContract.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {BtcTransaction, BtcTxSPVProof, StreamPosition, PegStatus} from "src/interfaces/IPegCommonTypes.sol";
 import {IPeginManager, RequestPeginTempInfo} from "src/interfaces/IPeginManager.sol";
-import {Slot, SlotState, Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
+import {Slot, SlotState, Stream, Packet, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE} from "src/interfaces/IBridge.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {ICommitteeRegistry, Committee, CommitteeMember} from "src/interfaces/ICommitteeRegistry.sol";
@@ -569,9 +569,16 @@ contract PeginManagerTest is Test, HelperContract {
         bytes32 requestPeginTxid = getBtcTxid(peginTx);
         StreamPosition memory streamPosition = peginManager.getStreamPositionByRequestPegin(requestPeginTxid);
 
-        // 2. Block the slot externally
-        vm.prank(address(peginManager));
-        streamManager.blockSlot(streamPosition.streamId, streamPosition.packetNumber, streamPosition.slotId);
+        // 2. Set up stream position for the accept txid and block the slot externally
+        vm.startPrank(address(peginManager));
+        streamManager.setStreamPosition(
+            DEFAULT_ACCEPT_PEGIN_TXID,
+            StreamPosition(
+                streamPosition.streamId, streamPosition.packetNumber, streamPosition.slotId, PegStatus.REGISTERED
+            )
+        );
+        streamManager.blockSlot(DEFAULT_ACCEPT_PEGIN_TXID);
+        vm.stopPrank();
 
         // 3. Try to accept pegin
         BtcTransaction memory acceptTx = getBtcAcceptPeginTx(peginTx);
@@ -748,6 +755,35 @@ contract PeginManagerTest is Test, HelperContract {
         // Verify user reimbursement txid is stored
         RequestPeginTempInfo memory peginTempInfo = peginManager.getRequestPeginTempInfo(requestPeginTxid);
         assertEq(peginTempInfo.userReimbursementTxid, userReimbursementTxid, "User reimbursement txid should be stored");
+    }
+
+    function test_userReimbursement_Success_LastSlot_ReleasesCommittee() external {
+        // Arrange - Complete 99 full peg flows (request -> accept -> pegout) to fill slots 0-98
+        setup_multiplePegFlows(Constants.SLOTS_PER_PACKET - 1);
+
+        // Create a request pegin for the last slot (slot 99)
+        (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
+        bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
+
+        // Create user reimbursement transaction
+        BtcTransaction memory userReimbursementTx = getBtcUserReimbursementTx(requestPeginTxid);
+        uint32 reimbursementPeginVin = userReimbursementTx.inputs[0].vout;
+        BtcTxSPVProof memory userReimbursementTxSPVProof = createBtcTxSPVProof(userReimbursementTx);
+
+        // Assert - expect PacketClosed event from StreamManager
+        vm.expectEmit(address(streamManager));
+        emit IStreamManager.PacketClosed(setupStreamId, PACKET_NUMBER);
+
+        // Assert - expect CommitteeMembersReleased event from CommitteeRegistry
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.CommitteeMembersReleased(setupStreamId, PACKET_NUMBER);
+
+        // Act
+        peginManager.userReimbursement(userReimbursementTxSPVProof, reimbursementPeginVin);
+
+        // Assert - verify packet is closed (finishedSlots == SLOTS_PER_PACKET)
+        Packet memory packet = streamManager.getPacket(setupStreamId, PACKET_NUMBER);
+        assertEq(packet.finishedSlots, Constants.SLOTS_PER_PACKET, "Packet should have all slots finished");
     }
 
     function test_userReimbursement_Revert_PeginNotRequested() external {
@@ -1004,6 +1040,43 @@ contract PeginManagerTest is Test, HelperContract {
         // Verify rejectPeginTxid is stored
         RequestPeginTempInfo memory peginTempInfo = peginManager.getRequestPeginTempInfo(requestPeginTxid);
         assertEq(peginTempInfo.rejectPeginTxid, rejectPeginTxid, "Reject pegin txid should be stored");
+    }
+
+    function test_rejectPegin_Success_LastSlot_ReleasesCommittee() external {
+        // Arrange - Complete 99 full peg flows (request -> accept -> pegout) to fill slots 0-98
+        setup_multiplePegFlows(Constants.SLOTS_PER_PACKET - 1);
+
+        // Create a request pegin for the last slot (slot 99)
+        (BtcTransaction memory requestPeginTx,) = setup_requestPeginFlow();
+        bytes32 requestPeginTxid = getBtcTxid(requestPeginTx);
+
+        // Get a committee member address for creating the reject transaction
+        uint128 committeeId = streamManager.getCommitteeId(setupStreamId, PACKET_NUMBER);
+        CommitteeMember[] memory committeeMembers = registry.getCommitteeMembers(committeeId);
+        address memberAddress = committeeMembers[0].memberAddress;
+
+        // Get operator dispute key used for the speed up output
+        bytes memory operatorPubKey = getDisputeKeyByAddress(memberAddress);
+
+        // Create reject pegin transaction
+        BtcTransaction memory rejectPeginTx = createRejectPeginTx(requestPeginTxid, operatorPubKey);
+        BtcTxSPVProof memory rejectPeginTxSPVProof = createBtcTxSPVProof(rejectPeginTx);
+
+        // Assert - expect PacketClosed event from StreamManager
+        vm.expectEmit(address(streamManager));
+        emit IStreamManager.PacketClosed(setupStreamId, PACKET_NUMBER);
+
+        // Assert - expect CommitteeMembersReleased event from CommitteeRegistry
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.CommitteeMembersReleased(setupStreamId, PACKET_NUMBER);
+
+        // Act - call from committee member address
+        vm.prank(memberAddress);
+        peginManager.rejectPegin(rejectPeginTxSPVProof);
+
+        // Assert - verify packet is closed (finishedSlots == SLOTS_PER_PACKET)
+        Packet memory packet = streamManager.getPacket(setupStreamId, PACKET_NUMBER);
+        assertEq(packet.finishedSlots, Constants.SLOTS_PER_PACKET, "Packet should have all slots finished");
     }
 
     function test_rejectPegin_Revert_PeginNotRequested() external {

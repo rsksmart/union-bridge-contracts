@@ -244,11 +244,11 @@ interface IStreamManager {
     ) external;
 
     /// @notice Blocks a reserved slot due to timeout or refund proof
-    /// @dev Updates the slot state from RESERVED to BLOCKED
-    /// @param _streamId The ID of the stream
-    /// @param _packetNumber The index of the packet within the stream
-    /// @param _slotId The ID of the slot to block
-    function blockSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) external;
+    /// @dev Updates the slot state from RESERVED to BLOCKED and sets peg status to BLOCKED
+    /// @dev Close the packet if blocked slot is the last one
+    /// @param _acceptPeginTxid The accept peg-in transaction ID to block
+    /// @return packetClosed Whether the packet was closed or not
+    function blockSlot(bytes32 _acceptPeginTxid) external returns (bool packetClosed);
 
     /// @notice Gets the committee ID for a specific packet
     /// @param _streamId The ID of the stream
@@ -271,13 +271,10 @@ interface IStreamManager {
     /// @notice Marks a slot as completed and stores the UserTake transaction id
     /// @dev Can only be called by the PegManager
     /// @dev Close the packet if completed slot is the last one
-    /// @param _streamInfo The stream info
     /// @param _acceptPeginTxid The hash of the accept peg-in transaction
     /// @param _userTakeTx The hash of the UserTake transaction
-    /// @return bool Whether the packet was closed or not
-    function completeSlot(StreamPosition memory _streamInfo, bytes32 _acceptPeginTxid, bytes32 _userTakeTx)
-        external
-        returns (bool);
+    /// @return packetClosed Whether the packet was closed or not
+    function completeSlot(bytes32 _acceptPeginTxid, bytes32 _userTakeTx) external returns (bool packetClosed);
 
     /// @notice Marks a slot as advanced by the operator to the user
     /// @dev Updates the slot state to ADVANCED and stores the operator's peg-out transaction
@@ -507,11 +504,6 @@ interface IStreamManager {
     /// @param actual The actual slot state
     /// @param expected The expected slot state
     error InvalidSlotState(SlotState actual, SlotState expected);
-
-    /// @notice Thrown when the accept peg-in transaction id doesn't match
-    /// @param expected The expected transaction id
-    /// @param actual The actual transaction id
-    error InvalidAcceptPeginTxid(bytes32 expected, bytes32 actual);
 
     /// @notice Thrown when a percentage value is invalid
     /// @param percentage The invalid percentage value

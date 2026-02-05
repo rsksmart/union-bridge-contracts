@@ -973,6 +973,12 @@ contract StreamManagerTest is Test, HelperContract {
         // Reserve a slot for filling
         vm.prank(address(peginManager));
         slotId = streamManager.reserveSlot(streamId, packetNumber);
+
+        // Set up stream position for the default acceptPeginTxid
+        vm.prank(address(peginManager));
+        streamManager.setStreamPosition(
+            DEFAULT_ACCEPT_PEGIN_TXID, StreamPosition(streamId, packetNumber, slotId, PegStatus.REGISTERED)
+        );
     }
 
     function test_fillSlot_Success() external {
@@ -1073,7 +1079,7 @@ contract StreamManagerTest is Test, HelperContract {
 
         // Block the reserved slot
         vm.prank(address(peginManager));
-        streamManager.blockSlot(streamId, packetNumber, slotId);
+        streamManager.blockSlot(DEFAULT_ACCEPT_PEGIN_TXID);
 
         // Verify slot is blocked
         Slot memory blockedSlot = streamManager.getSlot(streamId, packetNumber, slotId);
@@ -1161,7 +1167,7 @@ contract StreamManagerTest is Test, HelperContract {
 
         // Block the slot to have a BLOCKED slot for testing
         vm.prank(address(peginManager));
-        streamManager.blockSlot(streamId, packetNumber, slotId);
+        streamManager.blockSlot(DEFAULT_ACCEPT_PEGIN_TXID);
 
         // Verify slot is BLOCKED
         Slot memory blockedSlot = streamManager.getSlot(streamId, packetNumber, slotId);
@@ -1184,7 +1190,7 @@ contract StreamManagerTest is Test, HelperContract {
 
         // Act - call blockSlot as owner
         vm.prank(address(peginManager));
-        streamManager.blockSlot(streamId, packetNumber, slotId);
+        streamManager.blockSlot(DEFAULT_ACCEPT_PEGIN_TXID);
 
         // Assert
         Slot memory blockedSlot = streamManager.getSlot(streamId, packetNumber, slotId);
@@ -1206,7 +1212,7 @@ contract StreamManagerTest is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(IAccessManager.UnauthorizedToModifyPegStatus.selector, address(this)));
 
         // Act - try to call blockSlot from non-owner address (this test contract)
-        streamManager.blockSlot(streamId, packetNumber, slotId);
+        streamManager.blockSlot(DEFAULT_ACCEPT_PEGIN_TXID);
     }
 
     function test_blockSlot_Revert_SlotNotBlockable_FILLED() external {
@@ -1224,17 +1230,14 @@ contract StreamManagerTest is Test, HelperContract {
                 IStreamManager.SlotNotBlockable.selector, streamId, packetNumber, slotId, SlotState.FILLED
             )
         );
-        streamManager.blockSlot(streamId, packetNumber, slotId);
+        streamManager.blockSlot(DEFAULT_ACCEPT_PEGIN_TXID);
     }
 
     function test_blockSlot_Revert_SlotNotBlockable_LOCKED() external {
         // Arrange
         uint64 streamId = setupStreamId;
         uint64 packetNumber = 0;
-        uint64 slotId = 0;
-
-        // Create a slot in LOCKED state using harness
-        streamManager.pushSlotsHarness(streamId, packetNumber, 1, SlotState.LOCKED);
+        (uint64 slotId, bytes32 txid) = setup_slotWithState(streamId, packetNumber, SlotState.LOCKED);
 
         // Verify slot is LOCKED
         Slot memory slot = streamManager.getSlot(streamId, packetNumber, slotId);
@@ -1247,17 +1250,14 @@ contract StreamManagerTest is Test, HelperContract {
                 IStreamManager.SlotNotBlockable.selector, streamId, packetNumber, slotId, SlotState.LOCKED
             )
         );
-        streamManager.blockSlot(streamId, packetNumber, slotId);
+        streamManager.blockSlot(txid);
     }
 
     function test_blockSlot_Revert_SlotNotBlockable_COMPLETED() external {
         // Arrange
         uint64 streamId = setupStreamId;
         uint64 packetNumber = 0;
-        uint64 slotId = 0;
-
-        // Create a slot in COMPLETED state using harness
-        streamManager.pushSlotsHarness(streamId, packetNumber, 1, SlotState.COMPLETED);
+        (uint64 slotId, bytes32 txid) = setup_slotWithState(streamId, packetNumber, SlotState.COMPLETED);
 
         // Verify slot is COMPLETED
         Slot memory slot = streamManager.getSlot(streamId, packetNumber, slotId);
@@ -1270,17 +1270,14 @@ contract StreamManagerTest is Test, HelperContract {
                 IStreamManager.SlotNotBlockable.selector, streamId, packetNumber, slotId, SlotState.COMPLETED
             )
         );
-        streamManager.blockSlot(streamId, packetNumber, slotId);
+        streamManager.blockSlot(txid);
     }
 
     function test_blockSlot_Revert_SlotNotBlockable_BLOCKED() external {
         // Arrange
         uint64 streamId = setupStreamId;
         uint64 packetNumber = 0;
-        uint64 slotId = 0;
-
-        // Create a slot in BLOCKED state using harness
-        streamManager.pushSlotsHarness(streamId, packetNumber, 1, SlotState.BLOCKED);
+        (uint64 slotId, bytes32 txid) = setup_slotWithState(streamId, packetNumber, SlotState.BLOCKED);
 
         // Verify slot is BLOCKED
         Slot memory slot = streamManager.getSlot(streamId, packetNumber, slotId);
@@ -1293,7 +1290,7 @@ contract StreamManagerTest is Test, HelperContract {
                 IStreamManager.SlotNotBlockable.selector, streamId, packetNumber, slotId, SlotState.BLOCKED
             )
         );
-        streamManager.blockSlot(streamId, packetNumber, slotId);
+        streamManager.blockSlot(txid);
     }
 
     function test_blockSlot_Revert_NonExistentSlot() external {
@@ -1302,12 +1299,19 @@ contract StreamManagerTest is Test, HelperContract {
         uint64 packetNumber = 0;
         uint64 invalidSlotId = 999; // Non-existent slot
 
+        // Set up stream position pointing to invalid slot
+        bytes32 testTxid = bytes32(uint256(0x111));
+        vm.prank(address(peginManager));
+        streamManager.setStreamPosition(
+            testTxid, StreamPosition(streamId, packetNumber, invalidSlotId, PegStatus.REGISTERED)
+        );
+
         // Act - try to block non-existent slot (should revert)
         vm.prank(address(peginManager));
         vm.expectRevert(
             abi.encodeWithSelector(IStreamManager.NonExistentSlot.selector, streamId, packetNumber, invalidSlotId)
         );
-        streamManager.blockSlot(streamId, packetNumber, invalidSlotId);
+        streamManager.blockSlot(testTxid);
     }
 
     // ==================== ENHANCED LOCKSLOT TESTS ====================
@@ -1450,15 +1454,17 @@ contract StreamManagerTest is Test, HelperContract {
         vm.prank(address(peginManager));
         uint64 slotId = streamManager.reserveSlot(streamId, packetNumber);
 
-        // 2. Fill slot
+        // 2. Fill slot and set up stream position
         StreamPosition memory streamPos = StreamPosition({
             streamId: streamId,
             packetNumber: packetNumber,
             slotId: slotId,
             pegStatus: PegStatus.REGISTERED
         });
-        vm.prank(address(peginManager));
+        vm.startPrank(address(peginManager));
+        streamManager.setStreamPosition(acceptPeginTx, streamPos);
         streamManager.fillSlot(streamPos, acceptPeginAmount, acceptPeginTx, scriptPubKey);
+        vm.stopPrank();
 
         // 3. Lock slot
         vm.prank(address(pegoutManager));
@@ -1470,7 +1476,7 @@ contract StreamManagerTest is Test, HelperContract {
 
         // 5. Complete slot
         vm.prank(address(pegoutManager));
-        streamManager.completeSlot(streamPos, acceptPeginTx, userTakeTx);
+        streamManager.completeSlot(acceptPeginTx, userTakeTx);
 
         // Verify final state
         Slot memory completedSlot = streamManager.getSlot(streamId, packetNumber, slotId);

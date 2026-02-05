@@ -341,10 +341,9 @@ contract PeginManager is IPeginManager, PegManagerBase {
             _reimbursementPeginVin
         );
 
-        // Block slot as it has already been reimbursted to the user.
+        // Block slot as it has already been reimbursed to the user.
         // slither-disable-next-line reentrancy-no-eth reentrancy-benign
-        streamManager.blockSlot(streamInfo.streamId, streamInfo.packetNumber, streamInfo.slotId);
-        streamManager.setPegStatus(acceptPeginTxid, PegStatus.BLOCKED);
+        _blockSlot(streamInfo, acceptPeginTxid);
 
         // Set user reimbursement txid as rejected peg-in txid
         peginTempInfo[requestPeginTxid].userReimbursementTxid = userReimbursementTxid;
@@ -417,9 +416,15 @@ contract PeginManager is IPeginManager, PegManagerBase {
 
         emit RejectPeginRegistered(rejectPeginTxid, requestPeginTxid, streamInfo);
 
-        // Block slot as it has already been reimbursted to the user.
-        streamManager.blockSlot(streamInfo.streamId, streamInfo.packetNumber, streamInfo.slotId);
-        streamManager.setPegStatus(acceptPeginTxid, PegStatus.BLOCKED);
+        // Block slot as it has already been rejected.
+        _blockSlot(streamInfo, acceptPeginTxid);
+    }
+
+    function _blockSlot(StreamPosition memory _streamInfo, bytes32 _acceptPeginTxid) internal {
+        bool packetClosed = streamManager.blockSlot(_acceptPeginTxid);
+        if (packetClosed) {
+            committeeRegistry.releaseCommittee(_streamInfo.streamId, _streamInfo.packetNumber);
+        }
     }
 
     function _verifyRejectPeginTransaction(
