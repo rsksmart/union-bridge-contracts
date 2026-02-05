@@ -116,9 +116,17 @@ library Constants {
     /// @dev Number of inputs in a challenge Bitcoin transaction
     uint32 constant CHALLENGE_INPUT_COUNT = 1;
 
+    /// @dev Input index for revealed vin challenge in input revealed Bitcoin transactions
     uint32 constant INPUT_REVEALED_VIN_CHALLENGE = 0;
 
+    /// @dev Number of inputs in an input revealed Bitcoin transaction
     uint32 constant INPUT_REVEALED_INPUT_COUNT = 1;
+
+    /// @dev Input index for kickoff vin in kickoff Bitcoin transactions
+    uint32 constant KICKOFF_INPUT_COUNT = 1;
+
+    /// @dev Input index for kickoff vin in kickoff Bitcoin transactions
+    uint32 constant KICKOFF_VIN_SLOT_ID = 0;
 
     // Transaction Input/Output Counts
     /// @dev Number of outputs in a request peg-in transaction
