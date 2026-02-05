@@ -1615,12 +1615,13 @@ contract CommitteeRegistryTest is Test, HelperContract {
             0,
             "Should not have candidates after committee created"
         );
-
-        // Verify there is 1 active committee by checking packetsLength - pegoutPacketPointer
+        // Verify there is 1 active committee by checking active packets length
         Stream memory stream = streamManager.getStreamById(expectedCommittee.streamId);
-        uint64 packetsLength = streamManager.getPacketsLength(expectedCommittee.streamId);
-        assertEq(packetsLength - stream.pegoutPacketPointer, 1, "Should have 1 active committee after completion");
-        uint128 activeCommitteeId = streamManager.getCommitteeId(expectedCommittee.streamId, stream.pegoutPacketPointer);
+        uint64[] memory activePackets = streamManager.getActivePackets(expectedCommittee.streamId);
+        assertEq(activePackets.length, 1, "Should have 1 active committee after completion");
+        uint64 activePacketIndex = 0; // since we only have 1 active
+        uint128 activeCommitteeId =
+            streamManager.getCommitteeId(expectedCommittee.streamId, activePackets[activePacketIndex]);
         assertEq(activeCommitteeId, committeeId, "Active committee should match the completed one");
     }
 
@@ -2722,7 +2723,7 @@ contract CommitteeRegistryTest is Test, HelperContract {
 
     // ========================== TESTNET ONLY forceCloseCommittee ==========================
 
-    function test_forceCloseCommittee_TESTNET_Revert_OwnableUnauthorizedAccount() external {
+    function test_forceClosePackets_TESTNET_Revert_OwnableUnauthorizedAccount() external {
         // Arrange
         setup_completeCommittee();
         address notOwner = vm.addr(123);
@@ -2732,10 +2733,10 @@ contract CommitteeRegistryTest is Test, HelperContract {
 
         // Act
         vm.prank(notOwner);
-        registry.forceCloseCommittee_TESTNET(SETUP_PENDING_COMMITTEE_STREAM_ID);
+        registry.forceClosePackets_TESTNET(SETUP_PENDING_COMMITTEE_STREAM_ID);
     }
 
-    function test_forceCloseCommittee_TESTNET_Revert_NoActiveCommittees() external {
+    function test_forceClosePackets_TESTNET_Revert_NoActiveCommittees() external {
         // Arrange
         address owner = registry.owner();
 
@@ -2746,10 +2747,10 @@ contract CommitteeRegistryTest is Test, HelperContract {
 
         // Act
         vm.prank(owner);
-        registry.forceCloseCommittee_TESTNET(1);
+        registry.forceClosePackets_TESTNET(1);
     }
 
-    function test_forceCloseCommittee_TESTNET_Success_SingleActiveCommittee() external {
+    function test_forceClosePackets_TESTNET_Success_SingleActiveCommittee() external {
         // Arrange
         (, uint128 committeeId) = setup_completeCommittee();
         uint64 streamId = SETUP_PENDING_COMMITTEE_STREAM_ID;
@@ -2758,22 +2759,24 @@ contract CommitteeRegistryTest is Test, HelperContract {
         // Record member staked balances before force close
         CommitteeMember[] memory members = registry.getCommitteeMembers(committeeId);
         StreamDenomination denomination = StreamDenomination(streamId);
+        uint64 packetNumber = 0;
         uint256[] memory stakedBefore = new uint256[](members.length);
         for (uint256 i = 0; i < members.length; i++) {
-            stakedBefore[i] = memberRegistry.getMemberStakedBalance(members[i].memberAddress, denomination, 0);
+            stakedBefore[i] =
+                memberRegistry.getMemberStakedBalance(members[i].memberAddress, denomination, packetNumber);
         }
 
         // Assert
         vm.expectEmit(address(registry));
-        emit ICommitteeRegistry.CommitteeForceReleased(streamId, committeeId, 0);
+        emit ICommitteeRegistry.CommitteeForceReleased(streamId, committeeId, packetNumber);
         vm.expectEmit(address(streamManager));
-        emit IStreamManager.StreamPointersInvalidated(streamId);
+        emit IStreamManager.StreamPointersRestarted(streamId);
         vm.expectEmit(address(registry));
         emit ICommitteeRegistry.StreamForceReset(streamId);
 
         // Act
         vm.prank(owner);
-        registry.forceCloseCommittee_TESTNET(streamId);
+        registry.forceClosePackets_TESTNET(streamId);
 
         // Assert — shouldCreateCommittee is true
         assertTrue(
@@ -2788,15 +2791,17 @@ contract CommitteeRegistryTest is Test, HelperContract {
             assertEq(availableAfter, stakedBefore[i], "Available balance should equal previous staked");
         }
 
-        // Assert — stream pointers were advanced to the first "future" packet (no active committees)
+        // Assert
         Stream memory streamAfter = streamManager.getStreamById(streamId);
+        // pegin packet pointer was advanced to the first "future" packet
         uint64 packetsLengthAfter = streamManager.getPacketsLength(streamId);
         assertEq(streamAfter.peginPacketPointer, packetsLengthAfter, "Pegin pointer should be at end of packets");
-        assertEq(streamAfter.pegoutPacketPointer, packetsLengthAfter, "No active committees after force close");
-        assertEq(streamAfter.pegoutSlotPointer, 0, "Pegout slot pointer should be zero");
+        // active packets and stream filled slots were cleaned
+        assertEq(streamManager.getActivePackets(streamId).length, 0, "No active packets after force close");
+        assertEq(streamManager.getFilledSlots(streamId).length, 0, "No filled slots after force close");
     }
 
-    function test_forceCloseCommittee_TESTNET_Success_MultipleActiveCommittees() external {
+    function test_forceClosePackets_TESTNET_Success_MultipleActiveCommittees() external {
         // Arrange
         (uint128 firstCommitteeId, uint128 secondCommitteeId, uint64 streamId) = setup_twoActiveCommittees();
         address owner = registry.owner();
@@ -2807,47 +2812,51 @@ contract CommitteeRegistryTest is Test, HelperContract {
         vm.expectEmit(address(registry));
         emit ICommitteeRegistry.CommitteeForceReleased(streamId, secondCommitteeId, 1);
         vm.expectEmit(address(streamManager));
-        emit IStreamManager.StreamPointersInvalidated(streamId);
+        emit IStreamManager.StreamPointersRestarted(streamId);
         vm.expectEmit(address(registry));
         emit ICommitteeRegistry.StreamForceReset(streamId);
 
         // Act
         vm.prank(owner);
-        registry.forceCloseCommittee_TESTNET(streamId);
+        registry.forceClosePackets_TESTNET(streamId);
 
         // Assert
         assertTrue(
             registry.shouldCreateCommitteeHarness(streamId), "shouldCreateCommittee should be true after force close"
         );
 
-        // Assert — no active committees (pegoutPacketPointer == packetsLength)
-        Stream memory streamAfter = streamManager.getStreamById(streamId);
-        uint64 packetsLengthAfter = streamManager.getPacketsLength(streamId);
-        assertEq(streamAfter.pegoutPacketPointer, packetsLengthAfter, "No active committees after force close");
+        // Assert
+        // active packets and stream filled slots were cleaned
+        assertEq(streamManager.getActivePackets(streamId).length, 0, "No active packets after force close");
+        assertEq(streamManager.getFilledSlots(streamId).length, 0, "No filled slots after force close");
     }
 
-    function test_createCommittee_TESTNET_Success_PointersPointToNewPacketAfterForceClose() external {
+    function test_createCommittee_TESTNET_Success_AfterForceClose() external {
         // Arrange — complete a committee and force close it
         setup_completeCommittee();
         uint64 streamId = SETUP_PENDING_COMMITTEE_STREAM_ID;
         uint64 packetsLengthBeforeNewCommittee = streamManager.getPacketsLength(streamId);
 
         vm.prank(registry.owner());
-        registry.forceCloseCommittee_TESTNET(streamId);
+        registry.forceClosePackets_TESTNET(streamId);
 
         // Act — form a new committee after force close
         setup_completeAdditionalCommittee(BLOCK_COMMITTEE_2);
 
-        // Assert — stream pointers point to the new packet
+        // Assert
+        // pegin packet pointer was advanced to the first "future" packet
         Stream memory stream = streamManager.getStreamById(streamId);
         assertEq(stream.peginPacketPointer, packetsLengthBeforeNewCommittee, "Pegin pointer should point to new packet");
+        // active packets and stream filled slots were cleaned
         assertEq(
-            stream.pegoutPacketPointer, packetsLengthBeforeNewCommittee, "Pegout pointer should point to new packet"
+            streamManager.getActivePackets(streamId).length,
+            1,
+            "Shoul be one active packet after creating new committee"
         );
-        assertEq(stream.pegoutSlotPointer, 0, "Pegout slot pointer should be zero");
+        assertEq(streamManager.getFilledSlots(streamId).length, 0, "There should not be filled slots yet");
     }
 
-    function test_forceCloseCommittee_TESTNET_Success_SameMembersCanCreateCommittee() external {
+    function test_forceClosePackets_TESTNET_Success_SameMembersCanCreateCommittee() external {
         // Arrange — complete a committee and get the members
         (, uint128 firstCommitteeId) = setup_completeCommittee();
         uint64 streamId = SETUP_PENDING_COMMITTEE_STREAM_ID;
@@ -2856,7 +2865,7 @@ contract CommitteeRegistryTest is Test, HelperContract {
 
         // Force close the committee
         vm.prank(registry.owner());
-        registry.forceCloseCommittee_TESTNET(streamId);
+        registry.forceClosePackets_TESTNET(streamId);
 
         vm.warp(BLOCK_COMMITTEE_2);
         vm.roll(BLOCK_COMMITTEE_2);

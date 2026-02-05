@@ -8,7 +8,7 @@ import {BtcTransaction, BtcTxSPVProof, StreamPosition, PegStatus} from "src/inte
 import {BitcoinSignatureData} from "src/interfaces/IBitcoinManager.sol";
 import {IPegoutManager, PegoutManagerSettings, PegoutTempInfo} from "src/interfaces/IPegoutManager.sol";
 import {IPeginManager} from "src/interfaces/IPeginManager.sol";
-import {Slot, SlotState, Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
+import {Slot, SlotState, SlotLocation, Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {ISignatureManager} from "src/interfaces/ISignatureManager.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {Constants} from "src/libraries/Constants.sol";
@@ -185,8 +185,9 @@ contract PegoutManagerTest is Test, HelperContract {
         uint256 amountInWei = BtcHelper.satoshiToWei(amount);
 
         Stream memory stream = streamManager.getStream(amount);
-        uint64 slotId = stream.pegoutSlotPointer;
-        uint64 packetNumber = stream.pegoutPacketPointer;
+        SlotLocation memory slotLocation = streamManager.getNextPegoutSlotLocation(stream.streamId);
+        uint64 packetNumber = slotLocation.packetId;
+        uint64 slotId = slotLocation.slotId;
 
         bytes32 expectedPegoutId = calculatePegoutId(stream.streamId, packetNumber, slotId, globalUserAddress);
 
@@ -235,14 +236,15 @@ contract PegoutManagerTest is Test, HelperContract {
     function test_tryPegout_FromNextPacket_Success() external {
         // Setup
         uint256 pegoutAmount = Constants.SLOTS_PER_PACKET + 10;
+        uint256 totalSlotsToUse = Constants.SLOTS_PER_PACKET + 10;
         setup_multipleRequestAndAcceptPeginFlows(pegoutAmount);
 
         bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
         uint64 amount = VALUE;
         uint256 amountInWei = BtcHelper.satoshiToWei(amount);
-        uint64 packetNumberExpected = 0;
-        uint64 slotIdExpected = 0;
-        Stream memory stream;
+        uint64 packetNumberExpected;
+        uint64 slotIdExpected;
+        Stream memory stream = streamManager.getStream(amount);
 
         // Set up mock to allow burning for all pegouts in this test
         bridgeMock.setWeisTransferredToUnionBridge(amountInWei * pegoutAmount);
@@ -253,22 +255,18 @@ contract PegoutManagerTest is Test, HelperContract {
                 packetNumberExpected++;
             }
             slotIdExpected = uint64(i % Constants.SLOTS_PER_PACKET);
-
-            stream = streamManager.getStream(amount);
-            assertEq(packetNumberExpected, stream.pegoutPacketPointer, "PacketNumber before tryPegout is not correct");
-            assertEq(slotIdExpected, stream.pegoutSlotPointer, "SlotId before tryPegout is not correct");
+            SlotLocation memory slotLocationToUse = streamManager.getNextPegoutSlotLocation(stream.streamId);
 
             // Act
             vm.prank(globalUserAddress);
             pegoutManager.tryPegout{value: amountInWei}(userPubKey);
 
             // Assert
-            stream = streamManager.getStream(amount);
-            assertEq(packetNumberExpected, stream.pegoutPacketPointer, "PacketNumber after tryPegout is not correct");
-            assertEq(slotIdExpected, stream.pegoutSlotPointer, "SlotId after tryPegoutis not correct");
-            Slot memory slot =
-                streamManager.getSlot(stream.streamId, stream.pegoutPacketPointer, stream.pegoutSlotPointer);
+            Slot memory slot = streamManager.getSlot(stream.streamId, packetNumberExpected, slotIdExpected);
             assertEq(uint64(slot.state), uint64(SlotState.LOCKED), "Slot was not locked");
+
+            assertTrue(streamManager.hasPegoutInProcess(stream.streamId));
+            assertEq(slotLocationToUse.slotId, slotIdExpected);
 
             // Complete the slot
             BtcTransaction memory pegoutTx = createPegoutTx(slot.acceptPeginTx, userPubKey, slot.acceptPeginAmount);
@@ -276,12 +274,8 @@ contract PegoutManagerTest is Test, HelperContract {
             pegoutManager.registerUserTake(pegoutTxSPVProof);
         }
 
-        stream = streamManager.getStream(amount);
-        assertEq(
-            pegoutAmount,
-            uint256(stream.pegoutPacketPointer) * Constants.SLOTS_PER_PACKET + stream.pegoutSlotPointer,
-            "Pegout amount is not correct"
-        );
+        uint256 lastUsedIndex = streamManager.getNextPegoutSlotIndex(stream.streamId) - 1;
+        assertEq(totalSlotsToUse, lastUsedIndex + 1);
     }
 
     function test_tryPegout_Revert_InvalidPublicKeyLength() external {
@@ -407,10 +401,7 @@ contract PegoutManagerTest is Test, HelperContract {
         Slot memory updatedSlot = streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId);
         assertEq(uint256(updatedSlot.state), uint256(SlotState.COMPLETED), "Slot should be marked as COMPLETED");
 
-        // Verify pegoutPacketPointer and pegoutSlotPointer advance correctly
-        Stream memory updatedStream = streamManager.getStreamById(setup.stream.streamId);
-        assertEq(updatedStream.pegoutPacketPointer, 0, "Should be the same packet");
-        assertEq(updatedStream.pegoutSlotPointer, 1, "Should advance slot pointer after completed");
+        assertFalse(streamManager.hasPegoutInProcess(setup.stream.streamId));
     }
 
     function test_registerUserTake_Success_LastSlot() external {
@@ -449,8 +440,8 @@ contract PegoutManagerTest is Test, HelperContract {
             streamInfo
         );
 
-        vm.expectEmit(address(pegoutManager));
-        emit IPegoutManager.PacketClosed(setup.stream.streamId, setup.packetNumber);
+        vm.expectEmit(address(streamManager));
+        emit IStreamManager.PacketClosed(setup.stream.streamId, setup.packetNumber);
 
         vm.expectEmit(address(registry));
         emit ICommitteeRegistry.CommitteeMembersReleased(setup.stream.streamId, setup.packetNumber);
@@ -461,11 +452,6 @@ contract PegoutManagerTest is Test, HelperContract {
         // Assert: Verify the slot was marked as COMPLETED
         Slot memory updatedSlot = streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId);
         assertEq(uint256(updatedSlot.state), uint256(SlotState.COMPLETED), "Slot should be marked as COMPLETED");
-
-        // Verify pegoutPacketPointer and pegoutSlotPointer advance correctly
-        Stream memory updatedStream = streamManager.getStreamById(setup.stream.streamId);
-        assertEq(updatedStream.pegoutPacketPointer, 1, "Should advance to second packet");
-        assertEq(updatedStream.pegoutSlotPointer, 0, "Should advance slot pointer after completed");
 
         // Assert: Member balances shifted (staked -> preStaked, since reApply defaults to true)
         for (uint256 i = 0; i < members.length; i++) {
@@ -618,8 +604,7 @@ contract PegoutManagerTest is Test, HelperContract {
 
         // Calculate expected values
         Stream memory stream = streamManager.getStream(pegoutAmount);
-        uint64 expectedPacketNumber = stream.pegoutPacketPointer;
-        uint64 expectedSlotId = stream.pegoutSlotPointer;
+        SlotLocation memory slotLocation = streamManager.getNextPegoutSlotLocation(stream.streamId);
 
         // Set up BridgeMock to allow burning this amount
         bridgeMock.setWeisTransferredToUnionBridge(pegoutAmountInWei);
@@ -629,7 +614,7 @@ contract PegoutManagerTest is Test, HelperContract {
         pegoutManager.tryPegout{value: pegoutAmountInWei}(userPubKey);
 
         // Verify slot was locked
-        Slot memory slot = streamManager.getSlot(stream.streamId, expectedPacketNumber, expectedSlotId);
+        Slot memory slot = streamManager.getSlot(stream.streamId, slotLocation.packetId, slotLocation.slotId);
         assertEq(uint256(slot.state), uint256(SlotState.LOCKED), "Slot should be locked after peg-out request");
         assertEq(slot.acceptPeginTx, acceptPeginTxid, "Slot should reference the correct accept peg-in tx");
 
@@ -649,8 +634,8 @@ contract PegoutManagerTest is Test, HelperContract {
             COMMITTEE_ID_STREAM_1_COMMITTEE_1,
             StreamPosition({
                 streamId: stream.streamId,
-                packetNumber: expectedPacketNumber,
-                slotId: expectedSlotId,
+                packetNumber: slotLocation.packetId,
+                slotId: slotLocation.slotId,
                 pegStatus: PegStatus.USER_TAKE
             })
         );
@@ -660,7 +645,7 @@ contract PegoutManagerTest is Test, HelperContract {
 
         // Validate the full peg-out flow, avoiding stack too deep error
         _validateFullPegoutFlow(
-            requestPeginTx, acceptPeginTxid, stream, expectedPacketNumber, expectedSlotId, userPubKey
+            requestPeginTx, acceptPeginTxid, stream, slotLocation.packetId, slotLocation.slotId, userPubKey
         );
     }
 
@@ -956,8 +941,8 @@ contract PegoutManagerTest is Test, HelperContract {
             setup.operatorTakeSPV.blockHash, txid, setup.acceptPeginTxid, COMMITTEE_ID_STREAM_1_COMMITTEE_1, streamInfo
         );
 
-        vm.expectEmit(address(pegoutManager));
-        emit IPegoutManager.PacketClosed(setup.stream.streamId, setup.packetNumber);
+        vm.expectEmit(address(streamManager));
+        emit IStreamManager.PacketClosed(setup.stream.streamId, setup.packetNumber);
 
         // Act: Register the operator take for the last slot
         vm.prank(operatorAddress);
@@ -1326,11 +1311,6 @@ contract PegoutManagerTest is Test, HelperContract {
         // 4. Verify it skips entire first packet and locks slot in second packet
         Slot memory lockedSlot = streamManager.getSlot(stream.streamId, 1, 0);
         assertEq(uint256(lockedSlot.state), uint256(SlotState.LOCKED), "First slot in second packet should be LOCKED");
-
-        // 5. Verify pegoutPacketPointer have advanced and pegoutSlotPointer is up to the locked slot
-        Stream memory updatedStream = streamManager.getStreamById(stream.streamId);
-        assertEq(updatedStream.pegoutPacketPointer, 1, "Should advance packet pointer");
-        assertEq(updatedStream.pegoutSlotPointer, 0, "Should be up to the locked slot");
     }
 
     function test_tryPegout_Revert_EnforcedPause_PausedContract() external {
@@ -1822,8 +1802,9 @@ contract PegoutManagerTest is Test, HelperContract {
         uint256 amountInWei = BtcHelper.satoshiToWei(amount);
 
         Stream memory stream = streamManager.getStream(amount);
-        uint64 slotId = stream.pegoutSlotPointer;
-        uint64 packetNumber = stream.pegoutPacketPointer;
+        SlotLocation memory slotLocation = streamManager.getNextPegoutSlotLocation(stream.streamId);
+        uint64 packetNumber = slotLocation.packetId;
+        uint64 slotId = slotLocation.slotId;
         Slot memory slot = streamManager.getSlot(stream.streamId, packetNumber, slotId);
 
         // Calculate expected burn amount (acceptPeginAmount, not msg.value)
@@ -1860,8 +1841,10 @@ contract PegoutManagerTest is Test, HelperContract {
         uint256 amountInWei = BtcHelper.satoshiToWei(amount);
 
         Stream memory stream = streamManager.getStream(amount);
-        uint64 slotId = stream.pegoutSlotPointer;
-        uint64 packetNumber = stream.pegoutPacketPointer;
+        SlotLocation memory slotLocation = streamManager.getNextPegoutSlotLocation(stream.streamId);
+        uint64 packetNumber = slotLocation.packetId;
+        uint64 slotId = slotLocation.slotId;
+
         Slot memory slot = streamManager.getSlot(stream.streamId, packetNumber, slotId);
 
         uint256 burnAmount = BtcHelper.satoshiToWei(slot.acceptPeginAmount);
@@ -1887,8 +1870,10 @@ contract PegoutManagerTest is Test, HelperContract {
         uint256 amountInWei = BtcHelper.satoshiToWei(amount);
 
         Stream memory stream = streamManager.getStream(amount);
-        uint64 slotId = stream.pegoutSlotPointer;
-        uint64 packetNumber = stream.pegoutPacketPointer;
+        SlotLocation memory slotLocation = streamManager.getNextPegoutSlotLocation(stream.streamId);
+        uint64 packetNumber = slotLocation.packetId;
+        uint64 slotId = slotLocation.slotId;
+
         Slot memory slot = streamManager.getSlot(stream.streamId, packetNumber, slotId);
 
         uint256 burnAmount = BtcHelper.satoshiToWei(slot.acceptPeginAmount);
@@ -1917,8 +1902,10 @@ contract PegoutManagerTest is Test, HelperContract {
         uint256 amountInWei = BtcHelper.satoshiToWei(amount);
 
         Stream memory stream = streamManager.getStream(amount);
-        uint64 slotId = stream.pegoutSlotPointer;
-        uint64 packetNumber = stream.pegoutPacketPointer;
+        SlotLocation memory slotLocation = streamManager.getNextPegoutSlotLocation(stream.streamId);
+        uint64 packetNumber = slotLocation.packetId;
+        uint64 slotId = slotLocation.slotId;
+
         Slot memory slot = streamManager.getSlot(stream.streamId, packetNumber, slotId);
 
         uint256 burnAmount = BtcHelper.satoshiToWei(slot.acceptPeginAmount);

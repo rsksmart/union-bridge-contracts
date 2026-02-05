@@ -25,14 +25,18 @@ while getopts ":-:" opt; do
       ;;
     *)
       echo "Usage: $0 [--alphanet]"
+      echo "Example: $0 "
       exit 1
       ;;
   esac
 done
 
+
 echo "================ REGISTER USER TAKE REQUEST TO $RPC ================"
+
 forge script \
     script/RegisterUserTake.s.sol \
+    --sig "run()" \
     --rpc-url $RPC \
     --legacy \
     --broadcast \

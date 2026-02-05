@@ -86,7 +86,7 @@ contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
         }
 
         console.log("=== Operator take Pegout registered successfully ===");
-        console.log("Stream, Slot, Packet");
+        console.log("Stream, Packet, Slot");
         console.log(expectedStreamId, expectedPacketNumber, expectedSlotId);
     }
 }

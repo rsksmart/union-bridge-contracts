@@ -46,38 +46,23 @@ bash "$SCRIPT_DIR/deploy/deploy-local.sh"
 
 echo "================ CONTRACTS DEPLOYED ================"
 
-# Slot parameters for monitoring
-STREAM_ID=0
-PACKET_NUMBER=0
-SLOT_ID=0
-
 # Setup committee and packet
 bash "$SCRIPT_DIR/integration-test/packet-creation-flow.sh"
 
 echo "================ STEP 1: REQUEST PEGIN ================"
-bash "$SCRIPT_DIR/get-temporary-address.sh"
 bash "$SCRIPT_DIR/request-pegin.sh"
-
-echo "================ STEP 2: CHECK SLOT STATE (SHOULD BE RESERVED) ================"
-echo "After request pegin, slot should be in RESERVED state:"
-bash "$SCRIPT_DIR/tools/get-slot-info.sh" -s "$STREAM_ID" -p "$PACKET_NUMBER" -l "$SLOT_ID"
 
 # Use the default request pegin txid RequestPegin.s.sol
 REQUEST_PEGIN_TXID="0x0f52a17b791cf01a50af91789469afb496087fb45850b4e8b43f756ad925ad20"
 
-echo "================ STEP 3: ADVANCE BITCOIN BLOCKS PAST TIMELOCK ================"
+echo "================ STEP 2: ADVANCE BITCOIN BLOCKS PAST TIMELOCK ================"
 echo "Advancing blocks to simulate timelock expiry..."
-
 # Advance by 12 blocks to pass the timelock period
 bash "$SCRIPT_DIR/tools/advance-bitcoin-blocks.sh" -b 12
 
 echo "Bitcoin blocks advanced. Timelock should now be expired."
 
-echo "================ STEP 4: REGISTER USER REIMBURSEMENT ================"
+echo "================ STEP 3: REGISTER USER REIMBURSEMENT ================"
 bash "$SCRIPT_DIR/user-reimbursement.sh" -r "$REQUEST_PEGIN_TXID"
-
-echo "================ STEP 5: CHECK SLOT STATE (SHOULD BE BLOCKED) ================"
-echo "After user reimbursement, slot should be in BLOCKED state:"
-bash "$SCRIPT_DIR/tools/get-slot-info.sh" -s "$STREAM_ID" -p "$PACKET_NUMBER" -l "$SLOT_ID"
 
 echo "================ USER REIMBURSEMENT FLOW COMPLETE ================"

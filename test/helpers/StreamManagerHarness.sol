@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {SlotState, Slot, StreamManager} from "src/StreamManager.sol";
+import {SlotState, Slot, SlotLocation, StreamManager} from "src/StreamManager.sol";
 import {Role} from "src/interfaces/ICommitteeRegistry.sol";
 import {IBitcoinManager} from "src/interfaces/IBitcoinManager.sol";
 import {StreamManagerSettings} from "src/interfaces/IStreamManager.sol";
@@ -26,6 +26,17 @@ contract StreamManagerHarness is StreamManager {
         uint64 _amount,
         SlotState _state
     ) external returns (uint64) {
+        return _setSlotHarness(_streamId, _packet, _scriptPubKey, _txId, _amount, _state);
+    }
+
+    function _setSlotHarness(
+        uint64 _streamId,
+        uint64 _packet,
+        bytes memory _scriptPubKey,
+        bytes32 _txId,
+        uint64 _amount,
+        SlotState _state
+    ) internal returns (uint64) {
         uint64 slotId = uint64(slots[_streamId][_packet].length);
         slots[_streamId][_packet].push(
             Slot({
@@ -38,12 +49,24 @@ contract StreamManagerHarness is StreamManager {
             })
         );
 
-        return slotId;
-    }
+        if (_state == SlotState.FILLED) {
+            SlotLocation memory newFilledSlot = SlotLocation({packetId: _packet, slotId: slotId});
+            filledSlots[_streamId].push(newFilledSlot);
+        }
 
-    function setPegoutPointersHarness(uint64 _streamId, uint64 _packet, uint16 _slot) external {
-        streams[_streamId].pegoutPacketPointer = _packet;
-        streams[_streamId].pegoutSlotPointer = _slot;
+        if (_state == SlotState.LOCKED) {
+            if (isPegoutInProcess[_streamId]) {
+                revert PegoutInProcess(_streamId);
+            }
+            isPegoutInProcess[_streamId] = true;
+            nextPegoutSlotIndex[_streamId]++;
+        }
+
+        if (_state == SlotState.COMPLETED) {
+            isPegoutInProcess[_streamId] = false;
+        }
+
+        return slotId;
     }
 
     function setPacketEnablerScriptHarness(uint64 _streamId, uint64 _packetNumber, bytes memory _enablerScriptPubKey)
@@ -54,21 +77,20 @@ contract StreamManagerHarness is StreamManager {
 
     function pushSlotsHarness(uint64 _streamId, uint64 _packet, uint64 _slotsAmount, SlotState _slotState) external {
         for (uint64 i = 0; i < _slotsAmount; i++) {
-            slots[_streamId][_packet].push(
-                Slot({
-                    slotId: i,
-                    state: _slotState,
-                    scriptPubKey: hex"00",
-                    acceptPeginTx: bytes32(0),
-                    acceptPeginAmount: 0,
-                    takeTx: ""
-                })
-            );
+            _setSlotHarness(_streamId, _packet, hex"00", bytes32(0), 0, _slotState);
         }
     }
 
     function getSlotsLengthHarness(uint64 _streamId, uint64 _packet) external view returns (uint256) {
         return slots[_streamId][_packet].length;
+    }
+
+    function getNextPegoutSlotIndex(uint64 _streamId) external view returns (uint64) {
+        return nextPegoutSlotIndex[_streamId];
+    }
+
+    function getFilledSlots(uint64 _streamId) external view returns (SlotLocation[] memory) {
+        return filledSlots[_streamId];
     }
 
     function setSlotStateHarness(uint64 _streamId, uint64 _packet, uint64 _slotId, SlotState _state) external {

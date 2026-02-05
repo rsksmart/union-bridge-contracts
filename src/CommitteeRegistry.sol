@@ -16,7 +16,7 @@ import {
     CommunicationData,
     UTXO
 } from "./interfaces/ICommitteeRegistry.sol";
-import {StreamDenomination, IStreamManager, Stream} from "./interfaces/IStreamManager.sol";
+import {StreamDenomination, IStreamManager} from "./interfaces/IStreamManager.sol";
 import {SignatureData} from "./interfaces/ISignatureManager.sol";
 import {IMemberRegistry, MemberKeys} from "./interfaces/IMemberRegistry.sol";
 import {BytesHelper} from "./libraries/BytesHelper.sol";
@@ -779,38 +779,31 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
 
     // --- TESTNET ONLY: Force close committee functionality ---
     // TODO: Remove before mainnet deployment
-    function forceCloseCommittee_TESTNET(uint64 _streamId) external onlyOwner {
+    function forceClosePackets_TESTNET(uint64 _streamId) external onlyOwner {
         accessManager.revertIfNotTestnet();
         // slither-disable-next-line calls-loop
-        Stream memory stream = streamManager.getStreamById(_streamId);
-        // slither-disable-next-line calls-loop
-        uint64 packetsLength = streamManager.getPacketsLength(_streamId);
+        uint64[] memory activePackets = streamManager.getActivePackets(_streamId);
 
-        // Check at least one active committee exists
-        if (stream.pegoutPacketPointer >= packetsLength) {
+        if (activePackets.length == 0) {
             revert NoActiveCommittees(_streamId);
         }
-
         // Update state before external calls (to prevent reentrancy warnings)
         shouldCreateCommittee[_streamId] = true;
 
-        // Process each active committee (from pegoutPacketPointer to packetsLength)
-        for (uint64 packetNumber = stream.pegoutPacketPointer; packetNumber < packetsLength; packetNumber++) {
+        for (uint64 i = 0; i < activePackets.length; i++) {
+            uint64 packetNumber = activePackets[i];
             // slither-disable-next-line calls-loop
             uint128 committeeId = streamManager.getCommitteeId(_streamId, packetNumber);
             CommitteeMember[] memory members = _getCommitteeMembers(committeeId);
-
-            // Release funds and unsubscribe members
             // slither-disable-next-line calls-loop
             memberRegistry.forceReleaseCommitteeMembers_TESTNET(_streamId, packetNumber, members);
-
             // slither-disable-next-line reentrancy-events
             emit CommitteeForceReleased(_streamId, committeeId, packetNumber);
+            // slither-disable-next-line calls-loop
+            streamManager.closePacket_TESTNET(_streamId, packetNumber);
         }
 
-        // Invalidate stream pointers (createNewPacket will auto-correct later)
-        streamManager.invalidateStreamPointers_TESTNET(_streamId);
-
+        streamManager.restartStreamPointers_TESTNET(_streamId);
         // slither-disable-next-line reentrancy-events
         emit StreamForceReset(_streamId);
     }

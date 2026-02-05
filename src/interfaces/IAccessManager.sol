@@ -105,10 +105,15 @@ interface IAccessManager {
     /// @dev Used to protect testnet-only functions from being called on mainnet
     function revertIfNotTestnet() external view;
 
-    /// @notice Requires the caller to have permissions to invalidate stream pointers
+    /// @notice Requires the caller to have permissions to restart stream pointers
     /// @param _caller The address of the caller
-    /// @dev Reverts if the caller does not have permissions to invalidate stream pointers
-    function canForceUpdateStreamPointers(address _caller) external view;
+    /// @dev Reverts if the caller does not have permissions to restart stream pointers
+    function canForceRestartStreamPointers(address _caller) external view;
+
+    /// @notice Requires the caller to have permissions to force stream packets close
+    /// @param _caller The address of the caller
+    /// @dev Reverts if the caller does not have permissions to force stream packets close
+    function canForceCloseStreamPackets(address _caller) external view;
 
     /// @notice Requires the caller to have permissions force release a committee
     /// @param _caller The address of the caller
@@ -120,7 +125,11 @@ interface IAccessManager {
 
     /// @notice Thrown when an account is not authorized to invalidate stream pointers
     /// @param _caller The address of the unauthorized account
-    error UnauthorizedToInvalidateStreamPointers(address _caller);
+    error UnauthorizedToRestartStreamPointers(address _caller);
+
+    /// @notice Thrown when an account is not authorized to force stream packets close
+    /// @param _caller The address of the unauthorized account
+    error UnauthorizedToForceCloseStreamPackets(address _caller);
 
     /// @notice Thrown when an account is not authorized to force release a committee
     /// @param _caller The address of the unauthorized account

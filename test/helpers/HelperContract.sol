@@ -26,7 +26,7 @@ import {BridgeMock} from "./BridgeMock.sol";
 import {TestUtils} from "./TestUtils.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {OpCodes} from "src/libraries/OpCodes.sol";
-import {Stream, SlotState} from "src/interfaces/IStreamManager.sol";
+import {Stream, SlotState, SlotLocation} from "src/interfaces/IStreamManager.sol";
 import {CommitteeRegistryHarness} from "./CommitteeRegistryHarness.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {RbtcBridge} from "src/RbtcBridge.sol";
@@ -519,8 +519,10 @@ abstract contract HelperContract is Test, TestUtils {
 
         // Calculate expected values
         Stream memory stream = streamManager.getStream(pegoutAmount);
-        setup.packetNumber = stream.pegoutPacketPointer;
-        setup.slotId = stream.pegoutSlotPointer;
+
+        SlotLocation memory slotLocation = streamManager.getNextPegoutSlotLocation(stream.streamId);
+        setup.packetNumber = slotLocation.packetId;
+        setup.slotId = slotLocation.slotId;
 
         // Set up mock to allow burning this amount
         // Add capacity to support multiple pegout calls in sequence
