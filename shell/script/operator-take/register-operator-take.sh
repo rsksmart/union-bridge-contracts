@@ -4,10 +4,9 @@
 CURRENT_PATH=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 cd "$CURRENT_PATH/../../.."
 
-
 # Defaults
 ACCEPT_PEGIN_TXID="0x287ccabdb0e43b06ed2a4370139e9373a3fcb88625c4752e7947c5b858828115"
-PEGOUT_ID="0x10585ac9ce7f432fe24638c1b8f4ff53b27931f637e8f1b379b96d90de10051d"
+PEGOUT_ID="0xf3bed2c6accdfb255a92799af6479c94d8c1a1c5f1c26f07abef190484f2a981"
 
 # set up environment variables
 source .env
@@ -37,6 +36,8 @@ while getopts ":a:-:" opt; do
 done
 
 echo "================ REGISTER OPERATOR TAKE REQUEST TO $RPC ================"
+echo "Stream ID: $STREAM_ID, Packet: $PACKET_NUMBER, Slot: $SLOT_ID"
+
 forge script \
     script/RegisterOperatorTake.s.sol \
      --sig "run(bytes32, bytes32)" \

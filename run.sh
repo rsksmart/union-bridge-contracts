@@ -8,10 +8,14 @@ bash shell/script/deploy/simulate-deploy.sh
 # gas report (It also runs tests)
 bash shell/gas-report.sh
 # packet creation flow is running in the peg flow
-bash shell/script/integration-test/local-peg-full-flow.sh
-# user reimbursement flow
-bash shell/script/integration-test/user-reimbursement-flow.sh
+bash shell/script/integration-test/user-take-flow.sh
+# operator take flow
+bash shell/script/integration-test/operator-take-flow.sh
+# operator won flow
+bash shell/script/integration-test/operator-won-flow.sh
 # reject pegin flow
 bash shell/script/integration-test/reject-pegin-flow.sh
+# user reimbursement flow
+bash shell/script/integration-test/user-reimbursement-flow.sh
 # run slither
 bash shell/slither.sh

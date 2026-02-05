@@ -168,7 +168,7 @@ library Constants {
 
     // Stream and Packet Constants
     /// @dev Number of slots per packet in the streamfv
-    /// @dev NOTE: SLOTS_PER_PACKET should be smaller than 2^16 to avoid overflow of Stream.pegoutSlotPointer
+    /// @dev NOTE: SLOTS_PER_PACKET should be smaller than 2^16 to avoid overflow of slot location
     uint8 constant SLOTS_PER_PACKET = 100;
 
     /// @dev Threshold for slot usage that triggers new committee creation

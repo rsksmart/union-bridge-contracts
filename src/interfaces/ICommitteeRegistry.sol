@@ -582,6 +582,6 @@ interface ICommitteeRegistry {
 
     error NoActiveCommittees(uint64 streamId);
 
-    function forceCloseCommittee_TESTNET(uint64 _streamId) external;
+    function forceClosePackets_TESTNET(uint64 _streamId) external;
     // --- END TESTNET ONLY ---
 }

@@ -14,10 +14,9 @@ import {
     UTXO
 } from "src/interfaces/ICommitteeRegistry.sol";
 import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
-import {IPegoutManager} from "src/interfaces/IPegoutManager.sol";
 import {IAccessManager} from "src/interfaces/IAccessManager.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
-import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
+import {IStreamManager, StreamDenomination} from "src/interfaces/IStreamManager.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
@@ -1672,8 +1671,8 @@ contract MemberRegistryTest is Test, HelperContract {
         assertCandidateAmount(denomination, 0);
 
         // Assert
-        vm.expectEmit(address(pegoutManager));
-        emit IPegoutManager.PacketClosed(committee.streamId, 0);
+        vm.expectEmit(address(streamManager));
+        emit IStreamManager.PacketClosed(committee.streamId, 0);
 
         // Act
         pegoutManager.registerUserTake(setup.pegoutTxSPVProof);
@@ -1755,8 +1754,8 @@ contract MemberRegistryTest is Test, HelperContract {
         );
 
         // Assert
-        vm.expectEmit(address(pegoutManager));
-        emit IPegoutManager.PacketClosed(committee.streamId, 0);
+        vm.expectEmit(address(streamManager));
+        emit IStreamManager.PacketClosed(committee.streamId, 0);
 
         // Act
         pegoutManager.registerUserTake(setup.pegoutTxSPVProof);
@@ -1816,8 +1815,8 @@ contract MemberRegistryTest is Test, HelperContract {
         }
 
         // Assert
-        vm.expectEmit(address(pegoutManager));
-        emit IPegoutManager.PacketClosed(committee.streamId, 0);
+        vm.expectEmit(address(streamManager));
+        emit IStreamManager.PacketClosed(committee.streamId, 0);
 
         // Act
         pegoutManager.registerUserTake(setup.pegoutTxSPVProof);
@@ -1872,8 +1871,8 @@ contract MemberRegistryTest is Test, HelperContract {
         assertCandidateAmount(denomination, 0);
 
         // Assert
-        vm.expectEmit(address(pegoutManager));
-        emit IPegoutManager.PacketClosed(committee.streamId, 0);
+        vm.expectEmit(address(streamManager));
+        emit IStreamManager.PacketClosed(committee.streamId, 0);
 
         // Act
         pegoutManager.registerUserTake(setup.pegoutTxSPVProof);

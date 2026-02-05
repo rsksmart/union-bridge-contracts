@@ -25,14 +25,17 @@ while getopts ":-:" opt; do
       ;;
     *)
       echo "Usage: $0 [--alphanet]"
+      echo "Example: $0 "
       exit 1
       ;;
   esac
 done
 
-echo "================ REGISTER PEGOUT $RPC ================"
+echo "================ TRY PEGOUT $RPC ================"
+
 forge script \
     script/TryPegout.s.sol \
+    --sig "run()" \
     --rpc-url $RPC \
     --legacy \
     --broadcast \

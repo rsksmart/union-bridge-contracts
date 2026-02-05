@@ -42,6 +42,12 @@ enum SlotState {
     LENGTH
 }
 
+/// @notice Represents the location of a slot in the stream system
+struct SlotLocation {
+    uint64 packetId;
+    uint64 slotId;
+}
+
 /// @notice Represents a slot within a packet that can hold funds
 /// @dev Each slot corresponds to a specific UTXO in the Bitcoin network
 struct Slot {
@@ -76,6 +82,8 @@ struct Packet {
     /// @notice The enabler output script for the packet
     /// @dev All slots in a packet share the same enabler script based on the committee
     bytes enablerScriptPubKey;
+    /// @notice Counter of finished slots (completed or blocked)
+    uint64 finishedSlots;
 }
 
 /// @notice Represents a stream that manages funds of a specific denomination
@@ -89,12 +97,6 @@ struct Stream {
     /// @notice Index pointing to the current packet with space for peg-in requests
     /// @dev Used to track which packet should receive new peg-in transactions
     uint64 peginPacketPointer;
-    /// @notice Index pointing to the current packet that should have filled slots for peg-out requests
-    /// @dev Used to track which packet should be processed for peg-out operations
-    uint64 pegoutPacketPointer;
-    /// @notice Index pointing to the first slot in the pegoutPacketPointer that should be processed
-    /// @dev Used to track which slot should be processed next for peg-out operations
-    uint16 pegoutSlotPointer;
     /// @notice Number of confirmations required for peg-in transactions
     /// @dev Ensures sufficient Bitcoin confirmations before accepting peg-ins
     uint8 peginConfirmations;
@@ -195,6 +197,17 @@ interface IStreamManager {
     /// @return The packet data
     function getPacket(uint64 _streamId, uint64 _packetNumber) external view returns (Packet memory);
 
+    /// @notice Gets the slot location that next pegout would have
+    /// @dev Throws when there are no more filled slots - cant do a pegout
+    /// @param _streamId The ID of the stream
+    /// @return The slot location data
+    function getNextPegoutSlotLocation(uint64 _streamId) external view returns (SlotLocation memory);
+
+    /// @notice Returns whether there is a pegout in process associated to a stream
+    /// @param _streamId The ID of the stream
+    /// @return True if there is a pegout in process, false if not
+    function hasPegoutInProcess(uint64 _streamId) external view returns (bool);
+
     /// @notice Returns the first filled slot, locks it, and updates the peg-out pointers
     /// @notice Reverts if a pegout is already in progress for the same stream
     /// @dev Can only be called by the PegManager
@@ -257,19 +270,14 @@ interface IStreamManager {
 
     /// @notice Marks a slot as completed and stores the UserTake transaction id
     /// @dev Can only be called by the PegManager
-    /// @dev Moves the pegout slot pointer to the next slot
-    /// @param _streamId The ID of the stream
-    /// @param _packetNumber The packet number
-    /// @param _slotId The slot ID
+    /// @dev Close the packet if completed slot is the last one
+    /// @param _streamInfo The stream info
     /// @param _acceptPeginTxid The hash of the accept peg-in transaction
     /// @param _userTakeTx The hash of the UserTake transaction
-    function completeSlot(
-        uint64 _streamId,
-        uint64 _packetNumber,
-        uint64 _slotId,
-        bytes32 _acceptPeginTxid,
-        bytes32 _userTakeTx
-    ) external;
+    /// @return bool Whether the packet was closed or not
+    function completeSlot(StreamPosition memory _streamInfo, bytes32 _acceptPeginTxid, bytes32 _userTakeTx)
+        external
+        returns (bool);
 
     /// @notice Marks a slot as advanced by the operator to the user
     /// @dev Updates the slot state to ADVANCED and stores the operator's peg-out transaction
@@ -338,6 +346,11 @@ interface IStreamManager {
     /// @return The stream position associated with the transaction ID
     function getStreamPosition(bytes32 _acceptPeginTxid) external view returns (StreamPosition memory);
 
+    /// @notice Retrieves the active packets associated to a stream
+    /// @param _streamId The ID of the stream
+    /// @return The list of active packets IDs
+    function getActivePackets(uint64 _streamId) external view returns (uint64[] memory);
+
     /// @notice Gets the length of the slots in a packet
     /// @param _streamId The ID of the stream
     /// @param _packetNumber The packet number
@@ -360,6 +373,13 @@ interface IStreamManager {
     /// @param streamId The ID of the stream containing the packet
     /// @param packetNumber The number of the newly created packet
     event PacketCreated(uint64 streamId, uint64 packetNumber);
+
+    /// @notice Event emitted when a packet is closed in the stream
+    /// @param streamId The ID of the stream where the packet was closed
+    /// @param packetNumber The number of the packet that was closed
+    /// @dev Indicates that all slots in the packet have been processed and pegged out
+    /// @dev This event is used to track the lifecycle of packets in the stream
+    event PacketClosed(uint64 indexed streamId, uint64 indexed packetNumber);
 
     /// @notice Event emitted when a new slot is created
     /// @param streamId The ID of the stream containing the slot
@@ -454,10 +474,6 @@ interface IStreamManager {
     /// @param currentState The unexpected state
     error _InconsistentSlotState(uint256 streamId, uint256 packetNumber, uint256 slotId, SlotState currentState);
 
-    /// @notice Thrown when no packets are available for a given stream
-    /// @param streamId The stream ID
-    error NoPacketAvailable(uint256 streamId);
-
     // TODO: should this error be internal?
     /// @notice Thrown when there are inconsistent slots per packet
     /// @param streamId The stream ID
@@ -546,8 +562,10 @@ interface IStreamManager {
 
     // --- TESTNET ONLY: Force close committee functionality ---
     // TODO: Remove before mainnet deployment
-    event StreamPointersInvalidated(uint64 streamId);
+    event StreamPointersRestarted(uint64 streamId);
 
-    function invalidateStreamPointers_TESTNET(uint64 _streamId) external;
+    function restartStreamPointers_TESTNET(uint64 _streamId) external;
+
+    function closePacket_TESTNET(uint64 _streamId, uint64 _packetNumber) external;
     // --- END TESTNET ONLY ---
 }

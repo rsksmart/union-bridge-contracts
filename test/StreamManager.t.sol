@@ -6,6 +6,7 @@ import {HelperContract} from "test/helpers/HelperContract.sol";
 import {
     SlotState,
     Slot,
+    SlotLocation,
     Packet,
     Stream,
     IStreamManager,
@@ -15,7 +16,9 @@ import {
     StreamSettings
 } from "src/interfaces/IStreamManager.sol";
 import {IAccessManager} from "src/interfaces/IAccessManager.sol";
-import {StreamPosition, PegStatus} from "src/interfaces/IPegCommonTypes.sol";
+import {BtcTransaction, PrevoutData, BitcoinSignatureData} from "src/interfaces/IBitcoinManager.sol";
+import {BtcHelper} from "src/libraries/BtcHelper.sol";
+import {StreamPosition, PegStatus, BtcTxSPVProof} from "src/interfaces/IPegCommonTypes.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Committee, Role} from "src/interfaces/ICommitteeRegistry.sol";
@@ -1361,12 +1364,14 @@ contract StreamManagerTest is Test, HelperContract {
         assertEq(uint256(updatedSlot1.state), uint256(SlotState.BLOCKED), "Slot 1 should remain BLOCKED");
     }
 
-    function test_lockSlot_Success_SecondPacket() external {
+    function test_lockSlot_Success_ThirdPacket() external {
         uint64 streamId = setupStreamId;
-        uint64 firstPacketNumber = 0;
-        uint64 secondPacketNumber = 1;
 
-        // Fill first packet with blocked/completed slots
+        // Fill first packet with BLOCKED slots
+        uint64 firstPacketNumber = 0;
+        streamManager.pushSlotsHarness(streamId, firstPacketNumber, Constants.SLOTS_PER_PACKET, SlotState.BLOCKED);
+        // Fill second packet with RESERVED slots
+        uint64 secondPacketNumber = 1;
         streamManager.pushSlotsHarness(streamId, firstPacketNumber, Constants.SLOTS_PER_PACKET, SlotState.BLOCKED);
 
         // Create a new packet and add one filled slot
@@ -1376,26 +1381,27 @@ contract StreamManagerTest is Test, HelperContract {
         bytes32[] memory disputeKeys = registry.getCommitteeDisputeKeys(committeeId);
         vm.prank(address(registry));
         streamManager.createNewPacket(streamId, committeeId, committeePubKey, disputeKeys);
-
-        streamManager.pushSlotsHarness(streamId, secondPacketNumber, 1, SlotState.FILLED);
+        uint64 thirdPacketNumber = 2;
+        streamManager.pushSlotsHarness(streamId, thirdPacketNumber, 1, SlotState.FILLED);
 
         // Act - lockSlot should skip to second packet
         vm.prank(address(pegoutManager));
         (Slot memory lockedSlot, uint64 returnedPacketNumber) = streamManager.lockSlot(streamId);
 
         // Assert
-        assertEq(lockedSlot.slotId, 0, "Should lock first slot in second packet");
+        assertEq(returnedPacketNumber, thirdPacketNumber, "Should return third packet number");
+        assertEq(lockedSlot.slotId, 0, "Should lock first slot in packet");
         assertEq(uint256(lockedSlot.state), uint256(SlotState.LOCKED), "Slot should be LOCKED");
-        assertEq(returnedPacketNumber, secondPacketNumber, "Should return second packet number");
     }
 
-    function _test_lockSlot_Revert_PegoutInProcess(SlotState slotState) internal {
+    function test_lockSlot_Revert_PegoutInProcess() external {
         // Arrange
         uint64 streamId = setupStreamId;
         uint64 packetNumber = 0;
+        uint64 slotsAmount = 1;
 
-        // Create multiple blocked slots
-        streamManager.pushSlotsHarness(streamId, packetNumber, Constants.SLOTS_PER_PACKET, slotState);
+        streamManager.pushSlotsHarness(streamId, packetNumber, slotsAmount, SlotState.FILLED);
+        streamManager.pushSlotsHarness(streamId, packetNumber, slotsAmount, SlotState.LOCKED);
 
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IStreamManager.PegoutInProcess.selector, streamId));
@@ -1421,20 +1427,8 @@ contract StreamManagerTest is Test, HelperContract {
         streamManager.lockSlot(streamId);
     }
 
-    function test_lockSlot_Revert_PegoutInProcess_AllReserved() external {
+    function test_lockSlot_Revert_NoFilledSlot_AllReserved() external {
         _test_lockSlot_Revert_NoFilledSlot(SlotState.RESERVED);
-    }
-
-    function test_lockSlot_Revert_PegoutInProcess_AllLocked() external {
-        _test_lockSlot_Revert_PegoutInProcess(SlotState.LOCKED);
-    }
-
-    function test_lockSlot_Revert_PegoutInProcess_AllAdvanced() external {
-        _test_lockSlot_Revert_PegoutInProcess(SlotState.ADVANCED);
-    }
-
-    function test_lockSlot_Revert_PegoutInProcess_AllCompleted() external {
-        _test_lockSlot_Revert_PegoutInProcess(SlotState.COMPLETED);
     }
 
     function test_lockSlot_Revert_NoFilledSlot_AllBlocked() external {
@@ -1476,12 +1470,108 @@ contract StreamManagerTest is Test, HelperContract {
 
         // 5. Complete slot
         vm.prank(address(pegoutManager));
-        streamManager.completeSlot(streamId, packetNumber, slotId, acceptPeginTx, userTakeTx);
+        streamManager.completeSlot(streamPos, acceptPeginTx, userTakeTx);
 
         // Verify final state
         Slot memory completedSlot = streamManager.getSlot(streamId, packetNumber, slotId);
         assertEq(uint256(completedSlot.state), uint256(SlotState.COMPLETED), "Slot should be COMPLETED");
         assertEq(completedSlot.takeTx, userTakeTx, "userTakeTx should be stored");
+    }
+
+    function test_completeSlot_ClosePacket_OutOfOrderFills() external {
+        // Test to check that packet closes only if all slots are finished (i.e., blocked or completed) and not before
+        // This test uses the full pegin/pegout flow (requestPegin -> acceptPegin -> tryPegout -> registerUserTake)
+
+        // Arrange
+        // Store all request pegin transactions
+        BtcTransaction[] memory requestPeginTxs = new BtcTransaction[](Constants.SLOTS_PER_PACKET);
+        // Do 100 request pegins (reserves slots 0-99 in order)
+        for (uint64 i = 0; i < Constants.SLOTS_PER_PACKET; i++) {
+            (BtcTransaction memory btcTx,) = setup_requestPeginFlow();
+            requestPeginTxs[i] = btcTx;
+        }
+        // Accept pegins out of order: 0-97, then 99, then 98
+        // So filledSlots will be [0,1,...,97,99,98]
+        uint64 pegoutsInOrder = Constants.SLOTS_PER_PACKET - 2;
+        for (uint64 i = 0; i < pegoutsInOrder; i++) {
+            setup_acceptPeginFlow(requestPeginTxs[i]);
+        }
+        setup_acceptPeginFlow(requestPeginTxs[99]);
+        setup_acceptPeginFlow(requestPeginTxs[98]);
+
+        bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+        Stream memory stream = streamManager.getStreamById(setupStreamId);
+        uint64 pegoutAmount = stream.denomination;
+        uint256 pegoutAmountInWei = BtcHelper.satoshiToWei(pegoutAmount);
+
+        // Do 99 pegouts full flow
+        // Order should be: 0, 1, 2, ..., 97, 99, 98 since it depends on filled slots order
+        uint64[] memory expectedPegoutOrder = new uint64[](Constants.SLOTS_PER_PACKET);
+        for (uint64 i = 0; i < Constants.SLOTS_PER_PACKET - 2; i++) {
+            expectedPegoutOrder[i] = i;
+        }
+        expectedPegoutOrder[98] = 99;
+        expectedPegoutOrder[99] = 98;
+
+        uint64 expectedPacketNumber = 0;
+        for (uint64 pegoutIndex = 0; pegoutIndex < Constants.SLOTS_PER_PACKET - 1; pegoutIndex++) {
+            SlotLocation memory slotLocation = streamManager.getNextPegoutSlotLocation(setupStreamId);
+            uint64 returnedPacketNumber = slotLocation.packetId;
+            assertEq(returnedPacketNumber, expectedPacketNumber);
+            uint64 slotId = slotLocation.slotId;
+            assertEq(slotId, expectedPegoutOrder[pegoutIndex]);
+
+            // Prepare and perform a real pegout
+            bridgeMock.setWeisTransferredToUnionBridge(pegoutAmountInWei);
+            vm.prank(globalUserAddress);
+            pegoutManager.tryPegout{value: pegoutAmountInWei}(userPubKey);
+            // Build pegout tx SPV proof for this locked slot and register the user take
+            Slot memory slot = streamManager.getSlot(stream.streamId, returnedPacketNumber, slotId);
+            PrevoutData[] memory prevoutDatas = new PrevoutData[](2);
+            prevoutDatas[0] = PrevoutData({value: slot.acceptPeginAmount, scriptPubKey: slot.scriptPubKey});
+            prevoutDatas[1] = PrevoutData({
+                value: Constants.ENABLER_AMOUNT,
+                scriptPubKey: streamManager.getEnablerScriptPubKey(stream.streamId, returnedPacketNumber)
+            });
+            BitcoinSignatureData memory pegoutSignatureData =
+                bitcoinManager.getPegoutTxData(userPubKey, slot.acceptPeginTx, prevoutDatas);
+            BtcTxSPVProof memory pegoutProof = createBtcTxSPVProof(pegoutSignatureData.tx);
+
+            pegoutManager.registerUserTake(pegoutProof);
+        }
+
+        // last pegout
+        SlotLocation memory lastSlotLocation = streamManager.getNextPegoutSlotLocation(setupStreamId);
+        assertEq(lastSlotLocation.packetId, expectedPacketNumber);
+        assertEq(lastSlotLocation.slotId, expectedPegoutOrder[99]);
+
+        // Prepare and perform a real pegout
+        bridgeMock.setWeisTransferredToUnionBridge(pegoutAmountInWei);
+        vm.prank(globalUserAddress);
+        pegoutManager.tryPegout{value: pegoutAmountInWei}(userPubKey);
+        // Build pegout tx SPV proof for this locked slot and register the user take
+        Slot memory lastSlot =
+            streamManager.getSlot(stream.streamId, lastSlotLocation.packetId, lastSlotLocation.slotId);
+        PrevoutData[] memory lastPrevoutDatas = new PrevoutData[](2);
+        lastPrevoutDatas[0] = PrevoutData({value: lastSlot.acceptPeginAmount, scriptPubKey: lastSlot.scriptPubKey});
+        lastPrevoutDatas[1] = PrevoutData({
+            value: Constants.ENABLER_AMOUNT,
+            scriptPubKey: streamManager.getEnablerScriptPubKey(stream.streamId, 0)
+        });
+        BitcoinSignatureData memory lastPegoutSignatureData =
+            bitcoinManager.getPegoutTxData(userPubKey, lastSlot.acceptPeginTx, lastPrevoutDatas);
+        BtcTxSPVProof memory lastPegoutProof = createBtcTxSPVProof(lastPegoutSignatureData.tx);
+
+        // Assert
+        vm.expectEmit(address(streamManager));
+        emit IStreamManager.PacketClosed(setupStreamId, lastSlotLocation.packetId);
+
+        // Act
+        pegoutManager.registerUserTake(lastPegoutProof);
+
+        // Assert
+        Packet memory packet = streamManager.getPacket(setupStreamId, lastSlotLocation.packetId);
+        assertEq(packet.finishedSlots, Constants.SLOTS_PER_PACKET);
     }
 
     function test_getEnablerScriptPubKey_Success() external view {

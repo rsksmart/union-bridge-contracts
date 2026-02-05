@@ -5,48 +5,43 @@ import {console} from "forge-std/console.sol";
 import {PegoutManager} from "src/PegoutManager.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
-import {Slot, Stream, SlotState, IStreamManager} from "src/interfaces/IStreamManager.sol";
+import {Slot, SlotState, IStreamManager} from "src/interfaces/IStreamManager.sol";
+import {StreamPosition} from "src/interfaces/IPegCommonTypes.sol";
 
 contract TriggerOperatorTakeScript is ScriptUtils, ContractAddressManager {
     PegoutManager pegoutManager;
-
-    uint64 amount;
-    Stream stream;
     IStreamManager streamManager;
-    uint64 expectedPacketNumber;
-    uint64 expectedSlotId;
+    uint64 amount;
 
     function setUp() internal {
         pegoutManager = PegoutManager(getPegoutManager());
-        amount = 100_000; // 0.001 BTC
-
-        // Calculate expected slot and packet numbers
         streamManager = pegoutManager.streamManager();
-        stream = streamManager.getStream(amount);
-        expectedPacketNumber = stream.pegoutPacketPointer;
-        expectedSlotId = stream.pegoutSlotPointer; // At this point we already executed the peg out
     }
 
-    function run(bytes32 _pegoutSignatureHash) public {
+    function run(bytes32 _pegoutTxId) public {
         setUp();
 
-        Slot memory slot = streamManager.getSlot(stream.streamId, expectedPacketNumber, expectedSlotId);
+        console.log("=== Trigger Operator Take ===");
+        bytes32 acceptPeginTxid = pegoutManager.getAcceptPeginTxid(_pegoutTxId);
+        StreamPosition memory streamPosition = streamManager.getStreamPosition(acceptPeginTxid);
+        Slot memory slot =
+            streamManager.getSlot(streamPosition.streamId, streamPosition.packetNumber, streamPosition.slotId);
         if (slot.state != SlotState.LOCKED && slot.state != SlotState.ADVANCED) {
             revert("Slot should be marked as LOCKED or ADVANCED before triggering the operator take");
         }
 
         // Register operator take
         vm.startBroadcast(getDeployerKey());
-        pegoutManager.triggerOperatorTake(_pegoutSignatureHash);
+        pegoutManager.triggerOperatorTake(_pegoutTxId);
         vm.stopBroadcast();
 
-        slot = streamManager.getSlot(stream.streamId, expectedPacketNumber, expectedSlotId);
+        slot = streamManager.getSlot(streamPosition.streamId, streamPosition.packetNumber, streamPosition.slotId);
         if (slot.state != SlotState.ADVANCED) {
             revert("Slot should be marked as ADVANCED after operator take triggered");
         }
 
-        console.log("=== Operator Take triggered successfully ===");
-        console.log("Stream, Slot, Packet");
-        console.log(stream.streamId, expectedPacketNumber, expectedSlotId);
+        // console.log("=== Operator Take triggered successfully ===");
+        // console.log("Stream, Packet, Slot");
+        // console.log(streamPosition.streamId, streamPosition.packetNumber, streamPosition.slotId);
     }
 }

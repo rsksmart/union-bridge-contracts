@@ -73,6 +73,11 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         return pegoutTempInfo[_acceptPeginTxid];
     }
 
+    /// @inheritdoc IPegoutManager
+    function getAcceptPeginTxid(bytes32 _pegoutTxid) external view returns (bytes32) {
+        return pegoutToPeginTxid[_pegoutTxid];
+    }
+
     function _validatePegoutRequest(bytes memory _userPubKey, uint256 amountInWei) internal pure {
         if (BtcHelper.weiToSatoshi(amountInWei) > type(uint64).max) {
             revert PegoutRequestAmountExceedsUint64Limit(BtcHelper.weiToSatoshi(amountInWei));
@@ -187,14 +192,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
             pegoutTempInfo[acceptPeginTxid].committeeId,
             streamInfo
         );
-
-        // Update slot status
-        streamManager.completeSlot(
-            streamInfo.streamId, streamInfo.packetNumber, streamInfo.slotId, acceptPeginTxid, requestPegoutTxid
-        );
-
-        // If it's the last slot in the package, close and release the committee
-        _closePacketIfLastSlot(streamInfo);
+        _completeSlot(streamInfo, acceptPeginTxid, requestPegoutTxid);
     }
 
     /// @inheritdoc IPegoutManager
@@ -447,14 +445,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
 
         // update the peg status to COMPLETED
         streamManager.setPegStatus(acceptPeginTxid, PegStatus.COMPLETED);
-
-        // Update slot status
-        streamManager.completeSlot(
-            streamInfo.streamId, streamInfo.packetNumber, streamInfo.slotId, acceptPeginTxid, txid
-        );
-
-        // If it's the last slot in the package, close and release the committee
-        _closePacketIfLastSlot(streamInfo);
+        _completeSlot(streamInfo, acceptPeginTxid, txid);
     }
 
     /// @notice Deposits an operator won proof for a peg-out transaction
@@ -522,14 +513,14 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
 
         // update the peg status to COMPLETED
         streamManager.setPegStatus(acceptPeginTxid, PegStatus.COMPLETED);
+        _completeSlot(streamInfo, acceptPeginTxid, txid);
+    }
 
-        // Update slot status
-        streamManager.completeSlot(
-            streamInfo.streamId, streamInfo.packetNumber, streamInfo.slotId, acceptPeginTxid, txid
-        );
-
-        // If it's the last slot in the package, close and release the committee
-        _closePacketIfLastSlot(streamInfo);
+    function _completeSlot(StreamPosition memory _streamInfo, bytes32 _acceptPeginTxid, bytes32 _txid) internal {
+        bool packetClosed = streamManager.completeSlot(_streamInfo, _acceptPeginTxid, _txid);
+        if (packetClosed) {
+            committeeRegistry.releaseCommittee(_streamInfo.streamId, _streamInfo.packetNumber);
+        }
     }
 
     function _getOperatorTakeData(bytes32 _acceptPeginTxid, address _opAddress)
@@ -563,14 +554,6 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         }
         operatorTakeTimeout = _timeout;
         emit OperatorTakeTimeoutUpdated(operatorTakeTimeout);
-    }
-
-    function _closePacketIfLastSlot(StreamPosition memory streamInfo) internal {
-        // If it's the last slot in the package, close and release the committee
-        if (streamInfo.slotId == Constants.SLOTS_PER_PACKET - 1) {
-            emit PacketClosed(streamInfo.streamId, streamInfo.packetNumber);
-            committeeRegistry.releaseCommittee(streamInfo.streamId, streamInfo.packetNumber);
-        }
     }
 
     function _preparePegoutPrevoutDatas(uint64 _streamId, uint64 _packetNumber, Slot memory _slot)

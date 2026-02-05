@@ -103,10 +103,17 @@ contract AccessManager is IAccessManager, PauseManager {
         _revertIfNotTestnet();
     }
 
-    function canForceUpdateStreamPointers(address _caller) external view {
+    function canForceRestartStreamPointers(address _caller) external view {
         _revertIfNotTestnet();
         if (_caller != committeeRegistry) {
-            revert UnauthorizedToInvalidateStreamPointers(_caller);
+            revert UnauthorizedToRestartStreamPointers(_caller);
+        }
+    }
+
+    function canForceCloseStreamPackets(address _caller) external view {
+        _revertIfNotTestnet();
+        if (_caller != committeeRegistry) {
+            revert UnauthorizedToForceCloseStreamPackets(_caller);
         }
     }
 

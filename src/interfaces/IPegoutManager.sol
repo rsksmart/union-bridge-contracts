@@ -47,6 +47,11 @@ interface IPegoutManager {
     /// @return The temporary information needed for peg-out processing
     function getPegoutTempInfo(bytes32 _acceptPeginTxid) external view returns (PegoutTempInfo memory);
 
+    /// @notice Gets the accept peg-in transaction id for a given peg-out transaction id
+    /// @param _pegoutTxid The peg-out transaction id
+    /// @return The accept peg-in transaction id
+    function getAcceptPeginTxid(bytes32 _pegoutTxid) external view returns (bytes32);
+
     // ===================== Peg-out Request =====================
 
     /// @notice Initiates a peg-out operation by locking a slot and preparing the peg-out transaction
@@ -215,13 +220,6 @@ interface IPegoutManager {
         uint256 updatedAt,
         uint256 expireAt
     );
-
-    /// @notice Event emitted when a packet is closed in the stream
-    /// @param streamId The ID of the stream where the packet was closed
-    /// @param packetNumber The number of the packet that was closed
-    /// @dev Indicates that all slots in the packet have been processed and pegged out
-    /// @dev This event is used to track the lifecycle of packets in the stream
-    event PacketClosed(uint64 indexed streamId, uint64 indexed packetNumber);
 
     // ===================== Errors =====================
 
