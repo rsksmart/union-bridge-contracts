@@ -393,4 +393,39 @@ interface IBridge {
     /// @dev This method is new in RSKIP-502
     /// @return The result code of the operation (0 is success, otherwise error code)
     function releaseUnionBridgeRbtc() external payable returns (int256);
+
+    // ===================== RSKIP-529: Base Event Methods =====================
+    // See https://github.com/rsksmart/RSKIPs/blob/master/IPs/RSKIP529.md
+
+    /// @notice Gets the base event
+    /// @return The current base event, if no value is set, then it should return an empty array of bytes.
+    function getBaseEvent() external view returns (bytes memory);
+
+    /// @notice Sets the base event, it will override the previous value if it exists.
+    /// @param baseEvent The new base event (must be less than 128 bytes)
+    /// @dev This function will revert if:
+    /// @dev - the caller is not the Union Bridge contract address
+    /// @dev - the baseEvent array is greater than 128 bytes
+    function setBaseEvent(bytes memory baseEvent) external;
+
+    /// @notice Clears the base event
+    /// @dev It stores an empty byte array under the baseEvent storage key of the Bridge, overriding whatever value was previously there.
+    /// @dev This function will revert if  the caller is not the Union Bridge contract address
+    function clearBaseEvent() external;
+
+    /// @notice Gets the super event
+    /// @return The current super event, if no value is set, then it should return an empty array of bytes.
+    function getSuperEvent() external view returns (bytes memory);
+
+    /// @notice Sets the super event, it will override the previous value if it exists.
+    /// @param superEvent The new super event (must be less than 128 bytes)
+    /// @dev This function will revert if:
+    /// @dev - the caller is not the Union Bridge contract address
+    /// @dev - the superEvent array is greater than 128 bytes
+    function setSuperEvent(bytes memory superEvent) external;
+
+    /// @notice Clears the super event
+    /// @dev It stores an empty byte array under the superEvent storage key of the Bridge, overriding whatever value was previously there.
+    /// @dev This function will revert if the caller is not the Union Bridge contract address
+    function clearSuperEvent() external;
 }

@@ -55,6 +55,11 @@ interface IAccessManager {
     /// @dev Reverts if the caller does not have permissions to modify candidates for a stream
     function canModifyCandidatesForStream(address _caller) external view;
 
+    /// @notice Requires the caller to have permissions to set the base event
+    /// @param _caller The address of the caller
+    /// @dev Reverts if the caller does not have permissions to set the base event
+    function canSetBaseEvent(address _caller) external view;
+
     // ===================== Events =====================
 
     // ===================== Errors =====================
@@ -134,5 +139,9 @@ interface IAccessManager {
     /// @notice Thrown when an account is not authorized to force release a committee
     /// @param _caller The address of the unauthorized account
     error UnauthorizedToForceReleaseCommittee(address _caller);
+
+    /// @notice Thrown when an account is not authorized to set the base event
+    /// @param _caller The address of the unauthorized account
+    error UnauthorizedToSetBaseEvent(address _caller);
     // --- END TESTNET ONLY ---
 }

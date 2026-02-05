@@ -480,4 +480,57 @@ contract AccessManagerTest is Test, HelperContract {
         // Act
         accessManager.canModifyCandidatesForStream(address(memberRegistry));
     }
+
+    // ============ canSetBaseEvent Tests ============
+
+    function test_canSetBaseEvent_Success_CallFromPegoutManager() external view {
+        // Act & Assert - should not revert
+        accessManager.canSetBaseEvent(address(pegoutManager));
+    }
+
+    function test_canSetBaseEvent_Revert_UnauthorizedAddress() external {
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IAccessManager.UnauthorizedToSetBaseEvent.selector, unauthorizedAddress));
+
+        // Act
+        accessManager.canSetBaseEvent(unauthorizedAddress);
+    }
+
+    function test_canSetBaseEvent_Revert_CallFromPeginManager() external {
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessManager.UnauthorizedToSetBaseEvent.selector, address(peginManager))
+        );
+
+        // Act
+        accessManager.canSetBaseEvent(address(peginManager));
+    }
+
+    function test_canSetBaseEvent_Revert_CallFromCommitteeRegistry() external {
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IAccessManager.UnauthorizedToSetBaseEvent.selector, address(registry)));
+
+        // Act
+        accessManager.canSetBaseEvent(address(registry));
+    }
+
+    function test_canSetBaseEvent_Revert_CallFromMemberRegistry() external {
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessManager.UnauthorizedToSetBaseEvent.selector, address(memberRegistry))
+        );
+
+        // Act
+        accessManager.canSetBaseEvent(address(memberRegistry));
+    }
+
+    function test_canSetBaseEvent_Revert_CallFromChallengeManager() external {
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessManager.UnauthorizedToSetBaseEvent.selector, address(challengeManager))
+        );
+
+        // Act
+        accessManager.canSetBaseEvent(address(challengeManager));
+    }
 }

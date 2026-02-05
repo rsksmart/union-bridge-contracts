@@ -386,10 +386,12 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         // Update the reimbursement kickoff txid
         pegoutInfo.reimbursementKickoffTxid = txid;
 
+        emit ReimbursementKickoffRegistered(txid, acceptPeginTxid, pegoutInfo.committeeId, streamInfo);
+
         // update the peg status to KICKOFF
         streamManager.setPegStatus(acceptPeginTxid, PegStatus.KICKOFF);
 
-        emit ReimbursementKickoffRegistered(txid, acceptPeginTxid, pegoutInfo.committeeId, streamInfo);
+        rbtcBridge.setBaseEvent(abi.encodePacked(pegoutInfo.pegoutId));
     }
 
     /// @inheritdoc IPegoutManager

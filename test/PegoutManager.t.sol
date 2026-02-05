@@ -1567,6 +1567,7 @@ contract PegoutManagerTest is Test, HelperContract {
 
     function test_registerReimbursementKickoff_Success_UnpausedContract() external {
         // Arrange
+        bridgeMock.setStoreEvents(true);
         pauseAndUnpauseContracts();
         (address opAddress, RegisterUserTakeSetup memory setup) = setup_reimbursementKickoff();
         bytes32 txid = bitcoinManager.getBtcTxid(setup.reimbursementKickoffSPV.btcTx);
@@ -1577,27 +1578,46 @@ contract PegoutManagerTest is Test, HelperContract {
             pegStatus: PegStatus.ADVANCED
         });
 
+        // Get the expected pegoutId from the pegout info
+        PegoutTempInfo memory pegoutInfo = pegoutManager.getPegoutTempInfo(setup.acceptPeginTxid);
+        bytes memory expectedBaseEvent = abi.encodePacked(pegoutInfo.pegoutId);
+
+        // Assert - expect ReimbursementKickoffRegistered event
         vm.expectEmit(address(pegoutManager));
         emit IPegoutManager.ReimbursementKickoffRegistered(
             txid, setup.acceptPeginTxid, COMMITTEE_ID_STREAM_1_COMMITTEE_1, streamInfo
         );
 
+        // Assert - expect BaseEventSet event from RbtcBridge
+        vm.expectEmit(address(rbtcBridge));
+        emit IRbtcBridge.BaseEventSet(expectedBaseEvent);
+
         // Act
         vm.prank(opAddress);
         pegoutManager.registerReimbursementKickoff(setup.acceptPeginTxid, setup.reimbursementKickoffSPV);
 
+        // Verify peg status was updated
         streamInfo = streamManager.getStreamPosition(setup.acceptPeginTxid);
         assertEq(uint256(streamInfo.pegStatus), uint256(PegStatus.KICKOFF));
         assertTrue(
             streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId).state == SlotState.ADVANCED,
             "Slot state should be ADVANCED"
         );
-        PegoutTempInfo memory pegoutInfo = pegoutManager.getPegoutTempInfo(setup.acceptPeginTxid);
-        assertEq(pegoutInfo.reimbursementKickoffTxid, txid, "Reimbursement kickoff txid should be recorded");
+        // Get updated pegoutInfo after the call to verify reimbursementKickoffTxid was set
+        PegoutTempInfo memory updatedPegoutInfo = pegoutManager.getPegoutTempInfo(setup.acceptPeginTxid);
+        assertEq(updatedPegoutInfo.reimbursementKickoffTxid, txid, "Reimbursement kickoff txid should be recorded");
+
+        // Assert - verify base event was set correctly in bridge
+        bytes memory retrievedBaseEvent = bridgeMock.getBaseEvent();
+        assertEq(retrievedBaseEvent.length, expectedBaseEvent.length, "Base event length should match");
+        assertEq(
+            keccak256(retrievedBaseEvent), keccak256(expectedBaseEvent), "Base event content should match pegoutId"
+        );
     }
 
     function test_registerReimbursementKickoff_Revert_EnforcedPause_PausedContract() external {
         // Arrange
+        bridgeMock.setStoreEvents(true);
         (address opAddress, RegisterUserTakeSetup memory setup) = setup_reimbursementKickoff();
         pauseContracts();
 
@@ -1611,6 +1631,7 @@ contract PegoutManagerTest is Test, HelperContract {
 
     function test_registerReimbursementKickoff_Revert_PeginNotRequested() external {
         // Arrange
+        bridgeMock.setStoreEvents(true);
         (address opAddress, RegisterUserTakeSetup memory setup) = setup_reimbursementKickoff();
         bytes32 wrongAcceptPeginTxid = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
 
@@ -1624,6 +1645,7 @@ contract PegoutManagerTest is Test, HelperContract {
 
     function test_registerReimbursementKickoff_Revert_InvalidPegStatus() external {
         // Arrange
+        bridgeMock.setStoreEvents(true);
         (address opAddress, RegisterUserTakeSetup memory setup) = setup_reimbursementKickoff();
 
         // Set peg status to COMPLETED to trigger invalid status error
@@ -1679,6 +1701,65 @@ contract PegoutManagerTest is Test, HelperContract {
         // Act
         vm.prank(opAddress);
         pegoutManager.registerReimbursementKickoff(setup.acceptPeginTxid, setup.reimbursementKickoffSPV);
+    }
+
+    function test_registerReimbursementKickoff_Success_BaseEventContainsPegoutId() external {
+        // Arrange
+        bridgeMock.setStoreEvents(true);
+        pauseAndUnpauseContracts();
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_reimbursementKickoff();
+
+        // Get the pegoutId from the pegout info before calling registerReimbursementKickoff
+        PegoutTempInfo memory pegoutInfoBefore = pegoutManager.getPegoutTempInfo(setup.acceptPeginTxid);
+        bytes32 expectedPegoutId = pegoutInfoBefore.pegoutId;
+
+        // Act
+        vm.prank(opAddress);
+        pegoutManager.registerReimbursementKickoff(setup.acceptPeginTxid, setup.reimbursementKickoffSPV);
+
+        // Assert - verify base event contains the pegoutId (32 bytes)
+        bytes memory retrievedBaseEvent = bridgeMock.getBaseEvent();
+        assertEq(retrievedBaseEvent.length, 32, "Base event should be 32 bytes (pegoutId)");
+
+        // Extract the pegoutId from the base event
+        bytes32 retrievedPegoutId;
+        assembly {
+            retrievedPegoutId := mload(add(retrievedBaseEvent, 32))
+        }
+        assertEq(retrievedPegoutId, expectedPegoutId, "Base event should contain the correct pegoutId");
+    }
+
+    function test_registerReimbursementKickoff_Revert_BaseEventAlreadySet() external {
+        // Arrange
+        bridgeMock.setStoreEvents(true);
+        pauseAndUnpauseContracts();
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_reimbursementKickoff();
+
+        // Set a base event directly on the bridge mock to simulate it already being set
+        vm.prank(address(rbtcBridge));
+        bridgeMock.setBaseEvent("existing base event");
+
+        // Assert - should revert because base event is already set
+        vm.expectRevert(IRbtcBridge.BaseEventAlreadySet.selector);
+
+        // Act
+        vm.prank(opAddress);
+        pegoutManager.registerReimbursementKickoff(setup.acceptPeginTxid, setup.reimbursementKickoffSPV);
+    }
+
+    function test_registerReimbursementKickoff_Success_BaseEventIs32Bytes() external {
+        // Arrange
+        bridgeMock.setStoreEvents(true);
+        pauseAndUnpauseContracts();
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_reimbursementKickoff();
+
+        // Act
+        vm.prank(opAddress);
+        pegoutManager.registerReimbursementKickoff(setup.acceptPeginTxid, setup.reimbursementKickoffSPV);
+
+        // Assert - verify base event is exactly 32 bytes (size of bytes32 pegoutId)
+        bytes memory retrievedBaseEvent = bridgeMock.getBaseEvent();
+        assertEq(retrievedBaseEvent.length, 32, "Base event should be exactly 32 bytes (pegoutId)");
     }
 
     function test_registerOperatorWon_Success_UnpausedContract() external {

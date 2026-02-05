@@ -635,4 +635,137 @@ contract RbtcBridgeTest is HelperContract {
         // Assert
         assertEq(blockHash, expectedHash, "Block hash should match hash256 of the best block header");
     }
+
+    // ============ setBaseEvent Tests ============
+
+    function test_setBaseEvent_Success_CallFromPegoutManager() external {
+        // Arrange
+        bridgeMock.setStoreEvents(true);
+        bytes memory baseEvent = "test base event";
+
+        // Assert - expect event
+        vm.expectEmit(address(rbtcBridge));
+        emit IRbtcBridge.BaseEventSet(baseEvent);
+
+        // Act
+        vm.prank(address(pegoutManager));
+        rbtcBridge.setBaseEvent(baseEvent);
+
+        // Assert - verify base event was set in bridge
+        bytes memory retrievedBaseEvent = bridgeMock.getBaseEvent();
+        assertEq(retrievedBaseEvent.length, baseEvent.length, "Base event length should match");
+        assertEq(keccak256(retrievedBaseEvent), keccak256(baseEvent), "Base event content should match");
+    }
+
+    function test_setBaseEvent_Success_MaxLength() external {
+        // Arrange
+        bridgeMock.setStoreEvents(true);
+        // Create a base event with 128 bytes (max allowed)
+        bytes memory baseEvent = new bytes(128);
+        for (uint256 i = 0; i < 128; i++) {
+            baseEvent[i] = 0xAF;
+        }
+
+        // Assert - expect event
+        vm.expectEmit(address(rbtcBridge));
+        emit IRbtcBridge.BaseEventSet(baseEvent);
+
+        // Act
+        vm.prank(address(pegoutManager));
+        rbtcBridge.setBaseEvent(baseEvent);
+
+        // Assert - verify base event was set
+        bytes memory retrievedBaseEvent = bridgeMock.getBaseEvent();
+        assertEq(retrievedBaseEvent.length, 128, "Base event length should be 128 bytes");
+    }
+
+    function test_setBaseEvent_Revert_UnauthorizedCaller_CallFromNotPegoutManager() external {
+        // Arrange
+        bridgeMock.setStoreEvents(true);
+        address notPegoutManager = address(0x123);
+        bytes memory baseEvent = "test base event";
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IAccessManager.UnauthorizedToSetBaseEvent.selector, notPegoutManager));
+
+        // Act
+        vm.prank(notPegoutManager);
+        rbtcBridge.setBaseEvent(baseEvent);
+    }
+
+    function test_setBaseEvent_Revert_UnauthorizedCaller_CallFromPeginManager() external {
+        // Arrange
+        bridgeMock.setStoreEvents(true);
+        bytes memory baseEvent = "test base event";
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessManager.UnauthorizedToSetBaseEvent.selector, address(peginManager))
+        );
+
+        // Act
+        vm.prank(address(peginManager));
+        rbtcBridge.setBaseEvent(baseEvent);
+    }
+
+    function test_setBaseEvent_Revert_BaseEventEmpty() external {
+        // Arrange
+        bridgeMock.setStoreEvents(true);
+        bytes memory emptyBaseEvent = "";
+
+        // Assert
+        vm.expectRevert(IRbtcBridge.BaseEventEmpty.selector);
+
+        // Act
+        vm.prank(address(pegoutManager));
+        rbtcBridge.setBaseEvent(emptyBaseEvent);
+    }
+
+    function test_setBaseEvent_Revert_BaseEventTooLong() external {
+        // Arrange
+        bridgeMock.setStoreEvents(true);
+        // Create a base event with 129 bytes (exceeds max of 128)
+        bytes memory tooLongBaseEvent = new bytes(129);
+        for (uint256 i = 0; i < 129; i++) {
+            tooLongBaseEvent[i] = bytes1(uint8(i % 256));
+        }
+
+        // Assert
+        vm.expectRevert(IRbtcBridge.BaseEventTooLong.selector);
+
+        // Act
+        vm.prank(address(pegoutManager));
+        rbtcBridge.setBaseEvent(tooLongBaseEvent);
+    }
+
+    function test_setBaseEvent_Revert_BaseEventAlreadySet() external {
+        // Arrange
+        bridgeMock.setStoreEvents(true);
+        bytes memory baseEvent = "second base event";
+
+        // Set first base event directly on bridge mock
+        vm.prank(address(rbtcBridge));
+        bridgeMock.setBaseEvent("first base event");
+
+        // Assert
+        vm.expectRevert(IRbtcBridge.BaseEventAlreadySet.selector);
+
+        // Act - try to set another base event
+        vm.prank(address(pegoutManager));
+        rbtcBridge.setBaseEvent(baseEvent);
+    }
+
+    function test_setBaseEvent_Revert_EnforcedPause_PausedContract() external {
+        // Arrange
+        bridgeMock.setStoreEvents(true);
+        pauseContracts();
+        bytes memory baseEvent = "test base event";
+
+        // Assert
+        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
+
+        // Act
+        vm.prank(address(pegoutManager));
+        rbtcBridge.setBaseEvent(baseEvent);
+    }
 }

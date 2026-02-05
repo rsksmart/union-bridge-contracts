@@ -99,10 +99,12 @@ contract AccessManager is IAccessManager, PauseManager {
         }
     }
 
+    /// @inheritdoc IAccessManager
     function revertIfNotTestnet() external view {
         _revertIfNotTestnet();
     }
 
+    /// @inheritdoc IAccessManager
     function canForceRestartStreamPointers(address _caller) external view {
         _revertIfNotTestnet();
         if (_caller != committeeRegistry) {
@@ -117,10 +119,18 @@ contract AccessManager is IAccessManager, PauseManager {
         }
     }
 
+    /// @inheritdoc IAccessManager
     function canForceReleaseCommittee(address _caller) external view {
         _revertIfNotTestnet();
         if (_caller != committeeRegistry) {
             revert UnauthorizedToForceReleaseCommittee(_caller);
+        }
+    }
+
+    /// @inheritdoc IAccessManager
+    function canSetBaseEvent(address _caller) external view {
+        if (_caller != pegoutManager) {
+            revert UnauthorizedToSetBaseEvent(_caller);
         }
     }
     // --- END TESTNET ONLY ---

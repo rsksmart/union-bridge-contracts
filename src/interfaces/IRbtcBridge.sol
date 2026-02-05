@@ -83,6 +83,14 @@ interface IRbtcBridge {
         bytes32[] memory _merkleBranchHashes
     ) external view returns (int256 blockNumber);
 
+    /// @notice Sets the base event
+    /// @param _baseEvent The new base event (must be less than 128 bytes)
+    /// @dev This function will revert if:
+    /// @dev - the _baseEvent parameter is empty error BaseEventEmpty
+    /// @dev - the _baseEvent parameter is greater than 128 bytes error BaseEventTooLong
+    /// @dev - there is another event already set with error BaseEventAlreadySet
+    function setBaseEvent(bytes memory _baseEvent) external;
+
     // ===================== Events =====================
 
     /// @notice Emitted when RBTC is minted and sent to a user
@@ -93,6 +101,10 @@ interface IRbtcBridge {
     /// @notice Emitted when RBTC is burned back to the PowPeg bridge
     /// @param amount The amount of RBTC burned in wei
     event RbtcBurned(uint256 amount);
+
+    /// @notice Emitted when the base event is set
+    /// @param baseEvent The new base event
+    event BaseEventSet(bytes baseEvent);
 
     // ===================== Errors =====================
 
@@ -151,4 +163,13 @@ interface IRbtcBridge {
     /// @param actual The actual number of confirmations the transaction has
     /// @param expected The minimum number of confirmations required
     error NotEnoughConfirmations(int256 actual, uint256 expected);
+
+    /// @notice Error thrown when the base event is already set
+    error BaseEventAlreadySet();
+
+    /// @notice Error thrown when the base event is longer than 128 bytes
+    error BaseEventTooLong();
+
+    /// @notice Error thrown when the base event is empty
+    error BaseEventEmpty();
 }

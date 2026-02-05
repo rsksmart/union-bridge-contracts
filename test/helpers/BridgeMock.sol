@@ -16,6 +16,10 @@ contract BridgeMock is IBridge {
     bool private transfersDisabled = false;
     address payable private unionBridgeContractAddress = payable(address(0));
     uint256 private maxIncreaseMultiplier = 2; // Maximum allowed increase (e.g., 2 = doubling)
+    // RSKIP-529: Base Event state variable
+    bytes private baseEvent;
+    bytes private superEvent;
+    bool public storeEvents = false;
 
     // accept rbtc from blockchain and send it to the union bridge contract
     receive() external payable {}
@@ -402,6 +406,48 @@ contract BridgeMock is IBridge {
         return unionBridgeContractAddress;
     }
 
+    // ===================== RSKIP-529: Base Event Methods =====================
+
+    function getBaseEvent() external view override returns (bytes memory) {
+        return baseEvent;
+    }
+
+    function setBaseEvent(bytes memory _baseEvent) external override onlyUnionBridgeContract {
+        if (_baseEvent.length > 128) {
+            revert("BaseEventTooLong");
+        }
+        if (_baseEvent.length == 0) {
+            revert("EmptyBaseEvent");
+        }
+        if (storeEvents) {
+            baseEvent = _baseEvent;
+        }
+    }
+
+    function clearBaseEvent() external override onlyUnionBridgeContract {
+        baseEvent = "";
+    }
+
+    function getSuperEvent() external view override returns (bytes memory) {
+        return superEvent;
+    }
+
+    function setSuperEvent(bytes memory _superEvent) external override onlyUnionBridgeContract {
+        if (_superEvent.length > 128) {
+            revert("SuperEventTooLong");
+        }
+        if (_superEvent.length == 0) {
+            revert("EmptySuperEvent");
+        }
+        if (storeEvents) {
+            superEvent = _superEvent;
+        }
+    }
+
+    function clearSuperEvent() external override onlyUnionBridgeContract {
+        superEvent = "";
+    }
+
     //-------------------------------- Test Helpers ------------------------------------
 
     function setTransfersDisabled(bool _disabled) external {
@@ -412,5 +458,20 @@ contract BridgeMock is IBridge {
         uint256 totalCap = lockingCap + weisTransferredToUnionBridge;
         weisTransferredToUnionBridge = _amount;
         lockingCap = totalCap - _amount;
+    }
+
+    function setStoreEvents(bool _storeEvents) external {
+        storeEvents = _storeEvents;
+    }
+
+    modifier onlyUnionBridgeContract() {
+        _onlyUnionBridgeContract(msg.sender);
+        _;
+    }
+
+    function _onlyUnionBridgeContract(address _sender) internal view {
+        if (_sender != unionBridgeContractAddress) {
+            revert("OnlyUnionBridgeContract");
+        }
     }
 }

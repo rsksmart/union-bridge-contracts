@@ -205,7 +205,29 @@ contract RbtcBridge is IRbtcBridge, ReentrancyGuardUpgradeable, BaseProxy, Pausa
         return bridge.getBtcBlockchainBestChainHeight() - confirmations;
     }
 
+    /// @inheritdoc IRbtcBridge
     function getBestBlockHash() external view returns (bytes32) {
         return BtcHelper.hash256(bridge.getBtcBlockchainBestBlockHeader());
+    }
+
+    /// @inheritdoc IRbtcBridge
+    function setBaseEvent(bytes memory _baseEvent) external nonReentrant whenNotPaused {
+        // Validate the caller
+        accessManager.canSetBaseEvent(_msgSender());
+
+        // Validate the base event
+        if (_baseEvent.length == 0) {
+            revert BaseEventEmpty();
+        }
+        if (_baseEvent.length > 128) {
+            revert BaseEventTooLong();
+        }
+        if (bridge.getBaseEvent().length > 0) {
+            revert BaseEventAlreadySet();
+        }
+        // Set the base event
+        bridge.setBaseEvent(_baseEvent);
+
+        emit BaseEventSet(_baseEvent);
     }
 }
