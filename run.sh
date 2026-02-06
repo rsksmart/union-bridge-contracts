@@ -7,7 +7,7 @@ echo "================ IS TEST: $IS_TEST ================"
 bash shell/script/deploy/simulate-deploy.sh
 # gas report (It also runs tests)
 bash shell/gas-report.sh
-# packet creation flow is running in the peg flow
+# user take flow
 bash shell/script/integration-test/user-take-flow.sh
 # operator take flow
 bash shell/script/integration-test/operator-take-flow.sh

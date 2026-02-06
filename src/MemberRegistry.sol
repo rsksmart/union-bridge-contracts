@@ -675,15 +675,33 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
     function forceReleaseCommitteeMembers_TESTNET(
         uint64 _streamId,
         uint64 _packetNumber,
-        CommitteeMember[] memory _committeeMembers
-    ) external {
-        // Verify that the caller has permission to force release committee
-        accessManager.canForceReleaseCommittee(_msgSender());
+        address[] memory _committeeMembersAddresses
+    ) external onlyOwner {
+        accessManager.revertIfNotTestnet();
 
         StreamDenomination denomination = StreamDenomination(_streamId);
-        for (uint256 i = 0; i < _committeeMembers.length; i++) {
+        for (uint256 i = 0; i < _committeeMembersAddresses.length; i++) {
             // Move staked -> available (ignoring reApply flag)
-            _moveStakedToAvailable(_committeeMembers[i].memberAddress, denomination, _packetNumber);
+            _moveStakedToAvailable(_committeeMembersAddresses[i], denomination, _packetNumber);
+        }
+
+        emit CommitteeMembersForceReleased(_streamId, _packetNumber);
+    }
+
+    /// @inheritdoc IMemberRegistry
+    function forceExit_TESTNET(address _to) external onlyOwner {
+        accessManager.revertIfNotTestnet();
+        if (_to == address(0)) {
+            revert InvalidZeroAddress();
+        }
+        uint256 amount = address(this).balance;
+
+        emit ForceExit(_to, amount);
+
+        // slither-disable-next-line return-bomb
+        (bool sent,) = payable(_to).call{value: amount, gas: 30000}("");
+        if (!sent) {
+            revert FailedToSendRSK(_to, amount);
         }
     }
     // --- END TESTNET ONLY ---

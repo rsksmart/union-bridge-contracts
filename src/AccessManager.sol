@@ -88,6 +88,13 @@ contract AccessManager is IAccessManager, PauseManager {
         }
     }
 
+    /// @inheritdoc IAccessManager
+    function canSetBaseEvent(address _caller) external view {
+        if (_caller != pegoutManager) {
+            revert UnauthorizedToSetBaseEvent(_caller);
+        }
+    }
+
     // --- TESTNET ONLY: Force close committee functionality ---
     // TODO: Remove before mainnet deployment
     function _revertIfNotTestnet() internal view {
@@ -104,34 +111,5 @@ contract AccessManager is IAccessManager, PauseManager {
         _revertIfNotTestnet();
     }
 
-    /// @inheritdoc IAccessManager
-    function canForceRestartStreamPointers(address _caller) external view {
-        _revertIfNotTestnet();
-        if (_caller != committeeRegistry) {
-            revert UnauthorizedToRestartStreamPointers(_caller);
-        }
-    }
-
-    function canForceCloseStreamPackets(address _caller) external view {
-        _revertIfNotTestnet();
-        if (_caller != committeeRegistry) {
-            revert UnauthorizedToForceCloseStreamPackets(_caller);
-        }
-    }
-
-    /// @inheritdoc IAccessManager
-    function canForceReleaseCommittee(address _caller) external view {
-        _revertIfNotTestnet();
-        if (_caller != committeeRegistry) {
-            revert UnauthorizedToForceReleaseCommittee(_caller);
-        }
-    }
-
-    /// @inheritdoc IAccessManager
-    function canSetBaseEvent(address _caller) external view {
-        if (_caller != pegoutManager) {
-            revert UnauthorizedToSetBaseEvent(_caller);
-        }
-    }
     // --- END TESTNET ONLY ---
 }

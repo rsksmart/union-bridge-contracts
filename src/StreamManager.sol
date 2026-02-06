@@ -37,7 +37,6 @@ contract StreamManager is IStreamManager, BaseProxy {
     /// @dev The index should be used to get the next filled slot for peg-out processing
     mapping(uint64 streamId => SlotLocation[]) filledSlots;
     mapping(uint64 streamId => uint64 index) nextPegoutSlotIndex;
-    mapping(uint64 streamId => uint64[]) activePackets;
 
     /// @notice Mapping from stream ID to know if there's a pegout in process for that stream
     mapping(uint64 streamId => bool pegoutInProcess) isPegoutInProcess;
@@ -174,7 +173,6 @@ contract StreamManager is IStreamManager, BaseProxy {
                 finishedSlots: 0
             })
         );
-        activePackets[_streamId].push(packetNumber);
         emit PacketCreated(_streamId, packetNumber);
     }
 
@@ -221,11 +219,6 @@ contract StreamManager is IStreamManager, BaseProxy {
             revert PacketOutOfBound(_packetNumber);
         }
         return packets[_streamId][_packetNumber];
-    }
-
-    /// @inheritdoc IStreamManager
-    function getActivePackets(uint64 _streamId) external view returns (uint64[] memory) {
-        return activePackets[_streamId];
     }
 
     /// @inheritdoc IStreamManager
@@ -433,19 +426,7 @@ contract StreamManager is IStreamManager, BaseProxy {
             return false;
         }
         emit PacketClosed(_streamId, _packetNumber);
-        _removeFromActivePackets(_streamId, _packetNumber);
         return true;
-    }
-
-    function _removeFromActivePackets(uint64 _streamId, uint64 _packetNumber) internal {
-        uint64[] storage activePacketsForStream = activePackets[_streamId];
-        for (uint256 i = 0; i < activePacketsForStream.length; i++) {
-            if (_packetNumber == activePacketsForStream[i]) {
-                activePacketsForStream[i] = activePacketsForStream[activePacketsForStream.length - 1];
-                activePacketsForStream.pop();
-                break;
-            }
-        }
     }
 
     function _getSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) internal view returns (Slot storage) {
@@ -604,13 +585,13 @@ contract StreamManager is IStreamManager, BaseProxy {
 
     // --- TESTNET ONLY: Force close packets functionality ---
     // TODO: Remove before mainnet deployment
-    function restartStreamPointers_TESTNET(uint64 _streamId) external {
-        // Verify that the caller has permission to invalidate stream pointers
-        accessManager.canForceRestartStreamPointers(_msgSender());
+    function restartStreamPointers_TESTNET(uint64 _streamId) external onlyOwner {
+        accessManager.revertIfNotTestnet();
 
         Stream storage stream = _getStreamById(_streamId);
         stream.peginPacketPointer = uint64(packets[_streamId].length);
 
+        isPegoutInProcess[_streamId] = false;
         nextPegoutSlotIndex[_streamId] = 0;
         delete filledSlots[_streamId];
 
@@ -618,9 +599,5 @@ contract StreamManager is IStreamManager, BaseProxy {
         emit StreamPointersRestarted(_streamId);
     }
 
-    function closePacket_TESTNET(uint64 _streamId, uint64 _packetNumber) external {
-        accessManager.canForceCloseStreamPackets(_msgSender());
-        _removeFromActivePackets(_streamId, _packetNumber);
-    }
     // --- END TESTNET ONLY ---
 }

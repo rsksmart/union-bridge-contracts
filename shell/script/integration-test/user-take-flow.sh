@@ -88,4 +88,3 @@ bash "$SCRIPT_DIR/signatures/add-every-member-nonce-and-signature.sh" -h "$PEGOU
 bash "$SCRIPT_DIR/register-user-take.sh" $ALPHANET_FLAG
 
 echo "================ USER TAKE FLOW COMPLETE ================"
-

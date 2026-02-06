@@ -46,13 +46,13 @@ abstract contract ContractAddressManager is Script {
     /// @notice Get the PegoutManager contract address for the current network
     /// @return The PegoutManager contract
     function getPegoutManager() internal view returns (PegoutManager) {
-        return PegoutManager(getAccesManager().pegoutManager());
+        return PegoutManager(getAccessManager().pegoutManager());
     }
 
     /// @notice Get the ChallengeManager contract address for the current network
     /// @return The ChallengeManager contract
     function getChallengeManager() internal view returns (IChallengeManager) {
-        return IChallengeManager(getAccesManager().challengeManager());
+        return IChallengeManager(getAccessManager().challengeManager());
     }
 
     /// @notice Get the StreamManager contract for the current network
@@ -99,7 +99,7 @@ abstract contract ContractAddressManager is Script {
 
     /// @notice Get the AccessManager contract for the current network
     /// @return The AccessManager contract
-    function getAccesManager() internal view returns (AccessManager) {
+    function getAccessManager() internal view returns (AccessManager) {
         return AccessManager(address(getPeginManager().pauser()));
     }
 }

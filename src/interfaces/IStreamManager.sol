@@ -343,11 +343,6 @@ interface IStreamManager {
     /// @return The stream position associated with the transaction ID
     function getStreamPosition(bytes32 _acceptPeginTxid) external view returns (StreamPosition memory);
 
-    /// @notice Retrieves the active packets associated to a stream
-    /// @param _streamId The ID of the stream
-    /// @return The list of active packets IDs
-    function getActivePackets(uint64 _streamId) external view returns (uint64[] memory);
-
     /// @notice Gets the length of the slots in a packet
     /// @param _streamId The ID of the stream
     /// @param _packetNumber The packet number
@@ -557,7 +552,5 @@ interface IStreamManager {
     event StreamPointersRestarted(uint64 streamId);
 
     function restartStreamPointers_TESTNET(uint64 _streamId) external;
-
-    function closePacket_TESTNET(uint64 _streamId, uint64 _packetNumber) external;
     // --- END TESTNET ONLY ---
 }

@@ -195,9 +195,9 @@ contract PeginManagerTest is Test, HelperContract {
 
         // Now block the slot
         bytes32 requestPeginTxid2 = getBtcTxid(requestPeginTx2);
-        StreamPosition memory streamPosition = peginManager.getStreamPositionByRequestPegin(requestPeginTxid2);
+        bytes32 acceptPeginTxid2 = peginManager.getAcceptPegin(requestPeginTxid2);
         vm.prank(address(peginManager));
-        streamManager.blockSlot(streamPosition.streamId, streamPosition.packetNumber, streamPosition.slotId);
+        streamManager.blockSlot(acceptPeginTxid2);
 
         // Assert - verify committee still exists after blocking (regression: committee creation happens in requestPegin, not when slot is filled)
         Committee memory pendingCommittee = registry.getPendingCommittee(setupStreamId);

@@ -351,7 +351,16 @@ interface IMemberRegistry {
     function forceReleaseCommitteeMembers_TESTNET(
         uint64 _streamId,
         uint64 _packetNumber,
-        CommitteeMember[] memory _committeeMembers
+        address[] memory _committeeMembersAddresses
     ) external;
+
+    event CommitteeMembersForceReleased(uint64 indexed streamId, uint64 indexed packetNumber);
+
+    /// @notice WARNING! ONLY FOR TESTNET Forces a withdrawal of the contract's balance to a specified address
+    /// @dev Only callable on testnet, this function will leave the contract in a broken state and should be used only as a last resort
+    /// @param _to The address to which the balance will be sent
+    function forceExit_TESTNET(address _to) external;
+
+    event ForceExit(address indexed to, uint256 amount);
     // --- END TESTNET ONLY ---
 }

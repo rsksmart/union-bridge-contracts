@@ -338,7 +338,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         uint64 streamId = uint64(_denomination);
 
         if (_createCommitteeIfPending(streamId)) {
-            // If there is a pending committee, we should not create a new one at least it's expired
+            // If there is a pending committee, we should not create a new one unless it's expired
             return;
         }
 
@@ -349,7 +349,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
 
     function _createCommitteeIfPending(uint64 _streamId) internal returns (bool) {
         // This function return true if there is a pending committee
-        // If there is a pending committee, we should not create a new one at least it's expired
+        // If there is a pending committee, we should not create a new one unless it's expired
         uint256 createdAt = committeesById[pendingCommittees[_streamId]].createdAt;
         // NOTE: Slither flags this as dangerous-strict-equalities, but this is a false positive.
         if (createdAt == 0) {
@@ -779,33 +779,29 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
 
     // --- TESTNET ONLY: Force close committee functionality ---
     // TODO: Remove before mainnet deployment
-    function forceClosePackets_TESTNET(uint64 _streamId) external onlyOwner {
+    /// @inheritdoc ICommitteeRegistry
+    function forceDiscardPendingCommittee_TESTNET(uint64 _streamId) external onlyOwner {
         accessManager.revertIfNotTestnet();
-        // slither-disable-next-line calls-loop
-        uint64[] memory activePackets = streamManager.getActivePackets(_streamId);
 
-        if (activePackets.length == 0) {
-            revert NoActiveCommittees(_streamId);
-        }
-        // Update state before external calls (to prevent reentrancy warnings)
+        // Allow the creation of a new committee
         shouldCreateCommittee[_streamId] = true;
 
-        for (uint64 i = 0; i < activePackets.length; i++) {
-            uint64 packetNumber = activePackets[i];
-            // slither-disable-next-line calls-loop
-            uint128 committeeId = streamManager.getCommitteeId(_streamId, packetNumber);
-            CommitteeMember[] memory members = _getCommitteeMembers(committeeId);
-            // slither-disable-next-line calls-loop
-            memberRegistry.forceReleaseCommitteeMembers_TESTNET(_streamId, packetNumber, members);
-            // slither-disable-next-line reentrancy-events
-            emit CommitteeForceReleased(_streamId, committeeId, packetNumber);
-            // slither-disable-next-line calls-loop
-            streamManager.closePacket_TESTNET(_streamId, packetNumber);
+        uint128 committeeId = pendingCommittees[_streamId];
+        if (committeeId == 0) {
+            // No pending committee to discard
+            return;
         }
 
-        streamManager.restartStreamPointers_TESTNET(_streamId);
-        // slither-disable-next-line reentrancy-events
-        emit StreamForceReset(_streamId);
+        _resetPendingCommittee(_streamId);
+        emit PendingCommitteeForceDiscarded(_streamId, committeeId);
+
+        // unsubscibe memebers from stream
+        CommitteeMember[] memory committeeMembers = _getCommitteeMembers(committeeId);
+        StreamDenomination denomination = StreamDenomination(_streamId);
+        for (uint64 i = 0; i < committeeMembers.length; i++) {
+            // slither-disable-next-line calls-loop
+            memberRegistry.unsubscribeFromStream(committeeMembers[i].memberAddress, denomination);
+        }
     }
     // --- END TESTNET ONLY ---
 }

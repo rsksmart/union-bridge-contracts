@@ -104,44 +104,18 @@ interface IAccessManager {
     /// @param _caller The address of the unauthorized account
     error UnauthorizedToModifyCandidatesForStream(address _caller);
 
+    /// @notice Thrown when an account is not authorized to set the base event
+    /// @param _caller The address of the unauthorized account
+    error UnauthorizedToSetBaseEvent(address _caller);
+
     // --- TESTNET ONLY ---
     // TODO: Remove before mainnet deployment
     /// @notice Reverts if not called on testnet, regtest, or local network
     /// @dev Used to protect testnet-only functions from being called on mainnet
     function revertIfNotTestnet() external view;
 
-    /// @notice Requires the caller to have permissions to restart stream pointers
-    /// @param _caller The address of the caller
-    /// @dev Reverts if the caller does not have permissions to restart stream pointers
-    function canForceRestartStreamPointers(address _caller) external view;
-
-    /// @notice Requires the caller to have permissions to force stream packets close
-    /// @param _caller The address of the caller
-    /// @dev Reverts if the caller does not have permissions to force stream packets close
-    function canForceCloseStreamPackets(address _caller) external view;
-
-    /// @notice Requires the caller to have permissions force release a committee
-    /// @param _caller The address of the caller
-    /// @dev Reverts if the caller does not have permissions to force release a committee
-    function canForceReleaseCommittee(address _caller) external view;
-
     /// @notice Thrown when a testnet-only function is called on mainnet
     error TestnetOnlyFunction();
 
-    /// @notice Thrown when an account is not authorized to invalidate stream pointers
-    /// @param _caller The address of the unauthorized account
-    error UnauthorizedToRestartStreamPointers(address _caller);
-
-    /// @notice Thrown when an account is not authorized to force stream packets close
-    /// @param _caller The address of the unauthorized account
-    error UnauthorizedToForceCloseStreamPackets(address _caller);
-
-    /// @notice Thrown when an account is not authorized to force release a committee
-    /// @param _caller The address of the unauthorized account
-    error UnauthorizedToForceReleaseCommittee(address _caller);
-
-    /// @notice Thrown when an account is not authorized to set the base event
-    /// @param _caller The address of the unauthorized account
-    error UnauthorizedToSetBaseEvent(address _caller);
     // --- END TESTNET ONLY ---
 }

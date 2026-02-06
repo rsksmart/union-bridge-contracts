@@ -577,11 +577,11 @@ interface ICommitteeRegistry {
 
     // --- TESTNET ONLY: Force close committee functionality ---
     // TODO: Remove before mainnet deployment
-    event CommitteeForceReleased(uint64 indexed streamId, uint128 indexed committeeId, uint64 packetNumber);
-    event StreamForceReset(uint64 indexed streamId);
+    /// @notice Forces a discard of a pending committee, and enables the creation of a new committee
+    /// @dev Only callable on testnet
+    /// @param _streamId The stream ID for the pending committee to discard
+    function forceDiscardPendingCommittee_TESTNET(uint64 _streamId) external;
 
-    error NoActiveCommittees(uint64 streamId);
-
-    function forceClosePackets_TESTNET(uint64 _streamId) external;
+    event PendingCommitteeForceDiscarded(uint64 streamId, uint128 committeeId);
     // --- END TESTNET ONLY ---
 }
