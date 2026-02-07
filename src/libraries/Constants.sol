@@ -190,4 +190,7 @@ library Constants {
     /// @dev Based on gas consumption analysis: 100 members consume ~70% of block limit
     /// @dev This prevents DoS attacks and ensures operations stay within safe gas limits
     uint256 constant MAX_COMMITTEE_MEMBER_COUNT = 100;
+
+    /// @dev Version number for pegout IDs
+    uint8 constant PEGOUT_ID_VERSION = 1;
 }

@@ -118,7 +118,7 @@ contract BitcoinManager is IBitcoinManager, BaseProxy {
         if (_committeePubKey.length != 33) {
             revert InvalidCommitteePublicKeyLength(_committeePubKey.length, 33);
         }
-        if (keccak256(_committeePubKey) == keccak256(new bytes(33))) {
+        if (BytesHelper.compare(_committeePubKey, new bytes(33))) {
             revert InvalidCommitteePublicKeyZero();
         }
         if (_rskDestinationAddress == address(0)) {

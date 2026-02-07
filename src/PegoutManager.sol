@@ -22,6 +22,9 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
     /// @notice Timeout in seconds for operator take operations
     uint256 public operatorTakeTimeout;
 
+    /// @notice The pegout ID sequence number incremented for each new triggerOperatorTake
+    uint256 public sequenceNumber;
+
     mapping(bytes32 acceptPeginTxid => PegoutTempInfo tempInfo) internal pegoutTempInfo;
 
     mapping(bytes32 pegoutTxid => bytes32 acceptPeginTxid) internal pegoutToPeginTxid;
@@ -109,19 +112,15 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         // Store the pegout to pegin tx id mapping
         pegoutToPeginTxid[pegoutSignatureData.txid] = slot.acceptPeginTx;
 
-        // Compute pegout ID
-        bytes32 pegoutId = keccak256(
-            abi.encode(stream.streamId, packetNumber, slot.slotId, _msgSender(), rbtcBridge.getBestBlockHash())
-        );
-
         pegoutTempInfo[slot.acceptPeginTx] = PegoutTempInfo({
             userPubKey: _userPubKey,
             createdAt: block.timestamp,
             operatorTakeUpdatedAt: 0,
             committeeId: committeeId,
             takeOperatorAddress: address(0),
+            operatorTakePubKey: bytes32(0),
             operatorDisputePubKey: bytes32(0),
-            pegoutId: pegoutId,
+            pegoutId: bytes32(0),
             advanceFundsBlockNumber: 0,
             reimbursementKickoffTxid: bytes32(0)
         });
@@ -134,8 +133,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
             stream.streamId,
             packetNumber,
             slot.slotId,
-            stream.denomination,
-            pegoutId
+            stream.denomination
         );
 
         streamManager.setPegStatus(slot.acceptPeginTx, PegStatus.USER_TAKE);
@@ -228,9 +226,24 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         uint256 operatorTakeUpdatedAt = pegoutInfo.operatorTakeUpdatedAt;
         pegoutInfo.operatorTakeUpdatedAt = block.timestamp;
 
+        uint256 sequenceNumberToUse = sequenceNumber;
+        unchecked {
+            sequenceNumber++;
+        }
+
         //slither-disable-next-line unused-return
         (SignatureData[] memory signatureData, uint8 missingSignatures, uint8 missingNonces,) =
             signatureManager.getPartialSignatures(_pegoutTxid);
+
+        // slither-disable-next-line reentrancy-no-eth reentrancy-benign
+        (address takeOperatorAddress, bytes32 operatorDisputePubKey, bytes32 operatorTakePubKey) =
+            committeeRegistry.selectTakeOperator(pegoutInfo.committeeId, signatureData, missingNonces);
+
+        // Update state variables after external calls
+        pegoutInfo.takeOperatorAddress = takeOperatorAddress;
+        pegoutInfo.operatorTakePubKey = operatorTakePubKey;
+        pegoutInfo.operatorDisputePubKey = operatorDisputePubKey;
+        pegoutInfo.pegoutId = _generatePegoutId(streamInfo, operatorTakePubKey, sequenceNumberToUse);
 
         if (streamInfo.pegStatus == PegStatus.USER_TAKE) {
             if (missingSignatures == 0) {
@@ -241,7 +254,6 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
             if (block.timestamp <= pegoutInfo.createdAt + userTakeTimeout) {
                 revert UserTakeTimeoutNotExpired(pegoutInfo.createdAt, pegoutInfo.createdAt + userTakeTimeout);
             }
-
             streamManager.setPegStatus(acceptPeginTxid, PegStatus.OP_SELECTED);
             advanceSlot = true;
         } else if (streamInfo.pegStatus == PegStatus.OP_SELECTED) {
@@ -254,14 +266,6 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         } else {
             revert InvalidPegStatus(streamInfo.pegStatus);
         }
-
-        // slither-disable-next-line reentrancy-no-eth reentrancy-benign
-        (address takeOperatorAddress, bytes32 operatorDisputePubKey) =
-            committeeRegistry.getOperatorDisputeData(pegoutInfo.committeeId, signatureData, missingNonces);
-
-        // Update state variables after external calls
-        pegoutInfo.takeOperatorAddress = takeOperatorAddress;
-        pegoutInfo.operatorDisputePubKey = operatorDisputePubKey;
 
         // Fetch updated streamInfo after potential status change
         StreamPosition memory updatedStreamInfo = streamManager.getStreamPosition(acceptPeginTxid);
@@ -276,6 +280,25 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
                 updatedStreamInfo.streamId, updatedStreamInfo.packetNumber, updatedStreamInfo.slotId
             );
         }
+    }
+
+    function _generatePegoutId(StreamPosition memory _streamInfo, bytes32 _operatorTakePubKey, uint256 _sequenceNumber)
+        internal
+        view
+        returns (bytes32)
+    {
+        bytes32 pegoutId = keccak256(
+            abi.encodePacked(
+                Constants.PEGOUT_ID_VERSION,
+                _sequenceNumber,
+                _streamInfo.streamId,
+                _streamInfo.packetNumber,
+                _streamInfo.slotId,
+                _operatorTakePubKey,
+                rbtcBridge.getBestBlockHash() // used as randomness for the pegout ID
+            )
+        );
+        return pegoutId;
     }
 
     /// @inheritdoc IPegoutManager
@@ -298,7 +321,13 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
 
         // slither-disable-next-line reentrancy-events
         emit AdvanceFundsRegistered(
-            _advanceFunds.blockHash, txid, acceptPeginTxid, pegoutInfo.pegoutId, pegoutInfo.committeeId, streamInfo
+            _advanceFunds.blockHash,
+            txid,
+            acceptPeginTxid,
+            pegoutInfo.pegoutId,
+            pegoutInfo.committeeId,
+            streamInfo,
+            pegoutInfo.operatorTakePubKey
         );
     }
 
@@ -386,7 +415,14 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         // Update the reimbursement kickoff txid
         pegoutInfo.reimbursementKickoffTxid = txid;
 
-        emit ReimbursementKickoffRegistered(txid, acceptPeginTxid, pegoutInfo.committeeId, streamInfo);
+        emit ReimbursementKickoffRegistered(
+            txid,
+            acceptPeginTxid,
+            pegoutInfo.pegoutId,
+            pegoutInfo.committeeId,
+            streamInfo,
+            pegoutInfo.operatorTakePubKey
+        );
 
         // update the peg status to KICKOFF
         streamManager.setPegStatus(acceptPeginTxid, PegStatus.KICKOFF);

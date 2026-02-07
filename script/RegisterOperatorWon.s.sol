@@ -27,6 +27,7 @@ contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
     uint64 expectedStreamId;
     uint64 expectedPacketNumber;
     uint64 expectedSlotId;
+    bytes32 expectedPegoutId;
 
     function setUp(bytes32 _acceptPeginTxid) internal {
         pegoutManager = PegoutManager(getPegoutManager());
@@ -49,13 +50,15 @@ contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
 
         Packet memory packet = streamManager.getPacket(expectedStreamId, expectedPacketNumber);
         committeePubKey = packet.committeePubKey;
+
+        expectedPegoutId = pegoutManager.getPegoutTempInfo(_acceptPeginTxid).pegoutId;
     }
 
-    function run(bytes32 _acceptPeginTxid, bytes32 _pegoutId) public {
+    function run(bytes32 _acceptPeginTxid) public {
         setUp(_acceptPeginTxid);
 
         // ADVANCE FUNDS
-        BtcTransaction memory advanceFundsTx = createAdvanceFundsTx(userPubKey, amount, _pegoutId);
+        BtcTransaction memory advanceFundsTx = createAdvanceFundsTx(userPubKey, amount, expectedPegoutId);
         BtcTxSPVProof memory advanceFundsSPV = createBtcTxSPVProof(advanceFundsTx);
 
         // Register advance funds
@@ -64,7 +67,7 @@ contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
         vm.stopBroadcast();
 
         // REIMBURSEMENT KICKOFF
-        BtcTransaction memory kickoffTx = createReimbursementKickoffTx(committeePubKey, uint32(expectedSlotId));
+        BtcTransaction memory kickoffTx = createReimbursementKickoffTx(committeePubKey, expectedSlotId);
         BtcTxSPVProof memory kickoffTxSPVProof = createBtcTxSPVProof(kickoffTx);
         bytes32 reimbursementKickoffTxid = getTxid(kickoffTx);
 

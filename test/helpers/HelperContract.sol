@@ -7,30 +7,36 @@ import {StreamManagerHarness} from "test/helpers/StreamManagerHarness.sol";
 import {MemberRegistryHarness} from "test/helpers/MemberRegistryHarness.sol";
 import {PeginManagerHarness} from "test/helpers/PeginManagerHarness.sol";
 import {PegoutManagerHarness} from "test/helpers/PegoutManagerHarness.sol";
+import {CommitteeRegistryHarness} from "./CommitteeRegistryHarness.sol";
 import {SignatureManager} from "src/SignatureManager.sol";
 import {AccessManager} from "src/AccessManager.sol";
-import {Role, CommitteeMember, Committee, MemberRegistrationKeys, UTXO} from "src/CommitteeRegistry.sol";
-import {CommunicationData, COMMUNICATION_DATA_CHUNKS} from "src/interfaces/ICommitteeRegistry.sol";
-import {StreamDenomination, Slot} from "src/interfaces/IStreamManager.sol";
+import {BitcoinManager} from "src/BitcoinManager.sol";
+import {ChallengeManager} from "src/ChallengeManager.sol";
+import {RbtcBridge} from "src/RbtcBridge.sol";
+import {BridgeMock} from "./BridgeMock.sol";
+import {TestUtils} from "./TestUtils.sol";
+import {
+    Role,
+    CommitteeMember,
+    Committee,
+    MemberKeys,
+    MemberRegistrationKeys,
+    UTXO,
+    CommunicationData,
+    COMMUNICATION_DATA_CHUNKS
+} from "src/interfaces/ICommitteeRegistry.sol";
+import {StreamDenomination, Slot, Stream, SlotState, SlotLocation} from "src/interfaces/IStreamManager.sol";
 import {
     BtcTxIn, BtcTxOut, BtcTransaction, BitcoinSignatureData, PrevoutData
 } from "src/interfaces/IBitcoinManager.sol";
 import {BtcTxSPVProof, StreamPosition, PegStatus} from "src/interfaces/IPegCommonTypes.sol";
-import {PegoutTempInfo} from "src/interfaces/IPegoutManager.sol";
-import {IPegoutManager} from "src/interfaces/IPegoutManager.sol";
-import {BitcoinManager} from "src/BitcoinManager.sol";
+import {IPegoutManager, PegoutTempInfo} from "src/interfaces/IPegoutManager.sol";
 import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {BtcTxEncoder} from "src/libraries/BtcTxEncoder.sol";
-import {BridgeMock} from "./BridgeMock.sol";
-import {TestUtils} from "./TestUtils.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {OpCodes} from "src/libraries/OpCodes.sol";
-import {Stream, SlotState, SlotLocation} from "src/interfaces/IStreamManager.sol";
-import {CommitteeRegistryHarness} from "./CommitteeRegistryHarness.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
-import {RbtcBridge} from "src/RbtcBridge.sol";
-import {ChallengeManager} from "src/ChallengeManager.sol";
 
 abstract contract HelperContract is Test, TestUtils {
     bytes32 internal constant BTC_REIMBURSEMENT_PUBKEY =
@@ -473,18 +479,17 @@ abstract contract HelperContract is Test, TestUtils {
 
     function setup_requestAndAcceptPeginFlow(uint128 _committeeId)
         public
-        returns (BtcTransaction memory, BtcTransaction memory)
+        returns (bytes32 acceptPeginTxid, BtcTransaction memory peginTx, BtcTransaction memory acceptPeginTx)
     {
-        (BtcTransaction memory peginTx, uint64 peginSlotId) = setup_requestPeginFlow();
-        BtcTransaction memory acceptPeginTx = setup_acceptPeginFlow(peginTx);
-        bytes32 acceptPeginTxid = bitcoinManager.getBtcTxid(acceptPeginTx);
+        uint64 peginSlotId;
+        (peginTx, peginSlotId) = setup_requestPeginFlow();
+        acceptPeginTx = setup_acceptPeginFlow(peginTx);
+        acceptPeginTxid = bitcoinManager.getBtcTxid(acceptPeginTx);
 
         // This cover all operators in the committee
         setup_addOperatorTakeTxids_MultipleOperators(
             acceptPeginTxid, _committeeId, uint32(peginSlotId), registry.committeeMemberCount()
         );
-
-        return (peginTx, acceptPeginTx);
     }
 
     // ========================== Register Pegout Setup ==========================
@@ -509,10 +514,10 @@ abstract contract HelperContract is Test, TestUtils {
 
     function setup_pegout() internal returns (RegisterUserTakeSetup memory setup) {
         // =========== Request Peg-In & Accept Peg-In ============
-        (, BtcTransaction memory acceptPeginTx) = setup_requestAndAcceptPeginFlow(COMMITTEE_ID_STREAM_1_COMMITTEE_1);
+        (bytes32 acceptPeginTxid,,) = setup_requestAndAcceptPeginFlow(COMMITTEE_ID_STREAM_1_COMMITTEE_1);
 
         // Get the accept peg-in tx id that will be spent in the peg-out
-        setup.acceptPeginTxid = bitcoinManager.getBtcTxid(acceptPeginTx);
+        setup.acceptPeginTxid = acceptPeginTxid;
         setup.stream = streamManager.getStream(VALUE);
         setup.userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
 
@@ -560,18 +565,24 @@ abstract contract HelperContract is Test, TestUtils {
 
         setup.pegoutSignatureHash = pegoutSignatureData.signatureHash;
         setup.pegoutTxid = pegoutSignatureData.txid;
+    }
 
-        setup.pegoutId = keccak256(
-            abi.encode(
-                stream.streamId,
-                setup.packetNumber,
-                setup.slotId,
-                globalUserAddress,
+    function calculatePegoutId(bytes32 operatorTakePubKey, uint64 streamId, uint64 packetNumber, uint64 slotId)
+        internal
+        view
+        returns (bytes32)
+    {
+        return keccak256(
+            abi.encodePacked(
+                Constants.PEGOUT_ID_VERSION,
+                pegoutManager.sequenceNumber(),
+                streamId,
+                packetNumber,
+                slotId,
+                operatorTakePubKey,
                 BtcHelper.hash256(bridgeMock.getBtcBlockchainBestBlockHeader())
             )
         );
-
-        setup.advanceFundsSPV = createBtcTxSPVProof(createAdvanceFundsTx(setup.userPubKey, VALUE, setup.pegoutId));
     }
 
     function setup_pegFlow() internal returns (RegisterUserTakeSetup memory setup) {
@@ -596,7 +607,7 @@ abstract contract HelperContract is Test, TestUtils {
     function setup_addOperatorTakeTxids_MultipleOperators(
         bytes32 _acceptPeginTxid,
         uint128 _committeeId,
-        uint32 _slotId,
+        uint64 _slotId,
         uint256 _operatorCount
     ) internal {
         CommitteeMember[] memory members = registry.getCommitteeMembers(_committeeId);
@@ -965,10 +976,14 @@ abstract contract HelperContract is Test, TestUtils {
         // Get the actual operator that was selected from the contract state
         PegoutTempInfo memory actualPegoutInfo = pegoutManager.getPegoutTempInfo(setup.acceptPeginTxid);
         operatorAddress = actualPegoutInfo.takeOperatorAddress;
+        setup.pegoutId = actualPegoutInfo.pegoutId;
+
+        setup.advanceFundsSPV = createBtcTxSPVProof(createAdvanceFundsTx(setup.userPubKey, VALUE, setup.pegoutId));
 
         BtcTransaction memory opTakeTx;
         (opTakeTx,, setup.reimbursementKickoffSPV) =
             setup_getOperatorTakeData(setup.acceptPeginTxid, operatorAddress, uint32(setup.slotId));
+
         setup.operatorTakeSPV = createBtcTxSPVProof(opTakeTx);
 
         bytes32 reimbursementTxid = bitcoinManager.getBtcTxid(setup.reimbursementKickoffSPV.btcTx);
@@ -977,7 +992,7 @@ abstract contract HelperContract is Test, TestUtils {
         setup.challengeSPV = createBtcTxSPVProof(createChallengeTx(reimbursementTxid, committeePubKey));
     }
 
-    function setup_getOperatorTakeData(bytes32 _acceptPeginTxid, address _operatorAddress, uint32 _slotId)
+    function setup_getOperatorTakeData(bytes32 _acceptPeginTxid, address _operatorAddress, uint64 _slotId)
         internal
         returns (
             BtcTransaction memory opTakeTx,
@@ -1077,14 +1092,17 @@ abstract contract HelperContract is Test, TestUtils {
         address operatorAddress,
         uint256 createdAt
     ) internal {
+        MemberKeys memory keys = memberRegistry.getMemberPublicKeys(operatorAddress);
+
         PegoutTempInfo memory expectedPegoutInfo = PegoutTempInfo({
             userPubKey: setup.userPubKey,
             createdAt: createdAt,
             operatorTakeUpdatedAt: block.timestamp, // Updated when triggerOperatorTake is called
             committeeId: COMMITTEE_ID_STREAM_1_COMMITTEE_1,
             takeOperatorAddress: operatorAddress,
-            operatorDisputePubKey: getMemberDisputePubKey(operatorAddress),
-            pegoutId: setup.pegoutId,
+            operatorTakePubKey: keys.takePubKey,
+            operatorDisputePubKey: keys.covenantPubKey,
+            pegoutId: calculatePegoutId(keys.takePubKey, setup.stream.streamId, setup.packetNumber, setup.slotId),
             advanceFundsBlockNumber: 0,
             reimbursementKickoffTxid: bytes32(0)
         });
@@ -1230,16 +1248,6 @@ abstract contract HelperContract is Test, TestUtils {
         accessManager.pause();
         accessManager.unpause();
         vm.stopPrank();
-    }
-
-    function calculatePegoutId(uint64 _streamId, uint64 _packetNumber, uint64 _slotId, address _userAddress)
-        internal
-        pure
-        returns (bytes32)
-    {
-        // Calculate expected PegoutId using mock block hash
-        bytes32 mockBlockHash = 0x0000000000000000000049b460f18614380a01b8709d2c3a8ddf451d08d862b8;
-        return keccak256(abi.encode(_streamId, _packetNumber, _slotId, _userAddress, mockBlockHash));
     }
 
     /// @notice Gets the dispute key 33 bytes compact format for a member by address

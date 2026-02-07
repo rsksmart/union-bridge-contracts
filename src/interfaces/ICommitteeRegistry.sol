@@ -362,10 +362,11 @@ interface ICommitteeRegistry {
     /// @param _missingNonces Number of missing nonces
     /// @return operatorAddress The address of the next available operator for take operations
     /// @return disputePubKey The operator's dispute public key
+    /// @return takePubKey The operator's take public key
     /// @dev Reverts with TakeOperatorNotFound if no eligible operator is found
-    function getOperatorDisputeData(uint128 _committeeId, SignatureData[] calldata _signatureData, uint8 _missingNonces)
+    function selectTakeOperator(uint128 _committeeId, SignatureData[] calldata _signatureData, uint8 _missingNonces)
         external
-        returns (address operatorAddress, bytes32 disputePubKey);
+        returns (address operatorAddress, bytes32 disputePubKey, bytes32 takePubKey);
 
     /// @notice Releases committee members from a packet and handles their staked balance
     /// @dev Called by PegManager to release committee members after packet completion

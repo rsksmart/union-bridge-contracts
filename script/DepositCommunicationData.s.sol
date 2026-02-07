@@ -11,6 +11,7 @@ import {
     RSAPublicKey
 } from "src/interfaces/ICommitteeRegistry.sol";
 import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
+import {BytesHelper} from "src/libraries/BytesHelper.sol";
 
 contract DepositCommunicationDataScript is ScriptUtils, ContractAddressManager {
     ICommitteeRegistry committeeRegistry;
@@ -77,7 +78,7 @@ contract DepositCommunicationDataScript is ScriptUtils, ContractAddressManager {
     {
         CommunicationData[] memory encryptedData = new CommunicationData[](committeeComPubkeys.length);
         for (uint256 i = 0; i < committeeComPubkeys.length; i++) {
-            if (keccak256(abi.encode(committeeComPubkeys[i])) == keccak256(abi.encode(comPubKey))) {
+            if (BytesHelper.compare(abi.encode(committeeComPubkeys[i]), abi.encode(comPubKey))) {
                 continue;
             }
             encryptedData[i] = encryptData(committeeComPubkeys[i], data);

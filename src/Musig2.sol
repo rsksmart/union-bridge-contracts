@@ -5,6 +5,7 @@ import {BtcTaproot} from "./libraries/BtcTaproot.sol";
 import {Secp256k1} from "./libraries/Secp256k1.sol";
 import {IMusig2, Point, Nonce} from "./interfaces/IMusig2.sol";
 import {Constants} from "./libraries/Constants.sol";
+import {BytesHelper} from "./libraries/BytesHelper.sol";
 
 /// @title Musig2 Contract
 /// @notice Contract for verifying Musig2 signatures
@@ -120,13 +121,13 @@ contract Musig2 is IMusig2 {
         // to prevent collisions (See appendix B of the musig2 paper).
         bytes memory pk2 = compressedPubKeys[0];
         for (uint256 i = 1; i < length; ++i) {
-            if (!_equalCompressedPubKeys(compressedPubKeys[i], pk2)) {
+            if (!BytesHelper.compare(compressedPubKeys[i], pk2)) {
                 pk2 = compressedPubKeys[i];
                 break;
             }
         }
         // Instead of twaking we should revert if all pubkeys are the same in this implementation
-        if (_equalCompressedPubKeys(pk2, compressedPubKeys[0])) {
+        if (BytesHelper.compare(pk2, compressedPubKeys[0])) {
             revert AllPubkeysAreTheSame();
         }
 
@@ -145,7 +146,7 @@ contract Musig2 is IMusig2 {
             Point memory effectivePubKey = Point({x: 0, y: 0});
             // Compute the key coefficient
             uint256 key_coefficient = 1;
-            if (!_equalCompressedPubKeys(pk2, compressedPubKeys[i])) {
+            if (!BytesHelper.compare(pk2, compressedPubKeys[i])) {
                 bytes32 coefficientHash =
                     BtcTaproot.taggedHash(KEYAGG_COEFFICIENT, abi.encodePacked(pubKeyListHash, compressedPubKeys[i]));
                 // Reduce from hash to a scalar
@@ -296,14 +297,6 @@ contract Musig2 is IMusig2 {
         // adapted_nonce = final_nonce + adaptor_point
         // As adaptor point is zero (point at infinity) when verifying the partial signature, we don't need to add it to the final nonce
         return (adaptedAggregatedNonce, nonceCoef);
-    }
-
-    /// @notice Compare two compressed public keys for equality
-    /// @param a The first compressed public key
-    /// @param b The second compressed public key
-    /// @return true if the compressed public keys are equal, false otherwiseß
-    function _equalCompressedPubKeys(bytes memory a, bytes memory b) internal pure returns (bool) {
-        return keccak256(a) == keccak256(b);
     }
 
     /// @notice Reduce a hash to a scalar that exists in the secp256k1 curve

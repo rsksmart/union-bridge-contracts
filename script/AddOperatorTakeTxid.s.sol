@@ -67,7 +67,7 @@ contract addOperatorTakeTxidsScript is ScriptUtils, ContractAddressManager {
         setUp(_mnemonicIndex, _acceptPeginTxid);
 
         // REIMBURSEMENT KICKOFF
-        BtcTransaction memory kickoffTx = createReimbursementKickoffTx(committeePubKey, uint32(expectedSlotId));
+        BtcTransaction memory kickoffTx = createReimbursementKickoffTx(committeePubKey, expectedSlotId);
         bytes32 reimbursementKickoffTxid = getTxid(kickoffTx);
 
         // OPERATOR TAKE

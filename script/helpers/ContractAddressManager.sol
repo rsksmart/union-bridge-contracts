@@ -14,6 +14,7 @@ import {ISignatureManager} from "src/interfaces/ISignatureManager.sol";
 import {AccessManager} from "src/AccessManager.sol";
 import {IRbtcBridge} from "src/interfaces/IRbtcBridge.sol";
 import {IChallengeManager} from "src/interfaces/IChallengeManager.sol";
+import {BytesHelper} from "src/libraries/BytesHelper.sol";
 
 /// @title ContractAddressManager
 /// @notice Helper library to get contract addresses based on the current network
@@ -32,9 +33,9 @@ abstract contract ContractAddressManager is Script {
         } else if (block.chainid == ChainIds.RSK_TESTNET) {
             // For testnet/alphanet (both chain ID 31), check NETWORK env var
             string memory network = vm.envString("NETWORK");
-            if (keccak256(bytes(network)) == keccak256(bytes("alphanet"))) {
+            if (BytesHelper.compare(bytes(network), bytes("alphanet"))) {
                 peginManagerAddress = vm.envAddress("ALPHANET_PEGIN_MANAGER");
-            } else if (keccak256(bytes(network)) == keccak256(bytes("testnet"))) {
+            } else if (BytesHelper.compare(bytes(network), bytes("testnet"))) {
                 peginManagerAddress = vm.envAddress("TESTNET_PEGIN_MANAGER");
             }
         } else {

@@ -431,7 +431,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
             revert InvalidAggregatedKeyLength(_aggregatedKey.length, 33);
         }
 
-        if (keccak256(_aggregatedKey) == keccak256(new bytes(33))) {
+        if (BytesHelper.compare(_aggregatedKey, new bytes(33))) {
             revert InvalidAggregatedKeyZero();
         }
 
@@ -636,12 +636,13 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
     }
 
     /// @inheritdoc ICommitteeRegistry
-    function getOperatorDisputeData(uint128 _committeeId, SignatureData[] calldata _signatureData, uint8 _missingNonces)
+    function selectTakeOperator(uint128 _committeeId, SignatureData[] calldata _signatureData, uint8 _missingNonces)
         external
-        returns (address operatorAddress, bytes32 disputePubKey)
+        returns (address operatorAddress, bytes32 disputePubKey, bytes32 takePubKey)
     {
         // Verify that the caller has permission to select a take operator
         accessManager.canSelectTakeOperator(_msgSender());
+
         Committee storage committee = _getCommittee(_committeeId);
         uint256 membersLength = committee.members.length;
 
@@ -665,8 +666,10 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
                 // Get the operator's address and dispute public key
                 operatorAddress = committee.members[operatorTakeIndex].memberAddress;
                 // slither-disable-next-line calls-loop
-                disputePubKey = memberRegistry.getMemberPublicKeys(operatorAddress).covenantPubKey;
-                return (operatorAddress, disputePubKey);
+                MemberKeys memory keys = memberRegistry.getMemberPublicKeys(operatorAddress);
+                disputePubKey = keys.covenantPubKey;
+                takePubKey = keys.takePubKey;
+                return (operatorAddress, disputePubKey, takePubKey);
             }
         }
 

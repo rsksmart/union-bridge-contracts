@@ -1256,7 +1256,15 @@ The Advance Funds Protocol integrates with the **Dispute Core Protocol** to prov
 - **Dispute Resolution**: Process for resolving conflicts in operator transactions
 - **OPERATOR_TAKE_ENABLER**: UTXO from REIMBURSEMENT_KICKOFF_TX output 0 that enables OPERATOR_TAKE_TX execution
 - **OPERATOR_WON_ENABLER**: UTXO from REVEAL_INPUT_TX output 0 that enables OPERATOR_WON_TX execution. This output contains a timelock script requiring OP_WON_TIMELOCK blocks to expire before OPERATOR_WON_TX can be executed. The OPERATOR_WON_TX is automatically dispatched by the Dispute Core protocol after REVEAL_INPUT_TX is confirmed.
-- **Pegout ID**: 32-byte identifier used to link peg-out requests with dispute core transactions
+- **Pegout ID**: 32-byte identifier used to link peg-out requests with dispute core transactions. The pegout id is a hash of:
+  - Version number (See Constants.PEGOUT_ID_VERSION)
+  - Sequential number (incremental)
+  - Stream id
+  - Packet number
+  - Slot id que (0-99)
+  - Operator take pub key
+  - Bitcoin latest block hash (as source of entropy)
+
 - **registerAdvanceFunds**: Rootstock contract function to register ADVANCE_FUNDS_TX SPV proof and update status to ADVANCED
 - **registerReimbursementKickoff**: Rootstock contract function to register REIMBURSEMENT_KICKOFF_TX SPV proof and update status to KICKOFF
 - **registerOperatorTake**: Rootstock contract function to register OPERATOR_TAKE_TX SPV proof and update status to COMPLETED

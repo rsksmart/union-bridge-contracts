@@ -18,6 +18,8 @@ struct PegoutTempInfo {
     uint128 committeeId;
     /// @notice The operator address that will advance the funds to the user
     address takeOperatorAddress;
+    /// @notice The take public key (takePubKey) of the selected operator for operator-take transactions (x-coordinate only)
+    bytes32 operatorTakePubKey;
     /// @notice The dispute public key (covenantPubKey) of the selected operator for operator-take transactions (x-coordinate only)
     bytes32 operatorDisputePubKey;
     /// @notice The unique identifier for this peg-out operation
@@ -148,7 +150,6 @@ interface IPegoutManager {
     /// @param packetNumber The packet number within the stream
     /// @param slotId The slot ID within the packet
     /// @param amount The amount being peg-out in satoshis
-    /// @param pegoutId The unique identifier for this peg-out operation
     event PegoutRequested(
         bytes userPubKey,
         uint256 indexed committeeId,
@@ -156,8 +157,7 @@ interface IPegoutManager {
         uint64 streamId,
         uint64 packetNumber,
         uint64 slotId,
-        uint64 amount,
-        bytes32 pegoutId
+        uint64 amount
     );
 
     /// @notice Event emitted when a peg-out is successfully registered
@@ -181,22 +181,31 @@ interface IPegoutManager {
     /// @param pegoutId The unique identifier for this peg-out operation
     /// @param committeeId The ID of the committee responsible for this advance funds
     /// @param streamInfo The stream position information related to this advance funds
+    /// @param operatorTakePubKey The public key of the operator that took the advance funds
     event AdvanceFundsRegistered(
         bytes32 indexed blockHash,
         bytes32 indexed txid,
         bytes32 indexed acceptPeginTxid,
         bytes32 pegoutId,
         uint128 committeeId,
-        StreamPosition streamInfo
+        StreamPosition streamInfo,
+        bytes32 operatorTakePubKey
     );
 
     /// @notice Event emitted when reimbursement kickoff is successfully registered
     /// @param txid The hash of the reimbursement kickoff transaction
     /// @param acceptPeginTxid The hash of the original accept peg-in transaction
+    /// @param pegoutId The unique identifier for this peg-out operation
     /// @param committeeId The ID of the committee responsible for this reimbursement kickoff
     /// @param streamInfo The stream position information related to this reimbursement kickoff
+    /// @param operatorTakePubKey The public key of the operator that took the advance funds
     event ReimbursementKickoffRegistered(
-        bytes32 indexed txid, bytes32 indexed acceptPeginTxid, uint128 committeeId, StreamPosition streamInfo
+        bytes32 indexed txid,
+        bytes32 indexed acceptPeginTxid,
+        bytes32 indexed pegoutId,
+        uint128 committeeId,
+        StreamPosition streamInfo,
+        bytes32 operatorTakePubKey
     );
 
     /// @notice Event emitted when the user take timeout is updated
@@ -214,7 +223,7 @@ interface IPegoutManager {
     /// @param updatedAt The timestamp when the operator take was triggered
     /// @param expireAt The timestamp when the operator take timeout expires
     event OperatorTakeTriggered(
-        bytes32 pegoutTxid,
+        bytes32 indexed pegoutTxid,
         PegoutTempInfo pegoutInfo,
         StreamPosition streamPosition,
         uint256 updatedAt,

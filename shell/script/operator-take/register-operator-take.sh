@@ -6,7 +6,6 @@ cd "$CURRENT_PATH/../../.."
 
 # Defaults
 ACCEPT_PEGIN_TXID="0x287ccabdb0e43b06ed2a4370139e9373a3fcb88625c4752e7947c5b858828115"
-PEGOUT_ID="0xf3bed2c6accdfb255a92799af6479c94d8c1a1c5f1c26f07abef190484f2a981"
 
 # set up environment variables
 source .env
@@ -36,13 +35,12 @@ while getopts ":a:-:" opt; do
 done
 
 echo "================ REGISTER OPERATOR TAKE REQUEST TO $RPC ================"
-echo "Stream ID: $STREAM_ID, Packet: $PACKET_NUMBER, Slot: $SLOT_ID"
+echo "ACCEPT_PEGIN_TXID: $ACCEPT_PEGIN_TXID"
 
 forge script \
     script/RegisterOperatorTake.s.sol \
-     --sig "run(bytes32, bytes32)" \
+     --sig "run(bytes32)" \
     "$ACCEPT_PEGIN_TXID" \
-    "$PEGOUT_ID" \
     --rpc-url $RPC \
     --legacy \
     --broadcast \

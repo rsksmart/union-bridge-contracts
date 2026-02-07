@@ -220,35 +220,35 @@ contract CommitteeMemberIterationGasTest is Test, HelperContract {
         _logGasConsumption("SignatureManager.getOperatorTakeData", size, gasUsed, gasPrice, costInWei);
     }
 
-    function test_GasConsumption_CommitteeRegistry_getOperatorDisputeData_Size10() public {
-        _test_GasConsumption_CommitteeRegistry_getOperatorDisputeData(10);
+    function test_GasConsumption_CommitteeRegistry_selectTakeOperator_Size10() public {
+        _test_GasConsumption_CommitteeRegistry_selectTakeOperator(10);
     }
 
-    function test_GasConsumption_CommitteeRegistry_getOperatorDisputeData_Size20() public {
-        _test_GasConsumption_CommitteeRegistry_getOperatorDisputeData(20);
+    function test_GasConsumption_CommitteeRegistry_selectTakeOperator_Size20() public {
+        _test_GasConsumption_CommitteeRegistry_selectTakeOperator(20);
     }
 
-    function test_GasConsumption_CommitteeRegistry_getOperatorDisputeData_Size30() public {
-        _test_GasConsumption_CommitteeRegistry_getOperatorDisputeData(30);
+    function test_GasConsumption_CommitteeRegistry_selectTakeOperator_Size30() public {
+        _test_GasConsumption_CommitteeRegistry_selectTakeOperator(30);
     }
 
-    function test_GasConsumption_CommitteeRegistry_getOperatorDisputeData_Size50() public {
-        _test_GasConsumption_CommitteeRegistry_getOperatorDisputeData(50);
+    function test_GasConsumption_CommitteeRegistry_selectTakeOperator_Size50() public {
+        _test_GasConsumption_CommitteeRegistry_selectTakeOperator(50);
     }
 
-    function test_GasConsumption_CommitteeRegistry_getOperatorDisputeData_Size70() public {
-        _test_GasConsumption_CommitteeRegistry_getOperatorDisputeData(70);
+    function test_GasConsumption_CommitteeRegistry_selectTakeOperator_Size70() public {
+        _test_GasConsumption_CommitteeRegistry_selectTakeOperator(70);
     }
 
-    function test_GasConsumption_CommitteeRegistry_getOperatorDisputeData_Size100() public {
-        _test_GasConsumption_CommitteeRegistry_getOperatorDisputeData(100);
+    function test_GasConsumption_CommitteeRegistry_selectTakeOperator_Size100() public {
+        _test_GasConsumption_CommitteeRegistry_selectTakeOperator(100);
     }
 
-    function _test_GasConsumption_CommitteeRegistry_getOperatorDisputeData(uint256 size) internal {
+    function _test_GasConsumption_CommitteeRegistry_selectTakeOperator(uint256 size) internal {
         // Arrange
         (uint128 committeeId, CommitteeMember[] memory members) = setup_completeCommitteeWithSize(size);
 
-        bytes32 txid = _getTestTxid("test_GasConsumption_CommitteeRegistry_getOperatorDisputeData", size);
+        bytes32 txid = _getTestTxid("test_GasConsumption_CommitteeRegistry_selectTakeOperator", size);
         vm.prank(address(peginManager));
         signatureManager.initSignatures(txid, committeeId);
 
@@ -262,12 +262,12 @@ contract CommitteeMemberIterationGasTest is Test, HelperContract {
         // Act
         uint256 gasStart = gasleft();
         vm.prank(address(pegoutManager));
-        registry.getOperatorDisputeData(committeeId, signatureData, 1);
+        registry.selectTakeOperator(committeeId, signatureData, 1);
         uint256 gasUsed = gasStart - gasleft();
         (uint256 gasPrice, uint256 costInWei) = calculateGasCost(gasUsed);
 
         // Log
-        _logGasConsumption("CommitteeRegistry.getOperatorDisputeData", size, gasUsed, gasPrice, costInWei);
+        _logGasConsumption("CommitteeRegistry.selectTakeOperator", size, gasUsed, gasPrice, costInWei);
     }
 
     function test_GasConsumption_CommitteeRegistry_getCommunicationData_Size10() public {
