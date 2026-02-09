@@ -91,6 +91,62 @@ contract ChallengeManager is IChallengeManager, PegBase {
         streamManager.setPegStatus(_acceptPeginTxid, PegStatus.CHALLENGE);
     }
 
+    function _getChallengeTempInfo(bytes32 _acceptPeginTxid) internal view returns (ChallengeTempInfo storage) {
+        ChallengeTempInfo storage challengeInfo = challengeTempInfo[_acceptPeginTxid];
+        if (challengeInfo.challengeTxid == bytes32(0)) {
+            revert NoChallengeRegistered(_acceptPeginTxid);
+        }
+        return challengeInfo;
+    }
+
+    /// @inheritdoc IChallengeManager
+    function registerInputNotRevealed(bytes32 _acceptPeginTxid, BtcTxSPVProof calldata _inputNotRevealed)
+        external
+        nonReentrant
+        whenNotPaused
+    {
+        StreamPosition memory streamInfo = _validatePegStatus(_acceptPeginTxid, PegStatus.CHALLENGE);
+
+        if (_inputNotRevealed.btcTx.inputs.length != Constants.INPUT_NOT_REVEALED_INPUT_COUNT) {
+            revert InvalidInputNotRevealedInputCount(
+                _inputNotRevealed.btcTx.inputs.length, Constants.INPUT_NOT_REVEALED_INPUT_COUNT
+            );
+        }
+
+        PegoutTempInfo memory pegoutInfo = pegoutManager.getPegoutTempInfo(_acceptPeginTxid);
+        _validateMemberInCommittee(pegoutInfo.committeeId);
+
+        ChallengeTempInfo memory challengeInfo = _getChallengeTempInfo(_acceptPeginTxid);
+
+        bytes32 challengeTxid = _inputNotRevealed.btcTx.inputs[Constants.INPUT_NOT_REVEALED_VIN_CHALLENGE].txId;
+        if (challengeInfo.challengeTxid != challengeTxid) {
+            revert ChallengeTxidNotMatch(challengeTxid, challengeInfo.challengeTxid);
+        }
+
+        // Calculate the transaction id for verification
+        bytes32 txid = bitcoinManager.getBtcTxid(_inputNotRevealed.btcTx);
+
+        Stream memory stream = streamManager.getStreamById(streamInfo.streamId);
+
+        // Verify the txid is part of the Merkle Root and has enough confirmations
+        rbtcBridge.verifyTxConfirmations(
+            stream.pegoutConfirmations,
+            txid,
+            _inputNotRevealed.blockHash,
+            _inputNotRevealed.merkleBranchPath,
+            _inputNotRevealed.merkleBranchHashes
+        );
+
+        // Clean up temp info as no reveal will happen
+        challengeTempInfo[_acceptPeginTxid] = ChallengeTempInfo({challengeTxid: bytes32(0), revealTxid: bytes32(0)});
+        emit InputNotRevealedRegistered(txid, _acceptPeginTxid, pegoutInfo.committeeId, streamInfo);
+
+        // Retrigger operator take. Update peg status
+        // streamManager.setPegStatus(_acceptPeginTxid, PegStatus.CHALLENGE);
+        bytes32 pegoutTxid = pegoutManager.getPegoutTxid(_acceptPeginTxid);
+        pegoutManager.triggerOperatorTake(pegoutTxid);
+    }
+
     function _validateMemberInCommittee(uint128 _committeeId) internal view {
         address _memberAddress = _msgSender();
         bool inCommittee = committeeRegistry.isMemberInCommittee(_committeeId, _memberAddress);

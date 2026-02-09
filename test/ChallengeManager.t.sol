@@ -300,4 +300,100 @@ contract ChallengeManagerTest is Test, HelperContract {
         vm.prank(opAddress);
         challengeManager.registerInputRevealed(setup.acceptPeginTxid, wrongSPV);
     }
+
+    function test_registerInputNotRevealed_Success_MemberCall() external {
+        // Arrange
+        pauseAndUnpauseContracts();
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_challenge();
+        bytes32 txid = bitcoinManager.getBtcTxid(setup.inputNotRevealedSPV.btcTx);
+        StreamPosition memory streamInfo = StreamPosition({
+            streamId: setup.stream.streamId,
+            packetNumber: setup.packetNumber,
+            slotId: setup.slotId,
+            pegStatus: PegStatus.CHALLENGE
+        });
+
+        address memberAddress = getCommitteeMemberAddressByIndex(COMMITTEE_ID_STREAM_1_COMMITTEE_1, 0);
+        assertNotEq(memberAddress, opAddress, "Member address should be different from operator address");
+
+        vm.expectEmit(address(challengeManager));
+        emit IChallengeManager.InputNotRevealedRegistered(
+            txid, setup.acceptPeginTxid, COMMITTEE_ID_STREAM_1_COMMITTEE_1, streamInfo
+        );
+
+        // Act
+        vm.prank(memberAddress);
+        challengeManager.registerInputNotRevealed(setup.acceptPeginTxid, setup.inputNotRevealedSPV);
+
+        // Assert
+        streamInfo = streamManager.getStreamPosition(setup.acceptPeginTxid);
+        assertEq(uint256(streamInfo.pegStatus), uint256(PegStatus.OP_SELECTED), "PegStatus should be OP_SELECTED");
+
+        assertTrue(
+            streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId).state == SlotState.ADVANCED,
+            "Slot state should be ADVANCED"
+        );
+
+        ChallengeTempInfo memory challengeInfo = challengeManager.getChallengeTempInfo(setup.acceptPeginTxid);
+        assertEq(challengeInfo.challengeTxid, bytes32(0), "Challenge txid should be cleaned");
+        assertEq(challengeInfo.revealTxid, bytes32(0), "Input revealed txid should be cleaned");
+    }
+
+    function test_registerInputNotRevealed_Revert_EnforcedPause_PausedContract() external {
+        // Arrange
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_challenge();
+        pauseContracts();
+
+        // Assert
+        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
+
+        // Act
+        vm.prank(opAddress);
+        challengeManager.registerInputNotRevealed(setup.acceptPeginTxid, setup.inputNotRevealedSPV);
+    }
+
+    function test_registerInputNotRevealed_Revert_PeginNotRequested() external {
+        // Arrange
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_challenge();
+        bytes32 wrongAcceptPeginTxid = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IPegBase.PeginNotRequested.selector, wrongAcceptPeginTxid));
+
+        // Act
+        vm.prank(opAddress);
+        challengeManager.registerInputNotRevealed(wrongAcceptPeginTxid, setup.inputNotRevealedSPV);
+    }
+
+    function test_registerInputNotRevealed_Revert_InvalidPegStatus() external {
+        // Arrange
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_challenge();
+
+        // Set peg status to COMPLETED to trigger invalid status error
+        vm.prank(address(challengeManager));
+        streamManager.setPegStatus(setup.acceptPeginTxid, PegStatus.COMPLETED);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IPegBase.InvalidPegStatus.selector, PegStatus.COMPLETED));
+
+        // Act
+        vm.prank(opAddress);
+        challengeManager.registerInputNotRevealed(setup.acceptPeginTxid, setup.inputNotRevealedSPV);
+    }
+
+    function test_registerInputNotRevealed_Revert_ChallengeTxidNotMatch() external {
+        // Arrange
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_challenge();
+        bytes32 txid = bitcoinManager.getBtcTxid(setup.challengeSPV.btcTx);
+        bytes32 wrongTxid = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
+        bytes memory committeePubKey = streamManager.getCommitteePubKey(uint64(DEFAULT_STREAM), setup.packetNumber);
+        BtcTxSPVProof memory wrongSPV = createBtcTxSPVProof(createInputNotRevealTx(wrongTxid, committeePubKey));
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IChallengeManager.ChallengeTxidNotMatch.selector, wrongTxid, txid));
+
+        // Act
+        vm.prank(opAddress);
+        challengeManager.registerInputNotRevealed(setup.acceptPeginTxid, wrongSPV);
+    }
 }

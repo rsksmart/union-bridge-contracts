@@ -479,6 +479,32 @@ abstract contract ScriptUtils is Script {
         return BtcTransaction({version: Constants.BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
     }
 
+    // ========================== Reveal ==========================
+    function createInputNotRevealTx(bytes32 _challengeTxid, bytes memory _committeePubKey)
+        internal
+        pure
+        returns (BtcTransaction memory)
+    {
+        // Input: spend the challenge UTXO
+        BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
+        btcInputs[0] = BtcTxIn({
+            txId: _challengeTxid,
+            vout: 0, // P2TR output is at index 0
+            sequence: Constants.SEQUENCE,
+            scriptSig: hex""
+        });
+
+        // Outputs
+        BtcTxOut[] memory btcOutputs = new BtcTxOut[](1);
+
+        // P2TR to committee
+        // This is a fake amount just for testing purposes
+        btcOutputs[0] = BtcTxOut({amount: 2000, scriptPubKey: getAcceptPeginP2TRScriptPub(_committeePubKey)});
+
+        // TODO: locktime could be updated to match bitvmx transaction. It's not checked by the contract though.
+        return BtcTransaction({version: Constants.BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
+    }
+
     function getTxid(BtcTransaction memory _btcTransaction) internal pure returns (bytes32) {
         return BtcHelper.hash256(BtcTxEncoder.encodeTx(_btcTransaction));
     }

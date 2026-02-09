@@ -29,9 +29,15 @@ interface IChallengeManager {
 
     /// @notice Registers an input revealed for a challenge transaction
     /// @dev Validates the SPV proof and updates the challenge status accordingly
-    /// @param _acceptPeginTxid The accept peg-in transaction id that is being revealed
+    /// @param _acceptPeginTxid The accept peg-in transaction id that is being challenged
     /// @param _inputRevealed The BTC SPV proof of the input revealed transaction
     function registerInputRevealed(bytes32 _acceptPeginTxid, BtcTxSPVProof memory _inputRevealed) external;
+
+    /// @notice Registers an input not revealed for a challenge transaction
+    /// @dev Validates the SPV proof and updates the challenge status accordingly
+    /// @param _acceptPeginTxid The accept peg-in transaction id that is being challenged
+    /// @param _inputNotRevealed The BTC SPV proof of the input not revealed transaction
+    function registerInputNotRevealed(bytes32 _acceptPeginTxid, BtcTxSPVProof calldata _inputNotRevealed) external;
 
     // ===================== Events =====================
     /// @notice Event emitted when a challenge is registered for a peg-out
@@ -40,6 +46,10 @@ interface IChallengeManager {
     /// @param committeeId The ID of the committee responsible for this challenge
     /// @param streamInfo The stream position information related to this challenge
     event ChallengeRegistered(
+        bytes32 indexed txid, bytes32 indexed acceptPeginTxid, uint128 committeeId, StreamPosition streamInfo
+    );
+
+    event InputNotRevealedRegistered(
         bytes32 indexed txid, bytes32 indexed acceptPeginTxid, uint128 committeeId, StreamPosition streamInfo
     );
 
@@ -69,8 +79,17 @@ interface IChallengeManager {
     /// @param expected The expected number of inputs
     error InvalidChallengeInputCount(uint256 actual, uint256 expected);
 
+    /// @notice Thrown when the number of inputs in a input not reveal transaction is incorrect
+    /// @param actual The actual number of inputs found
+    /// @param expected The expected number of inputs
+    error InvalidInputNotRevealedInputCount(uint256 actual, uint256 expected);
+
     /// @notice Thrown when the number of inputs in a input reveal transaction is incorrect
     /// @param actual The actual number of inputs found
     /// @param expected The expected number of inputs
     error InvalidRevealedInputCount(uint256 actual, uint256 expected);
+
+    /// @notice Thrown when there is no challenge registered for the given accept peg-in transaction id
+    /// @param acceptPeginTxid The accept peg-in transaction id
+    error NoChallengeRegistered(bytes32 acceptPeginTxid);
 }

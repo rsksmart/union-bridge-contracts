@@ -81,6 +81,11 @@ interface IPegoutManager {
     /// @return The peg-out signature hash
     function getPegoutTxid(uint64 streamId, uint64 packetNumber, uint64 slotId) external view returns (bytes32);
 
+    /// @notice Gets the peg-out transaction id associated with a specific accept peg-in transaction id
+    /// @param _acceptPeginTxid The accept peg-in transaction id
+    /// @return The peg-out transaction id
+    function getPegoutTxid(bytes32 _acceptPeginTxid) external view returns (bytes32);
+
     /// @notice Sets the timeout duration for user take operations
     /// @dev Only callable by the contract owner
     /// @dev Emits UserTakeTimeoutUpdated event upon successful update
@@ -346,4 +351,10 @@ interface IPegoutManager {
     /// @param actual The actual slot id from the transaction input
     /// @param expected The expected slot id from the stream position
     error InvalidSlotId(uint32 actual, uint64 expected);
+
+    /// @notice Thrown when peg-out transaction id is not found for the given stream, packet, and slot
+    /// @param streamId The stream identifier
+    /// @param packetNumber The packet number within the stream
+    /// @param slotId The slot identifier within the packet
+    error PegoutTxidNotFoundForSlot(uint64 streamId, uint64 packetNumber, uint64 slotId);
 }

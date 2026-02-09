@@ -501,6 +501,7 @@ abstract contract HelperContract is Test, TestUtils {
         BtcTxSPVProof operatorTakeSPV;
         BtcTxSPVProof challengeSPV;
         BtcTxSPVProof inputRevealedSPV;
+        BtcTxSPVProof inputNotRevealedSPV;
         BtcTxSPVProof operatorWonSPV;
         Stream stream;
         uint64 packetNumber;
@@ -1033,6 +1034,7 @@ abstract contract HelperContract is Test, TestUtils {
         bytes memory committeePubKey = streamManager.getCommitteePubKey(uint64(DEFAULT_STREAM), setup.packetNumber);
         bytes32 challengeTxid = bitcoinManager.getBtcTxid(setup.challengeSPV.btcTx);
         setup.inputRevealedSPV = createBtcTxSPVProof(createRevealTx(challengeTxid, committeePubKey));
+        setup.inputNotRevealedSPV = createBtcTxSPVProof(createInputNotRevealTx(challengeTxid, committeePubKey));
 
         vm.prank(operatorAddress);
         challengeManager.registerChallenge(setup.acceptPeginTxid, setup.challengeSPV);
