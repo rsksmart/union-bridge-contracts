@@ -26,7 +26,7 @@ contract addOperatorTakeTxidsScript is ScriptUtils, ContractAddressManager {
     IStreamManager streamManager;
     uint64 expectedStreamId;
     uint64 expectedPacketNumber;
-    uint64 expectedSlotId;
+    uint32 expectedSlotId;
 
     function setUp(uint16 _mnemonicIndex, bytes32 _acceptPeginTxid) internal {
         pegoutManager = PegoutManager(getPegoutManager());
@@ -45,7 +45,7 @@ contract addOperatorTakeTxidsScript is ScriptUtils, ContractAddressManager {
         StreamPosition memory streamPosition = streamManager.getStreamPosition(_acceptPeginTxid);
         expectedStreamId = streamPosition.streamId;
         expectedPacketNumber = streamPosition.packetNumber;
-        expectedSlotId = streamPosition.slotId;
+        expectedSlotId = uint32(streamPosition.slotId);
 
         Packet memory packet = streamManager.getPacket(expectedStreamId, expectedPacketNumber);
         committeePubKey = packet.committeePubKey;

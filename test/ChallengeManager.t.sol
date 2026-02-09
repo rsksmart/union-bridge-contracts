@@ -489,9 +489,9 @@ contract ChallengeManagerTest is Test, HelperContract {
             "Slot state should be ADVANCED"
         );
 
+        // getChallengeTempInfo will revert if challengeTxid is not set
+        vm.expectRevert(abi.encodeWithSelector(IChallengeManager.NoChallengeRegistered.selector, setup.acceptPeginTxid));
         ChallengeTempInfo memory challengeInfo = challengeManager.getChallengeTempInfo(setup.acceptPeginTxid);
-        assertEq(challengeInfo.challengeTxid, bytes32(0), "Challenge txid should be cleaned");
-        assertEq(challengeInfo.revealTxid, bytes32(0), "Input revealed txid should be cleaned");
     }
 
     function test_registerStopOperatorWon_Revert_EnforcedPause_PausedContract() external {

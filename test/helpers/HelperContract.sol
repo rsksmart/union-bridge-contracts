@@ -517,7 +517,8 @@ abstract contract HelperContract is Test, TestUtils {
 
     function setup_pegout() internal returns (RegisterUserTakeSetup memory setup) {
         // =========== Request Peg-In & Accept Peg-In ============
-        (bytes32 acceptPeginTxid,,) = setup_requestAndAcceptPeginFlow(COMMITTEE_ID_STREAM_1_COMMITTEE_1);
+        (bytes32 acceptPeginTxid,, BtcTransaction memory acceptPeginTx) =
+            setup_requestAndAcceptPeginFlow(COMMITTEE_ID_STREAM_1_COMMITTEE_1);
 
         // Get the accept peg-in tx id that will be spent in the peg-out
         setup.acceptPeginSPV = createBtcTxSPVProof(acceptPeginTx);
@@ -1008,7 +1009,7 @@ abstract contract HelperContract is Test, TestUtils {
         bytes memory operatorDisputePubKeyCompact = BtcHelper.pubKeyXonlyToCompact(operatorPubKey);
 
         BtcTransaction memory reimbursementKickoffTx =
-            createReimbursementKickoffTx(operatorDisputePubKeyCompact, _slotId);
+            createReimbursementKickoffTx(operatorDisputePubKeyCompact, uint32(_slotId));
         bytes32 reimbursementTxid = bitcoinManager.getBtcTxid(reimbursementKickoffTx);
 
         reimbursementKickoffSPV = createBtcTxSPVProof(reimbursementKickoffTx);
