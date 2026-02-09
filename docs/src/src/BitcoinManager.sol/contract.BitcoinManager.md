@@ -1,8 +1,8 @@
 # BitcoinManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/BitcoinManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/835a0374fad05fe95d66ed5d56f02d5826093237/src/BitcoinManager.sol)
 
 **Inherits:**
-[IBitcoinManager](/src/interfaces/IBitcoinManager.sol/interface.IBitcoinManager.md), Initializable, [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md)
+[IBitcoinManager](/src/interfaces/IBitcoinManager.sol/interface.IBitcoinManager.md), [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md)
 
 Manages Bitcoin addresses and scripts for the union bridge
 
@@ -20,15 +20,6 @@ The Bitcoin network this contract operates on (mainnet, testnet, or regtest)
 
 ```solidity
 BtcNetwork public network;
-```
-
-
-### peginManager
-Peg manager contract for peg-in/peg-out coordination
-
-
-```solidity
-IPeginManager peginManager;
 ```
 
 
@@ -53,28 +44,11 @@ function initialize(address _initialOwner, BtcNetwork _network) public initializ
 |`_network`|`BtcNetwork`|The Bitcoin network to operate on|
 
 
-### setPeginManager
-
-Sets the Peg Manager contract address
-
-*Only callable by the contract owner*
-
-
-```solidity
-function setPeginManager(IPeginManager _peginManager) external onlyOwner;
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_peginManager`|`IPeginManager`|The address of the Pegin Manager contract|
-
-
 ### getBtcTxid
 
-Converts a Bitcoin transaction to raw hex format and calculates its hash
+Calculates the Bitcoin transaction id (txid) for a given transaction
 
-*Uses Bitcoin format encoding and then applies hash256 to get the transaction id*
+*Encodes the transaction into Bitcoin's raw format and performs double SHA256 hash*
 
 
 ```solidity
@@ -90,7 +64,7 @@ function getBtcTxid(BtcTransaction calldata _btcTx) external pure returns (bytes
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`bytes32`|The transaction id in bytes32 format|
+|`<none>`|`bytes32`|txid The transaction id in big-endian format (standard hex representation)|
 
 
 ### _getBtcTxid
@@ -102,9 +76,9 @@ function _getBtcTxid(BtcTransaction memory _btcTx) internal pure returns (bytes3
 
 ### getTemporaryPeginAddress
 
-Generates a temporary peg-in address for a peg-in request
+Obtains a temporary Bitcoin address for request peg-in operations
 
-*Creates a Taproot address with both key spend and script spend paths*
+*Creates a Taproot address with committee and user key paths for secure peg-in*
 
 
 ```solidity
@@ -122,9 +96,9 @@ function getTemporaryPeginAddress(
 |----|----|-----------|
 |`_timelockBlocks`|`uint32`|The timelock blocks for the Bitcoin transaction|
 |`_rskDestinationAddress`|`address`|The RSK address that will receive the RBTC|
-|`_value`|`uint64`|The amount in satoshis for the peg-in request|
-|`_btcReimbursementPubKey`|`bytes32`|The user's Bitcoin public key for reimbursement (x-only)|
-|`_committeePubKey`|`bytes`|The committee's public key for the Taproot address|
+|`_value`|`uint64`|The amount in satoshis to peg in (must match stream denomination)|
+|`_btcReimbursementPubKey`|`bytes32`|The user's Bitcoin public key (x-coordinate only, 32 bytes)|
+|`_committeePubKey`|`bytes`|The committee's public key|
 
 **Returns**
 
@@ -133,13 +107,13 @@ function getTemporaryPeginAddress(
 |`temporaryPeginAddress`|`string`|The generated temporary Bitcoin address for deposit|
 
 
-### getRequestPeginTweakedPublicKey
+### _getRequestPeginTweakedPublicKey
 
 *Generates the RequestPegin Taproot output script pub key with both key spend and script spend paths*
 
 
 ```solidity
-function getRequestPeginTweakedPublicKey(
+function _getRequestPeginTweakedPublicKey(
     uint32 _timelockBlocks,
     address _rskDestinationAddress,
     uint64 _value,
@@ -165,23 +139,9 @@ function _validateRequestPeginInputs(
 
 ### getPeginOpReturnData
 
-Extracts data from a peg-in OP_RETURN output
+Extracts data from a request peg-in Bitcoin transaction's OP_RETURN output
 
-*Expected OP_RETURN format:*
-
-*[OP_RETURN (1 byte)]*
-
-*[OP_PUSHBYTES_69 (1 byte)]*
-
-*[RSK_PEGIN (9 bytes)]*
-
-*[packet number (8 bytes)]*
-
-*[rsk destination address (20 bytes)]*
-
-*[reimbursement public key (32 bytes)]*
-
-*Total expected size: 71 bytes*
+*Expected OP_RETURN format: [OP_RETURN][RSK_PEGIN][packet number][rsk destination address][btc reimbursement public key]*
 
 
 ```solidity
@@ -191,20 +151,22 @@ function getPeginOpReturnData(BtcTxOut calldata _opReturnOut) external pure retu
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_opReturnOut`|`BtcTxOut`|The OP_RETURN output to parse|
+|`_opReturnOut`|`BtcTxOut`|The Bitcoin transaction output containing OP_RETURN data|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`uint64`|The packet number, RSK destination address, and Bitcoin reimbursement public key|
-|`<none>`|`address`||
-|`<none>`|`bytes32`||
+|`<none>`|`uint64`|packetNumber The packet number encoded in the OP_RETURN data|
+|`<none>`|`address`|destinationAddress The RSK destination address encoded in the OP_RETURN data|
+|`<none>`|`bytes32`|btcReimbursementPubKey The Bitcoin reimbursement public key (x only) encoded in the OP_RETURN data|
 
 
 ### validateRequestPeginP2TROutput
 
-Validates output against a Taproot script with both key spend and script spend paths
+Validates a P2TR output for request peg-in transactions
+
+*Ensures the Taproot output has the correct script structure with committee and user key paths*
 
 
 ```solidity
@@ -215,48 +177,47 @@ function validateRequestPeginP2TROutput(
     bytes32 _btcReimbursementPubKey,
     bytes memory _committeePubKey,
     BtcTxOut calldata _p2trOut
-) external view onlyPeginManager;
+) external pure;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
 |`_timelockBlocks`|`uint32`|The timelock blocks for the Bitcoin transaction|
-|`_rskDestinationAddress`|`address`|Address that will get the RBTC|
+|`_rskDestinationAddress`|`address`|The RSK address that should receive the RBTC|
 |`_streamDenomination`|`uint64`|The expected amount in satoshis|
-|`_btcReimbursementPubKey`|`bytes32`|The user's public key (x-only, 32 bytes)|
-|`_committeePubKey`|`bytes`|The committee's public key (x-only, 32 bytes)|
-|`_p2trOut`|`BtcTxOut`|The P2TR output of the peg-in request|
+|`_btcReimbursementPubKey`|`bytes32`|The user's Bitcoin public key (x-coordinate only)|
+|`_committeePubKey`|`bytes`|The committee's public key|
+|`_p2trOut`|`BtcTxOut`|The Bitcoin transaction output to validate|
 
 
 ### validateRequestPeginEnablerOutput
 
 Validates the enabler output in a request peg-in transaction
 
+*We don't check the inputs as this function is called by the pegin manager that already validated the inputs*
+
 
 ```solidity
-function validateRequestPeginEnablerOutput(
-    bytes memory _committeePubKey,
-    bytes32[] memory _disputeKeys,
-    BtcTxOut calldata _enablerOut
-) external view onlyPeginManager;
+function validateRequestPeginEnablerOutput(bytes memory _expectedEnablerScriptPubKey, BtcTxOut calldata _enablerOut)
+    external
+    pure;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_committeePubKey`|`bytes`|The committee's public key|
-|`_disputeKeys`|`bytes32[]`|The dispute keys (covenant public keys) for the committee|
+|`_expectedEnablerScriptPubKey`|`bytes`|The expected enabler script pub key (from packet storage)|
 |`_enablerOut`|`BtcTxOut`|The enabler output to validate|
 
 
-### getRequestPeginP2TRScriptPub
+### _getRequestPeginP2TRScriptPub
 
 Generates the RequestPegin Taproot output script pub key with both key spend and script spend paths
 
 
 ```solidity
-function getRequestPeginP2TRScriptPub(
+function _getRequestPeginP2TRScriptPub(
     uint32 _timelockBlocks,
     address _rskDestinationAddress,
     uint64 _value,
@@ -290,37 +251,63 @@ function _compareOutputPubKey(bytes memory outputPubKey, bytes memory expectedPu
 
 ### validatePegoutUserOutput
 
-Validates a peg-out user output against the expected P2WPKH script
+Validates that a peg-out transaction output is a P2WPKH paying the user
+
+*Ensures the output correctly pays the user with the expected P2WPKH script*
 
 
 ```solidity
-function validatePegoutUserOutput(BtcTxOut calldata _userOutput, bytes memory _userPubKey) external pure;
+function validatePegoutUserOutput(BtcTxOut calldata _pegoutOutput, bytes memory _userPubKey) external pure;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_userOutput`|`BtcTxOut`|The Bitcoin transaction output to validate|
-|`_userPubKey`|`bytes`|The user's public key to generate the expected script|
+|`_pegoutOutput`|`BtcTxOut`|The Bitcoin transaction output to validate|
+|`_userPubKey`|`bytes`|The user's public key that should receive the funds|
 
 
 ### validatePegoutMemberOutput
 
+Validates that a peg-out transaction output is a P2WPKH paying the committee member
+
+*Ensures the output correctly pays the committee member with the expected P2WPKH script*
+
 
 ```solidity
-function validatePegoutMemberOutput(BtcTxOut calldata _userOutput, bytes32 _memberPubKey) external pure;
+function validatePegoutMemberOutput(BtcTxOut calldata _pegoutOutput, bytes32 _memberPubKey) external pure;
 ```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_pegoutOutput`|`BtcTxOut`|The Bitcoin transaction output to validate|
+|`_memberPubKey`|`bytes32`|The committee member's public key that should receive the funds|
+
 
 ### validatePegoutIdOutput
+
+Validates that a peg-out transaction output encodes the correct peg-out id in OP_RETURN
+
+*Ensures the OP_RETURN output contains the expected peg-out id for tracking*
 
 
 ```solidity
 function validatePegoutIdOutput(BtcTxOut calldata _pegoutIdOutput, bytes32 _pegoutId) external pure;
 ```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_pegoutIdOutput`|`BtcTxOut`|The Bitcoin transaction output containing OP_RETURN data|
+|`_pegoutId`|`bytes32`|The expected peg-out id to validate against|
+
 
 ### getAcceptPeginSignatureHash
 
-Gets the signature hash for a peg-in accept transaction
+Calculates the signature hash for Bitcoin accept peg-in transactions
+
+*Generates the hash that committee members must sign to accept a peg-in*
 
 
 ```solidity
@@ -329,33 +316,33 @@ function getAcceptPeginSignatureHash(
     bytes32 _userXOnlyPubKey,
     bytes32 _registerPeginTx,
     PrevoutData[] memory _prevoutDatas,
-    bytes32[] memory _operatorDisputeKeys
-) external view onlyPeginManager returns (BitcoinSignatureData memory);
+    bytes32[] memory _disputeKeys
+) external pure returns (BitcoinSignatureData memory);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_committeePubKey`|`bytes`|The committee's public key (x-only)|
-|`_userXOnlyPubKey`|`bytes32`|The user's public key (x-only) for speed-up output|
-|`_registerPeginTx`|`bytes32`|The hash of the register peg-in transaction|
+|`_committeePubKey`|`bytes`|The committee's public key (x-coordinate only)|
+|`_userXOnlyPubKey`|`bytes32`|The user's public key (x-coordinate only, 32 bytes)|
+|`_registerPeginTx`|`bytes32`|The transaction id of the peg-in request being spent|
 |`_prevoutDatas`|`PrevoutData[]`|Array of prevout data for all inputs being spent (taptree + enabler outputs)|
-|`_operatorDisputeKeys`|`bytes32[]`|The dispute keys (covenant public keys) for OPERATOR members only|
+|`_disputeKeys`|`bytes32[]`|The dispute keys (covenant public keys) for all members|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`BitcoinSignatureData`|The transaction id, signature hash, and signature message|
+|`<none>`|`BitcoinSignatureData`|BitcoinSignatureData containing txid, signatureHash, and signatureMessage|
 
 
-### getAcceptPeginTweakedPublicKey
+### _getAcceptPeginTweakedPublicKey
 
 *Generates the Accept Pegin Taproot output script pub key with both key spend and script spend paths*
 
 
 ```solidity
-function getAcceptPeginTweakedPublicKey(bytes memory _committeePubKey) internal pure returns (bytes32);
+function _getAcceptPeginTweakedPublicKey(bytes memory _committeePubKey) internal pure returns (bytes32);
 ```
 
 ### _getVerifyKeyScript
@@ -409,6 +396,8 @@ function _getEnablerOutputTweakedPublicKey(bytes memory _committeePubKey, bytes3
 
 Generates the enabler output P2TR script pub key
 
+*Creates a Taproot script for the enabler output with dispute keys in the merkle tree*
+
 
 ```solidity
 function getEnablerOutputP2TRScriptPub(bytes memory _committeePubKey, bytes32[] memory _disputeKeys)
@@ -430,13 +419,13 @@ function getEnablerOutputP2TRScriptPub(bytes memory _committeePubKey, bytes32[] 
 |`<none>`|`bytes`|The P2TR script pub key bytes|
 
 
-### getAcceptPeginP2TRScriptPub
+### _getAcceptPeginP2TRScriptPub
 
 Generates the Accept Pegin Taproot output script pub key with both key spend and script spend paths
 
 
 ```solidity
-function getAcceptPeginP2TRScriptPub(bytes memory _committeePubKey) internal pure returns (bytes memory);
+function _getAcceptPeginP2TRScriptPub(bytes memory _committeePubKey) internal pure returns (bytes memory);
 ```
 **Parameters**
 
@@ -453,7 +442,9 @@ function getAcceptPeginP2TRScriptPub(bytes memory _committeePubKey) internal pur
 
 ### validateSpeedUpOutput
 
-Validates the speed-up output
+Validates a speed-up output transactions
+
+*Ensures the output is a valid P2WPKH for CPFP transactions to accelerate the parent transaction*
 
 
 ```solidity
@@ -463,13 +454,15 @@ function validateSpeedUpOutput(bytes32 _pubKey, BtcTxOut calldata _speedUpOut) e
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_pubKey`|`bytes32`|The public key for the speed-up output (x-only)|
-|`_speedUpOut`|`BtcTxOut`|The speed-up output to validate|
+|`_pubKey`|`bytes32`|The user's public key (x-coordinate only, 32 bytes)|
+|`_speedUpOut`|`BtcTxOut`|The Bitcoin transaction output containing the speed-up output|
 
 
 ### getSpeedUpScriptPub
 
-Generates the speed-up script pub key
+Generates a P2WPKH script pub key for speed-up outputs
+
+*Creates a P2WPKH script for Child Pays for Parent (CPFP) transactions to speed up the original transaction*
 
 
 ```solidity
@@ -479,18 +472,20 @@ function getSpeedUpScriptPub(bytes32 _pubKey) public pure returns (bytes memory)
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_pubKey`|`bytes32`|The public key for the speed-up output (x-only)|
+|`_pubKey`|`bytes32`|The user's public key (x-coordinate only, 32 bytes)|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`bytes`|The P2WPKH script pub key bytes|
+|`<none>`|`bytes`|The P2WPKH script pub key|
 
 
 ### getPegoutTxData
 
-Generates the signature hash for a peg-out transaction
+Calculates the signature hash for Bitcoin peg-out transactions
+
+*Generates the hash that committee members must sign to authorize a peg-out*
 
 
 ```solidity
@@ -503,18 +498,18 @@ function getPegoutTxData(bytes memory _userPubKey, bytes32 _acceptPeginTx, Prevo
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_userPubKey`|`bytes`|The user's public key for the peg-out|
-|`_acceptPeginTx`|`bytes32`|The hash of the accept peg-in transaction|
+|`_userPubKey`|`bytes`|The user's public key in compressed format that will receive the funds|
+|`_acceptPeginTx`|`bytes32`|The transaction id of the accept peg-in tx being spent|
 |`_prevoutDatas`|`PrevoutData[]`|Array of prevout data for all inputs being spent (taptree + enabler outputs)|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`BitcoinSignatureData`|bytes32 The txid, bytes32 the signature hash and bytes signature message|
+|`<none>`|`BitcoinSignatureData`|BitcoinSignatureData containing txid, signatureHash, and signatureMessage|
 
 
-### taprootSignatureHash
+### _taprootSignatureHash
 
 *Returns Signature Hash. The signature hash is the actual "message" that we sign when creating the signature.*
 
@@ -524,25 +519,9 @@ function getPegoutTxData(bytes memory _userPubKey, bytes32 _acceptPeginTx, Prevo
 
 
 ```solidity
-function taprootSignatureHash(uint8 _hashType, PrevoutData[] memory _prevoutDatas, BtcTransaction memory _btcTx)
+function _taprootSignatureHash(uint8 _hashType, PrevoutData[] memory _prevoutDatas, BtcTransaction memory _btcTx)
     internal
     pure
     returns (bytes32, bytes memory);
-```
-
-### onlyPeginManager
-
-Modifier to restrict access to the PeginManager contract
-
-
-```solidity
-modifier onlyPeginManager();
-```
-
-### _onlyPeginManager
-
-
-```solidity
-function _onlyPeginManager(address _account) internal view;
 ```
 

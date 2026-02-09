@@ -1,8 +1,5 @@
 # IMemberRegistry
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/interfaces/IMemberRegistry.sol)
-
-**Inherits:**
-[IPausable](/src/interfaces/IPausable.sol/interface.IPausable.md)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/835a0374fad05fe95d66ed5d56f02d5826093237/src/interfaces/IMemberRegistry.sol)
 
 Interface for managing committee member registration, applications, and balance tracking
 
@@ -43,6 +40,8 @@ Internal function to handle member unsubscription from stream
 
 *Called by CommitteeRegistry after pending committee checks*
 
+*Only callable by CommitteeRegistry contract*
+
 
 ```solidity
 function unsubscribeFromStream(address _memberAddress, StreamDenomination _denomination) external;
@@ -61,6 +60,8 @@ Withdraws available balance to the caller's address
 
 *Can only withdraw balance that is not pre-staked or staked*
 
+*Only callable when contract is unpaused*
+
 
 ```solidity
 function withdrawAvailableBalance() external;
@@ -68,9 +69,15 @@ function withdrawAvailableBalance() external;
 
 ### selectCommittee
 
-Internal function to select committee members
+Randomly selects members to form a new committee for a given stream
 
-*Called by CommitteeRegistry to select members for a new committee*
+*Pseudo-randomly select at least minCommitteeWatchtowers watchtowers and minCommitteeOperators operators.*
+
+*reverts with notEnoughWatchtowers if there are fewer than minCommitteeWatchtowers watchtower candidates*
+
+*reverts with notEnoughOperators if there are fewer than minCommitteeOperators operator candidates*
+
+*Only callable by CommitteeRegistry contract*
 
 
 ```solidity
@@ -115,12 +122,23 @@ function releaseCommitteeMembers(CommitteeMember[] memory _committeeMembers, uin
 |`_packetNumber`|`uint64`|The packet number|
 
 
-### reAddCommitteeMembers
+### reAddCandidateToStream
+
+External function to handle re-addition of members as candidates
+
+*Called by CommitteeRegistry after pending committee reset*
 
 
 ```solidity
-function reAddCommitteeMembers(Committee memory _discardedCommittee) external;
+function reAddCandidateToStream(StreamDenomination _denomination, CommitteeMember memory _member) external;
 ```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_denomination`|`StreamDenomination`|The stream of the pending committee|
+|`_member`|`CommitteeMember`|The member to re-add as candidate|
+
 
 ### setReApplyForStream
 
@@ -138,6 +156,45 @@ function setReApplyForStream(StreamDenomination _denomination, bool _reApply) ex
 |----|----|-----------|
 |`_denomination`|`StreamDenomination`|The stream denomination to set the flag for|
 |`_reApply`|`bool`|True to automatically reapply, false to receive balance as available|
+
+
+### disableMemberReApplyForStream
+
+Sets the reapply flag as false for a member in a specific stream
+
+*Controls that the member will not automatically reapply after committee release*
+
+
+```solidity
+function disableMemberReApplyForStream(address _memberAddress, StreamDenomination _denomination) external;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_memberAddress`|`address`|The member adress|
+|`_denomination`|`StreamDenomination`|The stream denomination to set the flag for|
+
+
+### isMember
+
+Returns whether the address belongs to a member
+
+
+```solidity
+function isMember(address _address) external view returns (bool);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_address`|`address`|The address|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`bool`|True when address was ever a member, false otherwise|
 
 
 ### getMemberTakePubKey
@@ -374,6 +431,8 @@ Moves candidates balance from pre staked to staked
 
 *Called by CommitteeRegistry during committee formation*
 
+*Only callable by Committee Registry contract*
+
 
 ```solidity
 function stakePreStakedCandidatesBalance(
@@ -391,55 +450,32 @@ function stakePreStakedCandidatesBalance(
 |`_packetNumber`|`uint64`|The packet number|
 
 
-### setCommitteeRegistry
-
-Sets the CommitteeRegistry contract address
-
-*Only callable by the contract owner*
+### forceReleaseCommitteeMembers_TESTNET
 
 
 ```solidity
-function setCommitteeRegistry(address _committeeRegistry) external;
+function forceReleaseCommitteeMembers_TESTNET(
+    uint64 _streamId,
+    uint64 _packetNumber,
+    address[] memory _committeeMembersAddresses
+) external;
+```
+
+### forceExit_TESTNET
+
+WARNING! ONLY FOR TESTNET Forces a withdrawal of the contract's balance to a specified address
+
+*Only callable on testnet, this function will leave the contract in a broken state and should be used only as a last resort*
+
+
+```solidity
+function forceExit_TESTNET(address _to) external;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_committeeRegistry`|`address`|The address of the CommitteeRegistry contract|
-
-
-### setStreamManager
-
-Sets the Stream Manager contract address
-
-*Only callable by the contract owner*
-
-
-```solidity
-function setStreamManager(IStreamManager _streamManager) external;
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_streamManager`|`IStreamManager`|The address of the Stream Manager contract|
-
-
-### setBridge
-
-Sets the Bridge contract address
-
-*Only callable by the contract owner*
-
-
-```solidity
-function setBridge(IBridge _bridge) external;
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_bridge`|`IBridge`|The address of the Bridge contract|
+|`_to`|`address`|The address to which the balance will be sent|
 
 
 ## Events
@@ -606,20 +642,6 @@ event MissingMembers(StreamDenomination denomination, uint256 required, uint256 
 |`required`|`uint256`|Number of members required|
 |`missing`|`uint256`|Number of members missing|
 
-### CommitteeRegistryUpdated
-Event emitted when the committee registry address is updated
-
-
-```solidity
-event CommitteeRegistryUpdated(address indexed newCommitteeRegistry);
-```
-
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`newCommitteeRegistry`|`address`|The new committee registry address|
-
 ### BridgeUpdated
 Event emitted when the bridge address is updated
 
@@ -633,6 +655,18 @@ event BridgeUpdated(address indexed newBridge);
 |Name|Type|Description|
 |----|----|-----------|
 |`newBridge`|`address`|The new bridge address|
+
+### CommitteeMembersForceReleased
+
+```solidity
+event CommitteeMembersForceReleased(uint64 indexed streamId, uint64 indexed packetNumber);
+```
+
+### ForceExit
+
+```solidity
+event ForceExit(address indexed to, uint256 amount);
+```
 
 ## Errors
 ### MemberNotRegistered
@@ -791,14 +825,6 @@ error TooManyCandidatesForStream(StreamDenomination denomination, Role role);
 |----|----|-----------|
 |`denomination`|`StreamDenomination`|The stream denomination|
 |`role`|`Role`|The role for which there are too many candidates|
-
-### InvalidZeroAddress
-Thrown when an address is zero
-
-
-```solidity
-error InvalidZeroAddress();
-```
 
 ### InvalidEDCSAPublicKey
 Thrown when a EDCSA public key is invalid (zero or not on curve)

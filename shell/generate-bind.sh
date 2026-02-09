@@ -6,6 +6,6 @@ cd "$CURRENT_PATH/..";
 # https://getfoundry.sh/forge/reference/forge-bind
 forge bind \
     --module \
-    --select "^(RbtcBridge|PeginManager|PegoutManager|BitcoinManager|CommitteeRegistry|SignatureManager|StreamManager|MemberRegistry|PauseManager)$" \
+    --select "^(RbtcBridge|ChallengeManager|PeginManager|PegoutManager|BitcoinManager|CommitteeRegistry|SignatureManager|StreamManager|MemberRegistry|PauseManager)$" \
     --overwrite \
     --bindings-path ./crate/src/bindings

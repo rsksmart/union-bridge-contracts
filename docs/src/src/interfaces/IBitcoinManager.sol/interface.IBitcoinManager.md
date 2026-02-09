@@ -1,5 +1,5 @@
 # IBitcoinManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/interfaces/IBitcoinManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/835a0374fad05fe95d66ed5d56f02d5826093237/src/interfaces/IBitcoinManager.sol)
 
 Interface for managing Bitcoin transaction operations in the union bridge
 
@@ -9,23 +9,6 @@ Interface for managing Bitcoin transaction operations in the union bridge
 
 
 ## Functions
-### setPeginManager
-
-Sets the Pegin Manager contract address
-
-*Only callable by the contract owner*
-
-
-```solidity
-function setPeginManager(IPeginManager _peginManager) external;
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_peginManager`|`IPeginManager`|The address of the Pegin Manager contract|
-
-
 ### getTemporaryPeginAddress
 
 Obtains a temporary Bitcoin address for request peg-in operations
@@ -63,7 +46,21 @@ function getTemporaryPeginAddress(
 
 Extracts data from a request peg-in Bitcoin transaction's OP_RETURN output
 
-*Expected OP_RETURN format: [OP_RETURN][RSK_PEGIN][packet number][rsk address][btc address]*
+*Expected OP_RETURN format: [OP_RETURN][RSK_PEGIN][packet number][rsk destination address][btc reimbursement public key]*
+
+*[OP_RETURN (1 byte)]*
+
+*[OP_PUSHBYTES_69 (1 byte)]*
+
+*[RSK_PEGIN (9 bytes)]*
+
+*[packet number (8 bytes)]*
+
+*[rsk destination address (20 bytes)]*
+
+*[btc reimbursement public key (32 bytes)]*
+
+*Total expected size: 71 bytes*
 
 *This function parses the structured data embedded in the OP_RETURN output*
 
@@ -92,6 +89,8 @@ Validates a P2TR output for request peg-in transactions
 
 *Ensures the Taproot output has the correct script structure with committee and user key paths*
 
+*we don't check the inputs as this function is called by the pegin manager*
+
 
 ```solidity
 function validateRequestPeginP2TROutput(
@@ -101,7 +100,7 @@ function validateRequestPeginP2TROutput(
     bytes32 _btcReimbursementPubKey,
     bytes memory _committeePubKey,
     BtcTxOut calldata _p2trOut
-) external view;
+) external pure;
 ```
 **Parameters**
 
@@ -119,20 +118,19 @@ function validateRequestPeginP2TROutput(
 
 Validates the enabler output in a request peg-in transaction
 
+*We don't check the inputs as this function is called by the pegin manager that already validated the inputs*
+
 
 ```solidity
-function validateRequestPeginEnablerOutput(
-    bytes memory _committeePubKey,
-    bytes32[] memory _disputeKeys,
-    BtcTxOut calldata _enablerOut
-) external view;
+function validateRequestPeginEnablerOutput(bytes memory _expectedEnablerScriptPubKey, BtcTxOut calldata _enablerOut)
+    external
+    pure;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_committeePubKey`|`bytes`|The committee's public key|
-|`_disputeKeys`|`bytes32[]`|The dispute keys (covenant public keys) for the committee|
+|`_expectedEnablerScriptPubKey`|`bytes`|The expected enabler script pub key (from packet storage)|
 |`_enablerOut`|`BtcTxOut`|The enabler output to validate|
 
 
@@ -167,6 +165,8 @@ Calculates the signature hash for Bitcoin accept peg-in transactions
 
 *Generates the hash that committee members must sign to accept a peg-in*
 
+*we don't check the inputs as this function is called by the pegin manager*
+
 
 ```solidity
 function getAcceptPeginSignatureHash(
@@ -174,8 +174,8 @@ function getAcceptPeginSignatureHash(
     bytes32 _userXOnlyPubKey,
     bytes32 _registerPeginTx,
     PrevoutData[] memory _prevoutDatas,
-    bytes32[] memory _operatorDisputeKeys
-) external view returns (BitcoinSignatureData memory);
+    bytes32[] memory _disputeKeys
+) external pure returns (BitcoinSignatureData memory);
 ```
 **Parameters**
 
@@ -185,7 +185,7 @@ function getAcceptPeginSignatureHash(
 |`_userXOnlyPubKey`|`bytes32`|The user's public key (x-coordinate only, 32 bytes)|
 |`_registerPeginTx`|`bytes32`|The transaction id of the peg-in request being spent|
 |`_prevoutDatas`|`PrevoutData[]`|Array of prevout data for all inputs being spent (taptree + enabler outputs)|
-|`_operatorDisputeKeys`|`bytes32[]`|The dispute keys (covenant public keys) for OPERATOR members only|
+|`_disputeKeys`|`bytes32[]`|The dispute keys (covenant public keys) for all members|
 
 **Returns**
 
@@ -343,21 +343,6 @@ function validatePegoutIdOutput(BtcTxOut calldata _pegoutIdOutput, bytes32 _pego
 |`_pegoutIdOutput`|`BtcTxOut`|The Bitcoin transaction output containing OP_RETURN data|
 |`_pegoutId`|`bytes32`|The expected peg-out id to validate against|
 
-
-## Events
-### PeginManagerUpdated
-Event emitted when pegin manager address is updated
-
-
-```solidity
-event PeginManagerUpdated(address peginManager);
-```
-
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`peginManager`|`address`|The new peg manager address|
 
 ## Errors
 ### InvalidOpReturnLength
@@ -526,26 +511,4 @@ error InvalidOutputAmount(uint64 actual, uint64 expected);
 |----|----|-----------|
 |`actual`|`uint64`|The actual output amount|
 |`expected`|`uint64`|The expected output amount|
-
-### UnauthorizedAccount
-Error thrown when an account is not authorized
-
-
-```solidity
-error UnauthorizedAccount(address account);
-```
-
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`account`|`address`|The unauthorized account|
-
-### InvalidZeroAddress
-Thrown when an address is zero
-
-
-```solidity
-error InvalidZeroAddress();
-```
 

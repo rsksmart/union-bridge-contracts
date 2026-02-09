@@ -1,5 +1,5 @@
 # PegoutManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/PegoutManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/835a0374fad05fe95d66ed5d56f02d5826093237/src/PegoutManager.sol)
 
 **Inherits:**
 [IPegoutManager](/src/interfaces/IPegoutManager.sol/interface.IPegoutManager.md), [PegManagerBase](/src/PegManagerBase.sol/abstract.PegManagerBase.md)
@@ -23,6 +23,15 @@ Timeout in seconds for operator take operations
 
 ```solidity
 uint256 public operatorTakeTimeout;
+```
+
+
+### sequenceNumber
+The pegout ID sequence number incremented for each new triggerOperatorTake
+
+
+```solidity
+uint256 public sequenceNumber;
 ```
 
 
@@ -58,11 +67,13 @@ Initializes the PegManager contract
 ```solidity
 function initialize(
     address _initialOwner,
-    address payable _bridgeAddress,
+    address _accessManager,
     ICommitteeRegistry _committeeRegistry,
     IBitcoinManager _bitcoinManager,
-    PegoutManagerSettings memory _settings,
-    IRbtcBridge _rbtcBridge
+    IRbtcBridge _rbtcBridge,
+    IStreamManager _streamManager,
+    ISignatureManager _signatureManager,
+    PegoutManagerSettings memory _settings
 ) public virtual initializer;
 ```
 **Parameters**
@@ -70,16 +81,18 @@ function initialize(
 |Name|Type|Description|
 |----|----|-----------|
 |`_initialOwner`|`address`|The initial owner of the contract|
-|`_bridgeAddress`|`address payable`|The address of the pow-peg bridge contract|
+|`_accessManager`|`address`|The access manager contract address|
 |`_committeeRegistry`|`ICommitteeRegistry`|The committee registry contract address|
 |`_bitcoinManager`|`IBitcoinManager`|The Bitcoin manager contract address|
-|`_settings`|`PegoutManagerSettings`|The peg manager settings including timeouts|
 |`_rbtcBridge`|`IRbtcBridge`|The RbtcBridge contract for burning RBTC|
+|`_streamManager`|`IStreamManager`|The stream manager contract address|
+|`_signatureManager`|`ISignatureManager`|The signature manager contract address|
+|`_settings`|`PegoutManagerSettings`|The peg manager settings including timeouts|
 
 
 ### getPegoutTempInfo
 
-Gets the temporary peg-out information for a given accept peg-in transaction id
+Gets temporary information stored during peg-out processing
 
 
 ```solidity
@@ -95,14 +108,35 @@ function getPegoutTempInfo(bytes32 _acceptPeginTxid) external view returns (Pego
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`PegoutTempInfo`|The temporary peg-out information|
+|`<none>`|`PegoutTempInfo`|The temporary information needed for peg-out processing|
+
+
+### getAcceptPeginTxid
+
+Gets the accept peg-in transaction id for a given peg-out transaction id
+
+
+```solidity
+function getAcceptPeginTxid(bytes32 _pegoutTxid) external view returns (bytes32);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_pegoutTxid`|`bytes32`|The peg-out transaction id|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`bytes32`|The accept peg-in transaction id|
 
 
 ### _validatePegoutRequest
 
 
 ```solidity
-function _validatePegoutRequest(bytes calldata _userPubKey, uint256 amountInWei) internal pure;
+function _validatePegoutRequest(bytes memory _userPubKey, uint256 amountInWei) internal pure;
 ```
 
 ### tryPegout
@@ -111,38 +145,26 @@ Initiates a peg-out operation by locking a slot and preparing the peg-out transa
 
 *This function LOCKS a slot in the appropriate stream and prepares the peg-out transaction*
 
-*The user must send the exact amount of RBTC they want to peg-out*
-
-*Emits the PegoutRequested event*
-
-*Only callable when contract is unpaused*
-
 
 ```solidity
-function tryPegout(bytes calldata _userPubKey) external payable nonReentrant whenNotPaused;
+function tryPegout(bytes memory _userPubKey) external payable nonReentrant whenNotPaused;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_userPubKey`|`bytes`|The user's compressed public key for the Bitcoin output|
+|`_userPubKey`|`bytes`|The user's compressed public key that will receive the Bitcoin funds|
 
 
 ### registerUserTake
 
-Register a peg-out transaction from Bitcoin
+Registers the Bitcoin peg-out transaction to the user account
 
 *This function validates the peg-out transaction and marks the slot as COMPLETED*
 
-*The transaction must spend the accept peg-in output and pay to the user's address*
-
-*Emits the PegoutRegistered event*
-
-*Only callable when contract is unpaused*
-
 
 ```solidity
-function registerUserTake(BtcTxSPVProof calldata _pegoutTxSPVProof) external nonReentrant whenNotPaused;
+function registerUserTake(BtcTxSPVProof memory _pegoutTxSPVProof) external nonReentrant whenNotPaused;
 ```
 **Parameters**
 
@@ -189,16 +211,6 @@ Triggers the operator take process for a peg-out when not all committee members 
 
 *This function can be called after a User Take expiration or after an Operator Take expiration*
 
-*Each case has its own timeout and before triggering the operator take (after a User Take expiration)*
-
-*signatures should be checked to see if the User Take was already signed*
-
-*Partial signatures are used to skip those operators that have not signed the User Take*
-
-*Emits OperatorTakeTriggered event upon successful triggering*
-
-*Only callable when contract is unpaused*
-
 
 ```solidity
 function triggerOperatorTake(bytes32 _pegoutTxid) external nonReentrant whenNotPaused;
@@ -210,25 +222,45 @@ function triggerOperatorTake(bytes32 _pegoutTxid) external nonReentrant whenNotP
 |`_pegoutTxid`|`bytes32`|The transaction id of the peg-out request|
 
 
-### registerAdvanceFunds
+### _generatePegoutId
 
 
 ```solidity
-function registerAdvanceFunds(bytes32 acceptPeginTxid, BtcTxSPVProof calldata _advanceFunds)
+function _generatePegoutId(StreamPosition memory _streamInfo, bytes32 _operatorTakePubKey, uint256 _sequenceNumber)
+    internal
+    view
+    returns (bytes32);
+```
+
+### registerAdvanceFunds
+
+Registers the advance funds transaction submitted by the operator
+
+*Validates the SPV proof and updated the peg-out status accordingly*
+
+
+```solidity
+function registerAdvanceFunds(bytes32 acceptPeginTxid, BtcTxSPVProof memory _advanceFunds)
     external
     nonReentrant
     whenNotPaused;
 ```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`acceptPeginTxid`|`bytes32`|The accept peg-in transaction id that it's being advanced|
+|`_advanceFunds`|`BtcTxSPVProof`|The BTC SPV proof of the advance funds transaction|
+
 
 ### _verifyAdvanceFundsTx
 
 
 ```solidity
-function _verifyAdvanceFundsTx(
-    BtcTxSPVProof calldata _advanceFunds,
-    PegoutTempInfo memory _pegoutInfo,
-    uint64 _streamId
-) internal view returns (bytes32 txid, int256 confirmations);
+function _verifyAdvanceFundsTx(BtcTxSPVProof memory _advanceFunds, PegoutTempInfo memory _pegoutInfo, uint64 _streamId)
+    internal
+    view
+    returns (bytes32 txid, int256 blockNumber);
 ```
 
 ### _validateOperatorTakeAddress
@@ -240,17 +272,39 @@ function _validateOperatorTakeAddress(bytes32 _acceptPeginTxid) internal view re
 
 ### registerReimbursementKickoff
 
+Registers the reimbursement kickoff transaction submitted by the operator
+
+*Validates the SPV proof and updates the peg-out status accordingly*
+
 
 ```solidity
-function registerReimbursementKickoff(bytes32 acceptPeginTxid, BtcTxSPVProof calldata _kickoffSPV)
+function registerReimbursementKickoff(bytes32 acceptPeginTxid, BtcTxSPVProof memory _kickoffSPV)
     external
     nonReentrant
     whenNotPaused;
 ```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`acceptPeginTxid`|`bytes32`|The accept peg-in transaction id that it's being reimbursed|
+|`_kickoffSPV`|`BtcTxSPVProof`|The BTC SPV proof of the reimbursement kickoff transaction|
+
 
 ### registerOperatorTake
 
 Deposits an operator take proof for a peg-out transaction
+
+*Validates the SPV proof and marks the slot as paid when operator takes over*
+
+
+```solidity
+function registerOperatorTake(BtcTxSPVProof memory _pegoutTxSPVProof) external nonReentrant whenNotPaused;
+```
+
+### registerOperatorWon
+
+Deposits an operator won proof for a peg-out transaction
 
 *Validates the SPV proof and marks the slot as paid when operator takes over*
 
@@ -262,22 +316,37 @@ Deposits an operator take proof for a peg-out transaction
 
 
 ```solidity
-function registerOperatorTake(BtcTxSPVProof calldata _pegoutTxSPVProof) external nonReentrant whenNotPaused;
+function registerOperatorWon(BtcTxSPVProof memory _pegoutTxSPVProof) external nonReentrant whenNotPaused;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_pegoutTxSPVProof`|`BtcTxSPVProof`|The BTC SPV proof of the operator take peg-out transaction|
+|`_pegoutTxSPVProof`|`BtcTxSPVProof`|The BTC SPV proof of the operator won transaction|
 
+
+### _completeSlot
+
+
+```solidity
+function _completeSlot(StreamPosition memory _streamInfo, bytes32 _acceptPeginTxid, bytes32 _txid) internal;
+```
+
+### _getOperatorTakeData
+
+
+```solidity
+function _getOperatorTakeData(bytes32 _acceptPeginTxid, address _opAddress)
+    internal
+    view
+    returns (OperatorTakeData memory);
+```
 
 ### setUserTakeTimeout
 
 Sets the timeout duration for user take operations
 
 *Only callable by the contract owner*
-
-*Emits UserTakeTimeoutUpdated event upon successful update*
 
 
 ```solidity
@@ -296,8 +365,6 @@ Sets the timeout duration for operator take operations
 
 *Only callable by the contract owner*
 
-*Emits OperatorTakeTimeoutUpdated event upon successful update*
-
 
 ```solidity
 function setOperatorTakeTimeout(uint256 _timeout) external onlyOwner;
@@ -309,17 +376,13 @@ function setOperatorTakeTimeout(uint256 _timeout) external onlyOwner;
 |`_timeout`|`uint256`|The new timeout duration in seconds|
 
 
-### _closePacketIfLastSlot
-
-
-```solidity
-function _closePacketIfLastSlot(StreamPosition memory streamInfo) internal;
-```
-
 ### _preparePegoutPrevoutDatas
 
 
 ```solidity
-function _preparePegoutPrevoutDatas(Slot memory _slot) internal pure returns (PrevoutData[] memory);
+function _preparePegoutPrevoutDatas(uint64 _streamId, uint64 _packetNumber, Slot memory _slot)
+    internal
+    view
+    returns (PrevoutData[] memory);
 ```
 

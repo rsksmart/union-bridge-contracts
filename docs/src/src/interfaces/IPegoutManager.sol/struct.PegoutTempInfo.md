@@ -1,5 +1,5 @@
 # PegoutTempInfo
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/interfaces/IPegoutManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/835a0374fad05fe95d66ed5d56f02d5826093237/src/interfaces/IPegoutManager.sol)
 
 Temporary information stored during peg-out processing
 
@@ -13,6 +13,7 @@ struct PegoutTempInfo {
     uint256 operatorTakeUpdatedAt;
     uint128 committeeId;
     address takeOperatorAddress;
+    bytes32 operatorTakePubKey;
     bytes32 operatorDisputePubKey;
     bytes32 pegoutId;
     int256 advanceFundsBlockNumber;

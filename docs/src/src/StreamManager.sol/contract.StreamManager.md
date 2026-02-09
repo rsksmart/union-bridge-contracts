@@ -1,8 +1,8 @@
 # StreamManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/StreamManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/835a0374fad05fe95d66ed5d56f02d5826093237/src/StreamManager.sol)
 
 **Inherits:**
-[IStreamManager](/src/interfaces/IStreamManager.sol/interface.IStreamManager.md), [AccessControl](/src/AccessControl.sol/contract.AccessControl.md)
+[IStreamManager](/src/interfaces/IStreamManager.sol/interface.IStreamManager.md), [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md)
 
 Manages streams for the union bridge system
 
@@ -33,7 +33,34 @@ mapping(uint64 streamId => Packet[]) public packets;
 ### slots
 
 ```solidity
-mapping(uint64 streamId => mapping(uint64 packerNumber => Slot[])) internal slots;
+mapping(uint64 streamId => mapping(uint64 packetNumber => Slot[])) internal slots;
+```
+
+
+### filledSlots
+Mapping from stream ID to array of historical filled slots for that stream
+
+*The index should be used to get the next filled slot for peg-out processing*
+
+
+```solidity
+mapping(uint64 streamId => SlotLocation[]) filledSlots;
+```
+
+
+### nextPegoutSlotIndex
+
+```solidity
+mapping(uint64 streamId => uint64 index) nextPegoutSlotIndex;
+```
+
+
+### isPegoutInProcess
+Mapping from stream ID to know if there's a pegout in process for that stream
+
+
+```solidity
+mapping(uint64 streamId => bool pegoutInProcess) isPegoutInProcess;
 ```
 
 
@@ -48,14 +75,25 @@ mapping(bytes32 acceptPeginTxid => StreamPosition) internal streamPositions;
 ```
 
 
-### committeeRegistry
-The committee registry contract that manages committee membership
+### bitcoinManager
+The Bitcoin manager contract that handles Bitcoin transaction operations
 
-*Used to create new packets when committees are formed*
+*Used to calculate enabler output scripts for packets*
 
 
 ```solidity
-ICommitteeRegistry public committeeRegistry;
+IBitcoinManager public bitcoinManager;
+```
+
+
+### accessManager
+The access manager contract that manages access control
+
+*Used to check access control for sensitive operations*
+
+
+```solidity
+IAccessManager public accessManager;
 ```
 
 
@@ -91,11 +129,9 @@ Initializes the streams with their denominations and parameters
 ```solidity
 function initialize(
     address _initialOwner,
-    address _peginManager,
-    address _pegoutManager,
-    ICommitteeRegistry _committeeRegistry,
-    StreamManagerSettings memory _settings,
-    StreamSettings[] memory _streamSettings
+    IAccessManager _accessManager,
+    IBitcoinManager _bitcoinManager,
+    StreamManagerSettings memory _settings
 ) public virtual initializer;
 ```
 **Parameters**
@@ -103,10 +139,23 @@ function initialize(
 |Name|Type|Description|
 |----|----|-----------|
 |`_initialOwner`|`address`|The address that will be set as the initial owner|
-|`_peginManager`|`address`|The address of the PeginManager contract|
-|`_pegoutManager`|`address`|The address of the PegoutManager contract|
-|`_committeeRegistry`|`ICommitteeRegistry`|The CommitteeRegistry contract address|
+|`_accessManager`|`IAccessManager`|The address of the AccessManager contract|
+|`_bitcoinManager`|`IBitcoinManager`|The BitcoinManager contract address|
 |`_settings`|`StreamManagerSettings`|Struct with the settings for the StreamManager including security bond percentages|
+
+
+### initializeStreams
+
+Initializes the streams with the given settings
+
+
+```solidity
+function initializeStreams(StreamSettings[] memory _streamSettings) external onlyOwner;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
 |`_streamSettings`|`StreamSettings[]`|Array of structs with the settings for each stream including confirmation counts and timelock settings|
 
 
@@ -125,9 +174,12 @@ Creates a new packet for a stream
 
 
 ```solidity
-function createNewPacket(uint64 _streamId, uint128 _committeeId, bytes calldata _committeePubKey)
-    external
-    onlyCommitteeRegistry;
+function createNewPacket(
+    uint64 _streamId,
+    uint128 _committeeId,
+    bytes calldata _committeePubKey,
+    bytes32[] memory _disputeKeys
+) external;
 ```
 **Parameters**
 
@@ -136,13 +188,19 @@ function createNewPacket(uint64 _streamId, uint128 _committeeId, bytes calldata 
 |`_streamId`|`uint64`|The ID of the stream to create a packet for|
 |`_committeeId`|`uint128`|The ID of the committee that will process this packet|
 |`_committeePubKey`|`bytes`|The public key of the committee for Bitcoin operations|
+|`_disputeKeys`|`bytes32[]`|The dispute keys (covenant public keys) for the committee members|
 
 
 ### _createNewPacket
 
 
 ```solidity
-function _createNewPacket(uint64 _streamId, uint128 _committeeId, bytes memory _committeePubKey) internal;
+function _createNewPacket(
+    uint64 _streamId,
+    uint128 _committeeId,
+    bytes memory _committeePubKey,
+    bytes32[] memory _disputeKeys
+) internal;
 ```
 
 ### getStream
@@ -196,7 +254,7 @@ function _getStreamById(uint64 _streamId) internal view returns (Stream storage)
 
 ### getStreamsLength
 
-Gets the total number of streams
+Gets the total number of streams in the system
 
 
 ```solidity
@@ -206,12 +264,12 @@ function getStreamsLength() external view returns (uint64);
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`uint64`|The number of streams in the system|
+|`<none>`|`uint64`|uint64 The number of streams|
 
 
 ### getPacketsLength
 
-Gets the number of packets in a stream
+Gets the number of packets in a specific stream
 
 
 ```solidity
@@ -227,7 +285,7 @@ function getPacketsLength(uint64 _streamId) external view returns (uint64);
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`uint64`|The number of packets in the stream|
+|`<none>`|`uint64`|uint64 The number of packets in the stream|
 
 
 ### getPacket
@@ -273,24 +331,66 @@ function getAvailablePeginCommitteeId(uint64 _streamId) external view returns (u
 |`<none>`|`uint128`|The committee ID, or 0 if no current packet|
 
 
-### _findNextFilledSlot
+### _getNextPegoutSlotLocation
 
 
 ```solidity
-function _findNextFilledSlot(uint64 _streamId) internal returns (Slot storage);
+function _getNextPegoutSlotLocation(uint64 _streamId) internal view returns (SlotLocation memory);
 ```
+
+### getNextPegoutSlotLocation
+
+Gets the slot location that next pegout would have
+
+*Throws when there are no more filled slots - cant do a pegout*
+
+
+```solidity
+function getNextPegoutSlotLocation(uint64 _streamId) external view returns (SlotLocation memory);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_streamId`|`uint64`|The ID of the stream|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`SlotLocation`|The slot location data|
+
+
+### hasPegoutInProcess
+
+Returns whether there is a pegout in process associated to a stream
+
+
+```solidity
+function hasPegoutInProcess(uint64 _streamId) external view returns (bool);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_streamId`|`uint64`|The ID of the stream|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`bool`|True if there is a pegout in process, false if not|
+
 
 ### lockSlot
 
 Returns the first filled slot, locks it, and updates the peg-out pointers
 
-Reverts if a pegout is already in progress for the same stream
-
 *Can only be called by the PegManager*
 
 
 ```solidity
-function lockSlot(uint64 _streamId) external onlyPegManager returns (Slot memory, uint64);
+function lockSlot(uint64 _streamId) external returns (Slot memory, uint64);
 ```
 **Parameters**
 
@@ -303,7 +403,7 @@ function lockSlot(uint64 _streamId) external onlyPegManager returns (Slot memory
 |Name|Type|Description|
 |----|----|-----------|
 |`<none>`|`Slot`|slot The locked slot data|
-|`<none>`|`uint64`|packet The packet number containing the slot|
+|`<none>`|`uint64`|packetNumber The packet number containing the slot|
 
 
 ### getSlot
@@ -381,20 +481,20 @@ Reserves a slot for a peg-in request
 
 
 ```solidity
-function reserveSlot(uint64 _streamId, uint64 _packetNumber) external onlyPegManager returns (uint64);
+function reserveSlot(uint64 _streamId, uint64 _packetNumber) external returns (uint64);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_streamId`|`uint64`|The ID of the stream|
-|`_packetNumber`|`uint64`|The packet number|
+|`_streamId`|`uint64`|The index of the stream|
+|`_packetNumber`|`uint64`|The index of the packet within the stream|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`uint64`|The slot ID that was reserved|
+|`<none>`|`uint64`|uint64 The slot ID of the reserved slot|
 
 
 ### fillSlot
@@ -406,41 +506,43 @@ Fills a slot with accept peg-in transaction information
 
 ```solidity
 function fillSlot(
-    StreamPosition memory _stream,
+    StreamPosition memory _streamPosition,
     uint64 _acceptPeginAmount,
     bytes32 _acceptPeginTx,
-    bytes memory _scriptPubKey,
-    bytes memory _enablerScriptPubKey
-) external onlyPegManager;
+    bytes memory _scriptPubKey
+) external;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_stream`|`StreamPosition`|The struct containing the stream, packet, and slot information|
-|`_acceptPeginAmount`|`uint64`|The amount of the accept peg-in transaction|
-|`_acceptPeginTx`|`bytes32`|The hash of the accept peg-in transaction|
-|`_scriptPubKey`|`bytes`|The script pub key for the taptree output|
-|`_enablerScriptPubKey`|`bytes`|The script pub key for the enabler output|
+|`_streamPosition`|`StreamPosition`||
+|`_acceptPeginAmount`|`uint64`|The amount of the accept peg-in transaction in satoshis|
+|`_acceptPeginTx`|`bytes32`|The transaction ID of the accept peg-in transaction|
+|`_scriptPubKey`|`bytes`|The scriptPubKey of the accept peg-in taptree output|
 
 
 ### blockSlot
 
 Blocks a reserved slot due to timeout or refund proof
 
-*Updates the slot state from RESERVED to BLOCKED*
+*Updates the slot state from RESERVED to BLOCKED and sets peg status to BLOCKED*
 
 
 ```solidity
-function blockSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) external onlyPegManager;
+function blockSlot(bytes32 _acceptPeginTxid) external returns (bool packetClosed);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_streamId`|`uint64`|The ID of the stream|
-|`_packetNumber`|`uint64`|The packet number|
-|`_slotId`|`uint64`|The ID of the slot to block|
+|`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction ID to block|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`packetClosed`|`bool`|Whether the packet was closed or not|
 
 
 ### getCommitteeId
@@ -462,12 +564,12 @@ function getCommitteeId(uint64 _streamId, uint64 _packetNumber) external view re
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`uint128`|The committee ID for the packet|
+|`<none>`|`uint128`|uint128 The committee ID for the packet|
 
 
 ### getCommitteePubKey
 
-Gets the committee public key for a specific packet
+Retrieves the committee public key for a specific packet
 
 
 ```solidity
@@ -478,13 +580,35 @@ function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external vie
 |Name|Type|Description|
 |----|----|-----------|
 |`_streamId`|`uint64`|The ID of the stream|
-|`_packetNumber`|`uint64`|The packet number|
+|`_packetNumber`|`uint64`|The index of the packet within the stream|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`bytes`|bytes The committee public key for the packet|
+|`<none>`|`bytes`|bytes The committee public key for this packet (33 bytes)|
+
+
+### getEnablerScriptPubKey
+
+Retrieves the enabler script public key for a specific packet
+
+
+```solidity
+function getEnablerScriptPubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes memory);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_streamId`|`uint64`|The ID of the stream|
+|`_packetNumber`|`uint64`|The index of the packet within the stream|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`bytes`|bytes The enabler script public key for this packet|
 
 
 ### completeSlot
@@ -493,28 +617,44 @@ Marks a slot as completed and stores the UserTake transaction id
 
 *Can only be called by the PegManager*
 
-*Moves the pegout slot pointer to the next slot*
-
 
 ```solidity
-function completeSlot(
-    uint64 _streamId,
-    uint64 _packetNumber,
-    uint64 _slotId,
-    bytes32 _acceptPeginTxid,
-    bytes32 _userTakeTx
-) external onlyPegManager;
+function completeSlot(bytes32 _acceptPeginTxid, bytes32 _userTakeTx) external returns (bool packetClosed);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_streamId`|`uint64`|The ID of the stream|
-|`_packetNumber`|`uint64`|The packet number|
-|`_slotId`|`uint64`|The slot ID|
 |`_acceptPeginTxid`|`bytes32`|The hash of the accept peg-in transaction|
 |`_userTakeTx`|`bytes32`|The hash of the UserTake transaction|
 
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`packetClosed`|`bool`|Whether the packet was closed or not|
+
+
+### _markSlotAsFinished
+
+
+```solidity
+function _markSlotAsFinished(uint64 _streamId, uint64 _packetNumber) internal returns (bool packetClosed);
+```
+
+### _pushToFilledSlotList
+
+
+```solidity
+function _pushToFilledSlotList(StreamPosition memory _streamPosition) internal;
+```
+
+### _closePacketIfLastSlot
+
+
+```solidity
+function _closePacketIfLastSlot(uint64 _streamId, uint64 _packetNumber) internal returns (bool);
+```
 
 ### _getSlot
 
@@ -525,17 +665,44 @@ function _getSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) intern
 
 ### advanceSlot
 
+Marks a slot as advanced by the operator to the user
+
+*Updates the slot state to ADVANCED and stores the operator's peg-out transaction*
+
 
 ```solidity
-function advanceSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) external onlyPegManager;
+function advanceSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) external;
 ```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_streamId`|`uint64`|The index of the stream|
+|`_packetNumber`|`uint64`|The index of the packet within the stream|
+|`_slotId`|`uint64`|The index of the slot within the packet|
+
 
 ### getMinimumDeposit
+
+Gets the minimum deposit required for a specific denomination and role
 
 
 ```solidity
 function getMinimumDeposit(StreamDenomination _denomination, Role _role) public view returns (uint256);
 ```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_denomination`|`StreamDenomination`|The denomination of the stream|
+|`_role`|`Role`|The role of the user (e.g., OPERATOR, WATCHTOWER)|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`uint256`|uint256 The minimum deposit required in wei|
+
 
 ### setTimelockSettings
 
@@ -562,7 +729,7 @@ function setTimelockSettings(uint64 _streamId, TimelockSettings memory _timelock
 
 Sets the number of confirmations required for peg-in transactions
 
-*Can only be called by the owner*
+*Only callable by the contract owner*
 
 
 ```solidity
@@ -573,14 +740,14 @@ function setPeginConfirmations(uint64 _streamId, uint8 _confirmations) external 
 |Name|Type|Description|
 |----|----|-----------|
 |`_streamId`|`uint64`|The ID of the stream|
-|`_confirmations`|`uint8`|The number of confirmations required|
+|`_confirmations`|`uint8`|The number of confirmations required for peg-in transactions|
 
 
 ### setPegoutConfirmations
 
 Sets the number of confirmations required for peg-out transactions
 
-*Can only be called by the owner*
+*Only callable by the contract owner*
 
 
 ```solidity
@@ -591,38 +758,14 @@ function setPegoutConfirmations(uint64 _streamId, uint8 _confirmations) external
 |Name|Type|Description|
 |----|----|-----------|
 |`_streamId`|`uint64`|The ID of the stream|
-|`_confirmations`|`uint8`|The number of confirmations required|
+|`_confirmations`|`uint8`|The number of confirmations required for peg-out transactions|
 
-
-### setCommitteeRegistry
-
-Sets the committee registry contract address
-
-*Can only be called by the owner*
-
-
-```solidity
-function setCommitteeRegistry(ICommitteeRegistry _committeeRegistry) external onlyOwner;
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_committeeRegistry`|`ICommitteeRegistry`|The new committee registry contract address|
-
-
-### _setCommitteeRegistry
-
-
-```solidity
-function _setCommitteeRegistry(ICommitteeRegistry _committeeRegistry) internal;
-```
 
 ### setSecurityBondPercentage
 
-Reverts if the role is NONE or if the percentage is 0 or greater than 10_000
+Sets the security bond percentage for a specific role
 
-*Sets the security bond percentage for a given role*
+*The percentage must be between 0 and 10000, where 10000 represents 100%*
 
 
 ```solidity
@@ -633,7 +776,7 @@ function setSecurityBondPercentage(Role _role, uint16 _percentage) external only
 |Name|Type|Description|
 |----|----|-----------|
 |`_role`|`Role`|The role for which to set the security bond percentage|
-|`_percentage`|`uint16`|The security bond percentage in 10_000 format (e.g. 1000 = 10%)|
+|`_percentage`|`uint16`|The new security bond percentage to set|
 
 
 ### _setSecurityBondPercentage
@@ -645,10 +788,20 @@ function _setSecurityBondPercentage(Role _role, uint16 _percentage) internal;
 
 ### setMinimumSecurityDeposit
 
+Sets the minimum security deposit required for the system
+
+*Only callable by the contract owner*
+
 
 ```solidity
 function setMinimumSecurityDeposit(uint256 _cost) external onlyOwner;
 ```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_cost`|`uint256`|The new minimum security deposit in wei|
+
 
 ### _setMinimumSecurityDeposit
 
@@ -662,8 +815,6 @@ function _setMinimumSecurityDeposit(uint256 _cost) internal;
 Sets the disablement payments cost per challenge, this is used to calculate the minimum deposit for a role
 
 *Can only be called by the owner*
-
-*Emits a DisablementPaymentsPerChallengeUpdated event on success*
 
 
 ```solidity
@@ -691,7 +842,7 @@ Stores the stream position for a given accept peg-in transaction ID
 
 
 ```solidity
-function setStreamPosition(bytes32 _acceptPeginTxid, StreamPosition memory _position) external onlyPegManager;
+function setStreamPosition(bytes32 _acceptPeginTxid, StreamPosition memory _position) external;
 ```
 **Parameters**
 
@@ -730,7 +881,7 @@ Updates only the peg status of an existing stream position
 
 
 ```solidity
-function setPegStatus(bytes32 _acceptPeginTxid, PegStatus _newStatus) external onlyPegManager;
+function setPegStatus(bytes32 _acceptPeginTxid, PegStatus _newStatus) external;
 ```
 **Parameters**
 
@@ -739,6 +890,13 @@ function setPegStatus(bytes32 _acceptPeginTxid, PegStatus _newStatus) external o
 |`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction ID|
 |`_newStatus`|`PegStatus`|The new peg status to set|
 
+
+### _setPegStatus
+
+
+```solidity
+function _setPegStatus(bytes32 _acceptPeginTxid, PegStatus _newStatus) internal;
+```
 
 ### streamExists
 
@@ -754,17 +912,10 @@ modifier streamExists(uint64 _streamId);
 function _streamExists(uint64 _streamId) internal view;
 ```
 
-### onlyCommitteeRegistry
+### restartStreamPointers_TESTNET
 
 
 ```solidity
-modifier onlyCommitteeRegistry();
-```
-
-### _onlyCommitteeRegistry
-
-
-```solidity
-function _onlyCommitteeRegistry() internal view;
+function restartStreamPointers_TESTNET(uint64 _streamId) external onlyOwner;
 ```
 

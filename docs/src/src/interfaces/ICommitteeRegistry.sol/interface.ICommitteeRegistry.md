@@ -1,5 +1,5 @@
 # ICommitteeRegistry
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/interfaces/ICommitteeRegistry.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/835a0374fad05fe95d66ed5d56f02d5826093237/src/interfaces/ICommitteeRegistry.sol)
 
 Interface for managing committee registration and formation in the union bridge
 
@@ -9,6 +9,95 @@ Interface for managing committee registration and formation in the union bridge
 
 
 ## Functions
+### isWhitelisted
+
+Checks if an address is whitelisted
+
+
+```solidity
+function isWhitelisted(address _address) external view returns (bool);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_address`|`address`|The address to check|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`bool`|True if the address is whitelisted, false otherwise|
+
+
+### whitelistAddress
+
+Whitelists an address to enable it to apply to a stream
+
+*Only callable by the contract whitelister*
+
+
+```solidity
+function whitelistAddress(address _address) external;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_address`|`address`|The address to whitelist|
+
+
+### whitelistAddresses
+
+Whitelists multiple addresses to enable them to apply to a stream
+
+*Only callable by the contract whitelister*
+
+
+```solidity
+function whitelistAddresses(address[] memory _addresses) external;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_addresses`|`address[]`|The addresses to whitelist|
+
+
+### unwhitelistAddress
+
+Unwhitelists an address to disable it from applying to a stream
+
+*Only callable by the contract whitelister*
+
+
+```solidity
+function unwhitelistAddress(address _address) external;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_address`|`address`|The address to unwhitelist|
+
+
+### unwhitelistAddresses
+
+Unwhitelists multiple addresses to disable them from applying to a stream
+
+*Only callable by the contract whitelister*
+
+
+```solidity
+function unwhitelistAddresses(address[] memory _addresses) external;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_addresses`|`address[]`|The addresses to unwhitelist|
+
+
 ### applyToStream
 
 Applies to participate in a stream with a specific role
@@ -36,17 +125,19 @@ function applyToStream(
 
 ### unsubscribeFromStream
 
-Unsubscribes from a stream and set as available balance the pre-staked balance
+Unsubscribes from a stream and sets the pre-staked balance as available
+
+*Only callable when contract is unpaused*
 
 
 ```solidity
-function unsubscribeFromStream(StreamDenomination _stream) external;
+function unsubscribeFromStream(StreamDenomination _denomination) external;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_stream`|`StreamDenomination`|The stream denomination to unsubscribe from|
+|`_denomination`|`StreamDenomination`|The stream denomination to unsubscribe from|
 
 
 ### getCommittee
@@ -111,6 +202,8 @@ function memberRegistry() external view returns (IMemberRegistry);
 Allows a member to deposit information  formation
 
 *Called by members to provide their aggregated key for a pending committee*
+
+*Only callable when contract is unpaused*
 
 
 ```solidity
@@ -236,6 +329,8 @@ Deposits encrypted communication data (IP and Port) for a member in a pending co
 
 *This function is called by members to provide their encrypted communication data*
 
+*Only callable when contract is unpaused*
+
 
 ```solidity
 function depositCommunicationData(uint128 _committeeId, CommunicationData[] memory _communicationData) external;
@@ -277,55 +372,37 @@ function getMemberCommunicationData(uint128 _committeeId, address _memberAddress
 |`communicationData`|`CommunicationData[]`|encrypted communication data (IP and Port) from the committee members|
 
 
-### setPeginManager
+### isMemberInCommittee
 
-Sets the Pegin Manager contract address
-
-*Only callable by the contract owner*
+Checks if a member is part of a specific committee
 
 
 ```solidity
-function setPeginManager(IPeginManager _peginManager) external;
+function isMemberInCommittee(uint128 _committeeId, address _memberAddress) external view returns (bool);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_peginManager`|`IPeginManager`|The address of the Pegin Manager contract|
+|`_committeeId`|`uint128`|The committee ID|
+|`_memberAddress`|`address`|The address of the member to check|
 
 
-### setPegoutManager
+### setWhitelister
 
-Sets the Pegout Manager contract address
-
-*Only callable by the contract owner*
-
-
-```solidity
-function setPegoutManager(IPegoutManager _pegoutManager) external;
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_pegoutManager`|`IPegoutManager`|The address of the Pegout Manager contract|
-
-
-### setStreamManager
-
-Sets the Stream Manager contract address
+Sets the Whitelister address
 
 *Only callable by the contract owner*
 
 
 ```solidity
-function setStreamManager(IStreamManager _streamManager) external;
+function setWhitelister(address _newWhitelister) external;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_streamManager`|`IStreamManager`|The address of the Stream Manager contract|
+|`_newWhitelister`|`address`|The address of the whitelister|
 
 
 ### setPendingCommitteeTimeout
@@ -396,44 +473,66 @@ function setCommitteeMemberCount(uint256 _committeeMemberCount) external;
 |`_committeeMemberCount`|`uint256`|The exact number of members required for a committee|
 
 
-### getOperatorDisputeData
+### selectTakeOperator
 
 Gets the operator dispute data (address and dispute public key) for operator-take operations
 
+*Rotates through committee operators to distribute take responsibilities*
+
+*Only operators who have deposited their signatures nonces are eligible for take operations*
+
+*Reverts with TakeOperatorNotFound if no eligible operator is found*
+
 
 ```solidity
-function getOperatorDisputeData(uint128 committeeId, SignatureData[] calldata signatureData, uint8 missingNonces)
+function selectTakeOperator(uint128 _committeeId, SignatureData[] calldata _signatureData, uint8 _missingNonces)
     external
-    returns (address operatorAddress, bytes32 disputePubKey);
+    returns (address operatorAddress, bytes32 disputePubKey, bytes32 takePubKey);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`committeeId`|`uint128`|The ID of the committee|
-|`signatureData`|`SignatureData[]`|The signature data for the committee members|
-|`missingNonces`|`uint8`|Number of missing nonces|
+|`_committeeId`|`uint128`|The committee ID to get the operator from|
+|`_signatureData`|`SignatureData[]`|Array of signature data for committee members|
+|`_missingNonces`|`uint8`|Number of missing nonces|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`operatorAddress`|`address`|The operator take address|
-|`disputePubKey`|`bytes32`|The operator's dispute public key (covenantPubKey) used for operator-take transactions|
+|`operatorAddress`|`address`|The address of the next available operator for take operations|
+|`disputePubKey`|`bytes32`|The operator's dispute public key|
+|`takePubKey`|`bytes32`|The operator's take public key|
 
 
 ### releaseCommittee
 
-Release the committee members from a packet (return or reapply staked money)
+Releases committee members from a packet and handles their staked balance
+
+*Called by PegManager to release committee members after packet completion*
+
+*Only callable by PegManager contract*
+
+*Members with reApply=true will be re-added as candidates, others get their balance as available*
 
 
 ```solidity
 function releaseCommittee(uint64 _streamId, uint64 _packetNumber) external;
 ```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_streamId`|`uint64`|The stream ID for the committee|
+|`_packetNumber`|`uint64`|The packet number where the committee was active|
+
 
 ### restartPendingCommittee
 
 Restarts a pending committee if it has expired
+
+*Only callable when contract is unpaused*
 
 
 ```solidity
@@ -527,25 +626,21 @@ function getCommitteeDisputeKeys(uint128 _committeeId) external view returns (by
 |`<none>`|`bytes32[]`|Array of dispute keys for all members|
 
 
-### getOperatorDisputeKeys
+### forceDiscardPendingCommittee_TESTNET
 
-Gets the dispute keys (covenant public keys) for operator committee members only
+Forces a discard of a pending committee, and enables the creation of a new committee
+
+*Only callable on testnet*
 
 
 ```solidity
-function getOperatorDisputeKeys(uint128 _committeeId) external view returns (bytes32[] memory);
+function forceDiscardPendingCommittee_TESTNET(uint64 _streamId) external;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_committeeId`|`uint128`|The committee ID|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`<none>`|`bytes32[]`|Array of dispute keys for operator members only|
+|`_streamId`|`uint64`|The stream ID for the pending committee to discard|
 
 
 ## Events
@@ -593,48 +688,6 @@ event PendingCommitteeTimeoutUpdated(uint256 timeout);
 |----|----|-----------|
 |`timeout`|`uint256`|The new timeout value|
 
-### StreamManagerUpdated
-Event emitted when stream manager address is updated
-
-
-```solidity
-event StreamManagerUpdated(address streamManager);
-```
-
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`streamManager`|`address`|The new stream manager address|
-
-### PeginManagerUpdated
-Event emitted when pegin manager address is updated
-
-
-```solidity
-event PeginManagerUpdated(address peginManager);
-```
-
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`peginManager`|`address`|The new pegin manager address|
-
-### PegoutManagerUpdated
-Event emitted when pegout manager address is updated
-
-
-```solidity
-event PegoutManagerUpdated(address pegoutManager);
-```
-
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`pegoutManager`|`address`|The new pegout manager address|
-
 ### CommitteeMinWatchtowersUpdated
 Event emitted when minimum watchtowers requirement is updated
 
@@ -676,6 +729,48 @@ event CommitteeMemberCountUpdated(uint256 minMembers);
 |Name|Type|Description|
 |----|----|-----------|
 |`minMembers`|`uint256`|The new minimum members requirement|
+
+### WhitelisterUpdated
+Event emitted when the whitelister address is updated
+
+
+```solidity
+event WhitelisterUpdated(address indexed newWhitelister);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`newWhitelister`|`address`|The new whitelister address|
+
+### AddressWhitelisted
+Event emitted when an address is whitelisted
+
+
+```solidity
+event AddressWhitelisted(address indexed whitelistedAddress);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`whitelistedAddress`|`address`|The address that is now whitelisted|
+
+### AddressUnwhitelisted
+Event emitted when an address is unwhitelisted
+
+
+```solidity
+event AddressUnwhitelisted(address indexed unwhitelistedAddress);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`unwhitelistedAddress`|`address`|The address that is now unwhitelisted|
 
 ### MemberInfoDeposited
 Event emitted when member info is deposited for committee formation
@@ -741,20 +836,6 @@ event AllCommunicationDataReady(uint128 indexed _committeeId);
 |----|----|-----------|
 |`_committeeId`|`uint128`|The ID of the committee for which all communication data is ready|
 
-### MemberRegistryUpdated
-Event emitted when the member registry address is updated
-
-
-```solidity
-event MemberRegistryUpdated(address memberRegistry);
-```
-
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`memberRegistry`|`address`|The new member registry address|
-
 ### CommitteeMembersReleased
 Event emitted when members from a packet's committee are released
 
@@ -769,6 +850,12 @@ event CommitteeMembersReleased(uint64 streamId, uint64 packetNumber);
 |----|----|-----------|
 |`streamId`|`uint64`|The stream ID for the committee|
 |`packetNumber`|`uint64`|The packet number where the committee was active|
+
+### PendingCommitteeForceDiscarded
+
+```solidity
+event PendingCommitteeForceDiscarded(uint64 streamId, uint128 committeeId);
+```
 
 ## Errors
 ### CommitteeIsNotPending
@@ -800,6 +887,34 @@ error PendingCommitteeNotExpired(uint64 streamId, uint256 createdAt, uint256 exp
 |`streamId`|`uint64`|The stream ID|
 |`createdAt`|`uint256`|The creation timestamp|
 |`expireAt`|`uint256`|The expiration timestamp|
+
+### NonWhitelistedAddress
+Thrown when non-whitelisted address tries to apply to stream
+
+
+```solidity
+error NonWhitelistedAddress(address nonWhitelistedAddress);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`nonWhitelistedAddress`|`address`|The non-whitelisted address|
+
+### UnauthorizedWhitelister
+Thrown when the caller is not the whitelister
+
+
+```solidity
+error UnauthorizedWhitelister(address sender);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`sender`|`address`|The address of the caller|
 
 ### InvalidAggregatedKeyLength
 Error thrown when the aggregated key has an invalid length
@@ -868,28 +983,12 @@ error CommitteeNotFound(uint128 committeeId);
 |----|----|-----------|
 |`committeeId`|`uint128`|The committee ID|
 
-### InvalidZeroAddress
-Thrown when an address is zero
-
-
-```solidity
-error InvalidZeroAddress();
-```
-
 ### InvalidZeroValue
 Thrown when a value is zero
 
 
 ```solidity
 error InvalidZeroValue();
-```
-
-### MemberRegistryAddressZero
-Thrown when the member registry address is zero
-
-
-```solidity
-error MemberRegistryAddressZero();
 ```
 
 ### InvalidMinMembers
@@ -907,6 +1006,21 @@ error InvalidMinMembers(uint256 minMembers, uint256 minCommitteWatchtowers, uint
 |`minMembers`|`uint256`|The minimum members requirement|
 |`minCommitteWatchtowers`|`uint256`|The minimum watchtowers requirement|
 |`minCommitteOperators`|`uint256`|The minimum operators requirement|
+
+### InvalidMaxMembers
+Thrown when committee member count exceeds the maximum allowed
+
+
+```solidity
+error InvalidMaxMembers(uint256 maxCommitteeMemberCount, uint256 committeeMemberCount);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`maxCommitteeMemberCount`|`uint256`|The maximum allowed committee member count|
+|`committeeMemberCount`|`uint256`|The requested committee member count|
 
 ### InvalidMinOperators
 Thrown when minimum operators requirement is invalid

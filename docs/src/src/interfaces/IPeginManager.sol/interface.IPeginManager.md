@@ -1,5 +1,5 @@
 # IPeginManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/interfaces/IPeginManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/835a0374fad05fe95d66ed5d56f02d5826093237/src/interfaces/IPeginManager.sol)
 
 Interface for managing peg-in operations
 
@@ -68,11 +68,15 @@ function getStreamPositionByRequestPegin(bytes32 requestPeginTxid) external view
 
 ### requestPegin
 
-Registers a peg-in request transaction from Bitcoin
+Requests a peg-in operation by providing an SPV proof of the Bitcoin transaction
 
-*Validates the SPV proof and initiates the peg-in process*
+*This function validates the peg-in request transaction and initiates the peg-in process*
 
-*Emits PeginRequested event upon successful registration*
+*The transaction must have at least 2 outputs: one P2TR output and one OP_RETURN output*
+
+*Emits the PeginRequested event*
+
+*Only callable when contract is unpaused*
 
 
 ```solidity
@@ -82,7 +86,7 @@ function requestPegin(BtcTxSPVProof calldata _requestPeginTxSPVProof) external;
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_requestPeginTxSPVProof`|`BtcTxSPVProof`|The BTC SPV proof of the peg-in request transaction|
+|`_requestPeginTxSPVProof`|`BtcTxSPVProof`|The SPV proof containing the Bitcoin transaction and merkle proof|
 
 
 ### getAcceptPegin
@@ -135,6 +139,8 @@ Accepts and registers a Bitcoin peg-in transaction to the committee account
 
 *Emits PeginAccepted event upon successful acceptance*
 
+*Only callable when contract is unpaused*
+
 
 ```solidity
 function acceptPegin(BtcTxSPVProof calldata _peginAcceptedTxSPVProof) external;
@@ -155,6 +161,8 @@ Registers a user reimbursement transaction from Bitcoin
 *Emits UserReimbursementRegistered event upon successful registration*
 
 *Slot state is set to BLOCKED*
+
+*Only callable when contract is unpaused*
 
 
 ```solidity
