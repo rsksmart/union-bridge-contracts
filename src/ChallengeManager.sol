@@ -23,7 +23,7 @@ contract ChallengeManager is IChallengeManager, PegBase {
 
     /// @inheritdoc IChallengeManager
     function getChallengeTempInfo(bytes32 _acceptPeginTxid) external view returns (ChallengeTempInfo memory) {
-        return challengeTempInfo[_acceptPeginTxid];
+        return _getChallengeTempInfo(_acceptPeginTxid);
     }
 
     /// @notice Initializes the ChallengeManager contract
@@ -141,8 +141,6 @@ contract ChallengeManager is IChallengeManager, PegBase {
         challengeTempInfo[_acceptPeginTxid] = ChallengeTempInfo({challengeTxid: bytes32(0), revealTxid: bytes32(0)});
         emit InputNotRevealedRegistered(txid, _acceptPeginTxid, pegoutInfo.committeeId, streamInfo);
 
-        // Retrigger operator take. Update peg status
-        // streamManager.setPegStatus(_acceptPeginTxid, PegStatus.CHALLENGE);
         bytes32 pegoutTxid = pegoutManager.getPegoutTxid(_acceptPeginTxid);
         pegoutManager.triggerOperatorTake(pegoutTxid);
     }
@@ -170,7 +168,7 @@ contract ChallengeManager is IChallengeManager, PegBase {
         PegoutTempInfo memory pegoutInfo = pegoutManager.getPegoutTempInfo(_acceptPeginTxid);
         _validateMemberInCommittee(pegoutInfo.committeeId);
 
-        ChallengeTempInfo storage challengeInfo = challengeTempInfo[_acceptPeginTxid];
+        ChallengeTempInfo storage challengeInfo = _getChallengeTempInfo(_acceptPeginTxid);
         bytes32 challengeTxid = _inputRevealed.btcTx.inputs[Constants.INPUT_REVEALED_VIN_CHALLENGE].txId;
         if (challengeInfo.challengeTxid != challengeTxid) {
             revert ChallengeTxidNotMatch(challengeTxid, challengeInfo.challengeTxid);

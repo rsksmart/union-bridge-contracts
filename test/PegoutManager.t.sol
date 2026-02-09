@@ -2026,4 +2026,35 @@ contract PegoutManagerTest is Test, HelperContract {
         vm.prank(globalUserAddress);
         pegoutManager.tryPegout{value: amountInWei}(userPubKey);
     }
+
+    function test_getPegoutTxid_Success() external {
+        // Arrange
+        RegisterUserTakeSetup memory setup = setup_pegout();
+
+        // Act
+        bytes32 txid1 = pegoutManager.getPegoutTxid(setup.stream.streamId, setup.packetNumber, setup.slotId);
+        bytes32 txid2 = pegoutManager.getPegoutTxid(setup.acceptPeginTxid);
+
+        // Assert
+        assertNotEq(txid1, bytes32(0), "Returned txid should not be zero");
+        assertNotEq(txid2, bytes32(0), "Returned txid should not be zero");
+        assertEq(txid1, txid2, "Both txids should match");
+    }
+
+    function test_getPegoutTxid_Revert_PegoutTxidNotFoundForSlot() external {
+        // Arrange
+        Stream memory stream = streamManager.getStream(VALUE);
+        uint64 packetNumber = 0;
+        uint64 slotId = 0;
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IPegoutManager.PegoutTxidNotFoundForSlot.selector, stream.streamId, packetNumber, slotId
+            )
+        );
+
+        // Act
+        pegoutManager.getPegoutTxid(stream.streamId, packetNumber, slotId);
+    }
 }

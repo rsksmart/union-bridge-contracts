@@ -63,7 +63,7 @@ interface IAccessManager {
     /// @notice Requires the caller to have permissions to trigger operator take
     /// @param _caller The address of the caller
     /// @dev Reverts if the caller does not have permissions to trigger operator take
-    function canCallTriggerOperatorTake(address _caller) external view;
+    function canTriggerOperatorTake(address _caller) external view;
 
     // ===================== Events =====================
 

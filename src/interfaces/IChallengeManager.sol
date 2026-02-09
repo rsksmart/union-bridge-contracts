@@ -79,7 +79,7 @@ interface IChallengeManager {
     /// @param expected The expected number of inputs
     error InvalidChallengeInputCount(uint256 actual, uint256 expected);
 
-    /// @notice Thrown when the number of inputs in a input not reveal transaction is incorrect
+    /// @notice Thrown when the number of inputs in an input not revealed transaction is incorrect
     /// @param actual The actual number of inputs found
     /// @param expected The expected number of inputs
     error InvalidInputNotRevealedInputCount(uint256 actual, uint256 expected);

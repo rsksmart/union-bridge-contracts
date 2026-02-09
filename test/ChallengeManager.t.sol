@@ -10,6 +10,8 @@ import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {SlotState} from "src/interfaces/IStreamManager.sol";
 import {IPegBase} from "src/interfaces/IPegBase.sol";
+import {BtcTxIn} from "src/interfaces/IBitcoinManager.sol";
+import {Constants} from "src/libraries/Constants.sol";
 
 contract ChallengeManagerTest is Test, HelperContract {
     function setUp() external {
@@ -334,9 +336,9 @@ contract ChallengeManagerTest is Test, HelperContract {
             "Slot state should be ADVANCED"
         );
 
+        // getChallengeTempInfo will revert if challengeTxid is not set
+        vm.expectRevert(abi.encodeWithSelector(IChallengeManager.NoChallengeRegistered.selector, setup.acceptPeginTxid));
         ChallengeTempInfo memory challengeInfo = challengeManager.getChallengeTempInfo(setup.acceptPeginTxid);
-        assertEq(challengeInfo.challengeTxid, bytes32(0), "Challenge txid should be cleaned");
-        assertEq(challengeInfo.revealTxid, bytes32(0), "Input revealed txid should be cleaned");
     }
 
     function test_registerInputNotRevealed_Revert_EnforcedPause_PausedContract() external {
@@ -387,7 +389,7 @@ contract ChallengeManagerTest is Test, HelperContract {
         bytes32 txid = bitcoinManager.getBtcTxid(setup.challengeSPV.btcTx);
         bytes32 wrongTxid = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
         bytes memory committeePubKey = streamManager.getCommitteePubKey(uint64(DEFAULT_STREAM), setup.packetNumber);
-        BtcTxSPVProof memory wrongSPV = createBtcTxSPVProof(createInputNotRevealTx(wrongTxid, committeePubKey));
+        BtcTxSPVProof memory wrongSPV = createBtcTxSPVProof(createInputNotRevealedTx(wrongTxid, committeePubKey));
 
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IChallengeManager.ChallengeTxidNotMatch.selector, wrongTxid, txid));
@@ -395,5 +397,50 @@ contract ChallengeManagerTest is Test, HelperContract {
         // Act
         vm.prank(opAddress);
         challengeManager.registerInputNotRevealed(setup.acceptPeginTxid, wrongSPV);
+    }
+
+    function test_registerInputNotRevealed_Revert_MemberNotInCommittee() external {
+        // Arrange
+        (, RegisterUserTakeSetup memory setup) = setup_challenge();
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ICommitteeRegistry.MemberNotInCommittee.selector, COMMITTEE_ID_STREAM_1_COMMITTEE_1, address(this)
+            )
+        );
+
+        // Act
+        challengeManager.registerInputNotRevealed(setup.acceptPeginTxid, setup.inputNotRevealedSPV);
+    }
+
+    function test_registerInputNotRevealed_Revert_InvalidChallengeInputCount() external {
+        // Arrange
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_challenge();
+
+        BtcTxIn[] memory modifiedInputs = new BtcTxIn[](setup.inputNotRevealedSPV.btcTx.inputs.length + 1);
+        for (uint256 i = 0; i < setup.inputNotRevealedSPV.btcTx.inputs.length; i++) {
+            modifiedInputs[i] = setup.inputNotRevealedSPV.btcTx.inputs[i];
+        }
+        modifiedInputs[modifiedInputs.length - 1] = BtcTxIn({
+            txId: 0xabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd,
+            vout: 0,
+            sequence: 4294967295,
+            scriptSig: hex""
+        });
+        setup.inputNotRevealedSPV.btcTx.inputs = modifiedInputs;
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IChallengeManager.InvalidInputNotRevealedInputCount.selector,
+                Constants.INPUT_NOT_REVEALED_INPUT_COUNT + 1,
+                Constants.INPUT_NOT_REVEALED_INPUT_COUNT
+            )
+        );
+
+        // Act
+        vm.prank(opAddress);
+        challengeManager.registerInputNotRevealed(setup.acceptPeginTxid, setup.inputNotRevealedSPV);
     }
 }

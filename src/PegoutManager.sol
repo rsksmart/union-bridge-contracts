@@ -278,7 +278,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
             }
         } else if (streamInfo.pegStatus == PegStatus.CHALLENGE) {
             // Only challenge manager can call this function when input not revealed is registered
-            accessManager.canCallTriggerOperatorTake(_msgSender());
+            accessManager.canTriggerOperatorTake(_msgSender());
             newStatus = PegStatus.OP_SELECTED;
         } else {
             revert InvalidPegStatus(streamInfo.pegStatus);

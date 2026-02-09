@@ -480,7 +480,7 @@ abstract contract ScriptUtils is Script {
     }
 
     // ========================== Reveal ==========================
-    function createInputNotRevealTx(bytes32 _challengeTxid, bytes memory _committeePubKey)
+    function createInputNotRevealedTx(bytes32 _challengeTxid, bytes memory _committeePubKey)
         internal
         pure
         returns (BtcTransaction memory)
