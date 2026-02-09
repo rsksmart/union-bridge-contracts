@@ -284,14 +284,6 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
             revert InvalidPegStatus(streamInfo.pegStatus);
         }
 
-        // slither-disable-next-line reentrancy-no-eth reentrancy-benign
-        (address takeOperatorAddress, bytes32 operatorDisputePubKey) =
-            committeeRegistry.getOperatorDisputeData(pegoutInfo.committeeId, signatureData, missingNonces);
-
-        // Update state variables after external calls
-        pegoutInfo.takeOperatorAddress = takeOperatorAddress;
-        pegoutInfo.operatorDisputePubKey = operatorDisputePubKey;
-
         if (newStatus != PegStatus.NOT_REGISTERED) {
             streamManager.setPegStatus(acceptPeginTxid, newStatus);
         }
