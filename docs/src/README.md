@@ -142,13 +142,21 @@ bash shell/size-report.sh
 
 ### Gas usage
 
-Also you can check the gas used the contracts:
+Also, you can check the gas used by the contracts:
 
 ```sh
 bash shell/gas-report.sh
 ```
 
-Contracts size needs to be lower than 24kb
+### Gas Consumption for different committee size
+
+Also, you can check the gas usage by the main functions based on the committee size:
+
+```sh
+bash shell/gas-consumption.sh
+```
+
+Gas consumption needs to be under 80% of max block size (max block size 6.8M gas)
 
 ## Release
 
@@ -190,7 +198,7 @@ After deploying the contracts to testnet or alphanet, you must configure the Pow
 
 #### Prerequisites
 
-- Deployed contracts (see [Deployment](#Deployment))
+- Deployed contracts (see Deployment section above)
 - RbtcBridge contract address from deployment
 - Private key with authorization to configure the PowPeg Bridge
 - `cast` CLI tool from Foundry
@@ -272,6 +280,173 @@ For local testing with Anvil or Regtest, the deployment script automatically:
 - **Note:** BridgeMock has a default `lockingCap = 400 ether` hardcoded, so Step 2 above is not needed locally
 
 No manual configuration is required for local development. See `script/deploy/01_DeployImplAndProxy.s.sol` for implementation details.
+
+### Contract Verification
+
+Running any of the `shell/script/deploy/deploy-<testnet/mainnet>.sh` scripts will automatically attempt to verify all the contracts to the rsk explorer and rsk blockscout explorer for the selected network. You can also verify contracts directly as shown below.
+
+#### Verification Prerequisites
+
+- Deployed contracts (see Deployment section above)
+- Broadcast file from deployment (located in `broadcast/DeployScript.s.sol/<CHAIN_ID>/run-latest.json`)
+- Environment variables configured in `.env`:
+  - `BLOCKSCOUT_MAINNET_API` / `BLOCKSCOUT_TESTNET_API`
+  - `RSK_EXPLORER_MAINNET_API` / `RSK_EXPLORER_TESTNET_API` / `RSK_EXPLORER_ALPHANET_API`
+  - `RSK_EXPLORER_MAINNET_URL` / `RSK_EXPLORER_TESTNET_URL` / `RSK_EXPLORER_ALPHANET_URL`
+
+#### Verify All Contracts
+
+The easiest way to verify contracts is to use the network-specific verification scripts. You must specify which verifier to use:
+
+```bash
+# Verify on Blockscout (testnet)
+bash shell/script/deploy/verification/verify-testnet.sh blockscout
+
+# Verify on RSK Explorer (testnet)
+bash shell/script/deploy/verification/verify-testnet.sh rsk-explorer
+
+# Verify on RSK Explorer (alphanet - Blockscout not available)
+bash shell/script/deploy/verification/verify-alphanet.sh rsk-explorer
+
+# Verify on Blockscout (mainnet)
+bash shell/script/deploy/verification/verify-mainnet.sh blockscout
+
+# Verify on RSK Explorer (mainnet)
+bash shell/script/deploy/verification/verify-mainnet.sh rsk-explorer
+
+# With custom broadcast file
+bash shell/script/deploy/verification/verify-testnet.sh blockscout broadcast/DeployScript.s.sol/31/run-latest.json
+```
+
+**Available networks:**
+- `verify-testnet.sh` - Verify contracts on testnet
+- `verify-alphanet.sh` - Verify contracts on alphanet (RSK Explorer only, no Blockscout)
+- `verify-mainnet.sh` - Verify contracts on mainnet
+
+**Verifier options (required):**
+- `blockscout` - Verify on Blockscout
+- `rsk-explorer` - Verify on RSK Explorer
+
+**Note:** To verify on both Blockscout and RSK Explorer, run the script twice with different verifier parameters.
+
+These scripts will:
+
+1. Verify all implementation contracts (MemberRegistry, CommitteeRegistry, etc.)
+2. Verify all proxy contracts (ERC1967Proxy instances)
+3. Extract and format constructor arguments automatically
+
+**Note:** The verification scripts automatically source `.env` and determine the appropriate API URLs based on the network. They can be run independently without needing to run the deploy scripts first.
+
+#### Verify a Single Contract
+
+If you need to verify a single contract manually (e.g., if one contract failed during batch verification), you can use the verification functions directly.
+
+##### Verify a Single Implementation Contract
+
+For implementation contracts (non-proxy contracts):
+
+```bash
+# 1. Source .env from project root to get API URLs
+source .env
+
+# 2. Change to verification directory (to avoid directory path issues from subsequent scripts)
+cd shell/script/deploy/verification
+
+# 3. Source the verification functions
+source verify-functions.sh
+
+# 4. Verify a single implementation contract
+# Parameters: contract_name, contract_addr, chain_id, verifier, verifier_url
+verify_implementation \
+    "StreamManager" \
+    "0x0b75fc65eda9ded22f774f3c7045b52024959eb3" \
+    "31" \
+    "blockscout" \
+    "$BLOCKSCOUT_TESTNET_API"
+```
+
+
+```bash
+
+    local contract_name="$1"
+    local contract_addr="$2"
+    local chain_id="$3"
+    local verifier="$4"
+    local verifier_url="$5"
+
+verify_implementation \
+    "StreamManager" \
+    "0x0b75fc65eda9ded22f774f3c7045b52024959eb3" \
+    "31" \
+    "custom" \
+    "$RSK_EXPLORER_TESTNET_API"
+```
+
+**Note**: Ensure the contract name matches the contract address, otherwise it will not work. Same for the `verify_proxy` function.
+
+For RSK Explorer, use `"custom"` as the verifier:
+
+```bash
+verify_implementation \
+    "MemberRegistry" \
+    "0x7CE9FE52C2Dc2bdCD894310D0625187e707e1516" \
+    "31" \
+    "custom" \
+    "$RSK_EXPLORER_TESTNET_API"
+```
+
+**Note**: If anything is changed in the verification scripts, you need to `cd` back to the verification directory and run `source verify-functions.sh` again for the changes to take effect.
+
+##### Verify a Single Proxy Contract
+
+For proxy contracts (ERC1967Proxy), the function automatically extracts the implementation address and initialization data from the broadcast file:
+
+```bash
+# 1. Source .env from project root to get API URLs
+source .env
+
+# 2. Change to verification directory
+cd shell/script/deploy/verification
+
+# 3. Source the verification functions
+source verify-functions.sh
+
+# 4. Verify a single proxy contract (uses default broadcast file: broadcast/DeployScript.s.sol/<chain_id>/run-latest.json)
+# Parameters: contract_name, proxy_addr, chain_id, verifier, verifier_url, [broadcast_file]
+verify_proxy \
+    "StreamManager" \
+    "0xcd01fb1cd725e792af40b589796367157bfafe28" \
+    "31" \
+    "blockscout" \
+    "$BLOCKSCOUT_TESTNET_API"
+```
+
+For RSK Explorer:
+
+```bash
+verify_proxy \
+    "MemberRegistry" \
+    "0x7a2d268cb4502ed00f01a0f061c507da70fbf25e" \
+    "31" \
+    "custom" \
+    "$RSK_EXPLORER_TESTNET_API"
+```
+
+With a custom broadcast file (optional, last parameter):
+
+```bash
+verify_proxy \
+    "MemberRegistry" \
+    "0x7a2d268cb4502ed00f01a0f061c507da70fbf25e" \
+    "31" \
+    "blockscout" \
+    "$BLOCKSCOUT_TESTNET_API" \
+    "../../../broadcast/DeployScript.s.sol/31/custom-run.json"
+```
+
+**Note:** When using a custom broadcast file, use a relative path from the verification directory, or an absolute path.
+
+**Note:** The function automatically extracts the implementation address and initialization data from the broadcast file based on the proxy address. If no broadcast file is provided, it defaults to `broadcast/DeployScript.s.sol/<chain_id>/run-latest.json`. The initialization data is automatically processed to extract the actual `initialize()` call data by skipping the first 32 bytes (selector + padding).
 
 ### Rust crate with Bindings
 
@@ -754,6 +929,18 @@ If not all committee members sign within the timeout period:
 7. **Validate transaction**: System validates the BTC transaction and proof
 8. **Peg-out Registered**: System emits an event PegoutRegistered informing that RBTC is now linked to Bitcoin via operator take
 
+#### Disputed Case: Operator Won (Take2) - Operator wins challenge dispute
+
+If the operator's REIMBURSEMENT_KICKOFF_TX is challenged by a watchtower:
+
+1. **Challenge registered**: A watchtower calls `registerChallenge()` after detecting incorrect behavior (e.g., invalid ADVANCE_FUNDS_TX). For detailed information about the [CHALLENGE_TX](./bitcoin-transactions.md#2-challenge_tx-challenge-transaction) transaction structure, inputs/outputs, and spending conditions.
+2. **Operator reveals input**: The operator must respond by broadcasting REVEAL_INPUT_TX to prove they advanced funds correctly. The operator signs the slot ID using their Winternitz SLOT_ID_KEY. For detailed information about the [REVEAL_INPUT_TX](./bitcoin-transactions.md#3-reveal_input_tx-reveal-input-transaction) transaction structure, inputs/outputs, and spending conditions.
+3. **Automatic dispatch**: The Dispute Core protocol automatically dispatches OPERATOR_WON_TX after REVEAL_INPUT_TX is confirmed, scheduled for execution after OP_WON_TIMELOCK blocks expire (default: 150 blocks).
+4. **Broadcast Operator Won transaction**: After the timelock expires, the operator broadcasts the Operator Won (Take2) Bitcoin transaction. For detailed information about the [OPERATOR_WON_TX](./bitcoin-transactions.md#3-operator_won_tx-operator-won-transaction) transaction structure, inputs/outputs, and spending conditions.
+5. **Submit BTC transaction**: Operator calls `registerOperatorTake()` with the Bitcoin transaction and SPV proof (same function as OPERATOR_TAKE_TX)
+6. **Validate transaction**: System validates the BTC transaction and proof
+7. **Peg-out Registered**: System emits an event PegoutRegistered informing that RBTC is now linked to Bitcoin via operator won (disputed fallback)
+
 ```mermaid
 sequenceDiagram
     participant M as Member
@@ -790,9 +977,46 @@ sequenceDiagram
 
     M->>+POM: registerOperatorTake(btcTxSPVProof)
     Note right of M: Operator calls `registerOperatorTake()` with the Bitcoin transaction and SPV proof
-    POM->>POM: Validate BTC transaction and SPV proof
+    POM->>POM: Validate BTC transaction and proof
     POM-->>-ENV: PegoutRegistered event
     Note right of POM: RBTC is now pegged-out to Bitcoin via operator take
+```
+
+**Disputed Case Flow** (when operator is challenged):
+
+```mermaid
+sequenceDiagram
+    participant WT as Watchtower
+    participant Op as Operator
+    participant BTC as Bitcoin Blockchain
+    participant POM as PegoutManager
+    participant ENV as Environment
+
+    Note over Op,ENV: Operator Take (Take1) - Challenge Dispute Flow
+    Note over Op,ENV: When operator is challenged after REIMBURSEMENT_KICKOFF_TX
+
+    WT->>BTC: 1. Dispatch CHALLENGE_TX
+    BTC-->>WT: Transaction mined
+    WT->>+POM: registerChallenge(btcTxSPVProof)
+    Note right of WT: Watchtower challenges operator actions
+    POM->>POM: Validate BTC transaction and SPV proof
+    POM-->>-ENV: ChallengeRegistered event
+    Note right of POM: Status: CHALLENGE
+
+    Op->>BTC: 2. Dispatch REVEAL_INPUT_TX
+    Note right of Op: Operator reveals slot ID signature<br/>proving correct fund advancement
+    BTC-->>Op: Transaction mined
+    Note right of Op: Dispute Core automatically schedules<br/>OPERATOR_WON_TX after OP_WON_TIMELOCK
+
+    Note over Op,BTC: Wait for OP_WON_TIMELOCK blocks (150 blocks)
+
+    Op->>BTC: 3. Dispatch OPERATOR_WON_TX
+    BTC-->>Op: Transaction mined
+    Op->>+POM: registerOperatorTake(btcTxSPVProof)
+    Note right of Op: Operator calls `registerOperatorTake()`<br/>with OPERATOR_WON_TX and SPV proof
+    POM->>POM: Validate BTC transaction and SPV proof
+    POM-->>-ENV: PegoutRegistered event
+    Note right of POM: RBTC is now pegged-out to Bitcoin<br/>via operator won (disputed fallback)
 ```
 
 ---
@@ -824,6 +1048,7 @@ The Union Bridge employs a fee mechanism to cover Bitcoin network transaction co
 ### Why This Design?
 
 Users effectively pay BTC transaction fees twice:
+
 - **Once in BTC** during the pegin (deducted from their Bitcoin deposit)
 - **Once in RBTC** during the pegout (paid as part of the full denomination requirement)
 
@@ -836,6 +1061,7 @@ This ensures the bridge system has funds to cover Bitcoin network fees for both 
 Currently, accumulated fees remain in the `PegoutManager` contract and can only be withdrawn by the contract owner.
 
 **Future implementation:** Fees will be distributed to operators and watchtowers as compensation for their services in running the bridge, including:
+
 - Operating committee members who sign transactions
 - Watchtowers who monitor for disputes
 - Operators who advance funds in timeout scenarios
@@ -843,6 +1069,7 @@ Currently, accumulated fees remain in the `PegoutManager` contract and can only 
 ### Fee Constants
 
 Fee amounts are defined in `src/libraries/Constants.sol`:
+
 - `P2TR_FEE = 335` satoshis
 - `SPEED_UP_AMOUNT = 540` satoshis
 
@@ -853,11 +1080,13 @@ Fee amounts are defined in `src/libraries/Constants.sol`:
 Using the 0.001 BTC (100,000 satoshis) stream denomination:
 
 **Pegin:**
+
 - User sends: **100,000 sats** in BTC
 - Pegin BTC tx fees deducted: **875 sats** (335 P2TR + 540 speed-up)
 - User receives: **99,125 sats worth of RBTC**
 
 **Pegout:**
+
 - User sends: **100,000 sats worth of RBTC** (full denomination required)
 - RBTC burned: **99,125 sats worth** (only what was minted)
 - Fees kept in contract: **875 sats worth of RBTC**
@@ -866,6 +1095,7 @@ Using the 0.001 BTC (100,000 satoshis) stream denomination:
 - User receives: **~98,250 sats in BTC** (99,125 - 875)
 
 **Total User Cost:**
+
 - Lost to pegin fees: **875 sats** (paid in BTC during pegin)
 - Lost to pegout RBTC fees: **875 sats** (paid in RBTC, kept by contract)
 - Lost to pegout BTC network fees: **~875 sats** (deducted from the 99,125 sat UTXO)
@@ -886,8 +1116,10 @@ graph TB
     %% Core Contracts
     PIM[PeginManager<br/>Handles Bitcoin → RSK operations]
     POM[PegoutManager<br/>Handles RSK → Bitcoin operations]
+    CM[ChallengeManager<br/>Dispute resolution management]
+    PB[PegBase<br/>Shared abstract base contract]
     PMB[PegManagerBase<br/>Shared abstract base contract]
-    PAM[PauseManager<br/>Centralized pause controller]
+    AM[AccessManager<br/>Authorization and pause controller]
     BM[BitcoinManager<br/>Bitcoin address generation and validation]
     CR[CommitteeRegistry<br/>Committee formation and management]
     MR[MemberRegistry<br/>Member registration and balance tracking]
@@ -899,8 +1131,10 @@ graph TB
     Bridge[RSK PowPeg Bridge<br/>External Precompiled Contract]
 
     %% Inheritance
+    PMB -.inherits.-> PB
     PIM -.inherits.-> PMB
     POM -.inherits.-> PMB
+    CM -.inherits.-> PB
 
     %% RbtcBridge - RSKIP-502 Single Authorized Address
     Bridge -->|authorizes<br/>single address| RB
@@ -922,11 +1156,26 @@ graph TB
     POM --> MR
     POM -->|calls burnRbtc| RB
 
-    %% PauseManager Relationships
-    PAM -.controls pause.-> PIM
-    PAM -.controls pause.-> POM
-    PAM -.controls pause.-> CR
-    PAM -.controls pause.-> MR
+    %% ChallengeManager Relationships
+    CM --> BM
+    CM --> CR
+    CM --> SM
+    CM --> POM
+
+    %% AccessManager Relationships - Pause Control
+    AM -.controls pause.-> PIM
+    AM -.controls pause.-> POM
+    AM -.controls pause.-> CR
+    AM -.controls pause.-> MR
+    AM -.controls pause.-> RB
+    AM -.controls pause.-> CM
+
+    %% AccessManager Relationships - Authorization Checks
+    SM -.checks authorization.-> AM
+    RB -.checks authorization.-> AM
+    CR -.checks authorization.-> AM
+    SigM -.checks authorization.-> AM
+    MR -.checks authorization.-> AM
 
     %% Other Relationships
     CR --> MR
@@ -948,13 +1197,13 @@ graph TB
     %% Styling
     classDef coreContract fill:#e1f5fe,stroke:#01579b,stroke-width:2px
     classDef baseContract fill:#c5e1a5,stroke:#33691e,stroke-width:2px
-    classDef pauseContract fill:#f8bbd0,stroke:#880e4f,stroke-width:2px
+    classDef accessContract fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
     classDef bridgeContract fill:#ffe0b2,stroke:#e65100,stroke-width:3px
     classDef external fill:#fff3e0,stroke:#e65100,stroke-width:2px
 
-    class PIM,POM,BM,CR,MR,SM,SigM coreContract
-    class PMB baseContract
-    class PAM pauseContract
+    class PIM,POM,CM,BM,CR,MR,SM,SigM coreContract
+    class PB,PMB baseContract
+    class AM accessContract
     class RB bridgeContract
     class Bridge external
 ```
@@ -971,8 +1220,8 @@ graph TB
   - Mints RBTC to users via RbtcBridge after successful peg-in
   - Coordinates with StreamManager for slot allocation
   - Integrates with CommitteeRegistry for committee management
-  - Inherits shared functionality from PegManagerBase
-- **Security Features**: Pausable (via PauseManager), UUPS upgradeable, non-reentrant
+  - Inherits shared functionality from PegManagerBase (which inherits from PegBase)
+- **Security Features**: Pausable (via AccessManager), UUPS upgradeable, non-reentrant
 
 #### 2. **PegoutManager**
 
@@ -983,31 +1232,44 @@ graph TB
   - Handles timeout-based operator advancement
   - Coordinates committee signatures for peg-outs
   - Integrates with MemberRegistry for operator management
-  - Inherits shared functionality from PegManagerBase
-- **Security Features**: Pausable (via PauseManager), UUPS upgradeable, non-reentrant
+  - Inherits shared functionality from PegManagerBase (which inherits from PegBase)
+- **Security Features**: Pausable (via AccessManager), UUPS upgradeable, non-reentrant
 
-#### 3. **PegManagerBase**
+#### 3. **PegBase**
+
+- **Purpose**: Abstract base contract providing shared functionality for PeginManager, PegoutManager, and ChallengeManager
+- **Key Features**:
+  - Centralizes common state variables (bitcoinManager, streamManager, committeeRegistry)
+  - Provides shared initialization logic with AccessManager integration
+  - Implements common peg status validation functions
+  - Inherits from BaseProxy, ReentrancyGuardUpgradeable, and Pausable
+- **Security Features**: Pausable (via AccessManager), UUPS upgradeable, non-reentrant
+
+#### 4. **PegManagerBase**
 
 - **Purpose**: Abstract base contract providing shared functionality for PeginManager and PegoutManager
 - **Key Features**:
-  - Centralizes common state variables (bitcoinManager, streamManager, committeeRegistry, signatureManager, rbtcBridge)
+  - Extends PegBase with additional manager-specific functionality
+  - Centralizes common state variables (signatureManager, rbtcBridge)
   - Provides shared initialization logic
   - Implements common setter functions (setStreamManager, setSignatureManager, setPauser)
 
-#### 4. **RbtcBridge**
+#### 5. **RbtcBridge**
 
 - **Purpose**: RSKIP-502 intermediary contract that serves as the single authorized address for RBTC minting and burning with the PowPeg Bridge
 - **Key Features**:
   - Acts as the single authorized contract registered with the PowPeg Bridge (RSKIP-502 requirement)
   - Provides `mintRbtc()` function exclusively for PeginManager to mint RBTC during peg-in acceptance
   - Provides `burnRbtc()` function exclusively for PegoutManager to burn RBTC during peg-out requests
+  - Provides `verifyTxConfirmations()` and `getTxBlockNumberAndVerifyConfirmations()` functions to verify Bitcoin transaction confirmations using RSK bridge precompiled contract
+  - Provides `getBestBlockHash()` function to retrieve the hash of the best Bitcoin block
   - Implements strict access control: only authorized managers can call mint/burn functions
   - Enforces 100k gas limit on RBTC transfers to prevent DoS attacks
   - Handles all PowPeg Bridge error codes (cap exceeded, transfers disabled, unauthorized caller)
 - **Security Features**: UUPS upgradeable, non-reentrant, owner-controlled manager address updates
-- **Critical Role**: Without RbtcBridge, both managers cannot interact with PowPeg Bridge due to single-address constraint
+- **Critical Role**: Without RbtcBridge, both managers cannot interact with PowPeg Bridge due to single-address constraint. Additionally, ChallengeManager, PeginManager, PegoutManager, and MemberRegistry depend on RbtcBridge's transaction verification functions (`verifyTxConfirmations`, `getTxBlockNumberAndVerifyConfirmations`, `getBestBlockHash`) to validate Bitcoin transactions and block data
 
-#### 5. **BitcoinManager**
+#### 6. **BitcoinManager**
 
 - **Purpose**: Handles Bitcoin address generation and transaction validation
 - **Key Features**:
@@ -1017,7 +1279,7 @@ graph TB
   - Manages Taproot addresses with key spend and script spend paths
 - **Security Features**: UUPS upgradeable
 
-#### 6. **CommitteeRegistry**
+#### 7. **CommitteeRegistry**
 
 - **Purpose**: Manages committee formation, selection, and lifecycle
 - **Key Features**:
@@ -1025,9 +1287,9 @@ graph TB
   - Handles committee member selection and rotation
   - Manages pending committee formation with timeouts
   - Coordinates with MemberRegistry for member management
-- **Security Features**: Pausable (via PauseManager), UUPS upgradeable, non-reentrant
+- **Security Features**: Pausable (via AccessManager), UUPS upgradeable, non-reentrant
 
-#### 7. **MemberRegistry**
+#### 8. **MemberRegistry**
 
 - **Purpose**: Manages member registration, applications, and balance tracking
 - **Key Features**:
@@ -1035,9 +1297,9 @@ graph TB
   - Manages security bond deposits and withdrawals
   - Tracks member balances (available, pre-staked, staked)
   - Supports member applications to different streams
-- **Security Features**: Pausable (via PauseManager), UUPS upgradeable, non-reentrant
+- **Security Features**: Pausable (via AccessManager), UUPS upgradeable, non-reentrant
 
-#### 8. **StreamManager**
+#### 9. **StreamManager**
 
 - **Purpose**: Manages streams and packet allocation for different Bitcoin denominations
 - **Key Features**:
@@ -1047,7 +1309,7 @@ graph TB
   - Tracks stream usage and committee rotation
 - **Security Features**: UUPS upgradeable
 
-#### 9. **SignatureManager**
+#### 10. **SignatureManager**
 
 - **Purpose**: Manages multi-signature operations for committee members
 - **Key Features**:
@@ -1057,12 +1319,26 @@ graph TB
   - Coordinates with CommitteeRegistry for member verification
 - **Security Features**: UUPS upgradeable
 
-#### 10. **PauseManager**
+#### 11. **ChallengeManager**
 
-- **Purpose**: Centralized pause controller for emergency stops
+- **Purpose**: Manages challenge operations for dispute resolution in peg-out flows
 - **Key Features**:
+  - Handles challenge registration when operators present invalid reimbursement transactions
+  - Manages input revelation for BitVMX dispute resolution
+  - Validates challenge transactions and SPV proofs
+  - Coordinates with PegoutManager for challenge context
+  - Inherits shared functionality from PegBase
+- **Security Features**: Pausable (via AccessManager), UUPS upgradeable, non-reentrant
+
+#### 12. **AccessManager**
+
+- **Purpose**: Centralized authorization and pause controller for emergency stops
+- **Key Features**:
+  - Extends PauseManager with role-based access control
+  - Provides authorization checks for sensitive operations across the bridge system
+  - Enforces permissions through view functions that restrict sensitive operations (peg status modifications, committee management, packet creation, RBTC operations, signature initialization, member management) to authorized contracts only
   - Single control point for pausing all contracts
-  - Coordinates pause/unpause across PeginManager, PegoutManager, CommitteeRegistry, and MemberRegistry
+  - Coordinates pause/unpause across PeginManager, PegoutManager, CommitteeRegistry, MemberRegistry, RbtcBridge, and ChallengeManager
   - Owner-controlled with single transaction emergency stop
   - Provides system-wide pause status checking
 - **Security Features**: UUPS upgradeable, owner access control
@@ -1077,16 +1353,16 @@ graph TB
 
 #### Pausability
 
-- **PeginManager**, **PegoutManager**, **CommitteeRegistry**, and **MemberRegistry** are pausable
-- **PauseManager** provides centralized pause control for all contracts
+- **PeginManager**, **PegoutManager**, **CommitteeRegistry**, **MemberRegistry**, **RbtcBridge**, and **ChallengeManager** are pausable
+- **AccessManager** (which extends PauseManager) provides centralized pause control for all contracts
 - Pause functionality allows emergency stops of critical operations with a single transaction
-- Only PauseManager owner can pause/unpause the system
-- All pausable contracts delegate pause authority to PauseManager
+- Only AccessManager owner can pause/unpause the system
+- All pausable contracts delegate pause authority to AccessManager
 
 #### Access Control
 
 - **BaseProxy** provides ownership functionality through OpenZeppelin's Ownable2StepUpgradeable
-- **AccessControl** contract provides role-based access control
+- **AccessManager** contract provides role-based access control
 - **PegManager** has administrative privileges over other contracts
 
 #### Reentrancy Protection
@@ -1106,13 +1382,16 @@ graph TB
 
 1. **PeginManager** manages peg-in operations, coordinating with BitcoinManager, CommitteeRegistry, StreamManager, SignatureManager, and RbtcBridge for minting RBTC
 2. **PegoutManager** manages peg-out operations, coordinating with BitcoinManager, CommitteeRegistry, StreamManager, SignatureManager, MemberRegistry, and RbtcBridge for burning RBTC
-3. **RbtcBridge** serves as the single authorized intermediary between both managers and the PowPeg Bridge (RSKIP-502), handling all RBTC minting and burning operations
-4. **PauseManager** controls pause state for PeginManager, PegoutManager, CommitteeRegistry, and MemberRegistry
-5. **CommitteeRegistry** manages committee lifecycle and coordinates with MemberRegistry and StreamManager
-6. **StreamManager** handles stream and packet management, working with CommitteeRegistry
-7. **SignatureManager** processes multi-signature operations for committees
-8. **BitcoinManager** provides Bitcoin-specific functionality as a utility contract
-9. **MemberRegistry** manages member data and balances across all other contracts
+3. **ChallengeManager** manages challenge operations for dispute resolution, coordinating with PegoutManager, BitcoinManager, CommitteeRegistry, and StreamManager
+4. **RbtcBridge** serves as the single authorized intermediary between both managers and the PowPeg Bridge (RSKIP-502), handling all RBTC minting and burning operations
+5. **AccessManager** controls pause state and provides role-based access control for PeginManager, PegoutManager, CommitteeRegistry, MemberRegistry, RbtcBridge, and ChallengeManager
+6. **PegBase** provides shared base functionality for PeginManager, PegoutManager, and ChallengeManager
+7. **PegManagerBase** extends PegBase with additional manager-specific functionality for PeginManager and PegoutManager
+8. **CommitteeRegistry** manages committee lifecycle and coordinates with MemberRegistry and StreamManager
+9. **StreamManager** handles stream and packet management, working with CommitteeRegistry
+10. **SignatureManager** processes multi-signature operations for committees
+11. **BitcoinManager** provides Bitcoin-specific functionality as a utility contract
+12. **MemberRegistry** manages member data and balances across all other contracts
 
 ### Deployment Architecture
 

@@ -1,8 +1,8 @@
 # RbtcBridge
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/RbtcBridge.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/835a0374fad05fe95d66ed5d56f02d5826093237/src/RbtcBridge.sol)
 
 **Inherits:**
-[IRbtcBridge](/src/interfaces/IRbtcBridge.sol/interface.IRbtcBridge.md), [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md), ReentrancyGuardUpgradeable
+[IRbtcBridge](/src/interfaces/IRbtcBridge.sol/interface.IRbtcBridge.md), ReentrancyGuardUpgradeable, [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md), [Pausable](/src/Pausable.sol/abstract.Pausable.md)
 
 Intermediary contract that acts as the single authorized address for RBTC minting/burning
 with the RSK PowPeg Bridge, serving both PeginManager and PegoutManager
@@ -16,7 +16,9 @@ this bridge serves as the single authorized intermediary.*
 
 ## State Variables
 ### bridge
-The RSK PowPeg Bridge contract
+The RSK Bridge contract used for Bitcoin transaction verification
+
+*This contract provides access to Bitcoin transaction confirmation data*
 
 
 ```solidity
@@ -24,51 +26,33 @@ IBridge public bridge;
 ```
 
 
-### peginManager
-The PeginManager contract address (authorized to mint RBTC)
+### accessManager
+The access manager contract that manages access control
+
+*Used to check access control for sensitive operations*
 
 
 ```solidity
-address public peginManager;
-```
-
-
-### pegoutManager
-The PegoutManager contract address (authorized to burn RBTC)
-
-
-```solidity
-address public pegoutManager;
+IAccessManager public accessManager;
 ```
 
 
 ## Functions
-### constructor
-
-**Note:**
-oz-upgrades-unsafe-allow: constructor
-
-
-```solidity
-constructor();
-```
-
 ### initialize
 
 Initializes the RbtcBridge contract
 
-*Manager addresses must be set after initialization via setPeginManager/setPegoutManager*
-
 
 ```solidity
-function initialize(address _initialOwner, address _bridge) external initializer;
+function initialize(address _initialOwner, IBridge _bridge, IAccessManager _accessManager) external initializer;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
 |`_initialOwner`|`address`|The initial owner of the contract|
-|`_bridge`|`address`|The RSK PowPeg Bridge contract address|
+|`_bridge`|`IBridge`|The RSK PowPeg Bridge contract address|
+|`_accessManager`|`IAccessManager`|The access manager contract address|
 
 
 ### receive
@@ -82,51 +66,15 @@ Allows the contract to receive RBTC from the PowPeg bridge
 receive() external payable;
 ```
 
-### setPeginManager
-
-Sets the PeginManager contract address
-
-*Only callable by owner*
-
-
-```solidity
-function setPeginManager(address _peginManager) external onlyOwner;
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_peginManager`|`address`|The PeginManager contract address|
-
-
-### setPegoutManager
-
-Sets the PegoutManager contract address
-
-*Only callable by owner*
-
-
-```solidity
-function setPegoutManager(address _pegoutManager) external onlyOwner;
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_pegoutManager`|`address`|The PegoutManager contract address|
-
-
 ### mintRbtc
 
 Mints RBTC from the PowPeg bridge and sends it to the specified address
 
-*Only callable by peginManager*
-
-*Follows checks-effects-interactions pattern*
+*Only callable by the peginManager when contract is not paused*
 
 
 ```solidity
-function mintRbtc(address payable _to, uint256 _amount) external nonReentrant;
+function mintRbtc(address payable _to, uint256 _amount) external nonReentrant whenNotPaused;
 ```
 **Parameters**
 
@@ -140,13 +88,11 @@ function mintRbtc(address payable _to, uint256 _amount) external nonReentrant;
 
 Burns RBTC back to the PowPeg bridge
 
-*Only callable by pegoutManager*
-
-*The pegoutManager must send the RBTC amount via msg.value*
+*Only callable by the pegoutManager when contract is not paused*
 
 
 ```solidity
-function burnRbtc() external payable nonReentrant;
+function burnRbtc() external payable nonReentrant whenNotPaused;
 ```
 
 ### _mintRbtc
@@ -210,8 +156,6 @@ function _releaseRbtc(uint256 _amountToReturn) internal;
 
 Gets the locking cap of the Union Bridge for RBTC minting operations
 
-*This method is new in RSKIP-502*
-
 
 ```solidity
 function getUnionBridgeLockingCap() external view returns (uint256);
@@ -220,6 +164,111 @@ function getUnionBridgeLockingCap() external view returns (uint256);
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`uint256`|The locking cap of the Union Bridge|
+|`<none>`|`uint256`|unionBridgeLockingCap The locking cap of the Union Bridge|
+
+
+### verifyTxConfirmations
+
+Verifies that a Bitcoin transaction exists in a block and has enough confirmations
+
+*Uses RSK bridge precompiled contract to verify the transaction*
+
+
+```solidity
+function verifyTxConfirmations(
+    uint256 _minConfirmations,
+    bytes32 _txid,
+    bytes32 _blockHash,
+    uint256 _merkleBranchPath,
+    bytes32[] memory _merkleBranchHashes
+) external view;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_minConfirmations`|`uint256`|The minimum number of confirmations required for the transaction|
+|`_txid`|`bytes32`|The hash of the Bitcoin transaction to verify|
+|`_blockHash`|`bytes32`|The hash of the block containing the transaction|
+|`_merkleBranchPath`|`uint256`|The path in the merkle tree to verify the transaction|
+|`_merkleBranchHashes`|`bytes32[]`|The hashes needed to verify the merkle proof|
+
+
+### _verifyTxConfirmations
+
+
+```solidity
+function _verifyTxConfirmations(
+    uint256 _minConfirmations,
+    bytes32 _txid,
+    bytes32 _blockHash,
+    uint256 _merkleBranchPath,
+    bytes32[] memory _merkleBranchHashes
+) internal view returns (int256);
+```
+
+### getTxBlockNumberAndVerifyConfirmations
+
+Verifies that a Bitcoin transaction exists in a block and has enough confirmations
+
+*Uses RSK bridge precompiled contract to verify the transaction*
+
+
+```solidity
+function getTxBlockNumberAndVerifyConfirmations(
+    uint256 _minConfirmations,
+    bytes32 _txid,
+    bytes32 _blockHash,
+    uint256 _merkleBranchPath,
+    bytes32[] memory _merkleBranchHashes
+) external view returns (int256);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_minConfirmations`|`uint256`|The minimum number of confirmations required for the transaction|
+|`_txid`|`bytes32`|The hash of the Bitcoin transaction to verify|
+|`_blockHash`|`bytes32`|The hash of the block containing the transaction|
+|`_merkleBranchPath`|`uint256`|The path in the merkle tree to verify the transaction|
+|`_merkleBranchHashes`|`bytes32[]`|The hashes needed to verify the merkle proof|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`int256`|blockNumber The block number of the transaction|
+
+
+### getBestBlockHash
+
+Gets the hash of the best block in the Bitcoin blockchain
+
+
+```solidity
+function getBestBlockHash() external view returns (bytes32);
+```
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`bytes32`|bestBlockHash The hash of the best block in the Bitcoin blockchain|
+
+
+### setBaseEvent
+
+Sets the base event
+
+*This function will revert if:*
+
+
+```solidity
+function setBaseEvent(bytes memory _baseEvent) external nonReentrant whenNotPaused;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_baseEvent`|`bytes`|The new base event (must be less than 128 bytes)|
 
 

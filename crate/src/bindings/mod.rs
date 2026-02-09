@@ -4,6 +4,7 @@
 //! Do not manually edit these files.
 //! These files may be overwritten by the codegen system at any time.
 pub mod r#bitcoin_manager;
+pub mod r#challenge_manager;
 pub mod r#committee_registry;
 pub mod r#member_registry;
 pub mod r#pause_manager;

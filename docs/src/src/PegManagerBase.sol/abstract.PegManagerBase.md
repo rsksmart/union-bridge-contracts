@@ -1,8 +1,8 @@
 # PegManagerBase
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/PegManagerBase.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/835a0374fad05fe95d66ed5d56f02d5826093237/src/PegManagerBase.sol)
 
 **Inherits:**
-[IPegManagerBase](/src/interfaces/IPegManagerBase.sol/interface.IPegManagerBase.md), [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md), [ProofValidator](/src/ProofValidator.sol/abstract.ProofValidator.md), ReentrancyGuardUpgradeable, [Pausable](/src/Pausable.sol/contract.Pausable.md)
+[IPegManagerBase](/src/interfaces/IPegManagerBase.sol/interface.IPegManagerBase.md), [PegBase](/src/PegBase.sol/abstract.PegBase.md)
 
 Abstract base contract for shared functionality between PeginManager and PegoutManager
 
@@ -10,48 +10,12 @@ Abstract base contract for shared functionality between PeginManager and PegoutM
 
 
 ## State Variables
-### bitcoinManager
-Bitcoin manager contract for Bitcoin transaction validation and address generation
-
-
-```solidity
-IBitcoinManager public bitcoinManager;
-```
-
-
-### streamManager
-Stream manager contract for managing union bridge streams and slots
-
-
-```solidity
-IStreamManager public streamManager;
-```
-
-
-### committeeRegistry
-Committee registry contract for managing committee and members
-
-
-```solidity
-ICommitteeRegistry public committeeRegistry;
-```
-
-
 ### signatureManager
 Signature manager contract for handling multi-signature operations
 
 
 ```solidity
 ISignatureManager public signatureManager;
-```
-
-
-### rbtcBridge
-The RbtcBridge contract for minting RBTC
-
-
-```solidity
-IRbtcBridge public rbtcBridge;
 ```
 
 
@@ -66,10 +30,12 @@ Initializes the base PegManager contract
 ```solidity
 function __PegManagerBase_init(
     address _initialOwner,
-    address payable _bridgeAddress,
+    address _accessManager,
     ICommitteeRegistry _committeeRegistry,
     IBitcoinManager _bitcoinManager,
-    IRbtcBridge _rbtcBridge
+    IRbtcBridge _rbtcBridge,
+    IStreamManager _streamManager,
+    ISignatureManager _signatureManager
 ) internal onlyInitializing;
 ```
 **Parameters**
@@ -77,70 +43,11 @@ function __PegManagerBase_init(
 |Name|Type|Description|
 |----|----|-----------|
 |`_initialOwner`|`address`|The initial owner of the contract|
-|`_bridgeAddress`|`address payable`|The address of the pow-peg bridge contract|
+|`_accessManager`|`address`|The access manager contract address|
 |`_committeeRegistry`|`ICommitteeRegistry`|The committee registry contract address|
 |`_bitcoinManager`|`IBitcoinManager`|The Bitcoin manager contract address|
-|`_rbtcBridge`|`IRbtcBridge`||
-
-
-### setStreamManager
-
-Sets the stream manager contract address
-
-*Only callable by the contract owner*
-
-
-```solidity
-function setStreamManager(IStreamManager _streamManager) external onlyOwner;
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
+|`_rbtcBridge`|`IRbtcBridge`|The RbtcBridge contract for minting/burning RBTC|
 |`_streamManager`|`IStreamManager`|The stream manager contract address|
+|`_signatureManager`|`ISignatureManager`||
 
-
-### setSignatureManager
-
-Sets the signature manager contract address
-
-*Only callable by the contract owner*
-
-
-```solidity
-function setSignatureManager(ISignatureManager _signatureManager) external onlyOwner;
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_signatureManager`|`ISignatureManager`|The signature manager contract address|
-
-
-### setPauser
-
-Sets a new pauser address
-
-*Only callable by the contract owner*
-
-
-```solidity
-function setPauser(address _newPauser) public override onlyOwner;
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_newPauser`|`address`|The new pauser address|
-
-
-### _validatePegStatus
-
-
-```solidity
-function _validatePegStatus(bytes32 _acceptPeginTxid, PegStatus _expectedStatus)
-    internal
-    view
-    returns (StreamPosition memory);
-```
 

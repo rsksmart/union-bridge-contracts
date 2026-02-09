@@ -1,5 +1,5 @@
 # Slot
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/interfaces/IStreamManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/835a0374fad05fe95d66ed5d56f02d5826093237/src/interfaces/IStreamManager.sol)
 
 Represents a slot within a packet that can hold funds
 
@@ -14,7 +14,6 @@ struct Slot {
     bytes32 acceptPeginTx;
     uint64 acceptPeginAmount;
     bytes32 takeTx;
-    bytes enablerScriptPubKey;
 }
 ```
 

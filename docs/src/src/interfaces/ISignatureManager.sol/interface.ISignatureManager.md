@@ -1,8 +1,5 @@
 # ISignatureManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/interfaces/ISignatureManager.sol)
-
-**Inherits:**
-[IAccessControl](/src/interfaces/IAccessControl.sol/interface.IAccessControl.md)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/835a0374fad05fe95d66ed5d56f02d5826093237/src/interfaces/ISignatureManager.sol)
 
 Interface for managing multi-signature operations in the union bridge
 
@@ -32,9 +29,9 @@ function initSignatures(bytes32 _txid, uint128 _committeeId) external;
 
 ### addMemberNonce
 
-Adds a nonce for a committee member
+Adds a nonce for a committee member to the signature collection
 
-*Called by committee members to provide their nonce for signature generation*
+*Nonces are required for Musig2 signature aggregation*
 
 
 ```solidity
@@ -44,21 +41,21 @@ function addMemberNonce(bytes32 _txid, bytes memory _nonce) external returns (bo
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_txid`|`bytes32`|The txid being signed|
-|`_nonce`|`bytes`|The nonce provided by the member (should be 66 bytes)|
+|`_txid`|`bytes32`|The txid that needs to be signed by the committee|
+|`_nonce`|`bytes`|The 66-byte nonce for the Musig2 protocol|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`bool`|True if the nonce was successfully added|
+|`<none>`|`bool`|true if all nonces are now present, false otherwise|
 
 
 ### addMemberSignature
 
-Adds a signature for a committee member
+Adds a signature for a committee member to the signature collection
 
-*Called by committee members to provide their signature*
+*Signatures can only be added after all nonces are present*
 
 
 ```solidity
@@ -68,19 +65,19 @@ function addMemberSignature(bytes32 _txid, bytes32 _signature) external returns 
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_txid`|`bytes32`|The txid being signed|
-|`_signature`|`bytes32`|The signature provided by the member|
+|`_txid`|`bytes32`|The hash that needs to be signed by the committee|
+|`_signature`|`bytes32`|The signature for the hash|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`bool`|True if the signature was successfully added|
+|`<none>`|`bool`|true if all signatures are now present, false otherwise|
 
 
 ### checkAllSignaturesReady
 
-Checks if all signatures are ready for a specific txid
+Checks if all signatures are ready for a given hash
 
 
 ```solidity
@@ -90,18 +87,18 @@ function checkAllSignaturesReady(bytes32 _txid) external view returns (bool);
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_txid`|`bytes32`|The txid to check signatures for|
+|`_txid`|`bytes32`|The hash to check signatures for|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`bool`|True if all required signatures have been collected|
+|`<none>`|`bool`|true if all signatures are present, false otherwise|
 
 
 ### getPartialSignatures
 
-Gets all partial signatures for a given txid
+Gets all partial signatures for a given hash
 
 *Returns signatures in the same order as committee members for Musig2 compatibility*
 
@@ -121,7 +118,7 @@ function getPartialSignatures(bytes32 _txid)
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_txid`|`bytes32`|The txid to get signatures for|
+|`_txid`|`bytes32`|The hash to get signatures for|
 
 **Returns**
 
@@ -135,9 +132,11 @@ function getPartialSignatures(bytes32 _txid)
 
 ### initOperatorTakeTxids
 
-Initializes OperatorTake transaction id collection for a specific accept peg-in
+Initializes OperatorTake transaction id collection for a given accept peg-in transaction
 
 *Sets up the OperatorTake txid tracking structure for committee members*
+
+*Can only be called by the PegManager*
 
 
 ```solidity
@@ -153,9 +152,9 @@ function initOperatorTakeTxids(bytes32 _acceptPeginTxid, uint128 _committeeId) e
 
 ### addOperatorTakeTxids
 
-Adds a OperatorTake transaction id for a committee member
+Adds a OperatorTake and OperatorWon transaction id for an operator
 
-*Called by committee operators to provide their OperatorTake transaction id*
+*Only operators can add OperatorTake transaction id's*
 
 
 ```solidity
@@ -166,13 +165,13 @@ function addOperatorTakeTxids(bytes32 _acceptPeginTxid, bytes32 _takeTxid, bytes
 |Name|Type|Description|
 |----|----|-----------|
 |`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction id|
-|`_takeTxid`|`bytes32`|The OperatorTake transaction id provided by the member|
+|`_takeTxid`|`bytes32`|The OperatorTake transaction id to add|
 |`_wonTxid`|`bytes32`||
 
 
 ### checkAllOperatorTakesHashesReady
 
-Checks if all OperatorTake transaction id's are ready
+Checks if all OperatorTake transaction id's are ready for a given accept peg-in transaction
 
 
 ```solidity
@@ -182,18 +181,18 @@ function checkAllOperatorTakesHashesReady(bytes32 _acceptPeginTxid) external vie
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction id|
+|`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction id to check|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`bool`|True if all required OperatorTake hashes have been collected|
+|`<none>`|`bool`|true if all OperatorTake transaction id's are present, false otherwise|
 
 
 ### getOperatorTakeData
 
-Retrieves all OperatorTake data for a specific accept peg-in
+Gets all OperatorTake transaction data for a given accept peg-in transaction
 
 
 ```solidity
@@ -209,7 +208,7 @@ function getOperatorTakeData(bytes32 _acceptPeginTxid) external view returns (Op
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`OperatorTakeData[]`|Array of OperatorTake data from all committee members|
+|`<none>`|`OperatorTakeData[]`|Array of OperatorTake transaction data for all operators|
 
 
 ### getCommitteeIdByAcceptPeginTxid
@@ -326,12 +325,12 @@ event AllOperatorTakeTxidsAdded(bytes32 acceptPeginTxid);
 |`acceptPeginTxid`|`bytes32`|The accept peg-in transaction id|
 
 ## Errors
-### CommitteeRegistryAddressZero
+### InvalidZeroAddress
 Thrown when the committee registry address is set to zero
 
 
 ```solidity
-error CommitteeRegistryAddressZero();
+error InvalidZeroAddress();
 ```
 
 ### TxidToSignNotFound

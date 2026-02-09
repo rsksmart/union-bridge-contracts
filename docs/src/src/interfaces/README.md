@@ -1,7 +1,7 @@
 
 
 # Contents
-- [IAccessControl](IAccessControl.sol/interface.IAccessControl.md)
+- [IAccessManager](IAccessManager.sol/interface.IAccessManager.md)
 - [BtcTxIn](IBitcoinManager.sol/struct.BtcTxIn.md)
 - [BtcTxOut](IBitcoinManager.sol/struct.BtcTxOut.md)
 - [BtcTransaction](IBitcoinManager.sol/struct.BtcTransaction.md)
@@ -10,6 +10,8 @@
 - [IBitcoinManager](IBitcoinManager.sol/interface.IBitcoinManager.md)
 - [IBridge](IBridge.sol/interface.IBridge.md)
 - [IBridge constants](IBridge.sol/constants.IBridge.md)
+- [ChallengeTempInfo](IChallengeManager.sol/struct.ChallengeTempInfo.md)
+- [IChallengeManager](IChallengeManager.sol/interface.IChallengeManager.md)
 - [CommitteeRegistrySettings](ICommitteeRegistry.sol/struct.CommitteeRegistrySettings.md)
 - [UTXO](ICommitteeRegistry.sol/struct.UTXO.md)
 - [Role](ICommitteeRegistry.sol/enum.Role.md)
@@ -34,6 +36,7 @@
 - [IMusig2](IMusig2.sol/interface.IMusig2.md)
 - [IPausable](IPausable.sol/interface.IPausable.md)
 - [IPauseManager](IPauseManager.sol/interface.IPauseManager.md)
+- [IPegBase](IPegBase.sol/interface.IPegBase.md)
 - [BtcTxSPVProof](IPegCommonTypes.sol/struct.BtcTxSPVProof.md)
 - [PegStatus](IPegCommonTypes.sol/enum.PegStatus.md)
 - [StreamPosition](IPegCommonTypes.sol/struct.StreamPosition.md)
@@ -51,6 +54,7 @@
 - [ISignatureManager](ISignatureManager.sol/interface.ISignatureManager.md)
 - [StreamDenomination](IStreamManager.sol/enum.StreamDenomination.md)
 - [SlotState](IStreamManager.sol/enum.SlotState.md)
+- [SlotLocation](IStreamManager.sol/struct.SlotLocation.md)
 - [Slot](IStreamManager.sol/struct.Slot.md)
 - [Packet](IStreamManager.sol/struct.Packet.md)
 - [Stream](IStreamManager.sol/struct.Stream.md)

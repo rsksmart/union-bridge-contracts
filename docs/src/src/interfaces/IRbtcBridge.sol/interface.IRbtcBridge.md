@@ -1,5 +1,5 @@
 # IRbtcBridge
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/interfaces/IRbtcBridge.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/835a0374fad05fe95d66ed5d56f02d5826093237/src/interfaces/IRbtcBridge.sol)
 
 Interface for the RbtcBridge contract that acts as the single authorized intermediary
 between the Union Bridge system and the RSK PowPeg Bridge for RBTC minting/burning operations
@@ -10,61 +10,26 @@ PeginManager and PegoutManager, we need this intermediary to be the single autho
 
 
 ## Functions
-### initialize
+### bridge
 
-Initializes the RbtcBridge contract
-
-
-```solidity
-function initialize(address _initialOwner, address _bridge) external;
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_initialOwner`|`address`|The initial owner of the contract|
-|`_bridge`|`address`|The RSK PowPeg Bridge contract address|
-
-
-### setPeginManager
-
-Sets the PeginManager contract address
-
-*Only callable by owner*
+Gets the RSK pow-peg Bridge contract
 
 
 ```solidity
-function setPeginManager(address _peginManager) external;
+function bridge() external view returns (IBridge);
 ```
-**Parameters**
+**Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_peginManager`|`address`|The PeginManager contract address|
-
-
-### setPegoutManager
-
-Sets the PegoutManager contract address
-
-*Only callable by owner*
-
-
-```solidity
-function setPegoutManager(address _pegoutManager) external;
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_pegoutManager`|`address`|The PegoutManager contract address|
+|`<none>`|`IBridge`|The RSK PowPeg Bridge contract|
 
 
 ### mintRbtc
 
 Mints RBTC from the PowPeg bridge and sends it to the specified address
 
-*Only callable by the peginManager*
+*Only callable by the peginManager when contract is not paused*
 
 *Requests RBTC from PowPeg bridge via requestUnionBridgeRbtc*
 
@@ -86,7 +51,7 @@ function mintRbtc(address payable _to, uint256 _amount) external;
 
 Burns RBTC back to the PowPeg bridge
 
-*Only callable by the pegoutManager*
+*Only callable by the pegoutManager when contract is not paused*
 
 *The pegoutManager must send the RBTC amount via msg.value*
 
@@ -103,13 +68,127 @@ Gets the locking cap of the Union Bridge for RBTC minting operations
 
 
 ```solidity
-function getUnionBridgeLockingCap() external view returns (uint256);
+function getUnionBridgeLockingCap() external view returns (uint256 unionBridgeLockingCap);
 ```
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`uint256`|The locking cap of the Union Bridge|
+|`unionBridgeLockingCap`|`uint256`|The locking cap of the Union Bridge|
+
+
+### getBestBlockHash
+
+Gets the hash of the best block in the Bitcoin blockchain
+
+
+```solidity
+function getBestBlockHash() external view returns (bytes32 bestBlockHash);
+```
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`bestBlockHash`|`bytes32`|The hash of the best block in the Bitcoin blockchain|
+
+
+### verifyTxConfirmations
+
+Verifies that a Bitcoin transaction exists in a block and has enough confirmations
+
+*Uses RSK bridge precompiled contract to verify the transaction*
+
+*Will revert if:
+- Block hash doesn't exist
+- Block is not in best chain
+- Block data is inconsistent
+- Block is too old (> 1 month)
+- Merkle proof is invalid
+- Not enough confirmations*
+
+
+```solidity
+function verifyTxConfirmations(
+    uint256 _minConfirmations,
+    bytes32 _txid,
+    bytes32 _blockHash,
+    uint256 _merkleBranchPath,
+    bytes32[] memory _merkleBranchHashes
+) external view;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_minConfirmations`|`uint256`|The minimum number of confirmations required for the transaction|
+|`_txid`|`bytes32`|The hash of the Bitcoin transaction to verify|
+|`_blockHash`|`bytes32`|The hash of the block containing the transaction|
+|`_merkleBranchPath`|`uint256`|The path in the merkle tree to verify the transaction|
+|`_merkleBranchHashes`|`bytes32[]`|The hashes needed to verify the merkle proof|
+
+
+### getTxBlockNumberAndVerifyConfirmations
+
+Verifies that a Bitcoin transaction exists in a block and has enough confirmations
+
+*Uses RSK bridge precompiled contract to verify the transaction*
+
+*Will revert if:
+- Block hash doesn't exist
+- Block is not in best chain
+- Block data is inconsistent
+- Block is too old (> 1 month)
+- Merkle proof is invalid
+- Not enough confirmations*
+
+
+```solidity
+function getTxBlockNumberAndVerifyConfirmations(
+    uint256 _minConfirmations,
+    bytes32 _txid,
+    bytes32 _blockHash,
+    uint256 _merkleBranchPath,
+    bytes32[] memory _merkleBranchHashes
+) external view returns (int256 blockNumber);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_minConfirmations`|`uint256`|The minimum number of confirmations required for the transaction|
+|`_txid`|`bytes32`|The hash of the Bitcoin transaction to verify|
+|`_blockHash`|`bytes32`|The hash of the block containing the transaction|
+|`_merkleBranchPath`|`uint256`|The path in the merkle tree to verify the transaction|
+|`_merkleBranchHashes`|`bytes32[]`|The hashes needed to verify the merkle proof|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`blockNumber`|`int256`|The block number of the transaction|
+
+
+### setBaseEvent
+
+Sets the base event
+
+*This function will revert if:*
+
+*- the _baseEvent parameter is empty error BaseEventEmpty*
+
+*- the _baseEvent parameter is greater than 128 bytes error BaseEventTooLong*
+
+*- there is another event already set with error BaseEventAlreadySet*
+
+
+```solidity
+function setBaseEvent(bytes memory _baseEvent) external;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_baseEvent`|`bytes`|The new base event (must be less than 128 bytes)|
 
 
 ## Events
@@ -141,6 +220,20 @@ event RbtcBurned(uint256 amount);
 |Name|Type|Description|
 |----|----|-----------|
 |`amount`|`uint256`|The amount of RBTC burned in wei|
+
+### BaseEventSet
+Emitted when the base event is set
+
+
+```solidity
+event BaseEventSet(bytes baseEvent);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`baseEvent`|`bytes`|The new base event|
 
 ## Errors
 ### UnauthorizedCaller
@@ -230,27 +323,114 @@ error BridgeBtcUnknownError(int256 errorCode);
 |----|----|-----------|
 |`errorCode`|`int256`|The error code returned by the bridge|
 
-### BridgeAddressZero
-Thrown when the bridge address is set to zero during initialization
+### BridgeBtcInexistantBlockHash
+Error thrown when the provided Bitcoin block hash doesn't exist
 
 
 ```solidity
-error BridgeAddressZero();
+error BridgeBtcInexistantBlockHash(bytes32 blockHash);
 ```
 
-### PeginManagerAddressZero
-Thrown when the peginManager address is set to zero during initialization
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`blockHash`|`bytes32`|The non-existent block hash that was provided|
+
+### BridgeBtcBlockNotInBestChain
+Error thrown when the provided Bitcoin block is not in the best chain
 
 
 ```solidity
-error PeginManagerAddressZero();
+error BridgeBtcBlockNotInBestChain(bytes32 blockHash);
 ```
 
-### PegoutManagerAddressZero
-Thrown when the pegoutManager address is set to zero during initialization
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`blockHash`|`bytes32`|The block hash that is not in the best chain|
+
+### BridgeBtcInconsistentBlock
+Error thrown when the provided Bitcoin block data is inconsistent
 
 
 ```solidity
-error PegoutManagerAddressZero();
+error BridgeBtcInconsistentBlock(bytes32 blockHash);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`blockHash`|`bytes32`|The block hash with inconsistent data|
+
+### BridgeBtcBlockTooOld
+Error thrown when the provided Bitcoin block is too old (> 1 month)
+
+
+```solidity
+error BridgeBtcBlockTooOld(int256 maxDepth);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`maxDepth`|`int256`|The maximum allowed depth for block retrieval|
+
+### BridgeBtcTxInvalidMerkleBranch
+Error thrown when the merkle proof for a Bitcoin transaction is invalid
+
+
+```solidity
+error BridgeBtcTxInvalidMerkleBranch(bytes32 txid, uint256 merkleBranchPath, bytes32[] merkleBranchHashes);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`txid`|`bytes32`|The transaction id that failed merkle proof verification|
+|`merkleBranchPath`|`uint256`|The merkle branch path that was used|
+|`merkleBranchHashes`|`bytes32[]`|The merkle branch hashes that were provided|
+
+### NotEnoughConfirmations
+Error thrown when a transaction doesn't have enough confirmations
+
+
+```solidity
+error NotEnoughConfirmations(int256 actual, uint256 expected);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`actual`|`int256`|The actual number of confirmations the transaction has|
+|`expected`|`uint256`|The minimum number of confirmations required|
+
+### BaseEventAlreadySet
+Error thrown when the base event is already set
+
+
+```solidity
+error BaseEventAlreadySet();
+```
+
+### BaseEventTooLong
+Error thrown when the base event is longer than 128 bytes
+
+
+```solidity
+error BaseEventTooLong();
+```
+
+### BaseEventEmpty
+Error thrown when the base event is empty
+
+
+```solidity
+error BaseEventEmpty();
 ```
 

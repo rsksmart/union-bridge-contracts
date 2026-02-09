@@ -1,8 +1,8 @@
 # MemberRegistry
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/MemberRegistry.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/835a0374fad05fe95d66ed5d56f02d5826093237/src/MemberRegistry.sol)
 
 **Inherits:**
-[IMemberRegistry](/src/interfaces/IMemberRegistry.sol/interface.IMemberRegistry.md), [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md), ReentrancyGuardUpgradeable, [Pausable](/src/Pausable.sol/contract.Pausable.md)
+[IMemberRegistry](/src/interfaces/IMemberRegistry.sol/interface.IMemberRegistry.md), [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md), ReentrancyGuardUpgradeable, [Pausable](/src/Pausable.sol/abstract.Pausable.md)
 
 Manages member registration, applications, and balance tracking for the union bridge system
 
@@ -37,21 +37,21 @@ IStreamManager public streamManager;
 ```
 
 
-### committeeRegistry
-Committee registry contract for committee operations
+### accessManager
+Access manager contract for managing access control
 
 
 ```solidity
-address public committeeRegistry;
+IAccessManager public accessManager;
 ```
 
 
-### bridge
-RSK Bridge contract for Bitcoin block hash entropy
+### rbtcBridge
+RbtcBridge contract for Bitcoin block hash entropy
 
 
 ```solidity
-IBridge public bridge;
+IRbtcBridge public rbtcBridge;
 ```
 
 
@@ -62,13 +62,21 @@ Initializes the MemberRegistry contract
 
 
 ```solidity
-function initialize(address _initialOwner) public virtual initializer;
+function initialize(
+    address _initialOwner,
+    IAccessManager _accessManager,
+    IRbtcBridge _rbtcBridge,
+    IStreamManager _streamManager
+) public virtual initializer;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
 |`_initialOwner`|`address`|The initial owner of the contract|
+|`_accessManager`|`IAccessManager`|The access manager contract address|
+|`_rbtcBridge`|`IRbtcBridge`|The rbtc bridge contract address|
+|`_streamManager`|`IStreamManager`||
 
 
 ### _validateFundingUTXO
@@ -100,8 +108,6 @@ Internal function to handle member application to stream
 
 *Called by CommitteeRegistry to handle member registration and candidacy*
 
-*Only callable by CommitteeRegistry contract*
-
 
 ```solidity
 function applyToStream(
@@ -110,7 +116,7 @@ function applyToStream(
     Role _role,
     MemberRegistrationKeys calldata _publicKeys,
     UTXO calldata _fundingUTXO
-) external payable onlyCommitteeRegistry;
+) external payable;
 ```
 **Parameters**
 
@@ -149,13 +155,9 @@ Internal function to handle member unsubscription from stream
 
 *Called by CommitteeRegistry after pending committee checks*
 
-*Only callable by CommitteeRegistry contract*
-
 
 ```solidity
-function unsubscribeFromStream(address _memberAddress, StreamDenomination _denomination)
-    external
-    onlyCommitteeRegistry;
+function unsubscribeFromStream(address _memberAddress, StreamDenomination _denomination) external;
 ```
 **Parameters**
 
@@ -171,19 +173,28 @@ Withdraws available balance to the caller's address
 
 *Can only withdraw balance that is not pre-staked or staked*
 
-*Only callable when contract is unpaused*
-
 
 ```solidity
 function withdrawAvailableBalance() external nonReentrant whenNotPaused;
 ```
 
-### reAddCommitteeMembers
+### reAddCandidateToStream
+
+External function to handle re-addition of members as candidates
+
+*Called by CommitteeRegistry after pending committee reset*
 
 
 ```solidity
-function reAddCommitteeMembers(Committee memory _discardedCommittee) external onlyCommitteeRegistry;
+function reAddCandidateToStream(StreamDenomination _denomination, CommitteeMember memory _member) external;
 ```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_denomination`|`StreamDenomination`|The stream of the pending committee|
+|`_member`|`CommitteeMember`|The member to re-add as candidate|
+
 
 ### releaseCommitteeMembers
 
@@ -191,13 +202,10 @@ Internal function to handle committee member release operations
 
 *Called by CommitteeRegistry after committee completion*
 
-*Only callable by CommitteeRegistry contract*
-
 
 ```solidity
 function releaseCommitteeMembers(CommitteeMember[] memory _committeeMembers, uint64 _streamId, uint64 _packetNumber)
-    external
-    onlyCommitteeRegistry;
+    external;
 ```
 **Parameters**
 
@@ -491,6 +499,27 @@ function getMemberFundingUTXO(uint64 _streamId, address _memberAddress) external
 |`<none>`|`UTXO`|The funding UTXO for the member's application to the stream|
 
 
+### isMember
+
+Returns whether the address belongs to a member
+
+
+```solidity
+function isMember(address _address) external view returns (bool);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_address`|`address`|The address|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`bool`|True when address was ever a member, false otherwise|
+
+
 ### _getMember
 
 
@@ -530,8 +559,6 @@ Sets the reapply flag for a member in a specific stream
 
 *Controls whether the member will automatically reapply after committee release*
 
-*Only callable when contract is unpaused*
-
 
 ```solidity
 function setReApplyForStream(StreamDenomination _denomination, bool _reApply) external override whenNotPaused;
@@ -543,6 +570,31 @@ function setReApplyForStream(StreamDenomination _denomination, bool _reApply) ex
 |`_denomination`|`StreamDenomination`|The stream denomination to set the flag for|
 |`_reApply`|`bool`|True to automatically reapply, false to receive balance as available|
 
+
+### disableMemberReApplyForStream
+
+Sets the reapply flag as false for a member in a specific stream
+
+*Controls that the member will not automatically reapply after committee release*
+
+
+```solidity
+function disableMemberReApplyForStream(address _memberAddress, StreamDenomination _denomination) external;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_memberAddress`|`address`|The member adress|
+|`_denomination`|`StreamDenomination`|The stream denomination to set the flag for|
+
+
+### _setReApplyForStream
+
+
+```solidity
+function _setReApplyForStream(address _memberAddress, StreamDenomination _denomination, bool _reApply) internal;
+```
 
 ### getReApplyForStream
 
@@ -571,15 +623,13 @@ Moves candidates balance from pre staked to staked
 
 *Called by CommitteeRegistry during committee formation*
 
-*Only callable by Committee Registry contract*
-
 
 ```solidity
 function stakePreStakedCandidatesBalance(
     CommitteeMember[] memory _members,
     StreamDenomination _denomination,
     uint64 _packetNumber
-) external onlyCommitteeRegistry;
+) external;
 ```
 **Parameters**
 
@@ -636,34 +686,27 @@ Randomly selects members to form a new committee for a given stream
 
 *Pseudo-randomly select at least minCommitteeWatchtowers watchtowers and minCommitteeOperators operators.*
 
-*reverts with notEnoughWatchtowers if there are fewer than minCommitteeWatchtowers watchtower candidates*
-
-*reverts with notEnoughOperators if there are fewer than minCommitteeOperators operator candidates*
-
-*Only callable by CommitteeRegistry contract*
-
 
 ```solidity
 function selectCommittee(uint64 _streamId, uint256 _minWatchtowers, uint256 _minOperators, uint256 _totalMemberCount)
     external
-    onlyCommitteeRegistry
     returns (CommitteeMember[] memory, PendingCommitteeStatus);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_streamId`|`uint64`|The ID of the stream to select committee members for (0-4)|
-|`_minWatchtowers`|`uint256`||
-|`_minOperators`|`uint256`||
-|`_totalMemberCount`|`uint256`||
+|`_streamId`|`uint64`|The stream ID to select committee for|
+|`_minWatchtowers`|`uint256`|Minimum number of watchtowers required|
+|`_minOperators`|`uint256`|Minimum number of operators required|
+|`_totalMemberCount`|`uint256`|Total number of members in committee|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`CommitteeMember[]`|An array of committeeMemberCount CommitteeMembers containing the selected members.|
-|`<none>`|`PendingCommitteeStatus`||
+|`<none>`|`CommitteeMember[]`|CommitteeMember[] Array of selected committee members|
+|`<none>`|`PendingCommitteeStatus`|PendingCommitteeStatus Status of the selection process|
 
 
 ### _selectCommittee
@@ -675,82 +718,31 @@ function _selectCommittee(uint64 _streamId, uint256 _minWatchtowers, uint256 _mi
     returns (CommitteeMember[] memory, PendingCommitteeStatus);
 ```
 
-### onlyCommitteeRegistry
-
-Modifier to restrict access to the CommitteeRegistry contract
-
-*Reverts if the caller is not the CommitteeRegistry*
+### forceReleaseCommitteeMembers_TESTNET
 
 
 ```solidity
-modifier onlyCommitteeRegistry();
+function forceReleaseCommitteeMembers_TESTNET(
+    uint64 _streamId,
+    uint64 _packetNumber,
+    address[] memory _committeeMembersAddresses
+) external onlyOwner;
 ```
 
-### setCommitteeRegistry
+### forceExit_TESTNET
 
-Sets the CommitteeRegistry contract address
+WARNING! ONLY FOR TESTNET Forces a withdrawal of the contract's balance to a specified address
 
-*Only callable by the contract owner*
-
-
-```solidity
-function setCommitteeRegistry(address _committeeRegistry) external override onlyOwner;
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_committeeRegistry`|`address`|The address of the CommitteeRegistry contract|
-
-
-### setStreamManager
-
-Sets the Stream Manager contract address
-
-*Only callable by the contract owner*
+*Only callable on testnet, this function will leave the contract in a broken state and should be used only as a last resort*
 
 
 ```solidity
-function setStreamManager(IStreamManager _streamManager) external override onlyOwner;
+function forceExit_TESTNET(address _to) external onlyOwner;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_streamManager`|`IStreamManager`|The address of the Stream Manager contract|
-
-
-### setBridge
-
-Sets the Bridge contract address
-
-*Only callable by the contract owner*
-
-
-```solidity
-function setBridge(IBridge _bridge) external override onlyOwner;
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_bridge`|`IBridge`|The address of the Bridge contract|
-
-
-### setPauser
-
-Sets a new pauser address
-
-*Only callable by the contract owner*
-
-
-```solidity
-function setPauser(address _newPauser) public override onlyOwner;
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_newPauser`|`address`|The new pauser address|
+|`_to`|`address`|The address to which the balance will be sent|
 
 

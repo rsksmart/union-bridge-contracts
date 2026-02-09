@@ -1,5 +1,5 @@
 # IPegoutManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/interfaces/IPegoutManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/835a0374fad05fe95d66ed5d56f02d5826093237/src/interfaces/IPegoutManager.sol)
 
 Interface for managing peg-out operations
 
@@ -11,13 +11,13 @@ Gets temporary information stored during peg-out processing
 
 
 ```solidity
-function getPegoutTempInfo(bytes32 acceptPeginTxid) external view returns (PegoutTempInfo memory);
+function getPegoutTempInfo(bytes32 _acceptPeginTxid) external view returns (PegoutTempInfo memory);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`acceptPeginTxid`|`bytes32`|The accept peg-in transaction id|
+|`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction id|
 
 **Returns**
 
@@ -26,15 +26,42 @@ function getPegoutTempInfo(bytes32 acceptPeginTxid) external view returns (Pegou
 |`<none>`|`PegoutTempInfo`|The temporary information needed for peg-out processing|
 
 
+### getAcceptPeginTxid
+
+Gets the accept peg-in transaction id for a given peg-out transaction id
+
+
+```solidity
+function getAcceptPeginTxid(bytes32 _pegoutTxid) external view returns (bytes32);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_pegoutTxid`|`bytes32`|The peg-out transaction id|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`bytes32`|The accept peg-in transaction id|
+
+
 ### tryPegout
 
-Initiates a peg-out request to Bitcoin
+Initiates a peg-out operation by locking a slot and preparing the peg-out transaction
 
 Reverts if a pegout is already in progress for the same stream
 
+*This function LOCKS a slot in the appropriate stream and prepares the peg-out transaction*
+
 *Requires payment in RBTC and will revert if no filled slot is available*
 
+*The user must send the exact amount of RBTC they want to peg-out*
+
 *Emits PegoutRequested event upon successful initiation*
+
+*Only callable when contract is unpaused*
 
 
 ```solidity
@@ -51,9 +78,13 @@ function tryPegout(bytes calldata _userPubKey) external payable;
 
 Registers the Bitcoin peg-out transaction to the user account
 
-*Validates the SPV proof and completes the peg-out process*
+*This function validates the peg-out transaction and marks the slot as COMPLETED*
 
-*Emits PegoutRegistered event upon successful registration*
+*The transaction must spend the accept peg-in output and pay to the user's address*
+
+*Emits the PegoutRegistered event*
+
+*Only callable when contract is unpaused*
 
 
 ```solidity
@@ -91,9 +122,9 @@ function getPegoutTxid(uint64 streamId, uint64 packetNumber, uint64 slotId) exte
 
 ### setUserTakeTimeout
 
-Sets User Take Timeout
+Sets the timeout duration for user take operations
 
-*Allows the contract owner to update the timeout for user take actions*
+*Only callable by the contract owner*
 
 *Emits UserTakeTimeoutUpdated event upon successful update*
 
@@ -107,14 +138,14 @@ function setUserTakeTimeout(uint256 _timeout) external;
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_timeout`|`uint256`|The new timeout value in seconds|
+|`_timeout`|`uint256`|The new timeout duration in seconds|
 
 
 ### setOperatorTakeTimeout
 
-Sets Operator Take Timeout
+Sets the timeout duration for operator take operations
 
-*Allows the contract owner to update the timeout for operator take actions*
+*Only callable by the contract owner*
 
 *Emits OperatorTakeTimeoutUpdated event upon successful update*
 
@@ -128,7 +159,7 @@ function setOperatorTakeTimeout(uint256 _timeout) external;
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_timeout`|`uint256`|The new timeout value in seconds|
+|`_timeout`|`uint256`|The new timeout duration in seconds|
 
 
 ### userTakeTimeout
@@ -199,7 +230,24 @@ function registerReimbursementKickoff(bytes32 acceptPeginTxid, BtcTxSPVProof cal
 
 ### registerOperatorTake
 
-Registers the Bitcoin peg-out transaction to the operator account
+Deposits an operator take proof for a peg-out transaction
+
+*Validates the SPV proof and marks the slot as paid when operator takes over*
+
+*Only callable when the peg status is KICKOFF and contract is unpaused*
+
+*Emits PegoutRegistered event upon successful deposit*
+
+*Only callable when contract is unpaused*
+
+
+```solidity
+function registerOperatorTake(BtcTxSPVProof calldata _pegoutTxSPVProof) external;
+```
+
+### registerOperatorWon
+
+Deposits an operator won proof for a peg-out transaction
 
 *Validates the SPV proof and marks the slot as paid when operator takes over*
 
@@ -207,15 +255,17 @@ Registers the Bitcoin peg-out transaction to the operator account
 
 *Emits PegoutRegistered event upon successful deposit*
 
+*Only callable when contract is unpaused*
+
 
 ```solidity
-function registerOperatorTake(BtcTxSPVProof calldata _pegoutTxSPVProof) external;
+function registerOperatorWon(BtcTxSPVProof memory _pegoutTxSPVProof) external;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_pegoutTxSPVProof`|`BtcTxSPVProof`|The BTC SPV proof of the operator take peg-out transaction|
+|`_pegoutTxSPVProof`|`BtcTxSPVProof`|The BTC SPV proof of the operator won transaction|
 
 
 ### triggerOperatorTake
@@ -231,6 +281,8 @@ Triggers the operator take process for a peg-out when not all committee members 
 *Partial signatures are used to skip those operators that have not signed the User Take*
 
 *Emits OperatorTakeTriggered event upon successful triggering*
+
+*Only callable when contract is unpaused*
 
 
 ```solidity
@@ -256,8 +308,7 @@ event PegoutRequested(
     uint64 streamId,
     uint64 packetNumber,
     uint64 slotId,
-    uint64 amount,
-    bytes32 pegoutId
+    uint64 amount
 );
 ```
 
@@ -272,7 +323,6 @@ event PegoutRequested(
 |`packetNumber`|`uint64`|The packet number within the stream|
 |`slotId`|`uint64`|The slot ID within the packet|
 |`amount`|`uint64`|The amount being peg-out in satoshis|
-|`pegoutId`|`bytes32`|The unique identifier for this peg-out operation|
 
 ### PegoutRegistered
 Event emitted when a peg-out is successfully registered
@@ -309,7 +359,8 @@ event AdvanceFundsRegistered(
     bytes32 indexed acceptPeginTxid,
     bytes32 pegoutId,
     uint128 committeeId,
-    StreamPosition streamInfo
+    StreamPosition streamInfo,
+    bytes32 operatorTakePubKey
 );
 ```
 
@@ -323,14 +374,33 @@ event AdvanceFundsRegistered(
 |`pegoutId`|`bytes32`|The unique identifier for this peg-out operation|
 |`committeeId`|`uint128`|The ID of the committee responsible for this advance funds|
 |`streamInfo`|`StreamPosition`|The stream position information related to this advance funds|
+|`operatorTakePubKey`|`bytes32`|The public key of the operator that took the advance funds|
 
 ### ReimbursementKickoffRegistered
+Event emitted when reimbursement kickoff is successfully registered
+
 
 ```solidity
 event ReimbursementKickoffRegistered(
-    bytes32 indexed txid, bytes32 indexed acceptPeginTxid, uint128 committeeId, StreamPosition streamInfo
+    bytes32 indexed txid,
+    bytes32 indexed acceptPeginTxid,
+    bytes32 indexed pegoutId,
+    uint128 committeeId,
+    StreamPosition streamInfo,
+    bytes32 operatorTakePubKey
 );
 ```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`txid`|`bytes32`|The hash of the reimbursement kickoff transaction|
+|`acceptPeginTxid`|`bytes32`|The hash of the original accept peg-in transaction|
+|`pegoutId`|`bytes32`|The unique identifier for this peg-out operation|
+|`committeeId`|`uint128`|The ID of the committee responsible for this reimbursement kickoff|
+|`streamInfo`|`StreamPosition`|The stream position information related to this reimbursement kickoff|
+|`operatorTakePubKey`|`bytes32`|The public key of the operator that took the advance funds|
 
 ### UserTakeTimeoutUpdated
 Event emitted when the user take timeout is updated
@@ -366,7 +436,11 @@ Event emitted when operator take is triggered for a peg-out
 
 ```solidity
 event OperatorTakeTriggered(
-    bytes32 pegoutTxid, PegoutTempInfo pegoutInfo, StreamPosition streamPosition, uint256 updatedAt, uint256 expireAt
+    bytes32 indexed pegoutTxid,
+    PegoutTempInfo pegoutInfo,
+    StreamPosition streamPosition,
+    uint256 updatedAt,
+    uint256 expireAt
 );
 ```
 
@@ -379,25 +453,6 @@ event OperatorTakeTriggered(
 |`streamPosition`|`StreamPosition`|Stream position information including slot ID|
 |`updatedAt`|`uint256`|The timestamp when the operator take was triggered|
 |`expireAt`|`uint256`|The timestamp when the operator take timeout expires|
-
-### PacketClosed
-Event emitted when a packet is closed in the stream
-
-*Indicates that all slots in the packet have been processed and pegged out*
-
-*This event is used to track the lifecycle of packets in the stream*
-
-
-```solidity
-event PacketClosed(uint64 indexed streamId, uint64 indexed packetNumber);
-```
-
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`streamId`|`uint64`|The ID of the stream where the packet was closed|
-|`packetNumber`|`uint64`|The number of the packet that was closed|
 
 ## Errors
 ### PegoutRequestAmountExceedsUint64Limit
@@ -655,15 +710,30 @@ Thrown when the reimbursement kickoff txid does not match the expected value
 
 
 ```solidity
-error ReimbursementKickoffTxidNotMatch(bytes32 expected, bytes32 actual);
+error ReimbursementKickoffTxidNotMatch(bytes32 actual, bytes32 expected);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`expected`|`bytes32`|The expected reimbursement kickoff txid|
 |`actual`|`bytes32`|The actual reimbursement kickoff txid provided|
+|`expected`|`bytes32`|The expected reimbursement kickoff txid|
+
+### InputRevealedTxidNotMatch
+Thrown when the input txid Operator Won transaction does not match the expected value
+
+
+```solidity
+error InputRevealedTxidNotMatch(bytes32 actual, bytes32 expected);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`actual`|`bytes32`|The actual input txid provided|
+|`expected`|`bytes32`|The expected input txid|
 
 ### OperatorTakeDataNotFound
 Thrown when operator take data is not found for a given accept peg-in txid and operator address
@@ -685,13 +755,58 @@ Thrown when the operator take transaction id does not match the expected value
 
 
 ```solidity
-error OperatorTakeTxidNotMatch(bytes32 expected, bytes32 actual);
+error OperatorTakeTxidNotMatch(bytes32 actual, bytes32 expected);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`expected`|`bytes32`|The expected operator take transaction id|
 |`actual`|`bytes32`|The actual operator take transaction id provided|
+|`expected`|`bytes32`|The expected operator take transaction id|
+
+### OperatorWonTxidNotMatch
+Thrown when the operator won transaction id does not match the expected value
+
+
+```solidity
+error OperatorWonTxidNotMatch(bytes32 actual, bytes32 expected);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`actual`|`bytes32`|The actual operator won transaction id provided|
+|`expected`|`bytes32`|The expected operator won transaction id|
+
+### InvalidKickoffInputCount
+Thrown when the number of inputs in the kickoff transaction doesn't match the expected count
+
+
+```solidity
+error InvalidKickoffInputCount(uint256 actual, uint256 expected);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`actual`|`uint256`|The actual number of inputs|
+|`expected`|`uint256`|The expected number of inputs|
+
+### InvalidSlotId
+Thrown when the slot id in the kickoff transaction doesn't match the expected slot id
+
+
+```solidity
+error InvalidSlotId(uint32 actual, uint64 expected);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`actual`|`uint32`|The actual slot id from the transaction input|
+|`expected`|`uint64`|The expected slot id from the stream position|
 

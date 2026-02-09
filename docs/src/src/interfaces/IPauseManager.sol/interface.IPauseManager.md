@@ -1,5 +1,5 @@
 # IPauseManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/interfaces/IPauseManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/835a0374fad05fe95d66ed5d56f02d5826093237/src/interfaces/IPauseManager.sol)
 
 Interface for the centralized pause manager contract
 
@@ -7,31 +7,6 @@ Interface for the centralized pause manager contract
 
 
 ## Functions
-### initialize
-
-Initializes the PauseManager contract
-
-
-```solidity
-function initialize(
-    address _initialOwner,
-    address _peginManager,
-    address _pegoutManager,
-    address _committeeRegistry,
-    address _memberRegistry
-) external;
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_initialOwner`|`address`|The initial owner of the contract who can pause/unpause|
-|`_peginManager`|`address`|The address of the PeginManager contract|
-|`_pegoutManager`|`address`|The address of the PegoutManager contract|
-|`_committeeRegistry`|`address`|The address of the CommitteeRegistry contract|
-|`_memberRegistry`|`address`|The address of the MemberRegistry contract|
-
-
 ### pause
 
 Pauses all pausable contracts
@@ -56,14 +31,122 @@ function unpause() external;
 
 ### areContractsPaused
 
-Returns true if any of the contracts is paused
+Returns true if all contracts are paused, false if all are unpaused
 
-*Returns true if at least one contract is paused*
+*Reverts if contracts have inconsistent pause states*
 
 
 ```solidity
 function areContractsPaused() external view returns (bool);
 ```
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`bool`|True if all contracts are paused, false if all are unpaused|
+
+
+### setCommitteeRegistry
+
+Sets the Committee Registry contract address
+
+*Only callable by the contract owner*
+
+
+```solidity
+function setCommitteeRegistry(address _committeeRegistry) external;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_committeeRegistry`|`address`|The address of the Committee Registry contract|
+
+
+### setPeginManager
+
+Sets the Pegin Manager contract address
+
+*Only callable by the contract owner*
+
+
+```solidity
+function setPeginManager(address _peginManager) external;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_peginManager`|`address`|The address of the Pegin Manager contract|
+
+
+### setPegoutManager
+
+Sets the Pegout Manager contract address
+
+*Only callable by the contract owner*
+
+
+```solidity
+function setPegoutManager(address _pegoutManager) external;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_pegoutManager`|`address`|The address of the Pegout Manager contract|
+
+
+### setChallengeManager
+
+Sets the Pegout Manager contract address
+
+*Only callable by the contract owner*
+
+
+```solidity
+function setChallengeManager(address _challengeManager) external;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_challengeManager`|`address`|The address of the Challenge Manager contract|
+
+
+### setMemberRegistry
+
+Sets the member registry contract address
+
+*Only callable by the contract owner*
+
+
+```solidity
+function setMemberRegistry(address _memberRegistry) external;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_memberRegistry`|`address`|The address of the Member Registry contract|
+
+
+### setRbtcBridge
+
+Sets the rbtc bridge contract address
+
+*Only callable by the contract owner*
+
+
+```solidity
+function setRbtcBridge(address _rbtcBridge) external;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_rbtcBridge`|`address`|The address of the Rbtc Bridge contract|
+
 
 ## Events
 ### PausableContractUpdated
@@ -82,14 +165,6 @@ event PausableContractUpdated(string contractName, address newAddress);
 |`newAddress`|`address`|The new address of the contract|
 
 ## Errors
-### ZeroAddress
-Error thrown when a zero address is provided
-
-
-```solidity
-error ZeroAddress();
-```
-
 ### _InconsistentPauseState
 Error thrown when the pause states of contracts are inconsistent
 
@@ -98,5 +173,21 @@ Error thrown when the pause states of contracts are inconsistent
 
 ```solidity
 error _InconsistentPauseState();
+```
+
+### InvalidZeroAddress
+Thrown when the value is zero
+
+
+```solidity
+error InvalidZeroAddress();
+```
+
+### AlreadySet
+Thrown when the value is already set to a non-zero address
+
+
+```solidity
+error AlreadySet();
 ```
 

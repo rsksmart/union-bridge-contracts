@@ -1,5 +1,5 @@
 # Musig2
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/Musig2.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/835a0374fad05fe95d66ed5d56f02d5826093237/src/Musig2.sol)
 
 **Inherits:**
 [IMusig2](/src/interfaces/IMusig2.sol/interface.IMusig2.md)
@@ -123,16 +123,6 @@ Verify a partial signature for a given public key index
 
 *This function expects the public keys to be in the same order and have the same length as the nonces.*
 
-*This function expects the public keys and nonces to be already validated.*
-
-*We are following the specification BIP-327: MuSig2 for BIP340-compatible Multi-Signatures https://github.com/bitcoin/bips/blob/master/bip-0327.mediawiki.*
-
-*We check for correctnes of the implementation against the rust musgi2 implementation: https://github.com/FairgateLabs/rust-bitvmx-key-manager/pull/48*
-
-*The implementation uses the RSKJ Secp256k1 precompiled contract: https://github.com/rsksmart/rskj/pull/3210/files#diff-6449788dd39d9278472df8fb3a946ef83b7d16c8452a90cc6e2a238f6615e8bf*
-
-*The specification can be found in RSKIP-516: https://github.com/rsksmart/RSKIPs/blob/master/IPs/RSKIP516.md.*
-
 
 ```solidity
 function verifyPartialSignature(
@@ -244,28 +234,6 @@ function _aggregatedNonce(uint256 xOnlyAggregatedPubKey, Nonce[] memory _nonces,
 |----|----|-----------|
 |`adaptedAggregatedNonce`|`Point`|The adapted aggregated nonce|
 |`nonceCoef`|`uint256`|The nonce coefficient|
-
-
-### _equalCompressedPubKeys
-
-Compare two compressed public keys for equality
-
-
-```solidity
-function _equalCompressedPubKeys(bytes memory a, bytes memory b) internal pure returns (bool);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`a`|`bytes`|The first compressed public key|
-|`b`|`bytes`|The second compressed public key|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`<none>`|`bool`|true if the compressed public keys are equal, false otherwiseß|
 
 
 ### _reduceToScalar

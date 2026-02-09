@@ -1,5 +1,5 @@
 # Constants
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/libraries/Constants.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/835a0374fad05fe95d66ed5d56f02d5826093237/src/libraries/Constants.sol)
 
 Library containing all constants used throughout the union bridge contracts
 
@@ -174,6 +174,17 @@ uint32 constant OPERATOR_TAKE_VIN_ACCEPT_PEGIN = 0;
 ```
 
 
+### OPERATOR_WON_VIN_ACCEPT_PEGIN
+*Input index for user input in operator won Bitcoin transactions*
+
+*First input (index 0) spends the accept peg-in output UTX*
+
+
+```solidity
+uint32 constant OPERATOR_WON_VIN_ACCEPT_PEGIN = 0;
+```
+
+
 ### OPERATOR_TAKE_VIN_REIMBURSEMENT_KICKOFF
 *Input index for reimbursement kickoff input in operator take Bitcoin transactions*
 
@@ -185,6 +196,17 @@ uint32 constant OPERATOR_TAKE_VIN_REIMBURSEMENT_KICKOFF = 1;
 ```
 
 
+### OPERATOR_WON_VIN_INPUT_REVEALED
+*Input index for revealed input in operator won Bitcoin transactions*
+
+*Second input (index 1) spends the revealed input UTXO*
+
+
+```solidity
+uint32 constant OPERATOR_WON_VIN_INPUT_REVEALED = 1;
+```
+
+
 ### OPERATOR_TAKE_VOUT_OPERATOR
 *Output index for operator dispute key inoperator take Bitcoin transactions*
 
@@ -193,6 +215,17 @@ uint32 constant OPERATOR_TAKE_VIN_REIMBURSEMENT_KICKOFF = 1;
 
 ```solidity
 uint32 constant OPERATOR_TAKE_VOUT_OPERATOR = 0;
+```
+
+
+### OPERATOR_WON_VOUT_OPERATOR
+*Output index for operator dispute key in operator won Bitcoin transactions*
+
+*First output (index 0) contains the payment to the operator's dispute key*
+
+
+```solidity
+uint32 constant OPERATOR_WON_VOUT_OPERATOR = 0;
 ```
 
 
@@ -237,6 +270,62 @@ uint32 constant PEGOUT_VOUT_USER = 0;
 
 ```solidity
 uint32 constant PEGOUT_VOUT_SPEED_UP = 1;
+```
+
+
+### CHALLENGE_VIN_REIMBURSEMENT_KICKOFF
+*Input index for reimbursement kickoff input in challenge vin reimbursement kickoff Bitcoin transactions*
+
+*First input (index 0) spends the reimbursement kickoff UTXO*
+
+
+```solidity
+uint32 constant CHALLENGE_VIN_REIMBURSEMENT_KICKOFF = 0;
+```
+
+
+### CHALLENGE_INPUT_COUNT
+*Number of inputs in a challenge Bitcoin transaction*
+
+
+```solidity
+uint32 constant CHALLENGE_INPUT_COUNT = 1;
+```
+
+
+### INPUT_REVEALED_VIN_CHALLENGE
+*Input index for revealed vin challenge in input revealed Bitcoin transactions*
+
+
+```solidity
+uint32 constant INPUT_REVEALED_VIN_CHALLENGE = 0;
+```
+
+
+### INPUT_REVEALED_INPUT_COUNT
+*Number of inputs in an input revealed Bitcoin transaction*
+
+
+```solidity
+uint32 constant INPUT_REVEALED_INPUT_COUNT = 1;
+```
+
+
+### KICKOFF_INPUT_COUNT
+*Input index for kickoff vin in kickoff Bitcoin transactions*
+
+
+```solidity
+uint32 constant KICKOFF_INPUT_COUNT = 1;
+```
+
+
+### KICKOFF_VIN_SLOT_ID
+*Input index for kickoff vin in kickoff Bitcoin transactions*
+
+
+```solidity
+uint32 constant KICKOFF_VIN_SLOT_ID = 0;
 ```
 
 
@@ -328,6 +417,17 @@ uint64 constant SPEED_UP_AMOUNT = 540;
 ```
 
 
+### DUST_AMOUNT
+*Dust threshold in satoshis for Bitcoin transactions*
+
+*Minimum amount required for a Bitcoin output to be considered valid*
+
+
+```solidity
+uint64 constant DUST_AMOUNT = 540;
+```
+
+
 ### ENABLER_AMOUNT
 *Enabler output amount in satoshis for dispute resolution*
 
@@ -335,27 +435,7 @@ uint64 constant SPEED_UP_AMOUNT = 540;
 
 
 ```solidity
-uint64 constant ENABLER_AMOUNT = 540;
-```
-
-
-### REIMBURSEMENT_KICKOFF_AMOUNT
-*Reimbursement kickoff amount in satoshis for Bitcoin transactions*
-
-
-```solidity
-uint64 constant REIMBURSEMENT_KICKOFF_AMOUNT = 5137;
-```
-
-
-### DUST_THRESHOLD
-*Dust threshold in satoshis for Bitcoin transactions*
-
-*Minimum amount required for a Bitcoin output to be considered valid*
-
-
-```solidity
-uint64 constant DUST_THRESHOLD = 300;
+uint64 constant ENABLER_AMOUNT = DUST_AMOUNT * 2;
 ```
 
 
@@ -371,9 +451,9 @@ uint8 constant SIGNATURE_NONCE_LENGTH = 66;
 
 
 ### SLOTS_PER_PACKET
-*Number of slots per packet in the stream*
+*Number of slots per packet in the streamfv*
 
-*NOTE: SLOTS_PER_PACKET should be smaller than 2^16 to avoid overflow of Stream.pegoutSlotPointer*
+*NOTE: SLOTS_PER_PACKET should be smaller than 2^16 to avoid overflow of slot location*
 
 
 ```solidity
@@ -392,23 +472,34 @@ uint8 constant SLOT_USAGE_THRESHOLD = 80;
 ```
 
 
-### MAX_DENOMINATIONS_SIZE
-*Maximum number of stream denominations supported by the bridge*
-
-*Limits the number of different Bitcoin amounts that can be processed*
-
-
-```solidity
-uint64 constant MAX_DENOMINATIONS_SIZE = 10;
-```
-
-
 ### MAX_CANDIDATES_SIZE_PER_ROLE
 *Maximum number of candidates to a committee for a particular role and stream denominations*
 
 
 ```solidity
 uint256 constant MAX_CANDIDATES_SIZE_PER_ROLE = 100;
+```
+
+
+### MAX_COMMITTEE_MEMBER_COUNT
+*Maximum number of members allowed in a committee*
+
+*Based on gas consumption analysis: 100 members consume ~70% of block limit*
+
+*This prevents DoS attacks and ensures operations stay within safe gas limits*
+
+
+```solidity
+uint256 constant MAX_COMMITTEE_MEMBER_COUNT = 100;
+```
+
+
+### PEGOUT_ID_VERSION
+*Version number for pegout IDs*
+
+
+```solidity
+uint8 constant PEGOUT_ID_VERSION = 1;
 ```
 
 

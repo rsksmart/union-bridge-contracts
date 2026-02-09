@@ -1,5 +1,5 @@
 # Stream
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/interfaces/IStreamManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/835a0374fad05fe95d66ed5d56f02d5826093237/src/interfaces/IStreamManager.sol)
 
 Represents a stream that manages funds of a specific denomination
 
@@ -11,8 +11,6 @@ struct Stream {
     uint64 streamId;
     uint64 denomination;
     uint64 peginPacketPointer;
-    uint64 pegoutPacketPointer;
-    uint16 pegoutSlotPointer;
     uint8 peginConfirmations;
     uint8 pegoutConfirmations;
     TimelockSettings timelockSettings;

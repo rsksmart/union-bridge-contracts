@@ -1,5 +1,5 @@
 # IBridge
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/interfaces/IBridge.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/835a0374fad05fe95d66ed5d56f02d5826093237/src/interfaces/IBridge.sol)
 
 Interface for interacting with the RSK pow-peg Bridge contract
 
@@ -1198,4 +1198,102 @@ function releaseUnionBridgeRbtc() external payable returns (int256);
 |----|----|-----------|
 |`<none>`|`int256`|The result code of the operation (0 is success, otherwise error code)|
 
+
+### getBaseEvent
+
+Gets the base event
+
+
+```solidity
+function getBaseEvent() external view returns (bytes memory);
+```
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`bytes`|The current base event, if no value is set, then it should return an empty array of bytes.|
+
+
+### setBaseEvent
+
+Sets the base event, it will override the previous value if it exists.
+
+*This function will revert if:*
+
+*- the caller is not the Union Bridge contract address*
+
+*- the baseEvent array is greater than 128 bytes*
+
+
+```solidity
+function setBaseEvent(bytes memory baseEvent) external;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`baseEvent`|`bytes`|The new base event (must be less than 128 bytes)|
+
+
+### clearBaseEvent
+
+Clears the base event
+
+*It stores an empty byte array under the baseEvent storage key of the Bridge, overriding whatever value was previously there.*
+
+*This function will revert if  the caller is not the Union Bridge contract address*
+
+
+```solidity
+function clearBaseEvent() external;
+```
+
+### getSuperEvent
+
+Gets the super event
+
+
+```solidity
+function getSuperEvent() external view returns (bytes memory);
+```
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`bytes`|The current super event, if no value is set, then it should return an empty array of bytes.|
+
+
+### setSuperEvent
+
+Sets the super event, it will override the previous value if it exists.
+
+*This function will revert if:*
+
+*- the caller is not the Union Bridge contract address*
+
+*- the superEvent array is greater than 128 bytes*
+
+
+```solidity
+function setSuperEvent(bytes memory superEvent) external;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`superEvent`|`bytes`|The new super event (must be less than 128 bytes)|
+
+
+### clearSuperEvent
+
+Clears the super event
+
+*It stores an empty byte array under the superEvent storage key of the Bridge, overriding whatever value was previously there.*
+
+*This function will revert if the caller is not the Union Bridge contract address*
+
+
+```solidity
+function clearSuperEvent() external;
+```
 

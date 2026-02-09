@@ -1,8 +1,8 @@
 # SignatureManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/SignatureManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/835a0374fad05fe95d66ed5d56f02d5826093237/src/SignatureManager.sol)
 
 **Inherits:**
-[ISignatureManager](/src/interfaces/ISignatureManager.sol/interface.ISignatureManager.md), [AccessControl](/src/AccessControl.sol/contract.AccessControl.md)
+[ISignatureManager](/src/interfaces/ISignatureManager.sol/interface.ISignatureManager.md), [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md)
 
 Manages signatures for peg-in and peg-out operations
 
@@ -20,6 +20,17 @@ The committee registry contract that manages committee membership
 
 ```solidity
 ICommitteeRegistry public committeeRegistry;
+```
+
+
+### accessManager
+The access manager contract that manages access control
+
+*Used to check access control for sensitive operations*
+
+
+```solidity
+IAccessManager public accessManager;
 ```
 
 
@@ -48,20 +59,16 @@ Initializes the SignatureManager contract
 
 
 ```solidity
-function initialize(
-    address _initialOwner,
-    address _peginManager,
-    address _pegoutManager,
-    ICommitteeRegistry _committeeRegistry
-) public initializer;
+function initialize(address _initialOwner, IAccessManager _accessManager, ICommitteeRegistry _committeeRegistry)
+    public
+    initializer;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
 |`_initialOwner`|`address`|The address that will be set as the initial owner|
-|`_peginManager`|`address`|The address of the PeginManager contract|
-|`_pegoutManager`|`address`|The address of the PegoutManager contract|
+|`_accessManager`|`IAccessManager`|The address of the AccessManager contract|
 |`_committeeRegistry`|`ICommitteeRegistry`|The address of the CommitteeRegistry contract|
 
 
@@ -191,38 +198,38 @@ function _getSignatures(bytes32 _txid) internal view returns (Signatures storage
 
 ### initSignatures
 
-Initializes signature collection for a given hash
+Initializes signature collection for a specific txid
 
-*Can only be called by the PegManager*
+*Sets up the signature tracking structure for committee members*
 
 
 ```solidity
-function initSignatures(bytes32 _txid, uint128 _committeeId) external onlyPegManager;
+function initSignatures(bytes32 _txid, uint128 _committeeId) external;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_txid`|`bytes32`|The hash that needs to be signed|
-|`_committeeId`|`uint128`|The committee ID that will sign the hash|
+|`_txid`|`bytes32`|The txid that committee members need to sign|
+|`_committeeId`|`uint128`|The ID of the committee responsible for signing|
 
 
 ### initOperatorTakeTxids
 
 Initializes OperatorTake transaction id collection for a given accept peg-in transaction
 
-*Can only be called by the PegManager*
+*Sets up the OperatorTake txid tracking structure for committee members*
 
 
 ```solidity
-function initOperatorTakeTxids(bytes32 _acceptPeginTxid, uint128 _committeeId) external onlyPegManager;
+function initOperatorTakeTxids(bytes32 _acceptPeginTxid, uint128 _committeeId) external;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
 |`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction id|
-|`_committeeId`|`uint128`|The committee ID that will provide OperatorTake transaction id's|
+|`_committeeId`|`uint128`|The ID of the committee responsible for OperatorTake operations|
 
 
 ### _getOperatorTakeTxids
@@ -295,7 +302,7 @@ function getOperatorTakeData(bytes32 _acceptPeginTxid) external view returns (Op
 
 ### getCommitteeIdByAcceptPeginTxid
 
-Gets the committee ID for a given accept peg-in transaction id
+Gets the committee ID for a specific accept peg-in transaction id
 
 
 ```solidity
@@ -311,6 +318,6 @@ function getCommitteeIdByAcceptPeginTxid(bytes32 _acceptPeginTxid) external view
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`uint128`|The committee ID associated with this transaction id|
+|`<none>`|`uint128`|The committee ID responsible for this accept peg-in|
 
 

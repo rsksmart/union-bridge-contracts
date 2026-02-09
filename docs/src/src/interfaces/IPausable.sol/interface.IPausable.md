@@ -1,5 +1,5 @@
 # IPausable
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/0c819fa3fad6abf73f5f2a830cc21b001080582f/src/interfaces/IPausable.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/835a0374fad05fe95d66ed5d56f02d5826093237/src/interfaces/IPausable.sol)
 
 Interface for pauser in the union bridge
 
@@ -11,7 +11,9 @@ Interface for pauser in the union bridge
 ## Functions
 ### pause
 
-External functions to handle pauser pauses
+Pauses the contract
+
+*Only callable by the pauser*
 
 
 ```solidity
@@ -20,6 +22,10 @@ function pause() external;
 
 ### unpause
 
+Unpauses the contract
+
+*Only callable by the pauser*
+
 
 ```solidity
 function unpause() external;
@@ -27,10 +33,48 @@ function unpause() external;
 
 ### isPaused
 
-*Returns true if the contract is paused, and false otherwise.*
+Returns true if the contract is paused, and false otherwise.
 
 
 ```solidity
 function isPaused() external view returns (bool);
 ```
+
+## Events
+### PauserUpdated
+Event emitted when the pauser is updated
+
+
+```solidity
+event PauserUpdated(address newPauser);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`newPauser`|`address`|The new pauser address|
+
+## Errors
+### InvalidZeroAddress
+Thrown when an address is zero
+
+
+```solidity
+error InvalidZeroAddress();
+```
+
+### UnauthorizedPauser
+Error thrown when an account is not authorized as pauser
+
+
+```solidity
+error UnauthorizedPauser(address account);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`account`|`address`|The unauthorized account|
 
