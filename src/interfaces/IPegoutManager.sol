@@ -168,7 +168,7 @@ interface IPegoutManager {
     /// @notice Event emitted when a peg-out is successfully registered
     /// @param blockHash The Bitcoin block hash containing the peg-out transaction
     /// @param txid The hash of the peg-out transaction
-    /// @param acceptPeginTxid The hash of the original accept peg-in transaction
+    /// @param acceptPeginTxid The txid of the original accept peg-in transaction
     /// @param committeeId The ID of the committee responsible for this peg-out
     /// @param streamInfo The stream position information related to this peg-out
     event PegoutRegistered(
@@ -182,7 +182,7 @@ interface IPegoutManager {
     /// @notice Event emitted when advance funds are successfully registered
     /// @param blockHash The Bitcoin block hash containing the advance funds transaction
     /// @param txid The hash of the advance funds transaction
-    /// @param acceptPeginTxid The hash of the original accept peg-in transaction
+    /// @param acceptPeginTxid The txid of the original accept peg-in transaction
     /// @param pegoutId The unique identifier for this peg-out operation
     /// @param committeeId The ID of the committee responsible for this advance funds
     /// @param streamInfo The stream position information related to this advance funds
@@ -199,7 +199,7 @@ interface IPegoutManager {
 
     /// @notice Event emitted when reimbursement kickoff is successfully registered
     /// @param txid The hash of the reimbursement kickoff transaction
-    /// @param acceptPeginTxid The hash of the original accept peg-in transaction
+    /// @param acceptPeginTxid The txid of the original accept peg-in transaction
     /// @param pegoutId The unique identifier for this peg-out operation
     /// @param committeeId The ID of the committee responsible for this reimbursement kickoff
     /// @param streamInfo The stream position information related to this reimbursement kickoff

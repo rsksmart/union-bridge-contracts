@@ -41,7 +41,7 @@ interface IChallengeManager {
 
     /// @notice Registers a stop operator won for a reveal transaction
     /// @dev Validates the SPV proof and updates the challenge status accordingly
-    /// @param _acceptPeginTxid The accept peg-in transaction id that is being
+    /// @param _acceptPeginTxid The accept peg-in transaction id that is being challenged
     /// @param _stopOperatorWon The BTC SPV proof of the stop operator won transaction
     function registerStopOperatorWon(bytes32 _acceptPeginTxid, BtcTxSPVProof calldata _stopOperatorWon) external;
 
@@ -50,7 +50,7 @@ interface IChallengeManager {
 
     /// @notice Event emitted when a challenge is registered for a peg-out
     /// @param txid The hash of the challenge transaction
-    /// @param acceptPeginTxid The hash of the original accept peg-in transaction
+    /// @param acceptPeginTxid The txid of the original accept peg-in transaction
     /// @param committeeId The ID of the committee responsible for this challenge
     /// @param streamInfo The stream position information related to this challenge
     event ChallengeRegistered(
@@ -59,7 +59,7 @@ interface IChallengeManager {
 
     /// @notice Event emitted when an input is not revealed for a challenge
     /// @param txid The hash of the input not revealed transaction
-    /// @param acceptPeginTxid The hash of the original accept peg-in transaction
+    /// @param acceptPeginTxid The txid of the original accept peg-in transaction
     /// @param committeeId The ID of the committee responsible for this pegout
     /// @param streamInfo The stream position information related to this pegout
     event InputNotRevealedRegistered(
@@ -68,7 +68,7 @@ interface IChallengeManager {
 
     /// @notice Event emitted when a stop operator won is registered for a reveal transaction
     /// @param txid The hash of the stop operator won transaction
-    /// @param acceptPeginTxid The hash of the original accept peg-in transaction
+    /// @param acceptPeginTxid The txid of the original accept peg-in transaction
     /// @param committeeId The ID of the committee responsible for this pegout
     /// @param streamInfo The stream position information related to this pegout
     event StopOperatorWonRegistered(
@@ -77,7 +77,7 @@ interface IChallengeManager {
 
     /// @notice Event emitted when an input is revealed for a challenge
     /// @param txid The hash of the reveal transaction
-    /// @param acceptPeginTxid The hash of the original accept peg-in transaction
+    /// @param acceptPeginTxid The txid of the original accept peg-in transaction
     /// @param committeeId The ID of the committee responsible for this pegout
     /// @param streamInfo The stream position information related to this pegout
     event RevealRegistered(
@@ -124,4 +124,9 @@ interface IChallengeManager {
     /// @notice Thrown when the stop operator won transaction id is invalid
     /// @param txid The invalid transaction id
     error InvalidStopOperatorWonTxid(bytes32 txid);
+
+    /// @notice Thrown when the number of inputs in a stop operator won transaction is incorrect
+    /// @param actual The actual number of inputs found
+    /// @param expected The expected number of inputs
+    error InvalidStopOperatorWonInputCount(uint256 actual, uint256 expected);
 }

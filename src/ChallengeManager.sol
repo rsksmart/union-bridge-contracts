@@ -203,7 +203,7 @@ contract ChallengeManager is IChallengeManager, PegBase {
         StreamPosition memory streamInfo = _validatePegStatus(_acceptPeginTxid, PegStatus.REVEALED);
 
         if (_stopOperatorWon.btcTx.inputs.length != Constants.STOP_OPERATOR_WON_INPUT_COUNT) {
-            revert InvalidRevealedInputCount(
+            revert InvalidStopOperatorWonInputCount(
                 _stopOperatorWon.btcTx.inputs.length, Constants.STOP_OPERATOR_WON_INPUT_COUNT
             );
         }
@@ -243,7 +243,6 @@ contract ChallengeManager is IChallengeManager, PegBase {
         emit StopOperatorWonRegistered(txid, _acceptPeginTxid, pegoutInfo.committeeId, streamInfo);
 
         // Retrigger operator take. Update peg status
-        // streamManager.setPegStatus(_acceptPeginTxid, PegStatus.CHALLENGE);
         bytes32 pegoutTxid = pegoutManager.getPegoutTxid(_acceptPeginTxid);
         pegoutManager.triggerOperatorTake(pegoutTxid);
     }
