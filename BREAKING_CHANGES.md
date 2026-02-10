@@ -2,11 +2,185 @@
 
 ## [Unreleased]
 
-- `PegoutManager.registerChallenge` to register a challenge SPV proof.
-- `PegoutManager.registerInputRevealed` to register an input revealed SPV proof.
-- `CommitteRegistry.getOperatorDisputeKeys` was replaced by `getCommitteeDisputeKeys` as we use all memebers of the committee for enablers and not just operators
-- PegoutManager was splitted as it reached 24 kb size, `Pegout.registerChallenge` and `registerInputRevealed` were moved to ChallengeManager.
-- `AccessControl` was moved to it's own contract similar to an Autorization service, the new contract name is `AccessManager` and inherits from `PausaManager`.
+## [v0.4.0-alpha]
+
+### Contract Restructuring (v0.4.0-alpha)
+
+1. **PegoutManager split – ChallengeManager introduced**
+   - **Reason**: PegoutManager reached 24 kB contract size limit.
+   - **Change**: `registerChallenge` and `registerInputRevealed` were moved from `PegoutManager` to a new contract `ChallengeManager`.
+   - **Impact**: Callers must invoke `ChallengeManager.registerChallenge` and `ChallengeManager.registerInputRevealed` instead of `PegoutManager`. Deployment and initialization must include the new `ChallengeManager` contract.
+
+2. **AccessControl replaced by AccessManager**
+   - **Old**: Access control logic was embedded in multiple contracts via `AccessControl` (abstract).
+   - **New**: A dedicated authorization contract `AccessManager` replaces `AccessControl`. `AccessManager` inherits from `PauseManager` and is used as the single authority for permissions and pausing.
+   - **Impact**: Deployment scripts and initializers must deploy and pass `AccessManager` instead of distributing multiple addresses. Contracts now take a single `IAccessManager` (or `AccessManager`) address for permission checks. The interfaces `IAccessControl` and contract `AccessControl` were removed.
+
+### Public Functions - Changed Names or Parameters (v0.4.0-alpha)
+
+1. **`reAddCommitteeMembers` → `reAddCandidateToStream`** (in `IMemberRegistry`)
+   - **Old signature**: `function reAddCommitteeMembers(Committee memory _discardedCommittee) external`
+   - **New signature**: `function reAddCandidateToStream(StreamDenomination _denomination, CommitteeMember memory _member) external`
+   - **Changes**: Function renamed; takes a single stream denomination and one `CommitteeMember` instead of a full `Committee`. Must be called per member.
+   - **Impact**: Callers must loop over committee members and call `reAddCandidateToStream` for each with the stream denomination.
+
+### Public Functions - Removed (v0.4.0-alpha)
+
+1. **`getOperatorDisputeKeys`** (in `ICommitteeRegistry`)
+   - **Old signature**: `function getOperatorDisputeKeys(uint128 _committeeId) external view returns (bytes32[] memory)`
+   - **Change**: Removed; enabler outputs now use all committee members’ dispute keys, not only operators.
+   - **Replacement**: Use `getCommitteeDisputeKeys(uint128 _committeeId)` which returns dispute keys for all committee members.
+   - **Impact**: Callers that relied on operator-only dispute keys must switch to `getCommitteeDisputeKeys` and, if needed, filter by operator role off-chain or accept the full committee key set.
+
+2. **`setPeginManager`** (in `IBitcoinManager`) – Removed; PeginManager is no longer set on BitcoinManager.
+3. **`setPeginManager`**, **`setPegoutManager`**, **`setStreamManager`** (in `ICommitteeRegistry`) – Removed; use AccessManager and deployment flow instead.
+4. **`setCommitteeRegistry`**, **`setStreamManager`**, **`setBridge`** (in `IMemberRegistry`) – Removed; set during initialization or via upgrade.
+5. **`setPeginManager`**, **`setPegoutManager`** (in `IRbtcBridge`) – Removed; RbtcBridge now receives `IAccessManager` at init and no longer has these setters.
+
+### Public Functions - New (v0.4.0-alpha)
+
+1. **`registerOperatorWon`** (in `IPegoutManager`)
+   - **Signature**: `function registerOperatorWon(BtcTxSPVProof memory _pegoutTxSPVProof) external`
+   - **Description**: Registers the operator-won transaction when the operator wins a challenge; marks the slot as paid. Call when peg status is `OPERATOR_TAKE`. Must be called after `registerOperatorTake` when the operator wins.
+   - **Impact**: Integrations implementing the operator-take flow must call this to complete the operator-won path.
+
+2. **`getAcceptPeginTxid`** (in `IPegoutManager`)
+   - **Signature**: `function getAcceptPeginTxid(bytes32 _pegoutTxid) external view returns (bytes32)`
+   - **Description**: Returns the accept peg-in transaction id for a given peg-out transaction id.
+   - **Impact**: Use for reverse lookup from pegout txid to accept pegin txid.
+
+3. **`getChallengeTempInfo`** (in `IChallengeManager`)
+   - **Signature**: `function getChallengeTempInfo(bytes32 _acceptPeginTxid) external view returns (ChallengeTempInfo memory)`
+   - **Description**: Returns temporary challenge information (challengeTxid, revealTxid) for a given accept peg-in txid.
+   - **Impact**: Query challenge state when integrating with ChallengeManager.
+
+4. **`isWhitelisted`**, **`whitelistAddress`**, **`whitelistAddresses`**, **`unwhitelistAddress`**, **`unwhitelistAddresses`** (in `ICommitteeRegistry`)
+   - **Description**: Whitelist management; addresses must be whitelisted before they can apply to a stream. `setWhitelister` sets the role allowed to whitelist/unwhitelist.
+   - **Impact**: Operators must whitelist candidate addresses; update apply-to-stream flow to respect whitelist.
+
+5. **`isMemberInCommittee`** (in `ICommitteeRegistry`)
+   - **Signature**: `function isMemberInCommittee(uint128 _committeeId, address _memberAddress) external view returns (bool)`
+   - **Description**: Returns whether an address is a member of a given committee.
+   - **Impact**: Use for membership checks without iterating committee members.
+
+6. **`setWhitelister`** (in `ICommitteeRegistry`)
+   - **Signature**: `function setWhitelister(address _newWhitelister) external`
+   - **Description**: Sets the whitelister address (owner only).
+   - **Impact**: Configure who can call whitelist/unwhitelist.
+
+7. **`getNextPegoutSlotLocation`**, **`hasPegoutInProcess`** (in `IStreamManager`)
+   - **Signatures**: `function getNextPegoutSlotLocation(uint64 _streamId) external view returns (SlotLocation memory)`; `function hasPegoutInProcess(uint64 _streamId) external view returns (bool)`
+   - **Description**: Get the next slot that would be used for pegout, and whether a pegout is already in progress for the stream.
+   - **Impact**: Replace use of `pegoutPacketPointer` / `pegoutSlotPointer` with these APIs.
+
+8. **`getEnablerScriptPubKey`** (in `IStreamManager`)
+   - **Signature**: `function getEnablerScriptPubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes memory)`
+   - **Description**: Returns the enabler script public key for a packet (enabler script is stored at packet level).
+   - **Impact**: Use when building accept-pegin or validating enabler output; pass to `validateRequestPeginEnablerOutput` as expected script.
+
+9. **`setTimelockSettings`** (in `IStreamManager`)
+   - **Signature**: `function setTimelockSettings(uint64 _streamId, TimelockSettings memory _timelockSettings) external`
+   - **Description**: Sets timelock settings for a stream (owner only).
+   - **Impact**: Configure timelock per stream after init if needed.
+
+10. **`isMember`** (in `IMemberRegistry`)
+    - **Signature**: `function isMember(address _address) external view returns (bool)`
+    - **Description**: Returns whether an address has ever been a member.
+    - **Impact**: Use for membership checks.
+
+11. **`bridge`**, **`getBestBlockHash`**, **`verifyTxConfirmations`**, **`getTxBlockNumberAndVerifyConfirmations`** (in `IRbtcBridge`)
+    - **Description**: RbtcBridge now exposes bridge getter, Bitcoin best block hash, and SPV verification helpers. ProofValidator logic moved into RbtcBridge.
+    - **Impact**: Call these for bridge interaction and proof verification.
+
+12. **IPauseManager setters** (in `IPauseManager`): **`setCommitteeRegistry`**, **`setPeginManager`**, **`setPegoutManager`**, **`setChallengeManager`**, **`setMemberRegistry`**, **`setRbtcBridge`**
+    - **Description**: Configure pausable contract addresses after deployment (no `initialize`). Each setter is owner-only; address can only be set once (reverts with `AlreadySet` if already non-zero).
+    - **Impact**: Deployment must use these setters instead of a single initialize to wire PauseManager/AccessManager.
+
+### Struct and Storage Layout Changes (v0.4.0-alpha)
+
+1. **`Slot`** (in `IStreamManager`)
+   - **Removed**: `enablerScriptPubKey` (bytes). Enabler script is now stored at packet level.
+2. **`Packet`** (in `IStreamManager`)
+   - **Added**: `enablerScriptPubKey` (bytes), `finishedSlots` (uint64).
+3. **`Stream`** (in `IStreamManager`)
+   - **Removed**: `pegoutPacketPointer`, `pegoutSlotPointer`. Peg-out slot selection uses new APIs (`getNextPegoutSlotLocation`, `hasPegoutInProcess`, `lockSlot`).
+4. **`PegoutTempInfo`** (in `IPegoutManager`)
+   - **Added**: `operatorTakePubKey` (bytes32) after `takeOperatorAddress`.
+
+### Events - Changed (v0.4.0-alpha)
+
+1. **`PegoutRequested`** (in `IPegoutManager`)
+   - **Old**: Last parameter `bytes32 pegoutId` present.
+   - **New**: `pegoutId` parameter removed.
+2. **`AdvanceFundsRegistered`** (in `IPegoutManager`)
+   - **New**: Added final parameter `bytes32 operatorTakePubKey`.
+3. **`ReimbursementKickoffRegistered`** (in `IPegoutManager`)
+   - **Old**: `(bytes32 indexed txid, bytes32 indexed acceptPeginTxid, uint128 committeeId, StreamPosition streamInfo)`.
+   - **New**: Added `bytes32 indexed pegoutId` and `bytes32 operatorTakePubKey`; parameter order and indexing changed.
+4. **`OperatorTakeTriggered`** (in `IPegoutManager`)
+   - **Change**: First parameter `pegoutTxid` is now `indexed`.
+
+### Events - Removed (v0.4.0-alpha)
+
+1. **`PeginManagerUpdated`** (in `IBitcoinManager`).
+2. **`StreamManagerUpdated`**, **`PeginManagerUpdated`**, **`PegoutManagerUpdated`** (in `ICommitteeRegistry`).
+3. **`MemberRegistryUpdated`** (in `ICommitteeRegistry`).
+4. **`CommitteeRegistryUpdated`** (in `IMemberRegistry`).
+5. **`PacketClosed`** (in `IPegoutManager`) – Emitted now by `IStreamManager` (see Events - New).
+6. **`CommitteeRegistryUpdated`** (in `IStreamManager`).
+
+### Events - New (v0.4.0-alpha)
+
+1. **`WhitelisterUpdated`**, **`AddressWhitelisted`**, **`AddressUnwhitelisted`** (in `ICommitteeRegistry`).
+2. **`PacketClosed`** (in `IStreamManager`) – Emitted when a packet is fully completed or closed.
+3. **`PauserUpdated`** (in `IPausable`).
+4. **`BaseEventSet`** (in `IRbtcBridge`).
+
+### Errors - Changed (v0.4.0-alpha)
+
+1. **`ReimbursementKickoffTxidNotMatch`** (in `IPegoutManager`)
+   - **Old**: `error ReimbursementKickoffTxidNotMatch(bytes32 expected, bytes32 actual)`
+   - **New**: `error ReimbursementKickoffTxidNotMatch(bytes32 actual, bytes32 expected)` (parameter order swapped).
+2. **`OperatorTakeTxidNotMatch`** (in `IPegoutManager`)
+   - **Old**: `error OperatorTakeTxidNotMatch(bytes32 expected, bytes32 actual)`
+   - **New**: `error OperatorTakeTxidNotMatch(bytes32 actual, bytes32 expected)` (parameter order swapped).
+3. **`CommitteeRegistryAddressZero` → `InvalidZeroAddress`** (in `ISignatureManager`).
+4. **`ZeroAddress` → `InvalidZeroAddress`** (in `IPauseManager`).
+5. **`StreamAlreadyInitialized`** (in `IStreamManager`)
+   - **Old**: `error StreamAlreadyInitialized(uint256 streamId)`
+   - **New**: `error StreamsAlreadyInitialized()` (no parameters).
+6. **`InvalidStreamSettingsLength`** (in `IStreamManager`)
+   - **Old**: `error InvalidStreamSettingsLength(uint256 streamSettingsLength)`
+   - **New**: `error InvalidStreamSettingsLength(uint256 actualLength, uint256 expectedLength)` (two parameters).
+
+### Errors - Removed (v0.4.0-alpha)
+
+1. **`UnauthorizedAccount`**, **`InvalidZeroAddress`** (in `IBitcoinManager`).
+2. **`InvalidZeroAddress`**, **`MemberRegistryAddressZero`** (in `ICommitteeRegistry`).
+3. **`InvalidZeroAddress`** (in `IMemberRegistry`).
+4. **`NoPacketAvailable`** (in `IStreamManager`).
+5. **`InvalidAcceptPeginTxid`** (in `IStreamManager`).
+6. **`BridgeAddressZero`**, **`PeginManagerAddressZero`**, **`PegoutManagerAddressZero`** (in `IRbtcBridge`).
+
+### Errors - New (v0.4.0-alpha)
+
+1. **IChallengeManager**: `ReimbursementKickoffTxidNotMatch`, `ChallengeTxidNotMatch`, `InvalidChallengeInputCount`, `InvalidRevealedInputCount`.
+2. **ICommitteeRegistry**: `NonWhitelistedAddress`, `UnauthorizedWhitelister`, `InvalidMaxMembers`.
+3. **IPauseManager**: `InvalidZeroAddress`, `AlreadySet`.
+4. **IPausable**: `InvalidZeroAddress`, `UnauthorizedPauser`.
+5. **IPegoutManager**: `InputRevealedTxidNotMatch`, `OperatorWonTxidNotMatch`, `InvalidKickoffInputCount`, `InvalidSlotId`.
+6. **IRbtcBridge**: `BridgeBtcInexistantBlockHash`, `BridgeBtcBlockNotInBestChain`, `BridgeBtcInconsistentBlock`, `BridgeBtcBlockTooOld`, `BridgeBtcTxInvalidMerkleBranch`, `NotEnoughConfirmations`, `BaseEventAlreadySet`, `BaseEventTooLong`, `BaseEventEmpty`.
+
+### New Contracts and Interfaces (v0.4.0-alpha)
+
+1. **ChallengeManager** / **IChallengeManager** – New contract and interface for challenge and input-reveal registration (see Contract Restructuring above).
+2. **AccessManager** / **IAccessManager** – New contract and interface replacing AccessControl; inherits from PauseManager and centralizes permission checks.
+3. **IPegBase** – New base interface for peg-related contracts (PeginManager, PegoutManager, ChallengeManager); includes `StreamManagerUpdated` event and errors `PeginNotRequested`, `InvalidPegStatus`.
+
+### Removed Contracts and Interfaces (v0.4.0-alpha)
+
+1. **AccessControl** / **IAccessControl** – Replaced by `AccessManager` / `IAccessManager`.
+2. **ProofValidator** – Logic moved into `RbtcBridge`; standalone contract and tests removed.
 
 ## [v0.3.0-alpha]
 
