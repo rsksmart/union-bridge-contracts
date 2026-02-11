@@ -1,5 +1,5 @@
 # RbtcBridge
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/835a0374fad05fe95d66ed5d56f02d5826093237/src/RbtcBridge.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/6a9ea8ca3ca82c82894d3db0e338e4bf6bb46de8/src/RbtcBridge.sol)
 
 **Inherits:**
 [IRbtcBridge](/src/interfaces/IRbtcBridge.sol/interface.IRbtcBridge.md), ReentrancyGuardUpgradeable, [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md), [Pausable](/src/Pausable.sol/abstract.Pausable.md)

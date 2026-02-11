@@ -1,5 +1,5 @@
 # IChallengeManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/835a0374fad05fe95d66ed5d56f02d5826093237/src/interfaces/IChallengeManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/6a9ea8ca3ca82c82894d3db0e338e4bf6bb46de8/src/interfaces/IChallengeManager.sol)
 
 Interface for managing challenge operations
 
@@ -34,13 +34,13 @@ Registers a challenge for a peg-out transaction
 
 
 ```solidity
-function registerChallenge(bytes32 acceptPeginTxid, BtcTxSPVProof calldata _challenge) external;
+function registerChallenge(bytes32 _acceptPeginTxid, BtcTxSPVProof calldata _challenge) external;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`acceptPeginTxid`|`bytes32`|The accept peg-in transaction id that is being challenged|
+|`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction id that is being challenged|
 |`_challenge`|`BtcTxSPVProof`|The BTC SPV proof of the challenge transaction|
 
 

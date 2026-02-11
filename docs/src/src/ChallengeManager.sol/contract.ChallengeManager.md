@@ -1,5 +1,5 @@
 # ChallengeManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/835a0374fad05fe95d66ed5d56f02d5826093237/src/ChallengeManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/6a9ea8ca3ca82c82894d3db0e338e4bf6bb46de8/src/ChallengeManager.sol)
 
 **Inherits:**
 [IChallengeManager](/src/interfaces/IChallengeManager.sol/interface.IChallengeManager.md), [PegBase](/src/PegBase.sol/abstract.PegBase.md)
@@ -96,7 +96,7 @@ function registerChallenge(bytes32 _acceptPeginTxid, BtcTxSPVProof calldata _cha
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_acceptPeginTxid`|`bytes32`||
+|`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction id that is being challenged|
 |`_challenge`|`BtcTxSPVProof`|The BTC SPV proof of the challenge transaction|
 
 

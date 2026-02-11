@@ -28,6 +28,8 @@ This repository contains the specifications and Solidity code for the Union Brid
   - [Phase 3: Register Peg-Out](#phase-3-register-peg-out)
     - [Normal Case: UserTake (Take0) - All Members Signed](#normal-case-usertake-take0---all-members-signed)
     - [Alternative Case: Operator Take (Take1) - Not all members signed](#alternative-case-operator-take-take1---not-all-members-signed)
+    - [Disputed Case: Operator Won (Take2) - Operator wins challenge dispute](#disputed-case-operator-won-take2---operator-wins-challenge-dispute)
+- [Fee Mechanism](#fee-mechanism)
 - [Smart Contracts Architecture](#smart-contracts-architecture)
 - [Bitcoin Transactions](./bitcoin-transactions.md)
 - [Musig2](#musig2---multi-signatures-on-bitcoin)
@@ -99,7 +101,7 @@ RSKIP-502 requires that the PowPeg Bridge authorize **only ONE contract address*
 
 **Key Features:**
 
-- **Access Control**: Only `PeginManager` can call `mintRbtc()`, only `PegoutManager` can call `burnRbtc()`
+- **Access Control**: Only the address authorized by AccessManager (PeginManager for mint, PegoutManager for burn) can call `mintRbtc()` / `burnRbtc()`
 - **Gas Limit Protection**: RBTC transfers use a 100k gas limit to prevent DoS attacks
 - **Upgradeable**: Uses UUPS pattern for future improvements
 - **Reentrancy Protection**: Implements OpenZeppelin's `nonReentrant` modifier
@@ -319,11 +321,13 @@ bash shell/script/deploy/verification/verify-testnet.sh blockscout broadcast/Dep
 ```
 
 **Available networks:**
+
 - `verify-testnet.sh` - Verify contracts on testnet
 - `verify-alphanet.sh` - Verify contracts on alphanet (RSK Explorer only, no Blockscout)
 - `verify-mainnet.sh` - Verify contracts on mainnet
 
 **Verifier options (required):**
+
 - `blockscout` - Verify on Blockscout
 - `rsk-explorer` - Verify on RSK Explorer
 
@@ -364,7 +368,6 @@ verify_implementation \
     "blockscout" \
     "$BLOCKSCOUT_TESTNET_API"
 ```
-
 
 ```bash
 
@@ -568,9 +571,9 @@ The Union Bridge system uses a trust minimized committee approach to manage Bitc
 
 ### Key Concepts
 
-- **Stream**: A stream in the Union Bridge is a logical channel that defines parameters such as denomination and operational rules for peg-in and peg-out flows. Streams allow the bridge to support multiple independent flows of assets, each with its own configuration. Committees, composed of operators, and watchtowers, are assigned to each packet within a stream.
+- **Stream**: A stream in the Union Bridge is a logical channel that defines parameters such as denomination and operational rules for peg-in and peg-out flows. Streams allow the bridge to support multiple independent flows of assets, each with its own configuration. Committees, composed of operators, and watchtowers, are assigned to each packet within a stream. There can be at most **one pegout in process per stream** at any time; a new pegout request reverts until the current one is completed or the slot is blocked.
 
-- **Packet**: A packet represents a discrete operational period or batch within a stream, during which a specific committee is responsible for processing peg-in and peg-out requests. Each packet contains up to 100 slots. The creation of a new packet is triggered either when the current packet nears capacity or when no packets are available (e.g. at system start). However, the packet is only finalized once a new committee is formed to manage it. Packets track the lifecycle of their peg slots and handle the registration and processing of peg-in and peg-out operations. Committee members secure the packet by depositing security bonds.
+- **Packet**: A packet represents a discrete operational period or batch within a stream, during which a specific committee is responsible for processing peg-in and peg-out requests. Each packet contains up to 100 slots. When slot usage reaches the threshold (e.g. 80%), the trigger for creating the next packet and committee happens at **request pegin**: the first time a request pegin is processed that reserves a slot at or past the threshold, the system triggers committee creation for the next packet. The packet is only created once a new committee is formed to manage it. When all slots in a packet are either BLOCKED or COMPLETED, the packet is closed and the committee is released. Committee members secure the packet by depositing security bonds.
 
 - **Slot**: A slot represents a single peg-in or peg-out operation. It's a storage unit within a packet that holds a specific Bitcoin UTXO (Unspent Transaction Output) resulting from a successful peg-in. Slots are created on demand, and when first created, they enter the Prepared state, indicating that all dispute resolution information is in place and the slot is ready to be assigned to a peg-in request. These slots are later used to fulfill peg-out requests, ensuring that the Bitcoin funds are properly accounted for and can be transferred back to users during peg-out operations.
 
@@ -579,15 +582,15 @@ The Union Bridge system uses a trust minimized committee approach to manage Bitc
 A slot can have the following states:
 
 - `Prepared`, when all the dispute resolution information is linked to the slot (setup completed). In this state the slot is ready to be assigned to a request peg-in operation.
-- `Blocked`, when pegin is not accepted by committee (Reject Pegin TX) or time window for the committee to sign has passed and the user recover the funds (User Reimbursement TX). The slot becomes blocked and cannot be used.
+- `Blocked`, when pegin is not accepted by committee (Reject Pegin TX) or time window for the committee to sign has passed and the user recovers the funds (User Reimbursement TX). The slot becomes blocked and cannot be used. If that slot is the last one in the packet, the committee is released.
 - `Filled`, when the Committee members have confirmed and registered a peg-in. In this state the slot is ready for peg-out.
 - `Locked`, when the slot is assigned to a peg-out operation.
-- `OP Selected`, when the timewindow for all memebers to sign the pegout (User Take TX) has passed and not all members signed. An operator is selected to send the funds to the user.
+- `OP Selected`, when the time window for all members to sign the pegout (User Take TX) has passed and not all members signed. An operator is selected to send the funds to the user.
 - `Advanced`: when the selected operator advanced funds. If no funds advanced we go back to select an operator
 - `Kickoff`: when the selected operator presents the reimbursement kickoff tx. If the reimbursement kickoff tx is not presented after some time we go back to select an operator.
 - `Challenged`: when a member (operator or watchtower) does not think reimbursement is valid it sends a Challenge Tx. After this point the selected operator can't receive the reimbursement (Operator Take TX), and needs to win the challenge.
 - `Revealed`: when the selected operator reveals the inputs (Reveal Slot ID TX) to be presented to BitVMX dispute. If it does not present the reveal tx we go back to select an operator.
-- `Completed`: when the peg-out is processed (happy path) or the operator presents the reimbursement after advance the funds without challenge, or operator receives the funds after winning the challenge.
+- `Completed`: when the peg-out is processed (happy path) or the operator presents the reimbursement after advance the funds without challenge, or operator receives the funds after winning the challenge. If that slot is the last one in the packet, the committee is released.
 
 <img src="./specs/imgs/slots_transitions.png" alt="Slots transitions" width="400">
 
@@ -646,10 +649,10 @@ The packet creation process follows four main phases:
 
 #### Phase 1: Member Application
 
-1. **Member applies to stream**: The member calls `applyToStream()` with their role (Operator/Watchtower) and public keys
+1. **Member applies to stream**: The member's address must be whitelisted (via CommitteeRegistry whitelist APIs). Then the member calls `applyToStream()` with their role (Operator/Watchtower) and public keys
 2. **Validation**: CommitteeRegistry validates public keys and signatures
 3. **Registration**: Member is registered and added as a candidate for their requested role
-4. **Committee creation trigger**: When enough members apply (minimum 3 operators + 3 watchtowers and at least 10 total) AND `shouldCreateCommittee` for the stream is true AND there is no pending committee or the pending committee has expired, a pending committee is created
+4. **Committee creation trigger (on apply)**: When enough members apply (at least `minCommitteeOperators` and `minCommitteeWatchtowers`, and at least `committeeMemberCount` total; e.g. 3 operators, 3 watchtowers, 10 total) AND `shouldCreateCommittee` for the stream is true AND there is no pending committee or the pending committee has expired, a pending committee is created. Committee creation can also be triggered at **request pegin** when slot usage reaches the threshold (see Peg-In Phase 1).
 
 ```mermaid
 sequenceDiagram
@@ -678,12 +681,12 @@ sequenceDiagram
 
 #### Phase 2: Committee Creation
 
-1. **Automatic creation**: When the committee creation trigger is met (i.e. `shouldCreateCommittee` for the stream is true, and there is no pending committee or the pending committee has expired), the system automatically trys to create a committee.
+1. **Automatic creation**: When the committee creation trigger is met (i.e. `shouldCreateCommittee` for the stream is true, and there is no pending committee or the pending committee has expired), the system automatically tries to create a committee.
 
-   > `shouldCreateCommittee` is set to true when the stream is first created or when the current packet slot usage hits 80%.
+   > `shouldCreateCommittee` is set to true when the stream is first created or when the current packet slot usage hits the threshold (e.g. 80%). **Slot-usage-based trigger**: when a **request pegin** is processed and the reserved slot reaches the slot-usage threshold, the system calls `createCommittee` for that stream so the next packet and committee are created in time.
 
 2. **Member selection**: Uses Fisher-Yates shuffle to randomly select operators and watchtowers from candidates
-3. **Committee composition**: Ensures at least 10 members have applied, including at least 3 operators and at least 3 watchtowers
+3. **Committee composition**: Ensures at least `committeeMemberCount` members have applied (e.g. 10), including at least `minCommitteeOperators` operators (e.g. 3) and at least `minCommitteeWatchtowers` watchtowers (e.g. 3)
 4. **Pending committee creation**: Creates a pending committee with selected members and sets missingData counter
 
 ```mermaid
@@ -693,18 +696,18 @@ sequenceDiagram
     participant ENV as Environment
 
     Note over CR,ENV: Phase 2: Committee Creation
-    Note over CR,ENV: Committee creation is triggered only when: at least 10 members have applied, including at least 3 operators and at least 3 watchtowers, shouldCreateCommittee for the stream is true, and there is no pending committee or the pending committee has expired
+    Note over CR,ENV: Trigger when committeeMemberCount (e.g. 10) min operators (e.g. 3) and min watchtowers (e.g. 3) applied and shouldCreateCommittee true and no pending or expired
     Note over CR,ENV: System creates committee by selecting members
 
     CR->>CR: _createCommittee(streamId)
     CR->>+MR: selectCommittee(streamId, minWatchtowers, minOperators, committeeMemberCount)
     Note right of CR: Delegates member selection to MemberRegistry
     MR->>MR: _selectCommittee()
-    Note right of MR: Check minimum requirements (3 operators + 3 watchtowers)
+    Note right of MR: Check minCommitteeOperators and minCommitteeWatchtowers (e.g. 3 each)
     MR->>MR: Randomly select operators from candidates
     Note right of MR: Use Fisher-Yates shuffle for selection
     MR->>MR: Randomly select watchtowers from candidates
-    Note right of MR: Ensure at least 10 members selected
+    Note right of MR: Select committeeMemberCount members (e.g. 10)
     MR-->>-CR: (CommitteeMember[], PendingCommitteeStatus)
     CR->>CR: Create pending committee with selected members
     CR->>CR: Set missingData counter to member count
@@ -759,14 +762,13 @@ sequenceDiagram
     participant CR as CommitteeRegistry
     participant MR as MemberRegistry
     participant SM as StreamManager
-    participant PM as PegManager
     participant ENV as Environment
 
     Note over CR,ENV: Phase 4: Committee Registration & Packet Creation
     Note over CR,ENV: Committee is registered and new packet is created
 
     CR->>CR: Generate committeeId (hash of streamId + packetNumber)
-    CR->>+MR: removeCandidatesAndUpdateBalance(committeeMembers, streamDenomination, packetNumber)
+    CR->>+MR: stakePreStakedCandidatesBalance(committeeMembers, streamDenomination, packetNumber)
     Note right of CR: Delegates balance updates to MemberRegistry
     MR->>MR: Move pre-staked to staked for all members
     MR->>MR: Remove members from candidates pool
@@ -790,7 +792,7 @@ sequenceDiagram
 1. **User generates temporary address**: User calls `getTemporaryPeginAddress()` to get a Bitcoin committee address for deposit
 2. **User deposits BTC**: User sends Bitcoin to the generated temporary address, including an OP_RETURN output with the RSK address where they want to receive the funds. For detailed information about the [REQUEST_PEGIN_TX](./bitcoin-transactions.md#1-request_pegin_tx-request-pegin-transaction) transaction structure, inputs/outputs, and Taproot script details.
 3. **Member submits request**: A committee member who monitors the Bitcoin network calls `requestPegin()` with the Bitcoin transaction and SPV proof
-4. **System validates**: System validates the transaction and stores the request
+4. **System validates**: System validates the transaction, reserves a slot, and stores the request. If the reserved slot reaches the slot-usage threshold (e.g. 80%), the system triggers **committee creation** for the next packet so a new packet will be ready when needed.
 5. **Generate accept transaction**: System generates the Bitcoin accept peg-in transaction and emits an event with the signature hash for committee members to sign
 
 ```mermaid
@@ -812,7 +814,8 @@ sequenceDiagram
     M->>+PIM: requestPegin(btcTxSPVProof)
     Note right of M: Committee member monitors Bitcoin network and submits transaction
     PIM->>PIM: Validate BTC transaction and SPV proof
-    PIM->>PIM: Store request pegin data
+    PIM->>PIM: Reserve slot and store request pegin data
+    Note right of PIM: If slot usage reaches threshold then createCommittee(streamId)
     PIM->>PIM: Generate accept peg-in transaction
     PIM-->>-M: PeginRequested event
     Note right of PIM: Event includes signature hash for committee members
@@ -893,11 +896,39 @@ sequenceDiagram
 
 #### Alternative Case: Reject Pegin - Not all members signed
 
-- **User Reimbursement**: After a time window the user can spend the request pegin transaction to recover the funds. If this is the case someone who monitors the Bitcoin network calls `userReimbursement()` with the broadcasted [USER_REIMBUSEMENT_TX](./bitcoin-transactions.md#1-user_reimbursment_tx-user-reimbursement-transaction) and SPV proof to mark that slot as BLOCKED.
+- **User Reimbursement**: After a time window the user can spend the request pegin transaction to recover the funds. If this is the case someone who monitors the Bitcoin network calls `userReimbursement()` with the broadcasted [USER_REIMBUSEMENT_TX](./bitcoin-transactions.md#1-user_reimbursment_tx-user-reimbursement-transaction) and SPV proof to mark that slot as BLOCKED. If that slot is the last one of the packet, the committee is released.
 
-- **Reject Pegin**: For some reason the committee does not accept the request pegin. A member brodcast a [REJECT_PEGIN_TX](./bitcoin-transactions.md#1-reject_pegin_tx-reject-pegin-transaction) to consume the enabler and calls `rejectPegin()` with the SPV proof of that transaction and mark the slot as BLOCKED.
+- **Reject Pegin**: For some reason the committee does not accept the request pegin. A member broadcasts a [REJECT_PEGIN_TX](./bitcoin-transactions.md#1-reject_pegin_tx-reject-pegin-transaction) to consume the enabler and calls `rejectPegin()` with the SPV proof of that transaction to mark the slot as BLOCKED. If that slot is the last one of the packet, the committee is released.
+
+```mermaid
+sequenceDiagram
+    participant M as Monitor/Member
+    participant PIM as PeginManager
+    participant SM as StreamManager
+    participant CR as CommitteeRegistry
+    participant ENV as Environment
+
+    Note over M,ENV: Reject Pegin or User Reimbursement. Slot BLOCKED. If last slot in packet then committee released.
+
+    alt User Reimbursement
+        M->>+PIM: userReimbursement(btcTxSPVProof)
+    else Reject Pegin
+        M->>+PIM: rejectPegin(btcTxSPVProof)
+    end
+    PIM->>+SM: blockSlot(acceptPeginTxid)
+    SM->>SM: Set slot state to BLOCKED
+    SM->>SM: Mark slot as finished
+    SM-->>-PIM: packetClosed
+    alt Last slot of packet
+        PIM->>+CR: releaseCommittee(streamId, packetNumber)
+        CR-->>-ENV: Committee released
+    end
+    PIM-->>-ENV: RejectPeginRegistered or UserReimbursementRegistered event
+```
 
 ## Peg-Out Process (RSK → Bitcoin)
+
+At most **one pegout can be in process per stream** at any time. A new pegout request (`tryPegout`) reverts with `PegoutInProcess` until the current pegout is completed (e.g. via `registerUserTake`, `registerOperatorTake`, or `registerOperatorWon`) or the slot is blocked (reject pegin or user reimbursement).
 
 ### Phase 1: Peg-Out Request
 
@@ -969,7 +1000,7 @@ sequenceDiagram
 2. **Submit BTC transaction**: Member calls `registerUserTake()` with the Bitcoin transaction and SPV proof
 3. **Validate transaction**: System validates the BTC transaction and proof
 4. **Validate signatures**: Committee signatures are validated
-5. **Peg-out Registered**: System emits an event PegoutRegistered informing that RBTC is now linked to Bitcoin
+5. **Peg-out Registered**: System emits an event PegoutRegistered informing that RBTC is now linked to Bitcoin. If the completed slot was the last one in the packet, the committee is released.
 
 ```mermaid
 sequenceDiagram
@@ -995,26 +1026,14 @@ sequenceDiagram
 
 If not all committee members sign within the timeout period:
 
-1. **Trigger operator take**: A member calls `triggerOperatorTake()` to start the operator take process, which emits an event indicating which operator needs to do the funds advancement
+1. **Trigger operator take**: A member calls `triggerOperatorTake()` to start the operator take process, which emits an event indicating which operator needs to do the funds advancement. A unique **PEGOUT ID** is created at this step (derived from stream position, operator take public key, current bitcoin block hash, version of the pegout id and an incrementing sequence number). This pegout ID is included in the `OperatorTakeTriggered` event and must be embedded in the [ADVANCE_FUNDS_TX](./bitcoin-transactions.md#1-advance_funds_tx-advance-funds-transaction) OP_RETURN output for later verification.
 2. **Operator advances funds**: An operator advances BTC to the user's Bitcoin address. For detailed information about the [ADVANCE_FUNDS_TX](./bitcoin-transactions.md#1-advance_funds_tx-advance-funds-transaction) transaction structure, inputs/outputs, and spending conditions.
-3. **Broadcast Reimbursement Kickoff**: The operator broadcasts a Reimbursement Kickoff Bitcoin transaction
+3. **Broadcast Reimbursement Kickoff**: The operator broadcasts a Reimbursement Kickoff Bitcoin transaction. When the operator calls `registerReimbursementKickoff()` with the SPV proof, the contract sets the [BASE EVENT](https://github.com/rsksmart/RSKIPs/blob/master/IPs/RSKIP529.md) on the RBTC bridge (via `RbtcBridge.setBaseEvent`) to the 32-byte pegout ID. This base event is used by the bridge for tracking and must be set before the operator take flow can complete.
 4. **Challenge period**: If no one challenges within the timeout period, the member proceeds
 5. **Broadcast Operator Take transaction**: The operator broadcasts the Operator Take (Take1) Bitcoin transaction. For detailed information about the [OPERATOR_TAKE_TX](./bitcoin-transactions.md#2-operator_take_tx-operator-take-transaction) transaction structure, inputs/outputs, and spending conditions.
 6. **Submit BTC transaction**: Operator calls `registerOperatorTake()` with the Bitcoin transaction and SPV proof
 7. **Validate transaction**: System validates the BTC transaction and proof
-8. **Peg-out Registered**: System emits an event PegoutRegistered informing that RBTC is now linked to Bitcoin via operator take
-
-#### Disputed Case: Operator Won (Take2) - Operator wins challenge dispute
-
-If the operator's REIMBURSEMENT_KICKOFF_TX is challenged by a watchtower:
-
-1. **Challenge registered**: A watchtower calls `registerChallenge()` after detecting incorrect behavior (e.g., invalid ADVANCE_FUNDS_TX). For detailed information about the [CHALLENGE_TX](./bitcoin-transactions.md#2-challenge_tx-challenge-transaction) transaction structure, inputs/outputs, and spending conditions.
-2. **Operator reveals input**: The operator must respond by broadcasting REVEAL_INPUT_TX to prove they advanced funds correctly. The operator signs the slot ID using their Winternitz SLOT_ID_KEY. For detailed information about the [REVEAL_INPUT_TX](./bitcoin-transactions.md#3-reveal_input_tx-reveal-input-transaction) transaction structure, inputs/outputs, and spending conditions.
-3. **Automatic dispatch**: The Dispute Core protocol automatically dispatches OPERATOR_WON_TX after REVEAL_INPUT_TX is confirmed, scheduled for execution after OP_WON_TIMELOCK blocks expire (default: 150 blocks).
-4. **Broadcast Operator Won transaction**: After the timelock expires, the operator broadcasts the Operator Won (Take2) Bitcoin transaction. For detailed information about the [OPERATOR_WON_TX](./bitcoin-transactions.md#3-operator_won_tx-operator-won-transaction) transaction structure, inputs/outputs, and spending conditions.
-5. **Submit BTC transaction**: Operator calls `registerOperatorTake()` with the Bitcoin transaction and SPV proof (same function as OPERATOR_TAKE_TX)
-6. **Validate transaction**: System validates the BTC transaction and proof
-7. **Peg-out Registered**: System emits an event PegoutRegistered informing that RBTC is now linked to Bitcoin via operator won (disputed fallback)
+8. **Peg-out Registered**: System emits an event PegoutRegistered informing that RBTC is now linked to Bitcoin via operator take. If the completed slot was the last one in the packet, the committee is released.
 
 ```mermaid
 sequenceDiagram
@@ -1026,9 +1045,9 @@ sequenceDiagram
     Note over M,ENV: When not all members sign within timeout
 
     M->>+POM: triggerOperatorTake(pegoutTxid)
-    Note right of M: Member triggers operator take after timeout
+    Note right of M: Member triggers operator take after timeout.<br/>Pegout ID created and emitted in OperatorTakeTriggered
     POM->>POM: Validate timeout and signatures status
-    POM-->>-ENV: OperatorTakeTriggered event
+    POM-->>-ENV: OperatorTakeTriggered event (includes pegoutId)
 
     M->>M: Bitcoin user funds advancement
     Note right of M: Operator advances BTC to user's Bitcoin address
@@ -1042,6 +1061,7 @@ sequenceDiagram
     M->>+POM: registerReimbursementKickoff(btcTxSPVProof)
     Note right of M: Operator calls `registerReimbursementKickoff()` with the kickoff tx and SPV proof
     POM->>POM: Validate BTC transaction and SPV proof
+    POM->>POM: setBaseEvent(pegoutId) on RbtcBridge
     POM-->>-ENV: ReimbursementKickoffRegistered event
 
     Note over M,ENV: Challenge period timeout
@@ -1057,13 +1077,24 @@ sequenceDiagram
     Note right of POM: RBTC is now pegged-out to Bitcoin via operator take
 ```
 
-**Disputed Case Flow** (when operator is challenged):
+#### Disputed Case: Operator Won (Take2) - Operator wins challenge dispute
+
+If the operator's REIMBURSEMENT_KICKOFF_TX is challenged by a watchtower:
+
+1. **Challenge registered**: A watchtower calls `ChallengeManager.registerChallenge()` after detecting incorrect behavior (e.g., invalid ADVANCE_FUNDS_TX). For detailed information about the [CHALLENGE_TX](./bitcoin-transactions.md#2-challenge_tx-challenge-transaction) transaction structure, inputs/outputs, and spending conditions.
+2. **Operator reveals input**: The operator must respond by broadcasting REVEAL_INPUT_TX to prove they advanced funds correctly. The operator signs the slot ID using their Winternitz SLOT_ID_KEY. A member calls `ChallengeManager.registerInputRevealed()` with the SPV proof. For detailed information about the [REVEAL_INPUT_TX](./bitcoin-transactions.md#3-reveal_input_tx-reveal-input-transaction) transaction structure, inputs/outputs, and spending conditions.
+3. **Automatic dispatch**: The Dispute Core protocol automatically dispatches OPERATOR_WON_TX after REVEAL_INPUT_TX is confirmed, scheduled for execution after OP_WON_TIMELOCK blocks expire (default: 150 blocks).
+4. **Broadcast Operator Won transaction**: After the timelock expires, the operator broadcasts the Operator Won (Take2) Bitcoin transaction. For detailed information about the [OPERATOR_WON_TX](./bitcoin-transactions.md#3-operator_won_tx-operator-won-transaction) transaction structure, inputs/outputs, and spending conditions.
+5. **Submit BTC transaction**: Operator calls `registerOperatorWon()` with the SPV proof of [OPERATOR_WON_TX](./bitcoin-transactions.md#3-operator_won_tx-operator-won-transaction) transaction.
+6. **Validate transaction**: System validates the BTC transaction and proof
+7. **Peg-out Registered**: System emits an event PegoutRegistered informing that RBTC is now linked to Bitcoin via operator won (disputed fallback). If the completed slot was the last one in the packet, the committee is released.
 
 ```mermaid
 sequenceDiagram
     participant WT as Watchtower
     participant Op as Operator
     participant BTC as Bitcoin Blockchain
+    participant CM as ChallengeManager
     participant POM as PegoutManager
     participant ENV as Environment
 
@@ -1072,26 +1103,30 @@ sequenceDiagram
 
     WT->>BTC: 1. Dispatch CHALLENGE_TX
     BTC-->>WT: Transaction mined
-    WT->>+POM: registerChallenge(btcTxSPVProof)
-    Note right of WT: Watchtower challenges operator actions
-    POM->>POM: Validate BTC transaction and SPV proof
-    POM-->>-ENV: ChallengeRegistered event
+    WT->>+CM: registerChallenge(acceptPeginTxid, btcTxSPVProof)
+    Note right of WT: Watchtower challenges via ChallengeManager
+    CM->>CM: Validate BTC transaction and SPV proof
+    CM-->>-ENV: ChallengeRegistered event
     Note right of POM: Status: CHALLENGE
 
     Op->>BTC: 2. Dispatch REVEAL_INPUT_TX
     Note right of Op: Operator reveals slot ID signature<br/>proving correct fund advancement
     BTC-->>Op: Transaction mined
+    Op->>+CM: registerInputRevealed(acceptPeginTxid, btcTxSPVProof)
+    Note right of Op: Member/operator registers reveal on-chain
+    CM->>CM: Validate REVEAL_INPUT_TX and SPV proof
+    CM-->>-ENV: InputRevealed event
     Note right of Op: Dispute Core automatically schedules<br/>OPERATOR_WON_TX after OP_WON_TIMELOCK
 
     Note over Op,BTC: Wait for OP_WON_TIMELOCK blocks (150 blocks)
 
     Op->>BTC: 3. Dispatch OPERATOR_WON_TX
     BTC-->>Op: Transaction mined
-    Op->>+POM: registerOperatorTake(btcTxSPVProof)
-    Note right of Op: Operator calls `registerOperatorTake()`<br/>with OPERATOR_WON_TX and SPV proof
+    Op->>+POM: registerOperatorWon(btcTxSPVProof)
+    Note right of Op: Operator calls `registerOperatorWon()`<br/>with OPERATOR_WON_TX and SPV proof
     POM->>POM: Validate BTC transaction and SPV proof
     POM-->>-ENV: PegoutRegistered event
-    Note right of POM: RBTC is now pegged-out to Bitcoin<br/>via operator won (disputed fallback)
+    Note right of POM: Reimbursement to the operator who advanced<br/>funds (user was already pegged-out in advance funds)
 ```
 
 ---
@@ -1131,8 +1166,6 @@ This ensures the bridge system has funds to cover Bitcoin network fees for both 
 
 ### Current Fee Distribution
 
-**Status: Not yet implemented**
-
 Currently, accumulated fees remain in the `PegoutManager` contract and can only be withdrawn by the contract owner.
 
 **Future implementation:** Fees will be distributed to operators and watchtowers as compensation for their services in running the bridge, including:
@@ -1148,7 +1181,7 @@ Fee amounts are defined in `src/libraries/Constants.sol`:
 - `P2TR_FEE = 335` satoshis
 - `SPEED_UP_AMOUNT = 540` satoshis
 
-**Note:** This is the initial implementation. Fee structure and distribution mechanisms may be refined in future versions based on operational requirements and economic analysis.
+**Note:** This is the initial implementation. Fee stru cture and distribution mechanisms may be refined in future versions based on operational requirements and economic analysis.
 
 ### TL;DR - Complete Example
 
@@ -1327,7 +1360,7 @@ graph TB
   - Extends PegBase with additional manager-specific functionality
   - Centralizes common state variables (signatureManager, rbtcBridge)
   - Provides shared initialization logic
-  - Implements common setter functions (setStreamManager, setSignatureManager, setPauser)
+  - Stream/signature manager and pause authority are configured at initialization or via upgrade (no post-deploy setters in this base)
 
 #### 5. **RbtcBridge**
 
@@ -1338,10 +1371,10 @@ graph TB
   - Provides `burnRbtc()` function exclusively for PegoutManager to burn RBTC during peg-out requests
   - Provides `verifyTxConfirmations()` and `getTxBlockNumberAndVerifyConfirmations()` functions to verify Bitcoin transaction confirmations using RSK bridge precompiled contract
   - Provides `getBestBlockHash()` function to retrieve the hash of the best Bitcoin block
-  - Implements strict access control: only authorized managers can call mint/burn functions
+  - Implements strict access control via AccessManager: only PeginManager can call mint, only PegoutManager can call burn
   - Enforces 100k gas limit on RBTC transfers to prevent DoS attacks
   - Handles all PowPeg Bridge error codes (cap exceeded, transfers disabled, unauthorized caller)
-- **Security Features**: UUPS upgradeable, non-reentrant, owner-controlled manager address updates
+- **Security Features**: UUPS upgradeable, non-reentrant, pausable via AccessManager
 - **Critical Role**: Without RbtcBridge, both managers cannot interact with PowPeg Bridge due to single-address constraint. Additionally, ChallengeManager, PeginManager, PegoutManager, and MemberRegistry depend on RbtcBridge's transaction verification functions (`verifyTxConfirmations`, `getTxBlockNumberAndVerifyConfirmations`, `getBestBlockHash`) to validate Bitcoin transactions and block data
 
 #### 6. **BitcoinManager**
@@ -1438,7 +1471,7 @@ graph TB
 
 - **BaseProxy** provides ownership functionality through OpenZeppelin's Ownable2StepUpgradeable
 - **AccessManager** contract provides role-based access control
-- **PegManager** has administrative privileges over other contracts
+- **PeginManager**, **PegoutManager**, and **ChallengeManager** have privileges over other contracts (enforced via AccessManager)
 
 #### Reentrancy Protection
 
