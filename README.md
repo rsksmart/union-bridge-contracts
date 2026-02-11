@@ -448,6 +448,81 @@ verify_proxy \
 
 **Note:** The function automatically extracts the implementation address and initialization data from the broadcast file based on the proxy address. If no broadcast file is provided, it defaults to `broadcast/DeployScript.s.sol/<chain_id>/run-latest.json`. The initialization data is automatically processed to extract the actual `initialize()` call data by skipping the first 32 bytes (selector + padding).
 
+### Transferring ownership
+
+**Note:** While ownership can be transferred to any address, it is **strongly recommended** to use a multisig wallet (such as a Safe multisig) for enhanced security and decentralized control.
+
+#### Manually transferring ownership
+
+High level:
+
+1. Call the `transferOwnership(address newOwner)` method on each contract indicating the new owner address as the `newOwner`, from the contract's `owner`.
+  1. Before this, the `pendingOwner()` address is not set.
+  2. After this, the `pendingOwner()` address should be set to the new owner address.
+2. The new owner needs to call `acceptOwnership()` on each contract.
+  1. If using a multisig (e.g., Safe), m of n members need to sign.
+  2. Any of the members can execute it once it is fully signed.
+3. After the new owner executes the transaction, then `owner` should be the new owner address and `pendingOwner` should be not set anymore.
+
+You can use the rsk explorer for this:
+
+1. Using the search bar or a direct link, go to the contract you want to transfer ownership, go to the `Contract` tab and select `Read Proxy`.
+2. Find `owner` and `pendingOwner`, click on them to expand them, click on `Read`.
+3. If no previous transfer ownership has occurred, then the `owner` should be the original deployer and `pendingOwner` should not be set.
+4. Go to `Write Proxy` tab, find the `transferOwnership()` method, add the new owner address in the `newOwner` field, and click `Write`.
+5. After the transaction is confirmed, go back to `Read Proxy` tab and call owner and `pendingOwner`. The owner should still be the deployer. But now, the pending owner should be the new owner contract address.
+6. Now, the new owner needs to accept the ownership by calling `acceptOwnership()`. If using a Safe multisig, use the Safe UI (https://safe.rootstock.io/) to create and execute the transaction. After the new owner accepts ownership, calling `owner` should be the new owner address and the `pendingOwner` should not be set anymore.
+
+#### Automatically transferring ownership
+
+The `TransferOwnership` script automates the transfer of ownership for all bridge contracts to a new owner address. **It is recommended to use a multisig wallet (such as a Safe multisig) as the new owner** for enhanced security. This script uses a two-step ownership transfer pattern (`Ownable2StepUpgradeable`), where the current owner initiates the transfer and the new owner must accept it.
+
+**What contracts are transferred:**
+- AccessManager
+- PeginManager
+- PegoutManager
+- StreamManager
+- CommitteeRegistry
+- MemberRegistry
+- BitcoinManager
+- SignatureManager
+- RbtcBridge
+- ChallengeManager
+
+**Using shell scripts (recommended):**
+
+```bash
+# For testnet
+bash shell/script/ownership/transfer-ownership-testnet.sh 0x...  # newOwner address
+
+# For mainnet
+bash shell/script/ownership/transfer-ownership-mainnet.sh 0x...  # newOwner address
+
+# For alphanet
+bash shell/script/ownership/transfer-ownership-alphanet.sh 0x...  # newOwner address
+
+# For local
+bash shell/script/ownership/transfer-ownership-local.sh 0x...  # newOwner address
+
+# For regtest
+bash shell/script/ownership/transfer-ownership-regtest.sh 0x...  # newOwner address
+```
+
+**What this does:**
+- Calls `transferOwnership(newOwner)` on all bridge contracts
+- Sets the new owner as the `pendingOwner` for each contract
+- Outputs status for each contract
+
+**After running the script:**
+- Ownership transfers are initiated but not yet complete
+- The new owner must call `acceptOwnership()` on each contract to complete the transfer
+- If the new owner is a Safe multisig, use the Safe UI (https://safe.rootstock.io/) to create and execute `acceptOwnership()` transactions
+- If the new owner is a regular EOA, simply call `acceptOwnership()` from that address
+
+**Tip:**
+
+You can run the `transfer-ownership-...` command again to see the status of the contracts, if the new/pending owner has claimed ownership or not. Keep in mind that the script will attempt to transfer ownership on any contract that has not initiated the transfer process previously for any reason.
+
 ### Rust crate with Bindings
 
 To generate the new bindings for the smart contracts run :
