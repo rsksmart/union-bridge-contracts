@@ -460,23 +460,27 @@ verify_proxy \
 High level:
 
 1. Call the `transferOwnership(address newOwner)` method on each contract indicating the new owner address as the `newOwner`, from the contract's `owner`.
-  1. Before this, the `pendingOwner()` address is not set.
-  2. After this, the `pendingOwner()` address should be set to the new owner address.
+    1. Before this, the `pendingOwner()` address is not set.
+    2. After this, the `pendingOwner()` address should be set to the new owner address.
 2. The new owner needs to call `acceptOwnership()` on each contract.
-  1. If using a multisig (e.g., Safe), m of n members need to sign.
-  2. Any of the members can execute it once it is fully signed.
+    1. If using a multisig (e.g., Safe), m of n members need to sign.
+    2. Any of the members can execute it once it is fully signed.
 3. After the new owner executes the transaction, then `owner` should be the new owner address and `pendingOwner` should be not set anymore.
 
-You can use the rsk explorer for this:
+We can use the rsk explorer for this:
 
 1. Using the search bar or a direct link, go to the contract you want to transfer ownership, go to the `Contract` tab and select `Read Proxy`.
 2. Find `owner` and `pendingOwner`, click on them to expand them, click on `Read`.
 3. If no previous transfer ownership has occurred, then the `owner` should be the original deployer and `pendingOwner` should not be set.
-4. Go to `Write Proxy` tab, find the `transferOwnership()` method, add the new owner address in the `newOwner` field, and click `Write`.
+4. Go to `Write Proxy` tab, find the `transferOwnership()` method, add the new owner address in the `newOwner` field, make sure you wallet is connected (like MetaMask), click `Write`, sign and send the transaction.
 5. After the transaction is confirmed, go back to `Read Proxy` tab and call owner and `pendingOwner`. The owner should still be the deployer. But now, the pending owner should be the new owner contract address.
-6. Now, the new owner needs to accept the ownership by calling `acceptOwnership()`. If using a Safe multisig, use the Safe UI (https://safe.rootstock.io/) to create and execute the transaction. After the new owner accepts ownership, calling `owner` should be the new owner address and the `pendingOwner` should not be set anymore.
+6. Now, the new owner needs to accept the ownership by calling `acceptOwnership()`. If using a Safe multisig, use the Safe UI (https://safe.rootstock.io/) to create and execute the transaction. After the new owner accepts ownership, calling `owner` should show the new owner address and the `pendingOwner` should not be set anymore.
 
 #### Automatically transferring ownership
+
+**Prerequisites:**
+
+- The `<NETWORK>_PEGIN_MANAGER` environment variable must be set in your `.env` file (e.g., `TESTNET_PEGIN_MANAGER`, `MAINNET_PEGIN_MANAGER`, `ALPHANET_PEGIN_MANAGER`, `LOCAL_PEGIN_MANAGER`, or `REGTEST_PEGIN_MANAGER` depending on the network you're targeting). This address is required as the entry point for the script to discover all other bridge contract addresses on-chain by calling methods on the PeginManager contract.
 
 The `TransferOwnership` script automates the transfer of ownership for all bridge contracts to a new owner address. **It is recommended to use a multisig wallet (such as a Safe multisig) as the new owner** for enhanced security. This script uses a two-step ownership transfer pattern (`Ownable2StepUpgradeable`), where the current owner initiates the transfer and the new owner must accept it.
 
