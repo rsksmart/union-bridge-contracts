@@ -21,7 +21,6 @@ import {BaseProxy} from "src/BaseProxy.sol";
 /// @notice Migration script to transfer ownership of all bridge contracts to a new owner address
 /// @dev After running this script, the new owner must accept ownership manually
 contract TransferOwnership is ScriptUtils, ContractAddressManager {
-
     /// @notice Struct to hold contract information
     struct ContractInfo {
         string name;
@@ -58,7 +57,7 @@ contract TransferOwnership is ScriptUtils, ContractAddressManager {
     function _discoverContractAddresses() internal view returns (ContractAddresses memory addresses) {
         PeginManager peginManager = getPeginManager();
         addresses.peginManager = address(peginManager);
-        
+
         addresses.accessManager = address(peginManager.pauser());
         AccessManager accessManager = AccessManager(addresses.accessManager);
         addresses.pegoutManager = accessManager.pegoutManager();
@@ -76,7 +75,7 @@ contract TransferOwnership is ScriptUtils, ContractAddressManager {
     /// @notice Initialize the contracts array with all bridge contracts
     function _initializeContracts() internal {
         ContractAddresses memory addresses = _discoverContractAddresses();
-        
+
         PeginManager peginManager = PeginManager(addresses.peginManager);
         AccessManager accessManager = AccessManager(addresses.accessManager);
         PegoutManager pegoutManager = PegoutManager(addresses.pegoutManager);
@@ -89,85 +88,105 @@ contract TransferOwnership is ScriptUtils, ContractAddressManager {
         ChallengeManager challengeManager = ChallengeManager(addresses.challengeManager);
 
         // Add all contracts that need ownership transfer
-        contracts.push(ContractInfo({
-            name: "AccessManager",
-            contractAddress: address(accessManager),
-            contractInstance: BaseProxy(address(accessManager)),
-            ownershipTransferred: false,
-            ownershipAccepted: false
-        }));
+        contracts.push(
+            ContractInfo({
+                name: "AccessManager",
+                contractAddress: address(accessManager),
+                contractInstance: BaseProxy(address(accessManager)),
+                ownershipTransferred: false,
+                ownershipAccepted: false
+            })
+        );
 
-        contracts.push(ContractInfo({
-            name: "PeginManager",
-            contractAddress: address(peginManager),
-            contractInstance: BaseProxy(address(peginManager)),
-            ownershipTransferred: false,
-            ownershipAccepted: false
-        }));
+        contracts.push(
+            ContractInfo({
+                name: "PeginManager",
+                contractAddress: address(peginManager),
+                contractInstance: BaseProxy(address(peginManager)),
+                ownershipTransferred: false,
+                ownershipAccepted: false
+            })
+        );
 
-        contracts.push(ContractInfo({
-            name: "PegoutManager",
-            contractAddress: address(pegoutManager),
-            contractInstance: BaseProxy(address(pegoutManager)),
-            ownershipTransferred: false,
-            ownershipAccepted: false
-        }));
+        contracts.push(
+            ContractInfo({
+                name: "PegoutManager",
+                contractAddress: address(pegoutManager),
+                contractInstance: BaseProxy(address(pegoutManager)),
+                ownershipTransferred: false,
+                ownershipAccepted: false
+            })
+        );
 
-        contracts.push(ContractInfo({
-            name: "StreamManager",
-            contractAddress: address(streamManager),
-            contractInstance: BaseProxy(address(streamManager)),
-            ownershipTransferred: false,
-            ownershipAccepted: false
-        }));
+        contracts.push(
+            ContractInfo({
+                name: "StreamManager",
+                contractAddress: address(streamManager),
+                contractInstance: BaseProxy(address(streamManager)),
+                ownershipTransferred: false,
+                ownershipAccepted: false
+            })
+        );
 
-        contracts.push(ContractInfo({
-            name: "CommitteeRegistry",
-            contractAddress: address(committeeRegistry),
-            contractInstance: BaseProxy(address(committeeRegistry)),
-            ownershipTransferred: false,
-            ownershipAccepted: false
-        }));
+        contracts.push(
+            ContractInfo({
+                name: "CommitteeRegistry",
+                contractAddress: address(committeeRegistry),
+                contractInstance: BaseProxy(address(committeeRegistry)),
+                ownershipTransferred: false,
+                ownershipAccepted: false
+            })
+        );
 
-        contracts.push(ContractInfo({
-            name: "MemberRegistry",
-            contractAddress: address(memberRegistry),
-            contractInstance: BaseProxy(address(memberRegistry)),
-            ownershipTransferred: false,
-            ownershipAccepted: false
-        }));
+        contracts.push(
+            ContractInfo({
+                name: "MemberRegistry",
+                contractAddress: address(memberRegistry),
+                contractInstance: BaseProxy(address(memberRegistry)),
+                ownershipTransferred: false,
+                ownershipAccepted: false
+            })
+        );
 
-        contracts.push(ContractInfo({
-            name: "BitcoinManager",
-            contractAddress: address(bitcoinManager),
-            contractInstance: BaseProxy(address(bitcoinManager)),
-            ownershipTransferred: false,
-            ownershipAccepted: false
-        }));
+        contracts.push(
+            ContractInfo({
+                name: "BitcoinManager",
+                contractAddress: address(bitcoinManager),
+                contractInstance: BaseProxy(address(bitcoinManager)),
+                ownershipTransferred: false,
+                ownershipAccepted: false
+            })
+        );
 
-        contracts.push(ContractInfo({
-            name: "SignatureManager",
-            contractAddress: address(signatureManager),
-            contractInstance: BaseProxy(address(signatureManager)),
-            ownershipTransferred: false,
-            ownershipAccepted: false
-        }));
+        contracts.push(
+            ContractInfo({
+                name: "SignatureManager",
+                contractAddress: address(signatureManager),
+                contractInstance: BaseProxy(address(signatureManager)),
+                ownershipTransferred: false,
+                ownershipAccepted: false
+            })
+        );
 
-        contracts.push(ContractInfo({
-            name: "RbtcBridge",
-            contractAddress: address(rbtcBridge),
-            contractInstance: BaseProxy(address(rbtcBridge)),
-            ownershipTransferred: false,
-            ownershipAccepted: false
-        }));
+        contracts.push(
+            ContractInfo({
+                name: "RbtcBridge",
+                contractAddress: address(rbtcBridge),
+                contractInstance: BaseProxy(address(rbtcBridge)),
+                ownershipTransferred: false,
+                ownershipAccepted: false
+            })
+        );
 
-        contracts.push(ContractInfo({
-            name: "ChallengeManager",
-            contractAddress: address(challengeManager),
-            contractInstance: BaseProxy(address(challengeManager)),
-            ownershipTransferred: false,
-            ownershipAccepted: false
-        }));
+        contracts.push(
+            ContractInfo({
+                name: "ChallengeManager",
+                contractAddress: address(challengeManager),
+                contractInstance: BaseProxy(address(challengeManager)),
+                ownershipTransferred: false,
+                ownershipAccepted: false
+            })
+        );
     }
 
     /// @notice Transfer ownership of all contracts to new owner
@@ -186,10 +205,10 @@ contract TransferOwnership is ScriptUtils, ContractAddressManager {
 
         for (uint256 i = 0; i < contracts.length; i++) {
             ContractInfo storage contractInfo = contracts[i];
-            
+
             address currentOwner = contractInfo.contractInstance.owner();
             address pendingOwner = contractInfo.contractInstance.pendingOwner();
-            
+
             console.log("");
             console.log("Contract:", contractInfo.name);
             console.log("  Address:", contractInfo.contractAddress);
@@ -213,14 +232,14 @@ contract TransferOwnership is ScriptUtils, ContractAddressManager {
             contractInfo.contractInstance.transferOwnership(_newOwner);
             contractInfo.ownershipTransferred = true;
             console.log(StdStyle.blue("  Status: Ownership transfer initiated"));
-
         }
 
         vm.stopBroadcast();
 
         console.log("\n=== PROCESS COMPLETE ===");
-        console.log("The new owner must call acceptOwnership() on each contract where the new owner's address is the pendingOwner");
-        
+        console.log(
+            "The new owner must call acceptOwnership() on each contract where the new owner's address is the pendingOwner"
+        );
     }
 
     /// @notice Transfer ownership of all contracts to new owner
