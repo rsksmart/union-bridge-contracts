@@ -23,9 +23,9 @@ interface IChallengeManager {
 
     /// @notice Registers a challenge for a peg-out transaction
     /// @dev Validates the SPV proof and updates the peg-out status accordingly
-    /// @param acceptPeginTxid The accept peg-in transaction id that is being challenged
+    /// @param _acceptPeginTxid The accept peg-in transaction id that is being challenged
     /// @param _challenge The BTC SPV proof of the challenge transaction
-    function registerChallenge(bytes32 acceptPeginTxid, BtcTxSPVProof calldata _challenge) external;
+    function registerChallenge(bytes32 _acceptPeginTxid, BtcTxSPVProof calldata _challenge) external;
 
     /// @notice Registers an input revealed for a challenge transaction
     /// @dev Validates the SPV proof and updates the challenge status accordingly
