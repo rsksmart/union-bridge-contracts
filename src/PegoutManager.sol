@@ -205,7 +205,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         bytes32 key = keccak256(abi.encodePacked(_streamId, _packetNumber, _slotId));
         bytes32 pegoutTxid = pegoutTxids[key];
         if (pegoutTxid == bytes32(0)) {
-            revert PegoutTxidNotFoundForSlot(_streamId, _packetNumber, _slotId);
+            revert PegoutTxidNotFound(_streamId, _packetNumber, _slotId);
         }
         return pegoutTxid;
     }
@@ -231,7 +231,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
     function triggerOperatorTake(bytes32 _pegoutTxid) external nonReentrant whenNotPaused {
         bytes32 acceptPeginTxid = pegoutToPeginTxid[_pegoutTxid];
         if (acceptPeginTxid == bytes32(0)) {
-            revert PegoutTxidNotFound(_pegoutTxid);
+            revert PeginNotFoundForPegout(_pegoutTxid);
         }
 
         PegoutTempInfo storage pegoutInfo = pegoutTempInfo[acceptPeginTxid];

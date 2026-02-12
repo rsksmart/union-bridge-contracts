@@ -665,12 +665,12 @@ contract PegoutManagerTest is Test, HelperContract {
         pegoutManager.triggerOperatorTake(setup.pegoutTxid);
     }
 
-    function test_triggerOperatorTake_Revert_PegoutTxidNotFound() external {
+    function test_triggerOperatorTake_Revert_PeginNotFoundForPegout() external {
         // Arrange
         bytes32 pegoutTxid = hex"0001";
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegoutManager.PegoutTxidNotFound.selector, pegoutTxid));
+        vm.expectRevert(abi.encodeWithSelector(IPegoutManager.PeginNotFoundForPegout.selector, pegoutTxid));
 
         // Act
         pegoutManager.triggerOperatorTake(pegoutTxid);
@@ -2093,7 +2093,7 @@ contract PegoutManagerTest is Test, HelperContract {
         assertEq(txid1, txid2, "Both txids should match");
     }
 
-    function test_getPegoutTxid_Revert_PegoutTxidNotFoundForSlot() external {
+    function test_getPegoutTxid_Revert_PegoutTxidNotFound() external {
         // Arrange
         Stream memory stream = streamManager.getStream(VALUE);
         uint64 packetNumber = 0;
@@ -2101,9 +2101,7 @@ contract PegoutManagerTest is Test, HelperContract {
 
         // Assert
         vm.expectRevert(
-            abi.encodeWithSelector(
-                IPegoutManager.PegoutTxidNotFoundForSlot.selector, stream.streamId, packetNumber, slotId
-            )
+            abi.encodeWithSelector(IPegoutManager.PegoutTxidNotFound.selector, stream.streamId, packetNumber, slotId)
         );
 
         // Act

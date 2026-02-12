@@ -298,9 +298,9 @@ interface IPegoutManager {
     /// @param expireAt The timestamp when the operator take timeout expires
     error OperatorTakeTimeoutNotExpired(uint256 createdAt, uint256 expireAt);
 
-    /// @notice Thrown when a peg-out signature hash is not found in the system
-    /// @param pegoutTxid The signature hash that was not found
-    error PegoutTxidNotFound(bytes32 pegoutTxid);
+    /// @notice Thrown when a peg-out txid is not found for the given accept peg-in transaction id
+    /// @param pegoutTxid The peg-out transaction id that was not found
+    error PeginNotFoundForPegout(bytes32 pegoutTxid);
 
     /// @notice Thrown when the operator address does not match the expected operator that should advance the funds
     /// @param expectedOperator The expected operator address that should take the pegout
@@ -356,5 +356,5 @@ interface IPegoutManager {
     /// @param streamId The stream identifier
     /// @param packetNumber The packet number within the stream
     /// @param slotId The slot identifier within the packet
-    error PegoutTxidNotFoundForSlot(uint64 streamId, uint64 packetNumber, uint64 slotId);
+    error PegoutTxidNotFound(uint64 streamId, uint64 packetNumber, uint64 slotId);
 }
