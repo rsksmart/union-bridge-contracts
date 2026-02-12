@@ -26,6 +26,8 @@ abstract contract ScriptUtils is Script {
     // Fake amount just for testing purposes
     uint64 constant INPUT_REVEALED_AMOUNT = 4000;
 
+    bytes32 constant SECOND_REVEAL_TXID = bytes32(0xabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd);
+
     function getDeployerKey() public view returns (uint256) {
         return getMemberKey(uint32(vm.envUint("DEPLOYER_INDEX")));
     }
@@ -307,7 +309,33 @@ abstract contract ScriptUtils is Script {
         return BtcTransaction({version: Constants.BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
     }
 
-    function createReimbursementKickoffTx(bytes memory _committeePubKey, uint64 _slotIndex)
+    function createStopOperatorWonTx(bytes32 _inputRevealedTxid) internal pure returns (BtcTransaction memory) {
+        // Input: spend the accept peg-in UTXO
+        BtcTxIn[] memory btcInputs = new BtcTxIn[](Constants.STOP_OPERATOR_WON_INPUT_COUNT);
+        btcInputs[0] = BtcTxIn({
+            txId: _inputRevealedTxid,
+            vout: 0, // P2TR output is at index 0
+            sequence: Constants.SEQUENCE,
+            scriptSig: hex""
+        });
+
+        btcInputs[1] = BtcTxIn({
+            txId: SECOND_REVEAL_TXID,
+            vout: 0, // P2TR output is at index 0
+            sequence: Constants.SEQUENCE,
+            scriptSig: hex""
+        });
+
+        // Outputs
+        BtcTxOut[] memory btcOutputs = new BtcTxOut[](1);
+
+        // Fake value and script. They are not checked by the contract.
+        btcOutputs[0] = BtcTxOut({amount: 10, scriptPubKey: bytes("")});
+
+        return BtcTransaction({version: Constants.BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
+    }
+
+    function createReimbursementKickoffTx(bytes memory _committeePubKey, uint64 _slotId)
         internal
         pure
         returns (BtcTransaction memory)
@@ -317,7 +345,7 @@ abstract contract ScriptUtils is Script {
         btcInputs[0] = BtcTxIn({
             // Input txid is uncheckable by the contract
             txId: bytes32(0xabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd),
-            vout: uint32(_slotIndex),
+            vout: uint32(_slotId),
             sequence: Constants.SEQUENCE,
             scriptSig: hex""
         });
@@ -455,7 +483,7 @@ abstract contract ScriptUtils is Script {
     }
 
     // ========================== Reveal ==========================
-    function createRevealTx(bytes32 _challengeTxid, bytes memory _committeePubKey)
+    function createInputRevealedTx(bytes32 _challengeTxid, bytes memory _committeePubKey)
         internal
         pure
         returns (BtcTransaction memory)
@@ -476,6 +504,32 @@ abstract contract ScriptUtils is Script {
         // This is a fake amount just for testing purposes
         btcOutputs[0] = BtcTxOut({amount: 2000, scriptPubKey: getAcceptPeginP2TRScriptPub(_committeePubKey)});
 
+        return BtcTransaction({version: Constants.BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
+    }
+
+    // ========================== Reveal ==========================
+    function createInputNotRevealedTx(bytes32 _challengeTxid, bytes memory _committeePubKey)
+        internal
+        pure
+        returns (BtcTransaction memory)
+    {
+        // Input: spend the challenge UTXO
+        BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
+        btcInputs[0] = BtcTxIn({
+            txId: _challengeTxid,
+            vout: 0, // P2TR output is at index 0
+            sequence: Constants.SEQUENCE,
+            scriptSig: hex""
+        });
+
+        // Outputs
+        BtcTxOut[] memory btcOutputs = new BtcTxOut[](1);
+
+        // P2TR to committee
+        // This is a fake amount just for testing purposes
+        btcOutputs[0] = BtcTxOut({amount: 2000, scriptPubKey: getAcceptPeginP2TRScriptPub(_committeePubKey)});
+
+        // TODO: locktime could be updated to match bitvmx transaction. It's not checked by the contract though.
         return BtcTransaction({version: Constants.BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
     }
 

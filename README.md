@@ -714,7 +714,7 @@ sequenceDiagram
 
 ### Phase 1: Request Peg-In
 
-1. **User generates temporary address**: User calls `getTemporaryPeginAddress()` to get a Bitcoin committee address for deposit
+1. **User generates temporary address**: User calls `getRequestPeginData()` to get a Bitcoin committee address for deposit
 2. **User deposits BTC**: User sends Bitcoin to the generated temporary address, including an OP_RETURN output with the RSK address where they want to receive the funds. For detailed information about the [REQUEST_PEGIN_TX](./bitcoin-transactions.md#1-request_pegin_tx-request-pegin-transaction) transaction structure, inputs/outputs, and Taproot script details.
 3. **Member submits request**: A committee member who monitors the Bitcoin network calls `requestPegin()` with the Bitcoin transaction and SPV proof
 4. **System validates**: System validates the transaction, reserves a slot, and stores the request. If the reserved slot reaches the slot-usage threshold (e.g. 80%), the system triggers **committee creation** for the next packet so a new packet will be ready when needed.
@@ -730,7 +730,7 @@ sequenceDiagram
     Note over U,ENV: Phase 1: Request Peg-In
     Note over U,ENV: User requests to peg-in Bitcoin to RSK
 
-    U->>+PIM: getTemporaryPeginAddress(rootstockAddress, value, btcReimbursementPubKey)
+    U->>+PIM: getRequestPeginData(rootstockAddress, value, btcReimbursementPubKey)
     PIM-->>-U: temporaryPeginAddress
 
     U->>U: Send BTC to temporaryPeginAddress
