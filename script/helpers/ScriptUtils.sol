@@ -335,7 +335,7 @@ abstract contract ScriptUtils is Script {
         return BtcTransaction({version: Constants.BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
     }
 
-    function createReimbursementKickoffTx(bytes memory _committeePubKey, uint32 _slotIndex)
+    function createReimbursementKickoffTx(bytes memory _committeePubKey, uint64 _slotId)
         internal
         pure
         returns (BtcTransaction memory)
@@ -345,7 +345,7 @@ abstract contract ScriptUtils is Script {
         btcInputs[0] = BtcTxIn({
             // Input txid is uncheckable by the contract
             txId: bytes32(0xabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd),
-            vout: uint32(_slotIndex),
+            vout: uint32(_slotId),
             sequence: Constants.SEQUENCE,
             scriptSig: hex""
         });
@@ -483,7 +483,7 @@ abstract contract ScriptUtils is Script {
     }
 
     // ========================== Reveal ==========================
-    function createRevealTx(bytes32 _challengeTxid, bytes memory _committeePubKey)
+    function createInputRevealedTx(bytes32 _challengeTxid, bytes memory _committeePubKey)
         internal
         pure
         returns (BtcTransaction memory)

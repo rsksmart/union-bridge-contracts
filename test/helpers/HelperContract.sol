@@ -1019,7 +1019,7 @@ abstract contract HelperContract is Test, TestUtils {
         BtcTransaction memory challengeTx = createChallengeTx(reimbursementTxid, committeePubKey);
 
         bytes32 challengeTxid = bitcoinManager.getBtcTxid(challengeTx);
-        BtcTransaction memory inputRevealedTx = createRevealTx(challengeTxid, committeePubKey);
+        BtcTransaction memory inputRevealedTx = createInputRevealedTx(challengeTxid, committeePubKey);
         bytes32 inputRevealedTxid = bitcoinManager.getBtcTxid(inputRevealedTx);
 
         opWonTx = createOperatorWonTx(_acceptPeginTxid, inputRevealedTxid, operatorDisputePubKeyCompact, VALUE);
@@ -1037,7 +1037,7 @@ abstract contract HelperContract is Test, TestUtils {
 
         bytes memory committeePubKey = streamManager.getCommitteePubKey(uint64(DEFAULT_STREAM), setup.packetNumber);
         bytes32 challengeTxid = bitcoinManager.getBtcTxid(setup.challengeSPV.btcTx);
-        setup.inputRevealedSPV = createBtcTxSPVProof(createRevealTx(challengeTxid, committeePubKey));
+        setup.inputRevealedSPV = createBtcTxSPVProof(createInputRevealedTx(challengeTxid, committeePubKey));
         setup.inputNotRevealedSPV = createBtcTxSPVProof(createInputNotRevealedTx(challengeTxid, committeePubKey));
 
         vm.prank(operatorAddress);

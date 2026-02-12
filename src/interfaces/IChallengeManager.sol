@@ -46,8 +46,6 @@ interface IChallengeManager {
     function registerStopOperatorWon(bytes32 _acceptPeginTxid, BtcTxSPVProof calldata _stopOperatorWon) external;
 
     // ===================== Events =====================
-    // TODO: Should we unify all the `Registered` events into a single event with a type field?
-
     /// @notice Event emitted when a challenge is registered for a peg-out
     /// @param txid The hash of the challenge transaction
     /// @param acceptPeginTxid The txid of the original accept peg-in transaction
@@ -97,10 +95,10 @@ interface IChallengeManager {
     error ChallengeTxidNotMatch(bytes32 actual, bytes32 expected);
 
     /// @notice Thrown when the reveal transaction id does not match the expected value
-    /// @param input1txid The actual input 1 transaction id
-    /// @param input2txid The actual input 2 transaction id
-    /// @param expected The expected transaction id
-    error RevealTxidNotMatch(bytes32 input1txid, bytes32 input2txid, bytes32 expected);
+    /// @param input1txid The txid for the first input
+    /// @param input2txid The txid for the second input
+    /// @param expectedTxid The expected transaction id
+    error RevealTxidNotMatch(bytes32 input1txid, bytes32 input2txid, bytes32 expectedTxid);
 
     /// @notice Thrown when the number of inputs in a challenge transaction is incorrect
     /// @param actual The actual number of inputs found

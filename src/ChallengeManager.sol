@@ -57,13 +57,12 @@ contract ChallengeManager is IChallengeManager, PegBase {
         whenNotPaused
     {
         StreamPosition memory streamInfo = _validatePegStatus(_acceptPeginTxid, PegStatus.KICKOFF);
+        PegoutTempInfo memory pegoutInfo = pegoutManager.getPegoutTempInfo(_acceptPeginTxid);
+        _validateMemberInCommittee(pegoutInfo.committeeId);
 
         if (_challenge.btcTx.inputs.length != Constants.CHALLENGE_INPUT_COUNT) {
             revert InvalidChallengeInputCount(_challenge.btcTx.inputs.length, Constants.CHALLENGE_INPUT_COUNT);
         }
-
-        PegoutTempInfo memory pegoutInfo = pegoutManager.getPegoutTempInfo(_acceptPeginTxid);
-        _validateMemberInCommittee(pegoutInfo.committeeId);
 
         bytes32 kickoffTxid = _challenge.btcTx.inputs[Constants.CHALLENGE_VIN_REIMBURSEMENT_KICKOFF].txId;
         if (pegoutInfo.reimbursementKickoffTxid != kickoffTxid) {
@@ -106,15 +105,14 @@ contract ChallengeManager is IChallengeManager, PegBase {
         whenNotPaused
     {
         StreamPosition memory streamInfo = _validatePegStatus(_acceptPeginTxid, PegStatus.CHALLENGE);
+        PegoutTempInfo memory pegoutInfo = pegoutManager.getPegoutTempInfo(_acceptPeginTxid);
+        _validateMemberInCommittee(pegoutInfo.committeeId);
 
         if (_inputNotRevealed.btcTx.inputs.length != Constants.INPUT_NOT_REVEALED_INPUT_COUNT) {
             revert InvalidInputNotRevealedInputCount(
                 _inputNotRevealed.btcTx.inputs.length, Constants.INPUT_NOT_REVEALED_INPUT_COUNT
             );
         }
-
-        PegoutTempInfo memory pegoutInfo = pegoutManager.getPegoutTempInfo(_acceptPeginTxid);
-        _validateMemberInCommittee(pegoutInfo.committeeId);
 
         ChallengeTempInfo memory challengeInfo = _getChallengeTempInfo(_acceptPeginTxid);
 
@@ -160,13 +158,12 @@ contract ChallengeManager is IChallengeManager, PegBase {
         whenNotPaused
     {
         StreamPosition memory streamInfo = _validatePegStatus(_acceptPeginTxid, PegStatus.CHALLENGE);
+        PegoutTempInfo memory pegoutInfo = pegoutManager.getPegoutTempInfo(_acceptPeginTxid);
+        _validateMemberInCommittee(pegoutInfo.committeeId);
 
         if (_inputRevealed.btcTx.inputs.length != Constants.INPUT_REVEALED_INPUT_COUNT) {
             revert InvalidRevealedInputCount(_inputRevealed.btcTx.inputs.length, Constants.INPUT_REVEALED_INPUT_COUNT);
         }
-
-        PegoutTempInfo memory pegoutInfo = pegoutManager.getPegoutTempInfo(_acceptPeginTxid);
-        _validateMemberInCommittee(pegoutInfo.committeeId);
 
         ChallengeTempInfo storage challengeInfo = _getChallengeTempInfo(_acceptPeginTxid);
         bytes32 challengeTxid = _inputRevealed.btcTx.inputs[Constants.INPUT_REVEALED_VIN_CHALLENGE].txId;
@@ -201,6 +198,8 @@ contract ChallengeManager is IChallengeManager, PegBase {
         whenNotPaused
     {
         StreamPosition memory streamInfo = _validatePegStatus(_acceptPeginTxid, PegStatus.REVEALED);
+        PegoutTempInfo memory pegoutInfo = pegoutManager.getPegoutTempInfo(_acceptPeginTxid);
+        _validateMemberInCommittee(pegoutInfo.committeeId);
 
         if (_stopOperatorWon.btcTx.inputs.length != Constants.STOP_OPERATOR_WON_INPUT_COUNT) {
             revert InvalidStopOperatorWonInputCount(
@@ -208,14 +207,11 @@ contract ChallengeManager is IChallengeManager, PegBase {
             );
         }
 
-        PegoutTempInfo memory pegoutInfo = pegoutManager.getPegoutTempInfo(_acceptPeginTxid);
-        _validateMemberInCommittee(pegoutInfo.committeeId);
-
         ChallengeTempInfo storage challengeInfo = challengeTempInfo[_acceptPeginTxid];
         bytes32 input0Txid = _stopOperatorWon.btcTx.inputs[0].txId;
         bytes32 input1Txid = _stopOperatorWon.btcTx.inputs[1].txId;
 
-        // Validate it's not Operator Won.
+        // Validate that input 0 is not the accept peg-in txid used in Operator Won.
         if (input0Txid == _acceptPeginTxid) {
             revert InvalidStopOperatorWonTxid(input0Txid);
         }

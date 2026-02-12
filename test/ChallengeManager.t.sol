@@ -101,31 +101,39 @@ contract ChallengeManagerTest is Test, HelperContract {
 
     function test_registerChallenge_Revert_EnforcedPause_PausedContract() external {
         // Arrange
-        (, RegisterUserTakeSetup memory setup) = setup_operatorTake();
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
+        address memberAddress = getCommitteeMemberAddressByIndex(COMMITTEE_ID_STREAM_1_COMMITTEE_1, 0);
+        assertNotEq(memberAddress, opAddress, "Member address should be different from operator address");
         pauseContracts();
 
         // Assert
         vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
 
         // Act
+        vm.prank(memberAddress);
         challengeManager.registerChallenge(setup.acceptPeginTxid, setup.challengeSPV);
     }
 
     function test_registerChallenge_Revert_PeginNotRequested() external {
         // Arrange
-        (, RegisterUserTakeSetup memory setup) = setup_operatorTake();
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
         bytes32 wrongAcceptPeginTxid = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
+        address memberAddress = getCommitteeMemberAddressByIndex(COMMITTEE_ID_STREAM_1_COMMITTEE_1, 0);
+        assertNotEq(memberAddress, opAddress, "Member address should be different from operator address");
 
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IPegBase.PeginNotRequested.selector, wrongAcceptPeginTxid));
 
         // Act
+        vm.prank(memberAddress);
         challengeManager.registerChallenge(wrongAcceptPeginTxid, setup.challengeSPV);
     }
 
     function test_registerChallenge_Revert_InvalidPegStatus() external {
         // Arrange
-        (, RegisterUserTakeSetup memory setup) = setup_operatorTake();
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
+        address memberAddress = getCommitteeMemberAddressByIndex(COMMITTEE_ID_STREAM_1_COMMITTEE_1, 0);
+        assertNotEq(memberAddress, opAddress, "Member address should be different from operator address");
 
         // Set peg status to COMPLETED to trigger invalid status error
         vm.prank(address(challengeManager));
@@ -135,6 +143,7 @@ contract ChallengeManagerTest is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(IPegBase.InvalidPegStatus.selector, PegStatus.COMPLETED));
 
         // Act
+        vm.prank(memberAddress);
         challengeManager.registerChallenge(setup.acceptPeginTxid, setup.challengeSPV);
     }
 
@@ -146,7 +155,6 @@ contract ChallengeManagerTest is Test, HelperContract {
         bytes memory committeePubKey = streamManager.getCommitteePubKey(uint64(DEFAULT_STREAM), setup.packetNumber);
         BtcTxSPVProof memory wrongSPV = createBtcTxSPVProof(createChallengeTx(wrongTxid, committeePubKey));
         address memberAddress = getCommitteeMemberAddressByIndex(COMMITTEE_ID_STREAM_1_COMMITTEE_1, 0);
-
         assertNotEq(memberAddress, opAddress, "Member address should be different from operator address");
 
         // Assert
@@ -293,7 +301,7 @@ contract ChallengeManagerTest is Test, HelperContract {
         bytes32 txid = bitcoinManager.getBtcTxid(setup.challengeSPV.btcTx);
         bytes32 wrongTxid = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
         bytes memory committeePubKey = streamManager.getCommitteePubKey(uint64(DEFAULT_STREAM), setup.packetNumber);
-        BtcTxSPVProof memory wrongSPV = createBtcTxSPVProof(createRevealTx(wrongTxid, committeePubKey));
+        BtcTxSPVProof memory wrongSPV = createBtcTxSPVProof(createInputRevealedTx(wrongTxid, committeePubKey));
 
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IChallengeManager.ChallengeTxidNotMatch.selector, wrongTxid, txid));
@@ -345,12 +353,14 @@ contract ChallengeManagerTest is Test, HelperContract {
         // Arrange
         (address opAddress, RegisterUserTakeSetup memory setup) = setup_challenge();
         pauseContracts();
+        address memberAddress = getCommitteeMemberAddressByIndex(COMMITTEE_ID_STREAM_1_COMMITTEE_1, 0);
+        assertNotEq(memberAddress, opAddress, "Member address should be different from operator address");
 
         // Assert
         vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
 
         // Act
-        vm.prank(opAddress);
+        vm.prank(memberAddress);
         challengeManager.registerInputNotRevealed(setup.acceptPeginTxid, setup.inputNotRevealedSPV);
     }
 
@@ -358,18 +368,22 @@ contract ChallengeManagerTest is Test, HelperContract {
         // Arrange
         (address opAddress, RegisterUserTakeSetup memory setup) = setup_challenge();
         bytes32 wrongAcceptPeginTxid = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
+        address memberAddress = getCommitteeMemberAddressByIndex(COMMITTEE_ID_STREAM_1_COMMITTEE_1, 0);
+        assertNotEq(memberAddress, opAddress, "Member address should be different from operator address");
 
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IPegBase.PeginNotRequested.selector, wrongAcceptPeginTxid));
 
         // Act
-        vm.prank(opAddress);
+        vm.prank(memberAddress);
         challengeManager.registerInputNotRevealed(wrongAcceptPeginTxid, setup.inputNotRevealedSPV);
     }
 
     function test_registerInputNotRevealed_Revert_InvalidPegStatus() external {
         // Arrange
         (address opAddress, RegisterUserTakeSetup memory setup) = setup_challenge();
+        address memberAddress = getCommitteeMemberAddressByIndex(COMMITTEE_ID_STREAM_1_COMMITTEE_1, 0);
+        assertNotEq(memberAddress, opAddress, "Member address should be different from operator address");
 
         // Set peg status to COMPLETED to trigger invalid status error
         vm.prank(address(challengeManager));
@@ -379,7 +393,7 @@ contract ChallengeManagerTest is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(IPegBase.InvalidPegStatus.selector, PegStatus.COMPLETED));
 
         // Act
-        vm.prank(opAddress);
+        vm.prank(memberAddress);
         challengeManager.registerInputNotRevealed(setup.acceptPeginTxid, setup.inputNotRevealedSPV);
     }
 
@@ -390,12 +404,14 @@ contract ChallengeManagerTest is Test, HelperContract {
         bytes32 wrongTxid = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
         bytes memory committeePubKey = streamManager.getCommitteePubKey(uint64(DEFAULT_STREAM), setup.packetNumber);
         BtcTxSPVProof memory wrongSPV = createBtcTxSPVProof(createInputNotRevealedTx(wrongTxid, committeePubKey));
+        address memberAddress = getCommitteeMemberAddressByIndex(COMMITTEE_ID_STREAM_1_COMMITTEE_1, 0);
+        assertNotEq(memberAddress, opAddress, "Member address should be different from operator address");
 
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IChallengeManager.ChallengeTxidNotMatch.selector, wrongTxid, txid));
 
         // Act
-        vm.prank(opAddress);
+        vm.prank(memberAddress);
         challengeManager.registerInputNotRevealed(setup.acceptPeginTxid, wrongSPV);
     }
 
@@ -417,6 +433,8 @@ contract ChallengeManagerTest is Test, HelperContract {
     function test_registerInputNotRevealed_Revert_InvalidChallengeInputCount() external {
         // Arrange
         (address opAddress, RegisterUserTakeSetup memory setup) = setup_challenge();
+        address memberAddress = getCommitteeMemberAddressByIndex(COMMITTEE_ID_STREAM_1_COMMITTEE_1, 0);
+        assertNotEq(memberAddress, opAddress, "Member address should be different from operator address");
 
         BtcTxIn[] memory modifiedInputs = new BtcTxIn[](setup.inputNotRevealedSPV.btcTx.inputs.length + 1);
         for (uint256 i = 0; i < setup.inputNotRevealedSPV.btcTx.inputs.length; i++) {
@@ -439,9 +457,9 @@ contract ChallengeManagerTest is Test, HelperContract {
         );
 
         // Act
-        vm.prank(opAddress);
-
+        vm.prank(memberAddress);
         challengeManager.registerInputNotRevealed(setup.acceptPeginTxid, setup.inputNotRevealedSPV);
+
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -452,7 +470,7 @@ contract ChallengeManagerTest is Test, HelperContract {
         );
 
         // Act
-        vm.prank(opAddress);
+        vm.prank(memberAddress);
         challengeManager.registerInputNotRevealed(setup.acceptPeginTxid, setup.inputNotRevealedSPV);
     }
 
@@ -494,16 +512,34 @@ contract ChallengeManagerTest is Test, HelperContract {
         ChallengeTempInfo memory challengeInfo = challengeManager.getChallengeTempInfo(setup.acceptPeginTxid);
     }
 
+    function test_registerStopOperatorWon_Revert_MemberNotInCommittee() external {
+        // Arrange
+        pauseAndUnpauseContracts();
+        (, RegisterUserTakeSetup memory setup) = setup_inputRevealed();
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ICommitteeRegistry.MemberNotInCommittee.selector, COMMITTEE_ID_STREAM_1_COMMITTEE_1, address(this)
+            )
+        );
+
+        // Act
+        challengeManager.registerStopOperatorWon(setup.acceptPeginTxid, setup.stopOperatorWonSPV);
+    }
+
     function test_registerStopOperatorWon_Revert_EnforcedPause_PausedContract() external {
         // Arrange
         (address opAddress, RegisterUserTakeSetup memory setup) = setup_inputRevealed();
+        address memberAddress = getCommitteeMemberAddressByIndex(COMMITTEE_ID_STREAM_1_COMMITTEE_1, 0);
+        assertNotEq(memberAddress, opAddress, "Member address should be different from operator address");
         pauseContracts();
 
         // Assert
         vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
 
         // Act
-        vm.prank(opAddress);
+        vm.prank(memberAddress);
         challengeManager.registerStopOperatorWon(setup.acceptPeginTxid, setup.stopOperatorWonSPV);
     }
 
@@ -512,17 +548,22 @@ contract ChallengeManagerTest is Test, HelperContract {
         (address opAddress, RegisterUserTakeSetup memory setup) = setup_inputRevealed();
         bytes32 wrongAcceptPeginTxid = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
 
+        address memberAddress = getCommitteeMemberAddressByIndex(COMMITTEE_ID_STREAM_1_COMMITTEE_1, 0);
+        assertNotEq(memberAddress, opAddress, "Member address should be different from operator address");
+
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IPegBase.PeginNotRequested.selector, wrongAcceptPeginTxid));
 
         // Act
-        vm.prank(opAddress);
+        vm.prank(memberAddress);
         challengeManager.registerStopOperatorWon(wrongAcceptPeginTxid, setup.stopOperatorWonSPV);
     }
 
     function test_registerStopOperatorWon_Revert_InvalidPegStatus() external {
         // Arrange
         (address opAddress, RegisterUserTakeSetup memory setup) = setup_inputRevealed();
+        address memberAddress = getCommitteeMemberAddressByIndex(COMMITTEE_ID_STREAM_1_COMMITTEE_1, 0);
+        assertNotEq(memberAddress, opAddress, "Member address should be different from operator address");
 
         // Set peg status to COMPLETED to trigger invalid status error
         vm.prank(address(challengeManager));
@@ -532,7 +573,7 @@ contract ChallengeManagerTest is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(IPegBase.InvalidPegStatus.selector, PegStatus.COMPLETED));
 
         // Act
-        vm.prank(opAddress);
+        vm.prank(memberAddress);
         challengeManager.registerStopOperatorWon(setup.acceptPeginTxid, setup.stopOperatorWonSPV);
     }
 
@@ -543,6 +584,8 @@ contract ChallengeManagerTest is Test, HelperContract {
         bytes32 wrongTxid = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
         bytes memory committeePubKey = streamManager.getCommitteePubKey(uint64(DEFAULT_STREAM), setup.packetNumber);
         BtcTxSPVProof memory wrongSPV = createBtcTxSPVProof(createStopOperatorWonTx(wrongTxid));
+        address memberAddress = getCommitteeMemberAddressByIndex(COMMITTEE_ID_STREAM_1_COMMITTEE_1, 0);
+        assertNotEq(memberAddress, opAddress, "Member address should be different from operator address");
 
         // Assert
         vm.expectRevert(
@@ -552,7 +595,7 @@ contract ChallengeManagerTest is Test, HelperContract {
         );
 
         // Act
-        vm.prank(opAddress);
+        vm.prank(memberAddress);
         challengeManager.registerStopOperatorWon(setup.acceptPeginTxid, wrongSPV);
     }
 
@@ -561,6 +604,8 @@ contract ChallengeManagerTest is Test, HelperContract {
         // So it's not possible to be a `STOP_OPERATOR_WON` case.
         // Arrange
         (address opAddress, RegisterUserTakeSetup memory setup) = setup_inputRevealed();
+        address memberAddress = getCommitteeMemberAddressByIndex(COMMITTEE_ID_STREAM_1_COMMITTEE_1, 0);
+        assertNotEq(memberAddress, opAddress, "Member address should be different from operator address");
 
         // Assert
         vm.expectRevert(
@@ -568,7 +613,7 @@ contract ChallengeManagerTest is Test, HelperContract {
         );
 
         // Act
-        vm.prank(opAddress);
+        vm.prank(memberAddress);
         challengeManager.registerStopOperatorWon(setup.acceptPeginTxid, setup.operatorWonSPV);
     }
 }

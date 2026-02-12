@@ -24,7 +24,7 @@ contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
     IStreamManager streamManager;
     uint64 expectedStreamId;
     uint64 expectedPacketNumber;
-    uint32 expectedSlotId;
+    uint64 expectedSlotId;
     bytes32 expectedPegoutId;
 
     function setUp(bytes32 _acceptPeginTxid) internal {
@@ -43,7 +43,7 @@ contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
         StreamPosition memory streamPosition = streamManager.getStreamPosition(_acceptPeginTxid);
         expectedStreamId = streamPosition.streamId;
         expectedPacketNumber = streamPosition.packetNumber;
-        expectedSlotId = uint32(streamPosition.slotId);
+        expectedSlotId = streamPosition.slotId;
 
         Packet memory packet = streamManager.getPacket(expectedStreamId, expectedPacketNumber);
         committeePubKey = packet.committeePubKey;

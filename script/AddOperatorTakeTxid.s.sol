@@ -26,7 +26,7 @@ contract addOperatorTakeTxidsScript is ScriptUtils, ContractAddressManager {
     IStreamManager streamManager;
     uint64 expectedStreamId;
     uint64 expectedPacketNumber;
-    uint32 expectedSlotId;
+    uint64 expectedSlotId;
 
     function setUp(uint16 _mnemonicIndex, bytes32 _acceptPeginTxid) internal {
         pegoutManager = PegoutManager(getPegoutManager());
@@ -45,7 +45,7 @@ contract addOperatorTakeTxidsScript is ScriptUtils, ContractAddressManager {
         StreamPosition memory streamPosition = streamManager.getStreamPosition(_acceptPeginTxid);
         expectedStreamId = streamPosition.streamId;
         expectedPacketNumber = streamPosition.packetNumber;
-        expectedSlotId = uint32(streamPosition.slotId);
+        expectedSlotId = streamPosition.slotId;
 
         Packet memory packet = streamManager.getPacket(expectedStreamId, expectedPacketNumber);
         committeePubKey = packet.committeePubKey;
@@ -80,7 +80,7 @@ contract addOperatorTakeTxidsScript is ScriptUtils, ContractAddressManager {
         bytes32 challengeTxid = getTxid(challengeTx);
 
         // INPUT REVEALED
-        BtcTransaction memory inputRevealedTx = createRevealTx(challengeTxid, committeePubKey);
+        BtcTransaction memory inputRevealedTx = createInputRevealedTx(challengeTxid, committeePubKey);
         bytes32 inputRevealedTxid = getTxid(inputRevealedTx);
 
         // OPERATOR WON

@@ -87,7 +87,7 @@ contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
         vm.stopBroadcast();
 
         // INPUT REVEALED
-        BtcTransaction memory inputRevealedTx = createRevealTx(challengeTxid, committeePubKey);
+        BtcTransaction memory inputRevealedTx = createInputRevealedTx(challengeTxid, committeePubKey);
         bytes32 inputRevealedTxid = getTxid(inputRevealedTx);
         BtcTxSPVProof memory inputRevealedSPVProof = createBtcTxSPVProof(inputRevealedTx);
 
