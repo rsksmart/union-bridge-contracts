@@ -715,7 +715,7 @@ contract PegoutManagerTest is Test, HelperContract {
         uint256 previousSequenceNumber = pegoutManager.sequenceNumber();
 
         // Assert event
-        assertEventOperatorTakeTriggered(setup.pegoutTxid, setup, expectedOperatorAddress, createdAt);
+        assertEventOperatorTakeTriggered(setup, expectedOperatorAddress, createdAt);
 
         // Act
         pegoutManager.triggerOperatorTake(setup.pegoutTxid);
@@ -747,7 +747,7 @@ contract PegoutManagerTest is Test, HelperContract {
 
         // Assert
         // By implementation, first operator is skipped.
-        assertEventOperatorTakeTriggered(setup.pegoutTxid, setup, secondOpAddress, createdAt);
+        assertEventOperatorTakeTriggered(setup, secondOpAddress, createdAt);
 
         // Act
         pegoutManager.triggerOperatorTake(setup.pegoutTxid);
@@ -910,7 +910,7 @@ contract PegoutManagerTest is Test, HelperContract {
 
         // Assert
         address expectedOperator = committee.members[expectedOpTakeIndex].memberAddress;
-        assertEventOperatorTakeTriggered(setup.pegoutTxid, setup, expectedOperator, createdAt);
+        assertEventOperatorTakeTriggered(setup, expectedOperator, createdAt);
 
         // Act
         pegoutManager.triggerOperatorTake(setup.pegoutTxid);
@@ -946,7 +946,7 @@ contract PegoutManagerTest is Test, HelperContract {
 
         // Assert
         // This call will select the third operator
-        assertEventOperatorTakeTriggered(setup.pegoutTxid, setup, thirdOpAddress, createdAt);
+        assertEventOperatorTakeTriggered(setup, thirdOpAddress, createdAt);
 
         // Act
         pegoutManager.triggerOperatorTake(setup.pegoutTxid);
@@ -1468,7 +1468,7 @@ contract PegoutManagerTest is Test, HelperContract {
         setup_addMemberNonce(secondOpAddress, pegoutTxId, nonce);
 
         // Assert
-        assertEventOperatorTakeTriggered(pegoutTxId, setup, secondOpAddress, createdAt);
+        assertEventOperatorTakeTriggered(setup, secondOpAddress, createdAt);
 
         // Act
         pegoutManager.triggerOperatorTake(pegoutTxId);
@@ -1510,6 +1510,9 @@ contract PegoutManagerTest is Test, HelperContract {
             streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId).state == SlotState.ADVANCED,
             "Slot state should be ADVANCED"
         );
+
+        PegoutTempInfo memory updatedPegoutInfo = pegoutManager.getPegoutTempInfo(setup.acceptPeginTxid);
+        assertEq(updatedPegoutInfo.operatorTakeUpdatedAt, block.timestamp, "operatorTakeUpdatedAt should be updated");
     }
 
     function test_registerAdvanceFunds_Revert_EnforcedPause_PausedContract() external {
@@ -1679,6 +1682,7 @@ contract PegoutManagerTest is Test, HelperContract {
         // Get updated pegoutInfo after the call to verify reimbursementKickoffTxid was set
         PegoutTempInfo memory updatedPegoutInfo = pegoutManager.getPegoutTempInfo(setup.acceptPeginTxid);
         assertEq(updatedPegoutInfo.reimbursementKickoffTxid, txid, "Reimbursement kickoff txid should be recorded");
+        assertEq(updatedPegoutInfo.operatorTakeUpdatedAt, block.timestamp, "operatorTakeUpdatedAt should be updated");
 
         // Assert - verify base event was set correctly in bridge
         bytes memory retrievedBaseEvent = bridgeMock.getBaseEvent();
@@ -2106,5 +2110,97 @@ contract PegoutManagerTest is Test, HelperContract {
 
         // Act
         pegoutManager.getPegoutTxid(stream.streamId, packetNumber, slotId);
+    }
+
+    // ============ Operator Take Timeout Enforcement Tests ============
+
+    function test_triggerOperatorTake_Success_FromAdvanced() external {
+        // Arrange - setup_reimbursementKickoff brings state to ADVANCED
+        (, RegisterUserTakeSetup memory setup) = setup_reimbursementKickoff();
+        PegoutTempInfo memory previousPegoutInfo = pegoutManager.getPegoutTempInfo(setup.acceptPeginTxid);
+
+        // Expire the operator take timeout
+        vm.warp(block.timestamp + TAKE_1_TIMEOUT_DEFAULT + 1);
+
+        // Get the expected next operator
+        Committee memory committee = registry.getCommittee(COMMITTEE_ID_STREAM_1_COMMITTEE_1);
+        uint256 expectedOpTakeIndex = (committee.operatorTakeIndex + 1) % committee.members.length;
+        address expectedOperatorAddress = committee.members[expectedOpTakeIndex].memberAddress;
+
+        // Assert
+        assertEventOperatorTakeTriggered(setup, expectedOperatorAddress, previousPegoutInfo.createdAt);
+
+        // Act
+        pegoutManager.triggerOperatorTake(setup.pegoutTxid);
+
+        // Assert - status should be reset to OP_SELECTED
+        StreamPosition memory updatedStreamInfo = streamManager.getStreamPosition(setup.acceptPeginTxid);
+        assertTrue(updatedStreamInfo.pegStatus == PegStatus.OP_SELECTED, "PegStatus should be reset to OP_SELECTED");
+    }
+
+    function test_triggerOperatorTake_Success_FromKickoff() external {
+        // Arrange - setup_operatorTake brings state to KICKOFF
+        (, RegisterUserTakeSetup memory setup) = setup_operatorTake();
+        PegoutTempInfo memory previousPegoutInfo = pegoutManager.getPegoutTempInfo(setup.acceptPeginTxid);
+
+        // Expire the operator take timeout
+        vm.warp(block.timestamp + TAKE_1_TIMEOUT_DEFAULT + 1);
+
+        // Get the expected next operator
+        Committee memory committee = registry.getCommittee(COMMITTEE_ID_STREAM_1_COMMITTEE_1);
+        uint256 expectedOpTakeIndex = (committee.operatorTakeIndex + 1) % committee.members.length;
+        address expectedOperatorAddress = committee.members[expectedOpTakeIndex].memberAddress;
+
+        // Assert
+        assertEventOperatorTakeTriggered(setup, expectedOperatorAddress, previousPegoutInfo.createdAt);
+
+        // Act
+        pegoutManager.triggerOperatorTake(setup.pegoutTxid);
+
+        // Assert - status should be reset to OP_SELECTED
+        StreamPosition memory updatedStreamInfo = streamManager.getStreamPosition(setup.acceptPeginTxid);
+        assertTrue(updatedStreamInfo.pegStatus == PegStatus.OP_SELECTED, "PegStatus should be reset to OP_SELECTED");
+    }
+
+    function test_triggerOperatorTake_FromAdvanced_Revert_OperatorTakeTimeoutNotExpired() external {
+        // Arrange - setup_reimbursementKickoff brings state to ADVANCED
+        (, RegisterUserTakeSetup memory setup) = setup_reimbursementKickoff();
+
+        // Get operatorTakeUpdatedAt
+        PegoutTempInfo memory pegoutInfo = pegoutManager.getPegoutTempInfo(setup.acceptPeginTxid);
+        uint256 operatorTakeUpdatedAt = pegoutInfo.operatorTakeUpdatedAt;
+
+        // Assert - should revert because timeout hasn't expired
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IPegoutManager.OperatorTakeTimeoutNotExpired.selector,
+                operatorTakeUpdatedAt,
+                operatorTakeUpdatedAt + TAKE_1_TIMEOUT_DEFAULT
+            )
+        );
+
+        // Act
+        pegoutManager.triggerOperatorTake(setup.pegoutTxid);
+    }
+
+    function test_triggerOperatorTake_FromKickoff_Revert_OperatorTakeTimeoutNotExpired() external {
+        // Arrange - setup_operatorTake brings state to KICKOFF
+        (, RegisterUserTakeSetup memory setup) = setup_operatorTake();
+
+        // Get operatorTakeUpdatedAt
+        PegoutTempInfo memory pegoutInfo = pegoutManager.getPegoutTempInfo(setup.acceptPeginTxid);
+        uint256 operatorTakeUpdatedAt = pegoutInfo.operatorTakeUpdatedAt;
+
+        // Assert - should revert because timeout hasn't expired
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IPegoutManager.OperatorTakeTimeoutNotExpired.selector,
+                operatorTakeUpdatedAt,
+                operatorTakeUpdatedAt + TAKE_1_TIMEOUT_DEFAULT
+            )
+        );
+
+        // Act
+        pegoutManager.triggerOperatorTake(setup.pegoutTxid);
     }
 }

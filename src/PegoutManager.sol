@@ -271,10 +271,17 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
             }
             advanceSlot = true;
             newStatus = PegStatus.OP_SELECTED;
-        } else if (streamInfo.pegStatus == PegStatus.OP_SELECTED) {
+        } else if (
+            streamInfo.pegStatus == PegStatus.OP_SELECTED || streamInfo.pegStatus == PegStatus.ADVANCED
+                || streamInfo.pegStatus == PegStatus.KICKOFF
+        ) {
             // slither-disable-next-line timestamp
             if (block.timestamp <= operatorTakeUpdatedAt + operatorTakeTimeout) {
                 revert OperatorTakeTimeoutNotExpired(operatorTakeUpdatedAt, operatorTakeUpdatedAt + operatorTakeTimeout);
+            }
+            // Reset to OP_SELECTED if currently in ADVANCED or KICKOFF
+            if (streamInfo.pegStatus != PegStatus.OP_SELECTED) {
+                newStatus = PegStatus.OP_SELECTED;
             }
         } else if (streamInfo.pegStatus == PegStatus.CHALLENGE || streamInfo.pegStatus == PegStatus.REVEALED) {
             // Only challenge manager can call this function when input not revealed is registered
@@ -336,6 +343,9 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
 
         // update the peg status to ADVANCED
         streamManager.setPegStatus(acceptPeginTxid, PegStatus.ADVANCED);
+
+        // reset operator take timeout window in case the process gets stuck and we need to select again
+        pegoutInfo.operatorTakeUpdatedAt = block.timestamp;
 
         // Update advance funds block number
         pegoutInfo.advanceFundsBlockNumber = blockNumber;
@@ -447,6 +457,9 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
 
         // update the peg status to KICKOFF
         streamManager.setPegStatus(acceptPeginTxid, PegStatus.KICKOFF);
+
+        // reset operator take timeout window in case the process gets stuck and we need to select again
+        pegoutInfo.operatorTakeUpdatedAt = block.timestamp;
 
         rbtcBridge.setBaseEvent(abi.encodePacked(pegoutInfo.pegoutId));
     }
