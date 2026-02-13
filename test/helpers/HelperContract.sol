@@ -501,7 +501,10 @@ abstract contract HelperContract is Test, TestUtils {
         BtcTxSPVProof operatorTakeSPV;
         BtcTxSPVProof challengeSPV;
         BtcTxSPVProof inputRevealedSPV;
+        BtcTxSPVProof inputNotRevealedSPV;
         BtcTxSPVProof operatorWonSPV;
+        BtcTxSPVProof stopOperatorWonSPV;
+        BtcTxSPVProof acceptPeginSPV;
         Stream stream;
         uint64 packetNumber;
         uint64 slotId;
@@ -514,10 +517,12 @@ abstract contract HelperContract is Test, TestUtils {
 
     function setup_pegout() internal returns (RegisterUserTakeSetup memory setup) {
         // =========== Request Peg-In & Accept Peg-In ============
-        (bytes32 acceptPeginTxid,,) = setup_requestAndAcceptPeginFlow(COMMITTEE_ID_STREAM_1_COMMITTEE_1);
+        (bytes32 acceptPeginTxid,, BtcTransaction memory acceptPeginTx) =
+            setup_requestAndAcceptPeginFlow(COMMITTEE_ID_STREAM_1_COMMITTEE_1);
 
         // Get the accept peg-in tx id that will be spent in the peg-out
-        setup.acceptPeginTxid = acceptPeginTxid;
+        setup.acceptPeginSPV = createBtcTxSPVProof(acceptPeginTx);
+        setup.acceptPeginTxid = bitcoinManager.getBtcTxid(acceptPeginTx);
         setup.stream = streamManager.getStream(VALUE);
         setup.userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
 
@@ -1004,7 +1009,7 @@ abstract contract HelperContract is Test, TestUtils {
         bytes memory operatorDisputePubKeyCompact = BtcHelper.pubKeyXonlyToCompact(operatorPubKey);
 
         BtcTransaction memory reimbursementKickoffTx =
-            createReimbursementKickoffTx(operatorDisputePubKeyCompact, _slotId);
+            createReimbursementKickoffTx(operatorDisputePubKeyCompact, uint32(_slotId));
         bytes32 reimbursementTxid = bitcoinManager.getBtcTxid(reimbursementKickoffTx);
 
         reimbursementKickoffSPV = createBtcTxSPVProof(reimbursementKickoffTx);
@@ -1014,7 +1019,7 @@ abstract contract HelperContract is Test, TestUtils {
         BtcTransaction memory challengeTx = createChallengeTx(reimbursementTxid, committeePubKey);
 
         bytes32 challengeTxid = bitcoinManager.getBtcTxid(challengeTx);
-        BtcTransaction memory inputRevealedTx = createRevealTx(challengeTxid, committeePubKey);
+        BtcTransaction memory inputRevealedTx = createInputRevealedTx(challengeTxid, committeePubKey);
         bytes32 inputRevealedTxid = bitcoinManager.getBtcTxid(inputRevealedTx);
 
         opWonTx = createOperatorWonTx(_acceptPeginTxid, inputRevealedTxid, operatorDisputePubKeyCompact, VALUE);
@@ -1032,7 +1037,8 @@ abstract contract HelperContract is Test, TestUtils {
 
         bytes memory committeePubKey = streamManager.getCommitteePubKey(uint64(DEFAULT_STREAM), setup.packetNumber);
         bytes32 challengeTxid = bitcoinManager.getBtcTxid(setup.challengeSPV.btcTx);
-        setup.inputRevealedSPV = createBtcTxSPVProof(createRevealTx(challengeTxid, committeePubKey));
+        setup.inputRevealedSPV = createBtcTxSPVProof(createInputRevealedTx(challengeTxid, committeePubKey));
+        setup.inputNotRevealedSPV = createBtcTxSPVProof(createInputNotRevealedTx(challengeTxid, committeePubKey));
 
         vm.prank(operatorAddress);
         challengeManager.registerChallenge(setup.acceptPeginTxid, setup.challengeSPV);
@@ -1048,6 +1054,8 @@ abstract contract HelperContract is Test, TestUtils {
         setup.operatorWonSPV = createBtcTxSPVProof(
             createOperatorWonTx(setup.acceptPeginTxid, inputRevealedTxid, operatorDisputePubKeyCompact, VALUE)
         );
+
+        setup.stopOperatorWonSPV = createBtcTxSPVProof(createStopOperatorWonTx(inputRevealedTxid));
 
         vm.prank(operatorAddress);
         challengeManager.registerInputRevealed(setup.acceptPeginTxid, setup.inputRevealedSPV);

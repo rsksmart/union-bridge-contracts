@@ -191,9 +191,23 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
     }
 
     /// @inheritdoc IPegoutManager
-    function getPegoutTxid(uint64 streamId, uint64 packetNumber, uint64 slotId) external view returns (bytes32) {
-        bytes32 key = keccak256(abi.encodePacked(streamId, packetNumber, slotId));
-        return pegoutTxids[key];
+    function getPegoutTxid(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) external view returns (bytes32) {
+        return _getPegoutTxid(_streamId, _packetNumber, _slotId);
+    }
+
+    /// @inheritdoc IPegoutManager
+    function getPegoutTxid(bytes32 _acceptPeginTxid) external view returns (bytes32) {
+        StreamPosition memory streamInfo = streamManager.getStreamPosition(_acceptPeginTxid);
+        return _getPegoutTxid(streamInfo.streamId, streamInfo.packetNumber, streamInfo.slotId);
+    }
+
+    function _getPegoutTxid(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) internal view returns (bytes32) {
+        bytes32 key = keccak256(abi.encodePacked(_streamId, _packetNumber, _slotId));
+        bytes32 pegoutTxid = pegoutTxids[key];
+        if (pegoutTxid == bytes32(0)) {
+            revert PegoutTxidNotFound(_streamId, _packetNumber, _slotId);
+        }
+        return pegoutTxid;
     }
 
     function _storePegoutAndInitSignatures(bytes32 _pegoutTxid, uint64 _streamId, uint64 _packetNumber, uint64 _slotId)
@@ -217,14 +231,15 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
     function triggerOperatorTake(bytes32 _pegoutTxid) external nonReentrant whenNotPaused {
         bytes32 acceptPeginTxid = pegoutToPeginTxid[_pegoutTxid];
         if (acceptPeginTxid == bytes32(0)) {
-            revert PegoutTxidNotFound(_pegoutTxid);
+            revert PeginNotFoundForPegout(_pegoutTxid);
         }
 
         PegoutTempInfo storage pegoutInfo = pegoutTempInfo[acceptPeginTxid];
         StreamPosition memory streamInfo = streamManager.getStreamPosition(acceptPeginTxid);
-        bool advanceSlot = false;
         uint256 operatorTakeUpdatedAt = pegoutInfo.operatorTakeUpdatedAt;
         pegoutInfo.operatorTakeUpdatedAt = block.timestamp;
+        bool advanceSlot = false;
+        PegStatus newStatus = PegStatus.NOT_REGISTERED;
 
         uint256 sequenceNumberToUse = sequenceNumber;
         unchecked {
@@ -254,17 +269,23 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
             if (block.timestamp <= pegoutInfo.createdAt + userTakeTimeout) {
                 revert UserTakeTimeoutNotExpired(pegoutInfo.createdAt, pegoutInfo.createdAt + userTakeTimeout);
             }
-            streamManager.setPegStatus(acceptPeginTxid, PegStatus.OP_SELECTED);
             advanceSlot = true;
+            newStatus = PegStatus.OP_SELECTED;
         } else if (streamInfo.pegStatus == PegStatus.OP_SELECTED) {
             // slither-disable-next-line timestamp
             if (block.timestamp <= operatorTakeUpdatedAt + operatorTakeTimeout) {
                 revert OperatorTakeTimeoutNotExpired(operatorTakeUpdatedAt, operatorTakeUpdatedAt + operatorTakeTimeout);
             }
-            // TODO: Handle other PegStatus like ADVANCED and KICKOFF.
-            // TODO: would this go here? or in challengeManager now that we have it?
+        } else if (streamInfo.pegStatus == PegStatus.CHALLENGE || streamInfo.pegStatus == PegStatus.REVEALED) {
+            // Only challenge manager can call this function when input not revealed is registered
+            accessManager.canTriggerOperatorTake(_msgSender());
+            newStatus = PegStatus.OP_SELECTED;
         } else {
             revert InvalidPegStatus(streamInfo.pegStatus);
+        }
+
+        if (newStatus != PegStatus.NOT_REGISTERED) {
+            streamManager.setPegStatus(acceptPeginTxid, newStatus);
         }
 
         // Fetch updated streamInfo after potential status change

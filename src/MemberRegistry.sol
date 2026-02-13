@@ -338,7 +338,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         }
 
         // Use the uncompressed public key as the message
-        bytes memory uncompressedPublicKey = abi.encode(_key.publicKeyX, _key.publicKeyY);
+        bytes memory uncompressedPublicKey = abi.encodePacked(_key.publicKeyX, _key.publicKeyY);
         bytes32 messageHash = keccak256(uncompressedPublicKey);
 
         // Validate the signature for the message is valid
