@@ -1,37 +1,47 @@
 #!/bin/bash
 set -e
 
-# Usage: transfer-ownership-common.sh <newOwner>
-# newOwner: The address that will become the new owner
-# Note: NETWORK and RPC should be exported by the calling script
+# Usage: transfer-ownership.sh <network> <newOwnerAddress>
+# network: testnet, mainnet, alphanet, local, or regtest
+# newOwnerAddress: The address that will become the new owner
 
 # we go to the root of the project to avoid relative path issues
 CURRENT_PATH=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 cd "$CURRENT_PATH/../../.."
 
-# Validate NETWORK is set (should be exported by calling script)
+# set up environment variables
+source .env
+
+# Source common functions
+source "$CURRENT_PATH/ownership-common.sh"
+
+# Get network from argument
+NETWORK="${1}"
+
+# Validate network is set
 if [[ -z "$NETWORK" ]]; then
-    echo "Error: NETWORK environment variable not set. This should be exported by the calling script." >&2
+    echo "Error: Network must be provided as first argument" >&2
+    echo "Usage: $0 <network> <newOwnerAddress>" >&2
+    echo "  network: testnet, mainnet, alphanet, local, or regtest" >&2
     exit 1
 fi
 
-# Validate RPC is set
-if [[ -z "$RPC" ]]; then
-    echo "Error: RPC URL not set for network '$NETWORK'" >&2
+# Set up network-specific variables
+if ! setup_network "$NETWORK"; then
     exit 1
 fi
 
-# Get newOwner from argument
-NEW_OWNER_ADDRESS="${1}"
+# Get new owner address from argument
+NEW_OWNER_ADDRESS="${2}"
 
-# Validate newOwner is set
+# Validate new owner address is set
 if [[ -z "$NEW_OWNER_ADDRESS" ]]; then
-    echo "Error: New owner address not provided" >&2
-    echo "Usage: $0 <newOwnerAddress>" >&2
+    echo "Error: New owner address must be provided as second argument" >&2
+    echo "Usage: $0 <network> <newOwnerAddress>" >&2
     exit 1
 fi
 
-# Validate newOwner is a valid address format (basic check)
+# Validate new owner address is a valid address format (basic check)
 if [[ ! "$NEW_OWNER_ADDRESS" =~ ^0x[a-fA-F0-9]{40}$ ]]; then
     echo "Error: Invalid address format: $NEW_OWNER_ADDRESS" >&2
     exit 1
@@ -56,10 +66,11 @@ fi
 
 # Build forge script command
 FORGE_CMD="forge script \
-    script/TransferOwnership.s.sol:TransferOwnership \
+    script/owner/OwnershipManager.s.sol:OwnershipManager \
     --sig \"transferAllOwnership(address)\" $NEW_OWNER_ADDRESS \
     --rpc-url $RPC \
     --broadcast \
+    --interactives 1 \
     --legacy"
 
 # Add gas-price from .env (if set)

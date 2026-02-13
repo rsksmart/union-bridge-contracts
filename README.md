@@ -453,28 +453,20 @@ verify_proxy \
 
 ### Transferring ownership
 
-**Note:** While ownership can be transferred to any address, it is **strongly recommended** to use a multisig wallet (such as a Safe multisig) for enhanced security and decentralized control.
+**Note:** While ownership can be transferred to any address, it is **strongly recommended** to use a multisig wallet (such as a [Safe multisig](https://rootstock.io/blog/safe-multisig-wallet-now-available-on-rootstock/)) for enhanced security and decentralized control.
 
 #### Manually transferring ownership
 
-High level:
+Ownership transfer is a **two-step process**:
 
-1. Call the `transferOwnership(address newOwner)` method on each contract indicating the new owner address as the `newOwner`, from the contract's `owner`.
-    1. Before this, the `pendingOwner()` address is not set.
-    2. After this, the `pendingOwner()` address should be set to the new owner address.
-2. The new owner needs to call `acceptOwnership()` on each contract.
-    1. If using a multisig (e.g., Safe), m of n members need to sign.
-    2. Any of the members can execute it once it is fully signed.
-3. After the new owner executes the transaction, then `owner` should be the new owner address and `pendingOwner` should be not set anymore.
+1. **Current owner calls `transferOwnership(newOwner)`** on each contract. This sets the `pendingOwner` to the new owner address.
+2. **New owner calls `acceptOwnership()`** on each contract. After this, the new owner becomes the `owner` and `pendingOwner` is cleared.
 
-We can use the rsk explorer for this:
+You can perform these steps manually using the RSK Explorer or a wallet interface. However, there are scripts available to automate the first step (transferring ownership) for all contracts at once:
 
-1. Using the search bar or a direct link, go to the contract you want to transfer ownership, go to the `Contract` tab and select `Read Proxy`.
-2. Find `owner` and `pendingOwner`, click on them to expand them, click on `Read`.
-3. If no previous transfer ownership has occurred, then the `owner` should be the original deployer and `pendingOwner` should not be set.
-4. Go to `Write Proxy` tab, find the `transferOwnership()` method, add the new owner address in the `newOwner` field, make sure you wallet is connected (like MetaMask), click `Write`, sign and send the transaction.
-5. After the transaction is confirmed, go back to `Read Proxy` tab and call owner and `pendingOwner`. The owner should still be the deployer. But now, the pending owner should be the new owner contract address.
-6. Now, the new owner needs to accept the ownership by calling `acceptOwnership()`. If using a Safe multisig, use the Safe UI (https://safe.rootstock.io/) to create and execute the transaction. After the new owner accepts ownership, calling `owner` should show the new owner address and the `pendingOwner` should not be set anymore.
+```bash
+bash shell/script/ownership/transfer-ownership.sh testnet 0x...  # network and newOwner address
+```
 
 #### Automatically transferring ownership
 
@@ -499,20 +491,22 @@ The `TransferOwnership` script automates the transfer of ownership for all bridg
 **Using shell scripts (recommended):**
 
 ```bash
-# For testnet
-bash shell/script/ownership/transfer-ownership-testnet.sh 0x...  # newOwner address
+# Transfer ownership (network and newOwner address)
+bash shell/script/ownership/transfer-ownership.sh testnet 0x...     # testnet
+bash shell/script/ownership/transfer-ownership.sh mainnet 0x...    # mainnet
+bash shell/script/ownership/transfer-ownership.sh alphanet 0x...   # alphanet
+bash shell/script/ownership/transfer-ownership.sh local 0x...     # local
+bash shell/script/ownership/transfer-ownership.sh regtest 0x...    # regtest
 
-# For mainnet
-bash shell/script/ownership/transfer-ownership-mainnet.sh 0x...  # newOwner address
+# Full example:
+sudo bash shell/script/ownership/transfer-ownership.sh testnet 0x01d0f7225c69A54CE719612b3A787ff61efE7084
 
-# For alphanet
-bash shell/script/ownership/transfer-ownership-alphanet.sh 0x...  # newOwner address
-
-# For local
-bash shell/script/ownership/transfer-ownership-local.sh 0x...  # newOwner address
-
-# For regtest
-bash shell/script/ownership/transfer-ownership-regtest.sh 0x...  # newOwner address
+# Check ownership status (network only)
+bash shell/script/ownership/check-ownership-status.sh testnet
+bash shell/script/ownership/check-ownership-status.sh mainnet
+bash shell/script/ownership/check-ownership-status.sh alphanet
+bash shell/script/ownership/check-ownership-status.sh local
+bash shell/script/ownership/check-ownership-status.sh regtest
 ```
 
 **What this does:**
