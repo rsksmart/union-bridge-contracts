@@ -38,20 +38,37 @@ contract OwnershipManager is ScriptUtils, ContractAddressManager {
         contracts.push(ContractInfo({name: "PegoutManager", contractAddress: address(getPegoutManager())}));
         contracts.push(ContractInfo({name: "StreamManager", contractAddress: address(getStreamManager())}));
         contracts.push(
-            ContractInfo({name: "CommitteeRegistry", contractAddress: address(CommitteeRegistry(address(getCommitteeRegistry())))})
+            ContractInfo({
+                name: "CommitteeRegistry",
+                contractAddress: address(CommitteeRegistry(address(getCommitteeRegistry())))
+            })
         );
         contracts.push(
-            ContractInfo({name: "MemberRegistry", contractAddress: address(MemberRegistry(address(getMemberRegistry())))})
+            ContractInfo({
+                name: "MemberRegistry",
+                contractAddress: address(MemberRegistry(address(getMemberRegistry())))
+            })
         );
         contracts.push(
-            ContractInfo({name: "BitcoinManager", contractAddress: address(BitcoinManager(address(getBitcoinManager())))})
+            ContractInfo({
+                name: "BitcoinManager",
+                contractAddress: address(BitcoinManager(address(getBitcoinManager())))
+            })
         );
         contracts.push(
-            ContractInfo({name: "SignatureManager", contractAddress: address(SignatureManager(address(getSignatureManager())))})
+            ContractInfo({
+                name: "SignatureManager",
+                contractAddress: address(SignatureManager(address(getSignatureManager())))
+            })
         );
-        contracts.push(ContractInfo({name: "RbtcBridge", contractAddress: address(RbtcBridge(payable(address(getRbtcBridge()))))}));
         contracts.push(
-            ContractInfo({name: "ChallengeManager", contractAddress: address(ChallengeManager(address(getChallengeManager())))})
+            ContractInfo({name: "RbtcBridge", contractAddress: address(RbtcBridge(payable(address(getRbtcBridge()))))})
+        );
+        contracts.push(
+            ContractInfo({
+                name: "ChallengeManager",
+                contractAddress: address(ChallengeManager(address(getChallengeManager())))
+            })
         );
     }
 
