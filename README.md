@@ -499,7 +499,7 @@ bash shell/script/ownership/transfer-ownership.sh local 0x...     # local
 bash shell/script/ownership/transfer-ownership.sh regtest 0x...    # regtest
 
 # Full example:
-sudo bash shell/script/ownership/transfer-ownership.sh testnet 0x01d0f7225c69A54CE719612b3A787ff61efE7084
+bash shell/script/ownership/transfer-ownership.sh testnet 0x01d0f7225c69A54CE719612b3A787ff61efE7084
 
 # Check ownership status (network only)
 bash shell/script/ownership/check-ownership-status.sh testnet

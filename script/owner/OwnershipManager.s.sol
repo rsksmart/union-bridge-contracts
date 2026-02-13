@@ -153,11 +153,4 @@ contract OwnershipManager is ScriptUtils, ContractAddressManager {
             "The new owner must call acceptOwnership() on each contract where the new owner's address is the pendingOwner"
         );
     }
-
-    /// @notice Transfer ownership of all contracts to new owner
-    /// @param _newOwner The address that will become the new owner
-    /// @dev This is a convenience function that calls transferAllOwnership
-    function run(address _newOwner) public {
-        transferAllOwnership(_newOwner);
-    }
 }
