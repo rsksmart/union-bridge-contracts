@@ -465,7 +465,7 @@ Ownership transfer is a **two-step process**:
 You can perform these steps manually using the RSK Explorer or a wallet interface. However, there are scripts available to automate the first step (transferring ownership) for all contracts at once:
 
 ```bash
-bash shell/script/ownership/transfer-ownership.sh testnet 0x...  # network and newOwner address
+bash shell/script/owner/transfer-ownership.sh testnet 0x...  # network and newOwner address
 ```
 
 #### Automatically transferring ownership
@@ -492,21 +492,21 @@ The `TransferOwnership` script automates the transfer of ownership for all bridg
 
 ```bash
 # Transfer ownership (network and newOwner address)
-bash shell/script/ownership/transfer-ownership.sh testnet 0x...     # testnet
-bash shell/script/ownership/transfer-ownership.sh mainnet 0x...    # mainnet
-bash shell/script/ownership/transfer-ownership.sh alphanet 0x...   # alphanet
-bash shell/script/ownership/transfer-ownership.sh local 0x...     # local
-bash shell/script/ownership/transfer-ownership.sh regtest 0x...    # regtest
+bash shell/script/owner/transfer-ownership.sh testnet 0x...     # testnet
+bash shell/script/owner/transfer-ownership.sh mainnet 0x...    # mainnet
+bash shell/script/owner/transfer-ownership.sh alphanet 0x...   # alphanet
+bash shell/script/owner/transfer-ownership.sh local 0x...     # local
+bash shell/script/owner/transfer-ownership.sh regtest 0x...    # regtest
 
 # Full example:
-bash shell/script/ownership/transfer-ownership.sh testnet 0x01d0f7225c69A54CE719612b3A787ff61efE7084
+bash shell/script/owner/transfer-ownership.sh testnet 0x01d0f7225c69A54CE719612b3A787ff61efE7084
 
 # Check ownership status (network only)
-bash shell/script/ownership/check-ownership-status.sh testnet
-bash shell/script/ownership/check-ownership-status.sh mainnet
-bash shell/script/ownership/check-ownership-status.sh alphanet
-bash shell/script/ownership/check-ownership-status.sh local
-bash shell/script/ownership/check-ownership-status.sh regtest
+bash shell/script/owner/check-ownership-status.sh testnet
+bash shell/script/owner/check-ownership-status.sh mainnet
+bash shell/script/owner/check-ownership-status.sh alphanet
+bash shell/script/owner/check-ownership-status.sh local
+bash shell/script/owner/check-ownership-status.sh regtest
 ```
 
 **What this does:**
