@@ -17,11 +17,9 @@ source "$CURRENT_PATH/ownership-common.sh"
 # Get network from argument
 NETWORK="${1}"
 
-# Validate network is set
-if [[ -z "$NETWORK" ]]; then
-    echo "Error: Network must be provided as argument" >&2
+# Validate network argument
+if ! validate_network_argument "$NETWORK"; then
     echo "Usage: $0 <network>" >&2
-    echo "  network: testnet, mainnet, alphanet, local, or regtest" >&2
     exit 1
 fi
 

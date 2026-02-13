@@ -1,9 +1,18 @@
 #!/bin/bash
 # Common functions for ownership scripts
 
-# Function to set up network-specific variables
-# Usage: setup_network <network>
-# Sets: NETWORK, RPC, CHAIN_ID
+validate_network_argument() {
+    local network="${1}"
+
+    if [[ -z "$network" ]]; then
+        echo "Error: Network must be provided" >&2
+        echo "Valid networks: testnet, mainnet, alphanet, local, regtest" >&2
+        return 1
+    fi
+
+    return 0
+}
+
 setup_network() {
     local network="${1}"
 

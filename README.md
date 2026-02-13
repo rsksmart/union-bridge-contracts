@@ -455,65 +455,42 @@ verify_proxy \
 
 **Note:** While ownership can be transferred to any address, it is **strongly recommended** to use a multisig wallet (such as a [Safe multisig](https://rootstock.io/blog/safe-multisig-wallet-now-available-on-rootstock/)) for enhanced security and decentralized control.
 
-Ownership transfer is a **two-step process**:
+Ownership transfer uses a **two-step process** (`Ownable2StepUpgradeable`):
 
 1. **Current owner calls `transferOwnership(newOwner)`** on each contract. This sets the `pendingOwner` to the new owner address.
 2. **New owner calls `acceptOwnership()`** on each contract. After this, the new owner becomes the `owner` and `pendingOwner` is cleared.
 
-You can perform these steps manually using the RSK Explorer or a wallet interface. However, there are scripts available to automate the first step (transferring ownership) for all contracts at once:
-
-```bash
-bash shell/script/owner/transfer-ownership.sh testnet 0x...  # network and newOwner address
-```
-
 **Prerequisites:**
 
-- The `<NETWORK>_PEGIN_MANAGER` environment variable must be set in your `.env` file (e.g., `TESTNET_PEGIN_MANAGER`, `MAINNET_PEGIN_MANAGER`, `ALPHANET_PEGIN_MANAGER`, `LOCAL_PEGIN_MANAGER`, or `REGTEST_PEGIN_MANAGER` depending on the network you're targeting). This address is required as the entry point for the script to discover all other bridge contract addresses on-chain by calling methods on the PeginManager contract.
-
-The `TransferOwnership` script automates the transfer of ownership for all bridge contracts to a new owner address. **It is recommended to use a multisig wallet (such as a Safe multisig) as the new owner** for enhanced security. This script uses a two-step ownership transfer pattern (`Ownable2StepUpgradeable`), where the current owner initiates the transfer and the new owner must accept it.
-
-**What contracts are transferred:**
-- AccessManager
-- PeginManager
-- PegoutManager
-- StreamManager
-- CommitteeRegistry
-- MemberRegistry
-- BitcoinManager
-- SignatureManager
-- RbtcBridge
-- ChallengeManager
+- The `<NETWORK>_PEGIN_MANAGER` environment variable must be set in your `.env` file (e.g., `TESTNET_PEGIN_MANAGER`, `MAINNET_PEGIN_MANAGER`, `ALPHANET_PEGIN_MANAGER`, `LOCAL_PEGIN_MANAGER`, or `REGTEST_PEGIN_MANAGER` depending on the network you're targeting). This address is required as the entry point for the script to discover all other bridge contract addresses on-chain.
 
 **Using shell scripts (recommended):**
 
 ```bash
-# Transfer ownership (network and newOwner address)
-bash shell/script/owner/transfer-ownership.sh testnet 0x...     # testnet
-bash shell/script/owner/transfer-ownership.sh mainnet 0x...    # mainnet
-bash shell/script/owner/transfer-ownership.sh alphanet 0x...   # alphanet
-bash shell/script/owner/transfer-ownership.sh local 0x...     # local
-bash shell/script/owner/transfer-ownership.sh regtest 0x...    # regtest
+# Transfer ownership (automates step 1 for all contracts)
+# Note: The new owner address must start with 0x prefix
+bash shell/script/owner/transfer-ownership.sh <network> <new_owner_address>
 
 # Full example:
 bash shell/script/owner/transfer-ownership.sh testnet 0x986E152f58725b87c0542aD9EaC176cCAc9d4965
 
-# Check ownership status (network only)
+# Check ownership status
+bash shell/script/owner/check-ownership-status.sh <network>
+
+# Full example:
 bash shell/script/owner/check-ownership-status.sh testnet
-bash shell/script/owner/check-ownership-status.sh mainnet
-bash shell/script/owner/check-ownership-status.sh alphanet
-bash shell/script/owner/check-ownership-status.sh local
-bash shell/script/owner/check-ownership-status.sh regtest
 ```
 
-**What this does:**
-- Calls `transferOwnership(newOwner)` for each contract to set the new owner as the `pendingOwner`
-- Outputs status for each contract
+**Supported networks:** `testnet`, `mainnet`, `alphanet`, `local`, `regtest`
 
-**After running the script:**
-- Ownership transfers are initiated but not yet complete
-- The new owner must call `acceptOwnership()` on each contract to complete the transfer
-- If the new owner is a Safe multisig, use the Safe UI (https://safe.rootstock.io/) to create and execute `acceptOwnership()` transactions
-- If the new owner is a regular EOA, simply call `acceptOwnership()` from that address
+**Which contracts are transferred:**
+- AccessManager, PeginManager, PegoutManager, StreamManager, CommitteeRegistry, MemberRegistry, BitcoinManager, SignatureManager, RbtcBridge, ChallengeManager
+
+**After running the transfer script:**
+- Step 1 is complete: Ownership transfers are initiated (the new owner is set as `pendingOwner` on all contracts)
+- Step 2 required: The new owner must call `acceptOwnership()` on each contract to complete the transfer
+  - If using a Safe multisig: Use the Safe UI (https://safe.rootstock.io/) to create and execute `acceptOwnership()` transactions
+  - If using a regular EOA: Call `acceptOwnership()` from that address
 
 ### Rust crate with Bindings
 

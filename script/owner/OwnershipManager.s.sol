@@ -123,7 +123,7 @@ contract OwnershipManager is ScriptUtils, ContractAddressManager {
 
         console.log("\n=== PROCESS COMPLETE ===");
         console.log(
-            "The new owner must call acceptOwnership() on each contract where the new owner's address is the pendingOwner"
+            "Step 1 complete: Ownership transfers initiated. Step 2: The pendingOwner must call acceptOwnership() on each contract to finalize become the owner"
         );
     }
 }
