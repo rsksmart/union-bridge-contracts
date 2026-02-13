@@ -471,14 +471,8 @@ Ownership transfer uses a **two-step process** (`Ownable2StepUpgradeable`):
 # Note: The new owner address must start with 0x prefix
 bash shell/script/owner/transfer-ownership.sh <network> <new_owner_address>
 
-# Full example:
-bash shell/script/owner/transfer-ownership.sh testnet 0x986E152f58725b87c0542aD9EaC176cCAc9d4965
-
 # Check ownership status
 bash shell/script/owner/check-ownership-status.sh <network>
-
-# Full example:
-bash shell/script/owner/check-ownership-status.sh testnet
 ```
 
 **Supported networks:** `testnet`, `mainnet`, `alphanet`, `local`, `regtest`
