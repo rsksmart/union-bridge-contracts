@@ -455,8 +455,6 @@ verify_proxy \
 
 **Note:** While ownership can be transferred to any address, it is **strongly recommended** to use a multisig wallet (such as a [Safe multisig](https://rootstock.io/blog/safe-multisig-wallet-now-available-on-rootstock/)) for enhanced security and decentralized control.
 
-#### Manually transferring ownership
-
 Ownership transfer is a **two-step process**:
 
 1. **Current owner calls `transferOwnership(newOwner)`** on each contract. This sets the `pendingOwner` to the new owner address.
@@ -467,8 +465,6 @@ You can perform these steps manually using the RSK Explorer or a wallet interfac
 ```bash
 bash shell/script/owner/transfer-ownership.sh testnet 0x...  # network and newOwner address
 ```
-
-#### Automatically transferring ownership
 
 **Prerequisites:**
 
@@ -499,7 +495,7 @@ bash shell/script/owner/transfer-ownership.sh local 0x...     # local
 bash shell/script/owner/transfer-ownership.sh regtest 0x...    # regtest
 
 # Full example:
-bash shell/script/owner/transfer-ownership.sh testnet 0x01d0f7225c69A54CE719612b3A787ff61efE7084
+bash shell/script/owner/transfer-ownership.sh testnet 0x986E152f58725b87c0542aD9EaC176cCAc9d4965
 
 # Check ownership status (network only)
 bash shell/script/owner/check-ownership-status.sh testnet
@@ -510,8 +506,7 @@ bash shell/script/owner/check-ownership-status.sh regtest
 ```
 
 **What this does:**
-- Calls `transferOwnership(newOwner)` on all bridge contracts
-- Sets the new owner as the `pendingOwner` for each contract
+- Calls `transferOwnership(newOwner)` for each contract to set the new owner as the `pendingOwner`
 - Outputs status for each contract
 
 **After running the script:**
@@ -519,10 +514,6 @@ bash shell/script/owner/check-ownership-status.sh regtest
 - The new owner must call `acceptOwnership()` on each contract to complete the transfer
 - If the new owner is a Safe multisig, use the Safe UI (https://safe.rootstock.io/) to create and execute `acceptOwnership()` transactions
 - If the new owner is a regular EOA, simply call `acceptOwnership()` from that address
-
-**Tip:**
-
-You can run the `transfer-ownership-...` command again to see the status of the contracts, if the new/pending owner has claimed ownership or not. Keep in mind that the script will attempt to transfer ownership on any contract that has not initiated the transfer process previously for any reason.
 
 ### Rust crate with Bindings
 
