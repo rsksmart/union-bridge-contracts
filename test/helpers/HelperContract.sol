@@ -1095,12 +1095,12 @@ abstract contract HelperContract is Test, TestUtils {
     }
 
     function assertEventOperatorTakeTriggered(
-        bytes32 pegoutTxid,
         RegisterUserTakeSetup memory setup,
         address operatorAddress,
         uint256 createdAt
     ) internal {
         MemberKeys memory keys = memberRegistry.getMemberPublicKeys(operatorAddress);
+        PegoutTempInfo memory currentInfo = pegoutManager.getPegoutTempInfo(setup.acceptPeginTxid);
 
         PegoutTempInfo memory expectedPegoutInfo = PegoutTempInfo({
             userPubKey: setup.userPubKey,
@@ -1111,8 +1111,8 @@ abstract contract HelperContract is Test, TestUtils {
             operatorTakePubKey: keys.takePubKey,
             operatorDisputePubKey: keys.covenantPubKey,
             pegoutId: calculatePegoutId(keys.takePubKey, setup.stream.streamId, setup.packetNumber, setup.slotId),
-            advanceFundsBlockNumber: 0,
-            reimbursementKickoffTxid: bytes32(0)
+            advanceFundsBlockNumber: currentInfo.advanceFundsBlockNumber,
+            reimbursementKickoffTxid: currentInfo.reimbursementKickoffTxid
         });
 
         StreamPosition memory expectedStreamPosition = StreamPosition({
@@ -1124,7 +1124,7 @@ abstract contract HelperContract is Test, TestUtils {
 
         vm.expectEmit(address(pegoutManager));
         emit IPegoutManager.OperatorTakeTriggered(
-            pegoutTxid,
+            setup.pegoutTxid,
             expectedPegoutInfo,
             expectedStreamPosition,
             block.timestamp,

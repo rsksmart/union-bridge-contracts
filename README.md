@@ -1024,6 +1024,27 @@ If not all committee members sign within the timeout period:
 7. **Validate transaction**: System validates the BTC transaction and proof
 8. **Peg-out Registered**: System emits an event PegoutRegistered informing that RBTC is now linked to Bitcoin via operator take. If the completed slot was the last one in the packet, the committee is released.
 
+##### Operator Take Timeout Enforcement
+
+If the selected operator fails to complete their required steps within the `operatorTakeTimeout` period, any member can call `triggerOperatorTake()` again to select a new operator:
+
+- **From OP_SELECTED**: Operator failed to register `registerAdvanceFunds()` within the timeout.
+- **From ADVANCED**: Operator registered advance funds but failed to register `registerReimbursementKickoff()` within the timeout. Status resets to `OP_SELECTED`.
+- **From KICKOFF**: Operator registered kickoff but failed to register `registerOperatorTake()` within the timeout. Status resets to `OP_SELECTED`.
+
+The timeout window resets each time the operator makes progress (each call to `registerAdvanceFunds()` or `registerReimbursementKickoff()` updates the `operatorTakeUpdatedAt` timestamp).
+
+#### Disputed Case: Operator Won (Take2) - Operator wins challenge dispute
+
+If the operator's REIMBURSEMENT_KICKOFF_TX is challenged by a watchtower:
+
+1. **Challenge registered**: A watchtower calls `registerChallenge()` after detecting incorrect behavior (e.g., invalid ADVANCE_FUNDS_TX). For detailed information about the [CHALLENGE_TX](./bitcoin-transactions.md#2-challenge_tx-challenge-transaction) transaction structure, inputs/outputs, and spending conditions.
+2. **Operator reveals input**: The operator must respond by broadcasting REVEAL_INPUT_TX to prove they advanced funds correctly. The operator signs the slot ID using their Winternitz SLOT_ID_KEY. For detailed information about the [REVEAL_INPUT_TX](./bitcoin-transactions.md#3-reveal_input_tx-reveal-input-transaction) transaction structure, inputs/outputs, and spending conditions.
+3. **Automatic dispatch**: The Dispute Core protocol automatically dispatches OPERATOR_WON_TX after REVEAL_INPUT_TX is confirmed, scheduled for execution after OP_WON_TIMELOCK blocks expire (default: 150 blocks).
+4. **Broadcast Operator Won transaction**: After the timelock expires, the operator broadcasts the Operator Won (Take2) Bitcoin transaction. For detailed information about the [OPERATOR_WON_TX](./bitcoin-transactions.md#3-operator_won_tx-operator-won-transaction) transaction structure, inputs/outputs, and spending conditions.
+5. **Submit BTC transaction**: Operator calls `registerOperatorTake()` with the Bitcoin transaction and SPV proof (same function as OPERATOR_TAKE_TX)
+6. **Validate transaction**: System validates the BTC transaction and proof
+7. **Peg-out Registered**: System emits an event PegoutRegistered informing that RBTC is now linked to Bitcoin via operator won (disputed fallback)
 ```mermaid
 sequenceDiagram
     participant M as Member
