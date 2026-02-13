@@ -23,7 +23,7 @@ import {BaseProxy} from "src/BaseProxy.sol";
 contract OwnershipManager is ScriptUtils, ContractAddressManager {
     /// @notice Struct to hold contract information
     struct ContractInfo {
-        string name;
+        string contractName;
         address contractAddress;
     }
 
@@ -33,16 +33,22 @@ contract OwnershipManager is ScriptUtils, ContractAddressManager {
     /// @notice Setup function - initializes contracts
     function setUp() public {
         // Add all contracts that need ownership transfer
-        contracts.push(ContractInfo({name: "AccessManager", contractAddress: address(getAccessManager())}));
-        contracts.push(ContractInfo({name: "PeginManager", contractAddress: address(getPeginManager())}));
-        contracts.push(ContractInfo({name: "PegoutManager", contractAddress: address(getPegoutManager())}));
-        contracts.push(ContractInfo({name: "StreamManager", contractAddress: address(getStreamManager())}));
-        contracts.push(ContractInfo({name: "CommitteeRegistry", contractAddress: address(getCommitteeRegistry())}));
-        contracts.push(ContractInfo({name: "MemberRegistry", contractAddress: address(getMemberRegistry())}));
-        contracts.push(ContractInfo({name: "BitcoinManager", contractAddress: address(getBitcoinManager())}));
-        contracts.push(ContractInfo({name: "SignatureManager", contractAddress: address(getSignatureManager())}));
-        contracts.push(ContractInfo({name: "RbtcBridge", contractAddress: address(getRbtcBridge())}));
-        contracts.push(ContractInfo({name: "ChallengeManager", contractAddress: address(getChallengeManager())}));
+        contracts.push(ContractInfo({contractName: "AccessManager", contractAddress: address(getAccessManager())}));
+        contracts.push(ContractInfo({contractName: "PeginManager", contractAddress: address(getPeginManager())}));
+        contracts.push(ContractInfo({contractName: "PegoutManager", contractAddress: address(getPegoutManager())}));
+        contracts.push(ContractInfo({contractName: "StreamManager", contractAddress: address(getStreamManager())}));
+        contracts.push(
+            ContractInfo({contractName: "CommitteeRegistry", contractAddress: address(getCommitteeRegistry())})
+        );
+        contracts.push(ContractInfo({contractName: "MemberRegistry", contractAddress: address(getMemberRegistry())}));
+        contracts.push(ContractInfo({contractName: "BitcoinManager", contractAddress: address(getBitcoinManager())}));
+        contracts.push(
+            ContractInfo({contractName: "SignatureManager", contractAddress: address(getSignatureManager())})
+        );
+        contracts.push(ContractInfo({contractName: "RbtcBridge", contractAddress: address(getRbtcBridge())}));
+        contracts.push(
+            ContractInfo({contractName: "ChallengeManager", contractAddress: address(getChallengeManager())})
+        );
     }
 
     /// @notice Check ownership status of all contracts
@@ -58,7 +64,7 @@ contract OwnershipManager is ScriptUtils, ContractAddressManager {
             address pendingOwner = contractInstance.pendingOwner();
 
             console.log("");
-            console.log("Contract:", contractInfo.name);
+            console.log("Contract:", contractInfo.contractName);
             console.log("  Address:", contractInfo.contractAddress);
             console.log("  Current Owner:", currentOwner);
             console.log("  Pending Owner:", pendingOwner);
@@ -93,7 +99,7 @@ contract OwnershipManager is ScriptUtils, ContractAddressManager {
             address pendingOwner = contractInstance.pendingOwner();
 
             console.log("");
-            console.log("Contract:", contractInfo.name);
+            console.log("Contract:", contractInfo.contractName);
             console.log("  Address:", contractInfo.contractAddress);
             console.log("  Current Owner:", currentOwner);
             console.log("  Pending Owner:", pendingOwner);
@@ -122,8 +128,6 @@ contract OwnershipManager is ScriptUtils, ContractAddressManager {
         }
 
         console.log("\n=== PROCESS COMPLETE ===");
-        console.log(
-            "Step 1 complete: Ownership transfers initiated. Step 2: The pendingOwner must call acceptOwnership() on each contract to finalize become the owner"
-        );
+        console.log("The pending owner must call acceptOwnership() on each contract to finalize becoming the owner.");
     }
 }

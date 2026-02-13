@@ -18,12 +18,6 @@ source "$CURRENT_PATH/ownership-common.sh"
 # Get network from argument
 NETWORK="${1}"
 
-# Validate network argument
-if ! validate_network_argument "$NETWORK"; then
-    echo "Usage: $0 <network> <newOwnerAddress>" >&2
-    exit 1
-fi
-
 # Set up network-specific variables
 if ! setup_network "$NETWORK"; then
     exit 1

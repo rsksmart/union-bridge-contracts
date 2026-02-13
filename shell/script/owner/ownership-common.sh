@@ -16,10 +16,8 @@ validate_network_argument() {
 setup_network() {
     local network="${1}"
 
-    # Validate network is set
-    if [[ -z "$network" ]]; then
-        echo "Error: Network must be provided" >&2
-        echo "Valid networks: testnet, mainnet, alphanet, local, regtest" >&2
+    # Validate network argument
+    if ! validate_network_argument "$network"; then
         return 1
     fi
 
