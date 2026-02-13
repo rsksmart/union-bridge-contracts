@@ -78,8 +78,13 @@ interface IPegoutManager {
     /// @param streamId The stream identifier
     /// @param packetNumber The packet number within the stream
     /// @param slotId The slot identifier within the packet
-    /// @return The peg-out signature hash
+    /// @return The peg-out transaction id
     function getPegoutTxid(uint64 streamId, uint64 packetNumber, uint64 slotId) external view returns (bytes32);
+
+    /// @notice Gets the peg-out transaction id associated with a specific accept peg-in transaction id
+    /// @param _acceptPeginTxid The accept peg-in transaction id
+    /// @return The peg-out transaction id
+    function getPegoutTxid(bytes32 _acceptPeginTxid) external view returns (bytes32);
 
     /// @notice Sets the timeout duration for user take operations
     /// @dev Only callable by the contract owner
@@ -163,7 +168,7 @@ interface IPegoutManager {
     /// @notice Event emitted when a peg-out is successfully registered
     /// @param blockHash The Bitcoin block hash containing the peg-out transaction
     /// @param txid The hash of the peg-out transaction
-    /// @param acceptPeginTxid The hash of the original accept peg-in transaction
+    /// @param acceptPeginTxid The txid of the original accept peg-in transaction
     /// @param committeeId The ID of the committee responsible for this peg-out
     /// @param streamInfo The stream position information related to this peg-out
     event PegoutRegistered(
@@ -177,7 +182,7 @@ interface IPegoutManager {
     /// @notice Event emitted when advance funds are successfully registered
     /// @param blockHash The Bitcoin block hash containing the advance funds transaction
     /// @param txid The hash of the advance funds transaction
-    /// @param acceptPeginTxid The hash of the original accept peg-in transaction
+    /// @param acceptPeginTxid The txid of the original accept peg-in transaction
     /// @param pegoutId The unique identifier for this peg-out operation
     /// @param committeeId The ID of the committee responsible for this advance funds
     /// @param streamInfo The stream position information related to this advance funds
@@ -194,7 +199,7 @@ interface IPegoutManager {
 
     /// @notice Event emitted when reimbursement kickoff is successfully registered
     /// @param txid The hash of the reimbursement kickoff transaction
-    /// @param acceptPeginTxid The hash of the original accept peg-in transaction
+    /// @param acceptPeginTxid The txid of the original accept peg-in transaction
     /// @param pegoutId The unique identifier for this peg-out operation
     /// @param committeeId The ID of the committee responsible for this reimbursement kickoff
     /// @param streamInfo The stream position information related to this reimbursement kickoff
@@ -293,9 +298,9 @@ interface IPegoutManager {
     /// @param expireAt The timestamp when the operator take timeout expires
     error OperatorTakeTimeoutNotExpired(uint256 createdAt, uint256 expireAt);
 
-    /// @notice Thrown when a peg-out signature hash is not found in the system
-    /// @param pegoutTxid The signature hash that was not found
-    error PegoutTxidNotFound(bytes32 pegoutTxid);
+    /// @notice Thrown when a peg-out txid is not found for the given accept peg-in transaction id
+    /// @param pegoutTxid The peg-out transaction id that was not found
+    error PeginNotFoundForPegout(bytes32 pegoutTxid);
 
     /// @notice Thrown when the operator address does not match the expected operator that should advance the funds
     /// @param expectedOperator The expected operator address that should take the pegout
@@ -346,4 +351,10 @@ interface IPegoutManager {
     /// @param actual The actual slot id from the transaction input
     /// @param expected The expected slot id from the stream position
     error InvalidSlotId(uint32 actual, uint64 expected);
+
+    /// @notice Thrown when peg-out transaction id is not found for the given stream, packet, and slot
+    /// @param streamId The stream identifier
+    /// @param packetNumber The packet number within the stream
+    /// @param slotId The slot identifier within the packet
+    error PegoutTxidNotFound(uint64 streamId, uint64 packetNumber, uint64 slotId);
 }

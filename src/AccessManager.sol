@@ -95,6 +95,13 @@ contract AccessManager is IAccessManager, PauseManager {
         }
     }
 
+    /// @inheritdoc IAccessManager
+    function canTriggerOperatorTake(address _caller) external view {
+        if (_caller != challengeManager) {
+            revert UnauthorizedToTriggerOperatorTake(_caller);
+        }
+    }
+
     // --- TESTNET ONLY: Force close committee functionality ---
     // TODO: Remove before mainnet deployment
     function _revertIfNotTestnet() internal view {

@@ -19,6 +19,7 @@ import {IRbtcBridge} from "src/interfaces/IRbtcBridge.sol";
 import {IPegBase} from "src/interfaces/IPegBase.sol";
 import {PegManagerSettingsConfig} from "script/helpers/PegManagerSettingsConfig.sol";
 import {BytesHelper} from "src/libraries/BytesHelper.sol";
+import {IAccessManager} from "src/interfaces/IAccessManager.sol";
 
 contract PegoutManagerTest is Test, HelperContract {
     // Arrange
@@ -664,12 +665,12 @@ contract PegoutManagerTest is Test, HelperContract {
         pegoutManager.triggerOperatorTake(setup.pegoutTxid);
     }
 
-    function test_triggerOperatorTake_Revert_PegoutTxidNotFound() external {
+    function test_triggerOperatorTake_Revert_PeginNotFoundForPegout() external {
         // Arrange
         bytes32 pegoutTxid = hex"0001";
 
         // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegoutManager.PegoutTxidNotFound.selector, pegoutTxid));
+        vm.expectRevert(abi.encodeWithSelector(IPegoutManager.PeginNotFoundForPegout.selector, pegoutTxid));
 
         // Act
         pegoutManager.triggerOperatorTake(pegoutTxid);
@@ -757,6 +758,110 @@ contract PegoutManagerTest is Test, HelperContract {
         );
 
         assertEq(pegoutManager.sequenceNumber(), previousSequenceNumber + 1, "Sequence number should be incremented");
+    }
+
+    function test_triggerOperatorTake_Revert_UnauthorizedToTriggerOperatorTake_OnChallenge() external {
+        // Arrange
+        RegisterUserTakeSetup memory setup = setup_pegout();
+        bytes memory nonce =
+            hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
+        uint256 createdAt = block.timestamp;
+        // Expire TAKE_0
+        vm.warp(createdAt + TAKE_0_TIMEOUT_DEFAULT + 1);
+
+        Committee memory committee = registry.getCommittee(COMMITTEE_ID_STREAM_1_COMMITTEE_1);
+        address firstOpAddress = committee.members[0].memberAddress;
+        address secondOpAddress = committee.members[1].memberAddress;
+        setup_addMemberNonce(firstOpAddress, setup.pegoutTxid, nonce);
+        setup_addMemberNonce(secondOpAddress, setup.pegoutTxid, nonce);
+
+        // On PegStatus.CHALLENGE, only challenge manager can trigger operator take
+        vm.prank(address(challengeManager));
+        streamManager.setPegStatus(setup.acceptPeginTxid, PegStatus.CHALLENGE);
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessManager.UnauthorizedToTriggerOperatorTake.selector, address(this))
+        );
+
+        // Act
+        pegoutManager.triggerOperatorTake(setup.pegoutTxid);
+    }
+
+    function test_triggerOperatorTake_Success_OnChallenge() external {
+        // Arrange
+        RegisterUserTakeSetup memory setup = setup_pegout();
+        bytes memory nonce =
+            hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
+        uint256 createdAt = block.timestamp;
+        // Expire TAKE_0
+        vm.warp(createdAt + TAKE_0_TIMEOUT_DEFAULT + 1);
+
+        Committee memory committee = registry.getCommittee(COMMITTEE_ID_STREAM_1_COMMITTEE_1);
+        address firstOpAddress = committee.members[0].memberAddress;
+        address secondOpAddress = committee.members[1].memberAddress;
+        setup_addMemberNonce(firstOpAddress, setup.pegoutTxid, nonce);
+        setup_addMemberNonce(secondOpAddress, setup.pegoutTxid, nonce);
+
+        // On PegStatus.CHALLENGE, only challenge manager can trigger operator take
+        vm.prank(address(challengeManager));
+        streamManager.setPegStatus(setup.acceptPeginTxid, PegStatus.CHALLENGE);
+
+        // Act
+        vm.prank(address(challengeManager));
+        pegoutManager.triggerOperatorTake(setup.pegoutTxid);
+    }
+
+    function test_triggerOperatorTake_Revert_UnauthorizedToTriggerOperatorTake_OnRevealed() external {
+        // Arrange
+        RegisterUserTakeSetup memory setup = setup_pegout();
+        bytes memory nonce =
+            hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
+        uint256 createdAt = block.timestamp;
+        // Expire TAKE_0
+        vm.warp(createdAt + TAKE_0_TIMEOUT_DEFAULT + 1);
+
+        Committee memory committee = registry.getCommittee(COMMITTEE_ID_STREAM_1_COMMITTEE_1);
+        address firstOpAddress = committee.members[0].memberAddress;
+        address secondOpAddress = committee.members[1].memberAddress;
+        setup_addMemberNonce(firstOpAddress, setup.pegoutTxid, nonce);
+        setup_addMemberNonce(secondOpAddress, setup.pegoutTxid, nonce);
+
+        // On PegStatus.REVEALED, only challenge manager can trigger operator take
+        vm.prank(address(challengeManager));
+        streamManager.setPegStatus(setup.acceptPeginTxid, PegStatus.REVEALED);
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessManager.UnauthorizedToTriggerOperatorTake.selector, address(this))
+        );
+
+        // Act
+        pegoutManager.triggerOperatorTake(setup.pegoutTxid);
+    }
+
+    function test_triggerOperatorTake_Success_OnRevealed() external {
+        // Arrange
+        RegisterUserTakeSetup memory setup = setup_pegout();
+        bytes memory nonce =
+            hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000";
+        uint256 createdAt = block.timestamp;
+        // Expire TAKE_0
+        vm.warp(createdAt + TAKE_0_TIMEOUT_DEFAULT + 1);
+
+        Committee memory committee = registry.getCommittee(COMMITTEE_ID_STREAM_1_COMMITTEE_1);
+        address firstOpAddress = committee.members[0].memberAddress;
+        address secondOpAddress = committee.members[1].memberAddress;
+        setup_addMemberNonce(firstOpAddress, setup.pegoutTxid, nonce);
+        setup_addMemberNonce(secondOpAddress, setup.pegoutTxid, nonce);
+
+        // On PegStatus.REVEALED, only challenge manager can trigger operator take
+        vm.prank(address(challengeManager));
+        streamManager.setPegStatus(setup.acceptPeginTxid, PegStatus.REVEALED);
+
+        // Act
+        vm.prank(address(challengeManager));
+        pegoutManager.triggerOperatorTake(setup.pegoutTxid);
     }
 
     function test_triggerOperatorTake_Revert_OperatorTakeTimeoutNotExpired() external {
@@ -1972,5 +2077,34 @@ contract PegoutManagerTest is Test, HelperContract {
         // Act
         vm.prank(globalUserAddress);
         pegoutManager.tryPegout{value: amountInWei}(userPubKey);
+    }
+
+    function test_getPegoutTxid_Success() external {
+        // Arrange
+        RegisterUserTakeSetup memory setup = setup_pegout();
+
+        // Act
+        bytes32 txid1 = pegoutManager.getPegoutTxid(setup.stream.streamId, setup.packetNumber, setup.slotId);
+        bytes32 txid2 = pegoutManager.getPegoutTxid(setup.acceptPeginTxid);
+
+        // Assert
+        assertNotEq(txid1, bytes32(0), "Returned txid should not be zero");
+        assertNotEq(txid2, bytes32(0), "Returned txid should not be zero");
+        assertEq(txid1, txid2, "Both txids should match");
+    }
+
+    function test_getPegoutTxid_Revert_PegoutTxidNotFound() external {
+        // Arrange
+        Stream memory stream = streamManager.getStream(VALUE);
+        uint64 packetNumber = 0;
+        uint64 slotId = 0;
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IPegoutManager.PegoutTxidNotFound.selector, stream.streamId, packetNumber, slotId)
+        );
+
+        // Act
+        pegoutManager.getPegoutTxid(stream.streamId, packetNumber, slotId);
     }
 }
