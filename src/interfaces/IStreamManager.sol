@@ -278,10 +278,8 @@ interface IStreamManager {
 
     /// @notice Marks a slot as advanced by the operator to the user
     /// @dev Updates the slot state to ADVANCED and stores the operator's peg-out transaction
-    /// @param _streamId The index of the stream
-    /// @param _packetNumber The index of the packet within the stream
-    /// @param _slotId The index of the slot within the packet
-    function advanceSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) external;
+    /// @param _acceptPeginTxid The accept peg-in transaction ID
+    function advanceSlot(bytes32 _acceptPeginTxid) external;
 
     /// @notice Sets the number of confirmations required for peg-in transactions
     /// @dev Only callable by the contract owner

@@ -440,10 +440,11 @@ contract StreamManager is IStreamManager, BaseProxy {
     }
 
     /// @inheritdoc IStreamManager
-    function advanceSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) external {
+    function advanceSlot(bytes32 _acceptPeginTxid) external {
         // Verify that the caller has permission to modify the peg status
         accessManager.canModifyPegStatus(_msgSender());
-        Slot storage slot = _getSlot(_streamId, _packetNumber, _slotId);
+        StreamPosition storage streamPosition = streamPositions[_acceptPeginTxid];
+        Slot storage slot = _getSlot(streamPosition.streamId, streamPosition.packetNumber, streamPosition.slotId);
 
         // Validate that the slot exists and is in LOCKED state
         if (slot.state != SlotState.LOCKED) {

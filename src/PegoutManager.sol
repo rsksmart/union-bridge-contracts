@@ -117,7 +117,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
             createdAt: block.timestamp,
             operatorTakeUpdatedAt: 0,
             committeeId: committeeId,
-            takeOperatorAddress: address(0),
+            operatorTakeAddress: address(0),
             operatorTakePubKey: bytes32(0),
             operatorDisputePubKey: bytes32(0),
             pegoutId: bytes32(0),
@@ -234,79 +234,79 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
             revert PeginNotFoundForPegout(_pegoutTxid);
         }
 
-        PegoutTempInfo storage pegoutInfo = pegoutTempInfo[acceptPeginTxid];
-        StreamPosition memory streamInfo = streamManager.getStreamPosition(acceptPeginTxid);
-        uint256 operatorTakeUpdatedAt = pegoutInfo.operatorTakeUpdatedAt;
-        pegoutInfo.operatorTakeUpdatedAt = block.timestamp;
-        bool advanceSlot = false;
-        PegStatus newStatus = PegStatus.NOT_REGISTERED;
-
-        uint256 sequenceNumberToUse = sequenceNumber;
-        unchecked {
-            sequenceNumber++;
-        }
-
         //slither-disable-next-line unused-return
         (SignatureData[] memory signatureData, uint8 missingSignatures, uint8 missingNonces,) =
             signatureManager.getPartialSignatures(_pegoutTxid);
 
-        // slither-disable-next-line reentrancy-no-eth reentrancy-benign
-        (address takeOperatorAddress, bytes32 operatorDisputePubKey, bytes32 operatorTakePubKey) =
-            committeeRegistry.selectTakeOperator(pegoutInfo.committeeId, signatureData, missingNonces);
-
-        // Update state variables after external calls
-        pegoutInfo.takeOperatorAddress = takeOperatorAddress;
-        pegoutInfo.operatorTakePubKey = operatorTakePubKey;
-        pegoutInfo.operatorDisputePubKey = operatorDisputePubKey;
-        pegoutInfo.pegoutId = _generatePegoutId(streamInfo, operatorTakePubKey, sequenceNumberToUse);
+        PegoutTempInfo storage pegoutInfo = pegoutTempInfo[acceptPeginTxid];
+        StreamPosition memory streamInfo = streamManager.getStreamPosition(acceptPeginTxid);
 
         if (streamInfo.pegStatus == PegStatus.USER_TAKE) {
-            if (missingSignatures == 0) {
-                revert UserTakeAlreadySigned(_pegoutTxid);
-            }
-
-            // slither-disable-next-line timestamp
-            if (block.timestamp <= pegoutInfo.createdAt + userTakeTimeout) {
-                revert UserTakeTimeoutNotExpired(pegoutInfo.createdAt, pegoutInfo.createdAt + userTakeTimeout);
-            }
-            advanceSlot = true;
-            newStatus = PegStatus.OP_SELECTED;
+            _handleUserTake(_pegoutTxid, pegoutInfo.createdAt, missingSignatures);
         } else if (
             streamInfo.pegStatus == PegStatus.OP_SELECTED || streamInfo.pegStatus == PegStatus.ADVANCED
                 || streamInfo.pegStatus == PegStatus.KICKOFF
         ) {
-            // slither-disable-next-line timestamp
-            if (block.timestamp <= operatorTakeUpdatedAt + operatorTakeTimeout) {
-                revert OperatorTakeTimeoutNotExpired(operatorTakeUpdatedAt, operatorTakeUpdatedAt + operatorTakeTimeout);
-            }
-            // Reset to OP_SELECTED if currently in ADVANCED or KICKOFF
-            if (streamInfo.pegStatus != PegStatus.OP_SELECTED) {
-                newStatus = PegStatus.OP_SELECTED;
-            }
+            _verifyOperatorTakeTimeoutExpired(pegoutInfo.operatorTakeUpdatedAt);
         } else if (streamInfo.pegStatus == PegStatus.CHALLENGE || streamInfo.pegStatus == PegStatus.REVEALED) {
-            // Only challenge manager can call this function when input not revealed is registered
-            accessManager.canTriggerOperatorTake(_msgSender());
-            newStatus = PegStatus.OP_SELECTED;
+            // Only the challenge manager can trigger operator take in these states
+            accessManager.revertIfNotChallengeManager(_msgSender());
         } else {
             revert InvalidPegStatus(streamInfo.pegStatus);
         }
 
-        if (newStatus != PegStatus.NOT_REGISTERED) {
-            streamManager.setPegStatus(acceptPeginTxid, newStatus);
+        // slither-disable-next-line reentrancy-no-eth reentrancy-benign
+        (address operatorTakeAddress, bytes32 operatorDisputePubKey, bytes32 operatorTakePubKey) = committeeRegistry
+            .selectTakeOperator(pegoutTempInfo[acceptPeginTxid].committeeId, signatureData, missingNonces);
+
+        _updatePegoutInfo(pegoutInfo, streamInfo, operatorTakeAddress, operatorDisputePubKey, operatorTakePubKey);
+
+        // save on a contract call if already set
+        if (streamInfo.pegStatus != PegStatus.OP_SELECTED) {
+            streamManager.setPegStatus(acceptPeginTxid, PegStatus.OP_SELECTED);
         }
 
-        // Fetch updated streamInfo after potential status change
         StreamPosition memory updatedStreamInfo = streamManager.getStreamPosition(acceptPeginTxid);
-
         // slither-disable-next-line reentrancy-events
         emit OperatorTakeTriggered(
             _pegoutTxid, pegoutInfo, updatedStreamInfo, block.timestamp, block.timestamp + operatorTakeTimeout
         );
+    }
 
-        if (advanceSlot) {
-            streamManager.advanceSlot(
-                updatedStreamInfo.streamId, updatedStreamInfo.packetNumber, updatedStreamInfo.slotId
-            );
+    function _handleUserTake(bytes32 _pegoutTxid, uint256 _pegoutCreatedAt, uint8 _missingSignatures) internal {
+        if (_missingSignatures == 0) {
+            revert UserTakeAlreadySigned(_pegoutTxid);
+        }
+        // slither-disable-next-line timestamp
+        if (block.timestamp <= _pegoutCreatedAt + userTakeTimeout) {
+            revert UserTakeTimeoutNotExpired(_pegoutCreatedAt, _pegoutCreatedAt + userTakeTimeout);
+        }
+
+        bytes32 acceptPeginTxid = pegoutToPeginTxid[_pegoutTxid];
+        streamManager.advanceSlot(acceptPeginTxid);
+    }
+
+    function _verifyOperatorTakeTimeoutExpired(uint256 _operatorTakeUpdatedAt) internal view {
+        // slither-disable-next-line timestamp
+        if (block.timestamp <= _operatorTakeUpdatedAt + operatorTakeTimeout) {
+            revert OperatorTakeTimeoutNotExpired(_operatorTakeUpdatedAt, _operatorTakeUpdatedAt + operatorTakeTimeout);
+        }
+    }
+
+    function _updatePegoutInfo(
+        PegoutTempInfo storage _pegoutInfo,
+        StreamPosition memory _streamInfo,
+        address _operatorTakeAddress,
+        bytes32 _operatorDisputePubKey,
+        bytes32 _operatorTakePubKey
+    ) internal {
+        _pegoutInfo.operatorTakeUpdatedAt = block.timestamp;
+        _pegoutInfo.operatorTakeAddress = _operatorTakeAddress;
+        _pegoutInfo.operatorTakePubKey = _operatorTakePubKey;
+        _pegoutInfo.operatorDisputePubKey = _operatorDisputePubKey;
+        _pegoutInfo.pegoutId = _generatePegoutId(_streamInfo, _operatorTakePubKey, sequenceNumber);
+        unchecked {
+            sequenceNumber++;
         }
     }
 
@@ -402,8 +402,8 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
     function _validateOperatorTakeAddress(bytes32 _acceptPeginTxid) internal view returns (PegoutTempInfo storage) {
         PegoutTempInfo storage pegoutInfo = pegoutTempInfo[_acceptPeginTxid];
         address sender = _msgSender();
-        if (pegoutInfo.takeOperatorAddress != sender) {
-            revert OperatorTakeAddressNotMatch(pegoutInfo.takeOperatorAddress, sender);
+        if (pegoutInfo.operatorTakeAddress != sender) {
+            revert OperatorTakeAddressNotMatch(pegoutInfo.operatorTakeAddress, sender);
         }
         return pegoutInfo;
     }
@@ -497,7 +497,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         // Calculate the transaction id for verification
         bytes32 txid = bitcoinManager.getBtcTxid(_pegoutTxSPVProof.btcTx);
 
-        OperatorTakeData memory opTakeData = _getOperatorTakeData(acceptPeginTxid, pegoutInfo.takeOperatorAddress);
+        OperatorTakeData memory opTakeData = _getOperatorTakeData(acceptPeginTxid, pegoutInfo.operatorTakeAddress);
 
         // Validate operator take txid matched the one deposited during accept pegin
         if (txid != opTakeData.takeTxid) {
@@ -563,7 +563,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         // Calculate the transaction id for verification
         bytes32 txid = bitcoinManager.getBtcTxid(_pegoutTxSPVProof.btcTx);
 
-        (OperatorTakeData memory opTakeData) = _getOperatorTakeData(acceptPeginTxid, pegoutInfo.takeOperatorAddress);
+        (OperatorTakeData memory opTakeData) = _getOperatorTakeData(acceptPeginTxid, pegoutInfo.operatorTakeAddress);
 
         // Validate operator take txid matched the one deposited during accept pegin
         if (txid != opTakeData.wonTxid) {

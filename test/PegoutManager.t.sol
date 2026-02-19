@@ -160,7 +160,7 @@ contract PegoutManagerTest is Test, HelperContract {
         assertEq(pegoutInfo.createdAt, createdAt, "Created at should match");
         assertEq(pegoutInfo.committeeId, committeeId, "Committee ID should match");
         assertEq(pegoutInfo.operatorTakeUpdatedAt, 0, "Operator take updated at should be zero");
-        assertEq(pegoutInfo.takeOperatorAddress, address(0), "Take operator address should be zero");
+        assertEq(pegoutInfo.operatorTakeAddress, address(0), "Take operator address should be zero");
         assertEq(pegoutInfo.operatorDisputePubKey, bytes32(0), "Operator dispute public key should be zero");
         assertEq(pegoutInfo.pegoutId, 0, "Pegout ID should be zero");
         assertEq(pegoutInfo.advanceFundsBlockNumber, 0, "Advance funds block number should be zero");
@@ -780,9 +780,7 @@ contract PegoutManagerTest is Test, HelperContract {
         streamManager.setPegStatus(setup.acceptPeginTxid, PegStatus.CHALLENGE);
 
         // Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(IAccessManager.UnauthorizedToTriggerOperatorTake.selector, address(this))
-        );
+        vm.expectRevert(abi.encodeWithSelector(IAccessManager.CallerIsNotChallengeManager.selector, address(this)));
 
         // Act
         pegoutManager.triggerOperatorTake(setup.pegoutTxid);
@@ -832,9 +830,7 @@ contract PegoutManagerTest is Test, HelperContract {
         streamManager.setPegStatus(setup.acceptPeginTxid, PegStatus.REVEALED);
 
         // Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(IAccessManager.UnauthorizedToTriggerOperatorTake.selector, address(this))
-        );
+        vm.expectRevert(abi.encodeWithSelector(IAccessManager.CallerIsNotChallengeManager.selector, address(this)));
 
         // Act
         pegoutManager.triggerOperatorTake(setup.pegoutTxid);

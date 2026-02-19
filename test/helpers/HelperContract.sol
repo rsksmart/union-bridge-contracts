@@ -980,7 +980,7 @@ abstract contract HelperContract is Test, TestUtils {
 
         // Get the actual operator that was selected from the contract state
         PegoutTempInfo memory actualPegoutInfo = pegoutManager.getPegoutTempInfo(setup.acceptPeginTxid);
-        operatorAddress = actualPegoutInfo.takeOperatorAddress;
+        operatorAddress = actualPegoutInfo.operatorTakeAddress;
         setup.pegoutId = actualPegoutInfo.pegoutId;
 
         setup.advanceFundsSPV = createBtcTxSPVProof(createAdvanceFundsTx(setup.userPubKey, VALUE, setup.pegoutId));
@@ -1107,7 +1107,7 @@ abstract contract HelperContract is Test, TestUtils {
             createdAt: createdAt,
             operatorTakeUpdatedAt: block.timestamp, // Updated when triggerOperatorTake is called
             committeeId: COMMITTEE_ID_STREAM_1_COMMITTEE_1,
-            takeOperatorAddress: operatorAddress,
+            operatorTakeAddress: operatorAddress,
             operatorTakePubKey: keys.takePubKey,
             operatorDisputePubKey: keys.covenantPubKey,
             pegoutId: calculatePegoutId(keys.takePubKey, setup.stream.streamId, setup.packetNumber, setup.slotId),
