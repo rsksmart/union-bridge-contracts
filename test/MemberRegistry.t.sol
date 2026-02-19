@@ -16,6 +16,8 @@ import {
 import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
 import {IAccessManager} from "src/interfaces/IAccessManager.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {IPausable} from "src/interfaces/IPausable.sol";
 import {IStreamManager, StreamDenomination} from "src/interfaces/IStreamManager.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
@@ -1977,4 +1979,102 @@ contract MemberRegistryTest is Test, HelperContract {
         vm.prank(user);
         memberRegistry.unsubscribeFromStream(user, DEFAULT_STREAM);
     }
+
+    // ==================== TESTNET ONLY FUNCTION TESTS ====================
+
+    function test_forceReleaseCommitteeMembers_TESTNET_Revert_OwnableUnauthorizedAccount() external {
+        // Arrange
+        address unauthorizedAccount = address(0x1234);
+        uint64 streamId = uint64(DEFAULT_STREAM);
+        uint64 packetNumber = 0;
+        address[] memory memberAddresses = new address[](0);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, unauthorizedAccount));
+
+        // Act
+        vm.prank(unauthorizedAccount);
+        memberRegistry.forceReleaseCommitteeMembers_TESTNET(streamId, packetNumber, memberAddresses);
+    }
+
+    function test_forceReleaseCommitteeMembers_TESTNET_Revert_TestnetOnlyFunction() external {
+        // Arrange
+        uint64 streamId = uint64(DEFAULT_STREAM);
+        uint64 packetNumber = 0;
+        address[] memory memberAddresses = new address[](0);
+        address owner = memberRegistry.owner();
+
+        // Simulate RSK mainnet (chain ID 30)
+        vm.chainId(30);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IAccessManager.TestnetOnlyFunction.selector));
+
+        // Act
+        vm.prank(owner);
+        memberRegistry.forceReleaseCommitteeMembers_TESTNET(streamId, packetNumber, memberAddresses);
+    }
+
+    function test_forceExit_TESTNET_Success() external {
+        // Arrange
+        address recipient = address(0x5678);
+        address owner = memberRegistry.owner();
+        uint256 contractBalance = 1 ether;
+        vm.deal(address(memberRegistry), contractBalance);
+
+        // Assert
+        vm.expectEmit(address(memberRegistry));
+        emit IMemberRegistry.ForceExit(recipient, contractBalance);
+
+        // Act
+        vm.prank(owner);
+        memberRegistry.forceExit_TESTNET(recipient);
+
+        // Assert
+        assertEq(recipient.balance, contractBalance, "Recipient should receive the contract balance");
+        assertEq(address(memberRegistry).balance, 0, "Contract balance should be zero");
+    }
+
+    function test_forceExit_TESTNET_Revert_InvalidZeroAddress() external {
+        // Arrange
+        address owner = memberRegistry.owner();
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IPausable.InvalidZeroAddress.selector));
+
+        // Act
+        vm.prank(owner);
+        memberRegistry.forceExit_TESTNET(address(0));
+    }
+
+    function test_forceExit_TESTNET_Revert_OwnableUnauthorizedAccount() external {
+        // Arrange
+        address unauthorizedAccount = address(0x1234);
+        address recipient = address(0x5678);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, unauthorizedAccount));
+
+        // Act
+        vm.prank(unauthorizedAccount);
+        memberRegistry.forceExit_TESTNET(recipient);
+    }
+
+    function test_forceExit_TESTNET_Revert_TestnetOnlyFunction() external {
+        // Arrange
+        address recipient = address(0x5678);
+        address owner = memberRegistry.owner();
+
+        // Simulate RSK mainnet (chain ID 30)
+        vm.chainId(30);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IAccessManager.TestnetOnlyFunction.selector));
+
+        // Act
+        vm.prank(owner);
+        memberRegistry.forceExit_TESTNET(recipient);
+    }
+
+    // ==================== END TESTNET ONLY FUNCTION TESTS ====================
 }

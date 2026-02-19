@@ -2730,4 +2730,37 @@ contract CommitteeRegistryTest is Test, HelperContract {
         // Assert
         assertFalse(isMember, "Address should not be in committee");
     }
+
+    // ==================== TESTNET ONLY FUNCTION TESTS ====================
+
+    function test_forceDiscardPendingCommittee_TESTNET_Revert_OwnableUnauthorizedAccount() external {
+        // Arrange
+        address unauthorizedAccount = address(0x1234);
+        uint64 streamId = SETUP_PENDING_COMMITTEE_STREAM_ID;
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, unauthorizedAccount));
+
+        // Act
+        vm.prank(unauthorizedAccount);
+        registry.forceDiscardPendingCommittee_TESTNET(streamId);
+    }
+
+    function test_forceDiscardPendingCommittee_TESTNET_Revert_TestnetOnlyFunction() external {
+        // Arrange
+        uint64 streamId = SETUP_PENDING_COMMITTEE_STREAM_ID;
+        address owner = registry.owner();
+
+        // Simulate RSK mainnet (chain ID 30)
+        vm.chainId(30);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IAccessManager.TestnetOnlyFunction.selector));
+
+        // Act
+        vm.prank(owner);
+        registry.forceDiscardPendingCommittee_TESTNET(streamId);
+    }
+
+    // ==================== END TESTNET ONLY FUNCTION TESTS ====================
 }
