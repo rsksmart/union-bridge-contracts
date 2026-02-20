@@ -1472,7 +1472,7 @@ contract StreamManagerTest is Test, HelperContract {
 
         // 4. Advance slot
         vm.prank(address(pegoutManager));
-        streamManager.advanceSlot(streamId, packetNumber, slotId);
+        streamManager.advanceSlot(acceptPeginTx);
 
         // 5. Complete slot
         vm.prank(address(pegoutManager));

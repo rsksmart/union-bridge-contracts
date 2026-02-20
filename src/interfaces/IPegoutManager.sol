@@ -17,7 +17,7 @@ struct PegoutTempInfo {
     /// @notice The committee ID responsible for signing this peg-out
     uint128 committeeId;
     /// @notice The operator address that will advance the funds to the user
-    address takeOperatorAddress;
+    address operatorTakeAddress;
     /// @notice The take public key (takePubKey) of the selected operator for operator-take transactions (x-coordinate only)
     bytes32 operatorTakePubKey;
     /// @notice The dispute public key (covenantPubKey) of the selected operator for operator-take transactions (x-coordinate only)

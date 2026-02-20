@@ -40,7 +40,7 @@ contract PegoutManagerHarness is PegoutManager {
             createdAt: block.timestamp,
             operatorTakeUpdatedAt: 0,
             committeeId: 0,
-            takeOperatorAddress: address(0),
+            operatorTakeAddress: address(0),
             operatorTakePubKey: bytes32(0),
             operatorDisputePubKey: bytes32(0),
             pegoutId: bytes32(0),

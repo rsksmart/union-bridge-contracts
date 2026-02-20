@@ -60,10 +60,10 @@ interface IAccessManager {
     /// @dev Reverts if the caller does not have permissions to set the base event
     function canSetBaseEvent(address _caller) external view;
 
-    /// @notice Requires the caller to have permissions to trigger operator take
+    /// @notice Requires the caller to be the challenge manager
     /// @param _caller The address of the caller
-    /// @dev Reverts if the caller does not have permissions to trigger operator take
-    function canTriggerOperatorTake(address _caller) external view;
+    /// @dev Reverts if the caller is not the challenge manager
+    function revertIfNotChallengeManager(address _caller) external view;
 
     // ===================== Events =====================
 
@@ -113,9 +113,9 @@ interface IAccessManager {
     /// @param _caller The address of the unauthorized account
     error UnauthorizedToSetBaseEvent(address _caller);
 
-    /// @notice Thrown when an account is not authorized to trigger operator take
+    /// @notice Thrown when an account is not the challenge manager
     /// @param _caller The address of the unauthorized account
-    error UnauthorizedToTriggerOperatorTake(address _caller);
+    error CallerIsNotChallengeManager(address _caller);
 
     // --- TESTNET ONLY ---
     // TODO: Remove before mainnet deployment

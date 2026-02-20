@@ -96,9 +96,9 @@ contract AccessManager is IAccessManager, PauseManager {
     }
 
     /// @inheritdoc IAccessManager
-    function canTriggerOperatorTake(address _caller) external view {
+    function revertIfNotChallengeManager(address _caller) external view {
         if (_caller != challengeManager) {
-            revert UnauthorizedToTriggerOperatorTake(_caller);
+            revert CallerIsNotChallengeManager(_caller);
         }
     }
 
