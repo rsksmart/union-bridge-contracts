@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {PegManagerBase} from "./PegManagerBase.sol";
-import {IPegoutManager, PegoutManagerSettings, PegoutTempInfo} from "./interfaces/IPegoutManager.sol";
+import {IPegoutManager, PegoutManagerSettings, PegoutTempInfo, PegoutRequest} from "./interfaces/IPegoutManager.sol";
 import {ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
 import {ISignatureManager, SignatureData, OperatorTakeData} from "./interfaces/ISignatureManager.sol";
 import {IStreamManager, Stream, Slot} from "./interfaces/IStreamManager.sol";
@@ -31,6 +31,9 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
 
     // Key = keccak256(abi.encodePacked(streamId, packetNumber, slotId))
     mapping(bytes32 key => bytes32 pegoutTxid) internal pegoutTxids;
+
+    mapping(uint64 streamId => PegoutRequest[]) internal pegoutQueue;
+    mapping(uint64 streamId => uint64) internal currentPegoutQueuePointer;
 
     /// @notice Initializes the PegManager contract
     /// @param _initialOwner The initial owner of the contract
@@ -81,33 +84,133 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         return pegoutToPeginTxid[_pegoutTxid];
     }
 
-    function _validatePegoutRequest(bytes memory _userPubKey, uint256 amountInWei) internal pure {
-        if (BtcHelper.weiToSatoshi(amountInWei) > type(uint64).max) {
-            revert PegoutRequestAmountExceedsUint64Limit(BtcHelper.weiToSatoshi(amountInWei));
+    function _validatePegoutRequest(bytes memory _userPubKey, uint256 amountInWei)
+        internal
+        view
+        returns (Stream memory)
+    {
+        uint256 amountInSatoshi = BtcHelper.weiToSatoshi(amountInWei);
+        if (amountInSatoshi > type(uint64).max) {
+            revert PegoutRequestAmountExceedsUint64Limit(amountInSatoshi);
         }
 
         // Validate the _userPubKey is 33 bytes (compressed pubkey)
         if (_userPubKey.length != 33 || (_userPubKey[0] != 0x02 && _userPubKey[0] != 0x03)) {
             revert InvalidCompressedPubKey(_userPubKey);
         }
+
+        return streamManager.getStream(uint64(amountInSatoshi));
     }
 
     /// @inheritdoc IPegoutManager
-    function tryPegout(bytes memory _userPubKey) external payable nonReentrant whenNotPaused {
-        _validatePegoutRequest(_userPubKey, msg.value);
+    function enqueuePegout(bytes memory _userPubKey) external payable nonReentrant whenNotPaused {
+        Stream memory stream = _validatePegoutRequest(_userPubKey, msg.value);
 
-        Stream memory stream = streamManager.getStream(uint64(BtcHelper.weiToSatoshi(msg.value)));
+        uint64 queueLength = _getPegoutQueueLength(stream.streamId);
+        if (queueLength >= Constants.MAX_PEGOUT_QUEUE_SIZE) {
+            revert PegoutQueueFull(stream.streamId);
+        }
+
+        uint64 filledSlotsCount = streamManager.getFilledSlotsCount(stream.streamId);
+        if (queueLength >= filledSlotsCount) {
+            revert NoFreeFilledSlot(stream.streamId, queueLength, filledSlotsCount);
+        }
+
+        // Enqueue the pegout request
+        pegoutQueue[stream.streamId].push(PegoutRequest({userPubKey: _userPubKey, userAddress: msg.sender}));
+        emit PegoutEnqueued(stream.streamId, _userPubKey, msg.sender);
+    }
+
+    /// @inheritdoc IPegoutManager
+    function dequeuePegout(uint64 _streamId) external nonReentrant whenNotPaused {
+        // Check if there are any enqueued peg-out requests for the given stream ID. If not, revert with an error.
+        if (_getPegoutQueueLength(_streamId) == 0) {
+            revert NoEnqueuedPegout(_streamId);
+        }
+
+        address sender = _msgSender();
+        bool userPegoutFound = false;
+        // slither-disable-next-line uninitialized-local
+        PegoutRequest memory request;
+        uint64 queueLength = uint64(pegoutQueue[_streamId].length);
+
+        uint64 i = currentPegoutQueuePointer[_streamId];
+
+        // Iterate through the peg-out queue to find the user's request
+        for (; i < queueLength; i++) {
+            address pegoutUserAddress = pegoutQueue[_streamId][i].userAddress;
+            if (pegoutUserAddress == sender) {
+                request = pegoutQueue[_streamId][i];
+                userPegoutFound = true;
+                break;
+            }
+        }
+
+        if (!userPegoutFound) {
+            revert PegoutNotFoundInQueue(_streamId, sender);
+        }
+
+        // Shift the remaining peg-out requests forward in the queue to fill the gap left by the dequeued request
+        for (; i < queueLength - 1; i++) {
+            pegoutQueue[_streamId][i] = pegoutQueue[_streamId][i + 1];
+        }
+
+        pegoutQueue[_streamId].pop();
+        // Emit an event for the dequeued peg-out request
+        emit PegoutDequeued(_streamId, request.userPubKey, sender);
+
+        // Refund the user for the dequeued peg-out request
+        uint256 amountInWei = BtcHelper.satoshiToWei(((streamManager.getStreamById(_streamId).denomination)));
+        // slither-disable-next-line arbitrary-send-eth
+        (bool sent,) = payable(sender).call{value: amountInWei}("");
+
+        // If the transfer fails, revert with an error
+        if (!sent) {
+            revert FailedToSendRSK(sender, amountInWei);
+        }
+    }
+
+    /// @inheritdoc IPegoutManager
+    function getPegoutQueueLength(uint64 _streamId) external view returns (uint64) {
+        return _getPegoutQueueLength(_streamId);
+    }
+
+    function _getPegoutQueueLength(uint64 _streamId) internal view returns (uint64) {
+        return uint64(pegoutQueue[_streamId].length) - currentPegoutQueuePointer[_streamId];
+    }
+
+    // Get the next enqueued pegout to process and advance the queue pointer
+    function _popPegoutQueue(uint64 _streamId) internal returns (PegoutRequest memory request) {
+        if (_getPegoutQueueLength(_streamId) == 0) {
+            revert NoEnqueuedPegout(_streamId);
+        }
+
+        request = pegoutQueue[_streamId][currentPegoutQueuePointer[_streamId]];
+        currentPegoutQueuePointer[_streamId]++;
+    }
+
+    /// @inheritdoc IPegoutManager
+    function tryProcessEnqueuedPegout(uint64 _streamId) external nonReentrant whenNotPaused {
+        PegoutRequest memory request = _popPegoutQueue(_streamId);
+        // Emit an event for the dequeued peg-out request
+        emit PegoutDequeued(_streamId, request.userPubKey, request.userAddress);
+
+        Stream memory stream = streamManager.getStreamById(_streamId);
+        _processPegout(request.userPubKey, stream);
+    }
+
+    function _processPegout(bytes memory _userPubKey, Stream memory _stream) internal {
         // slither-disable-next-line reentrancy-benign
-        (Slot memory slot, uint64 packetNumber) = streamManager.lockSlot(stream.streamId);
+        (Slot memory slot, uint64 packetNumber) = streamManager.lockSlot(_stream.streamId);
 
-        PrevoutData[] memory prevoutDatas = _preparePegoutPrevoutDatas(stream.streamId, packetNumber, slot);
+        PrevoutData[] memory prevoutDatas = _preparePegoutPrevoutDatas(_stream.streamId, packetNumber, slot);
 
         // Compute the Bitcoin peg-out signature hash
         BitcoinSignatureData memory pegoutSignatureData =
             bitcoinManager.getPegoutTxData(_userPubKey, slot.acceptPeginTx, prevoutDatas);
 
         uint128 committeeId =
-            _storePegoutAndInitSignatures(pegoutSignatureData.txid, stream.streamId, packetNumber, slot.slotId);
+            _storePegoutAndInitSignatures(pegoutSignatureData.txid, _stream.streamId, packetNumber, slot.slotId);
 
         // Store the pegout to pegin tx id mapping
         pegoutToPeginTxid[pegoutSignatureData.txid] = slot.acceptPeginTx;
@@ -130,10 +233,10 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
             _userPubKey,
             committeeId,
             pegoutSignatureData,
-            stream.streamId,
+            _stream.streamId,
             packetNumber,
             slot.slotId,
-            stream.denomination
+            _stream.denomination
         );
 
         streamManager.setPegStatus(slot.acceptPeginTx, PegStatus.USER_TAKE);
@@ -143,6 +246,18 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         // The difference (fees) remains in the contract for future operator fee distribution
         uint256 amountToBurn = BtcHelper.satoshiToWei(slot.acceptPeginAmount);
         rbtcBridge.burnRbtc{value: amountToBurn}();
+    }
+
+    /// @inheritdoc IPegoutManager
+    function tryPegout(bytes memory _userPubKey) external payable nonReentrant whenNotPaused {
+        Stream memory stream = _validatePegoutRequest(_userPubKey, msg.value);
+        uint64 queueLength = _getPegoutQueueLength(stream.streamId);
+
+        if (queueLength > 0) {
+            revert EnqueuedPegoutsForStream(stream.streamId, queueLength);
+        }
+
+        _processPegout(_userPubKey, stream);
     }
 
     /// @inheritdoc IPegoutManager
@@ -160,15 +275,15 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
         }
 
         // Calculate the transaction id for verification
-        bytes32 requestPegoutTxid = bitcoinManager.getBtcTxid(_pegoutTxSPVProof.btcTx);
+        bytes32 pegoutRequestTxid = bitcoinManager.getBtcTxid(_pegoutTxSPVProof.btcTx);
 
         // Get the stream to check confirmations
         Stream memory stream = streamManager.getStreamById(streamInfo.streamId);
 
-        // Verify the requestPegoutTxid is part of the Merkle Root and has enough confirmations
+        // Verify the pegoutRequestTxid is part of the Merkle Root and has enough confirmations
         rbtcBridge.verifyTxConfirmations(
             stream.pegoutConfirmations,
-            requestPegoutTxid,
+            pegoutRequestTxid,
             _pegoutTxSPVProof.blockHash,
             _pegoutTxSPVProof.merkleBranchPath,
             _pegoutTxSPVProof.merkleBranchHashes
@@ -182,12 +297,12 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
 
         emit PegoutRegistered(
             _pegoutTxSPVProof.blockHash,
-            requestPegoutTxid,
+            pegoutRequestTxid,
             acceptPeginTxid,
             pegoutTempInfo[acceptPeginTxid].committeeId,
             streamInfo
         );
-        _completeSlot(streamInfo, acceptPeginTxid, requestPegoutTxid);
+        _completeSlot(streamInfo, acceptPeginTxid, pegoutRequestTxid);
     }
 
     /// @inheritdoc IPegoutManager

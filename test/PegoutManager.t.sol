@@ -5,8 +5,8 @@ import {Test} from "forge-std/Test.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {BtcTransaction, BtcTxSPVProof, StreamPosition, PegStatus} from "src/interfaces/IPegCommonTypes.sol";
-import {BitcoinSignatureData} from "src/interfaces/IBitcoinManager.sol";
-import {IPegoutManager, PegoutManagerSettings, PegoutTempInfo} from "src/interfaces/IPegoutManager.sol";
+import {BitcoinSignatureData, BtcTxIn} from "src/interfaces/IBitcoinManager.sol";
+import {IPegoutManager, PegoutManagerSettings, PegoutTempInfo, PegoutRequest} from "src/interfaces/IPegoutManager.sol";
 import {Slot, SlotState, SlotLocation, Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {ISignatureManager} from "src/interfaces/ISignatureManager.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
@@ -14,7 +14,6 @@ import {Constants} from "src/libraries/Constants.sol";
 import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
 import {Committee, ICommitteeRegistry, CommitteeMember} from "src/interfaces/ICommitteeRegistry.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
 import {IRbtcBridge} from "src/interfaces/IRbtcBridge.sol";
 import {IPegBase} from "src/interfaces/IPegBase.sol";
 import {PegManagerSettingsConfig} from "script/helpers/PegManagerSettingsConfig.sol";
@@ -66,44 +65,20 @@ contract PegoutManagerTest is Test, HelperContract {
         pauseAndUnpauseContracts();
 
         // Arrange
-        BtcTxIn[] memory inputs = new BtcTxIn[](2);
-        inputs[0] = BtcTxIn({
-            txId: 0xb24858ade3e5be49ae63facb93524ddf460d0771f093525dae328b6c435516a2,
-            vout: 0,
-            sequence: 4294967293,
-            scriptSig: hex""
-        });
-        inputs[1] = BtcTxIn({
-            txId: 0xb24858ade3e5be49ae63facb93524ddf460d0771f093525dae328b6c435516a2,
-            vout: 1, // Enabler output from accept pegin
-            sequence: 4294967293,
-            scriptSig: hex""
-        });
-
-        BtcTxOut[] memory outputs = new BtcTxOut[](2);
-        outputs[0] = BtcTxOut({amount: 999125, scriptPubKey: hex"00143fd2e14f4b448a071e074e1e1879318447f2a266"});
-        outputs[1] = BtcTxOut({amount: 540, scriptPubKey: hex"00143fd2e14f4b448a071e074e1e1879318447f2a266"});
-
-        BitcoinSignatureData memory expectedSignatureData = BitcoinSignatureData({
-            tx: BtcTransaction({version: 2, inputs: inputs, outputs: outputs, locktime: 0}),
-            txid: 0xabfb8bf949dbb4c3cb6d3915b2bef8a143b70fce3b9fd4b4fe9be37f068248ce,
-            signatureHash: 0x361082764f790b0b5a524bfe10dd640a14fb4b4d94575d9f2bd07bf9c426b646,
-            signatureMessage: hex"000102000000000000002b8084abbfc6f1a5fe96508cb072809c2d082150a6c62d95f8080f7ec35e4cce17685862d673aaad7a4904f7eb4c397f372737f0476a1b1af21e168466de61deea85cbbfedfe2883dcc21cac6471b428c9cb053e470ac9c7de61c2a2e2ab9c4782d397cbbcff87bc5d0c4c70e424f9b830efbad7bf0be479da5d1d1bafdb9798bfd84e32f90f61452c95235739095ef9347def223e2b2a49d799abe42099e5850000000000"
-        });
+        (BitcoinSignatureData memory expectedSignatureData, bytes32 acceptPeginTxid) = getExpectedBitcoinSignatureData();
 
         bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
-
-        bytes32 txId = 0xb24858ade3e5be49ae63facb93524ddf460d0771f093525dae328b6c435516a2;
-        bytes memory scriptPubKey = hex"02f519f51e435c20d38af683ea86862f4591ce8cda248077c2d9a72a76b62f32";
-
-        uint64 amount = 1000000; // 0.01 BTC
+        bytes memory scriptPubKey = ACCEPT_PEGIN_P2TR_SCRIPT_PUBKEY;
+        uint64 amount = VALUE;
+        uint64 acceptPeginAmount = amount - Constants.P2TR_FEE - Constants.SPEED_UP_AMOUNT;
         uint256 amountInWei = BtcHelper.satoshiToWei(amount);
-
-        Stream memory stream = streamManager.getStream(uint64(amount));
         uint64 packetNumber = 0;
         uint64 slotId = 0;
+        Stream memory stream = streamManager.getStream(amount);
 
-        streamManager.setSlotHarness(stream.streamId, packetNumber, scriptPubKey, txId, amount, SlotState.FILLED);
+        streamManager.setSlotHarness(
+            stream.streamId, packetNumber, scriptPubKey, acceptPeginTxid, acceptPeginAmount, SlotState.FILLED
+        );
 
         // Set up mock to allow burning this amount
         bridgeMock.setWeisTransferredToUnionBridge(amountInWei);
@@ -146,7 +121,7 @@ contract PegoutManagerTest is Test, HelperContract {
             "Signatures struct hasn't been initialized"
         );
 
-        _assertPegoutTempInfoCreated(txId, COMMITTEE_ID_STREAM_1_COMMITTEE_1, createdAt, userPubKey);
+        _assertPegoutTempInfoCreated(acceptPeginTxid, COMMITTEE_ID_STREAM_1_COMMITTEE_1, createdAt, userPubKey);
     }
 
     function _assertPegoutTempInfoCreated(
@@ -173,35 +148,11 @@ contract PegoutManagerTest is Test, HelperContract {
         (bytes32 acceptPeginTxid,,) = setup_requestAndAcceptPeginFlow(committeeId);
 
         // Arrange
-        // These values are attached to txIdCounter value in HelperContract.getRequestPeginTxIn().
-        // Counter should start in 0, otherwise the test will fail or expectedDigest and userPubKey should be updated.
-        BtcTxIn[] memory inputs = new BtcTxIn[](2);
-        inputs[0] = BtcTxIn({
-            txId: 0x14fdaad7499abf1ef94b3705749fad1d3979cce2dc636e978b83e756bd6ad23a,
-            vout: 0,
-            sequence: 4294967293,
-            scriptSig: hex""
-        });
-        inputs[1] = BtcTxIn({
-            txId: 0x14fdaad7499abf1ef94b3705749fad1d3979cce2dc636e978b83e756bd6ad23a,
-            vout: 1, // Enabler output from accept pegin
-            sequence: 4294967293,
-            scriptSig: hex""
-        });
-
-        BtcTxOut[] memory outputs = new BtcTxOut[](2);
-        outputs[0] = BtcTxOut({amount: 998250, scriptPubKey: hex"00143fd2e14f4b448a071e074e1e1879318447f2a266"});
-        outputs[1] = BtcTxOut({amount: 540, scriptPubKey: hex"00143fd2e14f4b448a071e074e1e1879318447f2a266"});
-
-        BitcoinSignatureData memory expectedSignatureData = BitcoinSignatureData({
-            tx: BtcTransaction({version: 2, inputs: inputs, outputs: outputs, locktime: 0}),
-            txid: 0xe170b24b41e5bfb912fb4d9ea6688994a2290db667bdf9bcd207202fdc56a3c4,
-            signatureHash: 0x0a1043930f6622205d3c54be82a44e2090f38001dc95d188cf7ec4cfa7441ae0,
-            signatureMessage: hex"00010200000000000000a0e918b6e29da87a5467ddb8d7f29a4de304b82573887401d0b1fd7b81d4cdccac72564c6204c6e42cdd3fa58fd3314ac25c5e7a7d324d5dd03ee456abdcce386278a9f4ca919d3af59490c32ad58017de5f25e9c95d50c1569249e0f7eb688482d397cbbcff87bc5d0c4c70e424f9b830efbad7bf0be479da5d1d1bafdb9798f81b4776c4bc98417c41f791185dfa89d0789939526bc6907fcdcb6f7490398b0000000000"
-        });
+        (BitcoinSignatureData memory expectedSignatureData, bytes32 expecteAcceptPeginTxid) =
+            getExpectedBitcoinSignatureData();
+        assertEq(acceptPeginTxid, expecteAcceptPeginTxid, "Accept pegin txid should match expected");
 
         bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
-
         uint64 amount = VALUE;
         uint256 amountInWei = BtcHelper.satoshiToWei(amount);
 
@@ -293,7 +244,7 @@ contract PegoutManagerTest is Test, HelperContract {
         assertEq(totalSlotsToUse, lastUsedIndex + 1);
     }
 
-    function test_tryPegout_Revert_InvalidPublicKeyLength() external {
+    function test_tryPegout_Revert_InvalidCompressedPubKey() external {
         // Arrange
         bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b00";
 
@@ -2174,9 +2125,28 @@ contract PegoutManagerTest is Test, HelperContract {
                 operatorTakeUpdatedAt + TAKE_1_TIMEOUT_DEFAULT
             )
         );
+        pegoutManager.triggerOperatorTake(setup.pegoutTxid);
+    }
+
+    function test_enqueuePegout_Revert_NoFreeFilledSlot() external {
+        // Arrange
+        bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+        uint64 amount = VALUE;
+        Stream memory stream = streamManager.getStream(amount);
+        uint256 amountInWei = BtcHelper.satoshiToWei(amount);
+        uint64 queueLength = 0;
+        uint64 filledSlotCount = 0;
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IPegoutManager.NoFreeFilledSlot.selector, stream.streamId, queueLength, filledSlotCount
+            )
+        );
 
         // Act
-        pegoutManager.triggerOperatorTake(setup.pegoutTxid);
+        vm.prank(globalUserAddress);
+        pegoutManager.enqueuePegout{value: amountInWei}(userPubKey);
     }
 
     function test_triggerOperatorTake_FromKickoff_Revert_OperatorTakeTimeoutNotExpired() external {
@@ -2195,8 +2165,930 @@ contract PegoutManagerTest is Test, HelperContract {
                 operatorTakeUpdatedAt + TAKE_1_TIMEOUT_DEFAULT
             )
         );
+        pegoutManager.triggerOperatorTake(setup.pegoutTxid);
+    }
+
+    function test_enqueuePegout_Success() external {
+        // Arrange
+        setup_multipleRequestAndAcceptPeginFlows(1);
+        bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+        uint64 amount = VALUE;
+        Stream memory stream = streamManager.getStream(amount);
+        uint256 amountInWei = BtcHelper.satoshiToWei(amount);
+
+        // Assert
+        uint64 queueLength = pegoutManager.getPegoutQueueLength(stream.streamId);
+        assertEq(queueLength, 0, "Initial queue length should be 0");
+
+        uint256 balancePegoutManagerBefore = address(pegoutManager).balance;
+        uint256 balanceUserBefore = globalUserAddress.balance;
+
+        vm.expectEmit(address(pegoutManager));
+        emit IPegoutManager.PegoutEnqueued(stream.streamId, userPubKey, globalUserAddress);
 
         // Act
-        pegoutManager.triggerOperatorTake(setup.pegoutTxid);
+        vm.prank(globalUserAddress);
+        pegoutManager.enqueuePegout{value: amountInWei}(userPubKey);
+
+        // Assert - verify queue length is now 1
+        queueLength = pegoutManager.getPegoutQueueLength(stream.streamId);
+        assertEq(queueLength, 1, "Queue length should be 1 after enqueue");
+
+        // Assert - verify the correct amount was transferred to PegoutManager
+        uint256 balancePegoutManagerAfter = address(pegoutManager).balance;
+        uint256 balanceUserAfter = globalUserAddress.balance;
+        assertEq(
+            balancePegoutManagerAfter - balancePegoutManagerBefore,
+            amountInWei,
+            "PegoutManager should receive the enqueued amount"
+        );
+        assertEq(balanceUserBefore - balanceUserAfter, amountInWei, "User should be charged the enqueued amount");
+    }
+
+    function test_enqueuePegout_Revert_NoFreeFilledSlot_AlmostFilledQueue() external {
+        // Arrange
+        bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+        uint64 amount = VALUE;
+        Stream memory stream = streamManager.getStream(amount);
+        uint256 amountInWei = BtcHelper.satoshiToWei(amount);
+        uint64 queueLength = Constants.MAX_PEGOUT_QUEUE_SIZE - 1;
+        uint64 filledSlotCount = Constants.MAX_PEGOUT_QUEUE_SIZE - 1;
+
+        setup_multipleRequestAndAcceptPeginFlows(filledSlotCount);
+
+        // Fill all available slots to simulate almost full queue
+        for (uint64 i = 0; i < filledSlotCount; i++) {
+            vm.prank(globalUserAddress);
+            pegoutManager.enqueuePegout{value: amountInWei}(userPubKey);
+        }
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IPegoutManager.NoFreeFilledSlot.selector, stream.streamId, queueLength, filledSlotCount
+            )
+        );
+
+        // Act
+        vm.prank(globalUserAddress);
+        pegoutManager.enqueuePegout{value: amountInWei}(userPubKey);
+    }
+
+    function test_enqueuePegout_Revert_PegoutQueueFull() external {
+        // Arrange
+        bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+        uint64 amount = VALUE;
+        Stream memory stream = streamManager.getStream(amount);
+        uint256 amountInWei = BtcHelper.satoshiToWei(amount);
+        uint64 queueLength = Constants.MAX_PEGOUT_QUEUE_SIZE;
+        uint64 filledSlotCount = Constants.MAX_PEGOUT_QUEUE_SIZE + 1;
+
+        setup_multipleRequestAndAcceptPeginFlows(filledSlotCount);
+
+        // Fill all available slots to simulate full queue
+        for (uint64 i = 0; i < queueLength; i++) {
+            vm.prank(globalUserAddress);
+            pegoutManager.enqueuePegout{value: amountInWei}(userPubKey);
+        }
+
+        assertEq(
+            streamManager.getFilledSlotsCount(stream.streamId),
+            filledSlotCount,
+            "Filled slot count should match expected"
+        );
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IPegoutManager.PegoutQueueFull.selector, stream.streamId));
+
+        // Act
+        vm.prank(globalUserAddress);
+        pegoutManager.enqueuePegout{value: amountInWei}(userPubKey);
+    }
+
+    function test_tryProcessEnqueuedPegout_Success() external {
+        // Arrange
+        RegisterUserTakeSetup memory setup = setup_peginAndSPVs();
+        bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+        uint64 amount = VALUE;
+        Stream memory stream = streamManager.getStream(amount);
+        uint256 amountInWei = BtcHelper.satoshiToWei(amount);
+        uint64 packetNumber = 0;
+        uint64 slotId = 0;
+
+        (BitcoinSignatureData memory expectedSignatureData, bytes32 expectedAcceptPeginTxid) =
+            getExpectedBitcoinSignatureData();
+        assertEq(setup.acceptPeginTxid, expectedAcceptPeginTxid, "Accept pegin txid should match expected");
+
+        // Set up mock to allow burning this amount
+        bridgeMock.setWeisTransferredToUnionBridge(amountInWei);
+        // Enqueue a pegout
+        vm.prank(globalUserAddress);
+        pegoutManager.enqueuePegout{value: amountInWei}(userPubKey);
+
+        // Assert
+        vm.expectEmit(address(pegoutManager));
+        emit IPegoutManager.PegoutDequeued(stream.streamId, userPubKey, globalUserAddress);
+
+        vm.expectEmit(address(pegoutManager));
+        emit IPegoutManager.PegoutRequested(
+            userPubKey,
+            COMMITTEE_ID_STREAM_1_COMMITTEE_1,
+            expectedSignatureData,
+            stream.streamId,
+            packetNumber,
+            slotId,
+            amount
+        );
+
+        // Act
+        pegoutManager.tryProcessEnqueuedPegout(stream.streamId);
+
+        // Assert - verify the enqueued pegout was processed and queue is now empty
+        uint64 queueLength = pegoutManager.getPegoutQueueLength(stream.streamId);
+        assertEq(queueLength, 0, "Queue length should be 0 after processing enqueued pegout");
+
+        StreamPosition memory streamPosition = streamManager.getStreamPosition(setup.acceptPeginTxid);
+        assertTrue(
+            streamPosition.pegStatus == PegStatus.USER_TAKE,
+            "Peg status should be USER_TAKE after processing enqueued pegout"
+        );
+
+        // Act - simulate user take registration for the processed pegout
+        pegoutManager.registerUserTake(setup.pegoutTxSPVProof);
+
+        // Assert - verify peg status is now COMPLETED after user take registration
+        streamPosition = streamManager.getStreamPosition(setup.acceptPeginTxid);
+        assertTrue(
+            streamPosition.pegStatus == PegStatus.COMPLETED,
+            "Peg status should be COMPLETED after processing enqueued pegout"
+        );
+    }
+
+    function test_tryProcessEnqueuedPegout_Success_FullQueue() external {
+        // Arrange
+        // Make first pegin manually to get the setup information
+        RegisterUserTakeSetup memory setup = setup_peginAndSPVs();
+
+        uint160 startUserAddress = 1;
+        address userAddress = address(startUserAddress);
+        uint64 enqueueCount = Constants.MAX_PEGOUT_QUEUE_SIZE;
+
+        // Enqueue enough pegouts requests to fill the queue
+        (uint64 streamId, bytes memory userPubKey, uint256 amountInWei) =
+            setup_enqueuePegouts(startUserAddress, enqueueCount);
+
+        Stream memory stream = streamManager.getStream(VALUE);
+
+        (BitcoinSignatureData memory expectedSignatureData, bytes32 expectedAcceptPeginTxid) =
+            getExpectedBitcoinSignatureData();
+        assertEq(setup.acceptPeginTxid, expectedAcceptPeginTxid, "Accept pegin txid should match expected");
+
+        // Set up mock to allow burning this amount
+        bridgeMock.setWeisTransferredToUnionBridge(amountInWei);
+
+        // Assert
+        vm.expectEmit(address(pegoutManager));
+        emit IPegoutManager.PegoutDequeued(stream.streamId, userPubKey, userAddress);
+
+        vm.expectEmit(address(pegoutManager));
+        emit IPegoutManager.PegoutRequested(
+            userPubKey, COMMITTEE_ID_STREAM_1_COMMITTEE_1, expectedSignatureData, stream.streamId, 0, 0, VALUE
+        );
+
+        // Act
+        pegoutManager.tryProcessEnqueuedPegout(stream.streamId);
+
+        // Assert - verify the enqueued pegout was processed and queue is now empty
+        uint64 queueLength = pegoutManager.getPegoutQueueLength(stream.streamId);
+        assertEq(
+            queueLength, enqueueCount - 1, "Queue length should be (enqueueCount - 1) after processing enqueued pegout"
+        );
+
+        StreamPosition memory streamPosition = streamManager.getStreamPosition(setup.acceptPeginTxid);
+        assertTrue(
+            streamPosition.pegStatus == PegStatus.USER_TAKE,
+            "Peg status should be USER_TAKE after processing enqueued pegout"
+        );
+
+        // Act - simulate user take registration for the processed pegout
+        pegoutManager.registerUserTake(setup.pegoutTxSPVProof);
+
+        // Assert - verify peg status is now COMPLETED after user take registration
+        streamPosition = streamManager.getStreamPosition(setup.acceptPeginTxid);
+        assertTrue(
+            streamPosition.pegStatus == PegStatus.COMPLETED,
+            "Peg status should be COMPLETED after processing enqueued pegout"
+        );
+        assertQueueState(streamId, startUserAddress + 1, enqueueCount - 1);
+    }
+
+    function test_tryProcessEnqueuedPegout_Success_ProcessFullQueue() external {
+        // Arrange
+        // Note: Some values are hardcoded to avoid stack too deep issues.
+        uint160 startUserAddress = 1;
+        uint64 enqueueCount = Constants.MAX_PEGOUT_QUEUE_SIZE;
+        bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+        Stream memory stream = streamManager.getStream(VALUE);
+
+        // Make first pegin manually to get the setup information
+        RegisterUserTakeSetup[] memory setups = new RegisterUserTakeSetup[](enqueueCount);
+
+        // Loop to create multiple pegins and enqueue pegouts for each, incrementing the user address each time
+        for (uint64 i = 0; i < enqueueCount; i++) {
+            setups[i] = setup_peginAndSPVs();
+            // Increment the user address for the next setup
+            address userAddress = address(startUserAddress + i);
+
+            vm.deal(userAddress, 10 ether); // Fund the user address to ensure it can enqueue
+
+            // Enqueue a pegout for this setup
+            vm.prank(userAddress);
+            pegoutManager.enqueuePegout{value: BtcHelper.satoshiToWei(VALUE)}(userPubKey);
+        }
+
+        // Assert queue state is correct before processing
+        assertQueueState(setups[0].stream.streamId, startUserAddress, enqueueCount);
+
+        for (uint64 i = 0; i < enqueueCount; i++) {
+            // Get expected signature data and accept pegin txid for this setup
+            RegisterUserTakeSetup memory setup = setups[i];
+            address userAddress = address(startUserAddress + i);
+
+            // Set up mock to allow burning this amount
+            bridgeMock.setWeisTransferredToUnionBridge(BtcHelper.satoshiToWei(VALUE));
+
+            // Assert
+            vm.expectEmit(address(pegoutManager));
+            emit IPegoutManager.PegoutDequeued(stream.streamId, userPubKey, userAddress);
+
+            // Act
+            pegoutManager.tryProcessEnqueuedPegout(stream.streamId);
+
+            // Assert - verify the enqueued pegout was processed and queue is reduced by 1
+            assertEq(
+                pegoutManager.getPegoutQueueLength(stream.streamId),
+                enqueueCount - 1 - i,
+                "Queue length should be decremented after processing enqueued pegout"
+            );
+
+            StreamPosition memory streamPosition = streamManager.getStreamPosition(setup.acceptPeginTxid);
+            assertTrue(
+                streamPosition.pegStatus == PegStatus.USER_TAKE,
+                "Peg status should be USER_TAKE after processing enqueued pegout"
+            );
+
+            // Act - simulate user take registration for the processed pegout
+            pegoutManager.registerUserTake(setup.pegoutTxSPVProof);
+
+            // Assert - verify peg status is now COMPLETED after user take registration
+            streamPosition = streamManager.getStreamPosition(setup.acceptPeginTxid);
+            assertTrue(
+                streamPosition.pegStatus == PegStatus.COMPLETED,
+                "Peg status should be COMPLETED after processing enqueued pegout"
+            );
+            assertQueueState(stream.streamId, startUserAddress + 1 + i, enqueueCount - 1 - i);
+        }
+
+        // Assert - verify the enqueued pegout was processed and queue is now empty
+        assertEq(
+            pegoutManager.getPegoutQueueLength(stream.streamId),
+            0,
+            "Queue should be empty after processing all enqueued pegouts"
+        );
+    }
+
+    function test_tryProcessEnqueuedPegout_Revert_PegoutInProcess() external {
+        // Arrange. Get 2 pegins
+        setup_peginAndSPVs();
+        setup_peginAndSPVs();
+        bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+        uint64 amount = VALUE;
+        Stream memory stream = streamManager.getStream(amount);
+        uint256 amountInWei = BtcHelper.satoshiToWei(amount);
+
+        // Try a pegout. So set pegoutInProcess to true
+        vm.prank(globalUserAddress);
+        pegoutManager.tryPegout{value: amountInWei}(userPubKey);
+
+        // Enqueue a pegout
+        vm.prank(globalUserAddress);
+        pegoutManager.enqueuePegout{value: amountInWei}(userPubKey);
+
+        // Assert
+        assertEq(pegoutManager.getPegoutQueueLength(stream.streamId), 1, "Queue length should be 1 before revert");
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.PegoutInProcess.selector, stream.streamId));
+
+        // Act
+        pegoutManager.tryProcessEnqueuedPegout(stream.streamId);
+
+        // Assert - verify the enqueued pegout was not processed and the queue still has one element
+        assertEq(pegoutManager.getPegoutQueueLength(stream.streamId), 1, "Queue length should be 1 after revert");
+    }
+
+    function test_enqueuePegout_Revert_InvalidCompressedPubKey() external {
+        // Arrange
+        bytes memory invalidUserPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8baa"; // 1 byte longer
+        uint64 amount = VALUE;
+        Stream memory stream = streamManager.getStream(amount);
+        uint256 amountInWei = BtcHelper.satoshiToWei(amount);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IPegoutManager.InvalidCompressedPubKey.selector, invalidUserPubKey));
+
+        // Act
+        vm.prank(globalUserAddress);
+        pegoutManager.enqueuePegout{value: amountInWei}(invalidUserPubKey);
+    }
+
+    function test_enqueuePegout_Revert_InvalidPublicKeyFirstByte() external {
+        // Arrange
+        bytes memory invalidUserPubKey = hex"04d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b"; // starts with 0x04 instead of 0x02 or 0x03
+        uint64 amount = VALUE;
+        Stream memory stream = streamManager.getStream(amount);
+        uint256 amountInWei = BtcHelper.satoshiToWei(amount);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IPegoutManager.InvalidCompressedPubKey.selector, invalidUserPubKey));
+
+        // Act
+        vm.prank(globalUserAddress);
+        pegoutManager.enqueuePegout{value: amountInWei}(invalidUserPubKey);
+    }
+
+    function test_enqueuePegout_Revert_StreamNotFoundByDenomination() external {
+        // Arrange
+        bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+        uint64 amount = 555555; // this denomination does not exist
+        uint256 amountInWei = BtcHelper.satoshiToWei(amount);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.StreamNotFoundByDenomination.selector, amount));
+
+        // Act
+        vm.prank(globalUserAddress);
+        pegoutManager.enqueuePegout{value: amountInWei}(userPubKey);
+    }
+
+    function test_enqueuePegout_Revert_EnforcedPause_PausedContract() external {
+        // Arrange
+        bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+        uint64 amount = VALUE;
+        Stream memory stream = streamManager.getStream(amount);
+        uint256 amountInWei = BtcHelper.satoshiToWei(amount);
+        pauseContracts();
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector));
+
+        // Act
+        vm.prank(globalUserAddress);
+        pegoutManager.enqueuePegout{value: amountInWei}(userPubKey);
+    }
+
+    function test_dequeuePegout_Revert_EnforcedPause_PausedContract() external {
+        // Arrange
+        RegisterUserTakeSetup memory setup = setup_peginAndSPVs();
+        bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+        uint64 amount = VALUE;
+        Stream memory stream = streamManager.getStream(amount);
+        uint256 amountInWei = BtcHelper.satoshiToWei(amount);
+
+        // Enqueue a pegout
+        vm.prank(globalUserAddress);
+        pegoutManager.enqueuePegout{value: amountInWei}(userPubKey);
+
+        pauseContracts();
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector));
+
+        // Act
+        pegoutManager.dequeuePegout(stream.streamId);
+    }
+
+    function test_tryProcessEnqueuedPegout_Revert_EnforcedPause_PausedContract() external {
+        // Arrange
+        RegisterUserTakeSetup memory setup = setup_peginAndSPVs();
+        bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+        uint64 amount = VALUE;
+        Stream memory stream = streamManager.getStream(amount);
+        uint256 amountInWei = BtcHelper.satoshiToWei(amount);
+
+        // Enqueue a pegout
+        vm.prank(globalUserAddress);
+        pegoutManager.enqueuePegout{value: amountInWei}(userPubKey);
+
+        pauseContracts();
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector));
+
+        // Act
+        pegoutManager.tryProcessEnqueuedPegout(stream.streamId);
+    }
+
+    function test_tryPegout_Revert_EnqueuedPegoutsForStream() external {
+        // Arrange
+        RegisterUserTakeSetup memory setup = setup_peginAndSPVs();
+        bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+        uint64 amount = VALUE;
+        Stream memory stream = streamManager.getStream(amount);
+        uint256 amountInWei = BtcHelper.satoshiToWei(amount);
+
+        // Enqueue a pegout
+        vm.prank(globalUserAddress);
+        pegoutManager.enqueuePegout{value: amountInWei}(userPubKey);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IPegoutManager.EnqueuedPegoutsForStream.selector, stream.streamId, 1));
+
+        // Try a pegout
+        vm.prank(globalUserAddress);
+        pegoutManager.tryPegout{value: amountInWei}(userPubKey);
+
+        // Assert - verify the enqueued pegout was not processed and the queue still has one element
+        assertEq(pegoutManager.getPegoutQueueLength(stream.streamId), 1, "Queue length should be 1 after revert");
+    }
+
+    function test_tryProcessEnqueuedPegout_Revert_PegoutInProcess_FromQueue() external {
+        // Arrange
+        RegisterUserTakeSetup memory setup1 = setup_peginAndSPVs();
+        RegisterUserTakeSetup memory setup2 = setup_peginAndSPVs();
+        bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+        uint64 amount = VALUE;
+        Stream memory stream = streamManager.getStream(amount);
+        uint256 amountInWei = BtcHelper.satoshiToWei(amount);
+
+        // Enqueue a pegout
+        vm.prank(globalUserAddress);
+        pegoutManager.enqueuePegout{value: amountInWei}(userPubKey);
+        assertEq(pegoutManager.getPegoutQueueLength(stream.streamId), 1, "Queue length should be 1");
+
+        vm.prank(globalUserAddress);
+        pegoutManager.enqueuePegout{value: amountInWei}(userPubKey);
+        assertEq(pegoutManager.getPegoutQueueLength(stream.streamId), 2, "Queue length should be 2");
+
+        // Start process first enqueued pegout
+        pegoutManager.tryProcessEnqueuedPegout(stream.streamId);
+
+        // Assert
+        assertEq(
+            pegoutManager.getPegoutQueueLength(stream.streamId),
+            1,
+            "Queue length should be 1 after processing first pegout"
+        );
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.PegoutInProcess.selector, stream.streamId));
+
+        // Act
+        pegoutManager.tryProcessEnqueuedPegout(stream.streamId);
+
+        // Assert - verify the enqueued pegout was not processed and the queue still has one element
+        assertEq(pegoutManager.getPegoutQueueLength(stream.streamId), 1, "Queue length should be 1 after revert");
+    }
+
+    function test_tryProcessEnqueuedPegout_Revert_NoEnqueuedPegout() external {
+        uint64 streamId = streamManager.getStream(VALUE).streamId;
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IPegoutManager.NoEnqueuedPegout.selector, streamId));
+
+        // Act
+        pegoutManager.tryProcessEnqueuedPegout(streamId);
+    }
+
+    function setup_enqueuePegouts(uint160 startAddress, uint64 count)
+        internal
+        returns (uint64 streamId, bytes memory userPubKey, uint256 amountInWei)
+    {
+        userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+        uint64 amount = VALUE;
+        streamId = streamManager.getStream(amount).streamId;
+        amountInWei = BtcHelper.satoshiToWei(amount);
+
+        for (uint160 i = 0; i < count; i++) {
+            // Setup pegin and accept it.
+            setup_peginAndSPVs();
+
+            // Use consecutive addresses for enqueuing pegouts
+            address userAddress = address(startAddress + i);
+            vm.deal(userAddress, amountInWei);
+
+            // Enqueue a pegout for each user
+            vm.prank(userAddress);
+            pegoutManager.enqueuePegout{value: amountInWei}(userPubKey);
+        }
+
+        // Assert
+        uint64 queueLength = pegoutManager.getPegoutQueueLength(streamId);
+        assertEq(queueLength, count, "Queue length should be equal to count");
+    }
+
+    function assertQueueState(uint64 streamId, uint160 firstAddress, uint64 expectedLength) internal {
+        uint64 actualLength = pegoutManager.getPegoutQueueLength(streamId);
+        assertEq(actualLength, expectedLength, "Queue length mismatch");
+
+        PegoutRequest[] memory queue = pegoutManager.getPegoutQueueHarness(streamId);
+
+        for (uint160 i = 0; i < expectedLength; i++) {
+            address expectedAddress = address(firstAddress + i);
+            assertEq(queue[i].userAddress, expectedAddress, "User address mismatch at index");
+        }
+    }
+
+    function test_dequeuePegout_Success_OnePegoutInQueue() external {
+        // Arrange
+        uint160 startUserAddress = 1;
+        address userAddress = address(startUserAddress);
+        uint64 enqueueCount = 1;
+        (uint64 streamId, bytes memory userPubKey, uint256 amountInWei) =
+            setup_enqueuePegouts(startUserAddress, enqueueCount);
+
+        assertQueueState(streamId, startUserAddress, enqueueCount);
+        uint256 balancePegoutManagerBefore = address(pegoutManager).balance;
+        uint256 balanceUserBefore = userAddress.balance;
+
+        vm.expectEmit(address(pegoutManager));
+        emit IPegoutManager.PegoutDequeued(streamId, userPubKey, userAddress);
+
+        // Act
+        vm.prank(userAddress);
+        pegoutManager.dequeuePegout(streamId);
+
+        // Assert - verify queue is decreased by one
+        assertQueueState(streamId, startUserAddress, enqueueCount - 1);
+
+        // Assert - verify the correct amount was transferred from PegoutManager
+        uint256 balancePegoutManagerAfter = address(pegoutManager).balance;
+        uint256 balanceUserAfter = userAddress.balance;
+        assertEq(
+            balancePegoutManagerAfter + amountInWei,
+            balancePegoutManagerBefore,
+            "PegoutManager should return the enqueued amount"
+        );
+        assertEq(balanceUserBefore + amountInWei, balanceUserAfter, "User should be charged the enqueued amount");
+    }
+
+    function test_dequeuePegout_Success_FullQueueDequeueFirst() external {
+        // Arrange
+        uint160 startUserAddress = 1;
+        address userAddress = address(startUserAddress);
+        uint64 enqueueCount = Constants.MAX_PEGOUT_QUEUE_SIZE;
+        (uint64 streamId, bytes memory userPubKey, uint256 amountInWei) =
+            setup_enqueuePegouts(startUserAddress, enqueueCount);
+        assertQueueState(streamId, startUserAddress, enqueueCount);
+        uint256 balancePegoutManagerBefore = address(pegoutManager).balance;
+        uint256 balanceUserBefore = userAddress.balance;
+
+        vm.expectEmit(address(pegoutManager));
+        emit IPegoutManager.PegoutDequeued(streamId, userPubKey, userAddress);
+
+        // Act
+        vm.prank(userAddress);
+        pegoutManager.dequeuePegout(streamId);
+
+        // Assert - verify queue
+        assertQueueState(streamId, startUserAddress + 1, enqueueCount - 1);
+
+        // Assert - verify the correct amount was transferred from PegoutManager
+        uint256 balancePegoutManagerAfter = address(pegoutManager).balance;
+        uint256 balanceUserAfter = userAddress.balance;
+        assertEq(
+            balancePegoutManagerAfter + amountInWei,
+            balancePegoutManagerBefore,
+            "PegoutManager should return the enqueued amount"
+        );
+        assertEq(balanceUserBefore + amountInWei, balanceUserAfter, "User should be charged the enqueued amount");
+    }
+
+    function test_dequeuePegout_Success_FullQueueDequeueFromTheMiddle() external {
+        // Arrange
+        uint160 startUserAddress = 1;
+        uint160 middleUser = Constants.MAX_PEGOUT_QUEUE_SIZE / 2;
+        address userAddress = address(startUserAddress + middleUser);
+        uint64 enqueueCount = Constants.MAX_PEGOUT_QUEUE_SIZE;
+        (uint64 streamId, bytes memory userPubKey, uint256 amountInWei) =
+            setup_enqueuePegouts(startUserAddress, enqueueCount);
+        assertQueueState(streamId, startUserAddress, enqueueCount);
+        uint256 balancePegoutManagerBefore = address(pegoutManager).balance;
+        uint256 balanceUserBefore = userAddress.balance;
+
+        vm.expectEmit(address(pegoutManager));
+        emit IPegoutManager.PegoutDequeued(streamId, userPubKey, userAddress);
+
+        // Act
+        vm.prank(userAddress);
+        pegoutManager.dequeuePegout(streamId);
+
+        // Assert - verify queue
+        uint64 actualLength = pegoutManager.getPegoutQueueLength(streamId);
+        assertEq(actualLength, enqueueCount - 1, "Queue length mismatch");
+
+        PegoutRequest[] memory queue = pegoutManager.getPegoutQueueHarness(streamId);
+
+        // Check before removed address
+        for (uint160 i = 0; i < middleUser; i++) {
+            address expectedAddress = address(startUserAddress + i);
+            assertEq(queue[i].userAddress, expectedAddress, "User address mismatch at index");
+        }
+
+        // Check after removed address
+        for (uint160 i = middleUser + 1; i < enqueueCount; i++) {
+            address expectedAddress = address(startUserAddress + i);
+            assertEq(queue[i - 1].userAddress, expectedAddress, "User address mismatch at index");
+        }
+
+        // Assert - verify the correct amount was transferred from PegoutManager
+        uint256 balancePegoutManagerAfter = address(pegoutManager).balance;
+        uint256 balanceUserAfter = userAddress.balance;
+        assertEq(
+            balancePegoutManagerAfter + amountInWei,
+            balancePegoutManagerBefore,
+            "PegoutManager should return the enqueued amount"
+        );
+        assertEq(balanceUserBefore + amountInWei, balanceUserAfter, "User should be charged the enqueued amount");
+    }
+
+    function test_dequeuePegout_Success_FullQueueDequeueLast() external {
+        // Arrange
+        uint160 startUserAddress = 1;
+        uint64 enqueueCount = Constants.MAX_PEGOUT_QUEUE_SIZE;
+        address userAddress = address(startUserAddress + enqueueCount - 1); // Last user in the queue
+        (uint64 streamId, bytes memory userPubKey, uint256 amountInWei) =
+            setup_enqueuePegouts(startUserAddress, enqueueCount);
+        assertQueueState(streamId, startUserAddress, enqueueCount);
+        uint256 balancePegoutManagerBefore = address(pegoutManager).balance;
+        uint256 balanceUserBefore = userAddress.balance;
+
+        vm.expectEmit(address(pegoutManager));
+        emit IPegoutManager.PegoutDequeued(streamId, userPubKey, userAddress);
+
+        // Act
+        vm.prank(userAddress);
+        pegoutManager.dequeuePegout(streamId);
+
+        // Assert - verify queue
+        assertQueueState(streamId, startUserAddress, enqueueCount - 1);
+
+        // Assert - verify the correct amount was transferred from PegoutManager
+        uint256 balancePegoutManagerAfter = address(pegoutManager).balance;
+        uint256 balanceUserAfter = userAddress.balance;
+        assertEq(
+            balancePegoutManagerAfter + amountInWei,
+            balancePegoutManagerBefore,
+            "PegoutManager should return the enqueued amount"
+        );
+        assertEq(balanceUserBefore + amountInWei, balanceUserAfter, "User should be charged the enqueued amount");
+    }
+
+    function test_dequeuePegout_Success_AfterProcessingOne() external {
+        // Arrange
+        uint160 startUserAddress = 1;
+        address userA = address(startUserAddress);
+        address userB = address(startUserAddress + 1);
+        uint64 enqueueCount = 2;
+        (uint64 streamId, bytes memory userPubKey, uint256 amountInWei) =
+            setup_enqueuePegouts(startUserAddress, enqueueCount);
+        assertQueueState(streamId, startUserAddress, enqueueCount);
+
+        // Process the first enqueued pegout (userA) — queue pointer advances past it
+        bridgeMock.setWeisTransferredToUnionBridge(amountInWei);
+        pegoutManager.tryProcessEnqueuedPegout(streamId);
+        assertEq(
+            pegoutManager.getPegoutQueueLength(streamId), 1, "Queue length should be 1 after processing first pegout"
+        );
+
+        // User A tries to dequeue — should fail because their entry is behind the pointer (already processed)
+        vm.expectRevert(abi.encodeWithSelector(IPegoutManager.PegoutNotFoundInQueue.selector, streamId, userA));
+        vm.prank(userA);
+        pegoutManager.dequeuePegout(streamId);
+        assertEq(
+            pegoutManager.getPegoutQueueLength(streamId), 1, "Queue length should still be 1 after userA fails to dequeue"
+        );
+
+        // User B dequeues — should succeed because the pointer is behind their entry
+        vm.expectEmit(address(pegoutManager));
+        emit IPegoutManager.PegoutDequeued(streamId, userPubKey, userB);
+        vm.prank(userB);
+        pegoutManager.dequeuePegout(streamId);
+        assertEq(pegoutManager.getPegoutQueueLength(streamId), 0, "Queue length should be 0 after userB dequeues");
+    }
+
+    function test_dequeuePegout_Revert_NoEnqueuedPegout() external {
+        uint64 streamId = streamManager.getStream(VALUE).streamId;
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IPegoutManager.NoEnqueuedPegout.selector, streamId));
+
+        // Act
+        vm.prank(globalUserAddress);
+        pegoutManager.dequeuePegout(streamId);
+    }
+
+    function test_dequeuePegout_Revert_PegoutNotFoundInQueue() external {
+        // Arrange
+        uint160 startUserAddress = 1;
+        uint64 enqueueCount = Constants.MAX_PEGOUT_QUEUE_SIZE;
+        address userAddress = address(startUserAddress + enqueueCount - 1); // Last user in the queue
+        (uint64 streamId, bytes memory userPubKey, uint256 amountInWei) =
+            setup_enqueuePegouts(startUserAddress, enqueueCount);
+        assertQueueState(streamId, startUserAddress, enqueueCount);
+        address notInQueueUserAddress = address(startUserAddress + enqueueCount + 1); // User not in the queue
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IPegoutManager.PegoutNotFoundInQueue.selector, streamId, notInQueueUserAddress)
+        );
+
+        // Act
+        vm.prank(notInQueueUserAddress);
+        pegoutManager.dequeuePegout(streamId);
+
+        // Assert - verify queue
+        assertQueueState(streamId, startUserAddress, enqueueCount);
+    }
+
+    function test_dequeuePegout_Success_2RequestsSameUser() external {
+        // Arrange
+        address userAddress = address(uint160(1));
+        uint64 enqueueCount = 2;
+
+        bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+        uint64 amount = VALUE;
+        uint64 streamId = streamManager.getStream(amount).streamId;
+        uint256 amountInWei = BtcHelper.satoshiToWei(amount);
+        vm.deal(userAddress, amountInWei * enqueueCount);
+
+        // Enqueue enqueueCount requests for the same user
+        for (uint160 i = 0; i < enqueueCount; i++) {
+            // Setup pegin and accept it.
+            setup_peginAndSPVs();
+
+            // Enqueue a pegout for each user
+            vm.prank(userAddress);
+            pegoutManager.enqueuePegout{value: amountInWei}(userPubKey);
+        }
+
+        // Assert queue initial state
+        uint64 actualLength = pegoutManager.getPegoutQueueLength(streamId);
+        assertEq(actualLength, enqueueCount, "Queue length mismatch");
+
+        // Assert all the requests in the queue belong to the same user
+        PegoutRequest[] memory queue = pegoutManager.getPegoutQueueHarness(streamId);
+        for (uint160 i = 0; i < enqueueCount; i++) {
+            assertEq(queue[i].userAddress, userAddress, "Queue user address mismatch at expected userAddress");
+        }
+
+        // Save balance before dequeue
+        uint256 balancePegoutManagerBefore = address(pegoutManager).balance;
+        uint256 balanceUserBefore = userAddress.balance;
+
+        // Assert emited event
+        vm.expectEmit(address(pegoutManager));
+        emit IPegoutManager.PegoutDequeued(streamId, userPubKey, userAddress);
+
+        // Act
+        vm.prank(userAddress);
+        pegoutManager.dequeuePegout(streamId);
+
+        // Assert final queue length
+        actualLength = pegoutManager.getPegoutQueueLength(streamId);
+        assertEq(actualLength, enqueueCount - 1, "Queue length mismatch");
+
+        // Assert all the remaining requests in the queue belong to the same user
+        queue = pegoutManager.getPegoutQueueHarness(streamId);
+        for (uint160 i = 0; i < enqueueCount - 1; i++) {
+            assertEq(queue[i].userAddress, userAddress, "Queue user address mismatch at expected userAddress");
+        }
+
+        // Assert - verify the correct amount was transferred from PegoutManager
+        uint256 balancePegoutManagerAfter = address(pegoutManager).balance;
+        uint256 balanceUserAfter = userAddress.balance;
+        assertEq(
+            balancePegoutManagerAfter + amountInWei,
+            balancePegoutManagerBefore,
+            "PegoutManager should return the enqueued amount"
+        );
+        assertEq(balanceUserBefore + amountInWei, balanceUserAfter, "User should be charged the enqueued amount");
+    }
+
+    function test_dequeuePegout_Revert_NoEnqueuedPegout_DequeueTwice_OnePegoutInQueue() external {
+        // Arrange
+        uint160 startUserAddress = 1;
+        address userAddress = address(startUserAddress);
+        uint64 enqueueCount = 1;
+        (uint64 streamId, bytes memory userPubKey, uint256 amountInWei) =
+            setup_enqueuePegouts(startUserAddress, enqueueCount);
+
+        assertQueueState(streamId, startUserAddress, enqueueCount);
+
+        // Dequeue user request for the first time
+        vm.prank(userAddress);
+        pegoutManager.dequeuePegout(streamId);
+
+        // Assert - verify queue is decreased by one
+        assertQueueState(streamId, startUserAddress, enqueueCount - 1);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IPegoutManager.NoEnqueuedPegout.selector, streamId));
+
+        // Act - try to dequeue the same request again
+        vm.prank(userAddress);
+        pegoutManager.dequeuePegout(streamId);
+
+        // Assert - verify queue
+        assertQueueState(streamId, startUserAddress, enqueueCount - 1);
+    }
+
+    function test_dequeuePegout_Revert_PegoutNotFoundInQueue_DequeueTwice_FullQueueDequeueFirst() external {
+        // Arrange
+        uint160 startUserAddress = 1;
+        address userAddress = address(startUserAddress);
+        uint64 enqueueCount = Constants.MAX_PEGOUT_QUEUE_SIZE;
+        (uint64 streamId, bytes memory userPubKey, uint256 amountInWei) =
+            setup_enqueuePegouts(startUserAddress, enqueueCount);
+        assertQueueState(streamId, startUserAddress, enqueueCount);
+
+        // Dequeue user request for the first time
+        vm.prank(userAddress);
+        pegoutManager.dequeuePegout(streamId);
+
+        // Assert - verify queue
+        assertQueueState(streamId, startUserAddress + 1, enqueueCount - 1);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IPegoutManager.PegoutNotFoundInQueue.selector, streamId, userAddress));
+
+        // Act - Try to dequeue the same request again should revert
+        vm.prank(userAddress);
+        pegoutManager.dequeuePegout(streamId);
+
+        assertQueueState(streamId, startUserAddress + 1, enqueueCount - 1);
+    }
+
+    function test_dequeuePegout_Revert_PegoutNotFoundInQueue_DequeueTwice_FullQueueDequeueFromTheMiddle() external {
+        // Arrange
+        uint160 startUserAddress = 1;
+        uint160 middleUser = Constants.MAX_PEGOUT_QUEUE_SIZE / 2;
+        address userAddress = address(startUserAddress + middleUser);
+        uint64 enqueueCount = Constants.MAX_PEGOUT_QUEUE_SIZE;
+        (uint64 streamId, bytes memory userPubKey, uint256 amountInWei) =
+            setup_enqueuePegouts(startUserAddress, enqueueCount);
+
+        assertQueueState(streamId, startUserAddress, enqueueCount);
+
+        // Dequeue user request for the first time
+        vm.prank(userAddress);
+        pegoutManager.dequeuePegout(streamId);
+
+        // Assert - verify queue
+        uint64 actualLength = pegoutManager.getPegoutQueueLength(streamId);
+        assertEq(actualLength, enqueueCount - 1, "Queue length mismatch");
+
+        PegoutRequest[] memory queue = pegoutManager.getPegoutQueueHarness(streamId);
+
+        // Check before removed address
+        for (uint160 i = 0; i < middleUser; i++) {
+            address expectedAddress = address(startUserAddress + i);
+            assertEq(queue[i].userAddress, expectedAddress, "User address mismatch at index");
+        }
+
+        // Check after removed address
+        for (uint160 i = middleUser + 1; i < enqueueCount; i++) {
+            address expectedAddress = address(startUserAddress + i);
+            assertEq(queue[i - 1].userAddress, expectedAddress, "User address mismatch at index");
+        }
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IPegoutManager.PegoutNotFoundInQueue.selector, streamId, userAddress));
+
+        // Try to dequeue the same request again should revert
+        vm.prank(userAddress);
+        pegoutManager.dequeuePegout(streamId);
+    }
+
+    function test_dequeuePegout_Revert_PegoutNotFoundInQueue_DequeueTwice_FullQueueDequeueLast() external {
+        // Arrange
+        uint160 startUserAddress = 1;
+        uint64 enqueueCount = Constants.MAX_PEGOUT_QUEUE_SIZE;
+        address userAddress = address(startUserAddress + enqueueCount - 1); // Last user in the queue
+        (uint64 streamId, bytes memory userPubKey, uint256 amountInWei) =
+            setup_enqueuePegouts(startUserAddress, enqueueCount);
+        assertQueueState(streamId, startUserAddress, enqueueCount);
+
+        // Dequeue user request for the first time
+        vm.prank(userAddress);
+        pegoutManager.dequeuePegout(streamId);
+
+        // Assert - verify queue
+        assertQueueState(streamId, startUserAddress, enqueueCount - 1);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IPegoutManager.PegoutNotFoundInQueue.selector, streamId, userAddress));
+
+        // Act - Try to dequeue the same request again should revert
+        vm.prank(userAddress);
+        pegoutManager.dequeuePegout(streamId);
+
+        assertQueueState(streamId, startUserAddress, enqueueCount - 1);
     }
 }

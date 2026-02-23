@@ -202,4 +202,6 @@ library Constants {
 
     /// @dev Version number for pegout IDs
     uint8 constant PEGOUT_ID_VERSION = 1;
+
+    uint64 constant MAX_PEGOUT_QUEUE_SIZE = 10;
 }

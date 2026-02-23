@@ -230,6 +230,16 @@ contract StreamManager is IStreamManager, BaseProxy {
         return packets[_streamId][stream.peginPacketPointer].committeeId;
     }
 
+    /// @inheritdoc IStreamManager
+    function getFilledSlotsCount(uint64 _streamId) external view returns (uint64) {
+        uint64 totalFilledSlots = uint64(filledSlots[_streamId].length);
+        uint64 nextIndex = nextPegoutSlotIndex[_streamId];
+        if (nextIndex >= totalFilledSlots) {
+            return 0;
+        }
+        return totalFilledSlots - nextIndex;
+    }
+
     function _getNextPegoutSlotLocation(uint64 _streamId) internal view returns (SlotLocation memory) {
         uint64 indexToUse = nextPegoutSlotIndex[_streamId];
         if (indexToUse >= filledSlots[_streamId].length) {
@@ -259,6 +269,7 @@ contract StreamManager is IStreamManager, BaseProxy {
         }
 
         SlotLocation memory slotLocation = _getNextPegoutSlotLocation(_streamId);
+
         Slot storage slotToUse = slots[_streamId][slotLocation.packetId][slotLocation.slotId];
         slotToUse.state = SlotState.LOCKED;
         nextPegoutSlotIndex[_streamId]++;

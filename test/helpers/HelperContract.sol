@@ -67,6 +67,8 @@ abstract contract HelperContract is Test, TestUtils {
 
     // Default accept pegin txid for testing blockSlot
     bytes32 constant DEFAULT_ACCEPT_PEGIN_TXID = 0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef;
+    bytes constant ACCEPT_PEGIN_P2TR_SCRIPT_PUBKEY =
+        hex"51209687ca13c4fb3fa3ba05c2f9119dda026bfe66f0098dcf9b896a98ecb2e96702";
 
     // Default requested roles and streams for the members
     StreamDenomination internal constant DEFAULT_STREAM = StreamDenomination._0_01BTC;
@@ -388,7 +390,7 @@ abstract contract HelperContract is Test, TestUtils {
             // we subtract the fee, speed up amount from the value
             // the enabler amount cancels out between the input and the output
             amount: VALUE - (Constants.P2TR_FEE + Constants.SPEED_UP_AMOUNT),
-            scriptPubKey: hex"51209687ca13c4fb3fa3ba05c2f9119dda026bfe66f0098dcf9b896a98ecb2e96702"
+            scriptPubKey: ACCEPT_PEGIN_P2TR_SCRIPT_PUBKEY
         });
     }
 
@@ -515,7 +517,7 @@ abstract contract HelperContract is Test, TestUtils {
         bytes32 pegoutId;
     }
 
-    function setup_pegout() internal returns (RegisterUserTakeSetup memory setup) {
+    function setup_peginAndSPVs() internal returns (RegisterUserTakeSetup memory setup) {
         // =========== Request Peg-In & Accept Peg-In ============
         (bytes32 acceptPeginTxid,, BtcTransaction memory acceptPeginTx) =
             setup_requestAndAcceptPeginFlow(COMMITTEE_ID_STREAM_1_COMMITTEE_1);
@@ -532,6 +534,7 @@ abstract contract HelperContract is Test, TestUtils {
 
         // Calculate expected values
         Stream memory stream = streamManager.getStream(pegoutAmount);
+        Slot memory slot = streamManager.getSlot(stream.streamId, setup.packetNumber, setup.slotId);
 
         SlotLocation memory slotLocation = streamManager.getNextPegoutSlotLocation(stream.streamId);
         setup.packetNumber = slotLocation.packetId;
@@ -540,15 +543,6 @@ abstract contract HelperContract is Test, TestUtils {
         // Set up mock to allow burning this amount
         // Add capacity to support multiple pegout calls in sequence
         bridgeMock.setWeisTransferredToUnionBridge(pegoutAmountInWei);
-
-        // Request peg-out
-        vm.prank(globalUserAddress);
-        pegoutManager.tryPegout{value: pegoutAmountInWei}(setup.userPubKey);
-
-        // Verify slot was locked
-        Slot memory slot = streamManager.getSlot(stream.streamId, setup.packetNumber, setup.slotId);
-        assertEq(uint256(slot.state), uint256(SlotState.LOCKED), "Slot should be locked after peg-out request");
-        assertEq(slot.acceptPeginTx, setup.acceptPeginTxid, "Slot should reference the correct accept peg-in tx");
 
         // Prepare prevout data for both inputs: taptree and enabler outputs
         // Read taptree from slot, enabler from packet (matching production code in _preparePegoutPrevoutDatas)
@@ -570,6 +564,20 @@ abstract contract HelperContract is Test, TestUtils {
 
         setup.pegoutSignatureHash = pegoutSignatureData.signatureHash;
         setup.pegoutTxid = pegoutSignatureData.txid;
+    }
+
+    function setup_pegout() internal returns (RegisterUserTakeSetup memory setup) {
+        setup = setup_peginAndSPVs();
+        uint256 pegoutAmountInWei = BtcHelper.satoshiToWei(VALUE);
+
+        // Request peg-out
+        vm.prank(globalUserAddress);
+        pegoutManager.tryPegout{value: pegoutAmountInWei}(setup.userPubKey);
+
+        // Verify slot was locked
+        Slot memory slot = streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId);
+        assertEq(uint256(slot.state), uint256(SlotState.LOCKED), "Slot should be locked after peg-out request");
+        assertEq(slot.acceptPeginTx, setup.acceptPeginTxid, "Slot should reference the correct accept peg-in tx");
     }
 
     function calculatePegoutId(bytes32 operatorTakePubKey, uint64 streamId, uint64 packetNumber, uint64 slotId)
@@ -1307,5 +1315,34 @@ abstract contract HelperContract is Test, TestUtils {
 
         vm.prank(address(peginManager));
         streamManager.setStreamPosition(txid, StreamPosition(_streamId, _packetNumber, slotId, PegStatus.REGISTERED));
+    }
+
+    function getExpectedBitcoinSignatureData()
+        public
+        returns (BitcoinSignatureData memory data, bytes32 acceptPeginTxid)
+    {
+        // This function only works for first accept pegin with txid: 0x14fdaad7499abf1ef94b3705749fad1d3979cce2dc636e978b83e756bd6ad23a,
+        // If that's not the case txid, signatureHash and signatureMessage should be updated accordingly
+        acceptPeginTxid = 0x14fdaad7499abf1ef94b3705749fad1d3979cce2dc636e978b83e756bd6ad23a;
+
+        BtcTxIn[] memory inputs = new BtcTxIn[](2);
+        inputs[0] = BtcTxIn({txId: acceptPeginTxid, vout: 0, sequence: 4294967293, scriptSig: hex""});
+        inputs[1] = BtcTxIn({
+            txId: acceptPeginTxid,
+            vout: 1, // Enabler output from accept pegin
+            sequence: 4294967293,
+            scriptSig: hex""
+        });
+
+        BtcTxOut[] memory outputs = new BtcTxOut[](2);
+        outputs[0] = BtcTxOut({amount: 998250, scriptPubKey: hex"00143fd2e14f4b448a071e074e1e1879318447f2a266"});
+        outputs[1] = BtcTxOut({amount: 540, scriptPubKey: hex"00143fd2e14f4b448a071e074e1e1879318447f2a266"});
+
+        data = BitcoinSignatureData({
+            tx: BtcTransaction({version: 2, inputs: inputs, outputs: outputs, locktime: 0}),
+            txid: 0xe170b24b41e5bfb912fb4d9ea6688994a2290db667bdf9bcd207202fdc56a3c4,
+            signatureHash: 0x0a1043930f6622205d3c54be82a44e2090f38001dc95d188cf7ec4cfa7441ae0,
+            signatureMessage: hex"00010200000000000000a0e918b6e29da87a5467ddb8d7f29a4de304b82573887401d0b1fd7b81d4cdccac72564c6204c6e42cdd3fa58fd3314ac25c5e7a7d324d5dd03ee456abdcce386278a9f4ca919d3af59490c32ad58017de5f25e9c95d50c1569249e0f7eb688482d397cbbcff87bc5d0c4c70e424f9b830efbad7bf0be479da5d1d1bafdb9798f81b4776c4bc98417c41f791185dfa89d0789939526bc6907fcdcb6f7490398b0000000000"
+        });
     }
 }

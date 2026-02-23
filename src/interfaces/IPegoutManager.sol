@@ -41,6 +41,13 @@ struct PegoutManagerSettings {
     uint256 operatorTakeTimeout;
 }
 
+struct PegoutRequest {
+    /// @notice The user's public key that will receive the Bitcoin funds
+    bytes userPubKey;
+    /// @notice user RSK address in case a refund is needed.
+    address userAddress;
+}
+
 /// @title IPegoutManager
 /// @notice Interface for managing peg-out operations
 interface IPegoutManager {
@@ -145,6 +152,25 @@ interface IPegoutManager {
     /// @param _pegoutTxid The transaction id of the peg-out request
     function triggerOperatorTake(bytes32 _pegoutTxid) external;
 
+    /// @notice Get queue size for enqueued peg-out requests for a specific stream
+    /// @param _streamId The stream identifier
+    /// @return The number of enqueued peg-out requests for the specified stream
+    function getPegoutQueueLength(uint64 _streamId) external view returns (uint64);
+
+    /// @notice Enqueues a peg-out request for a specific stream
+    /// @dev This function allows users to enqueue their peg-out requests where there is a pegout in process
+    /// @param _userPubKey The user's compressed public key that will receive the Bitcoin funds
+    function enqueuePegout(bytes memory _userPubKey) external payable;
+
+    /// @notice Dequeues a peg-out request for processing for a specific stream
+    /// @dev Should be called from the user that enqueued a pegout
+    /// @param _streamId The stream identifier
+    function dequeuePegout(uint64 _streamId) external;
+
+    /// @notice Tries to process an enqueued peg-out request for a specific stream
+    /// @param _streamId The stream identifier
+    function tryProcessEnqueuedPegout(uint64 _streamId) external;
+
     // ===================== Events =====================
 
     /// @notice Event emitted when a peg-out is successfully requested
@@ -234,6 +260,18 @@ interface IPegoutManager {
         uint256 updatedAt,
         uint256 expireAt
     );
+
+    /// @notice Event emitted when a peg-out request is enqueued
+    /// @param streamId The stream identifier for which the peg-out request is enqueued
+    /// @param userPubKey The user's public key that will receive the Bitcoin funds
+    /// @param userAddress The user's RSK address in case a refund is needed
+    event PegoutEnqueued(uint64 indexed streamId, bytes userPubKey, address userAddress);
+
+    /// @notice Event emitted when a peg-out request is dequeued for processing
+    /// @param streamId The stream identifier for which the peg-out request is dequeued
+    /// @param userPubKey The user's public key that will receive the Bitcoin funds
+    /// @param userAddress The user's RSK address in case a refund is needed
+    event PegoutDequeued(uint64 indexed streamId, bytes userPubKey, address userAddress);
 
     // ===================== Errors =====================
 
@@ -357,4 +395,33 @@ interface IPegoutManager {
     /// @param packetNumber The packet number within the stream
     /// @param slotId The slot identifier within the packet
     error PegoutTxidNotFound(uint64 streamId, uint64 packetNumber, uint64 slotId);
+
+    /// @notice Thrown when the pegout queue has reached its maximum size
+    /// @param streamId The stream identifier
+    error PegoutQueueFull(uint64 streamId);
+
+    /// @notice Thrown when there are no enqueued peg-outs to process
+    /// @param streamId The stream identifier for which there are no enqueued peg-outs to process
+    error NoEnqueuedPegout(uint64 streamId);
+
+    /// @notice Thrown when there are no free filled slots available for peg-out in the specified stream
+    /// @param streamId The stream identifier
+    /// @param queueLength The current length of the peg-out queue for the stream
+    /// @param remainingFilledSlots The number of remaining filled slots available for peg-out in the stream
+    error NoFreeFilledSlot(uint64 streamId, uint64 queueLength, uint64 remainingFilledSlots);
+
+    /// @notice Thrown when trying to process an enqueued peg-out but the peg-out data is not found in the queue
+    /// @param streamId The stream identifier for which the peg-out data was not found
+    /// @param userAddress The user's RSK address associated with the peg-out request that was not found
+    error PegoutNotFoundInQueue(uint64 streamId, address userAddress);
+
+    /// @notice Thrown when RSK transfer fails
+    /// @param userAddress The user's address
+    /// @param amount The amount that failed to transfer
+    error FailedToSendRSK(address userAddress, uint256 amount);
+
+    /// @notice Thrown when trying to process a peg-out but there is already an enqueued peg-out for the same stream
+    /// @param streamId The stream identifier for which there is already an enqueued peg-out
+    /// @param queueLength The current length of the peg-out queue for the stream
+    error EnqueuedPegoutsForStream(uint64 streamId, uint64 queueLength);
 }

@@ -353,6 +353,9 @@ interface IStreamManager {
     /// @dev Only callable by the PegManager contract
     function setPegStatus(bytes32 _acceptPeginTxid, PegStatus _newStatus) external;
 
+    /// @notice Gets the number of remaining filled slots available for peg-out in the given stream
+    function getFilledSlotsCount(uint64 _streamId) external view returns (uint64);
+
     // Events
     /// @notice Event emitted when a new stream is created
     /// @param streamId The ID of the newly created stream
