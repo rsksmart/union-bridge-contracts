@@ -4,10 +4,8 @@ pragma solidity ^0.8.20;
 import {console} from "forge-std/console.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
-import {
-    ICommitteeRegistry, MemberRegistrationKeys, MemberKeys, Role, UTXO
-} from "src/interfaces/ICommitteeRegistry.sol";
-import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
+import {ICommitteeRegistry, Role, UTXO} from "src/interfaces/ICommitteeRegistry.sol";
+import {IMemberRegistry, MemberRegistrationKeys, MemberKeys} from "src/interfaces/IMemberRegistry.sol";
 import {StreamDenomination, IStreamManager} from "src/interfaces/IStreamManager.sol";
 
 contract ApplyToStreamScript is ScriptUtils, ContractAddressManager {

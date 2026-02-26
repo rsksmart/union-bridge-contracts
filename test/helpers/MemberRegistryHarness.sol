@@ -2,7 +2,8 @@
 pragma solidity ^0.8.20;
 
 import {MemberRegistry} from "src/MemberRegistry.sol";
-import {Role, UTXO, MemberRegistrationKeys} from "src/interfaces/ICommitteeRegistry.sol";
+import {Role, UTXO} from "src/interfaces/ICommitteeRegistry.sol";
+import {MemberRegistrationKeys} from "src/interfaces/IMemberRegistry.sol";
 import {IStreamManager, StreamDenomination} from "src/interfaces/IStreamManager.sol";
 import {IAccessManager} from "src/interfaces/IAccessManager.sol";
 import {IRbtcBridge} from "src/interfaces/IRbtcBridge.sol";

@@ -4,23 +4,20 @@ pragma solidity ^0.8.20;
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {BaseProxy} from "./BaseProxy.sol";
 import {Pausable} from "./Pausable.sol";
+import {Role, CommitteeMember, UTXO, PendingCommitteeStatus} from "./interfaces/ICommitteeRegistry.sol";
 import {
-    Role,
+    IMemberRegistry,
     Member,
-    CommitteeMember,
+    MemberRegistrationKeys,
+    MemberKeys,
     ApplicationData,
     Balance,
-    UTXO,
     ECDSAPublicKey,
     RSAPublicKey,
-    MemberRegistrationKeys,
     RSA_PUBLIC_KEY_CHUNKS,
-    MemberKeys,
-    PublicKeyType,
-    PendingCommitteeStatus
-} from "./interfaces/ICommitteeRegistry.sol";
+    PublicKeyType
+} from "./interfaces/IMemberRegistry.sol";
 import {StreamDenomination, IStreamManager} from "./interfaces/IStreamManager.sol";
-import {IMemberRegistry} from "./interfaces/IMemberRegistry.sol";
 import {Constants} from "./libraries/Constants.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {IRbtcBridge} from "./interfaces/IRbtcBridge.sol";

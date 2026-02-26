@@ -2,8 +2,8 @@
 pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
-import {CommitteeMember, Committee, MemberRegistrationKeys} from "src/CommitteeRegistry.sol";
-import {MemberKeys, PublicKeyType} from "src/interfaces/ICommitteeRegistry.sol";
+import {CommitteeMember, Committee} from "src/CommitteeRegistry.sol";
+import {MemberRegistrationKeys, MemberKeys, PublicKeyType} from "src/interfaces/IMemberRegistry.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {Vm} from "forge-std/Vm.sol";

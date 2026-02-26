@@ -20,19 +20,17 @@ import {
     Role,
     CommitteeMember,
     Committee,
-    MemberKeys,
-    MemberRegistrationKeys,
     UTXO,
     CommunicationData,
     COMMUNICATION_DATA_CHUNKS
 } from "src/interfaces/ICommitteeRegistry.sol";
+import {MemberRegistrationKeys, MemberKeys} from "src/interfaces/IMemberRegistry.sol";
 import {StreamDenomination, Slot, Stream, SlotState, SlotLocation} from "src/interfaces/IStreamManager.sol";
 import {
     BtcTxIn, BtcTxOut, BtcTransaction, BitcoinSignatureData, PrevoutData
 } from "src/interfaces/IBitcoinManager.sol";
 import {BtcTxSPVProof, StreamPosition, PegStatus} from "src/interfaces/IPegCommonTypes.sol";
-import {IOperatorTakeManager} from "src/interfaces/IOperatorTakeManager.sol";
-import {OperatorTakeInfo} from "src/interfaces/IOperatorTakeManager.sol";
+import {IOperatorTakeManager, OperatorTakeInfo} from "src/interfaces/IOperatorTakeManager.sol";
 import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {BtcTxEncoder} from "src/libraries/BtcTxEncoder.sol";

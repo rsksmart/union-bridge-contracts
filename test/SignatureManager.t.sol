@@ -4,16 +4,16 @@ pragma solidity ^0.8.20;
 import {Test} from "forge-std/Test.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
 import {
+    Committee,
     ICommitteeRegistry,
     StreamDenomination,
     Role,
-    CommitteeMember,
-    MemberRegistrationKeys
+    CommitteeMember
 } from "src/interfaces/ICommitteeRegistry.sol";
+import {MemberRegistrationKeys} from "src/interfaces/IMemberRegistry.sol";
 import {IAccessManager} from "src/interfaces/IAccessManager.sol";
 import {SignatureData, ISignatureManager, OperatorTakeData} from "src/interfaces/ISignatureManager.sol";
 import {Constants} from "src/libraries/Constants.sol";
-import {Committee} from "src/interfaces/ICommitteeRegistry.sol";
 
 contract SignatureManagerTest is Test, HelperContract {
     uint128 internal setupCommitteeId;

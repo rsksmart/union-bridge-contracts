@@ -2,14 +2,11 @@
 pragma solidity ^0.8.20;
 
 import {StreamDenomination} from "./IStreamManager.sol";
-import {IMemberRegistry} from "./IMemberRegistry.sol";
+import {IMemberRegistry, MemberRegistrationKeys} from "./IMemberRegistry.sol";
 import {SignatureData} from "./ISignatureManager.sol";
 
 /// @dev Amount of bytes32 chunks for communication data
 uint8 constant COMMUNICATION_DATA_CHUNKS = 8;
-
-/// @dev Amount of bytes32 chunks for DER-encoded RSA public key
-uint8 constant RSA_PUBLIC_KEY_CHUNKS = 10;
 
 struct CommitteeRegistrySettings {
     /// @notice Timeout in seconds for pending committee formation
@@ -60,102 +57,6 @@ enum PendingCommitteeStatus {
     /// @notice This must always be the last element since it represents the total count of enum elements
     /// @dev Used for validation and iteration over the enum values
     LENGTH
-}
-
-/// @notice Represents the balance and application staking information for a member
-/// @dev Tracks available balance, applications, and staked amounts across packets
-struct Balance {
-    /// @notice Available balance that can be withdrawn
-    uint256 available;
-    /// @notice Array of application data for different streams
-    ApplicationData[] applications;
-    /// @notice Mapping of staked amounts for packets where the member is part of a committee
-    /// @dev Each element is a mapping from packet number to staked amount
-    mapping(uint64 packetNumber => uint256 amount)[] staked;
-}
-
-/// @notice Represents application data for a member's role request
-/// @dev Contains the requested role, pre-staked amount, and funding UTXO
-struct ApplicationData {
-    /// @notice The role requested by the member
-    Role requestedRole;
-    /// @notice Amount pre-staked for this application
-    uint256 preStaked;
-    /// @notice Whether the member wants to reapply for the committee once a packet is over
-    bool reApply;
-    /// @notice The Bitcoin UTXO used for funding this application
-    UTXO fundingUTXO;
-}
-
-/// @notice Represents the different types of public keys a member can register
-/// @dev Each key type serves a specific purpose in the committee operations
-enum PublicKeyType {
-    /// @notice Public key used for take operations (normal peg-out)
-    TAKE,
-    /// @notice Public key used for covenant operations (dispute resolution)
-    COVENANT,
-    /// @notice Public key used for communication between members
-    COMMUNICATION,
-    /// @notice This must always be the last element since it represents the total count of enum elements
-    /// @dev Used for validation and iteration over the enum values
-    LENGTH
-}
-
-/// @notice Represents the data needed for ECDSA public key registration
-/// @dev Includes the public key coordinates and ECDSA signature for verification
-struct ECDSAPublicKey {
-    /// @notice X-coordinate of the public key
-    bytes32 publicKeyX;
-    /// @notice Y-coordinate of the public key
-    bytes32 publicKeyY;
-    /// @notice Recovery parameter for ECDSA signature
-    uint8 v;
-    /// @notice R component of ECDSA signature
-    bytes32 r;
-    /// @notice S component of ECDSA signature
-    bytes32 s;
-}
-
-/// @notice Represents RSA public key for communication
-/// @dev Contains DER-encoded RSA public key
-/// @dev We use a fixed bytes32 array for gas efficiency
-struct RSAPublicKey {
-    /// @notice DER-encoded RSA public key stored as bytes32 chunks
-    bytes32[RSA_PUBLIC_KEY_CHUNKS] rsaPublicKey;
-}
-
-/// @notice Member public key registration structure
-/// @dev Contains mixed key types for registration
-struct MemberRegistrationKeys {
-    /// @notice TAKE public key (ECDSA) - fully validated
-    ECDSAPublicKey takeKey;
-    /// @notice COVENANT public key (ECDSA) - no validation
-    ECDSAPublicKey covenantKey;
-    /// @notice COMMUNICATION public key (RSA) - input validation only
-    RSAPublicKey communicationKey;
-}
-
-/// @notice Member public keys structure for members
-/// @dev Contains different key types for different purposes
-struct MemberKeys {
-    /// @notice TAKE public key (ECDSA)
-    bytes32 takePubKey;
-    /// @notice COVENANT public key (ECDSA)
-    bytes32 covenantPubKey;
-    /// @notice COMMUNICATION public key (RSA)
-    RSAPublicKey communicationPubKey;
-}
-
-/// @notice Represents a committee member with their keys, roles, and balance
-/// @dev Contains all information needed to manage a member's participation
-struct Member {
-    /// @notice Member public keys for different purposes
-    /// @dev Contains TAKE (ECDSA), COVENANT (ECDSA), and COMMUNICATION (RSA) keys
-    MemberKeys publicKeys;
-    /// @notice Balance and staking information for the member
-    Balance balance;
-    /// @notice Additional data stored as key-value pairs
-    mapping(string key => string value) data;
 }
 
 /// @notice Represents a member within a specific committee
