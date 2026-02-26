@@ -20,12 +20,14 @@ import {AccessManager} from "src/AccessManager.sol";
 import {CommitteeRegistrySettings} from "src/interfaces/ICommitteeRegistry.sol";
 import {CommitteeRegistrySettingsConfig} from "script/helpers/CommitteeRegistrySettingsConfig.sol";
 import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
-import {PegoutManagerSettings} from "src/interfaces/IPegoutManager.sol";
+
+import {TakeTimeout} from "src/interfaces/IOperatorTakeManager.sol";
 import {StreamManagerSettings, StreamSettings, StreamDenomination} from "src/interfaces/IStreamManager.sol";
 import {StreamManagerSettingsConfig} from "script/helpers/StreamManagerSettingsConfig.sol";
-import {PegManagerSettingsConfig} from "script/helpers/PegManagerSettingsConfig.sol";
+import {OperatorTakeManagerSettingsConfig} from "script/helpers/OperatorTakeManagerSettingsConfig.sol";
 import {RbtcBridge} from "src/RbtcBridge.sol";
 import {ChallengeManager} from "src/ChallengeManager.sol";
+import {OperatorTakeManager} from "src/OperatorTakeManager.sol";
 
 /// @notice Struct to return deployed contracts and avoid stack too deep error
 struct DeployedContracts {
@@ -39,6 +41,7 @@ struct DeployedContracts {
     SignatureManager signatureManager;
     AccessManager accessManager;
     ChallengeManager challengeManager;
+    OperatorTakeManager operatorTakeManager;
     address upgradableOwner;
     address payable bridgeAddress;
 }
@@ -52,7 +55,7 @@ contract DeployImplAndProxy is ScriptUtils {
     address payable public bridgeAddress;
     StreamManagerSettings public streamManagerSettings;
     StreamSettings[] public streamSettings;
-    PegoutManagerSettings public pegoutManagerSettings;
+    TakeTimeout public operatorTakeTimeoutSettings;
     CommitteeRegistrySettings public committeeRegistrySettings;
 
     function setUp() internal {
@@ -69,7 +72,7 @@ contract DeployImplAndProxy is ScriptUtils {
                 StreamManagerSettingsConfig.getStreamSettings(block.chainid, i, denominations[i], isTest)
             );
         }
-        pegoutManagerSettings = PegManagerSettingsConfig.getSettings(block.chainid, isTest);
+        operatorTakeTimeoutSettings = OperatorTakeManagerSettingsConfig.getTakeTimeoutSettings(block.chainid, isTest);
         committeeRegistrySettings = CommitteeRegistrySettingsConfig.getSettings(block.chainid, isTest);
         // RSK Mainnet
         if (block.chainid == ChainIds.RSK_MAINNET) {
@@ -193,8 +196,7 @@ contract DeployImplAndProxy is ScriptUtils {
             bitcoinManager,
             rbtcBridge,
             streamManager,
-            signatureManager,
-            pegoutManagerSettings
+            signatureManager
         );
         if (pegoutManager.owner() != upgradableOwner) {
             revert("PegoutManager owner is not the upgradable owner");
@@ -209,8 +211,32 @@ contract DeployImplAndProxy is ScriptUtils {
             revert("PegoutManager signatureManager is not the signatureManager address");
         }
 
+        OperatorTakeManager operatorTakeManager = deployOperatorTakeManager(
+            upgradableOwner,
+            accessManager,
+            committeeRegistry,
+            bitcoinManager,
+            rbtcBridge,
+            pegoutManager,
+            streamManager,
+            signatureManager,
+            operatorTakeTimeoutSettings
+        );
+        if (operatorTakeManager.owner() != upgradableOwner) {
+            revert("OperatorTakeManager owner is not the upgradable owner");
+        }
+        if (address(operatorTakeManager.pegoutManager()) != address(pegoutManager)) {
+            revert("OperatorTakeManager pegoutManager is not the pegoutManager address");
+        }
+
         ChallengeManager challengeManager = deployChallengeManager(
-            upgradableOwner, accessManager, committeeRegistry, bitcoinManager, rbtcBridge, pegoutManager, streamManager
+            upgradableOwner,
+            accessManager,
+            committeeRegistry,
+            bitcoinManager,
+            rbtcBridge,
+            streamManager,
+            operatorTakeManager
         );
         if (challengeManager.owner() != upgradableOwner) {
             revert("ChallengeManager owner is not the upgradable owner");
@@ -221,12 +247,16 @@ contract DeployImplAndProxy is ScriptUtils {
         if (address(challengeManager.pauser()) != address(accessManager)) {
             revert("ChallengeManager pauser is not the accessManager address");
         }
+        if (address(challengeManager.operatorTakeManager()) != address(operatorTakeManager)) {
+            revert("ChallengeManager operatorTakeManager is not the operatorTakeManager address");
+        }
 
         // set contracts references for accessManager
         vm.startBroadcast(getDeployerKey());
         accessManager.setPeginManager(address(peginManager));
         accessManager.setPegoutManager(address(pegoutManager));
         accessManager.setChallengeManager(address(challengeManager));
+        accessManager.setOperatorTakeManager(address(operatorTakeManager));
         accessManager.setCommitteeRegistry(address(committeeRegistry));
         accessManager.setMemberRegistry(address(memberRegistry));
         accessManager.setRbtcBridge(address(rbtcBridge));
@@ -239,6 +269,9 @@ contract DeployImplAndProxy is ScriptUtils {
         }
         if (address(accessManager.challengeManager()) != address(challengeManager)) {
             revert("AccessManager challengeManager is not the challengeManager address");
+        }
+        if (address(accessManager.operatorTakeManager()) != address(operatorTakeManager)) {
+            revert("AccessManager operatorTakeManager is not the operatorTakeManager address");
         }
         if (address(accessManager.committeeRegistry()) != address(committeeRegistry)) {
             revert("AccessManager committeeRegistry is not the committeeRegistry address");
@@ -285,9 +318,10 @@ contract DeployImplAndProxy is ScriptUtils {
             streamManager: streamManager,
             signatureManager: signatureManager,
             accessManager: accessManager,
+            challengeManager: challengeManager,
+            operatorTakeManager: operatorTakeManager,
             upgradableOwner: upgradableOwner,
-            bridgeAddress: bridgeAddress,
-            challengeManager: challengeManager
+            bridgeAddress: bridgeAddress
         });
     }
 
@@ -397,8 +431,7 @@ contract DeployImplAndProxy is ScriptUtils {
         BitcoinManager _bitcoinManager,
         RbtcBridge _rbtcBridge,
         StreamManager _streamManager,
-        SignatureManager _signatureManager,
-        PegoutManagerSettings memory _settings
+        SignatureManager _signatureManager
     ) public returns (PegoutManager) {
         string memory contractName = "PegoutManager.sol";
         if (vm.isContext(VmSafe.ForgeContext.TestGroup)) {
@@ -415,8 +448,7 @@ contract DeployImplAndProxy is ScriptUtils {
                     _bitcoinManager,
                     _rbtcBridge,
                     _streamManager,
-                    _signatureManager,
-                    _settings
+                    _signatureManager
                 )
             )
         );
@@ -429,8 +461,8 @@ contract DeployImplAndProxy is ScriptUtils {
         CommitteeRegistry _committeeRegistry,
         BitcoinManager _bitcoinManager,
         RbtcBridge _rbtcBridge,
-        PegoutManager _pegoutManager,
-        StreamManager _streamManager
+        StreamManager _streamManager,
+        OperatorTakeManager _operatorTakeManager
     ) public returns (ChallengeManager) {
         string memory contractName = "ChallengeManager.sol";
 
@@ -444,12 +476,43 @@ contract DeployImplAndProxy is ScriptUtils {
                     _committeeRegistry,
                     _bitcoinManager,
                     _rbtcBridge,
-                    _pegoutManager,
-                    _streamManager
+                    _streamManager,
+                    _operatorTakeManager
                 )
             )
         );
         return ChallengeManager(proxyAdddress);
+    }
+
+    function deployOperatorTakeManager(
+        address _upgradableOwner,
+        AccessManager _accessManager,
+        CommitteeRegistry _committeeRegistry,
+        BitcoinManager _bitcoinManager,
+        RbtcBridge _rbtcBridge,
+        PegoutManager _pegoutManager,
+        StreamManager _streamManager,
+        SignatureManager _signatureManager,
+        TakeTimeout memory _takeTimeout
+    ) public returns (OperatorTakeManager) {
+        (, address proxyAdddress) = deployContractAndUUPSProxy(
+            "OperatorTakeManager.sol",
+            abi.encodeCall(
+                OperatorTakeManager.initialize,
+                (
+                    _upgradableOwner,
+                    address(_accessManager),
+                    _committeeRegistry,
+                    _bitcoinManager,
+                    _rbtcBridge,
+                    _pegoutManager,
+                    _streamManager,
+                    _signatureManager,
+                    _takeTimeout
+                )
+            )
+        );
+        return OperatorTakeManager(proxyAdddress);
     }
 
     function deployStreamManager(

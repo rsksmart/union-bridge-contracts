@@ -5,7 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
 import {BtcTxSPVProof, StreamPosition} from "src/interfaces/IPegCommonTypes.sol";
 import {PegStatus} from "src/interfaces/IPegCommonTypes.sol";
-import {ChallengeTempInfo, IChallengeManager} from "src/interfaces/IChallengeManager.sol";
+import {ChallengeInfo, IChallengeManager} from "src/interfaces/IChallengeManager.sol";
 import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {SlotState} from "src/interfaces/IStreamManager.sol";
@@ -27,7 +27,6 @@ contract ChallengeManagerTest is Test, HelperContract {
         assertEq(challengeManager.pauser(), address(accessManager)); // Pauser should be set to accessManager
         assertEq(address(challengeManager.committeeRegistry()), address(registry));
         assertEq(address(challengeManager.bitcoinManager()), address(bitcoinManager));
-        assertEq(address(challengeManager.pegoutManager()), address(pegoutManager));
         assertEq(address(challengeManager.streamManager()), address(streamManager));
         assertEq(address(challengeManager.rbtcBridge()), address(rbtcBridge));
     }
@@ -60,7 +59,7 @@ contract ChallengeManagerTest is Test, HelperContract {
             streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId).state == SlotState.ADVANCED,
             "Slot state should be ADVANCED"
         );
-        ChallengeTempInfo memory challengeInfo = challengeManager.getChallengeTempInfo(setup.acceptPeginTxid);
+        ChallengeInfo memory challengeInfo = challengeManager.getChallengeInfo(setup.acceptPeginTxid);
         assertEq(challengeInfo.challengeTxid, txid, "Challenge txid should be recorded");
     }
 
@@ -95,7 +94,7 @@ contract ChallengeManagerTest is Test, HelperContract {
             streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId).state == SlotState.ADVANCED,
             "Slot state should be ADVANCED"
         );
-        ChallengeTempInfo memory challengeInfo = challengeManager.getChallengeTempInfo(setup.acceptPeginTxid);
+        ChallengeInfo memory challengeInfo = challengeManager.getChallengeInfo(setup.acceptPeginTxid);
         assertEq(challengeInfo.challengeTxid, txid, "Challenge txid should be recorded");
     }
 
@@ -212,7 +211,7 @@ contract ChallengeManagerTest is Test, HelperContract {
             "Slot state should be ADVANCED"
         );
 
-        ChallengeTempInfo memory challengeInfo = challengeManager.getChallengeTempInfo(setup.acceptPeginTxid);
+        ChallengeInfo memory challengeInfo = challengeManager.getChallengeInfo(setup.acceptPeginTxid);
         assertEq(challengeInfo.revealTxid, txid, "Input revealed txid should be recorded");
     }
 
@@ -249,7 +248,7 @@ contract ChallengeManagerTest is Test, HelperContract {
             "Slot state should be ADVANCED"
         );
 
-        ChallengeTempInfo memory challengeInfo = challengeManager.getChallengeTempInfo(setup.acceptPeginTxid);
+        ChallengeInfo memory challengeInfo = challengeManager.getChallengeInfo(setup.acceptPeginTxid);
         assertEq(challengeInfo.revealTxid, txid, "Input revealed txid should be recorded");
     }
 
@@ -344,9 +343,9 @@ contract ChallengeManagerTest is Test, HelperContract {
             "Slot state should be ADVANCED"
         );
 
-        // getChallengeTempInfo will revert if challengeTxid is not set
+        // getChallengeInfo will revert if challengeTxid is not set
         vm.expectRevert(abi.encodeWithSelector(IChallengeManager.NoChallengeRegistered.selector, setup.acceptPeginTxid));
-        ChallengeTempInfo memory challengeInfo = challengeManager.getChallengeTempInfo(setup.acceptPeginTxid);
+        ChallengeInfo memory challengeInfo = challengeManager.getChallengeInfo(setup.acceptPeginTxid);
     }
 
     function test_registerInputNotRevealed_Revert_EnforcedPause_PausedContract() external {
@@ -507,9 +506,9 @@ contract ChallengeManagerTest is Test, HelperContract {
             "Slot state should be ADVANCED"
         );
 
-        // getChallengeTempInfo will revert if challengeTxid is not set
+        // getChallengeInfo will revert if challengeTxid is not set
         vm.expectRevert(abi.encodeWithSelector(IChallengeManager.NoChallengeRegistered.selector, setup.acceptPeginTxid));
-        ChallengeTempInfo memory challengeInfo = challengeManager.getChallengeTempInfo(setup.acceptPeginTxid);
+        ChallengeInfo memory challengeInfo = challengeManager.getChallengeInfo(setup.acceptPeginTxid);
     }
 
     function test_registerStopOperatorWon_Revert_MemberNotInCommittee() external {

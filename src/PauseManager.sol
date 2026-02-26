@@ -27,6 +27,9 @@ abstract contract PauseManager is IPauseManager, BaseProxy {
     /// @notice The ChallengeManager contract
     address public challengeManager;
 
+    /// @notice The OperatorTakeManager contract
+    address public operatorTakeManager;
+
     /// @notice Initializes the PauseManager contract
     /// @param _initialOwner The initial owner of the contract who can pause/unpause
     function __PauseManager_init(address _initialOwner) internal initializer {
@@ -41,6 +44,7 @@ abstract contract PauseManager is IPauseManager, BaseProxy {
         IPausable(memberRegistry).pause();
         IPausable(rbtcBridge).pause();
         IPausable(challengeManager).pause();
+        IPausable(operatorTakeManager).pause();
     }
 
     /// @inheritdoc IPauseManager
@@ -51,6 +55,7 @@ abstract contract PauseManager is IPauseManager, BaseProxy {
         IPausable(memberRegistry).unpause();
         IPausable(rbtcBridge).unpause();
         IPausable(challengeManager).unpause();
+        IPausable(operatorTakeManager).unpause();
     }
 
     /// @inheritdoc IPauseManager
@@ -61,12 +66,13 @@ abstract contract PauseManager is IPauseManager, BaseProxy {
         bool memberRegistryPaused = IPausable(memberRegistry).isPaused();
         bool rbtcBridgePaused = IPausable(rbtcBridge).isPaused();
         bool challengeManagerPaused = IPausable(challengeManager).isPaused();
+        bool operatorTakeManagerPaused = IPausable(operatorTakeManager).isPaused();
 
         // Check if all contracts have the same pause state
         bool referenceState = peginManagerPaused;
         bool allStatesMatch = pegoutManagerPaused == referenceState && committeeRegistryPaused == referenceState
             && memberRegistryPaused == referenceState && rbtcBridgePaused == referenceState
-            && challengeManagerPaused == referenceState;
+            && challengeManagerPaused == referenceState && operatorTakeManagerPaused == referenceState;
 
         if (!allStatesMatch) {
             revert _InconsistentPauseState();
@@ -117,6 +123,18 @@ abstract contract PauseManager is IPauseManager, BaseProxy {
             revert InvalidZeroAddress();
         }
         challengeManager = _challengeManager;
+    }
+
+    /// @notice Sets the OperatorTakeManager contract address
+    /// @param _operatorTakeManager The address of the OperatorTakeManager contract
+    function setOperatorTakeManager(address _operatorTakeManager) external onlyOwner {
+        if (operatorTakeManager != address(0)) {
+            revert AlreadySet();
+        }
+        if (_operatorTakeManager == address(0)) {
+            revert InvalidZeroAddress();
+        }
+        operatorTakeManager = _operatorTakeManager;
     }
 
     /// @inheritdoc IPauseManager

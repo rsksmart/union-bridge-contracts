@@ -7,7 +7,7 @@ import {IPegManagerBase} from "./interfaces/IPegManagerBase.sol";
 import {ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
 import {ISignatureManager} from "./interfaces/ISignatureManager.sol";
 import {IRbtcBridge} from "./interfaces/IRbtcBridge.sol";
-import {IStreamManager} from "./interfaces/IStreamManager.sol";
+import {IStreamManager, StreamPosition} from "./interfaces/IStreamManager.sol";
 
 /// @title PegManagerBase
 /// @notice Abstract base contract for shared functionality between PeginManager and PegoutManager
@@ -33,12 +33,17 @@ abstract contract PegManagerBase is IPegManagerBase, PegBase {
         IStreamManager _streamManager,
         ISignatureManager _signatureManager
     ) internal onlyInitializing {
-        // Validate that the addresses are not zero
         if (address(_signatureManager) == address(0)) {
             revert InvalidZeroAddress();
         }
         signatureManager = _signatureManager;
-
         __PegBase_init(_initialOwner, _accessManager, _committeeRegistry, _bitcoinManager, _rbtcBridge, _streamManager);
+    }
+
+    function _completeSlot(StreamPosition memory _streamInfo, bytes32 _acceptPeginTxid, bytes32 _txid) internal {
+        bool packetClosed = streamManager.completeSlot(_acceptPeginTxid, _txid);
+        if (packetClosed) {
+            committeeRegistry.releaseCommittee(_streamInfo.streamId, _streamInfo.packetNumber);
+        }
     }
 }

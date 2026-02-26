@@ -16,7 +16,7 @@ contract accessManagerTest is HelperContract {
         // Arrange
         address owner = accessManager.owner();
 
-        // Assert - expect events from all 5 contracts
+        // Assert - expect events from all pausable contracts
         vm.expectEmit(address(peginManager));
         emit PausableUpgradeable.Paused(address(accessManager));
         vm.expectEmit(address(pegoutManager));
@@ -28,6 +28,8 @@ contract accessManagerTest is HelperContract {
         vm.expectEmit(address(rbtcBridge));
         emit PausableUpgradeable.Paused(address(accessManager));
         vm.expectEmit(address(challengeManager));
+        emit PausableUpgradeable.Paused(address(accessManager));
+        vm.expectEmit(address(operatorTakeManager));
         emit PausableUpgradeable.Paused(address(accessManager));
 
         // Act
@@ -41,6 +43,7 @@ contract accessManagerTest is HelperContract {
         assertTrue(memberRegistry.isPaused());
         assertTrue(rbtcBridge.isPaused());
         assertTrue(challengeManager.isPaused());
+        assertTrue(operatorTakeManager.isPaused());
         assertTrue(accessManager.areContractsPaused());
     }
 
@@ -78,7 +81,7 @@ contract accessManagerTest is HelperContract {
         vm.prank(owner);
         accessManager.pause();
 
-        // Assert - expect events from all 5 contracts
+        // Assert - expect events from all pausable contracts
         vm.expectEmit(address(peginManager));
         emit PausableUpgradeable.Unpaused(address(accessManager));
         vm.expectEmit(address(pegoutManager));
@@ -90,6 +93,8 @@ contract accessManagerTest is HelperContract {
         vm.expectEmit(address(rbtcBridge));
         emit PausableUpgradeable.Unpaused(address(accessManager));
         vm.expectEmit(address(challengeManager));
+        emit PausableUpgradeable.Unpaused(address(accessManager));
+        vm.expectEmit(address(operatorTakeManager));
         emit PausableUpgradeable.Unpaused(address(accessManager));
 
         // Act
@@ -103,6 +108,7 @@ contract accessManagerTest is HelperContract {
         assertFalse(memberRegistry.isPaused());
         assertFalse(rbtcBridge.isPaused());
         assertFalse(challengeManager.isPaused());
+        assertFalse(operatorTakeManager.isPaused());
         assertFalse(accessManager.areContractsPaused());
     }
 
@@ -153,6 +159,7 @@ contract accessManagerTest is HelperContract {
         assertTrue(memberRegistry.isPaused());
         assertTrue(rbtcBridge.isPaused());
         assertTrue(challengeManager.isPaused());
+        assertTrue(operatorTakeManager.isPaused());
     }
 
     function test_areContractsPaused_Revert_InconsistentPauseState_SingleContractPaused() external {
@@ -235,5 +242,9 @@ contract accessManagerTest is HelperContract {
 
     function test_Success_PauserIsPauseManager_RbtcBridge() external view {
         assertEq(rbtcBridge.pauser(), address(accessManager));
+    }
+
+    function test_Success_OperatorTakeManagerIsSet() external view {
+        assertEq(address(accessManager.operatorTakeManager()), address(operatorTakeManager));
     }
 }

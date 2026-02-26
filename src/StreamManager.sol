@@ -21,6 +21,7 @@ import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {IBitcoinManager} from "src/interfaces/IBitcoinManager.sol";
 import {StreamPosition, PegStatus} from "src/interfaces/IPegCommonTypes.sol";
 import {Role} from "src/interfaces/ICommitteeRegistry.sol";
+import {IPegBase} from "src/interfaces/IPegBase.sol";
 
 /// @title Stream Manager
 /// @notice Manages streams for the union bridge system
@@ -211,6 +212,10 @@ contract StreamManager is IStreamManager, BaseProxy {
 
     /// @inheritdoc IStreamManager
     function getPacket(uint64 _streamId, uint64 _packetNumber) public view returns (Packet memory) {
+        return _getPacket(_streamId, _packetNumber);
+    }
+
+    function _getPacket(uint64 _streamId, uint64 _packetNumber) internal view returns (Packet memory) {
         if (_streamId >= streams.length) {
             revert StreamNotFoundById(_streamId);
         }
@@ -384,17 +389,17 @@ contract StreamManager is IStreamManager, BaseProxy {
 
     /// @inheritdoc IStreamManager
     function getCommitteeId(uint64 _streamId, uint64 _packetNumber) external view returns (uint128) {
-        return getPacket(_streamId, _packetNumber).committeeId;
+        return _getPacket(_streamId, _packetNumber).committeeId;
     }
 
     /// @inheritdoc IStreamManager
     function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes memory) {
-        return getPacket(_streamId, _packetNumber).committeePubKey;
+        return _getPacket(_streamId, _packetNumber).committeePubKey;
     }
 
     /// @inheritdoc IStreamManager
     function getEnablerScriptPubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes memory) {
-        return getPacket(_streamId, _packetNumber).enablerScriptPubKey;
+        return _getPacket(_streamId, _packetNumber).enablerScriptPubKey;
     }
 
     /// @inheritdoc IStreamManager
@@ -570,6 +575,44 @@ contract StreamManager is IStreamManager, BaseProxy {
     /// @inheritdoc IStreamManager
     function getStreamPosition(bytes32 _acceptPeginTxid) external view returns (StreamPosition memory) {
         return streamPositions[_acceptPeginTxid];
+    }
+
+    function _validatePegStatus(bytes32 _acceptPeginTxid, PegStatus _expectedStatus)
+        internal
+        view
+        returns (StreamPosition memory streamPosition)
+    {
+        streamPosition = streamPositions[_acceptPeginTxid];
+
+        if (streamPosition.pegStatus == PegStatus.NOT_REGISTERED) {
+            revert IPegBase.PeginNotRequested(_acceptPeginTxid);
+        }
+
+        if (streamPosition.pegStatus != _expectedStatus) {
+            revert IPegBase.InvalidPegStatus(streamPosition.pegStatus);
+        }
+
+        return streamPosition;
+    }
+
+    /// @inheritdoc IStreamManager
+    function validatePeginStatus(bytes32 _acceptPeginTxid, PegStatus _expectedStatus)
+        external
+        view
+        returns (StreamPosition memory)
+    {
+        return _validatePegStatus(_acceptPeginTxid, _expectedStatus);
+    }
+
+    /// @inheritdoc IStreamManager
+    function validatePegoutStatus(bytes32 _acceptPeginTxid, PegStatus _expectedStatus)
+        external
+        view
+        returns (StreamPosition memory streamPosition, uint128 committeeId, uint8 pegoutConfirmations)
+    {
+        streamPosition = _validatePegStatus(_acceptPeginTxid, _expectedStatus);
+        committeeId = _getPacket(streamPosition.streamId, streamPosition.packetNumber).committeeId;
+        pegoutConfirmations = _getStreamById(streamPosition.streamId).pegoutConfirmations;
     }
 
     /// @inheritdoc IStreamManager

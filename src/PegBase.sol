@@ -8,7 +8,6 @@ import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/ut
 import {IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
 import {IStreamManager} from "./interfaces/IStreamManager.sol";
 import {ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
-import {PegStatus, StreamPosition} from "./interfaces/IPegCommonTypes.sol";
 import {BaseProxy} from "./BaseProxy.sol";
 import {AccessManager} from "./AccessManager.sol";
 
@@ -50,6 +49,7 @@ abstract contract PegBase is IPegBase, BaseProxy, Pausable, ReentrancyGuardUpgra
         if (
             address(_bitcoinManager) == address(0) || address(_committeeRegistry) == address(0)
                 || address(_streamManager) == address(0) || address(_rbtcBridge) == address(0)
+                || address(_accessManager) == address(0)
         ) {
             revert InvalidZeroAddress();
         }
@@ -63,23 +63,5 @@ abstract contract PegBase is IPegBase, BaseProxy, Pausable, ReentrancyGuardUpgra
         // __Pauser_init is validating that _accessManager is not zero
         __Pauser_init(_accessManager);
         __ReentrancyGuard_init();
-    }
-
-    function _validatePegStatus(bytes32 _acceptPeginTxid, PegStatus _expectedStatus)
-        internal
-        view
-        returns (StreamPosition memory)
-    {
-        StreamPosition memory streamInfo = streamManager.getStreamPosition(_acceptPeginTxid);
-
-        if (streamInfo.pegStatus == PegStatus.NOT_REGISTERED) {
-            revert PeginNotRequested(_acceptPeginTxid);
-        }
-
-        if (streamInfo.pegStatus != _expectedStatus) {
-            revert InvalidPegStatus(streamInfo.pegStatus);
-        }
-
-        return streamInfo;
     }
 }

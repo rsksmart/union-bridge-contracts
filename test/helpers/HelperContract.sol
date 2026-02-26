@@ -12,6 +12,7 @@ import {SignatureManager} from "src/SignatureManager.sol";
 import {AccessManager} from "src/AccessManager.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
 import {ChallengeManager} from "src/ChallengeManager.sol";
+import {OperatorTakeManager} from "src/OperatorTakeManager.sol";
 import {RbtcBridge} from "src/RbtcBridge.sol";
 import {BridgeMock} from "./BridgeMock.sol";
 import {TestUtils} from "./TestUtils.sol";
@@ -30,7 +31,8 @@ import {
     BtcTxIn, BtcTxOut, BtcTransaction, BitcoinSignatureData, PrevoutData
 } from "src/interfaces/IBitcoinManager.sol";
 import {BtcTxSPVProof, StreamPosition, PegStatus} from "src/interfaces/IPegCommonTypes.sol";
-import {IPegoutManager, PegoutTempInfo} from "src/interfaces/IPegoutManager.sol";
+import {IOperatorTakeManager} from "src/interfaces/IOperatorTakeManager.sol";
+import {OperatorTakeInfo} from "src/interfaces/IOperatorTakeManager.sol";
 import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {BtcTxEncoder} from "src/libraries/BtcTxEncoder.sol";
@@ -85,6 +87,7 @@ abstract contract HelperContract is Test, TestUtils {
     PegoutManagerHarness internal pegoutManager;
     AccessManager internal accessManager;
     ChallengeManager internal challengeManager;
+    OperatorTakeManager internal operatorTakeManager;
 
     // Arrange
     uint64 internal constant VALUE = 1_000_000; // 0.01 BTC
@@ -106,6 +109,7 @@ abstract contract HelperContract is Test, TestUtils {
         accessManager = AccessManager(deployScript.accessManager());
         signatureManager = SignatureManager(deployScript.signatureManager());
         challengeManager = ChallengeManager(deployScript.challengeManager());
+        operatorTakeManager = OperatorTakeManager(deployScript.operatorTakeManager());
         // Set up bridge mock at bridge precompiled address
         bridgeMock = BridgeMock(deployScript.bridgeAddress());
         globalUserAddress = address(this);
@@ -588,7 +592,7 @@ abstract contract HelperContract is Test, TestUtils {
         return keccak256(
             abi.encodePacked(
                 Constants.PEGOUT_ID_VERSION,
-                pegoutManager.sequenceNumber(),
+                operatorTakeManager.sequenceNumber() + 1,
                 streamId,
                 packetNumber,
                 slotId,
@@ -984,12 +988,12 @@ abstract contract HelperContract is Test, TestUtils {
         setup_addMemberSignature_MultipleMembers(setup.pegoutTxid, firstHonestOpIndex, 2);
 
         // Trigger operator take and get the actual operator address selected by the contract
-        pegoutManager.triggerOperatorTake(setup.pegoutTxid);
+        operatorTakeManager.triggerOperatorTake(setup.acceptPeginTxid);
 
         // Get the actual operator that was selected from the contract state
-        PegoutTempInfo memory actualPegoutInfo = pegoutManager.getPegoutTempInfo(setup.acceptPeginTxid);
-        operatorAddress = actualPegoutInfo.operatorTakeAddress;
-        setup.pegoutId = actualPegoutInfo.pegoutId;
+        OperatorTakeInfo memory opInfo = operatorTakeManager.getOperatorTakeInfo(setup.acceptPeginTxid);
+        operatorAddress = opInfo.operatorTakeAddress;
+        setup.pegoutId = opInfo.pegoutId;
 
         setup.advanceFundsSPV = createBtcTxSPVProof(createAdvanceFundsTx(setup.userPubKey, VALUE, setup.pegoutId));
 
@@ -1037,7 +1041,7 @@ abstract contract HelperContract is Test, TestUtils {
         (operatorAddress, setup) = setup_reimbursementKickoff();
 
         vm.prank(operatorAddress);
-        pegoutManager.registerReimbursementKickoff(setup.acceptPeginTxid, setup.reimbursementKickoffSPV);
+        operatorTakeManager.registerReimbursementKickoff(setup.acceptPeginTxid, setup.reimbursementKickoffSPV);
     }
 
     function setup_challenge() internal returns (address operatorAddress, RegisterUserTakeSetup memory setup) {
@@ -1077,7 +1081,7 @@ abstract contract HelperContract is Test, TestUtils {
         (operatorAddress, setup) = setup_advanceFunds();
 
         vm.prank(operatorAddress);
-        pegoutManager.registerAdvanceFunds(setup.acceptPeginTxid, setup.advanceFundsSPV);
+        operatorTakeManager.registerAdvanceFunds(setup.acceptPeginTxid, setup.advanceFundsSPV);
 
         bridgeMock.setBtcBlockchainBestChainHeight(BEST_CHAIN_HEIGHT + 1);
     }
@@ -1102,25 +1106,17 @@ abstract contract HelperContract is Test, TestUtils {
         assertEq(reservedSlot.slotId, streamPosition.slotId, "Slot ID should match StreamPosition");
     }
 
-    function assertEventOperatorTakeTriggered(
-        RegisterUserTakeSetup memory setup,
-        address operatorAddress,
-        uint256 createdAt
-    ) internal {
-        MemberKeys memory keys = memberRegistry.getMemberPublicKeys(operatorAddress);
-        PegoutTempInfo memory currentInfo = pegoutManager.getPegoutTempInfo(setup.acceptPeginTxid);
+    function assertEventOperatorTakeTriggered(RegisterUserTakeSetup memory setup, address _operatorAddress) internal {
+        MemberKeys memory keys = memberRegistry.getMemberPublicKeys(_operatorAddress);
 
-        PegoutTempInfo memory expectedPegoutInfo = PegoutTempInfo({
-            userPubKey: setup.userPubKey,
-            createdAt: createdAt,
-            operatorTakeUpdatedAt: block.timestamp, // Updated when triggerOperatorTake is called
-            committeeId: COMMITTEE_ID_STREAM_1_COMMITTEE_1,
-            operatorTakeAddress: operatorAddress,
+        OperatorTakeInfo memory expectedOpInfo = OperatorTakeInfo({
+            operatorTakeUpdatedAt: block.timestamp,
+            operatorTakeAddress: _operatorAddress,
             operatorTakePubKey: keys.takePubKey,
             operatorDisputePubKey: keys.covenantPubKey,
             pegoutId: calculatePegoutId(keys.takePubKey, setup.stream.streamId, setup.packetNumber, setup.slotId),
-            advanceFundsBlockNumber: currentInfo.advanceFundsBlockNumber,
-            reimbursementKickoffTxid: currentInfo.reimbursementKickoffTxid
+            advanceFundsBlockNumber: 0,
+            reimbursementKickoffTxid: bytes32(0)
         });
 
         StreamPosition memory expectedStreamPosition = StreamPosition({
@@ -1130,10 +1126,10 @@ abstract contract HelperContract is Test, TestUtils {
             pegStatus: PegStatus.OP_SELECTED
         });
 
-        vm.expectEmit(address(pegoutManager));
-        emit IPegoutManager.OperatorTakeTriggered(
+        vm.expectEmit(address(operatorTakeManager));
+        emit IOperatorTakeManager.OperatorTakeTriggered(
             setup.pegoutTxid,
-            expectedPegoutInfo,
+            expectedOpInfo,
             expectedStreamPosition,
             block.timestamp,
             block.timestamp + TAKE_1_TIMEOUT_DEFAULT

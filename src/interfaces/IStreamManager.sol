@@ -341,6 +341,30 @@ interface IStreamManager {
     /// @return The stream position associated with the transaction ID
     function getStreamPosition(bytes32 _acceptPeginTxid) external view returns (StreamPosition memory);
 
+    /// @notice Validates peg-in status and returns the stream position
+    /// @param _acceptPeginTxid The accept peg-in transaction ID
+    /// @param _expectedStatus The expected peg status for the operation
+    /// @return streamPosition The stream position if validation passes
+    /// @dev Reverts with PeginNotRequested if the peg-in was not requested
+    /// @dev Reverts with InvalidPegStatus if the current status does not match the expected status
+    function validatePeginStatus(bytes32 _acceptPeginTxid, PegStatus _expectedStatus)
+        external
+        view
+        returns (StreamPosition memory streamPosition);
+
+    /// @notice Validates peg-out status and returns stream position, committee ID, and peg-out confirmations
+    /// @param _acceptPeginTxid The accept peg-in transaction ID
+    /// @param _expectedStatus The expected peg status for the operation
+    /// @return streamPosition The stream position if validation passes
+    /// @return committeeId The committee ID for the packet
+    /// @return pegoutConfirmations The number of confirmations required for peg-out transactions
+    /// @dev Reverts with PeginNotRequested if the peg-in was not requested
+    /// @dev Reverts with InvalidPegStatus if the current status does not match the expected status
+    function validatePegoutStatus(bytes32 _acceptPeginTxid, PegStatus _expectedStatus)
+        external
+        view
+        returns (StreamPosition memory streamPosition, uint128 committeeId, uint8 pegoutConfirmations);
+
     /// @notice Gets the length of the slots in a packet
     /// @param _streamId The ID of the stream
     /// @param _packetNumber The packet number

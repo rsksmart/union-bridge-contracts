@@ -11,11 +11,13 @@ import {BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
-import {IChallengeManager} from "src/ChallengeManager.sol";
+import {IChallengeManager} from "src/interfaces/IChallengeManager.sol";
+import {IOperatorTakeManager} from "src/interfaces/IOperatorTakeManager.sol";
 
 contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
     PegoutManager pegoutManager;
     IChallengeManager challengeManager;
+    IOperatorTakeManager operatorTakeManager;
     IStreamManager streamManager;
 
     uint64 amount;
@@ -32,6 +34,7 @@ contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
     function setUp(bytes32 _acceptPeginTxid) internal {
         pegoutManager = PegoutManager(getPegoutManager());
         challengeManager = getChallengeManager();
+        operatorTakeManager = getOperatorTakeManager();
 
         ICommitteeRegistry registry = getCommitteeRegistry();
         IMemberRegistry memberRegistry = registry.memberRegistry();
@@ -51,7 +54,7 @@ contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
         Packet memory packet = streamManager.getPacket(expectedStreamId, expectedPacketNumber);
         committeePubKey = packet.committeePubKey;
 
-        expectedPegoutId = pegoutManager.getPegoutTempInfo(_acceptPeginTxid).pegoutId;
+        expectedPegoutId = operatorTakeManager.getOperatorTakeInfo(_acceptPeginTxid).pegoutId;
     }
 
     function run(bytes32 _acceptPeginTxid) public {
@@ -63,7 +66,7 @@ contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
 
         // Register advance funds
         vm.startBroadcast(getDeployerKey());
-        pegoutManager.registerAdvanceFunds(_acceptPeginTxid, advanceFundsSPV);
+        operatorTakeManager.registerAdvanceFunds(_acceptPeginTxid, advanceFundsSPV);
         vm.stopBroadcast();
 
         // REIMBURSEMENT KICKOFF
@@ -73,7 +76,7 @@ contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
 
         // Register reimbursement kickoff
         vm.startBroadcast(getDeployerKey());
-        pegoutManager.registerReimbursementKickoff(_acceptPeginTxid, kickoffTxSPVProof);
+        operatorTakeManager.registerReimbursementKickoff(_acceptPeginTxid, kickoffTxSPVProof);
         vm.stopBroadcast();
 
         // CHALLENGE
@@ -102,7 +105,7 @@ contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
 
         // Register operator won
         vm.startBroadcast(getDeployerKey());
-        pegoutManager.registerOperatorWon(wonTxSPVProof);
+        operatorTakeManager.registerOperatorWon(wonTxSPVProof);
         vm.stopBroadcast();
 
         Slot memory slot = streamManager.getSlot(expectedStreamId, expectedPacketNumber, expectedSlotId);

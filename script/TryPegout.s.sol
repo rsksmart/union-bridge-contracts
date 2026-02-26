@@ -6,7 +6,7 @@ import {PegoutManager} from "src/PegoutManager.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
-import {SlotLocation, Stream} from "src/interfaces/IStreamManager.sol";
+import {Slot, SlotLocation, Stream} from "src/interfaces/IStreamManager.sol";
 import {StreamManager} from "src/StreamManager.sol";
 
 contract TryPegoutScript is ScriptUtils, ContractAddressManager {
@@ -34,10 +34,8 @@ contract TryPegoutScript is ScriptUtils, ContractAddressManager {
         pegoutManager.tryPegout{value: BtcHelper.satoshiToWei(amountInSatoshi)}(userPubKey);
         vm.stopBroadcast();
 
-        bytes32 pegoutTxid = pegoutManager.getPegoutTxid(stream.streamId, slotLocation.packetId, slotLocation.slotId);
-        if (pegoutTxid == bytes32(0)) {
-            revert("Pegout not accepted");
-        }
+        Slot memory slot = streamManager.getSlot(stream.streamId, slotLocation.packetId, slotLocation.slotId);
+        bytes32 pegoutTxid = pegoutManager.getPegoutStartInfo(slot.acceptPeginTx).pegoutTxid;
 
         // console.log("=== Pegout accepted successfully ===");
         // console.log("pegoutTxid");

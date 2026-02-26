@@ -49,9 +49,9 @@
    - **Description**: Returns the accept peg-in transaction id for a given peg-out transaction id.
    - **Impact**: Use for reverse lookup from pegout txid to accept pegin txid.
 
-3. **`getChallengeTempInfo`** (in `IChallengeManager`)
-   - **Signature**: `function getChallengeTempInfo(bytes32 _acceptPeginTxid) external view returns (ChallengeTempInfo memory)`
-   - **Description**: Returns temporary challenge information (challengeTxid, revealTxid) for a given accept peg-in txid.
+3. **`getChallengeInfo`** (in `IChallengeManager`)
+   - **Signature**: `function getChallengeInfo(bytes32 _acceptPeginTxid) external view returns (ChallengeInfo memory)`
+   - **Description**: Returns challenge information (challengeTxid, revealTxid) for a given accept peg-in txid.
    - **Impact**: Query challenge state when integrating with ChallengeManager.
 
 4. **`isWhitelisted`**, **`whitelistAddress`**, **`whitelistAddresses`**, **`unwhitelistAddress`**, **`unwhitelistAddresses`** (in `ICommitteeRegistry`)

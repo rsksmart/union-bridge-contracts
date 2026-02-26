@@ -333,7 +333,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
 
         // Validate the peg in request tx exists and the status
         bytes32 acceptPeginTxid = acceptPegins[requestPeginTxid];
-        StreamPosition memory streamInfo = _validatePegStatus(acceptPeginTxid, PegStatus.REGISTERED);
+        StreamPosition memory streamInfo = streamManager.validatePeginStatus(acceptPeginTxid, PegStatus.REGISTERED);
 
         // Calculate userReimbursementTxid from BtcTransaction
         bytes32 userReimbursementTxid = bitcoinManager.getBtcTxid(_userReimbursementTxSPVProof.btcTx);
@@ -409,7 +409,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
 
         // Validate the peg in request tx exists and the status
         bytes32 acceptPeginTxid = acceptPegins[requestPeginTxid];
-        StreamPosition memory streamInfo = _validatePegStatus(acceptPeginTxid, PegStatus.REGISTERED);
+        StreamPosition memory streamInfo = streamManager.validatePeginStatus(acceptPeginTxid, PegStatus.REGISTERED);
 
         // Calculate userReimbursementTxid from BtcTransaction
         bytes32 rejectPeginTxid = bitcoinManager.getBtcTxid(_rejectPeginTxSPVProof.btcTx);
