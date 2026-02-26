@@ -35,10 +35,15 @@ interface IPauseManager {
     /// @param _pegoutManager The address of the Pegout Manager contract
     function setPegoutManager(address _pegoutManager) external;
 
-    /// @notice Sets the Pegout Manager contract address
+    /// @notice Sets the Challenge Manager contract address
     /// @dev Only callable by the contract owner
     /// @param _challengeManager The address of the Challenge Manager contract
     function setChallengeManager(address _challengeManager) external;
+
+    /// @notice Sets the OperatorTakeManager contract address
+    /// @dev Only callable by the contract owner
+    /// @param _operatorTakeManager The address of the OperatorTakeManager contract
+    function setOperatorTakeManager(address _operatorTakeManager) external;
 
     /// @notice Sets the member registry contract address
     /// @dev Only callable by the contract owner

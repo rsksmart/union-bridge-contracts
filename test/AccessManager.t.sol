@@ -23,6 +23,7 @@ contract AccessManagerTest is Test, HelperContract {
         assertEq(address(accessManager.committeeRegistry()), address(registry));
         assertEq(address(accessManager.memberRegistry()), address(memberRegistry));
         assertEq(address(accessManager.challengeManager()), address(challengeManager));
+        assertEq(address(accessManager.operatorTakeManager()), address(operatorTakeManager));
     }
 
     // ============ canModifyPegStatus Tests ============
@@ -40,6 +41,11 @@ contract AccessManagerTest is Test, HelperContract {
     function test_canModifyPegStatus_Success_CallFromChallengeManager() external view {
         // Act & Assert - should not revert
         accessManager.canModifyPegStatus(address(challengeManager));
+    }
+
+    function test_canModifyPegStatus_Success_CallFromOperatorTakeManager() external view {
+        // Act & Assert - should not revert
+        accessManager.canModifyPegStatus(address(operatorTakeManager));
     }
 
     function test_canModifyPegStatus_Revert_UnauthorizedAddress() external {
@@ -131,6 +137,11 @@ contract AccessManagerTest is Test, HelperContract {
         accessManager.canReleaseCommittee(address(peginManager));
     }
 
+    function test_canReleaseCommittee_Success_CallFromOperatorTakeManager() external view {
+        // Act & Assert - should not revert
+        accessManager.canReleaseCommittee(address(operatorTakeManager));
+    }
+
     function test_canReleaseCommittee_Revert_UnauthorizedAddress() external {
         // Assert
         vm.expectRevert(
@@ -139,6 +150,16 @@ contract AccessManagerTest is Test, HelperContract {
 
         // Act
         accessManager.canReleaseCommittee(unauthorizedAddress);
+    }
+
+    function test_canReleaseCommittee_Revert_CallFromChallengeManager() external {
+        // Assert - should  revert
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessManager.UnauthorizedToReleaseCommittee.selector, address(challengeManager))
+        );
+
+        // Act
+        accessManager.canReleaseCommittee(address(challengeManager));
     }
 
     function test_canReleaseCommittee_Revert_CallFromCommitteeRegistry() external {
@@ -163,9 +184,9 @@ contract AccessManagerTest is Test, HelperContract {
 
     // ============ canSelectTakeOperator Tests ============
 
-    function test_canSelectTakeOperator_Success_CallFromPegoutManager() external view {
+    function test_canSelectTakeOperator_Success_CallFromOperatorTakeManager() external view {
         // Act & Assert - should not revert
-        accessManager.canSelectTakeOperator(address(pegoutManager));
+        accessManager.canSelectTakeOperator(address(operatorTakeManager));
     }
 
     function test_canSelectTakeOperator_Revert_UnauthorizedAddress() external {
@@ -483,9 +504,9 @@ contract AccessManagerTest is Test, HelperContract {
 
     // ============ canSetBaseEvent Tests ============
 
-    function test_canSetBaseEvent_Success_CallFromPegoutManager() external view {
+    function test_canSetBaseEvent_Success_CallFromOperatorTakeManager() external view {
         // Act & Assert - should not revert
-        accessManager.canSetBaseEvent(address(pegoutManager));
+        accessManager.canSetBaseEvent(address(operatorTakeManager));
     }
 
     function test_canSetBaseEvent_Revert_UnauthorizedAddress() external {
@@ -494,6 +515,16 @@ contract AccessManagerTest is Test, HelperContract {
 
         // Act
         accessManager.canSetBaseEvent(unauthorizedAddress);
+    }
+
+    function test_canSetBaseEvent_Revert_CallFromChallengeManager() external {
+        // Assert - should  revert
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessManager.UnauthorizedToSetBaseEvent.selector, address(challengeManager))
+        );
+
+        // Act
+        accessManager.canSetBaseEvent(address(challengeManager));
     }
 
     function test_canSetBaseEvent_Revert_CallFromPeginManager() external {
@@ -524,13 +555,90 @@ contract AccessManagerTest is Test, HelperContract {
         accessManager.canSetBaseEvent(address(memberRegistry));
     }
 
-    function test_canSetBaseEvent_Revert_CallFromChallengeManager() external {
+    function test_canSetBaseEvent_Revert_CallFromPegoutManager() external {
         // Assert
         vm.expectRevert(
-            abi.encodeWithSelector(IAccessManager.UnauthorizedToSetBaseEvent.selector, address(challengeManager))
+            abi.encodeWithSelector(IAccessManager.UnauthorizedToSetBaseEvent.selector, address(pegoutManager))
         );
 
         // Act
-        accessManager.canSetBaseEvent(address(challengeManager));
+        accessManager.canSetBaseEvent(address(pegoutManager));
+    }
+
+    // ============ revertIfNotChallengeManager Tests ============
+
+    function test_revertIfNotChallengeManager_Success_CallFromChallengeManager() external view {
+        // Act & Assert - should not revert
+        accessManager.revertIfNotChallengeManager(address(challengeManager));
+    }
+
+    function test_revertIfNotChallengeManager_Revert_UnauthorizedAddress() external {
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessManager.CallerIsNotChallengeManager.selector, unauthorizedAddress)
+        );
+
+        // Act
+        accessManager.revertIfNotChallengeManager(unauthorizedAddress);
+    }
+
+    function test_revertIfNotChallengeManager_Revert_CallFromOperatorTakeManager() external {
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessManager.CallerIsNotChallengeManager.selector, address(operatorTakeManager))
+        );
+
+        // Act
+        accessManager.revertIfNotChallengeManager(address(operatorTakeManager));
+    }
+
+    function test_revertIfNotChallengeManager_Revert_CallFromPeginManager() external {
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessManager.CallerIsNotChallengeManager.selector, address(peginManager))
+        );
+
+        // Act
+        accessManager.revertIfNotChallengeManager(address(peginManager));
+    }
+
+    function test_revertIfNotChallengeManager_Revert_CallFromPegoutManager() external {
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessManager.CallerIsNotChallengeManager.selector, address(pegoutManager))
+        );
+
+        // Act
+        accessManager.revertIfNotChallengeManager(address(pegoutManager));
+    }
+
+    function test_revertIfNotChallengeManager_Revert_CallFromMemberRegistry() external {
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessManager.CallerIsNotChallengeManager.selector, address(memberRegistry))
+        );
+
+        // Act
+        accessManager.revertIfNotChallengeManager(address(memberRegistry));
+    }
+
+    function test_revertIfNotChallengeManager_Revert_CallFromRbtcBridge() external {
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessManager.CallerIsNotChallengeManager.selector, address(rbtcBridge))
+        );
+
+        // Act
+        accessManager.revertIfNotChallengeManager(address(rbtcBridge));
+    }
+
+    function test_revertIfNotChallengeManager_Revert_CallFromSignatureManager() external {
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessManager.CallerIsNotChallengeManager.selector, address(signatureManager))
+        );
+
+        // Act
+        accessManager.revertIfNotChallengeManager(address(signatureManager));
     }
 }

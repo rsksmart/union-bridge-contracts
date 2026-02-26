@@ -2544,8 +2544,8 @@ contract CommitteeRegistryTest is Test, HelperContract {
         bytes32 expectedDisputePubKey = getMemberDisputePubKey(expectedOperator);
         bytes32 expectedTakePubKey = memberRegistry.getMemberPublicKeys(expectedOperator).takePubKey;
 
-        // Act - Call through pegoutManager since it's onlyPegManager
-        vm.prank(address(pegoutManager));
+        // Act - Call through operatorTakeManager since it's onlyPegManager
+        vm.prank(address(operatorTakeManager));
         (address operatorAddress, bytes32 disputePubKey, bytes32 takePubKey) =
             registry.selectTakeOperator(committeeId, signatureData, missingNonces);
 
@@ -2596,8 +2596,8 @@ contract CommitteeRegistryTest is Test, HelperContract {
         bytes32 expectedDisputePubKey = getMemberDisputePubKey(expectedOperator);
         bytes32 expectedTakePubKey = memberRegistry.getMemberPublicKeys(expectedOperator).takePubKey;
 
-        // Act - Call through pegoutManager since it's onlyPegManager
-        vm.prank(address(pegoutManager));
+        // Act - Call through operatorTakeManager since it's onlyPegManager
+        vm.prank(address(operatorTakeManager));
         (address operatorAddress, bytes32 disputePubKey, bytes32 takePubKey) =
             registry.selectTakeOperator(committeeId, signatureData, missingNonces);
 
@@ -2653,14 +2653,14 @@ contract CommitteeRegistryTest is Test, HelperContract {
         bytes32 expectedDisputePubKey = getMemberDisputePubKey(expectedOperator);
         bytes32 expectedTakePubKey = memberRegistry.getMemberPublicKeys(expectedOperator).takePubKey;
 
-        // Select the operator that has the nonce - Call through pegoutManager since it's onlyPegManager
-        vm.prank(address(pegoutManager));
+        // Select the operator that has the nonce - Call through operatorTakeManager since it's canSelectTakeOperator
+        vm.prank(address(operatorTakeManager));
         (address operatorAddress1, bytes32 disputePubKey1, bytes32 takePubKey1) =
             registry.selectTakeOperator(committeeId, signatureData, missingNonces);
 
-        // Act - Call through pegoutManager since it's onlyPegManager
+        // Act - Call through operatorTakeManager since it's canSelectTakeOperator
         // Repick the operator that has the nonce
-        vm.prank(address(pegoutManager));
+        vm.prank(address(operatorTakeManager));
         (address operatorAddress2, bytes32 disputePubKey2, bytes32 takePubKey2) =
             registry.selectTakeOperator(committeeId, signatureData, missingNonces);
 
@@ -2689,46 +2689,46 @@ contract CommitteeRegistryTest is Test, HelperContract {
         // Assert
         vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.TakeOperatorNotFound.selector, committeeId));
 
-        // Act - Call through pegoutManager since it's onlyPegManager
-        vm.prank(address(pegoutManager));
+        // Act - Call through operatorTakeManager since it's canSelectTakeOperator
+        vm.prank(address(operatorTakeManager));
         registry.selectTakeOperator(committeeId, signatureData, missingNonces);
     }
 
-    function test_isMemberInCommittee_Success_True() external {
+    function test_validateMemberInCommittee_Success() external {
         // Arrange
         (Committee memory expectedCommittee, uint128 committeeId) = setup_completeCommittee();
         address memberAddress = expectedCommittee.members[0].memberAddress;
 
-        // Act
-        bool isMember = registry.isMemberInCommittee(committeeId, memberAddress);
-
-        // Assert
-        assertTrue(isMember, "Member should be in committee");
+        // Act & Assert - should not revert
+        vm.prank(memberAddress);
+        registry.validateMemberInCommittee(committeeId, memberAddress);
     }
 
-    function test_isMemberInCommittee_Success_False_WrongAddress() external {
+    function test_validateMemberInCommittee_Reverts_WrongAddress() external {
         // Arrange
         (, uint128 committeeId) = setup_completeCommittee();
         address nonMemberAddress = vm.addr(999); // Address not in committee
 
-        // Act
-        bool isMember = registry.isMemberInCommittee(committeeId, nonMemberAddress);
-
-        // Assert
-        assertFalse(isMember, "Address should not be in committee");
+        // Act & Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(ICommitteeRegistry.MemberNotInCommittee.selector, committeeId, nonMemberAddress)
+        );
+        vm.prank(nonMemberAddress);
+        registry.validateMemberInCommittee(committeeId, nonMemberAddress);
     }
 
-    function test_isMemberInCommittee_Success_False_WrongCommittee() external {
+    function test_validateMemberInCommittee_Reverts_WrongCommittee() external {
         // Arrange
         (Committee memory expectedCommittee, uint128 committeeId) = setup_completeCommittee();
         address memberAddress = expectedCommittee.members[0].memberAddress;
         uint128 wrongCommitteeId = committeeId + 1; // Non-existent committee
 
-        // Act
-        bool isMember = registry.isMemberInCommittee(wrongCommitteeId, memberAddress);
-
-        // Assert
-        assertFalse(isMember, "Address should not be in committee");
+        // Act & Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(ICommitteeRegistry.MemberNotInCommittee.selector, wrongCommitteeId, memberAddress)
+        );
+        vm.prank(memberAddress);
+        registry.validateMemberInCommittee(wrongCommitteeId, memberAddress);
     }
 
     // ==================== TESTNET ONLY FUNCTION TESTS ====================

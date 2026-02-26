@@ -86,6 +86,6 @@ echo "================ ADVANCE $RPC TIME TO $TIMESTAMP ================"
 cast rpc evm_setNextBlockTimestamp $TIMESTAMP --rpc-url $RPC
 cast rpc evm_mine --rpc-url $RPC
 # Start the operator take flow (advance funds and reimbursement kickoff)
-bash "$SCRIPT_DIR/operator-take/trigger-operator-take.sh" -h "$PEGOUT_TXID" $ALPHANET_FLAG
+bash "$SCRIPT_DIR/operator-take/trigger-operator-take.sh" -a "$ACCEPT_PEGIN_TXID" $ALPHANET_FLAG
 # Register operator won - (this challenges the reimbursement kickoff, then reveals the input and finally registers the operator won)
 bash "$SCRIPT_DIR/operator-take/register-operator-won.sh" -a "$ACCEPT_PEGIN_TXID" $ALPHANET_FLAG

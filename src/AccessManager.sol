@@ -20,7 +20,10 @@ contract AccessManager is IAccessManager, PauseManager {
 
     /// @inheritdoc IAccessManager
     function canModifyPegStatus(address _caller) external view {
-        if (_caller != peginManager && _caller != pegoutManager && _caller != challengeManager) {
+        if (
+            _caller != peginManager && _caller != pegoutManager && _caller != challengeManager
+                && _caller != operatorTakeManager
+        ) {
             revert UnauthorizedToModifyPegStatus(_caller);
         }
     }
@@ -34,14 +37,14 @@ contract AccessManager is IAccessManager, PauseManager {
 
     /// @inheritdoc IAccessManager
     function canReleaseCommittee(address _caller) external view {
-        if (_caller != peginManager && _caller != pegoutManager) {
+        if (_caller != peginManager && _caller != pegoutManager && _caller != operatorTakeManager) {
             revert UnauthorizedToReleaseCommittee(_caller);
         }
     }
 
     /// @inheritdoc IAccessManager
     function canSelectTakeOperator(address _caller) external view {
-        if (_caller != pegoutManager) {
+        if (_caller != operatorTakeManager) {
             revert UnauthorizedToSelectTakeOperator(_caller);
         }
     }
@@ -90,7 +93,7 @@ contract AccessManager is IAccessManager, PauseManager {
 
     /// @inheritdoc IAccessManager
     function canSetBaseEvent(address _caller) external view {
-        if (_caller != pegoutManager) {
+        if (_caller != operatorTakeManager) {
             revert UnauthorizedToSetBaseEvent(_caller);
         }
     }

@@ -5,16 +5,6 @@ import {console} from "forge-std/console.sol";
 import {StdStyle} from "forge-std/StdStyle.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
-import {AccessManager} from "src/AccessManager.sol";
-import {StreamManager} from "src/StreamManager.sol";
-import {PegoutManager} from "src/PegoutManager.sol";
-import {CommitteeRegistry} from "src/CommitteeRegistry.sol";
-import {MemberRegistry} from "src/MemberRegistry.sol";
-import {PeginManager} from "src/PeginManager.sol";
-import {ChallengeManager} from "src/ChallengeManager.sol";
-import {BitcoinManager} from "src/BitcoinManager.sol";
-import {SignatureManager} from "src/SignatureManager.sol";
-import {RbtcBridge} from "src/RbtcBridge.sol";
 import {BaseProxy} from "src/BaseProxy.sol";
 
 /// @title OwnershipManager

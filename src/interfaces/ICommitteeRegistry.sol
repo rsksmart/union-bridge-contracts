@@ -324,10 +324,10 @@ interface ICommitteeRegistry {
         view
         returns (CommunicationData[] memory communicationData);
 
-    /// @notice Checks if a member is part of a specific committee
+    /// @notice Validates that a member is part of a specific committee; reverts if not
     /// @param _committeeId The committee ID
     /// @param _memberAddress The address of the member to check
-    function isMemberInCommittee(uint128 _committeeId, address _memberAddress) external view returns (bool);
+    function validateMemberInCommittee(uint128 _committeeId, address _memberAddress) external view;
 
     /// @notice Sets the Whitelister address
     /// @dev Only callable by the contract owner

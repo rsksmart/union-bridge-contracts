@@ -418,8 +418,8 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
     }
 
     /// @inheritdoc ICommitteeRegistry
-    function isMemberInCommittee(uint128 _committeeId, address _memberAddress) external view returns (bool) {
-        return committeesData[_committeeId][_memberAddress].inCommittee;
+    function validateMemberInCommittee(uint128 _committeeId, address _memberAddress) external view {
+        _isInCommitteeOrRevert(_committeeId, _memberAddress);
     }
 
     /// @inheritdoc ICommitteeRegistry

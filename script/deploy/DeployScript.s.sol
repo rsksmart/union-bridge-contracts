@@ -12,6 +12,7 @@ import {SignatureManager} from "src/SignatureManager.sol";
 import {AccessManager} from "src/AccessManager.sol";
 import {RbtcBridge} from "src/RbtcBridge.sol";
 import {ChallengeManager} from "src/ChallengeManager.sol";
+import {OperatorTakeManager} from "src/OperatorTakeManager.sol";
 import {DeployImplAndProxy, DeployedContracts} from "./01_DeployImplAndProxy.s.sol";
 
 contract DeployScript is Script {
@@ -26,6 +27,7 @@ contract DeployScript is Script {
     SignatureManager public signatureManager;
     AccessManager public accessManager;
     ChallengeManager public challengeManager;
+    OperatorTakeManager public operatorTakeManager;
     address public upgradableOwner;
     address payable public bridgeAddress;
 
@@ -49,5 +51,6 @@ contract DeployScript is Script {
         upgradableOwner = deployResults.upgradableOwner;
         bridgeAddress = deployResults.bridgeAddress;
         challengeManager = deployResults.challengeManager;
+        operatorTakeManager = deployResults.operatorTakeManager;
     }
 }

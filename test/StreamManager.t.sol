@@ -1912,6 +1912,23 @@ contract StreamManagerTest is Test, HelperContract {
         return streamSettings;
     }
 
+    function test_getFilledSlotsCount_Success() external {
+        // Arrange
+        bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+        uint64 amount = VALUE;
+        Stream memory stream = streamManager.getStream(amount);
+        uint256 amountInWei = BtcHelper.satoshiToWei(amount);
+
+        // Act & Assert - Initially 0 filled slots
+        assertEq(streamManager.getFilledSlotsCount(stream.streamId), 0, "Filled slot count should be 0");
+
+        // Arrange
+        setup_multipleRequestAndAcceptPeginFlows(1);
+
+        // Act & Assert - After one filled slot
+        assertEq(streamManager.getFilledSlotsCount(stream.streamId), 1, "Filled slot count should be 1");
+    }
+
     // ==================== TESTNET ONLY FUNCTION TESTS ====================
 
     function test_restartStreamPointers_TESTNET_Revert_OwnableUnauthorizedAccount() external {

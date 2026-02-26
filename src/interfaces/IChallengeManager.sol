@@ -4,9 +4,9 @@ pragma solidity ^0.8.20;
 import {BtcTxSPVProof} from "./IPegCommonTypes.sol";
 import {StreamPosition} from "./IPegCommonTypes.sol";
 
-/// @notice Temporary information stored during challenge processing
+/// @notice Information stored during challenge processing
 /// @dev Contains data needed for challenge transaction validation
-struct ChallengeTempInfo {
+struct ChallengeInfo {
     /// @notice The transaction id of the challenge transaction
     bytes32 challengeTxid;
     /// @notice The transaction id of the input reveal transaction
@@ -16,10 +16,10 @@ struct ChallengeTempInfo {
 /// @title IChallengeManager
 /// @notice Interface for managing challenge operations
 interface IChallengeManager {
-    /// @notice Gets the temporary challenge information for a given accept peg-in transaction id
+    /// @notice Gets the challenge information for a given accept peg-in transaction id
     /// @param _acceptPeginTxid The accept peg-in transaction id
-    /// @return The temporary challenge information
-    function getChallengeTempInfo(bytes32 _acceptPeginTxid) external view returns (ChallengeTempInfo memory);
+    /// @return The challenge information
+    function getChallengeInfo(bytes32 _acceptPeginTxid) external view returns (ChallengeInfo memory);
 
     /// @notice Registers a challenge for a peg-out transaction
     /// @dev Validates the SPV proof and updates the peg-out status accordingly
@@ -83,7 +83,6 @@ interface IChallengeManager {
     );
 
     // ===================== Errors =====================
-
     /// @notice Thrown when the reimbursement kickoff txid does not match the expected value
     /// @param actual The actual reimbursement kickoff txid provided
     /// @param expected The expected reimbursement kickoff txid

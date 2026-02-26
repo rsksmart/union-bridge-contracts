@@ -251,10 +251,6 @@ interface IBitcoinManager {
     /// @param timelockBlocks The invalid timelock blocks that was provided
     error InvalidTimelockBlocks(uint32 timelockBlocks);
 
-    /// @notice Thrown when a public key has invalid length
-    /// @param length The invalid length that was provided
-    error InvalidPublicKeyLength(uint256 length);
-
     /// @notice Error thrown when the committee public key has an invalid length
     /// @param length The actual length provided
     /// @param expected The expected length (33 bytes)
