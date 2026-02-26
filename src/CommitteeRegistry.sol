@@ -752,6 +752,42 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
     }
 
     /// @inheritdoc ICommitteeRegistry
+    function demoteOperatorToWatchtower(uint128 _committeeId, address _memberAddress) external onlyOwner {
+        Committee storage committee = _getCommittee(_committeeId);
+
+        if (committee.isPending) {
+            revert CommitteeIsNotActive(_committeeId);
+        }
+
+        uint256 membersLength = committee.members.length;
+        uint256 operatorCount = 0;
+        uint256 memberIndex;
+        bool found = false;
+
+        for (uint256 i = 0; i < membersLength; i++) {
+            if (committee.members[i].role == Role.OPERATOR) {
+                operatorCount++;
+                if (committee.members[i].memberAddress == _memberAddress) {
+                    memberIndex = i;
+                    found = true;
+                }
+            }
+        }
+
+        if (!found) {
+            revert MemberIsNotOperatorInCommittee(_committeeId, _memberAddress);
+        }
+
+        if (operatorCount - 1 < minCommitteeOperators) {
+            revert DemotionWouldViolateMinOperators(_committeeId, operatorCount, minCommitteeOperators);
+        }
+
+        committee.members[memberIndex].role = Role.WATCHTOWER;
+
+        emit OperatorDemotedToWatchtower(_committeeId, _memberAddress);
+    }
+
+    /// @inheritdoc ICommitteeRegistry
     function releaseCommittee(uint64 _streamId, uint64 _packetNumber) external {
         // Verify that the caller has permission to release a committee
         accessManager.canReleaseCommittee(_msgSender());

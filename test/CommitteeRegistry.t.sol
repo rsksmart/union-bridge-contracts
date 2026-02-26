@@ -2762,4 +2762,170 @@ contract CommitteeRegistryTest is Test, HelperContract {
     }
 
     // ==================== END TESTNET ONLY FUNCTION TESTS ====================
+
+    function _findFirstMemberWithRole(CommitteeMember[] memory members, Role role)
+        private
+        pure
+        returns (address, uint256)
+    {
+        for (uint256 i = 0; i < members.length; i++) {
+            if (members[i].role == role) {
+                return (members[i].memberAddress, i);
+            }
+        }
+        return (address(0), 0);
+    }
+
+    function test_demoteOperatorToWatchtower_Success() external {
+        // Arrange
+        (Committee memory committee, uint128 committeeId) = setup_completeCommittee();
+        (address operatorAddress, uint256 operatorIndex) = _findFirstMemberWithRole(committee.members, Role.OPERATOR);
+
+        // Assert
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.OperatorDemotedToWatchtower(committeeId, operatorAddress);
+
+        // Act
+        vm.prank(registry.owner());
+        registry.demoteOperatorToWatchtower(committeeId, operatorAddress);
+
+        // Assert - role updated in storage
+        CommitteeMember[] memory updatedMembers = registry.getCommitteeMembers(committeeId);
+        assertEq(uint256(updatedMembers[operatorIndex].role), uint256(Role.WATCHTOWER), "Should now be WATCHTOWER");
+    }
+
+    function test_demoteOperatorToWatchtower_Success_ReEnrollsAsWatchtowerOnRelease() external {
+        // Arrange
+        (Committee memory committee, uint128 committeeId) = setup_completeCommittee();
+        uint64 streamId = committee.streamId;
+        StreamDenomination denomination = StreamDenomination(streamId);
+        (address operatorAddress,) = _findFirstMemberWithRole(committee.members, Role.OPERATOR);
+
+        // Demote the operator
+        vm.prank(registry.owner());
+        registry.demoteOperatorToWatchtower(committeeId, operatorAddress);
+
+        // Act - release the committee (packet 0 is the first packet created by setup_completeCommittee)
+        vm.prank(address(pegoutManager));
+        registry.releaseCommittee(streamId, 0);
+
+        // Assert - demoted member is re-enrolled as WATCHTOWER, not OPERATOR
+        address[] memory operatorCandidates = memberRegistry.getCommitteeCandidates(denomination, Role.OPERATOR);
+        address[] memory watchtowerCandidates = memberRegistry.getCommitteeCandidates(denomination, Role.WATCHTOWER);
+
+        bool inOperators = false;
+        for (uint256 i = 0; i < operatorCandidates.length; i++) {
+            if (operatorCandidates[i] == operatorAddress) {
+                inOperators = true;
+                break;
+            }
+        }
+        assertFalse(inOperators, "Demoted member should not be re-enrolled as operator");
+
+        bool inWatchtowers = false;
+        for (uint256 i = 0; i < watchtowerCandidates.length; i++) {
+            if (watchtowerCandidates[i] == operatorAddress) {
+                inWatchtowers = true;
+                break;
+            }
+        }
+        assertTrue(inWatchtowers, "Demoted member should be re-enrolled as watchtower");
+    }
+
+    function test_demoteOperatorToWatchtower_Revert_OwnableUnauthorizedAccount() external {
+        // Arrange
+        (Committee memory committee, uint128 committeeId) = setup_completeCommittee();
+        (address operatorAddress,) = _findFirstMemberWithRole(committee.members, Role.OPERATOR);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+
+        // Act
+        registry.demoteOperatorToWatchtower(committeeId, operatorAddress);
+    }
+
+    function test_demoteOperatorToWatchtower_Revert_CommitteeNotFound() external {
+        // Arrange
+        uint128 nonExistentCommitteeId = 999;
+        address owner = registry.owner();
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.CommitteeNotFound.selector, nonExistentCommitteeId));
+
+        // Act
+        vm.prank(owner);
+        registry.demoteOperatorToWatchtower(nonExistentCommitteeId, vm.addr(1));
+    }
+
+    function test_demoteOperatorToWatchtower_Revert_CommitteeIsNotActive() external {
+        // Arrange - pending committee (not yet active)
+        setup_pendingCommittee();
+        uint128 pendingCommitteeId = registry.getPendingCommitteeId(SETUP_PENDING_COMMITTEE_STREAM_ID);
+        CommitteeMember[] memory members = registry.getCommitteeMembers(pendingCommitteeId);
+        (address operatorAddress,) = _findFirstMemberWithRole(members, Role.OPERATOR);
+        address owner = registry.owner();
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.CommitteeIsNotActive.selector, pendingCommitteeId));
+
+        // Act
+        vm.prank(owner);
+        registry.demoteOperatorToWatchtower(pendingCommitteeId, operatorAddress);
+    }
+
+    function test_demoteOperatorToWatchtower_Revert_MemberIsNotOperatorInCommittee_NotMember() external {
+        // Arrange
+        (, uint128 committeeId) = setup_completeCommittee();
+        address nonMember = vm.addr(999);
+        address owner = registry.owner();
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(ICommitteeRegistry.MemberIsNotOperatorInCommittee.selector, committeeId, nonMember)
+        );
+
+        // Act
+        vm.prank(owner);
+        registry.demoteOperatorToWatchtower(committeeId, nonMember);
+    }
+
+    function test_demoteOperatorToWatchtower_Revert_MemberIsNotOperatorInCommittee_IsWatchtower() external {
+        // Arrange
+        (Committee memory committee, uint128 committeeId) = setup_completeCommittee();
+        (address watchtowerAddress,) = _findFirstMemberWithRole(committee.members, Role.WATCHTOWER);
+        address owner = registry.owner();
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ICommitteeRegistry.MemberIsNotOperatorInCommittee.selector, committeeId, watchtowerAddress
+            )
+        );
+
+        // Act
+        vm.prank(owner);
+        registry.demoteOperatorToWatchtower(committeeId, watchtowerAddress);
+    }
+
+    function test_demoteOperatorToWatchtower_Revert_DemotionWouldViolateMinOperators() external {
+        // Arrange - create a committee with exactly minCommitteeOperators operators
+        uint256 minOperators = registry.minCommitteeOperators();
+        uint256 minWatchtowers = registry.minCommitteeWatchtowers();
+        (uint128 committeeId, CommitteeMember[] memory members) =
+            setup_completeCommitteeWithSize(minOperators + minWatchtowers);
+
+        (address operatorAddress,) = _findFirstMemberWithRole(members, Role.OPERATOR);
+        address owner = registry.owner();
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ICommitteeRegistry.DemotionWouldViolateMinOperators.selector, committeeId, minOperators, minOperators
+            )
+        );
+
+        // Act
+        vm.prank(owner);
+        registry.demoteOperatorToWatchtower(committeeId, operatorAddress);
+    }
 }
