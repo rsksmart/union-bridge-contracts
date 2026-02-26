@@ -1911,4 +1911,34 @@ contract StreamManagerTest is Test, HelperContract {
         }
         return streamSettings;
     }
+
+    // ==================== TESTNET ONLY FUNCTION TESTS ====================
+
+    function test_restartStreamPointers_TESTNET_Revert_OwnableUnauthorizedAccount() external {
+        // Arrange
+        address unauthorizedAccount = address(0x1234);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, unauthorizedAccount));
+
+        // Act
+        vm.prank(unauthorizedAccount);
+        streamManager.restartStreamPointers_TESTNET(setupStreamId);
+    }
+
+    function test_restartStreamPointers_TESTNET_Revert_TestnetOnlyFunction() external {
+        // Arrange
+        address owner = streamManager.owner();
+
+        // Simulate RSK mainnet (chain ID 30)
+        vm.chainId(30);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IAccessManager.TestnetOnlyFunction.selector));
+
+        // Act
+        vm.prank(owner);
+        streamManager.restartStreamPointers_TESTNET(setupStreamId);
+    }
+    // ==================== END TESTNET ONLY FUNCTION TESTS ====================
 }
