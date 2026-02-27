@@ -255,6 +255,14 @@ interface ICommitteeRegistry {
     /// @param _committeeMemberCount The exact number of members required for a committee
     function setCommitteeMemberCount(uint256 _committeeMemberCount) external;
 
+    /// @notice Demotes an operator to watchtower in a specific active committee
+    /// @dev Only callable by the contract owner
+    /// @dev Owner-only access is temporary, once slashing is implemented, this function
+    ///      will be internal and called directly by the slashing mechanism
+    /// @param _committeeId The ID of the active committee
+    /// @param _memberAddress The address of the operator to demote
+    function demoteOperatorToWatchtower(uint128 _committeeId, address _memberAddress) external;
+
     /// @notice Gets the operator dispute data (address and dispute public key) for operator-take operations
     /// @dev Rotates through committee operators to distribute take responsibilities
     /// @dev Only operators who have deposited their signatures nonces are eligible for take operations
@@ -371,6 +379,11 @@ interface ICommitteeRegistry {
     /// @param packetNumber The packet number where the committee was active
     event CommitteeMembersReleased(uint64 streamId, uint64 packetNumber);
 
+    /// @notice Event emitted when an operator is demoted to watchtower in a committee
+    /// @param committeeId The committee where the demotion occurred
+    /// @param memberAddress The address of the demoted member
+    event OperatorDemotedToWatchtower(uint128 indexed committeeId, address indexed memberAddress);
+
     // ===================== Errors =====================
     /// @notice Thrown when a committee is not in pending state
     /// @param committeeId The ID of the committee that is not pending
@@ -476,6 +489,21 @@ interface ICommitteeRegistry {
     /// @param createdAt Timestamp committee creation
     /// @param expireAt Timestamp committee expiration
     error PendingCommitteeExpired(uint128 committeeId, uint256 currentTime, uint256 createdAt, uint256 expireAt);
+
+    /// @notice Thrown when trying to demote from a committee that is still pending
+    /// @param committeeId The ID of the pending committee
+    error CommitteeIsNotActive(uint128 committeeId);
+
+    /// @notice Thrown when the member is not an operator in the given committee
+    /// @param committeeId The committee ID
+    /// @param memberAddress The member's address
+    error MemberIsNotOperatorInCommittee(uint128 committeeId, address memberAddress);
+
+    /// @notice Thrown when demotion would drop the committee below the minimum operator count
+    /// @param committeeId The committee ID
+    /// @param currentOperators The current number of operators in the committee
+    /// @param minOperators The minimum required
+    error DemotionViolatesMinOperators(uint128 committeeId, uint256 currentOperators, uint256 minOperators);
 
     // --- TESTNET ONLY: Force close committee functionality ---
     // TODO: Remove before mainnet deployment

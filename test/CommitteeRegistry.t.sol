@@ -19,8 +19,9 @@ import {IAccessManager} from "src/interfaces/IAccessManager.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Constants} from "src/libraries/Constants.sol";
-import {SignatureData} from "src/interfaces/ISignatureManager.sol";
+import {SignatureData, OperatorTakeData} from "src/interfaces/ISignatureManager.sol";
 import {IPausable} from "src/interfaces/IPausable.sol";
+import {BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
 
 contract CommitteeRegistryTest is Test, HelperContract {
     // Maximum allowed gas for committee creation operations
@@ -2762,4 +2763,219 @@ contract CommitteeRegistryTest is Test, HelperContract {
     }
 
     // ==================== END TESTNET ONLY FUNCTION TESTS ====================
+
+    function _findFirstMemberWithRole(CommitteeMember[] memory members, Role role)
+        private
+        pure
+        returns (address, uint256)
+    {
+        for (uint256 i = 0; i < members.length; i++) {
+            if (members[i].role == role) {
+                return (members[i].memberAddress, i);
+            }
+        }
+        revert("there should be at least one member with the specified role in the committee");
+    }
+
+    function test_demoteOperatorToWatchtower_Success() external {
+        // Arrange
+        (Committee memory committee, uint128 committeeId) = setup_completeCommittee();
+        (address operatorAddress, uint256 operatorIndex) = _findFirstMemberWithRole(committee.members, Role.OPERATOR);
+
+        // Assert
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.OperatorDemotedToWatchtower(committeeId, operatorAddress);
+
+        // Act
+        vm.prank(registry.owner());
+        registry.demoteOperatorToWatchtower(committeeId, operatorAddress);
+
+        // Assert - role updated in storage
+        CommitteeMember[] memory updatedMembers = registry.getCommitteeMembers(committeeId);
+        assertEq(uint256(updatedMembers[operatorIndex].role), uint256(Role.WATCHTOWER), "Should now be WATCHTOWER");
+    }
+
+    function test_demoteOperatorToWatchtower_Success_ReEnrollsAsWatchtowerOnRelease() external {
+        // Arrange
+        (Committee memory committee, uint128 committeeId) = setup_completeCommittee();
+        uint64 streamId = committee.streamId;
+        StreamDenomination denomination = StreamDenomination(streamId);
+        (address operatorAddress,) = _findFirstMemberWithRole(committee.members, Role.OPERATOR);
+
+        // Demote the operator
+        vm.prank(registry.owner());
+        registry.demoteOperatorToWatchtower(committeeId, operatorAddress);
+
+        // Act - release the committee (packet 0 is the first packet created by setup_completeCommittee)
+        vm.prank(address(pegoutManager));
+        registry.releaseCommittee(streamId, 0);
+
+        // Assert - demoted member is re-enrolled as WATCHTOWER, not OPERATOR
+        address[] memory operatorCandidates = memberRegistry.getCommitteeCandidates(denomination, Role.OPERATOR);
+        address[] memory watchtowerCandidates = memberRegistry.getCommitteeCandidates(denomination, Role.WATCHTOWER);
+
+        bool inOperators = false;
+        for (uint256 i = 0; i < operatorCandidates.length; i++) {
+            if (operatorCandidates[i] == operatorAddress) {
+                inOperators = true;
+                break;
+            }
+        }
+        assertFalse(inOperators, "Demoted member should not be re-enrolled as operator");
+
+        bool inWatchtowers = false;
+        for (uint256 i = 0; i < watchtowerCandidates.length; i++) {
+            if (watchtowerCandidates[i] == operatorAddress) {
+                inWatchtowers = true;
+                break;
+            }
+        }
+        assertTrue(inWatchtowers, "Demoted member should be re-enrolled as watchtower");
+    }
+
+    function test_demoteOperatorToWatchtower_Revert_OwnableUnauthorizedAccount() external {
+        // Arrange
+        (Committee memory committee, uint128 committeeId) = setup_completeCommittee();
+        (address operatorAddress,) = _findFirstMemberWithRole(committee.members, Role.OPERATOR);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+
+        // Act
+        registry.demoteOperatorToWatchtower(committeeId, operatorAddress);
+    }
+
+    function test_demoteOperatorToWatchtower_Revert_CommitteeNotFound() external {
+        // Arrange
+        uint128 nonExistentCommitteeId = 999;
+        address owner = registry.owner();
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.CommitteeNotFound.selector, nonExistentCommitteeId));
+
+        // Act
+        vm.prank(owner);
+        registry.demoteOperatorToWatchtower(nonExistentCommitteeId, vm.addr(1));
+    }
+
+    function test_demoteOperatorToWatchtower_Revert_CommitteeIsNotActive() external {
+        // Arrange - pending committee (not yet active)
+        setup_pendingCommittee();
+        uint128 pendingCommitteeId = registry.getPendingCommitteeId(SETUP_PENDING_COMMITTEE_STREAM_ID);
+        CommitteeMember[] memory members = registry.getCommitteeMembers(pendingCommitteeId);
+        (address operatorAddress,) = _findFirstMemberWithRole(members, Role.OPERATOR);
+        address owner = registry.owner();
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.CommitteeIsNotActive.selector, pendingCommitteeId));
+
+        // Act
+        vm.prank(owner);
+        registry.demoteOperatorToWatchtower(pendingCommitteeId, operatorAddress);
+    }
+
+    function test_demoteOperatorToWatchtower_Revert_MemberIsNotOperatorInCommittee_NotMember() external {
+        // Arrange
+        (, uint128 committeeId) = setup_completeCommittee();
+        address nonMember = vm.addr(999);
+        address owner = registry.owner();
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(ICommitteeRegistry.MemberIsNotOperatorInCommittee.selector, committeeId, nonMember)
+        );
+
+        // Act
+        vm.prank(owner);
+        registry.demoteOperatorToWatchtower(committeeId, nonMember);
+    }
+
+    function test_demoteOperatorToWatchtower_Revert_MemberIsNotOperatorInCommittee_IsWatchtower() external {
+        // Arrange
+        (Committee memory committee, uint128 committeeId) = setup_completeCommittee();
+        (address watchtowerAddress,) = _findFirstMemberWithRole(committee.members, Role.WATCHTOWER);
+        address owner = registry.owner();
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ICommitteeRegistry.MemberIsNotOperatorInCommittee.selector, committeeId, watchtowerAddress
+            )
+        );
+
+        // Act
+        vm.prank(owner);
+        registry.demoteOperatorToWatchtower(committeeId, watchtowerAddress);
+    }
+
+    function test_demoteOperatorToWatchtower_Revert_DemotionViolatesMinOperators() external {
+        // Arrange - create a committee with exactly minCommitteeOperators operators
+        uint256 minOperators = registry.minCommitteeOperators();
+        uint256 minWatchtowers = registry.minCommitteeWatchtowers();
+        (uint128 committeeId, CommitteeMember[] memory members) =
+            setup_completeCommitteeWithSize(minOperators + minWatchtowers);
+
+        (address operatorAddress,) = _findFirstMemberWithRole(members, Role.OPERATOR);
+        address owner = registry.owner();
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ICommitteeRegistry.DemotionViolatesMinOperators.selector, committeeId, minOperators, minOperators
+            )
+        );
+
+        // Act
+        vm.prank(owner);
+        registry.demoteOperatorToWatchtower(committeeId, operatorAddress);
+    }
+
+    function test_requestPegin_Success_AfterOperatorDemotion_MissingHashesMatchesNewOpCount() external {
+        // Arrange
+        uint256 committeeSize = registry.committeeMemberCount();
+        uint256 operatorsCount = committeeSize / 2;
+        (uint128 committeeId, CommitteeMember[] memory members) = setup_completeCommitteeWithSize(committeeSize);
+
+        // Demote one operator to watchtower before the pegin
+        (address demotedOperator,) = _findFirstMemberWithRole(members, Role.OPERATOR);
+        vm.prank(registry.owner());
+        registry.demoteOperatorToWatchtower(committeeId, demotedOperator);
+
+        // Act: requestPegin calls initOperatorTakeTxids internally
+        (BtcTransaction memory peginTx,) = setup_requestPeginFlow();
+        bytes32 acceptPeginTxid = bitcoinManager.getBtcTxid(getBtcAcceptPeginTx(peginTx));
+
+        // Assert: missingHashes was initialized to N-1 (demoted operator excluded)
+        assertEq(
+            signatureManager.getMissingOperatorTakeHashes(acceptPeginTxid),
+            operatorsCount - 1,
+            "missingHashes should be initialized to N-1 operators"
+        );
+    }
+
+    function test_getOperatorTakeData_Success_AfterOperatorDemotion_ExcludesDemotedOperator() external {
+        // Arrange
+        uint256 committeeSize = registry.committeeMemberCount();
+        uint256 operatorsCount = committeeSize / 2;
+        (uint128 committeeId, CommitteeMember[] memory members) = setup_completeCommitteeWithSize(committeeSize);
+
+        (bytes32 acceptPeginTxid,,) = setup_requestAndAcceptPeginFlow(committeeId);
+
+        // Demote one operator after all txids have already been submitted
+        (address demotedOperator,) = _findFirstMemberWithRole(members, Role.OPERATOR);
+        vm.prank(registry.owner());
+        registry.demoteOperatorToWatchtower(committeeId, demotedOperator);
+
+        // Act
+        OperatorTakeData[] memory operatorData = signatureManager.getOperatorTakeData(acceptPeginTxid);
+
+        // Assert: getOperatorTakeData only includes current OPERATOR members
+        assertEq(operatorData.length, operatorsCount - 1, "Demoted operator should be excluded from take data");
+        for (uint256 i = 0; i < operatorData.length; i++) {
+            assertTrue(
+                operatorData[i].memberAddress != demotedOperator,
+                "Demoted operator address should not appear in take data"
+            );
+        }
+    }
 }

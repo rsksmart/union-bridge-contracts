@@ -111,6 +111,11 @@ interface ISignatureManager {
     /// @return true if all OperatorTake transaction id's are present, false otherwise
     function checkAllOperatorTakesHashesReady(bytes32 _acceptPeginTxid) external view returns (bool);
 
+    /// @notice Gets the number of missing OperatorTake transaction id's for a given accept peg-in transaction
+    /// @param _acceptPeginTxid The accept peg-in transaction id
+    /// @return The number of missing OperatorTake transaction id's
+    function getMissingOperatorTakeHashes(bytes32 _acceptPeginTxid) external view returns (uint8);
+
     /// @notice Gets all OperatorTake transaction data for a given accept peg-in transaction
     /// @param _acceptPeginTxid The accept peg-in transaction id
     /// @return Array of OperatorTake transaction data for all operators
