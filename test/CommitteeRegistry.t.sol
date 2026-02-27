@@ -10,10 +10,9 @@ import {
     CommitteeMember,
     Committee,
     CommunicationData,
-    COMMUNICATION_DATA_CHUNKS,
-    MemberRegistrationKeys
+    COMMUNICATION_DATA_CHUNKS
 } from "src/interfaces/ICommitteeRegistry.sol";
-import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
+import {IMemberRegistry, MemberRegistrationKeys} from "src/interfaces/IMemberRegistry.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {StreamDenomination, IStreamManager, Stream} from "src/interfaces/IStreamManager.sol";
 import {IAccessManager} from "src/interfaces/IAccessManager.sol";

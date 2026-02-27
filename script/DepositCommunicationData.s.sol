@@ -7,10 +7,9 @@ import {
     ICommitteeRegistry,
     Committee,
     CommunicationData,
-    COMMUNICATION_DATA_CHUNKS,
-    RSAPublicKey
+    COMMUNICATION_DATA_CHUNKS
 } from "src/interfaces/ICommitteeRegistry.sol";
-import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
+import {IMemberRegistry, RSAPublicKey} from "src/interfaces/IMemberRegistry.sol";
 import {BytesHelper} from "src/libraries/BytesHelper.sol";
 
 contract DepositCommunicationDataScript is ScriptUtils, ContractAddressManager {

@@ -2,18 +2,14 @@
 pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
+import {ICommitteeRegistry, Role, Committee, CommitteeMember, UTXO} from "src/interfaces/ICommitteeRegistry.sol";
 import {
-    ICommitteeRegistry,
-    Role,
-    Committee,
+    IMemberRegistry,
     MemberRegistrationKeys,
-    PublicKeyType,
-    CommitteeMember,
     MemberKeys,
-    RSAPublicKey,
-    UTXO
-} from "src/interfaces/ICommitteeRegistry.sol";
-import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
+    PublicKeyType,
+    RSAPublicKey
+} from "src/interfaces/IMemberRegistry.sol";
 import {IAccessManager} from "src/interfaces/IAccessManager.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";

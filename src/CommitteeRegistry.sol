@@ -12,13 +12,12 @@ import {
     ICommitteeRegistry,
     PendingCommitteeStatus,
     PendingCommitteeData,
-    MemberRegistrationKeys,
     CommunicationData,
     UTXO
 } from "./interfaces/ICommitteeRegistry.sol";
+import {IMemberRegistry, MemberKeys, MemberRegistrationKeys} from "./interfaces/IMemberRegistry.sol";
 import {StreamDenomination, IStreamManager} from "./interfaces/IStreamManager.sol";
 import {SignatureData} from "./interfaces/ISignatureManager.sol";
-import {IMemberRegistry, MemberKeys} from "./interfaces/IMemberRegistry.sol";
 import {BytesHelper} from "./libraries/BytesHelper.sol";
 import {Constants} from "./libraries/Constants.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";

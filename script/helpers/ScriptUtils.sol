@@ -3,13 +3,8 @@ pragma solidity ^0.8.20;
 
 import {Script} from "forge-std/Script.sol";
 import {Vm} from "forge-std/Vm.sol";
-import {
-    PublicKeyType,
-    ECDSAPublicKey,
-    RSAPublicKey,
-    MemberRegistrationKeys,
-    RSA_PUBLIC_KEY_CHUNKS
-} from "src/interfaces/ICommitteeRegistry.sol";
+import {PublicKeyType, ECDSAPublicKey, RSAPublicKey, RSA_PUBLIC_KEY_CHUNKS} from "src/interfaces/IMemberRegistry.sol";
+import {MemberRegistrationKeys} from "src/interfaces/IMemberRegistry.sol";
 import {BtcTxSPVProof} from "src/interfaces/IPegCommonTypes.sol";
 import {BtcTransaction, BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
 import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
