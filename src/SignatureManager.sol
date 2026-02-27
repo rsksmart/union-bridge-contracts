@@ -284,6 +284,11 @@ contract SignatureManager is ISignatureManager, BaseProxy {
     }
 
     /// @inheritdoc ISignatureManager
+    function getMissingOperatorTakeHashes(bytes32 _acceptPeginTxid) external view returns (uint8) {
+        return _getOperatorTakeTxids(_acceptPeginTxid).missingHashes;
+    }
+
+    /// @inheritdoc ISignatureManager
     function getOperatorTakeData(bytes32 _acceptPeginTxid) external view returns (OperatorTakeData[] memory) {
         OperatorTakeTxids storage txids = _getOperatorTakeTxids(_acceptPeginTxid);
         uint256 operatorsCount = 0;

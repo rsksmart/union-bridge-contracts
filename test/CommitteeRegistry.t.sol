@@ -19,8 +19,9 @@ import {IAccessManager} from "src/interfaces/IAccessManager.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Constants} from "src/libraries/Constants.sol";
-import {SignatureData} from "src/interfaces/ISignatureManager.sol";
+import {SignatureData, OperatorTakeData} from "src/interfaces/ISignatureManager.sol";
 import {IPausable} from "src/interfaces/IPausable.sol";
+import {BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
 
 contract CommitteeRegistryTest is Test, HelperContract {
     // Maximum allowed gas for committee creation operations
@@ -2773,7 +2774,7 @@ contract CommitteeRegistryTest is Test, HelperContract {
                 return (members[i].memberAddress, i);
             }
         }
-        return (address(0), 0);
+        revert("there should be at least one member with the specified role in the committee");
     }
 
     function test_demoteOperatorToWatchtower_Success() external {
@@ -2907,7 +2908,7 @@ contract CommitteeRegistryTest is Test, HelperContract {
         registry.demoteOperatorToWatchtower(committeeId, watchtowerAddress);
     }
 
-    function test_demoteOperatorToWatchtower_Revert_DemotionWouldViolateMinOperators() external {
+    function test_demoteOperatorToWatchtower_Revert_DemotionViolatesMinOperators() external {
         // Arrange - create a committee with exactly minCommitteeOperators operators
         uint256 minOperators = registry.minCommitteeOperators();
         uint256 minWatchtowers = registry.minCommitteeWatchtowers();
@@ -2920,12 +2921,61 @@ contract CommitteeRegistryTest is Test, HelperContract {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(
-                ICommitteeRegistry.DemotionWouldViolateMinOperators.selector, committeeId, minOperators, minOperators
+                ICommitteeRegistry.DemotionViolatesMinOperators.selector, committeeId, minOperators, minOperators
             )
         );
 
         // Act
         vm.prank(owner);
         registry.demoteOperatorToWatchtower(committeeId, operatorAddress);
+    }
+
+    function test_requestPegin_Success_AfterOperatorDemotion_MissingHashesMatchesNewOpCount() external {
+        // Arrange
+        uint256 committeeSize = registry.committeeMemberCount();
+        uint256 operatorsCount = committeeSize / 2;
+        (uint128 committeeId, CommitteeMember[] memory members) = setup_completeCommitteeWithSize(committeeSize);
+
+        // Demote one operator to watchtower before the pegin
+        (address demotedOperator,) = _findFirstMemberWithRole(members, Role.OPERATOR);
+        vm.prank(registry.owner());
+        registry.demoteOperatorToWatchtower(committeeId, demotedOperator);
+
+        // Act: requestPegin calls initOperatorTakeTxids internally
+        (BtcTransaction memory peginTx,) = setup_requestPeginFlow();
+        bytes32 acceptPeginTxid = bitcoinManager.getBtcTxid(getBtcAcceptPeginTx(peginTx));
+
+        // Assert: missingHashes was initialized to N-1 (demoted operator excluded)
+        assertEq(
+            signatureManager.getMissingOperatorTakeHashes(acceptPeginTxid),
+            operatorsCount - 1,
+            "missingHashes should be initialized to N-1 operators"
+        );
+    }
+
+    function test_getOperatorTakeData_Success_AfterOperatorDemotion_ExcludesDemotedOperator() external {
+        // Arrange
+        uint256 committeeSize = registry.committeeMemberCount();
+        uint256 operatorsCount = committeeSize / 2;
+        (uint128 committeeId, CommitteeMember[] memory members) = setup_completeCommitteeWithSize(committeeSize);
+
+        (bytes32 acceptPeginTxid,,) = setup_requestAndAcceptPeginFlow(committeeId);
+
+        // Demote one operator after all txids have already been submitted
+        (address demotedOperator,) = _findFirstMemberWithRole(members, Role.OPERATOR);
+        vm.prank(registry.owner());
+        registry.demoteOperatorToWatchtower(committeeId, demotedOperator);
+
+        // Act
+        OperatorTakeData[] memory operatorData = signatureManager.getOperatorTakeData(acceptPeginTxid);
+
+        // Assert: getOperatorTakeData only includes current OPERATOR members
+        assertEq(operatorData.length, operatorsCount - 1, "Demoted operator should be excluded from take data");
+        for (uint256 i = 0; i < operatorData.length; i++) {
+            assertTrue(
+                operatorData[i].memberAddress != demotedOperator,
+                "Demoted operator address should not appear in take data"
+            );
+        }
     }
 }

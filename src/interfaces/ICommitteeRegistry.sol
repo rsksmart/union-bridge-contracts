@@ -503,7 +503,7 @@ interface ICommitteeRegistry {
     /// @param committeeId The committee ID
     /// @param currentOperators The current number of operators in the committee
     /// @param minOperators The minimum required
-    error DemotionWouldViolateMinOperators(uint128 committeeId, uint256 currentOperators, uint256 minOperators);
+    error DemotionViolatesMinOperators(uint128 committeeId, uint256 currentOperators, uint256 minOperators);
 
     // --- TESTNET ONLY: Force close committee functionality ---
     // TODO: Remove before mainnet deployment

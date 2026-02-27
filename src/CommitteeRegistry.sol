@@ -779,7 +779,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         }
 
         if (operatorCount - 1 < minCommitteeOperators) {
-            revert DemotionWouldViolateMinOperators(_committeeId, operatorCount, minCommitteeOperators);
+            revert DemotionViolatesMinOperators(_committeeId, operatorCount, minCommitteeOperators);
         }
 
         committee.members[memberIndex].role = Role.WATCHTOWER;
