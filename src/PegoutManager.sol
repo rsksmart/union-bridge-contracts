@@ -52,6 +52,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
     /// @inheritdoc IPegoutManager
     function getPegoutStartInfo(bytes32 _acceptPeginTxid) external view returns (PegoutStartInfo memory pegoutInfo) {
         pegoutInfo = pegoutStartInfo[_acceptPeginTxid];
+        // slither-disable-next-line timestamp
         if (pegoutInfo.pegoutTxid == bytes32(0)) {
             revert PegoutNotFoundForPegin(_acceptPeginTxid);
         }

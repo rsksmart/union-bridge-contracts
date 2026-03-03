@@ -7,11 +7,12 @@ import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/Pau
 import {BtcTxSPVProof, StreamPosition, PegStatus} from "src/interfaces/IPegCommonTypes.sol";
 import {OperatorTakeInfo} from "src/interfaces/IOperatorTakeManager.sol";
 import {IPegoutManager} from "src/interfaces/IPegoutManager.sol";
-import {SlotState, IStreamManager} from "src/interfaces/IStreamManager.sol";
+import {SlotState, StreamDenomination, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {Committee} from "src/interfaces/ICommitteeRegistry.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IAccessManager} from "src/interfaces/IAccessManager.sol";
 import {IOperatorTakeManager, TakeTimeout} from "src/interfaces/IOperatorTakeManager.sol";
+import {OperatorTakeManagerConfig} from "script/helpers/OperatorTakeManagerConfig.sol";
 import {BtcTxIn, BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {IRbtcBridge} from "src/interfaces/IRbtcBridge.sol";
@@ -20,6 +21,21 @@ import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
 
 contract OperatorTakeManagerTest is Test, HelperContract {
+    /// @dev Sets distinct timeout values for every stream except DEFAULT_STREAM, which keeps the standard
+    /// test defaults. This ensures triggerOperatorTake tests fail if the contract reads the wrong stream's timeout.
+    function _setupDistinctStreamTimeouts() private {
+        address owner = operatorTakeManager.owner();
+        uint64 defaultStreamId = uint64(DEFAULT_STREAM);
+        uint64 numStreams = uint64(StreamDenomination.LENGTH);
+        for (uint64 i = 0; i < numStreams; i++) {
+            if (i == defaultStreamId) continue;
+            vm.prank(owner);
+            operatorTakeManager.setTakeTimeout(
+                i, TakeTimeout({userTake: (i + 1) * 30 minutes, operatorTake: (i + 1) * 45 minutes})
+            );
+        }
+    }
+
     function setUp() external {
         runTestDeployScript();
         setup_completeCommitteeAndNewMembers();
@@ -52,6 +68,7 @@ contract OperatorTakeManagerTest is Test, HelperContract {
 
     function test_triggerOperatorTake_Revert_UserTakeTimeoutNotExpired() external {
         // Arrange
+        _setupDistinctStreamTimeouts();
         RegisterUserTakeSetup memory setup = setup_pegoutAndMemberNonces();
         uint256 createdAt = block.timestamp;
         uint256 expireAt = createdAt + TAKE_0_TIMEOUT_DEFAULT;
@@ -242,6 +259,7 @@ contract OperatorTakeManagerTest is Test, HelperContract {
 
     function test_triggerOperatorTake_Revert_OperatorTakeTimeoutNotExpired() external {
         // Arrange
+        _setupDistinctStreamTimeouts();
         RegisterUserTakeSetup memory setup = setup_pegoutAndMemberNonces();
         setup_addMemberSignature_MultipleMembers(setup.pegoutTxid, 0, registry.committeeMemberCount() - 1);
         vm.warp(block.timestamp + TAKE_0_TIMEOUT_DEFAULT + 1);
@@ -352,102 +370,92 @@ contract OperatorTakeManagerTest is Test, HelperContract {
         return setup.pegoutSignatureHash;
     }
 
-    function test_userTakeTimeout_Success() external view {
-        // Act
-        uint256 timeout = operatorTakeManager.getTakeTimeout().userTake;
-
-        // Assert
-        assertEq(timeout, TAKE_0_TIMEOUT_DEFAULT);
-    }
-
-    function test_operatorTakeTimeout_Success() external view {
-        // Act
-        uint256 timeout = operatorTakeManager.getTakeTimeout().operatorTake;
-
-        // Assert
-        assertEq(timeout, TAKE_1_TIMEOUT_DEFAULT);
-    }
-
-    function test_setUserTakeTimeout_Success() external {
+    function test_initialize_Success_Timeouts() external view {
         // Arrange
-        uint256 timeout = TAKE_0_TIMEOUT_DEFAULT + 1 days;
-        uint256 opTimeout = operatorTakeManager.getTakeTimeout().operatorTake;
+        TakeTimeout[] memory settings = OperatorTakeManagerConfig.getSettings(block.chainid, true);
+
+        // Act & Assert
+        for (uint64 i = 0; i < settings.length; i++) {
+            (uint256 userTake, uint256 operatorTake) = operatorTakeManager.takeTimeouts(i);
+            assertEq(userTake, settings[i].userTake);
+            assertEq(operatorTake, settings[i].operatorTake);
+        }
+    }
+
+    function test_setTakeTimeout_Success() external {
+        // Arrange
+        uint64 streamId = uint64(DEFAULT_STREAM);
+        TakeTimeout memory timeout =
+            TakeTimeout({userTake: TAKE_0_TIMEOUT_DEFAULT + 1 days, operatorTake: TAKE_1_TIMEOUT_DEFAULT + 1 days});
+        address owner = operatorTakeManager.owner();
 
         // Assert
         vm.expectEmit(address(operatorTakeManager));
-        emit IOperatorTakeManager.TimeoutsUpdated(timeout, opTimeout);
+        emit IOperatorTakeManager.TakeTimeoutUpdated(streamId, timeout);
 
         // Act
-        vm.prank(address(operatorTakeManager.owner()));
-        operatorTakeManager.setTakeTimeout(TakeTimeout({userTake: timeout, operatorTake: opTimeout}));
+        vm.prank(owner);
+        operatorTakeManager.setTakeTimeout(streamId, timeout);
 
         // Assert
-        uint256 newTimeout = operatorTakeManager.getTakeTimeout().userTake;
-        assertEq(newTimeout, timeout);
+        (uint256 userTake, uint256 operatorTake) = operatorTakeManager.takeTimeouts(streamId);
+        assertEq(userTake, timeout.userTake);
+        assertEq(operatorTake, timeout.operatorTake);
     }
 
-    function test_setOperatorTakeTimeout_Success() external {
+    function test_setTakeTimeout_Success_AllStreams() external {
         // Arrange
-        uint256 userTimeout = operatorTakeManager.getTakeTimeout().userTake;
-        uint256 timeout = TAKE_1_TIMEOUT_DEFAULT + 1 days;
+        uint64 numStreams = uint64(StreamDenomination.LENGTH);
+        address owner = operatorTakeManager.owner();
+        TakeTimeout[] memory expected = new TakeTimeout[](numStreams);
+        for (uint64 i = 0; i < numStreams; i++) {
+            expected[i] = TakeTimeout({userTake: 1 hours * (i + 1), operatorTake: 2 hours * (i + 1)});
+            vm.prank(owner);
+            operatorTakeManager.setTakeTimeout(i, expected[i]);
+        }
 
         // Assert
-        vm.expectEmit(address(operatorTakeManager));
-        emit IOperatorTakeManager.TimeoutsUpdated(userTimeout, timeout);
-
-        // Act
-        vm.prank(address(operatorTakeManager.owner()));
-        operatorTakeManager.setTakeTimeout(TakeTimeout({userTake: userTimeout, operatorTake: timeout}));
-
-        // Assert
-        uint256 newTimeout = operatorTakeManager.getTakeTimeout().operatorTake;
-        assertEq(newTimeout, timeout);
+        for (uint64 i = 0; i < numStreams; i++) {
+            (uint256 userTake, uint256 operatorTake) = operatorTakeManager.takeTimeouts(i);
+            assertEq(userTake, expected[i].userTake);
+            assertEq(operatorTake, expected[i].operatorTake);
+        }
     }
 
-    function test_setUserTakeTimeout_Revert_InvalidTimeout() external {
+    function test_setTakeTimeout_Revert_InvalidTimeout_UserTake() external {
         // Arrange
         address owner = operatorTakeManager.owner();
-        uint256 opTimeout = operatorTakeManager.getTakeTimeout().operatorTake;
+        TakeTimeout memory timeout = TakeTimeout({userTake: 0, operatorTake: 1 days});
 
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IOperatorTakeManager.InvalidTimeout.selector, 0));
 
         // Act
-        vm.prank(address(owner));
-        operatorTakeManager.setTakeTimeout(TakeTimeout({userTake: 0, operatorTake: opTimeout}));
+        vm.prank(owner);
+        operatorTakeManager.setTakeTimeout(uint64(DEFAULT_STREAM), timeout);
     }
 
-    function test_setOperatorTakeTimeout_Revert_InvalidTimeout() external {
+    function test_setTakeTimeout_Revert_InvalidTimeout_OperatorTake() external {
         // Arrange
         address owner = operatorTakeManager.owner();
-        uint256 userTimeout = operatorTakeManager.getTakeTimeout().userTake;
+        TakeTimeout memory timeout = TakeTimeout({userTake: 1 days, operatorTake: 0});
 
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IOperatorTakeManager.InvalidTimeout.selector, 0));
 
         // Act
-        vm.prank(address(owner));
-        operatorTakeManager.setTakeTimeout(TakeTimeout({userTake: userTimeout, operatorTake: 0}));
+        vm.prank(owner);
+        operatorTakeManager.setTakeTimeout(uint64(DEFAULT_STREAM), timeout);
     }
 
-    function test_setUserTakeTimeout_Revert_OwnableUnauthorizedAccount() external {
-        uint256 opTimeout = operatorTakeManager.getTakeTimeout().operatorTake;
-
+    function test_setTakeTimeout_Revert_OwnableUnauthorizedAccount() external {
         // Assert
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
 
         // Act
-        operatorTakeManager.setTakeTimeout(TakeTimeout({userTake: 1 days, operatorTake: opTimeout}));
-    }
-
-    function test_setOperatorTakeTimeout_Revert_OwnableUnauthorizedAccount() external {
-        uint256 userTimeout = operatorTakeManager.getTakeTimeout().userTake;
-
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
-
-        // Act
-        operatorTakeManager.setTakeTimeout(TakeTimeout({userTake: userTimeout, operatorTake: 1 days}));
+        operatorTakeManager.setTakeTimeout(
+            uint64(DEFAULT_STREAM), TakeTimeout({userTake: 1 days, operatorTake: 1 days})
+        );
     }
 
     function test_triggerOperatorTake_Revert_EnforcedPause_PausedContract() external {
@@ -464,6 +472,7 @@ contract OperatorTakeManagerTest is Test, HelperContract {
 
     function test_triggerOperatorTake_Success_UnpausedContract() external {
         // Arrange
+        _setupDistinctStreamTimeouts();
         pauseAndUnpauseContracts();
         RegisterUserTakeSetup memory setup = setup_pegout();
         bytes32 pegoutTxId = setup.pegoutTxid;
@@ -486,38 +495,22 @@ contract OperatorTakeManagerTest is Test, HelperContract {
         operatorTakeManager.triggerOperatorTake(setup.acceptPeginTxid);
     }
 
-    function test_setUserTakeTimeout_Success_PausedContract() external {
+    function test_setTakeTimeout_Success_PausedContract() external {
         // Arrange
         pauseContracts();
 
-        uint256 timeout = TAKE_0_TIMEOUT_DEFAULT + 1 days;
-        address owner = operatorTakeManager.owner();
-        uint256 opTimeout = operatorTakeManager.getTakeTimeout().operatorTake;
-
-        // Assert
-        vm.expectEmit(address(operatorTakeManager));
-        emit IOperatorTakeManager.TimeoutsUpdated(timeout, opTimeout);
-
-        // Act
-        vm.prank(owner);
-        operatorTakeManager.setTakeTimeout(TakeTimeout({userTake: timeout, operatorTake: opTimeout}));
-    }
-
-    function test_setOperatorTakeTimeout_Success_PausedContract() external {
-        // Arrange
-        pauseContracts();
-
-        uint256 userTimeout = operatorTakeManager.getTakeTimeout().userTake;
-        uint256 timeout = TAKE_1_TIMEOUT_DEFAULT + 1 days;
+        uint64 streamId = uint64(DEFAULT_STREAM);
+        TakeTimeout memory timeout =
+            TakeTimeout({userTake: TAKE_0_TIMEOUT_DEFAULT + 1 days, operatorTake: TAKE_1_TIMEOUT_DEFAULT + 1 days});
         address owner = operatorTakeManager.owner();
 
         // Assert
         vm.expectEmit(address(operatorTakeManager));
-        emit IOperatorTakeManager.TimeoutsUpdated(userTimeout, timeout);
+        emit IOperatorTakeManager.TakeTimeoutUpdated(streamId, timeout);
 
         // Act
         vm.prank(owner);
-        operatorTakeManager.setTakeTimeout(TakeTimeout({userTake: userTimeout, operatorTake: timeout}));
+        operatorTakeManager.setTakeTimeout(streamId, timeout);
     }
 
     function test_triggerOperatorTake_Success_FromAdvanced() external {
@@ -568,6 +561,7 @@ contract OperatorTakeManagerTest is Test, HelperContract {
 
     function test_triggerOperatorTake_FromAdvanced_Revert_OperatorTakeTimeoutNotExpired() external {
         // Arrange - setup_reimbursementKickoff brings state to ADVANCED
+        _setupDistinctStreamTimeouts();
         (, RegisterUserTakeSetup memory setup) = setup_reimbursementKickoff();
 
         // Get operatorTakeUpdatedAt
@@ -587,6 +581,7 @@ contract OperatorTakeManagerTest is Test, HelperContract {
 
     function test_triggerOperatorTake_FromKickoff_Revert_OperatorTakeTimeoutNotExpired() external {
         // Arrange - setup_operatorTake brings state to KICKOFF
+        _setupDistinctStreamTimeouts();
         (, RegisterUserTakeSetup memory setup) = setup_operatorTake();
 
         // Get operatorTakeUpdatedAt

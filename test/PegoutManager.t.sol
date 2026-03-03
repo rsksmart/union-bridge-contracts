@@ -15,9 +15,7 @@ import {Constants} from "src/libraries/Constants.sol";
 import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
 import {Committee, ICommitteeRegistry, CommitteeMember} from "src/interfaces/ICommitteeRegistry.sol";
 import {IRbtcBridge} from "src/interfaces/IRbtcBridge.sol";
-import {OperatorTakeManagerSettingsConfig} from "script/helpers/OperatorTakeManagerSettingsConfig.sol";
 import {BytesHelper} from "src/libraries/BytesHelper.sol";
-import {TakeTimeout} from "src/interfaces/IOperatorTakeManager.sol";
 
 contract PegoutManagerTest is Test, HelperContract {
     // Arrange
@@ -40,13 +38,9 @@ contract PegoutManagerTest is Test, HelperContract {
     // ============ Initialization Tests ============
 
     function test_initialize_Success() external {
-        // Arrenge
-        TakeTimeout memory expectedSettings =
-            OperatorTakeManagerSettingsConfig.getTakeTimeoutSettings(block.chainid, true);
-
         // Assert - verify initialization state
-        assertEq(pegoutManager.owner(), getDeployerAddress(), "Owner should be set"); // Owner should be set
-        assertEq(pegoutManager.pauser(), address(accessManager), "Pauser should be set to accessManager"); // Pauser should be set to accessManager
+        assertEq(pegoutManager.owner(), getDeployerAddress(), "Owner should be set");
+        assertEq(pegoutManager.pauser(), address(accessManager), "Pauser should be set to accessManager");
         assertEq(address(pegoutManager.committeeRegistry()), address(registry), "Committee registry should be set");
         assertEq(address(pegoutManager.bitcoinManager()), address(bitcoinManager), "Bitcoin manager should be set");
         assertEq(address(pegoutManager.rbtcBridge()), address(rbtcBridge), "Rbtc bridge should be set");
@@ -54,10 +48,6 @@ contract PegoutManagerTest is Test, HelperContract {
         assertEq(
             address(pegoutManager.signatureManager()), address(signatureManager), "Signature manager should be set"
         );
-        assertEq(address(pegoutManager.rbtcBridge()), address(rbtcBridge), "Rbtc bridge should be set");
-        TakeTimeout memory takeTimeout = operatorTakeManager.getTakeTimeout();
-        assertEq(takeTimeout.userTake, expectedSettings.userTake, "User take timeout should be set");
-        assertEq(takeTimeout.operatorTake, expectedSettings.operatorTake, "Operator take timeout should be set");
     }
 
     function test_getPegoutStartInfo_Success() external {

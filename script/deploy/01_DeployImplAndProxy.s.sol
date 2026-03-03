@@ -24,7 +24,7 @@ import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
 import {TakeTimeout} from "src/interfaces/IOperatorTakeManager.sol";
 import {StreamManagerSettings, StreamSettings, StreamDenomination} from "src/interfaces/IStreamManager.sol";
 import {StreamManagerSettingsConfig} from "script/helpers/StreamManagerSettingsConfig.sol";
-import {OperatorTakeManagerSettingsConfig} from "script/helpers/OperatorTakeManagerSettingsConfig.sol";
+import {OperatorTakeManagerConfig} from "script/helpers/OperatorTakeManagerConfig.sol";
 import {RbtcBridge} from "src/RbtcBridge.sol";
 import {ChallengeManager} from "src/ChallengeManager.sol";
 import {OperatorTakeManager} from "src/OperatorTakeManager.sol";
@@ -55,7 +55,7 @@ contract DeployImplAndProxy is ScriptUtils {
     address payable public bridgeAddress;
     StreamManagerSettings public streamManagerSettings;
     StreamSettings[] public streamSettings;
-    TakeTimeout public operatorTakeTimeoutSettings;
+    TakeTimeout[] internal operatorTakeTimeoutSettings;
     CommitteeRegistrySettings public committeeRegistrySettings;
 
     function setUp() internal {
@@ -72,7 +72,11 @@ contract DeployImplAndProxy is ScriptUtils {
                 StreamManagerSettingsConfig.getStreamSettings(block.chainid, i, denominations[i], isTest)
             );
         }
-        operatorTakeTimeoutSettings = OperatorTakeManagerSettingsConfig.getTakeTimeoutSettings(block.chainid, isTest);
+        TakeTimeout[] memory takeTimeoutSettings = OperatorTakeManagerConfig.getSettings(block.chainid, isTest);
+        delete operatorTakeTimeoutSettings;
+        for (uint256 i = 0; i < takeTimeoutSettings.length; i++) {
+            operatorTakeTimeoutSettings.push(takeTimeoutSettings[i]);
+        }
         committeeRegistrySettings = CommitteeRegistrySettingsConfig.getSettings(block.chainid, isTest);
         // RSK Mainnet
         if (block.chainid == ChainIds.RSK_MAINNET) {
@@ -493,7 +497,7 @@ contract DeployImplAndProxy is ScriptUtils {
         PegoutManager _pegoutManager,
         StreamManager _streamManager,
         SignatureManager _signatureManager,
-        TakeTimeout memory _takeTimeout
+        TakeTimeout[] memory _timeoutSettings
     ) public returns (OperatorTakeManager) {
         (, address proxyAdddress) = deployContractAndUUPSProxy(
             "OperatorTakeManager.sol",
@@ -508,7 +512,7 @@ contract DeployImplAndProxy is ScriptUtils {
                     _pegoutManager,
                     _streamManager,
                     _signatureManager,
-                    _takeTimeout
+                    _timeoutSettings
                 )
             )
         );

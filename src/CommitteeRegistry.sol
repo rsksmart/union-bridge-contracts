@@ -761,7 +761,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
 
         uint256 membersLength = committee.members.length;
         uint256 operatorCount = 0;
-        uint256 memberIndex;
+        uint256 memberIndex = 0;
         bool found = false;
 
         for (uint256 i = 0; i < membersLength; i++) {

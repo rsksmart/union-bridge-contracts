@@ -11,7 +11,7 @@ import {IBitcoinManager, BtcTxIn} from "./interfaces/IBitcoinManager.sol";
 import {IRbtcBridge} from "./interfaces/IRbtcBridge.sol";
 import {BtcTxSPVProof, StreamPosition} from "./interfaces/IPegCommonTypes.sol";
 import {Constants} from "./libraries/Constants.sol";
-import {IStreamManager, PegStatus, Stream} from "./interfaces/IStreamManager.sol";
+import {IStreamManager, PegStatus, Stream, StreamDenomination} from "./interfaces/IStreamManager.sol";
 import {OperatorTakeData, ISignatureManager, SignatureData} from "./interfaces/ISignatureManager.sol";
 
 /// @title OperatorTakeManager
@@ -20,8 +20,8 @@ contract OperatorTakeManager is IOperatorTakeManager, PegManagerBase {
     /// @notice The PegoutManager contract
     IPegoutManager public pegoutManager;
 
-    /// @notice Timeout settings (struct saves bytecode vs two separate setters)
-    TakeTimeout internal takeTimeout;
+    /// @notice Per-stream timeout settings indexed by stream ID
+    mapping(uint256 => TakeTimeout) public takeTimeouts;
 
     /// @notice The pegout ID sequence number incremented for each new triggerOperatorTake
     uint256 public sequenceNumber;
@@ -37,7 +37,7 @@ contract OperatorTakeManager is IOperatorTakeManager, PegManagerBase {
     /// @param _pegoutManager The pegout manager contract address
     /// @param _streamManager The stream manager contract address
     /// @param _signatureManager The signature manager contract address
-    /// @param _takeTimeout Timeout settings for user take and operator take
+    /// @param _takeTimeouts Per-stream timeout settings indexed by stream ID
     function initialize(
         address _initialOwner,
         address _accessManager,
@@ -47,7 +47,7 @@ contract OperatorTakeManager is IOperatorTakeManager, PegManagerBase {
         IPegoutManager _pegoutManager,
         IStreamManager _streamManager,
         ISignatureManager _signatureManager,
-        TakeTimeout memory _takeTimeout
+        TakeTimeout[] memory _takeTimeouts
     ) public initializer {
         __PegManagerBase_init(
             _initialOwner,
@@ -62,25 +62,33 @@ contract OperatorTakeManager is IOperatorTakeManager, PegManagerBase {
             revert InvalidZeroAddress();
         }
         pegoutManager = _pegoutManager;
-        _setTakeTimeout(_takeTimeout);
+        _setTakeTimeouts(_takeTimeouts);
     }
 
-    /// @inheritdoc IOperatorTakeManager
-    function getTakeTimeout() external view returns (TakeTimeout memory) {
-        return takeTimeout;
-    }
-
-    /// @inheritdoc IOperatorTakeManager
-    function setTakeTimeout(TakeTimeout memory _takeTimeout) external onlyOwner {
-        _setTakeTimeout(_takeTimeout);
-        emit TimeoutsUpdated(_takeTimeout.userTake, _takeTimeout.operatorTake);
-    }
-
-    function _setTakeTimeout(TakeTimeout memory _takeTimeout) internal {
-        if (_takeTimeout.userTake == 0 || _takeTimeout.operatorTake == 0) {
-            revert InvalidTimeout(0);
+    function _setTakeTimeouts(TakeTimeout[] memory _settings) internal {
+        uint64 numStreams = uint64(StreamDenomination.LENGTH);
+        if (_settings.length != numStreams) {
+            revert InvalidTimeoutsLength();
         }
-        takeTimeout = _takeTimeout;
+        for (uint64 i = 0; i < numStreams; i++) {
+            _setTakeTimeout(i, _settings[i]);
+        }
+    }
+
+    /// @inheritdoc IOperatorTakeManager
+    function setTakeTimeout(uint64 _streamId, TakeTimeout memory _timeout) external onlyOwner {
+        _setTakeTimeout(_streamId, _timeout);
+        emit TakeTimeoutUpdated(_streamId, _timeout);
+    }
+
+    function _setTakeTimeout(uint64 _streamId, TakeTimeout memory _timeout) internal {
+        if (_timeout.userTake == 0) {
+            revert InvalidTimeout(_timeout.userTake);
+        }
+        if (_timeout.operatorTake == 0) {
+            revert InvalidTimeout(_timeout.operatorTake);
+        }
+        takeTimeouts[_streamId] = _timeout;
     }
 
     /// @inheritdoc IOperatorTakeManager
@@ -102,12 +110,12 @@ contract OperatorTakeManager is IOperatorTakeManager, PegManagerBase {
         }
 
         if (streamInfo.pegStatus == PegStatus.USER_TAKE) {
-            _handleUserTake(_acceptPeginTxid, pegoutInfo.createdAt, missingSignatures);
+            _handleUserTake(_acceptPeginTxid, pegoutInfo.createdAt, missingSignatures, streamInfo.streamId);
         } else if (
             streamInfo.pegStatus == PegStatus.OP_SELECTED || streamInfo.pegStatus == PegStatus.ADVANCED
                 || streamInfo.pegStatus == PegStatus.KICKOFF
         ) {
-            _verifyOperatorTakeTimeoutExpired(opInfo.operatorTakeUpdatedAt);
+            _verifyOperatorTakeTimeoutExpired(opInfo.operatorTakeUpdatedAt, streamInfo.streamId);
         } else if (streamInfo.pegStatus == PegStatus.CHALLENGE || streamInfo.pegStatus == PegStatus.REVEALED) {
             // Only the challenge manager can trigger operator take in these states
             // we use msg.sender instead of _msgSender() as this case should not be relayed
@@ -130,28 +138,37 @@ contract OperatorTakeManager is IOperatorTakeManager, PegManagerBase {
         streamInfo.pegStatus = PegStatus.OP_SELECTED;
         // slither-disable-next-line reentrancy-events
         emit OperatorTakeTriggered(
-            pegoutInfo.pegoutTxid, opInfo, streamInfo, block.timestamp, block.timestamp + takeTimeout.operatorTake
+            pegoutInfo.pegoutTxid,
+            opInfo,
+            streamInfo,
+            block.timestamp,
+            block.timestamp + takeTimeouts[streamInfo.streamId].operatorTake
         );
     }
 
-    function _handleUserTake(bytes32 _acceptPeginTxid, uint256 _pegoutCreatedAt, uint8 _missingSignatures) internal {
+    function _handleUserTake(
+        bytes32 _acceptPeginTxid,
+        uint256 _pegoutCreatedAt,
+        uint8 _missingSignatures,
+        uint64 _streamId
+    ) internal {
         if (_missingSignatures == 0) {
             revert UserTakeAlreadySigned(_acceptPeginTxid);
         }
         // slither-disable-next-line timestamp
-        if (block.timestamp <= _pegoutCreatedAt + takeTimeout.userTake) {
-            revert UserTakeTimeoutNotExpired(_pegoutCreatedAt, _pegoutCreatedAt + takeTimeout.userTake);
+        if (block.timestamp <= _pegoutCreatedAt + takeTimeouts[_streamId].userTake) {
+            revert UserTakeTimeoutNotExpired(_pegoutCreatedAt, _pegoutCreatedAt + takeTimeouts[_streamId].userTake);
         }
 
         // slither-disable-next-line reentrancy-no-eth reentrancy-benign
         streamManager.advanceSlot(_acceptPeginTxid);
     }
 
-    function _verifyOperatorTakeTimeoutExpired(uint256 _operatorTakeUpdatedAt) internal view {
+    function _verifyOperatorTakeTimeoutExpired(uint256 _operatorTakeUpdatedAt, uint64 _streamId) internal view {
         // slither-disable-next-line timestamp
-        if (block.timestamp <= _operatorTakeUpdatedAt + takeTimeout.operatorTake) {
+        if (block.timestamp <= _operatorTakeUpdatedAt + takeTimeouts[_streamId].operatorTake) {
             revert OperatorTakeTimeoutNotExpired(
-                _operatorTakeUpdatedAt, _operatorTakeUpdatedAt + takeTimeout.operatorTake
+                _operatorTakeUpdatedAt, _operatorTakeUpdatedAt + takeTimeouts[_streamId].operatorTake
             );
         }
     }

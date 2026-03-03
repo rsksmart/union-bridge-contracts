@@ -15,9 +15,11 @@ struct OperatorTakeInfo {
     bytes32 reimbursementKickoffTxid;
 }
 
-/// @notice Timeout settings for operator take flow
+/// @notice Per-stream timeout settings for a single stream
 struct TakeTimeout {
+    /// @notice Timeout in seconds for user take operations
     uint256 userTake;
+    /// @notice Timeout in seconds for operator take operations
     uint256 operatorTake;
 }
 
@@ -55,11 +57,17 @@ interface IOperatorTakeManager {
     /// @notice Gets temporary operator take information for a peg-out
     function getOperatorTakeInfo(bytes32 _acceptPeginTxid) external view returns (OperatorTakeInfo memory);
 
-    /// @notice Gets the current timeout settings
-    function getTakeTimeout() external view returns (TakeTimeout memory);
+    /// @notice Gets the timeout settings for a specific stream (auto-generated from public storage)
+    /// @param streamId The stream identifier
+    /// @return userTake Timeout in seconds for user take operations
+    /// @return operatorTake Timeout in seconds for operator take operations
+    function takeTimeouts(uint256 streamId) external view returns (uint256 userTake, uint256 operatorTake);
 
-    /// @notice Sets the timeout settings for user take and operator take
-    function setTakeTimeout(TakeTimeout memory _takeTimeout) external;
+    /// @notice Sets the timeout settings for a specific stream
+    /// @dev Only callable by the contract owner
+    /// @param _streamId The stream identifier
+    /// @param _timeout The new timeout settings
+    function setTakeTimeout(uint64 _streamId, TakeTimeout memory _timeout) external;
 
     // ===================== Events =====================
 
@@ -83,8 +91,10 @@ interface IOperatorTakeManager {
         uint256 expireAt
     );
 
-    /// @notice Event emitted when timeouts are updated
-    event TimeoutsUpdated(uint256 userTake, uint256 operatorTake);
+    /// @notice Event emitted when the timeout settings are updated for a specific stream
+    /// @param streamId The stream identifier
+    /// @param newTimeout The new timeout settings
+    event TakeTimeoutUpdated(uint64 indexed streamId, TakeTimeout newTimeout);
 
     /// @notice Event emitted when reimbursement kickoff is successfully registered
     event ReimbursementKickoffRegistered(
@@ -127,6 +137,9 @@ interface IOperatorTakeManager {
 
     /// @notice Thrown when operator take data is not found for a given accept peg-in txid and operator address
     error OperatorTakeDataNotFound(bytes32 acceptPeginTxid, address operatorAddress);
+
+    /// @notice Thrown when the per-stream timeout array has incorrect length
+    error InvalidTimeoutsLength();
 
     /// @notice Thrown when an invalid timeout value is provided (zero timeout)
     error InvalidTimeout(uint256 timeout);
