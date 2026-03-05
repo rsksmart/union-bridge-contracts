@@ -1464,8 +1464,8 @@ contract PegoutManagerTest is Test, HelperContract {
         vm.expectRevert(
             abi.encodeWithSelector(
                 IPegoutManager.IncorrectOutputScript.selector,
-                hex"6a0000000000000000000000000000000000000000000000000000000000000000",
-                hex"6a30e614e19d9d364861907b6c1cf3c922887be82c255cdb4f966a549c291cfde5"
+                hex"6a200000000000000000000000000000000000000000000000000000000000000000",
+                hex"6a2030e614e19d9d364861907b6c1cf3c922887be82c255cdb4f966a549c291cfde5"
             )
         );
 

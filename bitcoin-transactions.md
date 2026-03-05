@@ -1137,7 +1137,7 @@ graph LR
 - **Key**: User's public key
 - **Purpose**: Main output containing the user's portion of peg-in funds
 
-##### Output 1: OP_RETURN Output
+##### Output 1: OP_RETURN Pegout ID Output
 
 - **Type**: OP_RETURN (unspendable)
 - **Amount**: 0 sats

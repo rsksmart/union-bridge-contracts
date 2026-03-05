@@ -192,4 +192,31 @@ contract BtcScriptParserTest is Test, TestUtils {
             "getP2WPKH third part should be the Hash160 of the public key"
         );
     }
+
+    function test_getPegoutIdScript_Success() external view {
+        // Arrange
+        bytes32 pegoutId = keccak256("pegout-id");
+        // Act
+        bytes memory script = BtcScriptParser.getPegoutIdScript(pegoutId);
+        // Assert
+        assertEq(script.length, 34, "getPegoutIdScript should return 1 + 1 + 32 bytes");
+        uint256 opReturnIndex = 0;
+        assertEq(script[opReturnIndex], OpCodes.OP_RETURN, "First byte should be OP_RETURN");
+        uint256 opPushbytesIndex = 1;
+        assertEq(script[opPushbytesIndex], OpCodes.OP_PUSHBYTES_32, "Second byte should be OP_PUSHBYTES_32");
+        uint256 pegoutIdIndex = 2;
+        assertEq(
+            BytesHelper.bytesToBytes32(script, pegoutIdIndex), pegoutId, "Remaining 32 bytes should be the pegoutId"
+        );
+    }
+
+    function test_getPegoutIdScript_DifferentIdsProduceDifferentScripts() external view {
+        bytes32 pegoutId1 = bytes32(uint256(1));
+        bytes32 pegoutId2 = bytes32(uint256(2));
+        bytes memory script1 = BtcScriptParser.getPegoutIdScript(pegoutId1);
+        bytes memory script2 = BtcScriptParser.getPegoutIdScript(pegoutId2);
+        assertEq(script1.length, 34);
+        assertEq(script2.length, 34);
+        assertTrue(keccak256(script1) != keccak256(script2), "Different pegoutIds must produce different scripts");
+    }
 }
