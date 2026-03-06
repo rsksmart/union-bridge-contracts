@@ -5,15 +5,14 @@ import {Test} from "forge-std/Test.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {BtcTxSPVProof, StreamPosition, PegStatus} from "src/interfaces/IPegCommonTypes.sol";
-import {OperatorTakeInfo} from "src/interfaces/IOperatorTakeManager.sol";
 import {IPegoutManager} from "src/interfaces/IPegoutManager.sol";
 import {SlotState, StreamDenomination, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {Committee} from "src/interfaces/ICommitteeRegistry.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IAccessManager} from "src/interfaces/IAccessManager.sol";
-import {IOperatorTakeManager, TakeTimeout} from "src/interfaces/IOperatorTakeManager.sol";
+import {IOperatorTakeManager, TakeTimeout, OperatorTakeInfo} from "src/interfaces/IOperatorTakeManager.sol";
 import {OperatorTakeManagerConfig} from "script/helpers/OperatorTakeManagerConfig.sol";
-import {BtcTxIn, BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
+import {BtcTxIn, BtcTxOut, BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {IRbtcBridge} from "src/interfaces/IRbtcBridge.sol";
 import {IPegBase} from "src/interfaces/IPegBase.sol";
@@ -352,6 +351,160 @@ contract OperatorTakeManagerTest is Test, HelperContract {
         );
     }
 
+    function test_registerCancelUserTake_Revert_EnforcedPause_PausedContract() external {
+        // Arrange
+        (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_cancelUserTake();
+
+        pauseContracts();
+
+        // Assert
+        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
+
+        // Act
+        vm.prank(globalUserAddress);
+        operatorTakeManager.registerCancelUserTake(setup.cancelUserTakeSPV);
+    }
+
+    function test_registerCancelUserTake_Success_UnpausedContract() external {
+        // Arrange
+        pauseAndUnpauseContracts();
+        (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_cancelUserTake();
+
+        // Assert
+        vm.expectEmit(address(operatorTakeManager));
+        emit IOperatorTakeManager.CancelUserTakeRegistered(setup.acceptPeginTxid);
+
+        // Act
+        operatorTakeManager.registerCancelUserTake(setup.cancelUserTakeSPV);
+
+        // Assert
+        assertTrue(operatorTakeManager.getCancelUserTakeTxBlockNumber(setup.acceptPeginTxid) > 0);
+    }
+
+    function test_registerCancelUserTake_Revert_CancelUserTakeAlreadyRegistered() external {
+        // Arrange
+        pauseAndUnpauseContracts();
+        (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_advanceFunds(); // this setup registers the cancel user take spv proof
+        assertTrue(operatorTakeManager.getCancelUserTakeTxBlockNumber(setup.acceptPeginTxid) > 0);
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IOperatorTakeManager.CancelUserTakeAlreadyRegistered.selector, setup.acceptPeginTxid)
+        );
+
+        // Act - try to register it again
+        operatorTakeManager.registerCancelUserTake(setup.cancelUserTakeSPV);
+    }
+
+    function test_registerCancelUserTake_Revert_IncorrectInputsNumber() external {
+        // Arrange
+        (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_cancelUserTake();
+
+        BtcTxIn[] memory inputs = new BtcTxIn[](2);
+        inputs[0] = setup.cancelUserTakeSPV.btcTx.inputs[0];
+
+        // add one extra input
+        inputs[1] = BtcTxIn({txId: bytes32(0), vout: 0, scriptSig: hex"", sequence: Constants.SEQUENCE});
+
+        BtcTransaction memory invalidTx = BtcTransaction({
+            version: Constants.BTC_TX_VERSION,
+            inputs: inputs,
+            outputs: setup.cancelUserTakeSPV.btcTx.outputs,
+            locktime: 0
+        });
+        BtcTxSPVProof memory invalidProof = createBtcTxSPVProof(invalidTx);
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IPegoutManager.IncorrectInputsNumber.selector, 2, Constants.CANCEL_USER_TAKE_INPUT_COUNT
+            )
+        );
+
+        // Act
+        operatorTakeManager.registerCancelUserTake(invalidProof);
+    }
+
+    function test_registerCancelUserTake_Revert_IncorrectOutputsNumber() external {
+        // Arrange
+        (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_cancelUserTake();
+
+        BtcTxOut[] memory outputs = new BtcTxOut[](2);
+        outputs[0] = setup.cancelUserTakeSPV.btcTx.outputs[0];
+
+        // add one extra output
+        outputs[1] = BtcTxOut({amount: 0, scriptPubKey: hex""});
+
+        BtcTransaction memory invalidTx = BtcTransaction({
+            version: Constants.BTC_TX_VERSION,
+            inputs: setup.cancelUserTakeSPV.btcTx.inputs,
+            outputs: outputs,
+            locktime: 0
+        });
+        BtcTxSPVProof memory invalidProof = createBtcTxSPVProof(invalidTx);
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IPegoutManager.IncorrectOutputsNumber.selector, 2, Constants.CANCEL_USER_TAKE_OUTPUT_COUNT
+            )
+        );
+
+        // Act
+        operatorTakeManager.registerCancelUserTake(invalidProof);
+    }
+
+    function test_registerCancelUserTake_Revert_IncorrectVout() external {
+        // Arrange
+        (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_cancelUserTake();
+
+        uint32 wrongVout = uint32(Constants.ACCEPT_PEGIN_VOUT_ENABLER + 1);
+        setup.cancelUserTakeSPV.btcTx.inputs[0].vout = wrongVout;
+        BtcTxSPVProof memory wrongProof = createBtcTxSPVProof(setup.cancelUserTakeSPV.btcTx);
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IPegoutManager.IncorrectVout.selector, wrongVout, Constants.ACCEPT_PEGIN_VOUT_ENABLER
+            )
+        );
+
+        // Act
+        operatorTakeManager.registerCancelUserTake(wrongProof);
+    }
+
+    function test_registerCancelUserTake_Revert_PeginNotRequested() external {
+        // Arrange
+        (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_cancelUserTake();
+        bytes32 wrongAcceptPeginTxid = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
+
+        BtcTxSPVProof memory wrongProof = createBtcTxSPVProof(
+            createCancelUserTakeTx(
+                wrongAcceptPeginTxid, BtcHelper.pubKeyXonlyToCompact(getMemberDisputePubKey(operatorAddress))
+            )
+        );
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IPegBase.PeginNotRequested.selector, wrongAcceptPeginTxid));
+
+        // Act
+        operatorTakeManager.registerCancelUserTake(wrongProof);
+    }
+
+    function test_registerCancelUserTake_Revert_InvalidPegStatus() external {
+        // Arrange
+        (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_cancelUserTake();
+
+        vm.prank(address(operatorTakeManager));
+        streamManager.setPegStatus(setup.acceptPeginTxid, PegStatus.COMPLETED);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IPegBase.InvalidPegStatus.selector, PegStatus.COMPLETED));
+
+        // Act
+        operatorTakeManager.registerCancelUserTake(setup.cancelUserTakeSPV);
+    }
+
     function setup_expireOperatorTakeAndTriggerMultipleTimes() internal returns (bytes32 _pegoutSignatureHash) {
         // Arrange
         RegisterUserTakeSetup memory setup = setup_pegoutAndMemberNonces();
@@ -682,6 +835,31 @@ contract OperatorTakeManagerTest is Test, HelperContract {
         // Act
         vm.prank(opAddress);
         operatorTakeManager.registerAdvanceFunds(wrongAcceptPeginTxid, setup.advanceFundsSPV);
+    }
+
+    function test_registerAdvanceFunds_Revert_UserTakeNotCancelled() external {
+        // Arrange
+        pauseAndUnpauseContracts();
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_cancelUserTake();
+
+        bytes32 txid = bitcoinManager.getBtcTxid(setup.advanceFundsSPV.btcTx);
+        StreamPosition memory streamInfo = StreamPosition({
+            streamId: setup.stream.streamId,
+            packetNumber: setup.packetNumber,
+            slotId: setup.slotId,
+            pegStatus: PegStatus.OP_SELECTED
+        });
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IOperatorTakeManager.AdvanceFundsBeforeCancelUserTake.selector, setup.acceptPeginTxid
+            )
+        );
+
+        // Act
+        vm.prank(opAddress);
+        operatorTakeManager.registerAdvanceFunds(setup.acceptPeginTxid, setup.advanceFundsSPV);
     }
 
     function test_registerAdvanceFunds_Revert_WrongUserAmount() external {

@@ -499,8 +499,9 @@ contract DeployImplAndProxy is ScriptUtils {
         SignatureManager _signatureManager,
         TakeTimeout[] memory _timeoutSettings
     ) public returns (OperatorTakeManager) {
+        string memory contractName = "OperatorTakeManager.sol";
         (, address proxyAdddress) = deployContractAndUUPSProxy(
-            "OperatorTakeManager.sol",
+            contractName,
             abi.encodeCall(
                 OperatorTakeManager.initialize,
                 (

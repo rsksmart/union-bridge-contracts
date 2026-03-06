@@ -87,6 +87,8 @@ cast rpc evm_setNextBlockTimestamp $TIMESTAMP --rpc-url $RPC
 cast rpc evm_mine --rpc-url $RPC
 # Start the operator take flow (advance funds and reimbursement kickoff)
 bash "$SCRIPT_DIR/operator-take/trigger-operator-take.sh" -a "$ACCEPT_PEGIN_TXID" $ALPHANET_FLAG
+# Register cancel user take
+bash "$SCRIPT_DIR/operator-take/register-cancel-user-take.sh" -a "$ACCEPT_PEGIN_TXID" $ALPHANET_FLAG
 # Register operator take
 bash "$SCRIPT_DIR/operator-take/register-operator-take.sh" -a "$ACCEPT_PEGIN_TXID" $ALPHANET_FLAG
 

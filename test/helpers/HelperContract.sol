@@ -7,12 +7,12 @@ import {StreamManagerHarness} from "test/helpers/StreamManagerHarness.sol";
 import {MemberRegistryHarness} from "test/helpers/MemberRegistryHarness.sol";
 import {PeginManagerHarness} from "test/helpers/PeginManagerHarness.sol";
 import {PegoutManagerHarness} from "test/helpers/PegoutManagerHarness.sol";
-import {CommitteeRegistryHarness} from "./CommitteeRegistryHarness.sol";
+import {CommitteeRegistryHarness} from "test/helpers/CommitteeRegistryHarness.sol";
 import {SignatureManager} from "src/SignatureManager.sol";
 import {AccessManager} from "src/AccessManager.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
-import {ChallengeManager} from "src/ChallengeManager.sol";
 import {OperatorTakeManager} from "src/OperatorTakeManager.sol";
+import {ChallengeManager} from "src/ChallengeManager.sol";
 import {RbtcBridge} from "src/RbtcBridge.sol";
 import {BridgeMock} from "./BridgeMock.sol";
 import {TestUtils} from "./TestUtils.sol";
@@ -500,6 +500,7 @@ abstract contract HelperContract is Test, TestUtils {
     struct RegisterUserTakeSetup {
         BtcTransaction pegoutTx;
         BtcTxSPVProof pegoutTxSPVProof;
+        BtcTxSPVProof cancelUserTakeSPV;
         BtcTxSPVProof advanceFundsSPV;
         BtcTxSPVProof reimbursementKickoffSPV;
         BtcTxSPVProof operatorTakeSPV;
@@ -973,7 +974,7 @@ abstract contract HelperContract is Test, TestUtils {
         }
     }
 
-    function setup_advanceFunds() internal returns (address operatorAddress, RegisterUserTakeSetup memory setup) {
+    function setup_cancelUserTake() internal returns (address operatorAddress, RegisterUserTakeSetup memory setup) {
         // Arrange
         setup = setup_pegoutAndMemberNonces();
         uint256 createdAt = block.timestamp;
@@ -993,6 +994,12 @@ abstract contract HelperContract is Test, TestUtils {
         operatorAddress = opInfo.operatorTakeAddress;
         setup.pegoutId = opInfo.pegoutId;
 
+        setup.cancelUserTakeSPV = createBtcTxSPVProof(
+            createCancelUserTakeTx(
+                setup.acceptPeginTxid, BtcHelper.pubKeyXonlyToCompact(getMemberDisputePubKey(operatorAddress))
+            )
+        );
+
         setup.advanceFundsSPV = createBtcTxSPVProof(createAdvanceFundsTx(setup.userPubKey, VALUE, setup.pegoutId));
 
         BtcTransaction memory opTakeTx;
@@ -1005,6 +1012,11 @@ abstract contract HelperContract is Test, TestUtils {
         bytes memory committeePubKey = streamManager.getCommitteePubKey(uint64(DEFAULT_STREAM), setup.packetNumber);
 
         setup.challengeSPV = createBtcTxSPVProof(createChallengeTx(reimbursementTxid, committeePubKey));
+    }
+
+    function setup_advanceFunds() internal returns (address operatorAddress, RegisterUserTakeSetup memory setup) {
+        (operatorAddress, setup) = setup_cancelUserTake();
+        operatorTakeManager.registerCancelUserTake(setup.cancelUserTakeSPV);
     }
 
     function setup_getOperatorTakeData(bytes32 _acceptPeginTxid, address _operatorAddress, uint64 _slotId)

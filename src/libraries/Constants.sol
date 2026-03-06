@@ -67,6 +67,10 @@ library Constants {
     /// @dev Second output (index 1) contains metadata for tracking
     uint32 constant ADVANCE_FUNDS_VOUT_OP_RETURN = 1;
 
+    /// @dev Input index for user input in cancel user take Bitcoin transaction
+    /// @dev First input (index 0) spends the accept peg-in output UTXO
+    uint32 constant CANCEL_USER_TAKE_VIN_ACCEPT_PEGIN = 0;
+
     /// @dev Input index for user input in operator take Bitcoin transaction
     /// @dev First input (index 0) spends the accept peg-in output UTXO
     uint32 constant OPERATOR_TAKE_VIN_ACCEPT_PEGIN = 0;
@@ -82,6 +86,10 @@ library Constants {
     /// @dev Input index for revealed input in operator won Bitcoin transaction
     /// @dev Second input (index 1) spends the revealed input UTXO
     uint32 constant OPERATOR_WON_VIN_INPUT_REVEALED = 1;
+
+    /// @dev Output index for operator dispute key in cancel user take Bitcoin transaction
+    /// @dev First output (index 0) contains the payment to the operator's dispute key
+    uint32 constant CANCEL_USER_TAKE_VOUT_OPERATOR = 0;
 
     /// @dev Output index for operator dispute key inoperator take Bitcoin transaction
     /// @dev First output (index 0) contains the payment to the operator's dispute key
@@ -113,17 +121,21 @@ library Constants {
     /// @dev First input (index 0) spends the reimbursement kickoff UTXO
     uint32 constant CHALLENGE_VIN_REIMBURSEMENT_KICKOFF = 0;
 
-    /// @dev Number of inputs in a challenge Bitcoin transaction
-    uint32 constant CHALLENGE_INPUT_COUNT = 1;
-
-    /// @dev Number of inputs in an input not revealed Bitcoin transaction
-    uint32 constant INPUT_NOT_REVEALED_INPUT_COUNT = 1;
-
     /// @dev Input index for challenge vin in input not revealed Bitcoin transaction
     uint32 constant INPUT_NOT_REVEALED_VIN_CHALLENGE = 0;
 
     /// @dev Input index for revealed vin challenge in input revealed Bitcoin transaction
     uint32 constant INPUT_REVEALED_VIN_CHALLENGE = 0;
+
+    /// @dev Input index for kickoff vin in kickoff Bitcoin transaction
+    uint32 constant KICKOFF_VIN_SLOT_ID = 0;
+
+    // Transaction Input/Output Counts
+    /// @dev Number of inputs in a challenge Bitcoin transaction
+    uint32 constant CHALLENGE_INPUT_COUNT = 1;
+
+    /// @dev Number of inputs in an input not revealed Bitcoin transaction
+    uint32 constant INPUT_NOT_REVEALED_INPUT_COUNT = 1;
 
     /// @dev Number of inputs in a stop operator won Bitcoin transaction
     uint32 constant STOP_OPERATOR_WON_INPUT_COUNT = 2;
@@ -134,10 +146,6 @@ library Constants {
     /// @dev Input index for kickoff vin in kickoff Bitcoin transaction
     uint32 constant KICKOFF_INPUT_COUNT = 1;
 
-    /// @dev Input index for kickoff vin in kickoff Bitcoin transaction
-    uint32 constant KICKOFF_VIN_SLOT_ID = 0;
-
-    // Transaction Input/Output Counts
     /// @dev Number of outputs in a request peg-in transaction
     /// @dev Includes: taptree output, OP_RETURN metadata, and enabler output
     uint32 constant REQUEST_PEGIN_OUTPUT_COUNT = 3;
@@ -149,6 +157,14 @@ library Constants {
     /// @dev Number of outputs in an accept peg-in transaction
     /// @dev Includes: taptree output, enabler output, and speed-up output
     uint32 constant ACCEPT_PEGIN_OUTPUT_COUNT = 3;
+
+    /// @dev Number of inputs in a cancel user take transaction
+    /// @dev Includes: accept pegin enabler input
+    uint32 constant CANCEL_USER_TAKE_INPUT_COUNT = 1;
+
+    /// @dev Number of outputs in a cancel user take transaction
+    /// @dev Includes: operator speedup key
+    uint32 constant CANCEL_USER_TAKE_OUTPUT_COUNT = 1;
 
     /// @dev Number of inputs in a pegout transaction
     /// @dev Includes: accept pegin taptree input and accept pegin enabler input

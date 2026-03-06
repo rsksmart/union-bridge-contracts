@@ -222,6 +222,28 @@ abstract contract ScriptUtils is Script {
         return btcTxSPVProof;
     }
 
+    function createCancelUserTakeTx(bytes32 _acceptPeginTxid, bytes memory _operatorPubKey)
+        internal
+        pure
+        returns (BtcTransaction memory)
+    {
+        // Input: spend the accept peg-in UTXO
+        BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
+        btcInputs[0] = BtcTxIn({
+            txId: _acceptPeginTxid,
+            vout: Constants.ACCEPT_PEGIN_VOUT_ENABLER, // Enabler output
+            sequence: Constants.SEQUENCE,
+            scriptSig: hex""
+        });
+
+        // Output: operator speedup
+        BtcTxOut[] memory btcOutputs = new BtcTxOut[](1);
+        bytes memory operatorScriptPubKey = BtcScriptParser.getP2WPKHScript(_operatorPubKey);
+        btcOutputs[0] = BtcTxOut({amount: Constants.SPEED_UP_AMOUNT, scriptPubKey: operatorScriptPubKey});
+
+        return BtcTransaction({version: Constants.BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
+    }
+
     function createOperatorTakeTx(
         bytes32 _acceptPeginTxid,
         bytes32 _reimbursementKickoffTxid,

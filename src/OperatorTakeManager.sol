@@ -26,6 +26,9 @@ contract OperatorTakeManager is IOperatorTakeManager, PegManagerBase {
     /// @notice The pegout ID sequence number incremented for each new triggerOperatorTake
     uint256 public sequenceNumber;
 
+    /// @notice Mapping that connects the blockNumber where the cancel user take tx was mined with its corresponding acceptPeginTxid
+    mapping(bytes32 acceptPeginTxid => int256 blockNumber) internal cancelUserTakeTxBlockNumber;
+
     mapping(bytes32 acceptPeginTxid => OperatorTakeInfo info) internal operatorTakeInfo;
 
     /// @notice Initializes the OperatorTakeManager contract
@@ -48,7 +51,7 @@ contract OperatorTakeManager is IOperatorTakeManager, PegManagerBase {
         IStreamManager _streamManager,
         ISignatureManager _signatureManager,
         TakeTimeout[] memory _takeTimeouts
-    ) public initializer {
+    ) public virtual initializer {
         __PegManagerBase_init(
             _initialOwner,
             _accessManager,
@@ -94,6 +97,64 @@ contract OperatorTakeManager is IOperatorTakeManager, PegManagerBase {
     /// @inheritdoc IOperatorTakeManager
     function getOperatorTakeInfo(bytes32 _acceptPeginTxid) external view returns (OperatorTakeInfo memory) {
         return operatorTakeInfo[_acceptPeginTxid];
+    }
+
+    /// @inheritdoc IOperatorTakeManager
+    function registerCancelUserTake(BtcTxSPVProof calldata _cancelUserTakeSPVProof)
+        external
+        nonReentrant
+        whenNotPaused
+    {
+        if (_cancelUserTakeSPVProof.btcTx.inputs.length != Constants.CANCEL_USER_TAKE_INPUT_COUNT) {
+            revert IPegoutManager.IncorrectInputsNumber(
+                _cancelUserTakeSPVProof.btcTx.inputs.length, Constants.CANCEL_USER_TAKE_INPUT_COUNT
+            );
+        }
+        if (_cancelUserTakeSPVProof.btcTx.outputs.length != Constants.CANCEL_USER_TAKE_OUTPUT_COUNT) {
+            revert IPegoutManager.IncorrectOutputsNumber(
+                _cancelUserTakeSPVProof.btcTx.outputs.length, Constants.CANCEL_USER_TAKE_OUTPUT_COUNT
+            );
+        }
+
+        bytes32 acceptPeginTxid = _cancelUserTakeSPVProof.btcTx.inputs[Constants.CANCEL_USER_TAKE_VIN_ACCEPT_PEGIN].txId;
+
+        if (cancelUserTakeTxBlockNumber[acceptPeginTxid] > 0) {
+            revert CancelUserTakeAlreadyRegistered(acceptPeginTxid);
+        }
+
+        // slither-disable-next-line unused-return
+        (,, uint8 pegoutConfirmations) = streamManager.validatePegoutStatus(acceptPeginTxid, PegStatus.OP_SELECTED);
+
+        // Validate that the vout is correct
+        uint32 vout = _cancelUserTakeSPVProof.btcTx.inputs[Constants.CANCEL_USER_TAKE_VIN_ACCEPT_PEGIN].vout;
+        if (vout != Constants.ACCEPT_PEGIN_VOUT_ENABLER) {
+            revert IPegoutManager.IncorrectVout(vout, Constants.ACCEPT_PEGIN_VOUT_ENABLER);
+        }
+
+        // Calculate the transaction id for verification
+        bytes32 txid = bitcoinManager.getBtcTxid(_cancelUserTakeSPVProof.btcTx);
+
+        // Verify the txid is part of the Merkle Root and has enough confirmations
+        int256 blockNumber = rbtcBridge.getTxBlockNumberAndVerifyConfirmations(
+            pegoutConfirmations,
+            txid,
+            _cancelUserTakeSPVProof.blockHash,
+            _cancelUserTakeSPVProof.merkleBranchPath,
+            _cancelUserTakeSPVProof.merkleBranchHashes
+        );
+
+        // TODO when having slashing mechanism,
+        // if the operator that mined the cancel user take tx in bitcoin
+        // did it before the user take flow was expired,
+        // we should penalize him
+
+        cancelUserTakeTxBlockNumber[acceptPeginTxid] = blockNumber;
+        emit CancelUserTakeRegistered(acceptPeginTxid);
+    }
+
+    /// @inheritdoc IOperatorTakeManager
+    function getCancelUserTakeTxBlockNumber(bytes32 _acceptPeginTxid) external view returns (int256 blockNumber) {
+        return cancelUserTakeTxBlockNumber[_acceptPeginTxid];
     }
 
     /// @inheritdoc IOperatorTakeManager
@@ -221,6 +282,10 @@ contract OperatorTakeManager is IOperatorTakeManager, PegManagerBase {
 
         (bytes32 txid, int256 blockNumber) =
             _verifyAdvanceFundsTx(_advanceFunds, pegoutInfo.userPubKey, opInfo.pegoutId, streamInfo.streamId);
+
+        if (cancelUserTakeTxBlockNumber[_acceptPeginTxid] < blockNumber) {
+            revert AdvanceFundsBeforeCancelUserTake(_acceptPeginTxid);
+        }
 
         opInfo.operatorTakeUpdatedAt = block.timestamp;
         opInfo.advanceFundsBlockNumber = blockNumber;

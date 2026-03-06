@@ -59,7 +59,10 @@ This document describes the Bitcoin transactions created by the Union Bridge pro
     - [Outputs](#user_take_tx-outputs)
     - [Transaction Flow](#user_take_tx-transaction-flow)
 - [Advance Funds Protocol - Transaction Details](#advance-funds-protocol---transaction-details)
-  - [1. ADVANCE_FUNDS_TX (Advance Funds Transaction)](#1-advance_funds_tx-advance-funds-transaction)
+  - [1. CANCEL_USER_TAKE_TX (Cancel User Take Transaction)](#1-cancel_user_take_tx-cancel-user-take-transaction)
+    - [Inputs](#cancel_user_take_tx-inputs)
+    - [Outputs](#cancel_user_take_tx-outputs)
+  - [2. ADVANCE_FUNDS_TX (Advance Funds Transaction)](#2-advance_funds_tx-advance-funds-transaction)
     - [Inputs](#advance_funds_tx-inputs)
     - [Outputs](#advance_funds_tx-outputs)
     - [Transaction Flow](#advance_funds_tx-transaction-flow)
@@ -109,7 +112,9 @@ The Union Bridge system includes multiple BitVMX protocols. This document covers
 
 ### Advance Funds Protocol
 
-1. **ADVANCE_FUNDS_TX** - Transaction allowing operators to advance funds to users before executing operator take transactions (peg-out flow, **proof of payment**)
+1. **CANCEL_USER_TAKE_TX** - Transaction for cancelling user take flow before executing operator advance funds transaction (**proof of payment**)
+
+2. **ADVANCE_FUNDS_TX** - Transaction allowing operators to advance funds to users before executing operator take transactions (peg-out flow, **proof of payment**)
 
 ### Dispute Core Protocol
 
@@ -130,17 +135,17 @@ graph TD
     B -->|Output 0| D[OPERATOR_TAKE_TX<br/>Accept PegIn Protocol<br/>Fallback]
     B -->|Output 0| E[OPERATOR_WON_TX<br/>Accept PegIn Protocol<br/>Disputed Fallback]
     B -->|Output 2| F[User speedup P2WPKH<br/>Accept PegIn Protocol]
-    
+
     %% Advance Funds Protocol
     G[ADVANCE_FUNDS_TX<br/>Advance Funds Protocol<br/>Operator advances funds to user] -->|Proof of payment| M
-    
+
     %% Dispute Core Protocol
     I[Dispute Core<br/>OP_INITIAL_DEPOSIT_TX] -->|spends with Winternitz signature| M[REIMBURSEMENT_KICKOFF_TX<br/>Dispute Core Protocol]
     M -->|Output 0: OPERATOR_TAKE_ENABLER| J[OPERATOR_TAKE_TX input 1<br/>Accept PegIn Protocol]
     M -->|Output 0| N[CHALLENGE_TX<br/>Dispute Core Protocol<br/>Challenge operator actions]
     N -->|Output 0: REVEAL_INPUT Output| K[REVEAL_INPUT_TX<br/>Dispute Core Protocol<br/>Operator reveals input]
     K -->|Output 0: OPERATOR_WON_ENABLER| L[OPERATOR_WON_TX input 1<br/>Accept PegIn Protocol]
-    
+
     style A fill:#e1f5fe
     style B fill:#f3e5f5
     style C fill:#e8f5e8
@@ -170,20 +175,20 @@ sequenceDiagram
     participant User as User
 
     Note over Op,RSK: Operator Selected (Status: OP_SELECTED)
-    
+
     Op->>BTC: 1. Dispatch ADVANCE_FUNDS_TX
     BTC-->>Op: Transaction mined
     Op->>RSK: 2. registerAdvanceFunds(SPV proof)
     RSK-->>Op: Status: ADVANCED<br/>Event: AdvanceFundsRegistered
     RSK->>User: Funds advanced
-    
+
     Op->>BTC: 3. Dispatch REIMBURSEMENT_KICKOFF_TX
     BTC-->>Op: Transaction mined
     Op->>RSK: 4. registerReimbursementKickoff(SPV proof)
     RSK-->>Op: Status: KICKOFF<br/>Event: ReimbursementKickoffRegistered
-    
+
     Note over Op,BTC: Wait for long timelock expiry
-    
+
     Op->>BTC: 5. Dispatch OPERATOR_TAKE_TX
     BTC-->>Op: Transaction mined
     Op->>RSK: 6. registerOperatorTake(SPV proof)
@@ -224,15 +229,15 @@ graph TD
     B --> C[USER_TAKE_TX<br/>Peg-out Flow - Common Case]
     B --> D[OPERATOR_TAKE_TX<br/>Peg-out Flow - Fallback]
     B --> E[OPERATOR_WON_TX<br/>Peg-out Flow - Disputed Fallback]
-    
+
     F[Pre-signed by Committee] --> B
     F --> C
     F --> D
     F --> E
-    
+
     G[Operator Signs Later] --> D
     G --> E
-    
+
     style A fill:#e1f5fe
     style B fill:#f3e5f5
     style C fill:#e8f5e8
@@ -289,10 +294,10 @@ graph TD
         A --> C[Script Tree]
         C --> D[Leaf 1: Timelock Script]
         C --> E[Leaf 2: OP_RETURN Script]
-        
+
         D --> F["OP_1 <TIMELOCK_BLOCKS> OP_CHECKSEQUENCEVERIFY OP_DROP <reimbursement_pubkey> OP_CHECKSIG"]
         E --> G["OP_RETURN <rootstock_address_bytes><amount_bytes><br/>vec![rootstock_address, value.to_be_bytes().as_slice()].concat()"]
-        
+
         style A fill:#e1f5fe
         style B fill:#f3e5f5
         style C fill:#e8f5e8
@@ -332,9 +337,9 @@ graph TD
         A[REQUEST_PEGIN_TX Enabler Output] --> B[Committee Aggregated Key]
         A --> C[Script Tree]
         C --> D[Leaf N: verify_signature Script]
-        
+
         D --> E["<dispute_xonly_pubkey> OP_CHECKSIG"]
-        
+
         style A fill:#e1f5fe
         style B fill:#f3e5f5
         style C fill:#e8f5e8
@@ -355,10 +360,10 @@ graph TD
 graph LR
     A[User's Bitcoin UTXO] --> B[REQUEST_PEGIN_TX<br/>Inputs:<br/>• Input 0: User's Bitcoin UTXO<br/>  User's private key]
     B --> C[REQUEST_PEGIN_TX<br/>Outputs:<br/>• Output 0: PegIn Request Output<br/>  P2TR - Committee Aggregated Key<br/><br/>--------------------------------<br/><br/>• Output 1: OP_RETURN Output<br/>  RSK pegin metadata<br/><br/>--------------------------------<br/><br/>• Output 2: Pegin Request Accept Enabler<br/>  P2TR - Members dispute Key<br/><br/>--------------------------------<br/><br/>• Output 3: Change Output<br/>  P2WPKH - User's key]
-    
+
     %% Flow to next transaction
     C --> D[ACCEPT_PEGIN_TX<br/>input 0<br/>Key Path: Committee Aggregated Key]
-    
+
     style A fill:#e1f5fe
     style B fill:#e1f5fe
     style C fill:#e1f5fe
@@ -394,10 +399,10 @@ graph LR
         A --> C[Script Tree]
         C --> D[Leaf 1: Timelock Script]
         C --> E[Leaf 2: OP_RETURN Script]
-        
+
         D --> F["OP_1 <TIMELOCK_BLOCKS> OP_CHECKSEQUENCEVERIFY OP_DROP <reimbursement_pubkey> OP_CHECKSIG"]
         E --> G["OP_RETURN <rootstock_address_bytes><amount_bytes><br/>vec![rootstock_address, value.to_be_bytes().as_slice()].concat()"]
-        
+
         style A fill:#e1f5fe
         style B fill:#f3e5f5
         style C fill:#e8f5e8
@@ -415,10 +420,10 @@ As this is a user transaction he can decide any output.
 graph LR
     A[User's Bitcoin UTXO] --> B[REQUEST_PEGIN_TX<br/>Inputs:<br/>• Input 0: User's Bitcoin UTXO<br/>  User's private key]
     B --> C[REQUEST_PEGIN_TX<br/>Outputs:<br/>• Output 0: PegIn Request Output<br/>  P2TR - Committee Aggregated Key<br/><br/>--------------------------------<br/><br/>• Output 1: OP_RETURN Output<br/>  RSK pegin metadata<br/><br/>--------------------------------<br/><br/>• Output 2: Pegin Request Accept Enabler<br/>  P2TR - Members dispute Key<br/><br/>--------------------------------<br/><br/>• Output 3: Change Output<br/>  P2WPKH - User's key]
-    
+
     %% Flow to USER_REIMBURSMENT_TX
     C -->|Output 0: Script path<br/>spends with timelock| D[USER_REIMBURSMENT_TX<br/>Inputs:<br/>• Input 0: REQUEST_PEGIN_TX Output 0<br/>  Script Path: Timelock Script]
-    
+
     style A fill:#e1f5fe
     style B fill:#e1f5fe
     style C fill:#e1f5fe
@@ -450,9 +455,9 @@ graph LR
         A[REQUEST_PEGIN_TX Output 2<br/>Enabler Output] --> B[Committee Aggregated Key]
         A --> C[Script Tree]
         C --> D[Leaf N: verify_signature Script]
-        
+
         D --> E["<dispute_xonly_pubkey> OP_CHECKSIG"]
-        
+
         style A fill:#e1f5fe
         style B fill:#f3e5f5
         style C fill:#e8f5e8
@@ -469,10 +474,10 @@ Output is not important as we only want to consume the enabler.
 graph LR
     A[User's Bitcoin UTXO] --> B[REQUEST_PEGIN_TX<br/>Inputs:<br/>• Input 0: User's Bitcoin UTXO<br/>  User's private key]
     B --> C[REQUEST_PEGIN_TX<br/>Outputs:<br/>• Output 0: PegIn Request Output<br/>  P2TR - Committee Aggregated Key<br/><br/>--------------------------------<br/><br/>• Output 1: OP_RETURN Output<br/>  RSK pegin metadata<br/><br/>--------------------------------<br/><br/>• Output 2: Pegin Request Accept Enabler<br/>  P2TR - Members dispute Key <br/><br/>--------------------------------<br/><br/>• Output 3: Change Output<br/>  P2WPKH - User's key]
-    
+
     %% Flow to REJECT_PEGIN_TX
     C -->|Output 2: Script path<br/>spends with dispute key| D[REJECT_PEGIN_TX<br/>Inputs:<br/>• Input 0: REQUEST_PEGIN_TX Output 2<br/>  Script Path: Dispute Key]
-    
+
     style A fill:#e1f5fe
     style B fill:#e1f5fe
     style C fill:#e1f5fe
@@ -507,10 +512,10 @@ graph LR
         A --> C[Script Tree]
         C --> D[Leaf 1: Timelock Script]
         C --> E[Leaf 2: OP_RETURN Script]
-        
+
         D --> F["OP_1 <TIMELOCK_BLOCKS> OP_CHECKSEQUENCEVERIFY OP_DROP <reimbursement_pubkey> OP_CHECKSIG"]
         E --> G["OP_RETURN <rootstock_address_bytes><amount_bytes><br/>vec![rootstock_address, value.to_be_bytes().as_slice()].concat()"]
-        
+
         style A fill:#e1f5fe
         style B fill:#f3e5f5
         style C fill:#e8f5e8
@@ -537,9 +542,9 @@ graph LR
         A[REQUEST_PEGIN_TX Enabler Output] --> B[Committee Aggregated Key]
         A --> C[Script Tree]
         C --> D[Leaf N: verify_signature Script]
-        
+
         D --> E["<dispute_xonly_pubkey> OP_CHECKSIG"]
-        
+
         style A fill:#e1f5fe
         style B fill:#f3e5f5
         style C fill:#e8f5e8
@@ -565,7 +570,7 @@ graph LR
     graph TD
         A[ACCEPT_PEGIN_TX Output] --> B[Committee Aggregated Key]
         A --> C[Empty Script Tree]
-        
+
         style A fill:#f3e5f5
         style B fill:#e8f5e8
         style C fill:#ffebee
@@ -589,9 +594,9 @@ graph LR
         A[ACCEPT_PEGIN_TX CANCEL_TAKE_0 Enabler Output] --> B[Committee Aggregated Key]
         A --> C[Script Tree]
         C --> D[Leaf N: verify_signature Script]
-        
+
         D --> E["<operator_dispute_xonly_pubkey> OP_CHECKSIG"]
-        
+
         style A fill:#f3e5f5
         style B fill:#e8f5e8
         style C fill:#e8f5e8
@@ -612,12 +617,12 @@ graph LR
     A[REQUEST_PEGIN_TX<br/>created by user<br/>Output 0] --> B[ACCEPT_PEGIN_TX<br/>Inputs:<br/>• Input 0: REQUEST_PEGIN_TX Output 0<br/>  Key Path: Committee Aggregated Key<br/><br/>--------------------------------<br/><br/>• Input 1: REQUEST_PEGIN_TX Output 2<br/>  Key Path: Committee Aggregated Key]
     G[REQUEST_PEGIN_TX<br/>created by user<br/>Output 2] --> B
     B --> C[ACCEPT_PEGIN_TX<br/>Outputs:<br/>• Output 0: Main PegIn Output<br/>  P2TR - Committee Aggregated Key<br/><br/>--------------------------------<br/><br/>• Output 1: CANCEL_TAKE_0 Enabler<br/>  P2TR - Operator dispute keys<br/><br/>--------------------------------<br/><br/>• Output 2: Speedup Output<br/>  P2WPKH - User's reimbursement key]
-    
+
     %% Flow to next transactions
     C --> D[USER_TAKE_TX<br/>input 0<br/>Key Path: Committee Aggregated Key]
     C --> E[OPERATOR_TAKE_TX<br/>input 0<br/>Key Path: Committee Aggregated Key]
     C --> F[OPERATOR_WON_TX<br/>input 0<br/>Key Path: Committee Aggregated Key]
-    
+
     style A fill:#e1f5fe
     style G fill:#e1f5fe
     style B fill:#f3e5f5
@@ -687,13 +692,12 @@ graph LR
     A[ACCEPT_PEGIN_TX<br/>output 0] --> B[OPERATOR_TAKE_TX<br/>Inputs:<br/>• Input 0: ACCEPT_PEGIN_TX output<br/>  Key Path: Committee Aggregated Key<br/><br/>--------------------------------<br/><br/>• Input 1: REIMBURSEMENT_KICKOFF_TX output<br/>  Script Path: Timelock Script]
     C[Dispute Core<br/>REIMBURSEMENT_KICKOFF_TX<br/>output] --> B
     B --> D[OPERATOR_TAKE_TX<br/>Outputs:<br/>• Output 0: Operator Output<br/>  P2WPKH - Operator's dispute key<br/><br/>--------------------------------<br/><br/>• Output 1: Speedup Output<br/>  P2WPKH - Operator's speedup key]
-    
+
     style A fill:#f3e5f5
     style B fill:#fff3e0
     style C fill:#fce4ec
     style D fill:#fff3e0
 ```
-
 
 ### 3. OPERATOR_WON_TX (Operator Won Transaction)
 
@@ -729,7 +733,7 @@ graph LR
   - **Script Path**: Uses timelock script leaf (leaf 0) for spending
   - **Script Tree**: Contains one script leaf:
     1. **Operator Won Script (Leaf 0)**: `OP_1 <OP_WON_TIMELOCK> OP_CHECKSEQUENCEVERIFY OP_DROP VERIFY_SIGNATURE(<take_aggregated_key>)` - Allows operator to claim funds after winning a challenge dispute, requires waiting for OP_WON_TIMELOCK blocks
-  - **Spending Conditions**: 
+  - **Spending Conditions**:
     - Must wait for OP_WON_TIMELOCK blocks to expire after REVEAL_INPUT_TX confirmation
     - Must sign with committee aggregated key (`take_aggregated_key`)
     - The operator can only spend using the script path (leaf 0) after the timelock expires
@@ -757,7 +761,7 @@ graph LR
     A[ACCEPT_PEGIN_TX<br/>output 0] --> B[OPERATOR_WON_TX<br/>Inputs:<br/>• Input 0: ACCEPT_PEGIN_TX output<br/>  Key Path: Committee Aggregated Key<br/><br/>--------------------------------<br/><br/>• Input 1: REVEAL_INPUT_TX output<br/>  Key Path: Committee Aggregated Key]
     C[REVEAL_INPUT_TX<br/>Dispute Core Protocol<br/>output 0: OPERATOR_WON_ENABLER] --> B
     B --> D[OPERATOR_WON_TX<br/>Outputs:<br/>• Output 0: Operator Output<br/>  P2WPKH - Operator's dispute key<br/><br/>--------------------------------<br/><br/>• Output 1: Speedup Output<br/>  P2WPKH - Operator's speedup key]
-    
+
     style A fill:#f3e5f5
     style B fill:#fce4ec
     style C fill:#fce4ec
@@ -826,10 +830,10 @@ The **Dispute Core Protocol** is responsible for managing dispute resolution mec
         A --> C[Script Tree]
         C --> D["Leaf ({operator_index}): Operator Long Timelock Script"]
         C --> F["Leaf (M - 1): Members Challenge Script"]
-        
+
         D --> G["OP_1 <LONG_TIMELOCK> OP_CHECKSEQUENCEVERIFY OP_DROP <operator_dispute_key> OP_CHECKSIG"]
         F --> I["OP_1 <SHORT_TIMELOCK> OP_CHECKSEQUENCEVERIFY OP_DROP VERIFY_WINTERNITZ_SIGNATURE(<dispute_aggregated_key>, CHALLENGE_KEY, <challenge_key>)"]
-        
+
         style A fill:#fce4ec
         style C fill:#fff3e0
         style D fill:#fff3e0
@@ -842,11 +846,11 @@ The **Dispute Core Protocol** is responsible for managing dispute resolution mec
 graph LR
     A[OP_INITIAL_DEPOSIT_TX<br/>output 0] --> B[REIMBURSEMENT_KICKOFF_TX<br/>Inputs:<br/>• Input 0: OP_INITIAL_DEPOSIT_TX output<br/>  Script Path: Winternitz Signature]
     B --> C[REIMBURSEMENT_KICKOFF_TX<br/>Outputs:<br/>• Output 0: OPERATOR_TAKE_ENABLER Output<br/>  P2TR - Committee Aggregated Key<br/>  Multiple script leaves]
-    
+
     %% Flow to next transactions
     C --> D[OPERATOR_TAKE_TX<br/>input 1<br/>Script Path: Long Timelock]
     C --> E[CHALLENGE_TX<br/>input 0<br/>Script Path: Short Timelock + Winternitz]
-    
+
     style A fill:#fce4ec
     style B fill:#fce4ec
     style C fill:#fce4ec
@@ -896,7 +900,7 @@ The Dispute Core Protocol integrates with the **Accept PegIn Protocol** to provi
   - **Script Tree**: Contains multiple script leaves (one per committee member)
   - **Script Leaf (Challenging Member)**: `OP_1 <SHORT_TIMELOCK> OP_CHECKSEQUENCEVERIFY OP_DROP VERIFY_WINTERNITZ_SIGNATURE(<dispute_aggregated_key>, CHALLENGE_KEY, <challenge_key>)` - Allows any committee member to challenge after short timelock expires
   - **Winternitz Signature Data**: The challenging member signs the value `[1u8]` (single byte with value 1) using their CHALLENGE_KEY Winternitz key
-  - **Spending Conditions**: 
+  - **Spending Conditions**:
     - Must wait for short timelock expiry (SHORT_TIMELOCK blocks)
     - Must provide Winternitz signature with CHALLENGE_KEY proving the challenge intent
     - The challenging member uses their own script leaf index (their member index in the committee)
@@ -915,7 +919,7 @@ The Dispute Core Protocol integrates with the **Accept PegIn Protocol** to provi
   - **Script Tree**: Contains two script leaves:
     1. **Reveal Input Script**: `VERIFY_WINTERNITZ_SIGNATURE(<operator_dispute_key>, SLOT_ID_KEY, <slot_id_key>)` - Allows operator to reveal the input by signing with their SLOT_ID_KEY Winternitz key
     2. **Input Not Revealed Script**: `OP_1 <INPUT_NOT_REVEALED_TIMELOCK> OP_CHECKSEQUENCEVERIFY OP_DROP VERIFY_SIGNATURE(<dispute_aggregated_key>)` - Allows committee to claim funds if operator doesn't reveal input within the timelock
-  - **Spending Conditions**: 
+  - **Spending Conditions**:
     - Operator can spend via reveal input script path by providing Winternitz signature with SLOT_ID_KEY
     - Committee can spend via input not revealed script path after timelock expiry if operator fails to reveal
 
@@ -934,11 +938,11 @@ The Dispute Core Protocol integrates with the **Accept PegIn Protocol** to provi
 graph LR
     A[REIMBURSEMENT_KICKOFF_TX<br/>output 0: OPERATOR_TAKE_ENABLER] --> B[CHALLENGE_TX<br/>Inputs:<br/>• Input 0: REIMBURSEMENT_KICKOFF_TX output<br/>  Script Path: Short Timelock + Winternitz<br/>  Data: [1u8] signed with CHALLENGE_KEY]
     B --> C[CHALLENGE_TX<br/>Outputs:<br/>• Output 0: REVEAL_INPUT Output<br/>  P2TR - Committee Aggregated Key<br/>  Two script leaves<br/><br/>• Output 1-N: Speedup Outputs<br/>  P2WPKH - One per committee member<br/>  Amount: SPEEDUP_VALUE each]
-    
+
     %% Flow to next transactions
     C --> D[REVEAL_INPUT_TX<br/>input 0<br/>Script Path: Winternitz Signature<br/>Operator reveals input]
     C --> E[INPUT_NOT_REVEALED_TX<br/>input 0<br/>Script Path: Timelock<br/>If operator doesn't reveal]
-    
+
     style A fill:#fce4ec
     style B fill:#fce4ec
     style C fill:#fce4ec
@@ -951,7 +955,7 @@ graph LR
 The Rootstock contract validates CHALLENGE_TX through the `registerChallenge` function:
 
 - **Status Validation**: The slot must be in `KICKOFF` status (REIMBURSEMENT_KICKOFF_TX must be previously registered)
-- **Input Validation**: 
+- **Input Validation**:
   - CHALLENGE_TX must have exactly 1 input (CHALLENGE_INPUT_COUNT)
   - Input 0 must reference the registered REIMBURSEMENT_KICKOFF_TX transaction ID
 - **Member Validation**: The caller must be a member of the committee for that slot
@@ -965,7 +969,7 @@ CHALLENGE_TX is a critical component of the dispute resolution mechanism:
 - **Challenge Trigger**: Can be dispatched at any time after REIMBURSEMENT_KICKOFF_TX is registered, as long as the short timelock has expired
 - **Operator Response**: The operator must respond by dispatching REVEAL_INPUT_TX to prove they advanced funds correctly
 - **Timeout Protection**: If the operator fails to reveal within INPUT_NOT_REVEALED_TIMELOCK blocks, INPUT_NOT_REVEALED_TX can be dispatched, leading to operator penalties
-- **Dispute Outcome**: 
+- **Dispute Outcome**:
   - If operator reveals correctly: Operator can proceed with OPERATOR_WON_TX
   - If operator fails to reveal: Watchtower wins the challenge, operator is penalized
 
@@ -989,7 +993,7 @@ CHALLENGE_TX is a critical component of the dispute resolution mechanism:
   - **Script Tree**: Contains two script leaves:
     1. **Reveal Input Script (Leaf 0)**: `VERIFY_WINTERNITZ_SIGNATURE(<operator_dispute_key>, SLOT_ID_KEY, <slot_id_key>)` - Allows operator to reveal the input by signing with their SLOT_ID_KEY Winternitz key
     2. **Input Not Revealed Script (Leaf 1)**: `OP_1 <INPUT_NOT_REVEALED_TIMELOCK> OP_CHECKSEQUENCEVERIFY OP_DROP VERIFY_SIGNATURE(<dispute_aggregated_key>)` - Allows committee to claim funds if operator doesn't reveal input within the timelock (used by INPUT_NOT_REVEALED_TX)
-  - **Spending Conditions**: 
+  - **Spending Conditions**:
     - Operator can spend via reveal input script path (leaf 0) by providing Winternitz signature with SLOT_ID_KEY
     - The signature must sign the slot index value (2 bytes, u16, little-endian)
     - Committee can spend via input not revealed script path (leaf 1) after timelock expiry if operator fails to reveal
@@ -1007,11 +1011,10 @@ CHALLENGE_TX is a critical component of the dispute resolution mechanism:
   - **Key Path**: Uses committee aggregated key for direct spending
   - **Script Tree**: Contains one script leaf:
     1. **Operator Won Script**: `OP_1 <OP_WON_TIMELOCK> OP_CHECKSEQUENCEVERIFY OP_DROP VERIFY_SIGNATURE(<take_aggregated_key>)` - Allows operator to claim funds after winning a challenge dispute, requires waiting for OP_WON_TIMELOCK blocks
-  - **Spending Conditions**: 
+  - **Spending Conditions**:
     - After OP_WON_TIMELOCK blocks expire, the operator can spend via script path using committee aggregated key signature
     - This output serves as input 1 for OPERATOR_WON_TX in the Accept PegIn Protocol
   - **REVEAL_INPUT_TX Output Script Tree**:
-
 
 ##### Output 1: Speedup Output
 
@@ -1026,10 +1029,10 @@ CHALLENGE_TX is a critical component of the dispute resolution mechanism:
 graph LR
     A[CHALLENGE_TX<br/>output 0: REVEAL_INPUT Output] --> B[REVEAL_INPUT_TX<br/>Inputs:<br/>• Input 0: CHALLENGE_TX output<br/>  Script Path: Winternitz Signature<br/>  Data: slot_index (u16, little-endian)<br/>  Signed with SLOT_ID_KEY]
     B --> C[REVEAL_INPUT_TX<br/>Outputs:<br/>• Output 0: OPERATOR_WON_ENABLER Output<br/>  P2TR - Committee Aggregated Key<br/>  Operator Won Script with Timelock<br/><br/>• Output 1: Speedup Output<br/>  P2WPKH - Operator's speedup key<br/>  Amount: SPEEDUP_VALUE]
-    
+
     %% Flow to next transaction
     C --> D[OPERATOR_WON_TX<br/>input 1<br/>Script Path: Operator Won Script<br/>After OP_WON_TIMELOCK expires]
-    
+
     style A fill:#fce4ec
     style B fill:#fce4ec
     style C fill:#fce4ec
@@ -1044,7 +1047,7 @@ REVEAL_INPUT_TX is a critical component of the dispute resolution mechanism:
 - **Slot ID Proof**: The Winternitz signature on the slot index proves the operator knows which slot they're defending
 - **OPERATOR_WON_TX Enablement**: Creates the OPERATOR_WON_ENABLER output that enables OPERATOR_WON_TX execution
 - **Timelock Requirement**: The OPERATOR_WON_ENABLER output requires OP_WON_TIMELOCK blocks to pass before OPERATOR_WON_TX can be executed
-- **Dispute Outcome**: 
+- **Dispute Outcome**:
   - If operator reveals correctly: Operator can proceed with OPERATOR_WON_TX after timelock expiry
   - If operator fails to reveal: INPUT_NOT_REVEALED_TX can be dispatched, leading to operator penalties
 
@@ -1091,7 +1094,7 @@ REVEAL_INPUT_TX is a critical component of the dispute resolution mechanism:
 graph LR
     A[ACCEPT_PEGIN_TX<br/>output 0] --> B[USER_TAKE_TX<br/>Inputs:<br/>• Input 0: ACCEPT_PEGIN_TX output<br/>  Key Path: Committee Aggregated Key]
     B --> C[USER_TAKE_TX<br/>Outputs:<br/>• Output 0: User Funds Output<br/>  P2WPKH - User's key<br/><br/>--------------------------------<br/><br/>• Output 1: Speedup Output<br/>  P2WPKH - User's key]
-    
+
     style A fill:#f3e5f5
     style B fill:#e8f5e8
     style C fill:#e8f5e8
@@ -1099,7 +1102,35 @@ graph LR
 
 ## Advance Funds Protocol - Transaction Details
 
-### 1. ADVANCE_FUNDS_TX (Advance Funds Transaction)
+### 1. CANCEL_USER_TAKE_TX (Cancel User Take Transaction)
+
+**Purpose**: Transaction that cancels user take flow before operator advances funds. This transaction serves as proof that the operator has cancelled the user take flow, ensuring it is secure for him to advance the funds.
+
+#### CANCEL_USER_TAKE_TX Inputs
+
+##### CANCEL_USER_TAKE_TX Input 0: From ACCEPT_PEGIN_TX
+
+- **Type**: Taproot (P2TR)
+- **Spend Mode**: KeyOnly with Aggregate signature
+- **Sighash Type**: SIGHASH_ALL
+- **Key Required**: Committee aggregated key (`take_aggregated_key`)
+- **Previous Transaction**: ACCEPT_PEGIN_TX
+- **Description**: Spends Output 1 from the accept peg-in transaction using the committee's aggregated key signature
+- **Taproot Script Details**:
+  - **Key Path**: Uses committee aggregated key for direct spending (User Take)
+  - **Script Tree**: One leaf per operator dispute key
+  - **Spending Path**: Script path spending leaf with the operator dispute key
+
+#### CANCEL_USER_TAKE_TX Outputs
+
+##### CANCEL_USER_TAKE_TX Output 0: Speedup Output
+
+- **Type**: SegWit (P2WPKH)
+- **Amount**: SPEEDUP_VALUE
+- **Key**: Operator's speedup key (`speedup_key`)
+- **Purpose**: Speedup transaction paid by the operator
+
+### 2. ADVANCE_FUNDS_TX (Advance Funds Transaction)
 
 **Purpose**: Transaction that allows operators to advance funds to users before executing their operator take transaction. This transaction serves as proof that the operator has fulfilled their obligation to advance funds to the user. If the operator is later challenged, this transaction proof can be used to validate that they sent the funds, and if the proof is correct, the OPERATOR_WON_TX will be executed.
 
@@ -1173,7 +1204,7 @@ graph TD
     A[Operator's Advance Funds Input<br/>ADVANCE_FUNDS_INPUT_TX<br/>P2WPKH - Operator's dispute key] --> B[ADVANCE_FUNDS_TX<br/>Inputs:<br/>• Input 0: Operator's Advance Funds Input<br/>  SegWit - Operator's dispute key<br/><br/>-------------------------------<br/><br/>• Input 1: Previous OPERATOR_TAKE_TX output<br/>  SegWit - Operator's dispute key<br/>  Optional]
     C[Previous OPERATOR_TAKE_TX<br/>output<br/>Optional] --> B
     B --> D[ADVANCE_FUNDS_TX<br/>Outputs:<br/>• Output 0: User Funds Output<br/>  P2WPKH - User's key<br/>  Amount: accept_pegin_amount - USER_TAKE_FEE<br/><br/>-------------------------------<br/><br/>• Output 1: OP_RETURN Output<br/>  Contains: pegout_id 32 bytes<br/><br/>-------------------------------<br/><br/>• Output 2: Operator Change Output<br/>  P2WPKH - Operator's dispute key<br/>  Amount: input_amount - user_amount - fees<br/>  Optional if change > DUST_VALUE]
-    
+
     style A fill:#fff3e0
     style B fill:#fff3e0
     style C fill:#fff3e0

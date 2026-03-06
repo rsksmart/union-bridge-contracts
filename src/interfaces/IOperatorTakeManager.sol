@@ -38,6 +38,11 @@ interface IOperatorTakeManager {
     /// @param _kickoffSPV The BTC SPV proof of the reimbursement kickoff transaction
     function registerReimbursementKickoff(bytes32 _acceptPeginTxid, BtcTxSPVProof calldata _kickoffSPV) external;
 
+    /// @notice Registers the cancel user take proof submitted by the operator
+    /// @dev Validates the SPV proof
+    /// @param _cancelUserTakeSPVProof The BTC SPV proof of the cancel user take transaction
+    function registerCancelUserTake(BtcTxSPVProof calldata _cancelUserTakeSPVProof) external;
+
     /// @notice Deposits an operator take proof for a peg-out transaction
     /// @dev Validates the SPV proof and marks the slot as paid when operator takes over
     /// @dev Only callable when the peg status is KICKOFF and contract is unpaused
@@ -56,6 +61,9 @@ interface IOperatorTakeManager {
 
     /// @notice Gets temporary operator take information for a peg-out
     function getOperatorTakeInfo(bytes32 _acceptPeginTxid) external view returns (OperatorTakeInfo memory);
+
+    /// @notice Returns the bitcoin block number where the cancel user take tx was mined
+    function getCancelUserTakeTxBlockNumber(bytes32 _acceptPeginTxid) external view returns (int256 blockNumber);
 
     /// @notice Gets the timeout settings for a specific stream (auto-generated from public storage)
     /// @param streamId The stream identifier
@@ -81,6 +89,9 @@ interface IOperatorTakeManager {
         StreamPosition streamInfo,
         bytes32 operatorTakePubKey
     );
+
+    /// @notice Event emitted when cancel user take spv proof is registered
+    event CancelUserTakeRegistered(bytes32 indexed acceptPeginTxid);
 
     /// @notice Event emitted when operator take is triggered
     event OperatorTakeTriggered(
@@ -152,4 +163,11 @@ interface IOperatorTakeManager {
 
     /// @notice Thrown when trying to trigger operator take before operator take timeout has expired
     error OperatorTakeTimeoutNotExpired(uint256 updatedAt, uint256 expireAt);
+
+    /// @notice Thrown when operator is trying to advance funds before cancelling user take flow
+    error AdvanceFundsBeforeCancelUserTake(bytes32 acceptPeginTxid);
+
+    /// @notice Thrown when trying to register an already registered cancel user take spv proof
+    /// @param acceptPeginTxid The accept pegin txid associated with the pegout for which user take flow is already cancelled
+    error CancelUserTakeAlreadyRegistered(bytes32 acceptPeginTxid);
 }

@@ -478,9 +478,11 @@ bash shell/script/owner/check-ownership-status.sh <network>
 **Supported networks:** `testnet`, `mainnet`, `alphanet`, `local`, `regtest`
 
 **Which contracts are transferred:**
+
 - AccessManager, PeginManager, PegoutManager, OperatorTakeManager, StreamManager, CommitteeRegistry, MemberRegistry, BitcoinManager, SignatureManager, RbtcBridge, ChallengeManager
 
 **After running the transfer script:**
+
 - Step 1 is complete: Ownership transfers are initiated (the new owner is set as `pendingOwner` on all contracts)
 - Step 2 required: The new owner must call `acceptOwnership()` on each contract to complete the transfer
   - If using a Safe multisig: Use the Safe UI (https://safe.rootstock.io/) to create and execute `acceptOwnership()` transactions
@@ -503,7 +505,7 @@ This can be achived using the methods introduced at [RSKIP-502](https://github.c
 
 For local network this is not necesary as it will use the [BridgeMock](./test/helpers/BridgeMock.sol)
 
-Example to register the bridge address in alphanet and testnet with  ``setUnionBridgeContractAddressForTestnet`
+Example to register the bridge address in alphanet and testnet with `setUnionBridgeContractAddressForTestnet`
 
 ```bash
 cast send 0x0000000000000000000000000000000001000006 "setUnionBridgeContractAddressForTestnet(address)" 0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6 --rpc-url http://node-use1-1.alphanet.rskcomputing.net:4444 --legacy --value 0 --gas-limit 500100 --gas-price 4325612 --private-key <RAW_PRIVATE_KEY>
@@ -987,13 +989,14 @@ sequenceDiagram
 If not all committee members sign within the timeout period:
 
 1. **Trigger operator take**: A member calls `OperatorTakeManager.triggerOperatorTake()` to start the operator take process, which emits an event indicating which operator needs to do the funds advancement. A unique **PEGOUT ID** is created at this step (derived from stream position, operator take public key, current bitcoin block hash, version of the pegout id and an incrementing sequence number). This pegout ID is included in the `OperatorTakeTriggered` event and must be embedded in the [ADVANCE_FUNDS_TX](./bitcoin-transactions.md#1-advance_funds_tx-advance-funds-transaction) OP_RETURN output for later verification.
-2. **Operator advances funds**: An operator advances BTC to the user's Bitcoin address. For detailed information about the [ADVANCE_FUNDS_TX](./bitcoin-transactions.md#1-advance_funds_tx-advance-funds-transaction) transaction structure, inputs/outputs, and spending conditions.
-3. **Broadcast Reimbursement Kickoff**: The operator broadcasts a Reimbursement Kickoff Bitcoin transaction. When the operator calls `OperatorTakeManager.registerReimbursementKickoff()` with the SPV proof, the contract sets the [BASE EVENT](https://github.com/rsksmart/RSKIPs/blob/master/IPs/RSKIP529.md) on the RBTC bridge (via `RbtcBridge.setBaseEvent`) to the 32-byte pegout ID. This base event is used by the bridge for tracking and must be set before the operator take flow can complete.
-4. **Challenge period**: If no one challenges within the timeout period, the member proceeds
-5. **Broadcast Operator Take transaction**: The operator broadcasts the Operator Take (Take1) Bitcoin transaction. For detailed information about the [OPERATOR_TAKE_TX](./bitcoin-transactions.md#2-operator_take_tx-operator-take-transaction) transaction structure, inputs/outputs, and spending conditions.
-6. **Submit BTC transaction**: Operator calls `OperatorTakeManager.registerOperatorTake()` with the Bitcoin transaction and SPV proof
-7. **Validate transaction**: System validates the BTC transaction and proof
-8. **Peg-out Registered**: System emits an event PegoutRegistered informing that RBTC is now linked to Bitcoin via operator take. If the completed slot was the last one in the packet, the committee is released.
+2. **Cancel user take flow**: Selected operator cancels the user take flow before advancing the funds.
+3. **Operator advances funds**: An operator advances BTC to the user's Bitcoin address. For detailed information about the [ADVANCE_FUNDS_TX](./bitcoin-transactions.md#1-advance_funds_tx-advance-funds-transaction) transaction structure, inputs/outputs, and spending conditions.
+4. **Broadcast Reimbursement Kickoff**: The operator broadcasts a Reimbursement Kickoff Bitcoin transaction. When the operator calls `OperatorTakeManager.registerReimbursementKickoff()` with the SPV proof, the contract sets the [BASE EVENT](https://github.com/rsksmart/RSKIPs/blob/master/IPs/RSKIP529.md) on the RBTC bridge (via `RbtcBridge.setBaseEvent`) to the 32-byte pegout ID. This base event is used by the bridge for tracking and must be set before the operator take flow can complete.
+5. **Challenge period**: If no one challenges within the timeout period, the member proceeds
+6. **Broadcast Operator Take transaction**: The operator broadcasts the Operator Take (Take1) Bitcoin transaction. For detailed information about the [OPERATOR_TAKE_TX](./bitcoin-transactions.md#2-operator_take_tx-operator-take-transaction) transaction structure, inputs/outputs, and spending conditions.
+7. **Submit BTC transaction**: Operator calls `OperatorTakeManager.registerOperatorTake()` with the Bitcoin transaction and SPV proof
+8. **Validate transaction**: System validates the BTC transaction and proof
+9. **Peg-out Registered**: System emits an event PegoutRegistered informing that RBTC is now linked to Bitcoin via operator take. If the completed slot was the last one in the packet, the committee is released.
 
 ##### Operator Take Timeout Enforcement
 
@@ -1016,6 +1019,7 @@ If the operator's REIMBURSEMENT_KICKOFF_TX is challenged by a watchtower:
 5. **Submit BTC transaction**: Operator calls `OperatorTakeManager.registerOperatorWon()` with the SPV proof of [OPERATOR_WON_TX](./bitcoin-transactions.md#3-operator_won_tx-operator-won-transaction) transaction.
 6. **Validate transaction**: System validates the BTC transaction and proof
 7. **Peg-out Registered**: System emits an event PegoutRegistered informing that RBTC is now linked to Bitcoin via operator won (disputed fallback)
+
 ```mermaid
 sequenceDiagram
     participant M as Member
@@ -1528,7 +1532,7 @@ This architecture ensures security, upgradeability, and maintainability while pr
 
 ## Musig2 - Multi-Signatures on Bitcoin
 
-MuSig2 allows groups of mutually distrusting parties to cooperatively sign data and aggregate their signatures into a single aggregated signature which is indistinguishable from a signature made by a single private key. The group collectively controls an aggregated public key which can only create signatures if everyone in the group cooperates (AKA an *N-of-N multisignature scheme*). MuSig2 is optimized to support secure signature aggregation with only *two round-trips of network communication*.
+MuSig2 allows groups of mutually distrusting parties to cooperatively sign data and aggregate their signatures into a single aggregated signature which is indistinguishable from a signature made by a single private key. The group collectively controls an aggregated public key which can only create signatures if everyone in the group cooperates (AKA an _N-of-N multisignature scheme_). MuSig2 is optimized to support secure signature aggregation with only _two round-trips of network communication_.
 
 Specifically we use the [smart contracts to verify Musig2](./src/Musig2.sol) partial signatures, in order to slash dishonest committee participants. We followed [rust musgi2 library](https://docs.rs/musig2/latest/musig2/) implementation that uses [BIP-0327: MuSig2 for BIP340-compatible Multi-Signatures](https://github.com/bitcoin/bips/blob/master/bip-0327.mediawiki), for creating and verifying signatures which validate under Bitcoin consensus rules.
 
@@ -1538,11 +1542,11 @@ If you’re not already familiar with MuSig2, the process of cooperative signing
 
 1. All signers share their public keys with one-another. The group computes an `aggregated public` key which they collectively control.
 
-2. In the *first signing round*, signers generate and share nonces (random numbers) with one-another. These nonces have both secret and public versions. Only the public nonce (AKA PubNonce) should be shared, while the corresponding secret nonce (AKA SecNonce) must be kept secret.
+2. In the _first signing round_, signers generate and share nonces (random numbers) with one-another. These nonces have both secret and public versions. Only the public nonce (AKA PubNonce) should be shared, while the corresponding secret nonce (AKA SecNonce) must be kept secret.
 
 3. Once every signer has received the public nonces of every other signer, each signer makes a partial signature for a message using their secret key and secret nonce.
 
-4. In the *second signing round*, signers share their partial signatures with one-another. Partial signatures can be verified to place blame on misbehaving signers (but are not themselves unforgeable).
+4. In the _second signing round_, signers share their partial signatures with one-another. Partial signatures can be verified to place blame on misbehaving signers (but are not themselves unforgeable).
 
 5. A valid set of partial signatures can be aggregated into a final signature, which is just a normal Schnorr signature, valid under the aggregated public key.
 
