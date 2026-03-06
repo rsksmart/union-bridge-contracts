@@ -76,9 +76,6 @@ struct Packet {
     /// @notice The committee ID responsible for this packet
     /// @dev Each packet is managed by a specific committee of validators
     uint128 committeeId;
-    /// @notice The internal key of the committee for this packet
-    /// @dev This is the public key used for committee operations
-    bytes committeePubKey;
     /// @notice The enabler output script for the packet
     /// @dev All slots in a packet share the same enabler script based on the committee
     bytes enablerScriptPubKey;
@@ -163,12 +160,12 @@ interface IStreamManager {
     /// @dev Can only be called by the CommitteeRegistry when a new committee is formed
     /// @param _streamId The ID of the stream to create a packet for
     /// @param _committeeId The ID of the committee that will process this packet
-    /// @param _committeePubKey The public key of the committee for Bitcoin operations
+    /// @param _committeePubKey The aggregated key of the committee for Bitcoin operations
     /// @param _disputeKeys The dispute keys (covenant public keys) for the committee members
     function createNewPacket(
         uint64 _streamId,
         uint128 _committeeId,
-        bytes calldata _committeePubKey,
+        bytes memory _committeePubKey,
         bytes32[] memory _disputeKeys
     ) external;
 
@@ -255,12 +252,6 @@ interface IStreamManager {
     /// @param _packetNumber The packet number
     /// @return uint128 The committee ID for the packet
     function getCommitteeId(uint64 _streamId, uint64 _packetNumber) external view returns (uint128);
-
-    /// @notice Retrieves the committee public key for a specific packet
-    /// @param _streamId The ID of the stream
-    /// @param _packetNumber The index of the packet within the stream
-    /// @return bytes The committee public key for this packet (33 bytes)
-    function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes memory);
 
     /// @notice Retrieves the enabler script public key for a specific packet
     /// @param _streamId The ID of the stream

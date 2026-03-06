@@ -50,8 +50,6 @@ contract ForceCloseCommitteeScript is ScriptUtils, ContractAddressManager {
             Packet memory packet = streamManager.getPacket(_streamId, packetNumber);
             console.log("Packet Number:", packet.packetNumber);
             console.log("Committee ID:", packet.committeeId);
-            console.log("Committee Pub Key:");
-            console.logBytes(packet.committeePubKey);
 
             Committee memory committee = committeeRegistry.getCommittee(packet.committeeId);
 

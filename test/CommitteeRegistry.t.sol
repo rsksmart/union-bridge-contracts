@@ -351,13 +351,13 @@ contract CommitteeRegistryTest is Test, HelperContract {
         // create committee to be released
         setup_pendingCommittee();
         uint128 committeeId = COMMITTEE_ID_STREAM_1_COMMITTEE_1;
-        bytes memory committeePubKey = COMMITTEE_PUB_KEY();
 
         uint64 streamId = uint64(SETUP_PENDING_COMMITTEE_DENOMINATION);
         uint64 packetNumber = 0;
+        bytes memory aggregatedKey = registry.getCommitteePubKey(committeeId);
         bytes32[] memory disputeKeys = registry.getCommitteeDisputeKeys(committeeId);
         vm.prank(address(registry));
-        streamManager.createNewPacket(streamId, committeeId, committeePubKey, disputeKeys);
+        streamManager.createNewPacket(streamId, committeeId, aggregatedKey, disputeKeys);
 
         pauseContracts();
 

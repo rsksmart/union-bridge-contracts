@@ -10,7 +10,7 @@ import {Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
-import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
+import {ICommitteeRegistry, Committee} from "src/interfaces/ICommitteeRegistry.sol";
 
 contract AcceptPeginScript is ScriptUtils, ContractAddressManager {
     PeginManager peginManager;
@@ -39,8 +39,8 @@ contract AcceptPeginScript is ScriptUtils, ContractAddressManager {
         RequestPeginTempInfo memory requestPeginTempInfo = peginManager.getRequestPeginTempInfo(_requestPeginTxid);
 
         // Get the committee public key
-        bytes memory committeePubKey =
-            streamManager.getCommitteePubKey(streamPosition.streamId, streamPosition.packetNumber);
+        uint128 committeeId = streamManager.getCommitteeId(streamPosition.streamId, streamPosition.packetNumber);
+        bytes memory committeePubKey = committeeRegistry.getCommitteePubKey(committeeId);
 
         // BtcTransaction to verify
         BtcTransaction memory btcTransaction = BtcTransaction({
@@ -74,7 +74,6 @@ contract AcceptPeginScript is ScriptUtils, ContractAddressManager {
         });
 
         // Enabler output
-        uint128 committeeId = streamManager.getCommitteeId(streamPosition.streamId, streamPosition.packetNumber);
         bytes32[] memory disputeKeys = committeeRegistry.getCommitteeDisputeKeys(committeeId);
         bytes memory enablerScript = bitcoinManager.getEnablerOutputP2TRScriptPub(committeePubKey, disputeKeys);
         btcTransaction.outputs[1] = BtcTxOut({amount: Constants.ENABLER_AMOUNT, scriptPubKey: enablerScript});

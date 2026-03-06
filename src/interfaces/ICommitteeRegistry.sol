@@ -162,6 +162,11 @@ interface ICommitteeRegistry {
     /// @return Committee The complete committee information
     function getCommittee(uint128 _committeeId) external view returns (Committee calldata);
 
+    /// @notice Retrieves the committee public key for a specific packet
+    /// @param _committeeId The committee ID
+    /// @return bytes The committee public key for this packet (33 bytes)
+    function getCommitteePubKey(uint128 _committeeId) external view returns (bytes memory);
+
     /// @notice Gets all members of a specific committee
     /// @param _committeeId The committee ID
     /// @return Array of committee members with their roles

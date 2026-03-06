@@ -737,7 +737,7 @@ sequenceDiagram
     MR-->>-CR: Balance updates completed
     CR->>CR: _registerCommittee()
     CR-->>ENV: NewCommittee event
-    CR->>+SM: createNewPacket(streamId, committeeId, aggregatedKey)
+    CR->>+SM: createNewPacket(streamId, committeeId, aggregatedKey, disputeKeys)
     SM->>SM: Create new packet with committee
     SM-->>-CR: Packet created
     CR->>CR: _deletePendingCommittee()

@@ -147,20 +147,12 @@ contract StreamManager is IStreamManager, BaseProxy {
     function createNewPacket(
         uint64 _streamId,
         uint128 _committeeId,
-        bytes calldata _committeePubKey,
+        bytes memory _committeePubKey,
         bytes32[] memory _disputeKeys
     ) external {
         // Verify that the caller has permission to create a packet
         accessManager.canCreatePacket(_msgSender());
-        _createNewPacket(_streamId, _committeeId, _committeePubKey, _disputeKeys);
-    }
 
-    function _createNewPacket(
-        uint64 _streamId,
-        uint128 _committeeId,
-        bytes memory _committeePubKey,
-        bytes32[] memory _disputeKeys
-    ) internal {
         // Calculate enabler script once for the whole packet
         bytes memory enablerScriptPubKey = bitcoinManager.getEnablerOutputP2TRScriptPub(_committeePubKey, _disputeKeys);
 
@@ -169,7 +161,6 @@ contract StreamManager is IStreamManager, BaseProxy {
             Packet({
                 packetNumber: packetNumber,
                 committeeId: _committeeId,
-                committeePubKey: _committeePubKey,
                 enablerScriptPubKey: enablerScriptPubKey,
                 finishedSlots: 0
             })
@@ -390,11 +381,6 @@ contract StreamManager is IStreamManager, BaseProxy {
     /// @inheritdoc IStreamManager
     function getCommitteeId(uint64 _streamId, uint64 _packetNumber) external view returns (uint128) {
         return _getPacket(_streamId, _packetNumber).committeeId;
-    }
-
-    /// @inheritdoc IStreamManager
-    function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes memory) {
-        return _getPacket(_streamId, _packetNumber).committeePubKey;
     }
 
     /// @inheritdoc IStreamManager

@@ -9,7 +9,7 @@ import {ISignatureManager, OperatorTakeData} from "src/interfaces/ISignatureMana
 import {IStreamManager, Packet} from "src/interfaces/IStreamManager.sol";
 import {BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
-import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
+import {ICommitteeRegistry, Committee} from "src/interfaces/ICommitteeRegistry.sol";
 import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
 import {StreamPosition} from "src/interfaces/IPegCommonTypes.sol";
 
@@ -32,8 +32,8 @@ contract addOperatorTakeTxidsScript is ScriptUtils, ContractAddressManager {
         pegoutManager = PegoutManager(getPegoutManager());
         signatureManager = ISignatureManager(pegoutManager.signatureManager());
 
-        ICommitteeRegistry registry = getCommitteeRegistry();
-        IMemberRegistry memberRegistry = registry.memberRegistry();
+        ICommitteeRegistry committeeRegistry = getCommitteeRegistry();
+        IMemberRegistry memberRegistry = committeeRegistry.memberRegistry();
 
         bytes32 operatorXOnlyPubKey = memberRegistry.getMemberPublicKeys(getDeployerAddress()).covenantPubKey;
 
@@ -47,8 +47,8 @@ contract addOperatorTakeTxidsScript is ScriptUtils, ContractAddressManager {
         expectedPacketNumber = streamPosition.packetNumber;
         expectedSlotId = streamPosition.slotId;
 
-        Packet memory packet = streamManager.getPacket(expectedStreamId, expectedPacketNumber);
-        committeePubKey = packet.committeePubKey;
+        uint128 committeeId = streamManager.getCommitteeId(expectedStreamId, expectedPacketNumber);
+        committeePubKey = committeeRegistry.getCommitteePubKey(committeeId);
 
         // Read args from command line / env
         if (_acceptPeginTxid == bytes32(0)) {

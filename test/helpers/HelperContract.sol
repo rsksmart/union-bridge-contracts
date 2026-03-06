@@ -307,10 +307,11 @@ abstract contract HelperContract is Test, TestUtils {
         Stream memory stream = streamManager.getStream(VALUE);
         uint128 committeeId = streamManager.getCommitteeId(stream.streamId, stream.peginPacketPointer);
 
+        bytes memory aggregatedKey = registry.getCommitteePubKey(committeeId);
         bytes32[] memory disputeKeys = registry.getCommitteeDisputeKeys(committeeId);
 
         // Get the enabler output script using the BitcoinManager
-        bytes memory enablerScript = bitcoinManager.getEnablerOutputP2TRScriptPub(COMMITTEE_PUB_KEY(), disputeKeys);
+        bytes memory enablerScript = bitcoinManager.getEnablerOutputP2TRScriptPub(aggregatedKey, disputeKeys);
 
         return BtcTxOut({amount: Constants.ENABLER_AMOUNT, scriptPubKey: enablerScript});
     }
@@ -402,9 +403,9 @@ abstract contract HelperContract is Test, TestUtils {
             bitcoinManager.getPeginOpReturnData(_requestTx.outputs[Constants.REQUEST_PEGIN_VOUT_OP_RETURN]);
 
         uint128 committeeId = streamManager.getCommitteeId(uint64(DEFAULT_STREAM), packetNumber);
+        bytes memory aggregatedKey = registry.getCommitteePubKey(committeeId);
         bytes32[] memory disputeKeys = registry.getCommitteeDisputeKeys(committeeId);
-        bytes memory committeePubKey = streamManager.getCommitteePubKey(uint64(DEFAULT_STREAM), packetNumber);
-        bytes memory enablerScript = bitcoinManager.getEnablerOutputP2TRScriptPub(committeePubKey, disputeKeys);
+        bytes memory enablerScript = bitcoinManager.getEnablerOutputP2TRScriptPub(aggregatedKey, disputeKeys);
 
         return BtcTxOut({amount: Constants.ENABLER_AMOUNT, scriptPubKey: enablerScript});
     }
@@ -1009,7 +1010,8 @@ abstract contract HelperContract is Test, TestUtils {
         setup.operatorTakeSPV = createBtcTxSPVProof(opTakeTx);
 
         bytes32 reimbursementTxid = bitcoinManager.getBtcTxid(setup.reimbursementKickoffSPV.btcTx);
-        bytes memory committeePubKey = streamManager.getCommitteePubKey(uint64(DEFAULT_STREAM), setup.packetNumber);
+        uint128 committeeId = streamManager.getCommitteeId(uint64(DEFAULT_STREAM), setup.packetNumber);
+        bytes memory committeePubKey = registry.getCommitteePubKey(committeeId);
 
         setup.challengeSPV = createBtcTxSPVProof(createChallengeTx(reimbursementTxid, committeePubKey));
     }
@@ -1027,24 +1029,53 @@ abstract contract HelperContract is Test, TestUtils {
             BtcTxSPVProof memory reimbursementKickoffSPV
         )
     {
-        bytes32 operatorPubKey = getMemberDisputePubKey(_operatorAddress);
-        bytes memory operatorDisputePubKeyCompact = BtcHelper.pubKeyXonlyToCompact(operatorPubKey);
+        bytes memory operatorDisputePubKeyCompact = _getMemberDisputePubKeyCompact(_operatorAddress);
 
-        BtcTransaction memory reimbursementKickoffTx =
-            createReimbursementKickoffTx(operatorDisputePubKeyCompact, uint32(_slotId));
-        bytes32 reimbursementTxid = bitcoinManager.getBtcTxid(reimbursementKickoffTx);
+        bytes32 reimbursementTxid;
+        (reimbursementTxid, reimbursementKickoffSPV) =
+            _createReimbursementKickoffSPV(operatorDisputePubKeyCompact, uint32(_slotId));
 
-        reimbursementKickoffSPV = createBtcTxSPVProof(reimbursementKickoffTx);
         opTakeTx = createOperatorTakeTx(_acceptPeginTxid, reimbursementTxid, operatorDisputePubKeyCompact, VALUE);
 
-        bytes memory committeePubKey = streamManager.getCommitteePubKey(uint64(DEFAULT_STREAM), 0);
-        BtcTransaction memory challengeTx = createChallengeTx(reimbursementTxid, committeePubKey);
+        uint128 committeeId = streamManager.getCommitteeId(uint64(DEFAULT_STREAM), 0);
+        bytes memory committeePubKey = registry.getCommitteePubKey(committeeId);
 
-        bytes32 challengeTxid = bitcoinManager.getBtcTxid(challengeTx);
-        BtcTransaction memory inputRevealedTx = createInputRevealedTx(challengeTxid, committeePubKey);
-        bytes32 inputRevealedTxid = bitcoinManager.getBtcTxid(inputRevealedTx);
+        bytes32 challengeTxid = _createChallengeTxid(reimbursementTxid, committeePubKey);
+
+        bytes32 inputRevealedTxid = _createInputRevealedTxid(challengeTxid, committeePubKey);
 
         opWonTx = createOperatorWonTx(_acceptPeginTxid, inputRevealedTxid, operatorDisputePubKeyCompact, VALUE);
+    }
+
+    function _getMemberDisputePubKeyCompact(address _operatorAddress) internal returns (bytes memory) {
+        bytes32 operatorPubKey = getMemberDisputePubKey(_operatorAddress);
+        return BtcHelper.pubKeyXonlyToCompact(operatorPubKey);
+    }
+
+    function _createReimbursementKickoffSPV(bytes memory _operatorDisputePubKeyCompact, uint64 _slotId)
+        internal
+        returns (bytes32 reimbursementTxid, BtcTxSPVProof memory reimbursementKickoffSPV)
+    {
+        BtcTransaction memory reimbursementKickoffTx =
+            createReimbursementKickoffTx(_operatorDisputePubKeyCompact, uint32(_slotId));
+        reimbursementTxid = bitcoinManager.getBtcTxid(reimbursementKickoffTx);
+        reimbursementKickoffSPV = createBtcTxSPVProof(reimbursementKickoffTx);
+    }
+
+    function _createChallengeTxid(bytes32 _reimbursementTxid, bytes memory _committeePubKey)
+        internal
+        returns (bytes32 challengeTxid)
+    {
+        BtcTransaction memory challengeTx = createChallengeTx(_reimbursementTxid, _committeePubKey);
+        return bitcoinManager.getBtcTxid(challengeTx);
+    }
+
+    function _createInputRevealedTxid(bytes32 _challengeTxid, bytes memory _committeePubKey)
+        internal
+        returns (bytes32 inputRevealedTxid)
+    {
+        BtcTransaction memory inputRevealedTx = createInputRevealedTx(_challengeTxid, _committeePubKey);
+        return bitcoinManager.getBtcTxid(inputRevealedTx);
     }
 
     function setup_operatorTake() internal returns (address operatorAddress, RegisterUserTakeSetup memory setup) {
@@ -1057,7 +1088,8 @@ abstract contract HelperContract is Test, TestUtils {
     function setup_challenge() internal returns (address operatorAddress, RegisterUserTakeSetup memory setup) {
         (operatorAddress, setup) = setup_operatorTake();
 
-        bytes memory committeePubKey = streamManager.getCommitteePubKey(uint64(DEFAULT_STREAM), setup.packetNumber);
+        uint128 committeeId = streamManager.getCommitteeId(uint64(DEFAULT_STREAM), setup.packetNumber);
+        bytes memory committeePubKey = registry.getCommitteePubKey(committeeId);
         bytes32 challengeTxid = bitcoinManager.getBtcTxid(setup.challengeSPV.btcTx);
         setup.inputRevealedSPV = createBtcTxSPVProof(createInputRevealedTx(challengeTxid, committeePubKey));
         setup.inputNotRevealedSPV = createBtcTxSPVProof(createInputNotRevealedTx(challengeTxid, committeePubKey));

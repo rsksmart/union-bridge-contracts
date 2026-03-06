@@ -702,9 +702,10 @@ contract PegoutManagerTest is Test, HelperContract {
 
         // 2. Create second packet with the existing committee setup
         uint128 committeeId = COMMITTEE_ID_STREAM_1_COMMITTEE_1;
+        bytes memory committeePubKey = COMMITTEE_PUB_KEY();
         bytes32[] memory disputeKeys = registry.getCommitteeDisputeKeys(committeeId);
         vm.prank(address(registry));
-        streamManager.createNewPacket(stream.streamId, committeeId, setupExpectedCommittee.aggregatedKey, disputeKeys);
+        streamManager.createNewPacket(stream.streamId, committeeId, committeePubKey, disputeKeys);
         streamManager.setSlotHarness(stream.streamId, 1, scriptPubKey, txId, amount, SlotState.FILLED);
 
         // Set up mock to allow burning this amount

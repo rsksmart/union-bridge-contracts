@@ -177,4 +177,12 @@ contract CommitteeRegistryHarness is CommitteeRegistry {
     ) public {
         memberRegistry.stakePreStakedCandidatesBalance(_members, _denomination, _packetNumber);
     }
+
+    /// @notice Forcefully sets a committee's aggregated key for testing purposes
+    /// @dev Bypasses all validation - USE ONLY IN TESTS
+    /// @param _committeeId The committee ID
+    /// @param _aggregatedKey The aggregated public key to set
+    function setCommitteeAggregatedKeyHarness(uint128 _committeeId, bytes memory _aggregatedKey) public {
+        committeesById[_committeeId].aggregatedKey = _aggregatedKey;
+    }
 }

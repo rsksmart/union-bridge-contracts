@@ -33,8 +33,8 @@ contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
         pegoutManager = PegoutManager(getPegoutManager());
         operatorTakeManager = getOperatorTakeManager();
 
-        ICommitteeRegistry registry = getCommitteeRegistry();
-        IMemberRegistry memberRegistry = registry.memberRegistry();
+        ICommitteeRegistry committeeRegistry = getCommitteeRegistry();
+        IMemberRegistry memberRegistry = committeeRegistry.memberRegistry();
 
         bytes32 operatorXOnlyPubKey = memberRegistry.getMemberPublicKeys(getDeployerAddress()).covenantPubKey;
         operatorPubKey = BtcHelper.pubKeyXonlyToCompact(operatorXOnlyPubKey);
@@ -48,8 +48,8 @@ contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
         expectedPacketNumber = streamPosition.packetNumber;
         expectedSlotId = streamPosition.slotId;
 
-        Packet memory packet = streamManager.getPacket(expectedStreamId, expectedPacketNumber);
-        committeePubKey = packet.committeePubKey;
+        uint128 committeeId = streamManager.getCommitteeId(expectedStreamId, expectedPacketNumber);
+        committeePubKey = committeeRegistry.getCommitteePubKey(committeeId);
 
         expectedPegoutId = operatorTakeManager.getOperatorTakeInfo(_acceptPeginTxid).pegoutId;
     }

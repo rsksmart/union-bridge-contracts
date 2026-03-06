@@ -275,6 +275,15 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         return _getCommittee(_committeeId);
     }
 
+    function _getCommitteeId(uint64 _streamId, uint64 _nonce) internal pure returns (uint128) {
+        return uint128(uint256(keccak256(abi.encode(_streamId, _nonce))));
+    }
+
+    /// @inheritdoc ICommitteeRegistry
+    function getCommitteePubKey(uint128 _committeeId) external view returns (bytes memory) {
+        return _getCommittee(_committeeId).aggregatedKey;
+    }
+
     function _getCommittee(uint128 _committeeId) internal view returns (Committee storage) {
         Committee storage committee = committeesById[_committeeId];
         if (committee.members.length == 0) {
@@ -368,7 +377,6 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
     // Note: State changes after external call to memberRegistry.selectCommittee() are necessary because
     // we need the returned committee member data to populate state. memberRegistry is a trusted contract
     // controlled by the same owner, making reentrancy attacks impossible.
-    // slither-disable-next-line reentrancy-benign,reentrancy-events
     function _createCommittee(uint64 _streamId) internal returns (PendingCommitteeStatus) {
         // slither-disable-next-line reentrancy-benign,calls-loop
         (CommitteeMember[] memory committeeMembers, PendingCommitteeStatus status) = memberRegistry.selectCommittee(
@@ -380,7 +388,8 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         }
 
         shouldCreateCommittee[_streamId] = false;
-        uint128 committeeId = uint128(uint256(keccak256(abi.encode(_streamId, block.number))));
+        // block.number acts as a nonce: successive committees for the same stream get distinct IDs.
+        uint128 committeeId = _getCommitteeId(_streamId, uint64(block.number));
         pendingCommittees[_streamId] = committeeId;
 
         Committee storage committee = committeesById[committeeId];

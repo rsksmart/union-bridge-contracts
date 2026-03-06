@@ -79,7 +79,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
 
         // Get the current packet's committee ID and key
         uint128 committeeId = streamManager.getCommitteeId(stream.streamId, stream.peginPacketPointer);
-        bytes memory committeeKey = streamManager.getCommitteePubKey(stream.streamId, stream.peginPacketPointer);
+        bytes memory committeeKey = committeeRegistry.getCommitteePubKey(committeeId);
 
         // Get the committee members
         CommitteeMember[] memory committeeMembers = committeeRegistry.getCommitteeMembers(committeeId);
@@ -115,12 +115,10 @@ contract PeginManager is IPeginManager, PegManagerBase {
             uint64 packetNumber,
             address rskDestinationAddress,
             bytes32 btcReimbursementPubKey,
+            uint128 committeeId,
             Stream memory stream,
             bytes memory committeePubKey
         ) = _validatePeginP2TRAndOpReturn(_requestPeginTxSPVProof);
-
-        // Get committee ID for later use
-        uint128 committeeId = streamManager.getCommitteeId(stream.streamId, packetNumber);
 
         // Fetch the enabler scriptPubKey from the packet (calculated during packet creation)
         bytes memory enablerScriptPubKey = streamManager.getEnablerScriptPubKey(stream.streamId, packetNumber);
@@ -211,6 +209,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
             uint64 packetNumber,
             address rskDestinationAddress,
             bytes32 btcReimbursementPubKey,
+            uint128 committeeId,
             Stream memory stream,
             bytes memory committeePubKey
         )
@@ -225,8 +224,9 @@ contract PeginManager is IPeginManager, PegManagerBase {
         stream =
             streamManager.getStream(_requestPeginTxSPVProof.btcTx.outputs[Constants.REQUEST_PEGIN_VOUT_TAPTREE].amount);
 
-        // getCommitteePubKey reverts if packet does not exist
-        committeePubKey = streamManager.getCommitteePubKey(stream.streamId, packetNumber);
+        committeeId = streamManager.getCommitteeId(stream.streamId, packetNumber);
+        // getCommitteePubKey reverts if committee does not exist
+        committeePubKey = committeeRegistry.getCommitteePubKey(committeeId);
 
         // Validates that the Taproot Script has a Key Path for the committeePubKey
         // and has a timelock for btcReimbursementPubKey

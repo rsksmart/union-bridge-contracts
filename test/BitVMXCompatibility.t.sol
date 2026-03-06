@@ -173,8 +173,7 @@ contract BitVMXCompatibilityTest is Test, HelperContract {
         uint128 committeeId = _setupCommitteeForStream0();
 
         // Override the committee's aggregated key with BitVMX's key
-        // Stream ID = 0 (0.001 BTC stream), Packet Number = 0 (first packet)
-        streamManager.setCommitteeAggregatedKeyHarness(0, 0, committeeAggregatedKey);
+        registry.setCommitteeAggregatedKeyHarness(committeeId, committeeAggregatedKey);
 
         // Get the committee info to find operator addresses
         Committee memory committee = registry.getCommittee(committeeId);

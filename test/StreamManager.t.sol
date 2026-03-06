@@ -126,7 +126,7 @@ contract StreamManagerTest is Test, HelperContract {
         // Assert
         Packet memory packet = streamManager.getPacket(setupStreamId, expectedPacketNumber);
         assertEq(packet.packetNumber, expectedPacketNumber, "packetNumber was not set correctly");
-        assertEq(packet.committeePubKey, committeePubKey, "committeePubKey was not set correctly");
+        assertEq(packet.committeeId, committeeId, "committeeId was not set correctly");
         bytes memory expectedEnablerScriptPubKey =
             hex"51201cbeafdb8fa122bf71ea817df2ed9131bfa165952d63ba5841313f918a0f86c9";
         assertEq(packet.enablerScriptPubKey, expectedEnablerScriptPubKey, "enablerScriptPubKey was not set correctly");
