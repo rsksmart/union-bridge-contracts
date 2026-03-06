@@ -104,6 +104,7 @@ interface ISignatureManager {
     /// @dev Only operators can add OperatorTake transaction id's
     /// @param _acceptPeginTxid The accept peg-in transaction id
     /// @param _takeTxid The OperatorTake transaction id to add
+    /// @param _wonTxid The OperatorWon transaction id to add
     function addOperatorTakeTxids(bytes32 _acceptPeginTxid, bytes32 _takeTxid, bytes32 _wonTxid) external;
 
     /// @notice Checks if all OperatorTake transaction id's are ready for a given accept peg-in transaction
