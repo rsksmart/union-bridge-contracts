@@ -297,6 +297,11 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         return _getCommitteeMembers(_committeeId);
     }
 
+    /// @inheritdoc ICommitteeRegistry
+    function getCommitteeMembersLength(uint128 _committeeId) external view returns (uint256) {
+        return _getCommittee(_committeeId).members.length;
+    }
+
     function _getCommitteeMembers(uint128 _committeeId) internal view returns (CommitteeMember[] memory) {
         return _getCommittee(_committeeId).members;
     }

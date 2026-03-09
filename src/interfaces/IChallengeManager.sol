@@ -109,10 +109,26 @@ interface IChallengeManager {
     /// @param expected The expected number of inputs
     error InvalidInputNotRevealedInputCount(uint256 actual, uint256 expected);
 
+    /// @notice Thrown when the number of outputs in an input not revealed transaction is incorrect
+    /// @param actual The actual number of outputs found
+    /// @param expected The expected number of outputs (1 OP_RETURN + one speedup per committee member)
+    error InvalidInputNotRevealedOutputCount(uint256 actual, uint256 expected);
+
+    /// @notice Thrown when outputs are empty or output 0 of input not revealed tx is not OP_RETURN as required
+    error InvalidInputNotRevealedOutput();
+
+    /// @notice Thrown when outputs are empty or the output 0 input revealed tx is actually the output 0 of an input not revealed tx
+    error InvalidRevealedOutput();
+
     /// @notice Thrown when the number of inputs in a input reveal transaction is incorrect
     /// @param actual The actual number of inputs found
     /// @param expected The expected number of inputs
     error InvalidRevealedInputCount(uint256 actual, uint256 expected);
+
+    /// @notice Thrown when the number of outputs in an input reveal transaction is incorrect
+    /// @param actual The actual number of outputs found
+    /// @param expected The expected number of outputs
+    error InvalidRevealedOutputCount(uint256 actual, uint256 expected);
 
     /// @notice Thrown when there is no challenge registered for the given accept peg-in transaction id
     /// @param acceptPeginTxid The accept peg-in transaction id

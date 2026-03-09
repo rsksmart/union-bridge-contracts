@@ -1110,6 +1110,32 @@ contract CommitteeRegistryTest is Test, HelperContract {
         assertEqCommitteeMembersSelection(expectedCommittee.members, members, "Member list are not equal");
     }
 
+    function test_getCommitteeMembersLength_Success() external {
+        // Arrange
+        (Committee memory expectedCommittee,) = setup_completeCommittee();
+        uint128 committeeId = COMMITTEE_ID_STREAM_1_COMMITTEE_1;
+
+        // Act
+        uint256 length = registry.getCommitteeMembersLength(committeeId);
+
+        // Assert
+        assertEq(length, expectedCommittee.members.length, "Length should match committee members length");
+        assertEq(
+            length, registry.getCommitteeMembers(committeeId).length, "Length should match getCommitteeMembers().length"
+        );
+    }
+
+    function test_getCommitteeMembersLength_Revert_CommitteeNotFound() external {
+        // Arrange
+        uint128 nonExistentCommitteeId = 0x1234567890abcdef1234567890abcdef;
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(ICommitteeRegistry.CommitteeNotFound.selector, nonExistentCommitteeId));
+
+        // Act
+        registry.getCommitteeMembersLength(nonExistentCommitteeId);
+    }
+
     function test_selectCommittee_Success_MinOperators() external {
         // Arrange
         StreamDenomination denomination = StreamDenomination._0_01BTC;

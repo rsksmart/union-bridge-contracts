@@ -172,6 +172,11 @@ interface ICommitteeRegistry {
     /// @return Array of committee members with their roles
     function getCommitteeMembers(uint128 _committeeId) external view returns (CommitteeMember[] memory);
 
+    /// @notice Gets the number of members in a specific committee
+    /// @param _committeeId The committee ID
+    /// @return The number of committee members (e.g. for validating input-not-revealed tx output count)
+    function getCommitteeMembersLength(uint128 _committeeId) external view returns (uint256);
+
     /// @notice Gets the member registry contract address
     /// @return The member registry contract
     function memberRegistry() external view returns (IMemberRegistry);

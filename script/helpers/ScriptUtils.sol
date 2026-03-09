@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import {Script} from "forge-std/Script.sol";
 import {Vm} from "forge-std/Vm.sol";
 import {PublicKeyType, ECDSAPublicKey, RSAPublicKey, RSA_PUBLIC_KEY_CHUNKS} from "src/interfaces/IMemberRegistry.sol";
-import {MemberRegistrationKeys} from "src/interfaces/IMemberRegistry.sol";
+import {MemberRegistrationKeys, MemberKeys} from "src/interfaces/IMemberRegistry.sol";
 import {BtcTxSPVProof} from "src/interfaces/IPegCommonTypes.sol";
 import {BtcTransaction, BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
 import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
@@ -500,11 +500,11 @@ abstract contract ScriptUtils is Script {
     }
 
     // ========================== Reveal ==========================
-    function createInputRevealedTx(bytes32 _challengeTxid, bytes memory _committeePubKey)
-        internal
-        pure
-        returns (BtcTransaction memory)
-    {
+    function createInputRevealedTx(
+        bytes32 _challengeTxid,
+        bytes memory _committeePubKey,
+        bytes memory _operatorDisputePubKeyCompact
+    ) internal pure returns (BtcTransaction memory) {
         // Input: spend the challenge UTXO
         BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
         btcInputs[0] = BtcTxIn({
@@ -515,17 +515,19 @@ abstract contract ScriptUtils is Script {
         });
 
         // Outputs
-        BtcTxOut[] memory btcOutputs = new BtcTxOut[](1);
+        BtcTxOut[] memory btcOutputs = new BtcTxOut[](2);
 
         // P2TR to committee
         // This is a fake amount just for testing purposes
         btcOutputs[0] = BtcTxOut({amount: 2000, scriptPubKey: getAcceptPeginP2TRScriptPub(_committeePubKey)});
+        bytes memory speedupScriptPubKey = BtcScriptParser.getP2WPKHScript(_operatorDisputePubKeyCompact);
+        btcOutputs[1] = BtcTxOut({amount: Constants.SPEED_UP_AMOUNT, scriptPubKey: speedupScriptPubKey});
 
         return BtcTransaction({version: Constants.BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
     }
 
-    // ========================== Reveal ==========================
-    function createInputNotRevealedTx(bytes32 _challengeTxid, bytes memory _committeePubKey)
+    // ========================== Input Not Revealed ==========================
+    function createInputNotRevealedTx(bytes32 _challengeTxid, MemberKeys[] memory _memberKeys)
         internal
         pure
         returns (BtcTransaction memory)
@@ -539,12 +541,15 @@ abstract contract ScriptUtils is Script {
             scriptSig: hex""
         });
 
-        // Outputs
-        BtcTxOut[] memory btcOutputs = new BtcTxOut[](1);
-
-        // P2TR to committee
-        // This is a fake amount just for testing purposes
-        btcOutputs[0] = BtcTxOut({amount: 2000, scriptPubKey: getAcceptPeginP2TRScriptPub(_committeePubKey)});
+        uint256 memberCount = _memberKeys.length;
+        // Outputs: Output 0 is OP_RETURN (empty) per dispute_core.rs, then one speedup output per committee member
+        BtcTxOut[] memory btcOutputs = new BtcTxOut[](1 + memberCount);
+        btcOutputs[0] = BtcTxOut({amount: 0, scriptPubKey: abi.encodePacked(OpCodes.OP_RETURN)}); // OP_RETURN
+        for (uint256 i = 0; i < memberCount; i++) {
+            bytes memory speedupScriptPubKey =
+                BtcScriptParser.getP2WPKHScript(BtcHelper.pubKeyXonlyToCompact(_memberKeys[i].covenantPubKey));
+            btcOutputs[1 + i] = BtcTxOut({amount: Constants.SPEED_UP_AMOUNT, scriptPubKey: speedupScriptPubKey});
+        }
 
         // TODO: locktime could be updated to match bitvmx transaction. It's not checked by the contract though.
         return BtcTransaction({version: Constants.BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: 0});

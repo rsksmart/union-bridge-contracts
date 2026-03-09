@@ -1042,7 +1042,8 @@ abstract contract HelperContract is Test, TestUtils {
 
         bytes32 challengeTxid = _createChallengeTxid(reimbursementTxid, committeePubKey);
 
-        bytes32 inputRevealedTxid = _createInputRevealedTxid(challengeTxid, committeePubKey);
+        bytes32 inputRevealedTxid =
+            _createInputRevealedTxid(challengeTxid, committeePubKey, operatorDisputePubKeyCompact);
 
         opWonTx = createOperatorWonTx(_acceptPeginTxid, inputRevealedTxid, operatorDisputePubKeyCompact, VALUE);
     }
@@ -1070,11 +1071,13 @@ abstract contract HelperContract is Test, TestUtils {
         return bitcoinManager.getBtcTxid(challengeTx);
     }
 
-    function _createInputRevealedTxid(bytes32 _challengeTxid, bytes memory _committeePubKey)
-        internal
-        returns (bytes32 inputRevealedTxid)
-    {
-        BtcTransaction memory inputRevealedTx = createInputRevealedTx(_challengeTxid, _committeePubKey);
+    function _createInputRevealedTxid(
+        bytes32 _challengeTxid,
+        bytes memory _committeePubKey,
+        bytes memory _operatorDisputePubKeyCompact
+    ) internal returns (bytes32 inputRevealedTxid) {
+        BtcTransaction memory inputRevealedTx =
+            createInputRevealedTx(_challengeTxid, _committeePubKey, _operatorDisputePubKeyCompact);
         return bitcoinManager.getBtcTxid(inputRevealedTx);
     }
 
@@ -1091,8 +1094,17 @@ abstract contract HelperContract is Test, TestUtils {
         uint128 committeeId = streamManager.getCommitteeId(uint64(DEFAULT_STREAM), setup.packetNumber);
         bytes memory committeePubKey = registry.getCommitteePubKey(committeeId);
         bytes32 challengeTxid = bitcoinManager.getBtcTxid(setup.challengeSPV.btcTx);
-        setup.inputRevealedSPV = createBtcTxSPVProof(createInputRevealedTx(challengeTxid, committeePubKey));
-        setup.inputNotRevealedSPV = createBtcTxSPVProof(createInputNotRevealedTx(challengeTxid, committeePubKey));
+        bytes memory operatorPubKey =
+            BtcHelper.pubKeyXonlyToCompact(memberRegistry.getMemberPublicKeys(operatorAddress).covenantPubKey);
+        setup.inputRevealedSPV =
+            createBtcTxSPVProof(createInputRevealedTx(challengeTxid, committeePubKey, operatorPubKey));
+
+        CommitteeMember[] memory committeeMembers = registry.getCommitteeMembers(committeeId);
+        MemberKeys[] memory memberKeys = new MemberKeys[](committeeMembers.length);
+        for (uint256 i = 0; i < committeeMembers.length; i++) {
+            memberKeys[i] = memberRegistry.getMemberPublicKeys(committeeMembers[i].memberAddress);
+        }
+        setup.inputNotRevealedSPV = createBtcTxSPVProof(createInputNotRevealedTx(challengeTxid, memberKeys));
 
         vm.prank(operatorAddress);
         challengeManager.registerChallenge(setup.acceptPeginTxid, setup.challengeSPV);

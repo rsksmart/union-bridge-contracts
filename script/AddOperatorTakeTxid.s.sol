@@ -80,7 +80,7 @@ contract addOperatorTakeTxidsScript is ScriptUtils, ContractAddressManager {
         bytes32 challengeTxid = getTxid(challengeTx);
 
         // INPUT REVEALED
-        BtcTransaction memory inputRevealedTx = createInputRevealedTx(challengeTxid, committeePubKey);
+        BtcTransaction memory inputRevealedTx = createInputRevealedTx(challengeTxid, committeePubKey, operatorPubKey);
         bytes32 inputRevealedTxid = getTxid(inputRevealedTx);
 
         // OPERATOR WON

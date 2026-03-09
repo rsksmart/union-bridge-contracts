@@ -53,6 +53,8 @@ This document describes the Bitcoin transactions created by the Union Bridge pro
     - [Transaction Flow](#challenge_tx-transaction-flow)
     - [CHALLENGE_TX Registration and Validation](#challenge_tx-registration-and-validation)
     - [CHALLENGE_TX Integration with Dispute Resolution](#challenge_tx-integration-with-dispute-resolution)
+  - [3. REVEAL_INPUT_TX (Reveal Input Transaction)](#3-reveal_input_tx-reveal-input-transaction)
+  - [4. INPUT_NOT_REVEALED_TX (Input Not Revealed Transaction)](#4-input_not_revealed_tx-input-not-revealed-transaction)
 - [User Take Protocol - Transaction Details](#user-take-protocol---transaction-details)
   - [1. USER_TAKE_TX (User Take Transaction)](#1-user_take_tx-user-take-transaction)
     - [Inputs](#user_take_tx-inputs)
@@ -121,6 +123,7 @@ The Union Bridge system includes multiple BitVMX protocols. This document covers
 1. **REIMBURSEMENT_KICKOFF_TX** - Transaction that enables operators to claim funds through OPERATOR_TAKE_TX (peg-out flow, one per operator per slot)
 2. **CHALLENGE_TX** - Transaction that allows committee members to challenge operator actions if they detect incorrect behavior (peg-out flow, dispute resolution)
 3. **REVEAL_INPUT_TX** - Transaction that allows operators to reveal the input (slot ID signature) during dispute resolution, proving they correctly advanced funds (peg-out flow, dispute resolution)
+4. **INPUT_NOT_REVEALED_TX** - Transaction that allows committee to claim funds if operator fails to reveal input within INPUT_NOT_REVEALED_TIMELOCK (peg-out flow, dispute resolution)
 
 ### Transaction Relationships
 
@@ -724,18 +727,18 @@ graph LR
 - **Spend Mode**: Script path (timelock)
 - **Sighash Type**: SIGHASH_ALL
 - **Timelock**: OP_WON_TIMELOCK blocks (from StreamSettings, default: 150 blocks)
-- **Key Required**: Committee aggregated key (`take_aggregated_key`)
+- **Key Required**: Committee Dispute aggregated key (`dispute_aggregated_key`)
 - **Previous Transaction**: REVEAL_INPUT_TX (from Dispute Core protocol, indexed by slot)
 - **Description**: Spends the OPERATOR_WON_ENABLER output (output 0) from REVEAL_INPUT_TX. This output is created when the operator successfully reveals the input during dispute resolution. The operator can claim funds after winning a challenge dispute.
 - **Dispute Core Context**: The REVEAL_INPUT_TX is created as part of the dispute resolution process. When an operator is challenged and successfully reveals the input (proving they advanced funds correctly), this transaction creates the OPERATOR_WON_ENABLER output that enables OPERATOR_WON_TX execution.
 - **Taproot Script Details**:
-  - **Key Path**: Uses committee aggregated key for direct spending
+  - **Key Path**: Uses committee dispute aggregated key for direct spending
   - **Script Path**: Uses timelock script leaf (leaf 0) for spending
   - **Script Tree**: Contains one script leaf:
-    1. **Operator Won Script (Leaf 0)**: `OP_1 <OP_WON_TIMELOCK> OP_CHECKSEQUENCEVERIFY OP_DROP VERIFY_SIGNATURE(<take_aggregated_key>)` - Allows operator to claim funds after winning a challenge dispute, requires waiting for OP_WON_TIMELOCK blocks
+    1. **Operator Won Script (Leaf 0)**: `OP_1 <OP_WON_TIMELOCK> OP_CHECKSEQUENCEVERIFY OP_DROP VERIFY_SIGNATURE(<dispute_aggregated_key>)` - Allows operator to claim funds after winning a challenge dispute, requires waiting for OP_WON_TIMELOCK blocks
   - **Spending Conditions**:
     - Must wait for OP_WON_TIMELOCK blocks to expire after REVEAL_INPUT_TX confirmation
-    - Must sign with committee aggregated key (`take_aggregated_key`)
+    - Must sign with committee dispute aggregated key (`dispute_aggregated_key`)
     - The operator can only spend using the script path (leaf 0) after the timelock expires
 
 #### OPERATOR_WON_TX Outputs
@@ -758,7 +761,7 @@ graph LR
 
 ```mermaid
 graph LR
-    A[ACCEPT_PEGIN_TX<br/>output 0] --> B[OPERATOR_WON_TX<br/>Inputs:<br/>• Input 0: ACCEPT_PEGIN_TX output<br/>  Key Path: Committee Aggregated Key<br/><br/>--------------------------------<br/><br/>• Input 1: REVEAL_INPUT_TX output<br/>  Key Path: Committee Aggregated Key]
+    A[ACCEPT_PEGIN_TX<br/>output 0] --> B[OPERATOR_WON_TX<br/>Inputs:<br/>• Input 0: ACCEPT_PEGIN_TX output<br/>  Key Path: Committee Aggregated Key<br/><br/>--------------------------------<br/><br/>• Input 1: REVEAL_INPUT_TX output<br/>  Script Path: timelock for committee dispute aggregated key]
     C[REVEAL_INPUT_TX<br/>Dispute Core Protocol<br/>output 0: OPERATOR_WON_ENABLER] --> B
     B --> D[OPERATOR_WON_TX<br/>Outputs:<br/>• Output 0: Operator Output<br/>  P2WPKH - Operator's dispute key<br/><br/>--------------------------------<br/><br/>• Output 1: Speedup Output<br/>  P2WPKH - Operator's speedup key]
 
@@ -1004,7 +1007,7 @@ CHALLENGE_TX is a critical component of the dispute resolution mechanism:
 
 - **Type**: Taproot (P2TR)
 - **Amount**: `AUTO_AMOUNT` (calculated during protocol setup)
-- **Key**: Committee aggregated key (`take_aggregated_key`)
+- **Key**: Committee Dispute aggregated key (`dispute_aggregated_key`)
 - **Leaves**: One script leaf for operator won scenario
 - **Purpose**: Main output that enables OPERATOR_WON_TX execution (serves as input 1 for OPERATOR_WON_TX)
 - **Taproot Script Details**:
@@ -1012,7 +1015,7 @@ CHALLENGE_TX is a critical component of the dispute resolution mechanism:
   - **Script Tree**: Contains one script leaf:
     1. **Operator Won Script**: `OP_1 <OP_WON_TIMELOCK> OP_CHECKSEQUENCEVERIFY OP_DROP VERIFY_SIGNATURE(<take_aggregated_key>)` - Allows operator to claim funds after winning a challenge dispute, requires waiting for OP_WON_TIMELOCK blocks
   - **Spending Conditions**:
-    - After OP_WON_TIMELOCK blocks expire, the operator can spend via script path using committee aggregated key signature
+    - After OP_WON_TIMELOCK blocks expire, the operator can spend via script path using committee dispute aggregated key signature
     - This output serves as input 1 for OPERATOR_WON_TX in the Accept PegIn Protocol
   - **REVEAL_INPUT_TX Output Script Tree**:
 
@@ -1020,16 +1023,16 @@ CHALLENGE_TX is a critical component of the dispute resolution mechanism:
 
 - **Type**: SegWit (P2WPKH)
 - **Amount**: `SPEEDUP_VALUE` (540 satoshis)
-- **Key**: Operator's speedup key (`speedup_key`)
-- **Purpose**: Speedup transaction for the operator to accelerate future transaction confirmations
+- **Key**: Operator's speedup key (`operator_take_key`)
+- **Purpose**: Speedup transaction for the operator to accelerate future transaction confirmations.
 
 #### REVEAL_INPUT_TX Transaction Flow
 
 ```mermaid
 graph LR
     A[CHALLENGE_TX<br/>output 0: REVEAL_INPUT Output] --> B[REVEAL_INPUT_TX<br/>Inputs:<br/>• Input 0: CHALLENGE_TX output<br/>  Script Path: Winternitz Signature<br/>  Data: slot_index (u16, little-endian)<br/>  Signed with SLOT_ID_KEY]
-    B --> C[REVEAL_INPUT_TX<br/>Outputs:<br/>• Output 0: OPERATOR_WON_ENABLER Output<br/>  P2TR - Committee Aggregated Key<br/>  Operator Won Script with Timelock<br/><br/>• Output 1: Speedup Output<br/>  P2WPKH - Operator's speedup key<br/>  Amount: SPEEDUP_VALUE]
-
+    B --> C[REVEAL_INPUT_TX<br/>Outputs:<br/>• Output 0: OPERATOR_WON_ENABLER Output<br/>  P2TR - Committee Aggregated Key<br/>  Operator Won Script with Timelock<br/><br/>• Output 1-N: Speedup Output<br/>  P2WPKH - Member's speedup key<br/>  Amount: SPEEDUP_VALUE]
+    
     %% Flow to next transaction
     C --> D[OPERATOR_WON_TX<br/>input 1<br/>Script Path: Operator Won Script<br/>After OP_WON_TIMELOCK expires]
 
@@ -1050,6 +1053,67 @@ REVEAL_INPUT_TX is a critical component of the dispute resolution mechanism:
 - **Dispute Outcome**:
   - If operator reveals correctly: Operator can proceed with OPERATOR_WON_TX after timelock expiry
   - If operator fails to reveal: INPUT_NOT_REVEALED_TX can be dispatched, leading to operator penalties
+
+### 4. INPUT_NOT_REVEALED_TX (Input Not Revealed Transaction)
+
+**Purpose**: Transaction that allows the committee (watchtower) to claim the REVEAL_INPUT output from CHALLENGE_TX when the operator fails to reveal the input within INPUT_NOT_REVEALED_TIMELOCK blocks. This transaction is the alternative path to REVEAL_INPUT_TX and leads to operator penalization.
+
+#### INPUT_NOT_REVEALED_TX Inputs
+
+##### Input 0: From CHALLENGE_TX (Input Not Revealed Script)
+
+- **Type**: Taproot (P2TR)
+- **Spend Mode**: Script path (Input Not Revealed Script, leaf 1)
+- **Sighash Type**: SIGHASH_ALL
+- **Timelock**: INPUT_NOT_REVEALED_TIMELOCK blocks (from StreamSettings)
+- **Key Required**: Committee aggregated key (`dispute_aggregated_key`)
+- **Previous Transaction**: CHALLENGE_TX (from Dispute Core protocol, output 0)
+- **Description**: Spends the REVEAL_INPUT output from CHALLENGE_TX via the Input Not Revealed Script path. The committee can spend after the timelock expires if the operator has not dispatched REVEAL_INPUT_TX.
+- **Taproot Script Details**:
+  - **Script Path**: Uses Input Not Revealed Script (leaf 1) for spending
+  - **Script**: `OP_1 <INPUT_NOT_REVEALED_TIMELOCK> OP_CHECKSEQUENCEVERIFY OP_DROP VERIFY_SIGNATURE(<dispute_aggregated_key>)`
+  - **Spending Conditions**:
+    - Must wait for INPUT_NOT_REVEALED_TIMELOCK blocks to expire
+    - Must provide committee dispute aggregated signature
+
+#### INPUT_NOT_REVEALED_TX Outputs
+
+The total number of outputs must equal 1 + committee member count (one OP_RETURN plus one speedup output per member).
+
+##### Output 0: OP_RETURN Output
+
+- **Type**: OP_RETURN (unspendable)
+- **Amount**: 0 sats
+- **Purpose**: Unspendable output (empty data); funds are effectively burned/donated to miners as fees
+- **Reference**: [dispute_core.rs](https://github.com/FairgateLabs/rust-bitvmx-client/blob/dev/src/program/protocols/union/dispute_core.rs) - `OutputType::segwit_unspendable(op_return(vec![]))`
+
+##### Output 1 to N: Speedup Outputs
+
+- **Type**: SegWit (P2WPKH)
+- **Amount**: `SPEEDUP_VALUE` (540 satoshis) per output
+- **Key**: Each committee member's speedup key (`speedup_key`)
+- **Count**: One speedup output per committee member
+- **Purpose**: Speedup transactions for each committee member
+- **Indexing**: The speedup output index for each member is `1 + member_index` (output 0 is the OP_RETURN)
+- **Reference**: [dispute_core.rs](https://github.com/FairgateLabs/rust-bitvmx-client/blob/dev/src/program/protocols/union/dispute_core.rs) - `add_dispute_core_speedup_outputs` adds one `segwit_key(AmountType::Auto, keys[i].get_public(SPEEDUP_KEY))` per committee member to both CHALLENGE_TX and INPUT_NOT_REVEALED_TX
+
+#### INPUT_NOT_REVEALED_TX Transaction Flow
+
+```mermaid
+graph LR
+    A[CHALLENGE_TX<br/>output 0: REVEAL_INPUT Output] --> B[INPUT_NOT_REVEALED_TX<br/>Inputs:<br/>• Input 0: CHALLENGE_TX output<br/>  Script Path: Input Not Revealed (leaf 1)<br/>  Timelock: INPUT_NOT_REVEALED_TIMELOCK<br/>  Committee aggregated signature]
+    B --> C[INPUT_NOT_REVEALED_TX<br/>Outputs:<br/>• Output 0: OP_RETURN (unspendable)<br/>  Empty data<br/><br/>• Output 1-N: Speedup Outputs<br/>  P2WPKH - One per committee member<br/>  Amount: SPEEDUP_VALUE each]
+    
+    style A fill:#fce4ec
+    style B fill:#fce4ec
+    style C fill:#fce4ec
+```
+
+#### INPUT_NOT_REVEALED_TX Integration with Dispute Resolution
+
+- **Timeout Path**: Dispatched by the watchtower when the operator fails to reveal within INPUT_NOT_REVEALED_TIMELOCK blocks after CHALLENGE_TX
+- **Rootstock Registration**: The watchtower calls `registerInputNotRevealed` on the Rootstock contract with SPV proof
+- **Status Update**: Upon registration, the contract triggers `triggerOperatorTake` to retry operator take with a new operator selection
 
 ## User Take Protocol - Transaction Details
 
