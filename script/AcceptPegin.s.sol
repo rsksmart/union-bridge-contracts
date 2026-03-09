@@ -10,7 +10,7 @@ import {Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
-import {ICommitteeRegistry, Committee} from "src/interfaces/ICommitteeRegistry.sol";
+import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 
 contract AcceptPeginScript is ScriptUtils, ContractAddressManager {
     PeginManager peginManager;

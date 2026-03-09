@@ -6,7 +6,7 @@ import {PegoutManager} from "src/PegoutManager.sol";
 import {BtcTxSPVProof, StreamPosition} from "src/interfaces/IPegCommonTypes.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
-import {Slot, SlotState, IStreamManager, Packet} from "src/interfaces/IStreamManager.sol";
+import {Slot, SlotState, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";

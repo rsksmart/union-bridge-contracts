@@ -6,10 +6,10 @@ import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
 import {PegoutManager} from "src/PegoutManager.sol";
 import {ISignatureManager, OperatorTakeData} from "src/interfaces/ISignatureManager.sol";
-import {IStreamManager, Packet} from "src/interfaces/IStreamManager.sol";
+import {IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
-import {ICommitteeRegistry, Committee} from "src/interfaces/ICommitteeRegistry.sol";
+import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
 import {StreamPosition} from "src/interfaces/IPegCommonTypes.sol";
 
@@ -36,7 +36,6 @@ contract addOperatorTakeTxidsScript is ScriptUtils, ContractAddressManager {
         IMemberRegistry memberRegistry = committeeRegistry.memberRegistry();
 
         bytes32 operatorXOnlyPubKey = memberRegistry.getMemberPublicKeys(getDeployerAddress()).covenantPubKey;
-
         operatorPubKey = BtcHelper.pubKeyXonlyToCompact(operatorXOnlyPubKey);
         amount = 100_000; // 0.001 BTC
 

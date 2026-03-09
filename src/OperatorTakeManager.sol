@@ -20,6 +20,9 @@ contract OperatorTakeManager is IOperatorTakeManager, PegManagerBase {
     /// @notice The PegoutManager contract
     IPegoutManager public pegoutManager;
 
+    /// @notice The ChallengeManager contract
+    IChallengeManager public challengeManager;
+
     /// @notice Per-stream timeout settings indexed by stream ID
     mapping(uint256 => TakeTimeout) public takeTimeouts;
 
@@ -92,6 +95,17 @@ contract OperatorTakeManager is IOperatorTakeManager, PegManagerBase {
             revert InvalidTimeout(_timeout.operatorTake);
         }
         takeTimeouts[_streamId] = _timeout;
+    }
+
+    /// @inheritdoc IOperatorTakeManager
+    function setChallengeManager(address _challengeManager) external onlyOwner {
+        if (address(challengeManager) != address(0)) {
+            revert AlreadySet();
+        }
+        if (_challengeManager == address(0)) {
+            revert InvalidZeroAddress();
+        }
+        challengeManager = IChallengeManager(_challengeManager);
     }
 
     /// @inheritdoc IOperatorTakeManager
@@ -442,9 +456,7 @@ contract OperatorTakeManager is IOperatorTakeManager, PegManagerBase {
             OperatorTakeInfo storage opInfo
         ) = _parseOperatorPegoutInputs(_pegoutTxSPVProof.btcTx.inputs, PegStatus.REVEALED);
 
-        // we access through accessManager.challengeManager() instead of directly as this is the only place where the challenge manager is used
-        ChallengeInfo memory challengeInfo =
-            IChallengeManager(accessManager.challengeManager()).getChallengeInfo(acceptPeginTxid);
+        ChallengeInfo memory challengeInfo = challengeManager.getChallengeInfo(acceptPeginTxid);
 
         if (challengeInfo.revealTxid != _pegoutTxSPVProof.btcTx.inputs[Constants.OPERATOR_WON_VIN_INPUT_REVEALED].txId)
         {
@@ -476,6 +488,28 @@ contract OperatorTakeManager is IOperatorTakeManager, PegManagerBase {
             committeeId,
             pegoutConfirmations
         );
+    }
+
+    /// @inheritdoc IOperatorTakeManager
+    function skipOperatorWon(bytes32 _acceptPeginTxid) external nonReentrant whenNotPaused {
+        // slither-disable-next-line unused-return
+        (StreamPosition memory streamInfo, uint128 committeeId,) =
+            streamManager.validatePegoutStatus(_acceptPeginTxid, PegStatus.REVEALED);
+
+        committeeRegistry.validateMemberInCommittee(committeeId, _msgSender());
+
+        ChallengeInfo memory challengeInfo = challengeManager.getChallengeInfo(_acceptPeginTxid);
+
+        Stream memory stream = streamManager.getStreamById(streamInfo.streamId);
+        uint256 skipThreshold = uint256(stream.timelockSettings.opWonTimelock) + 2 * uint256(stream.pegoutConfirmations);
+
+        int256 currentBtcHeight = rbtcBridge.bridge().getBtcBlockchainBestChainHeight();
+        if (currentBtcHeight < challengeInfo.revealBtcBlockNumber + int256(skipThreshold)) {
+            revert OperatorWonTimeoutNotExpired(challengeInfo.revealBtcBlockNumber, currentBtcHeight, skipThreshold);
+        }
+
+        emit OperatorWonSkipped(_acceptPeginTxid, committeeId, streamInfo);
+        _completeSlot(streamInfo, _acceptPeginTxid, bytes32(0));
     }
 
     function _verifyConfirmationsEmitAndComplete(

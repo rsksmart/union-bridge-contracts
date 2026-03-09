@@ -11,7 +11,7 @@ import {OpCodes} from "src/libraries/OpCodes.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
-import {ICommitteeRegistry, CommitteeMember, Committee} from "src/interfaces/ICommitteeRegistry.sol";
+import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
 
 contract RequestPeginScript is ScriptUtils, ContractAddressManager {

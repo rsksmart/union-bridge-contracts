@@ -41,6 +41,9 @@ jobs:
       - name: Run operator-won-flow
         run: bash shell/script/integration-test/operator-won-flow.sh
 
+      - name: Run skip-operator-won-flow
+        run: bash shell/script/integration-test/skip-operator-won-flow.sh
+
       - name: Run reject-pegin-flow
         run: bash shell/script/integration-test/reject-pegin-flow.sh
 

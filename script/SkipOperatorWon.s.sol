@@ -6,15 +6,16 @@ import {PegoutManager} from "src/PegoutManager.sol";
 import {BtcTxSPVProof, StreamPosition} from "src/interfaces/IPegCommonTypes.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
-import {Slot, SlotState, IStreamManager} from "src/interfaces/IStreamManager.sol";
+import {Slot, SlotState, Stream, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
-import {IChallengeManager} from "src/interfaces/IChallengeManager.sol";
+import {IChallengeManager, ChallengeInfo} from "src/interfaces/IChallengeManager.sol";
 import {IOperatorTakeManager} from "src/interfaces/IOperatorTakeManager.sol";
+import {BridgeMock} from "test/helpers/BridgeMock.sol";
 
-contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
+contract SkipOperatorWonScript is ScriptUtils, ContractAddressManager {
     PegoutManager pegoutManager;
     IChallengeManager challengeManager;
     IOperatorTakeManager operatorTakeManager;
@@ -22,7 +23,6 @@ contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
 
     uint64 amount;
     bytes operatorPubKey;
-    bytes32 acceptPeginTxid;
     bytes committeePubKey;
     bytes userPubKey;
 
@@ -36,8 +36,8 @@ contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
         challengeManager = getChallengeManager();
         operatorTakeManager = getOperatorTakeManager();
 
-        ICommitteeRegistry committeeRegistry = getCommitteeRegistry();
-        IMemberRegistry memberRegistry = committeeRegistry.memberRegistry();
+        ICommitteeRegistry registry = getCommitteeRegistry();
+        IMemberRegistry memberRegistry = registry.memberRegistry();
 
         bytes32 operatorXOnlyPubKey = memberRegistry.getMemberPublicKeys(getDeployerAddress()).covenantPubKey;
         operatorPubKey = BtcHelper.pubKeyXonlyToCompact(operatorXOnlyPubKey);
@@ -52,7 +52,7 @@ contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
         expectedSlotId = uint32(streamPosition.slotId);
 
         uint128 committeeId = streamManager.getCommitteeId(expectedStreamId, expectedPacketNumber);
-        committeePubKey = committeeRegistry.getCommitteePubKey(committeeId);
+        committeePubKey = registry.getCommitteePubKey(committeeId);
 
         expectedPegoutId = operatorTakeManager.getOperatorTakeInfo(_acceptPeginTxid).pegoutId;
     }
@@ -91,7 +91,6 @@ contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
 
         // INPUT REVEALED
         BtcTransaction memory inputRevealedTx = createInputRevealedTx(challengeTxid, committeePubKey, operatorPubKey);
-        bytes32 inputRevealedTxid = getTxid(inputRevealedTx);
         BtcTxSPVProof memory inputRevealedSPVProof = createBtcTxSPVProof(inputRevealedTx);
 
         // Register input revealed
@@ -99,22 +98,41 @@ contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
         challengeManager.registerInputRevealed(_acceptPeginTxid, inputRevealedSPVProof);
         vm.stopBroadcast();
 
-        // OPERATOR WON
-        BtcTransaction memory wonTx = createOperatorWonTx(_acceptPeginTxid, inputRevealedTxid, operatorPubKey, amount);
-        BtcTxSPVProof memory wonTxSPVProof = createBtcTxSPVProof(wonTx);
+        // ADVANCE BITCOIN BLOCKS past the skipOperatorWon threshold (local/mock only)
+        _advanceBTCBlocksPastSkipThreshold(_acceptPeginTxid);
 
-        // Register operator won
+        // SKIP OPERATOR WON
         vm.startBroadcast(getDeployerKey());
-        operatorTakeManager.registerOperatorWon(wonTxSPVProof);
+        operatorTakeManager.skipOperatorWon(_acceptPeginTxid);
         vm.stopBroadcast();
 
         Slot memory slot = streamManager.getSlot(expectedStreamId, expectedPacketNumber, expectedSlotId);
         if (slot.state != SlotState.COMPLETED) {
-            revert("Slot should be marked as COMPLETED after operator won peg-out registration");
+            revert("Slot should be marked as COMPLETED after skip operator won");
         }
 
-        console.log("=== Operator take Pegout registered successfully ===");
+        console.log("=== Skip operator won registered successfully ===");
         console.log("Stream, Packet, Slot");
         console.log(expectedStreamId, expectedPacketNumber, expectedSlotId);
+    }
+
+    function _advanceBTCBlocksPastSkipThreshold(bytes32 _acceptPeginTxid) internal {
+        ChallengeInfo memory info = challengeManager.getChallengeInfo(_acceptPeginTxid);
+        Stream memory stream = streamManager.getStreamById(expectedStreamId);
+        uint256 skipThreshold = uint256(stream.timelockSettings.opWonTimelock) + 2 * uint256(stream.pegoutConfirmations);
+        int256 targetHeight = info.revealBtcBlockNumber + int256(skipThreshold);
+
+        console.log("=== Advancing Bitcoin blocks ===");
+        console.log("Reveal block number:");
+        console.logInt(info.revealBtcBlockNumber);
+        console.log("Skip threshold:");
+        console.log(skipThreshold);
+        console.log("Target height:");
+        console.logInt(targetHeight);
+
+        BridgeMock bridgeMock = BridgeMock(payable(address(getBridge())));
+        vm.startBroadcast(getDeployerKey());
+        bridgeMock.setBtcBlockchainBestChainHeight(targetHeight);
+        vm.stopBroadcast();
     }
 }

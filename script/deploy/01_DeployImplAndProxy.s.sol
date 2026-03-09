@@ -232,6 +232,7 @@ contract DeployImplAndProxy is ScriptUtils {
         if (address(operatorTakeManager.pegoutManager()) != address(pegoutManager)) {
             revert("OperatorTakeManager pegoutManager is not the pegoutManager address");
         }
+        // challengeManager verification happens after deployChallengeManager below
 
         ChallengeManager challengeManager = deployChallengeManager(
             upgradableOwner,
@@ -255,7 +256,7 @@ contract DeployImplAndProxy is ScriptUtils {
             revert("ChallengeManager operatorTakeManager is not the operatorTakeManager address");
         }
 
-        // set contracts references for accessManager
+        // set contracts references for accessManager and operatorTakeManager
         vm.startBroadcast(getDeployerKey());
         accessManager.setPeginManager(address(peginManager));
         accessManager.setPegoutManager(address(pegoutManager));
@@ -264,6 +265,7 @@ contract DeployImplAndProxy is ScriptUtils {
         accessManager.setCommitteeRegistry(address(committeeRegistry));
         accessManager.setMemberRegistry(address(memberRegistry));
         accessManager.setRbtcBridge(address(rbtcBridge));
+        operatorTakeManager.setChallengeManager(address(challengeManager));
         vm.stopBroadcast();
         if (address(accessManager.peginManager()) != address(peginManager)) {
             revert("AccessManager peginManager is not the peginManager address");
@@ -285,6 +287,9 @@ contract DeployImplAndProxy is ScriptUtils {
         }
         if (address(accessManager.rbtcBridge()) != address(rbtcBridge)) {
             revert("AccessManager rbtcBridge is not the rbtcBridge address");
+        }
+        if (address(operatorTakeManager.challengeManager()) != address(challengeManager)) {
+            revert("OperatorTakeManager challengeManager is not the challengeManager address");
         }
 
         // Set BridgeMock values if on local chain

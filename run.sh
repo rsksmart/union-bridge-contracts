@@ -13,6 +13,8 @@ bash shell/script/integration-test/user-take-flow.sh
 bash shell/script/integration-test/operator-take-flow.sh
 # operator won flow
 bash shell/script/integration-test/operator-won-flow.sh
+# skip operator won flow
+bash shell/script/integration-test/skip-operator-won-flow.sh
 # reject pegin flow
 bash shell/script/integration-test/reject-pegin-flow.sh
 # user reimbursement flow
