@@ -168,7 +168,7 @@ contract BitcoinManagerTest is Test, HelperContract {
         uint64 value = VALUE;
         address rskDestinationAddress = getPeginRskDestinationAddress();
         bytes32 btcReimbursementPubKey = getPeginBtcReimbursementPubKey();
-        bytes memory committeePubKey = COMMITTEE_PUB_KEY();
+        bytes memory committeePubKey = COMMITTEE_TAKE_PUB_KEY();
         uint32 timelockBlocks = 12;
         // Act
         vm.prank(address(peginManager));
@@ -186,7 +186,7 @@ contract BitcoinManagerTest is Test, HelperContract {
         uint64 value = VALUE;
         address rskDestinationAddress = getPeginRskDestinationAddress();
         bytes32 btcReimbursementPubKey = getPeginBtcReimbursementPubKey();
-        bytes memory committeePubKey = COMMITTEE_PUB_KEY();
+        bytes memory committeePubKey = COMMITTEE_TAKE_PUB_KEY();
         uint32 timelockBlocks = 1;
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IBitcoinManager.InvalidOutputAmount.selector, btcTxOut.amount, value));

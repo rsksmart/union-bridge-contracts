@@ -318,7 +318,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
     function _validatePublicKeys(MemberRegistrationKeys calldata _publicKeys) internal pure {
         _validateECDSAKey(_publicKeys.takeKey, PublicKeyType.TAKE);
 
-        _validateECDSAKey(_publicKeys.covenantKey, PublicKeyType.COVENANT);
+        _validateECDSAKey(_publicKeys.disputeKey, PublicKeyType.DISPUTE);
 
         _validateRSAKey(_publicKeys.communicationKey, PublicKeyType.COMMUNICATION);
     }
@@ -368,10 +368,10 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         if (_member.publicKeys.takePubKey != _publicKeys.takeKey.publicKeyX) {
             revert PublicKeyMismatch(PublicKeyType.TAKE, _member.publicKeys.takePubKey, _publicKeys.takeKey.publicKeyX);
         }
-        // COVENANT key
-        if (_member.publicKeys.covenantPubKey != _publicKeys.covenantKey.publicKeyX) {
+        // DISPUTE key
+        if (_member.publicKeys.disputePubKey != _publicKeys.disputeKey.publicKeyX) {
             revert PublicKeyMismatch(
-                PublicKeyType.COVENANT, _member.publicKeys.covenantPubKey, _publicKeys.covenantKey.publicKeyX
+                PublicKeyType.DISPUTE, _member.publicKeys.disputePubKey, _publicKeys.disputeKey.publicKeyX
             );
         }
         // COMMUNICATION key - compare RSA public key
@@ -393,7 +393,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
 
         // Initialize Member public keys from the struct
         member.publicKeys.takePubKey = _publicKeys.takeKey.publicKeyX;
-        member.publicKeys.covenantPubKey = _publicKeys.covenantKey.publicKeyX;
+        member.publicKeys.disputePubKey = _publicKeys.disputeKey.publicKeyX;
         member.publicKeys.communicationPubKey = _publicKeys.communicationKey;
 
         _initMemberBalance(member);
@@ -411,6 +411,11 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
     /// @inheritdoc IMemberRegistry
     function getMemberComPubKey(address _address) external view override returns (RSAPublicKey memory) {
         return _getMember(_address).publicKeys.communicationPubKey;
+    }
+
+    /// @inheritdoc IMemberRegistry
+    function getMemberDisputePubKey(address _address) external view override returns (bytes32) {
+        return _getMember(_address).publicKeys.disputePubKey;
     }
 
     /// @inheritdoc IMemberRegistry

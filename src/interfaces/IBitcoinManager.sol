@@ -101,14 +101,14 @@ interface IBitcoinManager {
     /// @param _rskDestinationAddress The RSK address that will receive the RBTC
     /// @param _value The amount in satoshis to peg in (must match stream denomination)
     /// @param _btcReimbursementPubKey The user's Bitcoin public key (x-coordinate only, 32 bytes)
-    /// @param _committeePubKey The committee's public key
+    /// @param _committeeTakePubKey The committee's take aggregated public key
     /// @return temporaryPeginAddress The generated temporary Bitcoin address for deposit
     function getTemporaryPeginAddress(
         uint32 _timelockBlocks,
         address _rskDestinationAddress,
         uint64 _value,
         bytes32 _btcReimbursementPubKey,
-        bytes memory _committeePubKey
+        bytes memory _committeeTakePubKey
     ) external view returns (string memory temporaryPeginAddress);
 
     /// @notice Extracts data from a request peg-in Bitcoin transaction's OP_RETURN output
@@ -133,7 +133,7 @@ interface IBitcoinManager {
     /// @param _rskDestinationAddress The RSK address that should receive the RBTC
     /// @param _streamDenomination The expected amount in satoshis
     /// @param _btcReimbursementPubKey The user's Bitcoin public key (x-coordinate only)
-    /// @param _committeePubKey The committee's public key
+    /// @param _committeeTakePubKey The committee's take aggregated public key
     /// @param _p2trOut The Bitcoin transaction output to validate
     /// @dev we don't check the inputs as this function is called by the pegin manager
     function validateRequestPeginP2TROutput(
@@ -141,7 +141,7 @@ interface IBitcoinManager {
         address _rskDestinationAddress,
         uint64 _streamDenomination,
         bytes32 _btcReimbursementPubKey,
-        bytes memory _committeePubKey,
+        bytes memory _committeeTakePubKey,
         BtcTxOut calldata _p2trOut
     ) external pure;
 
@@ -162,7 +162,7 @@ interface IBitcoinManager {
 
     /// @notice Calculates the signature hash for Bitcoin accept peg-in transactions
     /// @dev Generates the hash that committee members must sign to accept a peg-in
-    /// @param _committeePubKey The committee's public key (x-coordinate only)
+    /// @param _committeeTakePubKey The committee's take aggregated public key (x-coordinate only)
     /// @param _userXOnlyPubKey The user's public key (x-coordinate only, 32 bytes)
     /// @param _registerPeginTx The transaction id of the peg-in request being spent
     /// @param _prevoutDatas Array of prevout data for all inputs being spent (taptree + enabler outputs)
@@ -170,7 +170,7 @@ interface IBitcoinManager {
     /// @return BitcoinSignatureData containing txid, signatureHash, and signatureMessage
     /// @dev we don't check the inputs as this function is called by the pegin manager
     function getAcceptPeginSignatureHash(
-        bytes memory _committeePubKey,
+        bytes memory _committeeTakePubKey,
         bytes32 _userXOnlyPubKey,
         bytes32 _registerPeginTx,
         PrevoutData[] memory _prevoutDatas,
@@ -179,10 +179,10 @@ interface IBitcoinManager {
 
     /// @notice Generates the enabler output P2TR script pub key
     /// @dev Creates a Taproot script for the enabler output with dispute keys in the merkle tree
-    /// @param _committeePubKey The committee's aggregated public key (33 bytes compressed)
+    /// @param _committeeTakePubKey The committee's take aggregated public key (33 bytes compressed)
     /// @param _disputeKeys Array of dispute keys for committee members (x-only, 32 bytes each)
     /// @return The P2TR script pub key bytes
-    function getEnablerOutputP2TRScriptPub(bytes memory _committeePubKey, bytes32[] memory _disputeKeys)
+    function getEnablerOutputP2TRScriptPub(bytes memory _committeeTakePubKey, bytes32[] memory _disputeKeys)
         external
         pure
         returns (bytes memory);

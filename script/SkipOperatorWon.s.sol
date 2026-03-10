@@ -23,7 +23,8 @@ contract SkipOperatorWonScript is ScriptUtils, ContractAddressManager {
 
     uint64 amount;
     bytes operatorPubKey;
-    bytes committeePubKey;
+    bytes committeeTakePubKey;
+    bytes committeeDisputePubKey;
     bytes userPubKey;
 
     uint64 expectedStreamId;
@@ -36,11 +37,11 @@ contract SkipOperatorWonScript is ScriptUtils, ContractAddressManager {
         challengeManager = getChallengeManager();
         operatorTakeManager = getOperatorTakeManager();
 
-        ICommitteeRegistry registry = getCommitteeRegistry();
-        IMemberRegistry memberRegistry = registry.memberRegistry();
+        ICommitteeRegistry committeeRegistry = getCommitteeRegistry();
+        IMemberRegistry memberRegistry = committeeRegistry.memberRegistry();
 
-        bytes32 operatorXOnlyPubKey = memberRegistry.getMemberPublicKeys(getDeployerAddress()).covenantPubKey;
-        operatorPubKey = BtcHelper.pubKeyXonlyToCompact(operatorXOnlyPubKey);
+        bytes32 operatorXOnlyDisputeKey = memberRegistry.getMemberDisputePubKey(getDeployerAddress());
+        operatorPubKey = BtcHelper.pubKeyXonlyToCompact(operatorXOnlyDisputeKey);
         userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
         amount = 100_000; // 0.001 BTC
 
@@ -52,7 +53,8 @@ contract SkipOperatorWonScript is ScriptUtils, ContractAddressManager {
         expectedSlotId = uint32(streamPosition.slotId);
 
         uint128 committeeId = streamManager.getCommitteeId(expectedStreamId, expectedPacketNumber);
-        committeePubKey = registry.getCommitteePubKey(committeeId);
+        committeeTakePubKey = committeeRegistry.getCommitteeTakePubKey(committeeId);
+        committeeDisputePubKey = committeeRegistry.getCommitteeDisputePubKey(committeeId);
 
         expectedPegoutId = operatorTakeManager.getOperatorTakeInfo(_acceptPeginTxid).pegoutId;
     }
@@ -70,7 +72,7 @@ contract SkipOperatorWonScript is ScriptUtils, ContractAddressManager {
         vm.stopBroadcast();
 
         // REIMBURSEMENT KICKOFF
-        BtcTransaction memory kickoffTx = createReimbursementKickoffTx(committeePubKey, expectedSlotId);
+        BtcTransaction memory kickoffTx = createReimbursementKickoffTx(committeeTakePubKey, expectedSlotId);
         BtcTxSPVProof memory kickoffTxSPVProof = createBtcTxSPVProof(kickoffTx);
         bytes32 reimbursementKickoffTxid = getTxid(kickoffTx);
 
@@ -80,7 +82,7 @@ contract SkipOperatorWonScript is ScriptUtils, ContractAddressManager {
         vm.stopBroadcast();
 
         // CHALLENGE
-        BtcTransaction memory challengeTx = createChallengeTx(reimbursementKickoffTxid, committeePubKey);
+        BtcTransaction memory challengeTx = createChallengeTx(reimbursementKickoffTxid, committeeDisputePubKey);
         bytes32 challengeTxid = getTxid(challengeTx);
         BtcTxSPVProof memory challengeSPVProof = createBtcTxSPVProof(challengeTx);
 
@@ -90,7 +92,8 @@ contract SkipOperatorWonScript is ScriptUtils, ContractAddressManager {
         vm.stopBroadcast();
 
         // INPUT REVEALED
-        BtcTransaction memory inputRevealedTx = createInputRevealedTx(challengeTxid, committeePubKey, operatorPubKey);
+        BtcTransaction memory inputRevealedTx =
+            createInputRevealedTx(challengeTxid, committeeDisputePubKey, operatorPubKey);
         BtcTxSPVProof memory inputRevealedSPVProof = createBtcTxSPVProof(inputRevealedTx);
 
         // Register input revealed

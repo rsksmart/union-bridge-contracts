@@ -700,7 +700,7 @@ sequenceDiagram
     CR->>CR: Decrement missingCommunicationData counter
     CR-->>-M: MemberCommunicationDataDeposited event
 
-    M->>+CR: depositAggregatedKey(committeeId, aggregatedKey)
+    M->>+CR: depositAggregatedKeys(committeeId, aggregatedTakeKey, aggregatedDisputeKey)
     Note right of M: Provides aggregated public key (33 bytes)
     CR->>CR: Validate member is in pending committee
     CR->>CR: Store aggregated key
@@ -737,7 +737,7 @@ sequenceDiagram
     MR-->>-CR: Balance updates completed
     CR->>CR: _registerCommittee()
     CR-->>ENV: NewCommittee event
-    CR->>+SM: createNewPacket(streamId, committeeId, aggregatedKey, disputeKeys)
+    CR->>+SM: createNewPacket(streamId, committeeId, aggregatedTakePubKey, disputeKeys)
     SM->>SM: Create new packet with committee
     SM-->>-CR: Packet created
     CR->>CR: _deletePendingCommittee()

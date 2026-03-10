@@ -15,7 +15,7 @@ import {
     CommunicationData,
     UTXO
 } from "./interfaces/ICommitteeRegistry.sol";
-import {IMemberRegistry, MemberKeys, MemberRegistrationKeys} from "./interfaces/IMemberRegistry.sol";
+import {IMemberRegistry, MemberRegistrationKeys} from "./interfaces/IMemberRegistry.sol";
 import {StreamDenomination, IStreamManager} from "./interfaces/IStreamManager.sol";
 import {SignatureData} from "./interfaces/ISignatureManager.sol";
 import {BytesHelper} from "./libraries/BytesHelper.sol";
@@ -280,8 +280,13 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
     }
 
     /// @inheritdoc ICommitteeRegistry
-    function getCommitteePubKey(uint128 _committeeId) external view returns (bytes memory) {
-        return _getCommittee(_committeeId).aggregatedKey;
+    function getCommitteeTakePubKey(uint128 _committeeId) external view returns (bytes memory) {
+        return _getCommittee(_committeeId).takeAggregatedKey;
+    }
+
+    /// @inheritdoc ICommitteeRegistry
+    function getCommitteeDisputePubKey(uint128 _committeeId) external view returns (bytes memory) {
+        return _getCommittee(_committeeId).disputeAggregatedKey;
     }
 
     function _getCommittee(uint128 _committeeId) internal view returns (Committee storage) {
@@ -401,12 +406,11 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         committee.createdAt = block.timestamp;
         committee.missingData = uint16(committeeMembers.length);
         committee.missingCommunicationData = uint16(committeeMembers.length);
-        committee.aggregatedKey = new bytes(0);
         committee.streamId = _streamId;
         committee.isPending = true;
 
         // Initialize the committee members here.
-        // No need to initialize aggregatedKey, since it will be set by the members.
+        // No need to initialize takeAggregatedKey, since it will be set by the members.
         for (uint256 i = 0; i < committeeMembers.length; i++) {
             // Copy committee members from memory to storage
             committee.members.push(committeeMembers[i]);
@@ -424,60 +428,73 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         return PendingCommitteeStatus.SUCCESS;
     }
 
-    function _isInCommitteeOrRevert(uint128 _committeeId, address _memberAddress) internal view {
-        if (!committeesData[_committeeId][_memberAddress].inCommittee) {
+    function _getMemberCommitteeData(uint128 _committeeId, address _memberAddress)
+        internal
+        view
+        returns (PendingCommitteeData storage memberCommitteeData)
+    {
+        memberCommitteeData = committeesData[_committeeId][_memberAddress];
+        if (!memberCommitteeData.inCommittee) {
             revert MemberNotInCommittee(_committeeId, _memberAddress);
         }
     }
 
     /// @inheritdoc ICommitteeRegistry
     function validateMemberInCommittee(uint128 _committeeId, address _memberAddress) external view {
-        _isInCommitteeOrRevert(_committeeId, _memberAddress);
+        // This function is used to validate that a member is in a committee
+        // slither-disable-next-line unused-return
+        _getMemberCommitteeData(_committeeId, _memberAddress);
     }
 
     /// @inheritdoc ICommitteeRegistry
-    function depositAggregatedKey(uint128 _committeeId, bytes memory _aggregatedKey) external whenNotPaused {
-        address sender = _msgSender();
+    function depositAggregatedKeys(
+        uint128 _committeeId,
+        bytes memory _takeAggregatedKey,
+        bytes memory _disputeAggregatedKey
+    ) external whenNotPaused {
+        _validateAggregatedKey(_takeAggregatedKey);
+        _validateAggregatedKey(_disputeAggregatedKey);
+        if (BytesHelper.compare(_takeAggregatedKey, _disputeAggregatedKey)) {
+            revert InvalidSameAggregatedKeys();
+        }
+
+        // Gets the pending committee revert if pending committee is not found
         Committee storage pendingCommittee = _getPendingCommitteeById(_committeeId);
 
-        if (_aggregatedKey.length != 33) {
-            revert InvalidAggregatedKeyLength(_aggregatedKey.length, 33);
-        }
-
-        if (BytesHelper.compare(_aggregatedKey, new bytes(33))) {
-            revert InvalidAggregatedKeyZero();
-        }
-
-        _isInCommitteeOrRevert(_committeeId, sender);
-
-        if (committeesData[_committeeId][sender].aggregatedKey.length != 0) {
+        address sender = _msgSender();
+        // gets the member committee data and validates that the sender is a member in the committee
+        PendingCommitteeData storage memberCommitteeData = _getMemberCommitteeData(_committeeId, sender);
+        if (memberCommitteeData.takeAggregatedKey.length != 0) {
             revert MemberInfoAlreadyDeposited(_committeeId, sender);
         }
+        _setMemberCommitteeData(memberCommitteeData, _takeAggregatedKey, _disputeAggregatedKey);
 
-        committeesData[_committeeId][sender].aggregatedKey = _aggregatedKey;
-
-        if (pendingCommittee.aggregatedKey.length == 0) {
-            // Save the aggregated key for the committee
-            pendingCommittee.aggregatedKey = _aggregatedKey;
+        if (pendingCommittee.takeAggregatedKey.length == 0) {
+            // First member to deposit the aggregated keys saves the aggregated keys for the committee
+            pendingCommittee.takeAggregatedKey = _takeAggregatedKey;
+            pendingCommittee.disputeAggregatedKey = _disputeAggregatedKey;
         } else {
-            if (keccak256(pendingCommittee.aggregatedKey) != keccak256(_aggregatedKey)) {
+            // If the committee already has aggregated keys, we need to validate that the aggregated keys are the same
+            if (
+                keccak256(pendingCommittee.takeAggregatedKey) != keccak256(_takeAggregatedKey)
+                    || keccak256(pendingCommittee.disputeAggregatedKey) != keccak256(_disputeAggregatedKey)
+            ) {
                 // slither-disable-next-line reentrancy-no-eth reentrancy-benign
                 _discardPendingCommittee(pendingCommittee.streamId);
-                _createCommittee(pendingCommittee.streamId); // Ignoring checks
+                _createCommittee(pendingCommittee.streamId);
                 return;
             }
         }
 
         pendingCommittee.missingData--;
-        emit MemberInfoDeposited(_committeeId, sender, _aggregatedKey);
+        emit MemberInfoDeposited(_committeeId, sender, _takeAggregatedKey, _disputeAggregatedKey);
         if (pendingCommittee.missingData != 0) {
             // Committee is not completed yet
             return;
         }
 
         // Follow checks-effects-interactions pattern: state changes before external calls
-        uint64 streamId = pendingCommittee.streamId;
-        _resetPendingCommittee(streamId);
+        _resetPendingCommittee(pendingCommittee.streamId);
         emit NewCommittee(_committeeId, pendingCommittee);
 
         // External calls last to prevent reentrancy
@@ -487,10 +504,31 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
             streamManager.getPacketsLength(pendingCommittee.streamId)
         );
 
-        bytes32[] memory disputeKeys = _getCommitteeDisputeKeys(_committeeId);
         streamManager.createNewPacket(
-            pendingCommittee.streamId, _committeeId, pendingCommittee.aggregatedKey, disputeKeys
+            pendingCommittee.streamId,
+            _committeeId,
+            pendingCommittee.takeAggregatedKey,
+            _getCommitteeDisputeKeys(_committeeId)
         );
+    }
+
+    function _validateAggregatedKey(bytes memory _aggregatedKey) internal pure {
+        if (_aggregatedKey.length != 33) {
+            revert InvalidAggregatedKeyLength(_aggregatedKey.length, 33);
+        }
+
+        if (BytesHelper.compare(_aggregatedKey, new bytes(33))) {
+            revert InvalidAggregatedKeyZero();
+        }
+    }
+
+    function _setMemberCommitteeData(
+        PendingCommitteeData storage memberCommitteeData,
+        bytes memory _takeAggregatedKey,
+        bytes memory _disputeAggregatedKey
+    ) internal {
+        memberCommitteeData.takeAggregatedKey = _takeAggregatedKey;
+        memberCommitteeData.disputeAggregatedKey = _disputeAggregatedKey;
     }
 
     /// @inheritdoc ICommitteeRegistry
@@ -500,11 +538,9 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
     {
         address sender = _msgSender();
         Committee storage pendingCommittee = _getPendingCommitteeById(_committeeId);
-
-        CommunicationData[] storage communicationDataStorage = committeesData[_committeeId][sender].communicationData;
         CommitteeMember[] storage committeeMembers = pendingCommittee.members;
-
-        _isInCommitteeOrRevert(_committeeId, sender);
+        CommunicationData[] storage communicationDataStorage =
+            _getMemberCommitteeData(_committeeId, sender).communicationData;
 
         if (communicationDataStorage.length != 0) {
             revert MemberAlreadyDepositedCommunicationData(_committeeId, sender, communicationDataStorage.length);
@@ -555,8 +591,6 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         view
         returns (CommunicationData[] memory communicationData)
     {
-        _isInCommitteeOrRevert(_committeeId, _msgSender());
-
         CommitteeMember[] storage committeeMembers = committeesById[_committeeId].members;
 
         uint256 memberIndex = 0;
@@ -679,9 +713,8 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
                 // Get the operator's address and dispute public key
                 operatorAddress = committee.members[operatorTakeIndex].memberAddress;
                 // slither-disable-next-line calls-loop
-                MemberKeys memory keys = memberRegistry.getMemberPublicKeys(operatorAddress);
-                disputePubKey = keys.covenantPubKey;
-                takePubKey = keys.takePubKey;
+                disputePubKey = memberRegistry.getMemberDisputePubKey(operatorAddress);
+                takePubKey = memberRegistry.getMemberTakePubKey(operatorAddress);
                 return (operatorAddress, disputePubKey, takePubKey);
             }
         }
@@ -823,8 +856,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         bytes32[] memory disputeKeys = new bytes32[](committeeMembers.length);
         for (uint256 i = 0; i < committeeMembers.length; i++) {
             // slither-disable-next-line calls-loop
-            MemberKeys memory keys = memberRegistry.getMemberPublicKeys(committeeMembers[i].memberAddress);
-            disputeKeys[i] = keys.covenantPubKey;
+            disputeKeys[i] = memberRegistry.getMemberDisputePubKey(committeeMembers[i].memberAddress);
         }
         return disputeKeys;
     }

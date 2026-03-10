@@ -40,7 +40,7 @@ contract AcceptPeginScript is ScriptUtils, ContractAddressManager {
 
         // Get the committee public key
         uint128 committeeId = streamManager.getCommitteeId(streamPosition.streamId, streamPosition.packetNumber);
-        bytes memory committeePubKey = committeeRegistry.getCommitteePubKey(committeeId);
+        bytes memory committeeTakePubKey = committeeRegistry.getCommitteeTakePubKey(committeeId);
 
         // BtcTransaction to verify
         BtcTransaction memory btcTransaction = BtcTransaction({
@@ -70,12 +70,12 @@ contract AcceptPeginScript is ScriptUtils, ContractAddressManager {
         Stream memory stream = streamManager.getStreamById(streamPosition.streamId);
         btcTransaction.outputs[0] = BtcTxOut({
             amount: stream.denomination - Constants.P2TR_FEE - Constants.SPEED_UP_AMOUNT,
-            scriptPubKey: getAcceptPeginP2TRScriptPub(committeePubKey)
+            scriptPubKey: getP2TRKeySpendScriptPub(committeeTakePubKey)
         });
 
         // Enabler output
         bytes32[] memory disputeKeys = committeeRegistry.getCommitteeDisputeKeys(committeeId);
-        bytes memory enablerScript = bitcoinManager.getEnablerOutputP2TRScriptPub(committeePubKey, disputeKeys);
+        bytes memory enablerScript = bitcoinManager.getEnablerOutputP2TRScriptPub(committeeTakePubKey, disputeKeys);
         btcTransaction.outputs[1] = BtcTxOut({amount: Constants.ENABLER_AMOUNT, scriptPubKey: enablerScript});
 
         // Speed up output (child pays for parent)

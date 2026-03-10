@@ -56,14 +56,14 @@ contract BitcoinManager is IBitcoinManager, BaseProxy {
         address _rskDestinationAddress,
         uint64 _value,
         bytes32 _btcReimbursementPubKey,
-        bytes memory _committeePubKey
+        bytes memory _committeeTakePubKey
     ) external view returns (string memory temporaryPeginAddress) {
         _validateRequestPeginInputs(
-            _timelockBlocks, _btcReimbursementPubKey, _committeePubKey, _rskDestinationAddress, _value
+            _timelockBlocks, _btcReimbursementPubKey, _committeeTakePubKey, _rskDestinationAddress, _value
         );
 
         bytes32 tweakedPublicKey = _getRequestPeginTweakedPublicKey(
-            _timelockBlocks, _rskDestinationAddress, _value, _btcReimbursementPubKey, _committeePubKey
+            _timelockBlocks, _rskDestinationAddress, _value, _btcReimbursementPubKey, _committeeTakePubKey
         );
 
         return Bech32m.encodeTaprootAddress(abi.encodePacked(tweakedPublicKey), network);
@@ -75,7 +75,7 @@ contract BitcoinManager is IBitcoinManager, BaseProxy {
         address _rskDestinationAddress,
         uint64 _value,
         bytes32 _btcReimbursementPubKey,
-        bytes memory _committeePubKey
+        bytes memory _committeeTakePubKey
     ) internal pure returns (bytes32) {
         bytes memory timelockScript = BtcScriptParser.getTimelockScript(_timelockBlocks, _btcReimbursementPubKey);
         bytes32 timelockLeaf = BtcTaproot.getLeaf(timelockScript);
@@ -92,7 +92,7 @@ contract BitcoinManager is IBitcoinManager, BaseProxy {
         bytes32 committeePubKeyX;
         // slither-disable-next-line assembly
         assembly ("memory-safe") {
-            committeePubKeyX := mload(add(_committeePubKey, 33))
+            committeePubKeyX := mload(add(_committeeTakePubKey, 33))
         }
 
         bytes32 tweak = BtcTaproot.getTweak(abi.encodePacked(committeePubKeyX, merkleRoot));
@@ -105,7 +105,7 @@ contract BitcoinManager is IBitcoinManager, BaseProxy {
     function _validateRequestPeginInputs(
         uint32 _timelockBlocks,
         bytes32 _btcReimbursementPubKey,
-        bytes memory _committeePubKey,
+        bytes memory _committeeTakePubKey,
         address _rskDestinationAddress,
         uint64 _value
     ) internal pure {
@@ -115,10 +115,10 @@ contract BitcoinManager is IBitcoinManager, BaseProxy {
         if (_btcReimbursementPubKey == bytes32(0)) {
             revert InvalidPublicKey(_btcReimbursementPubKey);
         }
-        if (_committeePubKey.length != 33) {
-            revert InvalidCommitteePublicKeyLength(_committeePubKey.length, 33);
+        if (_committeeTakePubKey.length != 33) {
+            revert InvalidCommitteePublicKeyLength(_committeeTakePubKey.length, 33);
         }
-        if (BytesHelper.compare(_committeePubKey, new bytes(33))) {
+        if (BytesHelper.compare(_committeeTakePubKey, new bytes(33))) {
             revert InvalidCommitteePublicKeyZero();
         }
         if (_rskDestinationAddress == address(0)) {
@@ -176,7 +176,7 @@ contract BitcoinManager is IBitcoinManager, BaseProxy {
         address _rskDestinationAddress,
         uint64 _streamDenomination,
         bytes32 _btcReimbursementPubKey,
-        bytes memory _committeePubKey,
+        bytes memory _committeeTakePubKey,
         BtcTxOut calldata _p2trOut
     ) external pure {
         // Validate that the amount is enough for the stream
@@ -184,10 +184,10 @@ contract BitcoinManager is IBitcoinManager, BaseProxy {
             revert InvalidOutputAmount(_p2trOut.amount, _streamDenomination);
         }
         _validateRequestPeginInputs(
-            _timelockBlocks, _btcReimbursementPubKey, _committeePubKey, _rskDestinationAddress, _streamDenomination
+            _timelockBlocks, _btcReimbursementPubKey, _committeeTakePubKey, _rskDestinationAddress, _streamDenomination
         );
         bytes memory p2trScriptPubKey = _getRequestPeginP2TRScriptPub(
-            _timelockBlocks, _rskDestinationAddress, _streamDenomination, _btcReimbursementPubKey, _committeePubKey
+            _timelockBlocks, _rskDestinationAddress, _streamDenomination, _btcReimbursementPubKey, _committeeTakePubKey
         );
         _compareOutputPubKey(_p2trOut.scriptPubKey, p2trScriptPubKey);
     }
@@ -211,17 +211,17 @@ contract BitcoinManager is IBitcoinManager, BaseProxy {
     /// @param _rskDestinationAddress The RSK address that will receive the RBTC
     /// @param _value The amount in satoshis for the peg-in request
     /// @param _btcReimbursementPubKey The user's Bitcoin public key for reimbursement (x-only)
-    /// @param _committeePubKey The committee's public key for the Taproot address (x-only)
+    /// @param _committeeTakePubKey The committee's take public key for the Taproot address (x-only)
     /// @return The P2TR script pub key bytes
     function _getRequestPeginP2TRScriptPub(
         uint32 _timelockBlocks,
         address _rskDestinationAddress,
         uint64 _value,
         bytes32 _btcReimbursementPubKey,
-        bytes memory _committeePubKey
+        bytes memory _committeeTakePubKey
     ) internal pure returns (bytes memory) {
         bytes32 tweakedPublicKey = _getRequestPeginTweakedPublicKey(
-            _timelockBlocks, _rskDestinationAddress, _value, _btcReimbursementPubKey, _committeePubKey
+            _timelockBlocks, _rskDestinationAddress, _value, _btcReimbursementPubKey, _committeeTakePubKey
         );
         return BtcTaproot.getP2TRScriptPubKey(tweakedPublicKey);
     }
@@ -258,7 +258,7 @@ contract BitcoinManager is IBitcoinManager, BaseProxy {
     // ========================== Peg In Accept ==========================
     /// @inheritdoc IBitcoinManager
     function getAcceptPeginSignatureHash(
-        bytes memory _committeePubKey,
+        bytes memory _committeeTakePubKey,
         bytes32 _userXOnlyPubKey,
         bytes32 _registerPeginTx,
         PrevoutData[] memory _prevoutDatas,
@@ -290,14 +290,14 @@ contract BitcoinManager is IBitcoinManager, BaseProxy {
         // Committee accept pegin (using value from first input - fee - speedup)
         // we should also subtract the enabler amount but since we also have the enabler amount from the request pegin
         // they cancel out
-        bytes memory scriptPubKey = _getAcceptPeginP2TRScriptPub(_committeePubKey);
+        bytes memory scriptPubKey = _getP2TRKeySpendScriptPub(_committeeTakePubKey);
         btcOutputs[Constants.ACCEPT_PEGIN_VOUT_TAPTREE] = BtcTxOut({
             amount: _prevoutDatas[Constants.REQUEST_PEGIN_VOUT_TAPTREE].value - fee - speedUpAmount,
             scriptPubKey: scriptPubKey
         });
 
         // Enabler output with operator-only dispute keys
-        bytes memory enablerScriptPubKey = getEnablerOutputP2TRScriptPub(_committeePubKey, _disputeKeys);
+        bytes memory enablerScriptPubKey = getEnablerOutputP2TRScriptPub(_committeeTakePubKey, _disputeKeys);
         btcOutputs[Constants.ACCEPT_PEGIN_VOUT_ENABLER] =
             BtcTxOut({amount: Constants.ENABLER_AMOUNT, scriptPubKey: enablerScriptPubKey});
 
@@ -326,7 +326,7 @@ contract BitcoinManager is IBitcoinManager, BaseProxy {
     }
 
     /// @dev Generates the Accept Pegin Taproot output script pub key with both key spend and script spend paths
-    function _getAcceptPeginTweakedPublicKey(bytes memory _committeePubKey) internal pure returns (bytes32) {
+    function _getKeySpendTweakedPublicKey(bytes memory _committeePubKey) internal pure returns (bytes32) {
         // Extract x-coordinate from compressed public key (skip first byte which is prefix)
         // Assembly is required here for BIP340 X-only public key extraction from the 33-byte compressed format.
         // BIP340 specifies Schnorr signatures use only the x-coordinate, stored at bytes 1-32 (skipping the prefix byte).
@@ -425,7 +425,7 @@ contract BitcoinManager is IBitcoinManager, BaseProxy {
         return levels[0][0];
     }
 
-    function _getEnablerOutputTweakedPublicKey(bytes memory _committeePubKey, bytes32[] memory _disputeKeys)
+    function _getEnablerOutputTweakedPublicKey(bytes memory _committeeTakePubKey, bytes32[] memory _disputeKeys)
         internal
         pure
         returns (bytes32)
@@ -434,7 +434,7 @@ contract BitcoinManager is IBitcoinManager, BaseProxy {
         bytes32 committeePubKeyX;
         // slither-disable-next-line assembly
         assembly ("memory-safe") {
-            committeePubKeyX := mload(add(_committeePubKey, 33))
+            committeePubKeyX := mload(add(_committeeTakePubKey, 33))
         }
 
         // Create script leaves for each dispute key
@@ -449,20 +449,20 @@ contract BitcoinManager is IBitcoinManager, BaseProxy {
     }
 
     /// @inheritdoc IBitcoinManager
-    function getEnablerOutputP2TRScriptPub(bytes memory _committeePubKey, bytes32[] memory _disputeKeys)
+    function getEnablerOutputP2TRScriptPub(bytes memory _committeeTakePubKey, bytes32[] memory _disputeKeys)
         public
         pure
         returns (bytes memory)
     {
-        bytes32 tweakedPublicKey = _getEnablerOutputTweakedPublicKey(_committeePubKey, _disputeKeys);
+        bytes32 tweakedPublicKey = _getEnablerOutputTweakedPublicKey(_committeeTakePubKey, _disputeKeys);
         return BtcTaproot.getP2TRScriptPubKey(tweakedPublicKey);
     }
 
     /// @notice Generates the Accept Pegin Taproot output script pub key with both key spend and script spend paths
     /// @param _committeePubKey The committee's public key (x-only)
     /// @return The P2TR script pub key bytes
-    function _getAcceptPeginP2TRScriptPub(bytes memory _committeePubKey) internal pure returns (bytes memory) {
-        bytes32 tweakedPublicKey = _getAcceptPeginTweakedPublicKey(_committeePubKey);
+    function _getP2TRKeySpendScriptPub(bytes memory _committeePubKey) internal pure returns (bytes memory) {
+        bytes32 tweakedPublicKey = _getKeySpendTweakedPublicKey(_committeePubKey);
         return BtcTaproot.getP2TRScriptPubKey(tweakedPublicKey);
     }
 

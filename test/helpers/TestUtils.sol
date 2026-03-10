@@ -69,9 +69,14 @@ abstract contract TestUtils is Test, ScriptUtils {
         pure
     {
         assertEq(
-            actualCommittee.aggregatedKey,
-            expectedCommittee.aggregatedKey,
-            string(abi.encodePacked("expect committees to have same aggregatedKey"))
+            actualCommittee.takeAggregatedKey,
+            expectedCommittee.takeAggregatedKey,
+            string(abi.encodePacked("expect committees to have same takeAggregatedKey"))
+        );
+        assertEq(
+            actualCommittee.disputeAggregatedKey,
+            expectedCommittee.disputeAggregatedKey,
+            string(abi.encodePacked("expect committees to have same disputeAggregatedKey"))
         );
     }
 
@@ -137,7 +142,7 @@ abstract contract TestUtils is Test, ScriptUtils {
         returns (MemberKeys memory publicKeys)
     {
         publicKeys.takePubKey = _registrationKeys.takeKey.publicKeyX;
-        publicKeys.covenantPubKey = _registrationKeys.covenantKey.publicKeyX;
+        publicKeys.disputePubKey = _registrationKeys.disputeKey.publicKeyX;
         publicKeys.communicationPubKey = _registrationKeys.communicationKey;
     }
 }

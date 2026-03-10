@@ -111,7 +111,7 @@ contract StreamManagerTest is Test, HelperContract {
         // we expect the packet number to be 1 since the first packet is being created in the test setup function
         uint128 committeeId = COMMITTEE_ID_STREAM_1_COMMITTEE_1;
         uint64 expectedPacketNumber = 1;
-        bytes memory committeePubKey = COMMITTEE_PUB_KEY();
+        bytes memory committeePubKey = COMMITTEE_TAKE_PUB_KEY();
         bytes32[] memory disputeKeys = registry.getCommitteeDisputeKeys(committeeId);
 
         // Assert
@@ -1381,7 +1381,7 @@ contract StreamManagerTest is Test, HelperContract {
         // Create a new packet and add one filled slot
         // For the pourpose of this test we can reuse the existing committee that was created during the setup
         uint128 committeeId = COMMITTEE_ID_STREAM_1_COMMITTEE_1;
-        bytes memory committeePubKey = COMMITTEE_PUB_KEY();
+        bytes memory committeePubKey = COMMITTEE_TAKE_PUB_KEY();
         bytes32[] memory disputeKeys = registry.getCommitteeDisputeKeys(committeeId);
         vm.prank(address(registry));
         streamManager.createNewPacket(streamId, committeeId, committeePubKey, disputeKeys);

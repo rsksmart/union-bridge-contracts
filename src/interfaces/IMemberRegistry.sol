@@ -12,8 +12,8 @@ uint8 constant RSA_PUBLIC_KEY_CHUNKS = 10;
 enum PublicKeyType {
     /// @notice Public key used for take operations (normal peg-out)
     TAKE,
-    /// @notice Public key used for covenant operations (dispute resolution)
-    COVENANT,
+    /// @notice Public key used for dispute operations (dispute resolution)
+    DISPUTE,
     /// @notice Public key used for communication between members
     COMMUNICATION,
     /// @notice This must always be the last element since it represents the total count of enum elements
@@ -49,8 +49,8 @@ struct RSAPublicKey {
 struct MemberRegistrationKeys {
     /// @notice TAKE public key (ECDSA) - fully validated
     ECDSAPublicKey takeKey;
-    /// @notice COVENANT public key (ECDSA) - no validation
-    ECDSAPublicKey covenantKey;
+    /// @notice DISPUTE public key (ECDSA) - no validation
+    ECDSAPublicKey disputeKey;
     /// @notice COMMUNICATION public key (RSA) - input validation only
     RSAPublicKey communicationKey;
 }
@@ -85,8 +85,8 @@ struct Balance {
 struct MemberKeys {
     /// @notice TAKE public key (ECDSA)
     bytes32 takePubKey;
-    /// @notice COVENANT public key (ECDSA)
-    bytes32 covenantPubKey;
+    /// @notice DISPUTE public key (ECDSA)
+    bytes32 disputePubKey;
     /// @notice COMMUNICATION public key (RSA)
     RSAPublicKey communicationPubKey;
 }
@@ -95,7 +95,7 @@ struct MemberKeys {
 /// @dev Contains all information needed to manage a member's participation
 struct Member {
     /// @notice Member public keys for different purposes
-    /// @dev Contains TAKE (ECDSA), COVENANT (ECDSA), and COMMUNICATION (RSA) keys
+    /// @dev Contains TAKE (ECDSA), DISPUTE (ECDSA), and COMMUNICATION (RSA) keys
     MemberKeys publicKeys;
     /// @notice Balance and staking information for the member
     Balance balance;
@@ -196,6 +196,11 @@ interface IMemberRegistry {
     /// @param _address The member's address
     /// @return The COMMUNICATION public key (RSA struct)
     function getMemberComPubKey(address _address) external view returns (RSAPublicKey memory);
+
+    /// @notice Retrieves the DISPUTE public key for a specific member
+    /// @param _address The member's address
+    /// @return The member's dispute public key (x-only)
+    function getMemberDisputePubKey(address _address) external view returns (bytes32);
 
     /// @notice Retrieves all public keys for a specific member
     /// @param _address The member's address
@@ -393,28 +398,28 @@ interface IMemberRegistry {
     error TooManyCandidatesForStream(StreamDenomination denomination, Role role);
 
     /// @notice Thrown when a EDCSA public key is invalid (zero or not on curve)
-    /// @param keyType The type of the public key (TAKE, COVENANT, or COMMUNICATION)
+    /// @param keyType The type of the public key (TAKE, DISPUTE, or COMMUNICATION)
     /// @param publicKeyX The X-coordinate of the public key
     /// @param publicKeyY The Y-coordinate of the public key
     error InvalidEDCSAPublicKey(PublicKeyType keyType, bytes32 publicKeyX, bytes32 publicKeyY);
 
     /// @notice Thrown when a RSA public key is zero
-    /// @param keyType The type of the public key (TAKE, COVENANT, or COMMUNICATION)
+    /// @param keyType The type of the public key (TAKE, DISPUTE, or COMMUNICATION)
     error InvalidZeroRSAPublicKey(PublicKeyType keyType);
 
     /// @notice Thrown when a public key doesn't match the expected value
-    /// @param keyType The type of the public key (TAKE, COVENANT, or COMMUNICATION)
+    /// @param keyType The type of the public key (TAKE, DISPUTE, or COMMUNICATION)
     /// @param currentPubKey The current public key
     /// @param newPubKey The new public key
     error PublicKeyMismatch(PublicKeyType keyType, bytes32 currentPubKey, bytes32 newPubKey);
 
     /// @notice Thrown when a signature is zero
-    /// @param keyType The type of the public key (TAKE, COVENANT, or COMMUNICATION)
+    /// @param keyType The type of the public key (TAKE, DISPUTE, or COMMUNICATION)
     /// @param publicKey The public key registration with invalid signature
     error InvalidZeroEDCSASignature(PublicKeyType keyType, ECDSAPublicKey publicKey);
 
     /// @notice Thrown when a signature is invalid
-    /// @param keyType The type of the public key (TAKE, COVENANT, or COMMUNICATION)
+    /// @param keyType The type of the public key (TAKE, DISPUTE, or COMMUNICATION)
     /// @param publicKey The public key registration with invalid signature
     /// @param recoveredSignerAddress The address recovered from the signature
     /// @param signerAddress The expected signer address

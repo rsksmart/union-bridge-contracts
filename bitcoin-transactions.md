@@ -811,11 +811,11 @@ The **Dispute Core Protocol** is responsible for managing dispute resolution mec
 
 - **Type**: Taproot (P2TR)
 - **Amount**: `AUTO_AMOUNT` (calculated during protocol setup)
-- **Key**: Committee aggregated key (`take_aggregated_key`)
+- **Key**: Committee take aggregated key (`take_aggregated_key`)
 - **Leaves**: Multiple script leaves for challenge and operator take scenarios
 - **Purpose**: Main output that enables OPERATOR_TAKE_TX and CHALLENGE_TX transactions
 - **Taproot Script Details**:
-  - **Key Path**: Uses committee aggregated key for direct spending
+  - **Key Path**: Uses committee take aggregated key, this path is not used, it's just to force all memebers to sign the transaction.
   - **Script Tree**: Contains multiple script leaves:
     1. **Operator Take Script (Long Timelock)**: `OP_1 <LONG_TIMELOCK> OP_CHECKSEQUENCEVERIFY OP_DROP <operator_dispute_key> OP_CHECKSIG` - Allows operator to claim funds after long timelock expires
     2. **Challenge Script (Short Timelock)**: `OP_1 <SHORT_TIMELOCK> OP_CHECKSEQUENCEVERIFY OP_DROP VERIFY_WINTERNITZ_SIGNATURE(<dispute_aggregated_key>, CHALLENGE_KEY, <challenge_key>)` - Allows any committee member to challenge after short timelock expires
@@ -829,7 +829,7 @@ The **Dispute Core Protocol** is responsible for managing dispute resolution mec
 
     ```mermaid
     graph TD
-        A[REIMBURSEMENT_KICKOFF_TX Output 0] --> B[Committee Aggregated Key]
+        A[REIMBURSEMENT_KICKOFF_TX Output 0] --> B[Committee Take Aggregated Key]
         A --> C[Script Tree]
         C --> D["Leaf ({operator_index}): Operator Long Timelock Script"]
         C --> F["Leaf (M - 1): Members Challenge Script"]
@@ -910,15 +910,15 @@ The Dispute Core Protocol integrates with the **Accept PegIn Protocol** to provi
 
 #### CHALLENGE_TX Outputs
 
-##### Output 0: REVEAL_INPUT Output
+##### Output 0: REVEAL_INPUT and INPUT_NOT_REVEALED_TX
 
 - **Type**: Taproot (P2TR)
 - **Amount**: `AUTO_AMOUNT` (calculated during protocol setup)
-- **Key**: Committee aggregated key (`dispute_aggregated_key`)
+- **Key**: Committee dispute aggregated key, this path is never used, it's just to force everyone to sign the transaction.
 - **Leaves**: Two script leaves for reveal input and input not revealed scenarios
 - **Purpose**: Main output that enables REVEAL_INPUT_TX and INPUT_NOT_REVEALED_TX transactions
 - **Taproot Script Details**:
-  - **Key Path**: Uses committee aggregated key for direct spending
+  - **Key Path**: Uses committee dispute aggregated key for direct spending
   - **Script Tree**: Contains two script leaves:
     1. **Reveal Input Script**: `VERIFY_WINTERNITZ_SIGNATURE(<operator_dispute_key>, SLOT_ID_KEY, <slot_id_key>)` - Allows operator to reveal the input by signing with their SLOT_ID_KEY Winternitz key
     2. **Input Not Revealed Script**: `OP_1 <INPUT_NOT_REVEALED_TIMELOCK> OP_CHECKSEQUENCEVERIFY OP_DROP VERIFY_SIGNATURE(<dispute_aggregated_key>)` - Allows committee to claim funds if operator doesn't reveal input within the timelock
@@ -939,8 +939,8 @@ The Dispute Core Protocol integrates with the **Accept PegIn Protocol** to provi
 
 ```mermaid
 graph LR
-    A[REIMBURSEMENT_KICKOFF_TX<br/>output 0: OPERATOR_TAKE_ENABLER] --> B[CHALLENGE_TX<br/>Inputs:<br/>• Input 0: REIMBURSEMENT_KICKOFF_TX output<br/>  Script Path: Short Timelock + Winternitz<br/>  Data: [1u8] signed with CHALLENGE_KEY]
-    B --> C[CHALLENGE_TX<br/>Outputs:<br/>• Output 0: REVEAL_INPUT Output<br/>  P2TR - Committee Aggregated Key<br/>  Two script leaves<br/><br/>• Output 1-N: Speedup Outputs<br/>  P2WPKH - One per committee member<br/>  Amount: SPEEDUP_VALUE each]
+    A[REIMBURSEMENT_KICKOFF_TX<br/>output 0: OPERATOR_TAKE_ENABLER] --> B["CHALLENGE_TX<br/>Inputs:<br/>• Input 0: REIMBURSEMENT_KICKOFF_TX output<br/>  Script Path: Short Timelock + Winternitz<br/>  Data: (1u8) signed with CHALLENGE_KEY"]
+    B --> C[CHALLENGE_TX<br/>Outputs:<br/>• Output 0: REVEAL_INPUT Output<br/>  P2TR - Committee Dispute Aggregated Key<br/><br/>• Output 1-N: Speedup Outputs<br/>  P2WPKH - One per committee member<br/>  Amount: SPEEDUP_VALUE each]
 
     %% Flow to next transactions
     C --> D[REVEAL_INPUT_TX<br/>input 0<br/>Script Path: Winternitz Signature<br/>Operator reveals input]

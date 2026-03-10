@@ -18,9 +18,9 @@ contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
     IOperatorTakeManager operatorTakeManager;
 
     uint64 amount;
-    bytes operatorPubKey;
+    bytes operatorDisputePubKey;
     bytes32 acceptPeginTxid;
-    bytes committeePubKey;
+    bytes committeeTakePubKey;
     bytes userPubKey;
 
     IStreamManager streamManager;
@@ -36,8 +36,8 @@ contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
         ICommitteeRegistry committeeRegistry = getCommitteeRegistry();
         IMemberRegistry memberRegistry = committeeRegistry.memberRegistry();
 
-        bytes32 operatorXOnlyPubKey = memberRegistry.getMemberPublicKeys(getDeployerAddress()).covenantPubKey;
-        operatorPubKey = BtcHelper.pubKeyXonlyToCompact(operatorXOnlyPubKey);
+        bytes32 operatorXOnlyDisputeKey = memberRegistry.getMemberDisputePubKey(getDeployerAddress());
+        operatorDisputePubKey = BtcHelper.pubKeyXonlyToCompact(operatorXOnlyDisputeKey);
         userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
         amount = 100_000; // 0.001 BTC
 
@@ -49,7 +49,7 @@ contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
         expectedSlotId = streamPosition.slotId;
 
         uint128 committeeId = streamManager.getCommitteeId(expectedStreamId, expectedPacketNumber);
-        committeePubKey = committeeRegistry.getCommitteePubKey(committeeId);
+        committeeTakePubKey = committeeRegistry.getCommitteeTakePubKey(committeeId);
 
         expectedPegoutId = operatorTakeManager.getOperatorTakeInfo(_acceptPeginTxid).pegoutId;
     }
@@ -67,7 +67,7 @@ contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
         vm.stopBroadcast();
 
         // REIMBURSEMENT KICKOFF
-        BtcTransaction memory kickoffTx = createReimbursementKickoffTx(committeePubKey, expectedSlotId);
+        BtcTransaction memory kickoffTx = createReimbursementKickoffTx(committeeTakePubKey, expectedSlotId);
         BtcTxSPVProof memory kickoffTxSPVProof = createBtcTxSPVProof(kickoffTx);
         bytes32 reimbursementKickoffTxid = getTxid(kickoffTx);
 
@@ -78,7 +78,7 @@ contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
 
         // OPERATOR TAKE
         BtcTransaction memory takeTx =
-            createOperatorTakeTx(_acceptPeginTxid, reimbursementKickoffTxid, operatorPubKey, amount);
+            createOperatorTakeTx(_acceptPeginTxid, reimbursementKickoffTxid, operatorDisputePubKey, amount);
         BtcTxSPVProof memory takeTxSPVProof = createBtcTxSPVProof(takeTx);
 
         // Register operator take

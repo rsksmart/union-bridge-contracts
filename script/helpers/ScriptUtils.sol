@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import {Script} from "forge-std/Script.sol";
 import {Vm} from "forge-std/Vm.sol";
 import {PublicKeyType, ECDSAPublicKey, RSAPublicKey, RSA_PUBLIC_KEY_CHUNKS} from "src/interfaces/IMemberRegistry.sol";
-import {MemberRegistrationKeys, MemberKeys} from "src/interfaces/IMemberRegistry.sol";
+import {MemberRegistrationKeys} from "src/interfaces/IMemberRegistry.sol";
 import {BtcTxSPVProof} from "src/interfaces/IPegCommonTypes.sol";
 import {BtcTransaction, BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
 import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
@@ -102,17 +102,17 @@ abstract contract ScriptUtils is Script {
     {
         // Generate a deterministic 'public keys' from a private key
         registrationKeys.takeKey = generateECDSAPublicKey(_privateKey, PublicKeyType.TAKE);
-        registrationKeys.covenantKey = generateECDSAPublicKey(_privateKey, PublicKeyType.COVENANT);
+        registrationKeys.disputeKey = generateECDSAPublicKey(_privateKey, PublicKeyType.DISPUTE);
         registrationKeys.communicationKey = generateRSAPublicKey(_privateKey, PublicKeyType.COMMUNICATION);
     }
 
     // ========================== Peg in ==========================
-    function getAcceptPeginP2TRScriptPub(bytes memory _committeePubKey) internal pure returns (bytes memory) {
-        bytes32 tweakedPublicKey = getAcceptPeginTweakedPublicKey(_committeePubKey);
+    function getP2TRKeySpendScriptPub(bytes memory _committeePubKey) internal pure returns (bytes memory) {
+        bytes32 tweakedPublicKey = getKeySpendTweakedPublicKey(_committeePubKey);
         return BtcTaproot.getP2TRScriptPubKey(tweakedPublicKey);
     }
 
-    function getAcceptPeginTweakedPublicKey(bytes memory _committeePubKey) internal pure returns (bytes32) {
+    function getKeySpendTweakedPublicKey(bytes memory _committeePubKey) internal pure returns (bytes32) {
         // Extract x-coordinate from compressed public key (skip first byte which is prefix)
         // Assembly is required here for BIP340 X-only public key extraction from the 33-byte compressed format.
         // BIP340 specifies Schnorr signatures use only the x-coordinate, stored at bytes 1-32 (skipping the prefix byte).
@@ -462,11 +462,9 @@ abstract contract ScriptUtils is Script {
         // Outputs
         BtcTxOut[] memory btcOutputs = new BtcTxOut[](1);
 
-        // P2TR to committee
-        btcOutputs[0] = BtcTxOut({
-            amount: REIMBURSEMENT_KICKOFF_AMOUNT,
-            scriptPubKey: getAcceptPeginP2TRScriptPub(_committeePubKey)
-        });
+        // TODO: we use getP2TRKeySpendScriptPub for testing purposes, actual value is a taptree that uses WINTERNITZ signatures but we can't validate it in solidity.
+        btcOutputs[0] =
+            BtcTxOut({amount: REIMBURSEMENT_KICKOFF_AMOUNT, scriptPubKey: getP2TRKeySpendScriptPub(_committeePubKey)});
 
         return BtcTransaction({version: Constants.BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
     }
@@ -502,7 +500,7 @@ abstract contract ScriptUtils is Script {
     // ========================== Reveal ==========================
     function createInputRevealedTx(
         bytes32 _challengeTxid,
-        bytes memory _committeePubKey,
+        bytes memory _committeeDisputePubKey,
         bytes memory _operatorDisputePubKeyCompact
     ) internal pure returns (BtcTransaction memory) {
         // Input: spend the challenge UTXO
@@ -517,9 +515,9 @@ abstract contract ScriptUtils is Script {
         // Outputs
         BtcTxOut[] memory btcOutputs = new BtcTxOut[](2);
 
-        // P2TR to committee
+        // This ouput is used by Operator Won Tx input Close enabler
         // This is a fake amount just for testing purposes
-        btcOutputs[0] = BtcTxOut({amount: 2000, scriptPubKey: getAcceptPeginP2TRScriptPub(_committeePubKey)});
+        btcOutputs[0] = BtcTxOut({amount: 2000, scriptPubKey: getP2TRKeySpendScriptPub(_committeeDisputePubKey)});
         bytes memory speedupScriptPubKey = BtcScriptParser.getP2WPKHScript(_operatorDisputePubKeyCompact);
         btcOutputs[1] = BtcTxOut({amount: Constants.SPEED_UP_AMOUNT, scriptPubKey: speedupScriptPubKey});
 
@@ -527,7 +525,7 @@ abstract contract ScriptUtils is Script {
     }
 
     // ========================== Input Not Revealed ==========================
-    function createInputNotRevealedTx(bytes32 _challengeTxid, MemberKeys[] memory _memberKeys)
+    function createInputNotRevealedTx(bytes32 _challengeTxid, bytes32[] memory _disputePubKeys)
         internal
         pure
         returns (BtcTransaction memory)
@@ -541,13 +539,13 @@ abstract contract ScriptUtils is Script {
             scriptSig: hex""
         });
 
-        uint256 memberCount = _memberKeys.length;
+        uint256 memberCount = _disputePubKeys.length;
         // Outputs: Output 0 is OP_RETURN (empty) per dispute_core.rs, then one speedup output per committee member
         BtcTxOut[] memory btcOutputs = new BtcTxOut[](1 + memberCount);
         btcOutputs[0] = BtcTxOut({amount: 0, scriptPubKey: abi.encodePacked(OpCodes.OP_RETURN)}); // OP_RETURN
         for (uint256 i = 0; i < memberCount; i++) {
             bytes memory speedupScriptPubKey =
-                BtcScriptParser.getP2WPKHScript(BtcHelper.pubKeyXonlyToCompact(_memberKeys[i].covenantPubKey));
+                BtcScriptParser.getP2WPKHScript(BtcHelper.pubKeyXonlyToCompact(_disputePubKeys[i]));
             btcOutputs[1 + i] = BtcTxOut({amount: Constants.SPEED_UP_AMOUNT, scriptPubKey: speedupScriptPubKey});
         }
 

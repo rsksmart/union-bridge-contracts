@@ -29,7 +29,7 @@ contract RegisterCancelUserTakeScript is ScriptUtils, ContractAddressManager {
         ICommitteeRegistry registry = getCommitteeRegistry();
         IMemberRegistry memberRegistry = registry.memberRegistry();
 
-        bytes32 operatorXOnlyPubKey = memberRegistry.getMemberPublicKeys(getDeployerAddress()).covenantPubKey;
+        bytes32 operatorXOnlyPubKey = memberRegistry.getMemberDisputePubKey(getDeployerAddress());
         operatorPubKey = BtcHelper.pubKeyXonlyToCompact(operatorXOnlyPubKey);
 
         // Calculate expected slot and packet numbers

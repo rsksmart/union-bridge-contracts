@@ -5,7 +5,7 @@ import {console} from "forge-std/console.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
 import {ICommitteeRegistry, Role, UTXO} from "src/interfaces/ICommitteeRegistry.sol";
-import {IMemberRegistry, MemberRegistrationKeys, MemberKeys} from "src/interfaces/IMemberRegistry.sol";
+import {IMemberRegistry, MemberRegistrationKeys} from "src/interfaces/IMemberRegistry.sol";
 import {StreamDenomination, IStreamManager} from "src/interfaces/IStreamManager.sol";
 
 contract ApplyToStreamScript is ScriptUtils, ContractAddressManager {
@@ -51,7 +51,7 @@ contract ApplyToStreamScript is ScriptUtils, ContractAddressManager {
         user = vm.addr(privKey);
         MemberRegistrationKeys memory memberRegistrationKeysMemory = generateRegistrationPublicKeys(privKey);
         memberRegistrationKeys.takeKey = memberRegistrationKeysMemory.takeKey;
-        memberRegistrationKeys.covenantKey = memberRegistrationKeysMemory.covenantKey;
+        memberRegistrationKeys.disputeKey = memberRegistrationKeysMemory.disputeKey;
         memberRegistrationKeys.communicationKey = memberRegistrationKeysMemory.communicationKey;
 
         if (user.balance < minimumDeposit) {
@@ -83,15 +83,14 @@ contract ApplyToStreamScript is ScriptUtils, ContractAddressManager {
             StreamDenomination(streamId), Role(role), memberRegistrationKeys, fundingUTXO
         );
         vm.stopBroadcast();
-        MemberKeys memory memberPubKeys = memberRegistry.getMemberPublicKeys(user);
-        if (memberPubKeys.takePubKey != memberRegistrationKeys.takeKey.publicKeyX) {
+        if (memberRegistry.getMemberTakePubKey(user) != memberRegistrationKeys.takeKey.publicKeyX) {
             revert("applyToStream failed: take public key mismatch");
         }
-        if (memberPubKeys.covenantPubKey != memberRegistrationKeys.covenantKey.publicKeyX) {
+        if (memberRegistry.getMemberDisputePubKey(user) != memberRegistrationKeys.disputeKey.publicKeyX) {
             revert("applyToStream failed: covenant public key mismatch");
         }
         if (
-            keccak256(abi.encode(memberPubKeys.communicationPubKey))
+            keccak256(abi.encode(memberRegistry.getMemberComPubKey(user)))
                 != keccak256(abi.encode(memberRegistrationKeys.communicationKey))
         ) {
             revert("applyToStream failed: communication public key mismatch");

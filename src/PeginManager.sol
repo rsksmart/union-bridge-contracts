@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import {PegManagerBase} from "./PegManagerBase.sol";
 import {IPeginManager, RequestPeginTempInfo} from "./interfaces/IPeginManager.sol";
 import {ICommitteeRegistry, CommitteeMember} from "./interfaces/ICommitteeRegistry.sol";
-import {IMemberRegistry, MemberKeys} from "./interfaces/IMemberRegistry.sol";
+import {IMemberRegistry} from "./interfaces/IMemberRegistry.sol";
 import {IStreamManager, Stream} from "./interfaces/IStreamManager.sol";
 import {IBitcoinManager, PrevoutData, BitcoinSignatureData, BtcTxOut} from "./interfaces/IBitcoinManager.sol";
 import {BtcTxSPVProof, StreamPosition, PegStatus} from "./interfaces/IPegCommonTypes.sol";
@@ -79,7 +79,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
 
         // Get the current packet's committee ID and key
         uint128 committeeId = streamManager.getCommitteeId(stream.streamId, stream.peginPacketPointer);
-        bytes memory committeeKey = committeeRegistry.getCommitteePubKey(committeeId);
+        bytes memory committeeKey = committeeRegistry.getCommitteeTakePubKey(committeeId);
 
         // Get the committee members
         CommitteeMember[] memory committeeMembers = committeeRegistry.getCommitteeMembers(committeeId);
@@ -89,8 +89,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
         IMemberRegistry memberRegistry = committeeRegistry.memberRegistry();
         for (uint256 i = 0; i < committeeMembers.length; i++) {
             // slither-disable-next-line calls-loop
-            MemberKeys memory keys = memberRegistry.getMemberPublicKeys(committeeMembers[i].memberAddress);
-            memberDisputeKeys[i] = keys.covenantPubKey;
+            memberDisputeKeys[i] = memberRegistry.getMemberDisputePubKey(committeeMembers[i].memberAddress);
         }
 
         return (
@@ -225,8 +224,8 @@ contract PeginManager is IPeginManager, PegManagerBase {
             streamManager.getStream(_requestPeginTxSPVProof.btcTx.outputs[Constants.REQUEST_PEGIN_VOUT_TAPTREE].amount);
 
         committeeId = streamManager.getCommitteeId(stream.streamId, packetNumber);
-        // getCommitteePubKey reverts if committee does not exist
-        committeePubKey = committeeRegistry.getCommitteePubKey(committeeId);
+        // getCommitteeTakePubKey reverts if committee does not exist
+        committeePubKey = committeeRegistry.getCommitteeTakePubKey(committeeId);
 
         // Validates that the Taproot Script has a Key Path for the committeePubKey
         // and has a timelock for btcReimbursementPubKey

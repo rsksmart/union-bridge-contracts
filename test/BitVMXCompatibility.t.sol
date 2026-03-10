@@ -172,8 +172,8 @@ contract BitVMXCompatibilityTest is Test, HelperContract {
         // Create a committee for stream 0 (0.001 BTC = 100,000 satoshis) to match BitVMX transaction
         uint128 committeeId = _setupCommitteeForStream0();
 
-        // Override the committee's aggregated key with BitVMX's key
-        registry.setCommitteeAggregatedKeyHarness(committeeId, committeeAggregatedKey);
+        // Override the committee's take aggregated key with BitVMX's key
+        registry.setCommitteeTakeAggregatedKeyHarness(committeeId, committeeAggregatedKey);
 
         // Get the committee info to find operator addresses
         Committee memory committee = registry.getCommittee(committeeId);
@@ -185,7 +185,7 @@ contract BitVMXCompatibilityTest is Test, HelperContract {
         for (uint256 i = 0; i < committee.members.length; i++) {
             if (opAssigned < BITVMX_OP_COUNT && committee.members[i].role == Role.OPERATOR) {
                 address operatorAddress = committee.members[i].memberAddress;
-                memberRegistry.setMemberCovenantKeyHarness(operatorAddress, bitvmxCovenantKeys[opAssigned]);
+                memberRegistry.setMemberDisputeKeyHarness(operatorAddress, bitvmxCovenantKeys[opAssigned]);
                 opAssigned++;
                 continue;
             }
@@ -193,7 +193,7 @@ contract BitVMXCompatibilityTest is Test, HelperContract {
             if (wtAssigned < BITVMX_WT_COUNT && committee.members[i].role == Role.WATCHTOWER) {
                 address wtAddress = committee.members[i].memberAddress;
                 // watchtower keys are expected after operator keys in the array
-                memberRegistry.setMemberCovenantKeyHarness(wtAddress, bitvmxCovenantKeys[BITVMX_OP_COUNT + wtAssigned]);
+                memberRegistry.setMemberDisputeKeyHarness(wtAddress, bitvmxCovenantKeys[BITVMX_OP_COUNT + wtAssigned]);
                 wtAssigned++;
                 continue;
             }

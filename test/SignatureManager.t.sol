@@ -24,7 +24,7 @@ contract SignatureManagerTest is Test, HelperContract {
         runTestDeployScript();
         (Committee memory expectedCommittee, uint128 committeeId) = setup_completeCommittee();
 
-        setupExpectedCommittee.aggregatedKey = expectedCommittee.aggregatedKey;
+        setupExpectedCommittee.takeAggregatedKey = expectedCommittee.takeAggregatedKey;
         setupExpectedCommittee.leaderAddress = expectedCommittee.leaderAddress;
         setupExpectedCommittee.streamId = expectedCommittee.streamId;
         for (uint64 i = 0; i < expectedCommittee.members.length; i++) {

@@ -24,7 +24,7 @@ import {
     CommunicationData,
     COMMUNICATION_DATA_CHUNKS
 } from "src/interfaces/ICommitteeRegistry.sol";
-import {MemberRegistrationKeys, MemberKeys} from "src/interfaces/IMemberRegistry.sol";
+import {MemberRegistrationKeys} from "src/interfaces/IMemberRegistry.sol";
 import {StreamDenomination, Slot, Stream, SlotState, SlotLocation} from "src/interfaces/IStreamManager.sol";
 import {
     BtcTxIn, BtcTxOut, BtcTransaction, BitcoinSignatureData, PrevoutData
@@ -49,9 +49,14 @@ abstract contract HelperContract is Test, TestUtils {
     uint128 constant COMMITTEE_ID_STREAM_1_COMMITTEE_3 = 252028015853910751738154200832734646518;
     // 33-byte compressed public key (0x02 prefix + 32 bytes)
 
-    function COMMITTEE_PUB_KEY() internal pure returns (bytes memory) {
+    function COMMITTEE_TAKE_PUB_KEY() internal pure returns (bytes memory) {
         return
             abi.encodePacked(bytes1(0x02), bytes32(0xd1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d));
+    }
+
+    function COMMITTEE_DISPUTE_PUB_KEY() internal pure returns (bytes memory) {
+        return
+            abi.encodePacked(bytes1(0x02), bytes32(0xe2dfc3050433ff7cb4b99d7f18d7733319f1fc2e4020ffbcc410f5227469834e));
     }
 
     uint256 constant BLOCK_COMMITTEE_1 = 10;
@@ -177,7 +182,7 @@ abstract contract HelperContract is Test, TestUtils {
     }
 
     function getMemberDisputePubKey(address _memberAddress) internal returns (bytes32) {
-        return generateRegistrationPublicKeys(uint256(uint160(_memberAddress))).covenantKey.publicKeyX;
+        return generateRegistrationPublicKeys(uint256(uint160(_memberAddress))).disputeKey.publicKeyX;
     }
 
     /**
@@ -307,11 +312,11 @@ abstract contract HelperContract is Test, TestUtils {
         Stream memory stream = streamManager.getStream(VALUE);
         uint128 committeeId = streamManager.getCommitteeId(stream.streamId, stream.peginPacketPointer);
 
-        bytes memory aggregatedKey = registry.getCommitteePubKey(committeeId);
+        bytes memory aggregatedTakePubKey = registry.getCommitteeTakePubKey(committeeId);
         bytes32[] memory disputeKeys = registry.getCommitteeDisputeKeys(committeeId);
 
         // Get the enabler output script using the BitcoinManager
-        bytes memory enablerScript = bitcoinManager.getEnablerOutputP2TRScriptPub(aggregatedKey, disputeKeys);
+        bytes memory enablerScript = bitcoinManager.getEnablerOutputP2TRScriptPub(aggregatedTakePubKey, disputeKeys);
 
         return BtcTxOut({amount: Constants.ENABLER_AMOUNT, scriptPubKey: enablerScript});
     }
@@ -403,9 +408,9 @@ abstract contract HelperContract is Test, TestUtils {
             bitcoinManager.getPeginOpReturnData(_requestTx.outputs[Constants.REQUEST_PEGIN_VOUT_OP_RETURN]);
 
         uint128 committeeId = streamManager.getCommitteeId(uint64(DEFAULT_STREAM), packetNumber);
-        bytes memory aggregatedKey = registry.getCommitteePubKey(committeeId);
+        bytes memory aggregatedTakePubKey = registry.getCommitteeTakePubKey(committeeId);
         bytes32[] memory disputeKeys = registry.getCommitteeDisputeKeys(committeeId);
-        bytes memory enablerScript = bitcoinManager.getEnablerOutputP2TRScriptPub(aggregatedKey, disputeKeys);
+        bytes memory enablerScript = bitcoinManager.getEnablerOutputP2TRScriptPub(aggregatedTakePubKey, disputeKeys);
 
         return BtcTxOut({amount: Constants.ENABLER_AMOUNT, scriptPubKey: enablerScript});
     }
@@ -645,7 +650,7 @@ abstract contract HelperContract is Test, TestUtils {
 
     function setup_depositAggregatedKey(uint128 _committeeId, address _memberAddress) internal {
         vm.prank(_memberAddress);
-        registry.depositAggregatedKey(_committeeId, COMMITTEE_PUB_KEY());
+        registry.depositAggregatedKeys(_committeeId, COMMITTEE_TAKE_PUB_KEY(), COMMITTEE_DISPUTE_PUB_KEY());
     }
 
     // This function is used to deposit the aggregated key for multiple members in a committee
@@ -692,7 +697,8 @@ abstract contract HelperContract is Test, TestUtils {
         (expectedCommittee, committeeId) = setup_pendingCommittee();
 
         setup_depositAggregatedKey_MultipleMembers(committeeId, 0, registry.committeeMemberCount());
-        expectedCommittee.aggregatedKey = COMMITTEE_PUB_KEY();
+        expectedCommittee.takeAggregatedKey = COMMITTEE_TAKE_PUB_KEY();
+        expectedCommittee.disputeAggregatedKey = COMMITTEE_DISPUTE_PUB_KEY();
         expectedCommittee.isPending = false;
         expectedCommittee.missingData = 0;
 
@@ -816,14 +822,16 @@ abstract contract HelperContract is Test, TestUtils {
         setup_registerNewMembers(numWatchtowers, numOperators, StreamDenomination(firstCommittee.streamId));
 
         secondCommittee = setup_getExpectedSecondCommittee();
-        secondCommittee.aggregatedKey = COMMITTEE_PUB_KEY();
+        secondCommittee.takeAggregatedKey = COMMITTEE_TAKE_PUB_KEY();
+        secondCommittee.disputeAggregatedKey = COMMITTEE_DISPUTE_PUB_KEY();
 
         return (firstCommittee, secondCommittee, COMMITTEE_ID_STREAM_1_COMMITTEE_2);
     }
 
     function setup_getExpectedSecondCommittee() internal view returns (Committee memory) {
         Committee memory committee = Committee({
-            aggregatedKey: new bytes(0),
+            takeAggregatedKey: new bytes(0),
+            disputeAggregatedKey: new bytes(0),
             members: new CommitteeMember[](registry.committeeMemberCount()),
             leaderAddress: address(0),
             operatorTakeIndex: 0,
@@ -856,7 +864,8 @@ abstract contract HelperContract is Test, TestUtils {
     function setup_getExpectedCommitteeBeforeExpire() internal view returns (Committee memory) {
         // NOTE: This function is tied to the initial setup of members that it's 0 members
         Committee memory committee = Committee({
-            aggregatedKey: new bytes(0),
+            takeAggregatedKey: new bytes(0),
+            disputeAggregatedKey: new bytes(0),
             members: new CommitteeMember[](registry.committeeMemberCount()),
             leaderAddress: address(0),
             operatorTakeIndex: 0,
@@ -895,7 +904,8 @@ abstract contract HelperContract is Test, TestUtils {
     function setup_getExpectedCommitteeAfterExpire() internal view returns (Committee memory) {
         // NOTE: member order is tied to the timeout used in setup_pendingCommitteeAndExpire()
         Committee memory committee = Committee({
-            aggregatedKey: new bytes(0),
+            takeAggregatedKey: new bytes(0),
+            disputeAggregatedKey: new bytes(0),
             members: new CommitteeMember[](registry.committeeMemberCount()),
             leaderAddress: address(0),
             operatorTakeIndex: 0,
@@ -1011,7 +1021,7 @@ abstract contract HelperContract is Test, TestUtils {
 
         bytes32 reimbursementTxid = bitcoinManager.getBtcTxid(setup.reimbursementKickoffSPV.btcTx);
         uint128 committeeId = streamManager.getCommitteeId(uint64(DEFAULT_STREAM), setup.packetNumber);
-        bytes memory committeePubKey = registry.getCommitteePubKey(committeeId);
+        bytes memory committeePubKey = registry.getCommitteeTakePubKey(committeeId);
 
         setup.challengeSPV = createBtcTxSPVProof(createChallengeTx(reimbursementTxid, committeePubKey));
     }
@@ -1038,7 +1048,7 @@ abstract contract HelperContract is Test, TestUtils {
         opTakeTx = createOperatorTakeTx(_acceptPeginTxid, reimbursementTxid, operatorDisputePubKeyCompact, VALUE);
 
         uint128 committeeId = streamManager.getCommitteeId(uint64(DEFAULT_STREAM), 0);
-        bytes memory committeePubKey = registry.getCommitteePubKey(committeeId);
+        bytes memory committeePubKey = registry.getCommitteeTakePubKey(committeeId);
 
         bytes32 challengeTxid = _createChallengeTxid(reimbursementTxid, committeePubKey);
 
@@ -1092,19 +1102,19 @@ abstract contract HelperContract is Test, TestUtils {
         (operatorAddress, setup) = setup_operatorTake();
 
         uint128 committeeId = streamManager.getCommitteeId(uint64(DEFAULT_STREAM), setup.packetNumber);
-        bytes memory committeePubKey = registry.getCommitteePubKey(committeeId);
+        bytes memory committeePubKey = registry.getCommitteeTakePubKey(committeeId);
         bytes32 challengeTxid = bitcoinManager.getBtcTxid(setup.challengeSPV.btcTx);
         bytes memory operatorPubKey =
-            BtcHelper.pubKeyXonlyToCompact(memberRegistry.getMemberPublicKeys(operatorAddress).covenantPubKey);
+            BtcHelper.pubKeyXonlyToCompact(memberRegistry.getMemberDisputePubKey(operatorAddress));
         setup.inputRevealedSPV =
             createBtcTxSPVProof(createInputRevealedTx(challengeTxid, committeePubKey, operatorPubKey));
 
         CommitteeMember[] memory committeeMembers = registry.getCommitteeMembers(committeeId);
-        MemberKeys[] memory memberKeys = new MemberKeys[](committeeMembers.length);
+        bytes32[] memory disputePubKeys = new bytes32[](committeeMembers.length);
         for (uint256 i = 0; i < committeeMembers.length; i++) {
-            memberKeys[i] = memberRegistry.getMemberPublicKeys(committeeMembers[i].memberAddress);
+            disputePubKeys[i] = memberRegistry.getMemberDisputePubKey(committeeMembers[i].memberAddress);
         }
-        setup.inputNotRevealedSPV = createBtcTxSPVProof(createInputNotRevealedTx(challengeTxid, memberKeys));
+        setup.inputNotRevealedSPV = createBtcTxSPVProof(createInputNotRevealedTx(challengeTxid, disputePubKeys));
 
         vm.prank(operatorAddress);
         challengeManager.registerChallenge(setup.acceptPeginTxid, setup.challengeSPV);
@@ -1161,14 +1171,15 @@ abstract contract HelperContract is Test, TestUtils {
     }
 
     function assertEventOperatorTakeTriggered(RegisterUserTakeSetup memory setup, address _operatorAddress) internal {
-        MemberKeys memory keys = memberRegistry.getMemberPublicKeys(_operatorAddress);
+        bytes32 takePubKey = memberRegistry.getMemberTakePubKey(_operatorAddress);
+        bytes32 disputePubKey = memberRegistry.getMemberDisputePubKey(_operatorAddress);
 
         OperatorTakeInfo memory expectedOpInfo = OperatorTakeInfo({
             operatorTakeUpdatedAt: block.timestamp,
             operatorTakeAddress: _operatorAddress,
-            operatorTakePubKey: keys.takePubKey,
-            operatorDisputePubKey: keys.covenantPubKey,
-            pegoutId: calculatePegoutId(keys.takePubKey, setup.stream.streamId, setup.packetNumber, setup.slotId),
+            operatorTakePubKey: takePubKey,
+            operatorDisputePubKey: disputePubKey,
+            pegoutId: calculatePegoutId(takePubKey, setup.stream.streamId, setup.packetNumber, setup.slotId),
             advanceFundsBlockNumber: 0,
             reimbursementKickoffTxid: bytes32(0)
         });
@@ -1320,7 +1331,7 @@ abstract contract HelperContract is Test, TestUtils {
     /// @param _memberAddress The address of the member
     /// @return disputeKey The dispute key 33 bytes compact format for the member
     function getDisputeKeyByAddress(address _memberAddress) internal view returns (bytes memory disputeKey) {
-        bytes32 operatorXOnlyPubKey = memberRegistry.getMemberPublicKeys(_memberAddress).covenantPubKey;
+        bytes32 operatorXOnlyPubKey = memberRegistry.getMemberDisputePubKey(_memberAddress);
         disputeKey = BtcHelper.pubKeyXonlyToCompact(operatorXOnlyPubKey);
         return disputeKey;
     }

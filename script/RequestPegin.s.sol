@@ -36,7 +36,7 @@ contract RequestPeginScript is ScriptUtils, ContractAddressManager {
         Stream memory stream = streamManager.getStream(value);
         uint64 packetNumber = stream.peginPacketPointer;
         uint128 committeeId = streamManager.getCommitteeId(stream.streamId, packetNumber);
-        bytes memory committeePubKey = committeeRegistry.getCommitteePubKey(committeeId);
+        bytes memory committeePubKey = committeeRegistry.getCommitteeTakePubKey(committeeId);
         // BtcTransaction to verify
         BtcTransaction memory btcTransaction = BtcTransaction({
             version: Constants.BTC_TX_VERSION,

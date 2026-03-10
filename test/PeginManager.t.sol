@@ -10,7 +10,7 @@ import {Slot, SlotState, Stream, Packet, IStreamManager} from "src/interfaces/IS
 import {BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE} from "src/interfaces/IBridge.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {ICommitteeRegistry, Committee, CommitteeMember} from "src/interfaces/ICommitteeRegistry.sol";
-import {IMemberRegistry, MemberKeys} from "src/interfaces/IMemberRegistry.sol";
+import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
 import {IRbtcBridge} from "src/interfaces/IRbtcBridge.sol";
 import {IPegBase} from "src/interfaces/IPegBase.sol";
 
@@ -27,7 +27,7 @@ contract PeginManagerTest is Test, HelperContract {
         runTestDeployScript();
         (, Committee memory expectedCommittee, uint128 committeeId) = setup_completeCommitteeAndNewMembers();
 
-        setupExpectedCommittee.aggregatedKey = expectedCommittee.aggregatedKey;
+        setupExpectedCommittee.takeAggregatedKey = expectedCommittee.takeAggregatedKey;
         setupExpectedCommittee.leaderAddress = expectedCommittee.leaderAddress;
         for (uint64 i = 0; i < expectedCommittee.members.length; i++) {
             setupExpectedCommittee.members.push(expectedCommittee.members[i]);
@@ -71,8 +71,11 @@ contract PeginManagerTest is Test, HelperContract {
         // Verify each dispute key matches the expected covenant key for that committee member
         IMemberRegistry memberRegistry = registry.memberRegistry();
         for (uint256 i = 0; i < committeeMembers.length; i++) {
-            MemberKeys memory keys = memberRegistry.getMemberPublicKeys(committeeMembers[i].memberAddress);
-            assertEq(memberDisputeKeys[i], keys.covenantPubKey, "Incorrect dispute key for committee member");
+            assertEq(
+                memberDisputeKeys[i],
+                memberRegistry.getMemberDisputePubKey(committeeMembers[i].memberAddress),
+                "Incorrect dispute key for committee member"
+            );
         }
     }
 

@@ -73,7 +73,7 @@ contract CommitteeRegistryHarness is CommitteeRegistry {
         committeesById[committeeId].streamId = _streamId;
 
         // Initialize the committee members here.
-        // No need to initialize aggregatedKey, since it will be set by the members.
+        // No need to initialize takeAggregatedKey, since it will be set by the members.
         for (uint256 i = 0; i < committeeMembers.length; i++) {
             // Copy committee members from memory to storage
             committeesById[committeeId].members.push(committeeMembers[i]);
@@ -181,8 +181,8 @@ contract CommitteeRegistryHarness is CommitteeRegistry {
     /// @notice Forcefully sets a committee's aggregated key for testing purposes
     /// @dev Bypasses all validation - USE ONLY IN TESTS
     /// @param _committeeId The committee ID
-    /// @param _aggregatedKey The aggregated public key to set
-    function setCommitteeAggregatedKeyHarness(uint128 _committeeId, bytes memory _aggregatedKey) public {
-        committeesById[_committeeId].aggregatedKey = _aggregatedKey;
+    /// @param _aggregatedTakePubKey The aggregated take public key to set
+    function setCommitteeTakeAggregatedKeyHarness(uint128 _committeeId, bytes memory _aggregatedTakePubKey) public {
+        committeesById[_committeeId].takeAggregatedKey = _aggregatedTakePubKey;
     }
 }

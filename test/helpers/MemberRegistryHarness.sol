@@ -43,8 +43,8 @@ contract MemberRegistryHarness is MemberRegistry {
     /// @notice Forcefully sets a member's covenant key for testing purposes
     /// @dev Bypasses all validation - USE ONLY IN TESTS
     /// @param _memberAddress The member whose covenant key to set
-    /// @param _covenantKey The covenant public key (x-coordinate only)
-    function setMemberCovenantKeyHarness(address _memberAddress, bytes32 _covenantKey) public {
-        members[_memberAddress].publicKeys.covenantPubKey = _covenantKey;
+    /// @param _disputeKey The dispute public key (x-coordinate only)
+    function setMemberDisputeKeyHarness(address _memberAddress, bytes32 _disputeKey) public {
+        members[_memberAddress].publicKeys.disputePubKey = _disputeKey;
     }
 }

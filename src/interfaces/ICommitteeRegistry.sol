@@ -71,8 +71,10 @@ struct CommitteeMember {
 /// @notice Represents a complete committee with aggregated key and members
 /// @dev Contains all information needed for committee operations
 struct Committee {
-    /// @notice Bitcoin public key of the committee (aggregated from member keys)
-    bytes aggregatedKey;
+    /// @notice Bitcoin take public key of the committee (aggregated from member keys)
+    bytes takeAggregatedKey;
+    /// @notice Bitcoin dispute public key of the committee (aggregated from member keys)
+    bytes disputeAggregatedKey;
     /// @notice Array of committee members with their roles
     CommitteeMember[] members;
     /// @notice Address of the committee leader
@@ -96,8 +98,10 @@ struct Committee {
 /// @notice Represents pending data for a member in committee formation
 /// @dev Contains the aggregated key provided by the member and committee status
 struct PendingCommitteeData {
-    /// @notice Aggregated key provided by the member
-    bytes aggregatedKey;
+    /// @notice Take aggregated key provided by the member
+    bytes takeAggregatedKey;
+    /// @notice Dispute aggregated key provided by the member
+    bytes disputeAggregatedKey;
     /// @notice Whether the member is included in the committee
     bool inCommittee;
     /// @notice Array of encrypted Communication Data
@@ -162,10 +166,15 @@ interface ICommitteeRegistry {
     /// @return Committee The complete committee information
     function getCommittee(uint128 _committeeId) external view returns (Committee calldata);
 
-    /// @notice Retrieves the committee public key for a specific packet
+    /// @notice Retrieves the committee take aggregated public key for a specific packet
     /// @param _committeeId The committee ID
-    /// @return bytes The committee public key for this packet (33 bytes)
-    function getCommitteePubKey(uint128 _committeeId) external view returns (bytes memory);
+    /// @return bytes The committee take aggregated public key for this packet (33 bytes compressed format)
+    function getCommitteeTakePubKey(uint128 _committeeId) external view returns (bytes memory);
+
+    /// @notice Retrieves the committee dispute aggregated public key for a specific packet
+    /// @param _committeeId The committee ID
+    /// @return bytes The committee dispute aggregated public key for this packet (33 bytes compressed format)
+    function getCommitteeDisputePubKey(uint128 _committeeId) external view returns (bytes memory);
 
     /// @notice Gets all members of a specific committee
     /// @param _committeeId The committee ID
@@ -181,12 +190,17 @@ interface ICommitteeRegistry {
     /// @return The member registry contract
     function memberRegistry() external view returns (IMemberRegistry);
 
-    /// @notice Allows a member to deposit information  formation
-    /// @dev Called by members to provide their aggregated key for a pending committee
+    /// @notice Allows a member to deposit their aggregated keys for committee formation
+    /// @dev Called by members to provide their take and dispute aggregated keys for a pending committee
     /// @dev Only callable when contract is unpaused
     /// @param _committeeId The ID of the pending committee
-    /// @param _aggregatedKey The aggregated public key provided by the member (must be exactly 33 bytes)
-    function depositAggregatedKey(uint128 _committeeId, bytes memory _aggregatedKey) external;
+    /// @param _takeAggregatedKey The take aggregated public key provided by the member (must be exactly 33 bytes)
+    /// @param _disputeAggregatedKey The dispute aggregated public key provided by the member (must be exactly 33 bytes)
+    function depositAggregatedKeys(
+        uint128 _committeeId,
+        bytes memory _takeAggregatedKey,
+        bytes memory _disputeAggregatedKey
+    ) external;
 
     /// @notice Triggers the creation of a new committee for a stream if the timeout has expired
     /// @dev This function is called when the slot usage threshold is reached
@@ -364,8 +378,11 @@ interface ICommitteeRegistry {
     /// @notice Event emitted when member info is deposited for committee formation
     /// @param committeeId The ID of the pending committee
     /// @param member The member's address
-    /// @param aggregatedKey The aggregated key provided by the member
-    event MemberInfoDeposited(uint128 indexed committeeId, address indexed member, bytes aggregatedKey);
+    /// @param takeAggregatedKey The take aggregated key provided by the member
+    /// @param disputeAggregatedKey The dispute aggregated key provided by the member
+    event MemberInfoDeposited(
+        uint128 indexed committeeId, address indexed member, bytes takeAggregatedKey, bytes disputeAggregatedKey
+    );
 
     /// @notice Event emitted when no honest operators remain in a committee
     /// @param committeeId The ID of the committee with no honest operators
@@ -420,6 +437,9 @@ interface ICommitteeRegistry {
 
     /// @notice Error thrown when the aggregated key is all zeros
     error InvalidAggregatedKeyZero();
+
+    /// @notice Error thrown when take and dispute aggregated keys are the same
+    error InvalidSameAggregatedKeys();
 
     /// @notice Thrown when a member is not in the committee
     /// @param committeeId The committee ID

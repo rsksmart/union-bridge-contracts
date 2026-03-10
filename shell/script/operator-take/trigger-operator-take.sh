@@ -4,9 +4,6 @@
 CURRENT_PATH=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 cd "$CURRENT_PATH/../../.."
 
-# Defaults
-ACCEPT_PEGIN_TXID="0xadb3b6b14418136ab8202e57cd93615d051a38aa08bb0576420db6a1b72249ff"
-
 # set up environment variables
 source .env
 RPC=$LOCAL_RPC
@@ -33,6 +30,14 @@ while getopts ":a:-:" opt; do
       ;;
   esac
 done
+
+# Enforce required args
+if [ -z "$ACCEPT_PEGIN_TXID" ]; then
+  echo "Error: ACCEPT_PEGIN_TXID is required."
+  echo "Usage: $0 -a <accept_pegin_txid>"
+  exit 1
+fi
+
 echo "================ TRIGGER OPERATOR TAKE REQUEST TO $RPC ================"
 echo "ACCEPT_PEGIN_TXID: $ACCEPT_PEGIN_TXID "
 

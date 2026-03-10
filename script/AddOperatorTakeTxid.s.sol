@@ -21,7 +21,8 @@ contract addOperatorTakeTxidsScript is ScriptUtils, ContractAddressManager {
     uint64 amount;
 
     bytes operatorPubKey;
-    bytes committeePubKey;
+    bytes committeeTakePubKey;
+    bytes committeeDisputePubKey;
 
     IStreamManager streamManager;
     uint64 expectedStreamId;
@@ -35,8 +36,9 @@ contract addOperatorTakeTxidsScript is ScriptUtils, ContractAddressManager {
         ICommitteeRegistry committeeRegistry = getCommitteeRegistry();
         IMemberRegistry memberRegistry = committeeRegistry.memberRegistry();
 
-        bytes32 operatorXOnlyPubKey = memberRegistry.getMemberPublicKeys(getDeployerAddress()).covenantPubKey;
-        operatorPubKey = BtcHelper.pubKeyXonlyToCompact(operatorXOnlyPubKey);
+        bytes32 operatorXOnlyDisputeKey = memberRegistry.getMemberDisputePubKey(getDeployerAddress());
+
+        operatorPubKey = BtcHelper.pubKeyXonlyToCompact(operatorXOnlyDisputeKey);
         amount = 100_000; // 0.001 BTC
 
         // Calculate expected slot and packet numbers
@@ -47,7 +49,8 @@ contract addOperatorTakeTxidsScript is ScriptUtils, ContractAddressManager {
         expectedSlotId = streamPosition.slotId;
 
         uint128 committeeId = streamManager.getCommitteeId(expectedStreamId, expectedPacketNumber);
-        committeePubKey = committeeRegistry.getCommitteePubKey(committeeId);
+        committeeTakePubKey = committeeRegistry.getCommitteeTakePubKey(committeeId);
+        committeeDisputePubKey = committeeRegistry.getCommitteeDisputePubKey(committeeId);
 
         // Read args from command line / env
         if (_acceptPeginTxid == bytes32(0)) {
@@ -66,7 +69,7 @@ contract addOperatorTakeTxidsScript is ScriptUtils, ContractAddressManager {
         setUp(_mnemonicIndex, _acceptPeginTxid);
 
         // REIMBURSEMENT KICKOFF
-        BtcTransaction memory kickoffTx = createReimbursementKickoffTx(committeePubKey, expectedSlotId);
+        BtcTransaction memory kickoffTx = createReimbursementKickoffTx(committeeTakePubKey, expectedSlotId);
         bytes32 reimbursementKickoffTxid = getTxid(kickoffTx);
 
         // OPERATOR TAKE
@@ -75,11 +78,12 @@ contract addOperatorTakeTxidsScript is ScriptUtils, ContractAddressManager {
         bytes32 takeTxid = getTxid(takeTx);
 
         // CHALLENGE
-        BtcTransaction memory challengeTx = createChallengeTx(reimbursementKickoffTxid, committeePubKey);
+        BtcTransaction memory challengeTx = createChallengeTx(reimbursementKickoffTxid, committeeDisputePubKey);
         bytes32 challengeTxid = getTxid(challengeTx);
 
         // INPUT REVEALED
-        BtcTransaction memory inputRevealedTx = createInputRevealedTx(challengeTxid, committeePubKey, operatorPubKey);
+        BtcTransaction memory inputRevealedTx =
+            createInputRevealedTx(challengeTxid, committeeDisputePubKey, operatorPubKey);
         bytes32 inputRevealedTxid = getTxid(inputRevealedTx);
 
         // OPERATOR WON

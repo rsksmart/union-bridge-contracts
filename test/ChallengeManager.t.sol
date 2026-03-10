@@ -12,7 +12,6 @@ import {BtcTxSPVProof, StreamPosition} from "src/interfaces/IPegCommonTypes.sol"
 import {PegStatus} from "src/interfaces/IPegCommonTypes.sol";
 import {ChallengeInfo, IChallengeManager} from "src/interfaces/IChallengeManager.sol";
 import {ICommitteeRegistry, CommitteeMember} from "src/interfaces/ICommitteeRegistry.sol";
-import {MemberKeys} from "src/interfaces/IMemberRegistry.sol";
 import {SlotState} from "src/interfaces/IStreamManager.sol";
 import {BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
 
@@ -155,7 +154,7 @@ contract ChallengeManagerTest is Test, HelperContract {
         bytes32 txid = bitcoinManager.getBtcTxid(setup.reimbursementKickoffSPV.btcTx);
         bytes32 wrongTxid = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
         uint128 committeeId = streamManager.getCommitteeId(uint64(DEFAULT_STREAM), setup.packetNumber);
-        bytes memory committeePubKey = registry.getCommitteePubKey(committeeId);
+        bytes memory committeePubKey = registry.getCommitteeTakePubKey(committeeId);
         BtcTxSPVProof memory wrongSPV = createBtcTxSPVProof(createChallengeTx(wrongTxid, committeePubKey));
         address memberAddress = getCommitteeMemberAddressByIndex(COMMITTEE_ID_STREAM_1_COMMITTEE_1, 0);
         assertNotEq(memberAddress, opAddress, "Member address should be different from operator address");
@@ -324,9 +323,8 @@ contract ChallengeManagerTest is Test, HelperContract {
         bytes32 txid = bitcoinManager.getBtcTxid(setup.challengeSPV.btcTx);
         bytes32 wrongTxid = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
         uint128 committeeId = streamManager.getCommitteeId(uint64(DEFAULT_STREAM), setup.packetNumber);
-        bytes memory committeePubKey = registry.getCommitteePubKey(committeeId);
-        bytes memory operatorPubKey =
-            BtcHelper.pubKeyXonlyToCompact(memberRegistry.getMemberPublicKeys(opAddress).covenantPubKey);
+        bytes memory committeePubKey = registry.getCommitteeTakePubKey(committeeId);
+        bytes memory operatorPubKey = BtcHelper.pubKeyXonlyToCompact(memberRegistry.getMemberDisputePubKey(opAddress));
         BtcTxSPVProof memory wrongSPV =
             createBtcTxSPVProof(createInputRevealedTx(wrongTxid, committeePubKey, operatorPubKey));
 
@@ -524,11 +522,11 @@ contract ChallengeManagerTest is Test, HelperContract {
         uint128 committeeId = streamManager.getCommitteeId(uint64(DEFAULT_STREAM), setup.packetNumber);
 
         CommitteeMember[] memory committeeMembers = registry.getCommitteeMembers(committeeId);
-        MemberKeys[] memory memberKeys = new MemberKeys[](committeeMembers.length);
+        bytes32[] memory disputePubKeys = new bytes32[](committeeMembers.length);
         for (uint256 i = 0; i < committeeMembers.length; i++) {
-            memberKeys[i] = memberRegistry.getMemberPublicKeys(committeeMembers[i].memberAddress);
+            disputePubKeys[i] = memberRegistry.getMemberDisputePubKey(committeeMembers[i].memberAddress);
         }
-        BtcTxSPVProof memory wrongSPV = createBtcTxSPVProof(createInputNotRevealedTx(wrongTxid, memberKeys));
+        BtcTxSPVProof memory wrongSPV = createBtcTxSPVProof(createInputNotRevealedTx(wrongTxid, disputePubKeys));
         address memberAddress = getCommitteeMemberAddressByIndex(COMMITTEE_ID_STREAM_1_COMMITTEE_1, 0);
         assertNotEq(memberAddress, opAddress, "Member address should be different from operator address");
 
@@ -753,7 +751,7 @@ contract ChallengeManagerTest is Test, HelperContract {
         bytes32 revealTxid = bitcoinManager.getBtcTxid(setup.inputRevealedSPV.btcTx);
         bytes32 wrongTxid = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
         uint128 committeeId = streamManager.getCommitteeId(uint64(DEFAULT_STREAM), setup.packetNumber);
-        bytes memory committeePubKey = registry.getCommitteePubKey(committeeId);
+        bytes memory committeePubKey = registry.getCommitteeTakePubKey(committeeId);
         BtcTxSPVProof memory wrongSPV = createBtcTxSPVProof(createStopOperatorWonTx(wrongTxid));
         address memberAddress = getCommitteeMemberAddressByIndex(COMMITTEE_ID_STREAM_1_COMMITTEE_1, 0);
         assertNotEq(memberAddress, opAddress, "Member address should be different from operator address");

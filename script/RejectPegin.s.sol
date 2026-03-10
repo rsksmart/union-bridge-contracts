@@ -24,8 +24,8 @@ contract BlockSlotScript is ScriptUtils, ContractAddressManager {
         streamManager = peginManager.streamManager();
         memberRegistry = registry.memberRegistry();
 
-        bytes32 operatorXOnlyPubKey = memberRegistry.getMemberPublicKeys(getDeployerAddress()).covenantPubKey;
-        operatorPubKey = BtcHelper.pubKeyXonlyToCompact(operatorXOnlyPubKey);
+        bytes32 operatorXOnlyDisputeKey = memberRegistry.getMemberDisputePubKey(getDeployerAddress());
+        operatorPubKey = BtcHelper.pubKeyXonlyToCompact(operatorXOnlyDisputeKey);
 
         // Reject Pegin Btc transaction to verify
         BtcTransaction memory rejectPeginTx = createRejectPeginTx(_requestPeginTxid, operatorPubKey);
