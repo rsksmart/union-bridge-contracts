@@ -6,15 +6,17 @@ cd "$CURRENT_PATH/../../.."
 
 # Defaults
 ACCEPT_PEGIN_TXID="0x287ccabdb0e43b06ed2a4370139e9373a3fcb88625c4752e7947c5b858828115"
+REIMBURSEMENT_KICKOFF_TXID="0x0cbb7bd4fc45ea88604e0ecc463b942b0a2ea7497929d280d04a3066c91232d1"
 
 # set up environment variables
 source .env
 RPC=$LOCAL_RPC
 
 # Parse args
-while getopts ":a:-:" opt; do
+while getopts ":a:r:-:" opt; do
   case "$opt" in
     a) ACCEPT_PEGIN_TXID="$OPTARG" ;;
+    r) REIMBURSEMENT_KICKOFF_TXID="$OPTARG" ;;
     -)
       case "${OPTARG}" in
         alphanet)
@@ -28,7 +30,7 @@ while getopts ":a:-:" opt; do
       esac
       ;;
     *)
-      echo "Usage: $0 -a <accept_pegin_txid> [--alphanet]"
+      echo "Usage: $0 -a <accept_pegin_txid> -r <reimbursement_kickoff_txid> [--alphanet]"
       exit 1
       ;;
   esac
@@ -39,8 +41,9 @@ echo "ACCEPT_PEGIN_TXID: $ACCEPT_PEGIN_TXID"
 
 forge script \
     script/RegisterOperatorTake.s.sol \
-     --sig "run(bytes32)" \
+     --sig "run(bytes32,bytes32)" \
     "$ACCEPT_PEGIN_TXID" \
+    "$REIMBURSEMENT_KICKOFF_TXID" \
     --rpc-url $RPC \
     --legacy \
     --broadcast \

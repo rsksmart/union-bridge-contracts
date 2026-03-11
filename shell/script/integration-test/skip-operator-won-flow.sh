@@ -87,8 +87,17 @@ cast rpc evm_setNextBlockTimestamp $TIMESTAMP --rpc-url $RPC
 cast rpc evm_mine --rpc-url $RPC
 # Start the operator take flow (advance funds and reimbursement kickoff)
 bash "$SCRIPT_DIR/operator-take/trigger-operator-take.sh" -a "$ACCEPT_PEGIN_TXID" $ALPHANET_FLAG
-# Skip operator won - (challenges the reimbursement kickoff, reveals the input,
-# advances BridgeMock past the skipOperatorWon threshold, then skips operator won)
+# Register advance funds
+bash "$SCRIPT_DIR/operator-take/register-advance-funds.sh" -a "$ACCEPT_PEGIN_TXID" $ALPHANET_FLAG
+# Register reimbursement kickoff
+bash "$SCRIPT_DIR/operator-take/register-reimbursement-kickoff.sh" -a "$ACCEPT_PEGIN_TXID" $ALPHANET_FLAG
+# Register challenge
+bash "$SCRIPT_DIR/operator-take/register-challenge.sh" -a "$ACCEPT_PEGIN_TXID" $ALPHANET_FLAG
+# Register input revealed
+bash "$SCRIPT_DIR/operator-take/register-input-revealed.sh" -a "$ACCEPT_PEGIN_TXID" $ALPHANET_FLAG
+# Advance BridgeMock past the skipOperatorWon threshold
+bash "$SCRIPT_DIR/operator-take/advance-past-skip-threshold.sh" -a "$ACCEPT_PEGIN_TXID" $ALPHANET_FLAG
+# Skip operator won
 bash "$SCRIPT_DIR/operator-take/skip-operator-won.sh" -a "$ACCEPT_PEGIN_TXID" $ALPHANET_FLAG
 
 echo "================ SKIP OPERATOR WON FLOW COMPLETE ================"

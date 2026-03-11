@@ -3,22 +3,19 @@ pragma solidity ^0.8.20;
 
 import {console} from "forge-std/console.sol";
 import {IOperatorTakeManager} from "src/interfaces/IOperatorTakeManager.sol";
-import {PegoutManager} from "src/PegoutManager.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
 import {Slot, SlotState, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {StreamPosition} from "src/interfaces/IPegCommonTypes.sol";
 
 contract TriggerOperatorTakeScript is ScriptUtils, ContractAddressManager {
-    PegoutManager pegoutManager;
     IOperatorTakeManager operatorTakeManager;
     IStreamManager streamManager;
     uint64 amount;
 
     function setUp() internal {
-        pegoutManager = PegoutManager(getPegoutManager());
         operatorTakeManager = getOperatorTakeManager();
-        streamManager = pegoutManager.streamManager();
+        streamManager = IStreamManager(getStreamManager());
     }
 
     function run(bytes32 _acceptPeginTxid) public {

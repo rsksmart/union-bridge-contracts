@@ -714,6 +714,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
                 operatorAddress = committee.members[operatorTakeIndex].memberAddress;
                 // slither-disable-next-line calls-loop
                 disputePubKey = memberRegistry.getMemberDisputePubKey(operatorAddress);
+                // slither-disable-next-line calls-loop
                 takePubKey = memberRegistry.getMemberTakePubKey(operatorAddress);
                 return (operatorAddress, disputePubKey, takePubKey);
             }
