@@ -1,5 +1,5 @@
 # SignatureManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/6a9ea8ca3ca82c82894d3db0e338e4bf6bb46de8/src/SignatureManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/aa0c5b500b0a03f68164877ee0ab01eebfbdfa68/src/SignatureManager.sol)
 
 **Inherits:**
 [ISignatureManager](/src/interfaces/ISignatureManager.sol/interface.ISignatureManager.md), [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md)
@@ -255,7 +255,7 @@ function addOperatorTakeTxids(bytes32 _acceptPeginTxid, bytes32 _takeTxid, bytes
 |----|----|-----------|
 |`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction id|
 |`_takeTxid`|`bytes32`|The OperatorTake transaction id to add|
-|`_wonTxid`|`bytes32`||
+|`_wonTxid`|`bytes32`|The OperatorWon transaction id to add|
 
 
 ### checkAllOperatorTakesHashesReady

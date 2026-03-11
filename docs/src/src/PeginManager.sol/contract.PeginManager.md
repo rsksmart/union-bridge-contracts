@@ -1,5 +1,5 @@
 # PeginManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/6a9ea8ca3ca82c82894d3db0e338e4bf6bb46de8/src/PeginManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/aa0c5b500b0a03f68164877ee0ab01eebfbdfa68/src/PeginManager.sol)
 
 **Inherits:**
 [IPeginManager](/src/interfaces/IPeginManager.sol/interface.IPeginManager.md), [PegManagerBase](/src/PegManagerBase.sol/abstract.PegManagerBase.md)

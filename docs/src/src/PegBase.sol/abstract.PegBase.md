@@ -1,5 +1,5 @@
 # PegBase
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/6a9ea8ca3ca82c82894d3db0e338e4bf6bb46de8/src/PegBase.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/aa0c5b500b0a03f68164877ee0ab01eebfbdfa68/src/PegBase.sol)
 
 **Inherits:**
 [IPegBase](/src/interfaces/IPegBase.sol/interface.IPegBase.md), [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md), [Pausable](/src/Pausable.sol/abstract.Pausable.md), ReentrancyGuardUpgradeable
