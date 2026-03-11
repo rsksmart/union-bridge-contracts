@@ -369,7 +369,9 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
     ) internal view {
         bytes1 parity = BtcHelper.parityFromY(_submitted.publicKeyY);
         if (_stored.xOnly != _submitted.publicKeyX || _stored.parity != parity) {
-            revert PublicKeyMismatch(_keyType, _stored.xOnly, _submitted.publicKeyX);
+            revert PublicKeyMismatch(
+                _keyType, _stored, CompactPubKey({parity: parity, xOnly: _submitted.publicKeyX})
+            );
         }
     }
 
@@ -383,7 +385,11 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         bytes32 storedComKeyHash = _getRSAKeyHash(_member.publicKeys.communicationPubKey.rsaPublicKey);
         bytes32 newComKeyHash = _getRSAKeyHash(_publicKeys.communicationKey.rsaPublicKey);
         if (storedComKeyHash != newComKeyHash) {
-            revert PublicKeyMismatch(PublicKeyType.COMMUNICATION, storedComKeyHash, newComKeyHash);
+            revert PublicKeyMismatch(
+                PublicKeyType.COMMUNICATION,
+                CompactPubKey({parity: bytes1(0), xOnly: storedComKeyHash}),
+                CompactPubKey({parity: bytes1(0), xOnly: newComKeyHash})
+            );
         }
     }
 

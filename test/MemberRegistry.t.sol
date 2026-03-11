@@ -413,12 +413,14 @@ contract MemberRegistryTest is Test, HelperContract {
         vm.deal(user, minimumDeposit);
 
         // Assert
+        MemberKeys memory stored = memberKeysFromRegistration(memberRegistrationKeys);
+        MemberKeys memory submitted = memberKeysFromRegistration(differentPubKey);
         vm.expectRevert(
             abi.encodeWithSelector(
                 IMemberRegistry.PublicKeyMismatch.selector,
                 PublicKeyType.TAKE,
-                memberRegistrationKeys.takeKey.publicKeyX,
-                differentPubKey.takeKey.publicKeyX
+                stored.takePubKey,
+                submitted.takePubKey
             )
         );
 
@@ -452,12 +454,14 @@ contract MemberRegistryTest is Test, HelperContract {
         vm.deal(user, minimumDeposit);
 
         // Assert
+        MemberKeys memory stored = memberKeysFromRegistration(memberRegistrationKeys);
+        MemberKeys memory submitted = memberKeysFromRegistration(differentPubKey);
         vm.expectRevert(
             abi.encodeWithSelector(
                 IMemberRegistry.PublicKeyMismatch.selector,
                 PublicKeyType.DISPUTE,
-                memberRegistrationKeys.disputeKey.publicKeyX,
-                differentPubKey.disputeKey.publicKeyX
+                stored.disputePubKey,
+                submitted.disputePubKey
             )
         );
 
@@ -497,7 +501,10 @@ contract MemberRegistryTest is Test, HelperContract {
         // Assert
         vm.expectRevert(
             abi.encodeWithSelector(
-                IMemberRegistry.PublicKeyMismatch.selector, PublicKeyType.COMMUNICATION, storedComKeyHash, newComKeyHash
+                IMemberRegistry.PublicKeyMismatch.selector,
+                PublicKeyType.COMMUNICATION,
+                CompactPubKey({parity: bytes1(0), xOnly: storedComKeyHash}),
+                CompactPubKey({parity: bytes1(0), xOnly: newComKeyHash})
             )
         );
 

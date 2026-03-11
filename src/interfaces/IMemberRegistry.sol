@@ -415,11 +415,11 @@ interface IMemberRegistry {
     /// @param keyType The type of the public key (TAKE, DISPUTE, or COMMUNICATION)
     error InvalidZeroRSAPublicKey(PublicKeyType keyType);
 
-    /// @notice Thrown when a public key doesn't match the expected value
+    /// @notice Thrown when a public key doesn't match the registered value
     /// @param keyType The type of the public key (TAKE, DISPUTE, or COMMUNICATION)
-    /// @param currentPubKey The current public key
-    /// @param newPubKey The new public key
-    error PublicKeyMismatch(PublicKeyType keyType, bytes32 currentPubKey, bytes32 newPubKey);
+    /// @param registeredPubKey The previously registered public key (for COMMUNICATION, xOnly holds the key hash and parity is zero)
+    /// @param submittedPubKey The newly submitted public key
+    error PublicKeyMismatch(PublicKeyType keyType, CompactPubKey registeredPubKey, CompactPubKey submittedPubKey);
 
     /// @notice Thrown when a signature is zero
     /// @param keyType The type of the public key (TAKE, DISPUTE, or COMMUNICATION)
