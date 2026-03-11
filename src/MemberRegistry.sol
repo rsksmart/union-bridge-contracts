@@ -369,9 +369,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
     ) internal view {
         bytes1 parity = BtcHelper.parityFromY(_submitted.publicKeyY);
         if (_stored.xOnly != _submitted.publicKeyX || _stored.parity != parity) {
-            revert PublicKeyMismatch(
-                _keyType, _stored, CompactPubKey({parity: parity, xOnly: _submitted.publicKeyX})
-            );
+            revert PublicKeyMismatch(_keyType, _stored, CompactPubKey({parity: parity, xOnly: _submitted.publicKeyX}));
         }
     }
 

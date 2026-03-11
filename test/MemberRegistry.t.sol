@@ -417,10 +417,7 @@ contract MemberRegistryTest is Test, HelperContract {
         MemberKeys memory submitted = memberKeysFromRegistration(differentPubKey);
         vm.expectRevert(
             abi.encodeWithSelector(
-                IMemberRegistry.PublicKeyMismatch.selector,
-                PublicKeyType.TAKE,
-                stored.takePubKey,
-                submitted.takePubKey
+                IMemberRegistry.PublicKeyMismatch.selector, PublicKeyType.TAKE, stored.takePubKey, submitted.takePubKey
             )
         );
 
