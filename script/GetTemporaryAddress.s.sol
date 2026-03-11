@@ -35,6 +35,7 @@ contract GetTemporaryAddressScript is Script, ContractAddressManager {
         console.log("=== Member Dispute Keys ===");
         for (uint256 i = 0; i < memberDisputeKeys.length; i++) {
             console.log("Member", i, ":");
+            console.logBytes1(memberDisputeKeys[i].parity);
             console.logBytes32(memberDisputeKeys[i].xOnly);
         }
     }
