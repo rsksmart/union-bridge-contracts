@@ -9,7 +9,7 @@ import {IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
 import {IChallengeManager} from "src/interfaces/IChallengeManager.sol";
 import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
-import {IMemberRegistry, CompactPubKey} from "src/interfaces/IMemberRegistry.sol";
+import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 
 contract RegisterInputRevealedScript is ScriptUtils, ContractAddressManager {
@@ -36,9 +36,8 @@ contract RegisterInputRevealedScript is ScriptUtils, ContractAddressManager {
         committeeDisputePubKey = committeeRegistry.getCommitteeDisputePubKey(committeeId);
 
         IMemberRegistry memberRegistry = committeeRegistry.memberRegistry();
-        operatorDisputePubKey = BtcHelper.compactPubKeyToBytes(
-            memberRegistry.getMemberPublicKeys(getDeployerAddress()).disputePubKey
-        );
+        operatorDisputePubKey =
+            BtcHelper.compactPubKeyToBytes(memberRegistry.getMemberPublicKeys(getDeployerAddress()).disputePubKey);
 
         bytes32 reimbursementKickoffTxid = getTxid(createReimbursementKickoffTx(committeeTakePubKey, expectedSlotId));
         challengeTxid = getTxid(createChallengeTx(reimbursementKickoffTxid, committeeDisputePubKey));

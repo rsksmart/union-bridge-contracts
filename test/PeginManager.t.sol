@@ -72,7 +72,9 @@ contract PeginManagerTest is Test, HelperContract {
         IMemberRegistry memberRegistry = registry.memberRegistry();
         for (uint256 i = 0; i < committeeMembers.length; i++) {
             MemberKeys memory keys = memberRegistry.getMemberPublicKeys(committeeMembers[i].memberAddress);
-            assertEqCompactPubKey(memberDisputeKeys[i], keys.disputePubKey, "Incorrect dispute key for committee member");
+            assertEqCompactPubKey(
+                memberDisputeKeys[i], keys.disputePubKey, "Incorrect dispute key for committee member"
+            );
         }
     }
 

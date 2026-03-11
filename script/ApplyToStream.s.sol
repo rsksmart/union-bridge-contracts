@@ -93,8 +93,7 @@ contract ApplyToStreamScript is ScriptUtils, ContractAddressManager {
         }
         if (
             memberPubKeys.disputePubKey.xOnly != memberRegistrationKeys.disputeKey.publicKeyX
-                || memberPubKeys.disputePubKey.parity
-                    != BtcHelper.parityFromY(memberRegistrationKeys.disputeKey.publicKeyY)
+                || memberPubKeys.disputePubKey.parity != BtcHelper.parityFromY(memberRegistrationKeys.disputeKey.publicKeyY)
         ) {
             revert("applyToStream failed: covenant public key mismatch");
         }

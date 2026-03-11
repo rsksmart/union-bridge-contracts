@@ -184,9 +184,7 @@ contract BitVMXCompatibilityTest is Test, HelperContract {
         for (uint256 i = 0; i < committee.members.length; i++) {
             if (opAssigned < BITVMX_OP_COUNT && committee.members[i].role == Role.OPERATOR) {
                 address operatorAddress = committee.members[i].memberAddress;
-                memberRegistry.setMemberDisputeKeyHarness(
-                    operatorAddress, bytes1(0x02), bitvmxCovenantKeys[opAssigned]
-                );
+                memberRegistry.setMemberDisputeKeyHarness(operatorAddress, bytes1(0x02), bitvmxCovenantKeys[opAssigned]);
                 opAssigned++;
                 continue;
             }

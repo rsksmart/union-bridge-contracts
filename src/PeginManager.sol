@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import {PegManagerBase} from "./PegManagerBase.sol";
 import {IPeginManager, RequestPeginTempInfo} from "./interfaces/IPeginManager.sol";
 import {ICommitteeRegistry, CommitteeMember} from "./interfaces/ICommitteeRegistry.sol";
-import {IMemberRegistry, MemberKeys, CompactPubKey} from "./interfaces/IMemberRegistry.sol";
+import {IMemberRegistry, CompactPubKey} from "./interfaces/IMemberRegistry.sol";
 import {IStreamManager, Stream} from "./interfaces/IStreamManager.sol";
 import {IBitcoinManager, PrevoutData, BitcoinSignatureData, BtcTxOut} from "./interfaces/IBitcoinManager.sol";
 import {BtcTxSPVProof, StreamPosition, PegStatus} from "./interfaces/IPegCommonTypes.sol";

@@ -15,7 +15,7 @@ import {
     CommunicationData,
     UTXO
 } from "./interfaces/ICommitteeRegistry.sol";
-import {IMemberRegistry, MemberKeys, MemberRegistrationKeys, CompactPubKey} from "./interfaces/IMemberRegistry.sol";
+import {IMemberRegistry, MemberRegistrationKeys, CompactPubKey} from "./interfaces/IMemberRegistry.sol";
 import {StreamDenomination, IStreamManager} from "./interfaces/IStreamManager.sol";
 import {SignatureData} from "./interfaces/ISignatureManager.sol";
 import {BytesHelper} from "./libraries/BytesHelper.sol";
@@ -506,10 +506,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
 
         CompactPubKey[] memory disputeKeys = _getCommitteeDisputeKeys(_committeeId);
         streamManager.createNewPacket(
-            pendingCommittee.streamId,
-            _committeeId,
-            pendingCommittee.takeAggregatedKey,
-            disputeKeys
+            pendingCommittee.streamId, _committeeId, pendingCommittee.takeAggregatedKey, disputeKeys
         );
     }
 

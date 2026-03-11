@@ -3,7 +3,6 @@ pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
 import {ICommitteeRegistry, Role, Committee, CommitteeMember, UTXO} from "src/interfaces/ICommitteeRegistry.sol";
-import {CompactPubKey} from "src/interfaces/IMemberRegistry.sol";
 import {
     IMemberRegistry,
     MemberRegistrationKeys,
@@ -1450,7 +1449,9 @@ contract MemberRegistryTest is Test, HelperContract {
         bytes32 disputePubKey = memberRegistry.getMemberDisputePubKey(userAddress);
 
         // Assert
-        assertEq(pubKeys.disputePubKey.xOnly, disputePubKey, "Member dispute public key should match the registered one");
+        assertEq(
+            pubKeys.disputePubKey.xOnly, disputePubKey, "Member dispute public key should match the registered one"
+        );
     }
 
     function test_getMemberRequestedRole_Revert_MemberNotRegistered() external {
