@@ -182,7 +182,7 @@ interface IBitcoinManager {
     /// @notice Generates the enabler output P2TR script pub key
     /// @dev Creates a Taproot script for the enabler output with dispute keys in the merkle tree
     /// @param _committeeTakePubKey The committee's take aggregated public key (33 bytes compressed)
-    /// @param _disputeKeys Array of dispute keys for committee members (x-only, 32 bytes each)
+    /// @param _disputeKeys Array of dispute keys for committee members (parity byte + x-only, 33 bytes each)
     /// @return The P2TR script pub key bytes
     function getEnablerOutputP2TRScriptPub(bytes memory _committeeTakePubKey, CompactPubKey[] memory _disputeKeys)
         external
