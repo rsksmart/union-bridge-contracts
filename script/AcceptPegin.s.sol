@@ -11,6 +11,7 @@ import {Constants} from "src/libraries/Constants.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
 import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
+import {CompactPubKey} from "src/interfaces/IMemberRegistry.sol";
 
 contract AcceptPeginScript is ScriptUtils, ContractAddressManager {
     PeginManager peginManager;
@@ -74,7 +75,7 @@ contract AcceptPeginScript is ScriptUtils, ContractAddressManager {
         });
 
         // Enabler output
-        bytes32[] memory disputeKeys = committeeRegistry.getCommitteeDisputeKeys(committeeId);
+        CompactPubKey[] memory disputeKeys = committeeRegistry.getCommitteeDisputeKeys(committeeId);
         bytes memory enablerScript = bitcoinManager.getEnablerOutputP2TRScriptPub(committeeTakePubKey, disputeKeys);
         btcTransaction.outputs[1] = BtcTxOut({amount: Constants.ENABLER_AMOUNT, scriptPubKey: enablerScript});
 

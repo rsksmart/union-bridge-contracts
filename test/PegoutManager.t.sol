@@ -14,6 +14,7 @@ import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
 import {Committee, ICommitteeRegistry, CommitteeMember} from "src/interfaces/ICommitteeRegistry.sol";
+import {CompactPubKey} from "src/interfaces/IMemberRegistry.sol";
 import {IRbtcBridge} from "src/interfaces/IRbtcBridge.sol";
 import {BytesHelper} from "src/libraries/BytesHelper.sol";
 
@@ -169,7 +170,7 @@ contract PegoutManagerTest is Test, HelperContract {
         assertEq(pegoutInfo.createdAt, createdAt, "Created at should match");
         assertEq(opInfo.operatorTakeUpdatedAt, 0, "Operator take updated at should be zero");
         assertEq(opInfo.operatorTakeAddress, address(0), "Take operator address should be zero");
-        assertEq(opInfo.operatorDisputePubKey, bytes32(0), "Operator dispute public key should be zero");
+        assertEqCompactPubKey(opInfo.operatorDisputePubKey, CompactPubKey({xOnly: bytes32(0), parity: bytes1(0)}), "Operator dispute public key should be zero");
         assertEq(opInfo.pegoutId, bytes32(0), "Pegout ID should be zero");
         assertEq(opInfo.advanceFundsBlockNumber, 0, "Advance funds block number should be zero");
         assertEq(opInfo.reimbursementKickoffTxid, bytes32(0), "Reimbursement kickoff txid should be zero");
@@ -702,7 +703,7 @@ contract PegoutManagerTest is Test, HelperContract {
 
         // 2. Create second packet with the existing committee setup
         uint128 committeeId = COMMITTEE_ID_STREAM_1_COMMITTEE_1;
-        bytes32[] memory disputeKeys = registry.getCommitteeDisputeKeys(committeeId);
+        CompactPubKey[] memory disputeKeys = registry.getCommitteeDisputeKeys(committeeId);
         vm.prank(address(registry));
         streamManager.createNewPacket(
             stream.streamId, committeeId, setupExpectedCommittee.takeAggregatedKey, disputeKeys

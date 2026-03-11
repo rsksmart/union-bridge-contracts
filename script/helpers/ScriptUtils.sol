@@ -434,7 +434,7 @@ abstract contract ScriptUtils is Script {
         BtcTxOut[] memory btcOutputs = new BtcTxOut[](1);
         btcOutputs[0] = BtcTxOut({
             amount: _amount - Constants.P2TR_FEE,
-            scriptPubKey: BtcScriptParser.getP2WPKHScript(BtcHelper.pubKeyXonlyToCompact(_btcReimbursementPubKey))
+            scriptPubKey: BtcScriptParser.getP2WPKHScript(abi.encodePacked(bytes1(0x02), _btcReimbursementPubKey))
         });
         return BtcTransaction({
             version: Constants.BTC_TX_VERSION,
@@ -545,7 +545,7 @@ abstract contract ScriptUtils is Script {
         btcOutputs[0] = BtcTxOut({amount: 0, scriptPubKey: abi.encodePacked(OpCodes.OP_RETURN)}); // OP_RETURN
         for (uint256 i = 0; i < memberCount; i++) {
             bytes memory speedupScriptPubKey =
-                BtcScriptParser.getP2WPKHScript(BtcHelper.pubKeyXonlyToCompact(_disputePubKeys[i]));
+                BtcScriptParser.getP2WPKHScript(abi.encodePacked(bytes1(0x02), _disputePubKeys[i]));
             btcOutputs[1 + i] = BtcTxOut({amount: Constants.SPEED_UP_AMOUNT, scriptPubKey: speedupScriptPubKey});
         }
 

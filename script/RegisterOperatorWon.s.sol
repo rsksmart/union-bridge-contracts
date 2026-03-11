@@ -9,7 +9,7 @@ import {Slot, SlotState, IStreamManager} from "src/interfaces/IStreamManager.sol
 import {BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
-import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
+import {IMemberRegistry, CompactPubKey} from "src/interfaces/IMemberRegistry.sol";
 import {IOperatorTakeManager} from "src/interfaces/IOperatorTakeManager.sol";
 
 contract RegisterOperatorWonScript is ScriptUtils, ContractAddressManager {
@@ -29,8 +29,9 @@ contract RegisterOperatorWonScript is ScriptUtils, ContractAddressManager {
         ICommitteeRegistry committeeRegistry = getCommitteeRegistry();
         IMemberRegistry memberRegistry = committeeRegistry.memberRegistry();
 
-        bytes32 operatorXOnlyDisputeKey = memberRegistry.getMemberDisputePubKey(getDeployerAddress());
-        operatorDisputePubKey = BtcHelper.pubKeyXonlyToCompact(operatorXOnlyDisputeKey);
+        operatorDisputePubKey = BtcHelper.compactPubKeyToBytes(
+            memberRegistry.getMemberPublicKeys(getDeployerAddress()).disputePubKey
+        );
         amount = 100_000; // 0.001 BTC
 
         streamManager = IStreamManager(getStreamManager());

@@ -10,7 +10,7 @@ import {Slot, SlotState, Stream, Packet, IStreamManager} from "src/interfaces/IS
 import {BTC_TRANSACTION_CONFIRMATION_INVALID_MERKLE_BRANCH_ERROR_CODE} from "src/interfaces/IBridge.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {ICommitteeRegistry, Committee, CommitteeMember} from "src/interfaces/ICommitteeRegistry.sol";
-import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
+import {IMemberRegistry, MemberKeys, CompactPubKey} from "src/interfaces/IMemberRegistry.sol";
 import {IRbtcBridge} from "src/interfaces/IRbtcBridge.sol";
 import {IPegBase} from "src/interfaces/IPegBase.sol";
 
@@ -55,7 +55,7 @@ contract PeginManagerTest is Test, HelperContract {
         // Address is different according to amount and destination address
         string memory tempAddress = "bcrt1pwpfkfegptuz3k0y9j47cutzcrstnrz6sz44x3senwwtjp5ugmh7q578ryg";
 
-        (string memory result, uint64 packetNumber, bytes32[] memory memberDisputeKeys, uint64 availableSlots) =
+        (string memory result, uint64 packetNumber, CompactPubKey[] memory memberDisputeKeys, uint64 availableSlots) =
             peginManager.getRequestPeginData(dummyRskAddress, VALUE, BTC_REIMBURSEMENT_PUBKEY);
         assertEq(result, tempAddress, "Incorrect temporary peg in address at PegManager");
         assertEq(packetNumber, PACKET_NUMBER, "Incorrect packet number at PegManager");
@@ -71,11 +71,8 @@ contract PeginManagerTest is Test, HelperContract {
         // Verify each dispute key matches the expected covenant key for that committee member
         IMemberRegistry memberRegistry = registry.memberRegistry();
         for (uint256 i = 0; i < committeeMembers.length; i++) {
-            assertEq(
-                memberDisputeKeys[i],
-                memberRegistry.getMemberDisputePubKey(committeeMembers[i].memberAddress),
-                "Incorrect dispute key for committee member"
-            );
+            MemberKeys memory keys = memberRegistry.getMemberPublicKeys(committeeMembers[i].memberAddress);
+            assertEqCompactPubKey(memberDisputeKeys[i], keys.disputePubKey, "Incorrect dispute key for committee member");
         }
     }
 

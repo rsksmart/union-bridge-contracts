@@ -17,6 +17,7 @@ import {Constants} from "src/libraries/Constants.sol";
 import {IRbtcBridge} from "src/interfaces/IRbtcBridge.sol";
 import {IPegBase} from "src/interfaces/IPegBase.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
+import {CompactPubKey} from "src/interfaces/IMemberRegistry.sol";
 import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
 
 contract OperatorTakeManagerTest is Test, HelperContract {
@@ -480,7 +481,8 @@ contract OperatorTakeManagerTest is Test, HelperContract {
 
         BtcTxSPVProof memory wrongProof = createBtcTxSPVProof(
             createCancelUserTakeTx(
-                wrongAcceptPeginTxid, BtcHelper.pubKeyXonlyToCompact(getMemberDisputePubKey(operatorAddress))
+                wrongAcceptPeginTxid,
+                BtcHelper.compactPubKeyToBytes(memberRegistry.getMemberPublicKeys(operatorAddress).disputePubKey)
             )
         );
 
@@ -931,8 +933,8 @@ contract OperatorTakeManagerTest is Test, HelperContract {
     function test_registerAdvanceFunds_Revert_IncorrectOutputScript_WrongUserPubKey() external {
         // Arrange
         (address opAddress, RegisterUserTakeSetup memory setup) = setup_advanceFunds();
-        bytes32 operatorPubKey = getMemberDisputePubKey(opAddress);
-        bytes memory operatorDisputePubKeyCompact = BtcHelper.pubKeyXonlyToCompact(operatorPubKey);
+        bytes memory operatorDisputePubKeyCompact =
+            BtcHelper.compactPubKeyToBytes(memberRegistry.getMemberPublicKeys(opAddress).disputePubKey);
 
         BtcTxSPVProof memory wrongSPV =
             createBtcTxSPVProof(createAdvanceFundsTx(operatorDisputePubKeyCompact, VALUE, setup.pegoutId));
@@ -1213,8 +1215,8 @@ contract OperatorTakeManagerTest is Test, HelperContract {
         // Arrange
         (address opAddress, RegisterUserTakeSetup memory setup) = setup_inputRevealed();
         bytes32 wrongAcceptPeginTxid = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
-        bytes32 operatorPubKey = getMemberDisputePubKey(opAddress);
-        bytes memory operatorDisputePubKeyCompact = BtcHelper.pubKeyXonlyToCompact(operatorPubKey);
+        bytes memory operatorDisputePubKeyCompact =
+            BtcHelper.compactPubKeyToBytes(memberRegistry.getMemberPublicKeys(opAddress).disputePubKey);
 
         bytes32 inputRevealedTxid = bitcoinManager.getBtcTxid(setup.inputRevealedSPV.btcTx);
         BtcTxSPVProof memory wrongOperatorWonSPV = createBtcTxSPVProof(
@@ -1317,13 +1319,15 @@ contract OperatorTakeManagerTest is Test, HelperContract {
     function test_registerOperatorTake_Revert_PeginNotRequested() external {
         // Arrange
         (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
-        bytes32 operatorPubKey = getMemberDisputePubKey(operatorAddress);
         bytes32 wrongAcceptPeginTxid = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
 
         bytes32 reimbursementTxid = bitcoinManager.getBtcTxid(setup.reimbursementKickoffSPV.btcTx);
 
         BtcTransaction memory operatorTakeTx = createOperatorTakeTx(
-            wrongAcceptPeginTxid, reimbursementTxid, BtcHelper.pubKeyXonlyToCompact(operatorPubKey), VALUE
+            wrongAcceptPeginTxid,
+            reimbursementTxid,
+            BtcHelper.compactPubKeyToBytes(memberRegistry.getMemberPublicKeys(operatorAddress).disputePubKey),
+            VALUE
         );
         BtcTxSPVProof memory operatorTakeSPV = createBtcTxSPVProof(operatorTakeTx);
 
@@ -1380,22 +1384,23 @@ contract OperatorTakeManagerTest is Test, HelperContract {
     function test_registerOperatorTake_Revert_IncorrectOutputScript() external {
         // Arrange
         (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
-        bytes32 operatorPubKey = getMemberDisputePubKey(operatorAddress);
         address wrongOperator = vm.addr(1);
-        bytes32 wrongOperatorPubKey = getMemberDisputePubKey(wrongOperator);
+        CompactPubKey memory wrongOperatorPubKey = getMemberDisputeCompactPubKey(wrongOperator);
 
         bytes32 reimbursementTxid = bitcoinManager.getBtcTxid(setup.reimbursementKickoffSPV.btcTx);
 
         BtcTransaction memory operatorTakeTx = createOperatorTakeTx(
-            setup.acceptPeginTxid, reimbursementTxid, BtcHelper.pubKeyXonlyToCompact(wrongOperatorPubKey), VALUE
+            setup.acceptPeginTxid, reimbursementTxid, BtcHelper.compactPubKeyToBytes(wrongOperatorPubKey), VALUE
         );
         BtcTxSPVProof memory operatorTakeSPV = createBtcTxSPVProof(operatorTakeTx);
 
         vm.expectRevert(
             abi.encodeWithSelector(
                 IPegoutManager.IncorrectOutputScript.selector,
-                BtcScriptParser.getP2WPKHScript(BtcHelper.pubKeyXonlyToCompact(wrongOperatorPubKey)),
-                BtcScriptParser.getP2WPKHScript(BtcHelper.pubKeyXonlyToCompact(operatorPubKey))
+                BtcScriptParser.getP2WPKHScript(BtcHelper.compactPubKeyToBytes(wrongOperatorPubKey)),
+                BtcScriptParser.getP2WPKHScript(
+                    BtcHelper.compactPubKeyToBytes(memberRegistry.getMemberPublicKeys(operatorAddress).disputePubKey)
+                )
             )
         );
 
@@ -1432,13 +1437,15 @@ contract OperatorTakeManagerTest is Test, HelperContract {
     function test_registerOperatorTake_Revert_OperatorTakeTxidNotMatch() external {
         // Arrange
         (address operatorAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
-        bytes32 operatorPubKey = getMemberDisputePubKey(operatorAddress);
         bytes32 realTakeTxid = bitcoinManager.getBtcTxid(setup.operatorTakeSPV.btcTx);
 
         bytes32 reimbursementTxid = bitcoinManager.getBtcTxid(setup.reimbursementKickoffSPV.btcTx);
 
         BtcTransaction memory operatorTakeTx = createOperatorTakeTx(
-            setup.acceptPeginTxid, reimbursementTxid, BtcHelper.pubKeyXonlyToCompact(operatorPubKey), VALUE
+            setup.acceptPeginTxid,
+            reimbursementTxid,
+            BtcHelper.compactPubKeyToBytes(memberRegistry.getMemberPublicKeys(operatorAddress).disputePubKey),
+            VALUE
         );
         operatorTakeTx.outputs[1].amount += 1000; // Modify the tx to produce a different txid
 

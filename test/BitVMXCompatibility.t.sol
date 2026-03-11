@@ -60,11 +60,9 @@ pragma solidity ^0.8.20;
  *
  * Known issues:
  * - The user btc address that is extracted from the OP_RETURN output can come from BITVMX as either even or odd,
- *   the contracts expect the pubkey even (prefix 0x02).
+ *   the contracts assume the pubkey is even (prefix 0x02) as a protocol-level decision.
  *   This effectively means that the test will fail if the generated pubkey is odd (prefix 0x03).
- *   To make sure everything is working as expected we can modify the BtcHelper.pubKeyXonlyToCompact
- *   function temporarily to return 0x03 prefix instead of 0x02, and re-run the test to confirm it passes.
- *   Another temporary fix is to modify the receive_key in the user_1.yaml to be an even key.
+ *   A temporary fix is to modify the receive_key in the user_1.yaml to be an even key.
  *
  *   Future fix should be either in BitVMX to always generate with 0x02 prefix, or to modify the transaction structure to get the uncompressed pubkey.
  *
@@ -75,6 +73,7 @@ import {HelperContract} from "test/helpers/HelperContract.sol";
 import {BtcTransaction, BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
 import {BtcTxSPVProof} from "src/interfaces/IPegCommonTypes.sol";
 import {Role, Committee} from "src/interfaces/ICommitteeRegistry.sol";
+import {CompactPubKey} from "src/interfaces/IMemberRegistry.sol";
 import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
 
 contract BitVMXCompatibilityTest is Test, HelperContract {
@@ -185,7 +184,9 @@ contract BitVMXCompatibilityTest is Test, HelperContract {
         for (uint256 i = 0; i < committee.members.length; i++) {
             if (opAssigned < BITVMX_OP_COUNT && committee.members[i].role == Role.OPERATOR) {
                 address operatorAddress = committee.members[i].memberAddress;
-                memberRegistry.setMemberDisputeKeyHarness(operatorAddress, bitvmxCovenantKeys[opAssigned]);
+                memberRegistry.setMemberDisputeKeyHarness(
+                    operatorAddress, bytes1(0x02), bitvmxCovenantKeys[opAssigned]
+                );
                 opAssigned++;
                 continue;
             }
@@ -193,7 +194,9 @@ contract BitVMXCompatibilityTest is Test, HelperContract {
             if (wtAssigned < BITVMX_WT_COUNT && committee.members[i].role == Role.WATCHTOWER) {
                 address wtAddress = committee.members[i].memberAddress;
                 // watchtower keys are expected after operator keys in the array
-                memberRegistry.setMemberDisputeKeyHarness(wtAddress, bitvmxCovenantKeys[BITVMX_OP_COUNT + wtAssigned]);
+                memberRegistry.setMemberDisputeKeyHarness(
+                    wtAddress, bytes1(0x02), bitvmxCovenantKeys[BITVMX_OP_COUNT + wtAssigned]
+                );
                 wtAssigned++;
                 continue;
             }
@@ -206,7 +209,7 @@ contract BitVMXCompatibilityTest is Test, HelperContract {
         // Recalculate the packet's enabler scriptPubKey with the updated BitVMX keys
         // This is necessary because the packet was created with default keys, but we've now
         // overridden both the committee aggregated key and the covenant keys.
-        bytes32[] memory updatedDisputeKeys = registry.getCommitteeDisputeKeys(committeeId);
+        CompactPubKey[] memory updatedDisputeKeys = registry.getCommitteeDisputeKeys(committeeId);
         bytes memory updatedEnablerScript =
             bitcoinManager.getEnablerOutputP2TRScriptPub(committeeAggregatedKey, updatedDisputeKeys);
         streamManager.setPacketEnablerScriptHarness(0, 0, updatedEnablerScript);

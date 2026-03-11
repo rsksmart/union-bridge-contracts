@@ -6,7 +6,7 @@ import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
 import {Slot, SlotState, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
-import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
+import {IMemberRegistry, CompactPubKey} from "src/interfaces/IMemberRegistry.sol";
 import {PeginManager} from "src/PeginManager.sol";
 import {BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
 import {BtcTxSPVProof, StreamPosition} from "src/interfaces/IPegCommonTypes.sol";
@@ -24,8 +24,9 @@ contract BlockSlotScript is ScriptUtils, ContractAddressManager {
         streamManager = peginManager.streamManager();
         memberRegistry = registry.memberRegistry();
 
-        bytes32 operatorXOnlyDisputeKey = memberRegistry.getMemberDisputePubKey(getDeployerAddress());
-        operatorPubKey = BtcHelper.pubKeyXonlyToCompact(operatorXOnlyDisputeKey);
+        operatorPubKey = BtcHelper.compactPubKeyToBytes(
+            memberRegistry.getMemberPublicKeys(getDeployerAddress()).disputePubKey
+        );
 
         // Reject Pegin Btc transaction to verify
         BtcTransaction memory rejectPeginTx = createRejectPeginTx(_requestPeginTxid, operatorPubKey);

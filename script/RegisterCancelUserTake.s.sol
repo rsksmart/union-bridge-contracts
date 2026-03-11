@@ -10,7 +10,7 @@ import {Slot, SlotState, IStreamManager} from "src/interfaces/IStreamManager.sol
 import {BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
-import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
+import {IMemberRegistry, CompactPubKey} from "src/interfaces/IMemberRegistry.sol";
 
 contract RegisterCancelUserTakeScript is ScriptUtils, ContractAddressManager {
     IOperatorTakeManager operatorTakeManager;
@@ -29,8 +29,9 @@ contract RegisterCancelUserTakeScript is ScriptUtils, ContractAddressManager {
         ICommitteeRegistry registry = getCommitteeRegistry();
         IMemberRegistry memberRegistry = registry.memberRegistry();
 
-        bytes32 operatorXOnlyPubKey = memberRegistry.getMemberDisputePubKey(getDeployerAddress());
-        operatorPubKey = BtcHelper.pubKeyXonlyToCompact(operatorXOnlyPubKey);
+        operatorPubKey = BtcHelper.compactPubKeyToBytes(
+            memberRegistry.getMemberPublicKeys(getDeployerAddress()).disputePubKey
+        );
 
         // Calculate expected slot and packet numbers
         streamManager = IStreamManager(getStreamManager());

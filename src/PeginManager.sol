@@ -89,7 +89,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
         IMemberRegistry memberRegistry = committeeRegistry.memberRegistry();
         for (uint256 i = 0; i < committeeMembers.length; i++) {
             // slither-disable-next-line calls-loop
-            memberDisputeKeys[i] = memberRegistry.getMemberDisputePubKey(committeeMembers[i].memberAddress);
+            memberDisputeKeys[i] = memberRegistry.getMemberPublicKeys(committeeMembers[i].memberAddress).disputePubKey;
         }
 
         return (

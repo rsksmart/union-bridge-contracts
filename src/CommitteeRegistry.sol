@@ -714,7 +714,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
                 // Get the operator's address and dispute public key
                 operatorAddress = committee.members[operatorTakeIndex].memberAddress;
                 // slither-disable-next-line calls-loop
-                disputePubKey = memberRegistry.getMemberDisputePubKey(operatorAddress);
+                disputePubKey = memberRegistry.getMemberPublicKeys(operatorAddress).disputePubKey;
                 // slither-disable-next-line calls-loop
                 takePubKey = memberRegistry.getMemberTakePubKey(operatorAddress);
                 return (operatorAddress, disputePubKey, takePubKey);
@@ -858,7 +858,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
         CompactPubKey[] memory disputeKeys = new CompactPubKey[](committeeMembers.length);
         for (uint256 i = 0; i < committeeMembers.length; i++) {
             // slither-disable-next-line calls-loop
-            disputeKeys[i] = memberRegistry.getMemberDisputePubKey(committeeMembers[i].memberAddress);
+            disputeKeys[i] = memberRegistry.getMemberPublicKeys(committeeMembers[i].memberAddress).disputePubKey;
         }
         return disputeKeys;
     }

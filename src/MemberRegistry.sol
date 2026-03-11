@@ -423,7 +423,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
 
     /// @inheritdoc IMemberRegistry
     function getMemberDisputePubKey(address _address) external view override returns (bytes32) {
-        return _getMember(_address).publicKeys.disputePubKey;
+        return _getMember(_address).publicKeys.disputePubKey.xOnly;
     }
 
     /// @inheritdoc IMemberRegistry

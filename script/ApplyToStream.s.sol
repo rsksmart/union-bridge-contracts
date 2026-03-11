@@ -83,7 +83,7 @@ contract ApplyToStreamScript is ScriptUtils, ContractAddressManager {
             StreamDenomination(streamId), Role(role), memberRegistrationKeys, fundingUTXO
         );
         vm.stopBroadcast();
-        if (memberRegistry.getMemberTakePubKey(user) != memberRegistrationKeys.takeKey.publicKeyX) {
+        if (memberRegistry.getMemberTakePubKey(user).xOnly != memberRegistrationKeys.takeKey.publicKeyX) {
             revert("applyToStream failed: take public key mismatch");
         }
         if (memberRegistry.getMemberDisputePubKey(user) != memberRegistrationKeys.disputeKey.publicKeyX) {

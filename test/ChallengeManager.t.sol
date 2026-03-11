@@ -324,7 +324,8 @@ contract ChallengeManagerTest is Test, HelperContract {
         bytes32 wrongTxid = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
         uint128 committeeId = streamManager.getCommitteeId(uint64(DEFAULT_STREAM), setup.packetNumber);
         bytes memory committeePubKey = registry.getCommitteeTakePubKey(committeeId);
-        bytes memory operatorPubKey = BtcHelper.pubKeyXonlyToCompact(memberRegistry.getMemberDisputePubKey(opAddress));
+        bytes memory operatorPubKey =
+            BtcHelper.compactPubKeyToBytes(memberRegistry.getMemberPublicKeys(opAddress).disputePubKey);
         BtcTxSPVProof memory wrongSPV =
             createBtcTxSPVProof(createInputRevealedTx(wrongTxid, committeePubKey, operatorPubKey));
 
