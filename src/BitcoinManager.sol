@@ -11,6 +11,7 @@ import {
     IBitcoinManager,
     BitcoinSignatureData
 } from "./interfaces/IBitcoinManager.sol";
+import {CompactPubKey} from "./interfaces/IMemberRegistry.sol";
 import {BytesHelper} from "./libraries/BytesHelper.sol";
 import {BtcHelper} from "./libraries/BtcHelper.sol";
 import {BtcTxEncoder} from "./libraries/BtcTxEncoder.sol";
@@ -241,9 +242,12 @@ contract BitcoinManager is IBitcoinManager, BaseProxy {
     }
 
     /// @inheritdoc IBitcoinManager
-    function validatePegoutMemberOutput(BtcTxOut calldata _pegoutOutput, bytes32 _memberPubKey) external pure {
+    function validatePegoutMemberOutput(BtcTxOut calldata _pegoutOutput, CompactPubKey calldata _memberPubKey)
+        external
+        pure
+    {
         bytes memory expectedScriptPubKey =
-            BtcScriptParser.getP2WPKHScript(BtcHelper.pubKeyXonlyToCompact(_memberPubKey));
+            BtcScriptParser.getP2WPKHScript(BtcHelper.compactPubKeyToBytes(_memberPubKey));
 
         _compareOutputPubKey(_pegoutOutput.scriptPubKey, expectedScriptPubKey);
     }
@@ -262,7 +266,7 @@ contract BitcoinManager is IBitcoinManager, BaseProxy {
         bytes32 _userXOnlyPubKey,
         bytes32 _registerPeginTx,
         PrevoutData[] memory _prevoutDatas,
-        bytes32[] memory _disputeKeys
+        CompactPubKey[] memory _disputeKeys
     ) external pure returns (BitcoinSignatureData memory) {
         // Prepare the inputs
         BtcTxIn[] memory btcInputs = new BtcTxIn[](Constants.ACCEPT_PEGIN_INPUT_COUNT);
@@ -449,12 +453,16 @@ contract BitcoinManager is IBitcoinManager, BaseProxy {
     }
 
     /// @inheritdoc IBitcoinManager
-    function getEnablerOutputP2TRScriptPub(bytes memory _committeeTakePubKey, bytes32[] memory _disputeKeys)
+    function getEnablerOutputP2TRScriptPub(bytes memory _committeeTakePubKey, CompactPubKey[] memory _disputeKeys)
         public
         pure
         returns (bytes memory)
     {
-        bytes32 tweakedPublicKey = _getEnablerOutputTweakedPublicKey(_committeeTakePubKey, _disputeKeys);
+        bytes32[] memory xOnlyKeys = new bytes32[](_disputeKeys.length);
+        for (uint256 i = 0; i < _disputeKeys.length; i++) {
+            xOnlyKeys[i] = _disputeKeys[i].xOnly;
+        }
+        bytes32 tweakedPublicKey = _getEnablerOutputTweakedPublicKey(_committeeTakePubKey, xOnlyKeys);
         return BtcTaproot.getP2TRScriptPubKey(tweakedPublicKey);
     }
 
@@ -480,7 +488,7 @@ contract BitcoinManager is IBitcoinManager, BaseProxy {
     function getSpeedUpScriptPub(bytes32 _pubKey) public pure returns (bytes memory) {
         // TODO change this to use P2WPSH with OP_1 so anyone can send the speed up
         // this should change at the same time as in the protocol builder
-        return BtcScriptParser.getP2WPKHScript(BtcHelper.pubKeyXonlyToCompact(_pubKey));
+        return BtcScriptParser.getP2WPKHScript(abi.encodePacked(uint8(0x02), _pubKey));
     }
 
     // ========================== Peg Out Signature Hash ==========================

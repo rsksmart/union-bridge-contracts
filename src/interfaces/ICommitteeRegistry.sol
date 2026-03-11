@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {StreamDenomination} from "./IStreamManager.sol";
-import {IMemberRegistry, MemberRegistrationKeys} from "./IMemberRegistry.sol";
+import {IMemberRegistry, MemberRegistrationKeys, CompactPubKey} from "./IMemberRegistry.sol";
 import {SignatureData} from "./ISignatureManager.sol";
 
 /// @dev Amount of bytes32 chunks for communication data
@@ -299,7 +299,7 @@ interface ICommitteeRegistry {
     /// @dev Reverts with TakeOperatorNotFound if no eligible operator is found
     function selectTakeOperator(uint128 _committeeId, SignatureData[] calldata _signatureData, uint8 _missingNonces)
         external
-        returns (address operatorAddress, bytes32 disputePubKey, bytes32 takePubKey);
+        returns (address operatorAddress, CompactPubKey memory disputePubKey, CompactPubKey memory takePubKey);
 
     /// @notice Releases committee members from a packet and handles their staked balance
     /// @dev Called by PegManager to release committee members after packet completion
@@ -334,7 +334,7 @@ interface ICommitteeRegistry {
     /// @notice Gets the dispute keys (covenant public keys) for all committee members
     /// @param _committeeId The committee ID
     /// @return Array of dispute keys for all members
-    function getCommitteeDisputeKeys(uint128 _committeeId) external view returns (bytes32[] memory);
+    function getCommitteeDisputeKeys(uint128 _committeeId) external view returns (CompactPubKey[] memory);
 
     // ===================== Events =====================
     /// @notice Event emitted when a new committee is created

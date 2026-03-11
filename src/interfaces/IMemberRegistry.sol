@@ -21,6 +21,14 @@ enum PublicKeyType {
     LENGTH
 }
 
+/// @notice Compressed Bitcoin public key with parity prefix
+struct CompactPubKey {
+    /// @notice parity is 0x02 (even Y) or 0x03 (odd Y)
+    bytes1 parity;
+    /// @notice X-coordinate of the public key
+    bytes32 xOnly;
+}
+
 /// @notice Represents the data needed for ECDSA public key registration
 /// @dev Includes the public key coordinates and ECDSA signature for verification
 struct ECDSAPublicKey {
@@ -84,9 +92,9 @@ struct Balance {
 /// @dev Contains different key types for different purposes
 struct MemberKeys {
     /// @notice TAKE public key (ECDSA)
-    bytes32 takePubKey;
+    CompactPubKey takePubKey;
     /// @notice DISPUTE public key (ECDSA)
-    bytes32 disputePubKey;
+    CompactPubKey disputePubKey;
     /// @notice COMMUNICATION public key (RSA)
     RSAPublicKey communicationPubKey;
 }
@@ -190,7 +198,7 @@ interface IMemberRegistry {
     /// @notice Gets the TAKE public key for a specific member
     /// @param _address The member's address
     /// @return The TAKE public key (x-coordinate only)
-    function getMemberTakePubKey(address _address) external view returns (bytes32);
+    function getMemberTakePubKey(address _address) external view returns (CompactPubKey memory);
 
     /// @notice Gets the COMMUNICATION public key for a specific member
     /// @param _address The member's address

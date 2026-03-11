@@ -15,7 +15,7 @@ import {
     CommunicationData,
     UTXO
 } from "./interfaces/ICommitteeRegistry.sol";
-import {IMemberRegistry, MemberRegistrationKeys} from "./interfaces/IMemberRegistry.sol";
+import {IMemberRegistry, MemberKeys, MemberRegistrationKeys, CompactPubKey} from "./interfaces/IMemberRegistry.sol";
 import {StreamDenomination, IStreamManager} from "./interfaces/IStreamManager.sol";
 import {SignatureData} from "./interfaces/ISignatureManager.sol";
 import {BytesHelper} from "./libraries/BytesHelper.sol";
@@ -504,11 +504,12 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
             streamManager.getPacketsLength(pendingCommittee.streamId)
         );
 
+        CompactPubKey[] memory disputeKeys = _getCommitteeDisputeKeys(_committeeId);
         streamManager.createNewPacket(
             pendingCommittee.streamId,
             _committeeId,
             pendingCommittee.takeAggregatedKey,
-            _getCommitteeDisputeKeys(_committeeId)
+            disputeKeys
         );
     }
 
@@ -685,7 +686,7 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
     /// @inheritdoc ICommitteeRegistry
     function selectTakeOperator(uint128 _committeeId, SignatureData[] calldata _signatureData, uint8 _missingNonces)
         external
-        returns (address operatorAddress, bytes32 disputePubKey, bytes32 takePubKey)
+        returns (address operatorAddress, CompactPubKey memory disputePubKey, CompactPubKey memory takePubKey)
     {
         // Verify that the caller has permission to select a take operator
         accessManager.canSelectTakeOperator(_msgSender());
@@ -848,13 +849,13 @@ contract CommitteeRegistry is ICommitteeRegistry, BaseProxy, ReentrancyGuardUpgr
     }
 
     /// @inheritdoc ICommitteeRegistry
-    function getCommitteeDisputeKeys(uint128 _committeeId) external view returns (bytes32[] memory) {
+    function getCommitteeDisputeKeys(uint128 _committeeId) external view returns (CompactPubKey[] memory) {
         return _getCommitteeDisputeKeys(_committeeId);
     }
 
-    function _getCommitteeDisputeKeys(uint128 _committeeId) internal view returns (bytes32[] memory) {
+    function _getCommitteeDisputeKeys(uint128 _committeeId) internal view returns (CompactPubKey[] memory) {
         CommitteeMember[] memory committeeMembers = _getCommitteeMembers(_committeeId);
-        bytes32[] memory disputeKeys = new bytes32[](committeeMembers.length);
+        CompactPubKey[] memory disputeKeys = new CompactPubKey[](committeeMembers.length);
         for (uint256 i = 0; i < committeeMembers.length; i++) {
             // slither-disable-next-line calls-loop
             disputeKeys[i] = memberRegistry.getMemberDisputePubKey(committeeMembers[i].memberAddress);

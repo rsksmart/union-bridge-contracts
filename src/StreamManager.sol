@@ -21,6 +21,7 @@ import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {IBitcoinManager} from "src/interfaces/IBitcoinManager.sol";
 import {StreamPosition, PegStatus} from "src/interfaces/IPegCommonTypes.sol";
 import {Role} from "src/interfaces/ICommitteeRegistry.sol";
+import {CompactPubKey} from "src/interfaces/IMemberRegistry.sol";
 import {IPegBase} from "src/interfaces/IPegBase.sol";
 
 /// @title Stream Manager
@@ -148,7 +149,7 @@ contract StreamManager is IStreamManager, BaseProxy {
         uint64 _streamId,
         uint128 _committeeId,
         bytes memory _committeePubKey,
-        bytes32[] memory _disputeKeys
+        CompactPubKey[] memory _disputeKeys
     ) external {
         // Verify that the caller has permission to create a packet
         accessManager.canCreatePacket(_msgSender());

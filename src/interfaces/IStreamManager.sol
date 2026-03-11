@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import {Role} from "./ICommitteeRegistry.sol";
 import {StreamPosition, PegStatus} from "./IPegCommonTypes.sol";
+import {CompactPubKey} from "./IMemberRegistry.sol";
 
 /// @notice Represents different Bitcoin denominations supported by the union bridge
 /// @dev Each denomination corresponds to a specific stream for efficient fund management
@@ -166,7 +167,7 @@ interface IStreamManager {
         uint64 _streamId,
         uint128 _committeeId,
         bytes memory _committeePubKey,
-        bytes32[] memory _disputeKeys
+        CompactPubKey[] memory _disputeKeys
     ) external;
 
     /// @notice Gets a stream by its denomination

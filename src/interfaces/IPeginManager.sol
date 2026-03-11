@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {BtcTxSPVProof, StreamPosition} from "./IPegCommonTypes.sol";
+import {CompactPubKey} from "./IMemberRegistry.sol";
 
 /// @notice Temporary information stored during peg-in request processing
 /// @dev Contains data needed for the accept peg-in phase
@@ -40,7 +41,7 @@ interface IPeginManager {
         returns (
             string memory temporaryPeginAddress,
             uint64 packetNumber,
-            bytes32[] memory memberDisputeKeys,
+            CompactPubKey[] memory memberDisputeKeys,
             uint64 availableSlots
         );
 

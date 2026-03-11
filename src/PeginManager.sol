@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import {PegManagerBase} from "./PegManagerBase.sol";
 import {IPeginManager, RequestPeginTempInfo} from "./interfaces/IPeginManager.sol";
 import {ICommitteeRegistry, CommitteeMember} from "./interfaces/ICommitteeRegistry.sol";
-import {IMemberRegistry} from "./interfaces/IMemberRegistry.sol";
+import {IMemberRegistry, MemberKeys, CompactPubKey} from "./interfaces/IMemberRegistry.sol";
 import {IStreamManager, Stream} from "./interfaces/IStreamManager.sol";
 import {IBitcoinManager, PrevoutData, BitcoinSignatureData, BtcTxOut} from "./interfaces/IBitcoinManager.sol";
 import {BtcTxSPVProof, StreamPosition, PegStatus} from "./interfaces/IPegCommonTypes.sol";
@@ -65,7 +65,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
         returns (
             string memory bitcoinDepositAddress,
             uint64 packetNumber,
-            bytes32[] memory memberDisputeKeys,
+            CompactPubKey[] memory memberDisputeKeys,
             uint64 availableSlots
         )
     {
@@ -85,7 +85,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
         CommitteeMember[] memory committeeMembers = committeeRegistry.getCommitteeMembers(committeeId);
 
         // Extract dispute keys (covenant keys) from each member
-        memberDisputeKeys = new bytes32[](committeeMembers.length);
+        memberDisputeKeys = new CompactPubKey[](committeeMembers.length);
         IMemberRegistry memberRegistry = committeeRegistry.memberRegistry();
         for (uint256 i = 0; i < committeeMembers.length; i++) {
             // slither-disable-next-line calls-loop
@@ -295,7 +295,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
         // Second input: enabler output from request peg-in
         prevoutDatas[1] = PrevoutData({value: Constants.SPEED_UP_AMOUNT, scriptPubKey: _enablerScriptPubKey});
         // Get the members dispute keys of the committee
-        bytes32[] memory membersDisputeKeys = committeeRegistry.getCommitteeDisputeKeys(_committeeId);
+        CompactPubKey[] memory membersDisputeKeys = committeeRegistry.getCommitteeDisputeKeys(_committeeId);
         acceptPeginSignatureData = bitcoinManager.getAcceptPeginSignatureHash(
             _committeePubKey, _btcReimbursementPubKey, _requestPeginTxid, prevoutDatas, membersDisputeKeys
         );
