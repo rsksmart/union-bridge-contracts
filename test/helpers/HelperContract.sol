@@ -908,10 +908,8 @@ abstract contract HelperContract is Test, TestUtils {
     }
 
     function setup_memberWithOddParityCovenantKey() internal returns (MemberKeys memory keys) {
-        // Private key 2 produces a wallet with odd Y dispute key (verified: publicKeyY % 2 == 1)
-        uint256 oddParityDisputePrivKey = 2;
-        address memberAddr = vm.addr(oddParityDisputePrivKey);
-        MemberRegistrationKeys memory regKeys = generateRegistrationPublicKeys(oddParityDisputePrivKey);
+        address memberAddr = vm.addr(ODD_PARITY_COVENANT_PRIV_KEY);
+        MemberRegistrationKeys memory regKeys = generateRegistrationPublicKeys(ODD_PARITY_COVENANT_PRIV_KEY);
         setup_applyToStream(StreamDenomination._0_001BTC, memberAddr, regKeys, Role.OPERATOR);
         keys = memberRegistry.getMemberPublicKeys(memberAddr);
     }

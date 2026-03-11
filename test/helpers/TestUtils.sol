@@ -136,11 +136,10 @@ abstract contract TestUtils is Test, ScriptUtils {
         return bytes32(wallet.publicKeyX);
     }
 
-    function assertEqCompactPubKey(
-        CompactPubKey memory actual,
-        CompactPubKey memory expected,
-        string memory message
-    ) internal pure {
+    function assertEqCompactPubKey(CompactPubKey memory actual, CompactPubKey memory expected, string memory message)
+        internal
+        pure
+    {
         assertEq(actual.xOnly, expected.xOnly, string(abi.encodePacked(message, " xOnly")));
         assertEq(actual.parity, expected.parity, string(abi.encodePacked(message, " parity")));
     }

@@ -170,7 +170,11 @@ contract PegoutManagerTest is Test, HelperContract {
         assertEq(pegoutInfo.createdAt, createdAt, "Created at should match");
         assertEq(opInfo.operatorTakeUpdatedAt, 0, "Operator take updated at should be zero");
         assertEq(opInfo.operatorTakeAddress, address(0), "Take operator address should be zero");
-        assertEqCompactPubKey(opInfo.operatorDisputePubKey, CompactPubKey({xOnly: bytes32(0), parity: bytes1(0)}), "Operator dispute public key should be zero");
+        assertEqCompactPubKey(
+            opInfo.operatorDisputePubKey,
+            CompactPubKey({xOnly: bytes32(0), parity: bytes1(0)}),
+            "Operator dispute public key should be zero"
+        );
         assertEq(opInfo.pegoutId, bytes32(0), "Pegout ID should be zero");
         assertEq(opInfo.advanceFundsBlockNumber, 0, "Advance funds block number should be zero");
         assertEq(opInfo.reimbursementKickoffTxid, bytes32(0), "Reimbursement kickoff txid should be zero");
