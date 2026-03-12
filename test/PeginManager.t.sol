@@ -884,7 +884,7 @@ contract PeginManagerTest is Test, HelperContract {
         // Assert - expect revert
         vm.expectRevert(
             abi.encodeWithSelector(
-                IRbtcBridge.NotEnoughConfirmations.selector, actualConfirmations, stream.peginConfirmations
+                IRbtcBridge.NotEnoughConfirmations.selector, actualConfirmations, stream.rejectPeginConfirmations
             )
         );
 
@@ -1203,7 +1203,7 @@ contract PeginManagerTest is Test, HelperContract {
         // Assert - expect revert
         vm.expectRevert(
             abi.encodeWithSelector(
-                IRbtcBridge.NotEnoughConfirmations.selector, actualConfirmations, stream.peginConfirmations
+                IRbtcBridge.NotEnoughConfirmations.selector, actualConfirmations, stream.rejectPeginConfirmations
             )
         );
 

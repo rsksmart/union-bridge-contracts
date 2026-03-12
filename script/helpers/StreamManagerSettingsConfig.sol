@@ -44,6 +44,7 @@ library StreamManagerSettingsConfig {
         streamSettings = StreamSettings({
             denomination: _denomination,
             peginConfirmations: 12,
+            rejectPeginConfirmations: 6,
             pegoutConfirmations: 12,
             // Obtained from https://github.com/FairgateLabs/rust-bitvmx-client/blob/ff0e44255d45ac07e668171cc70668a08e819441/examples/union/participants/common.rs#L89
             timelockSettings: TimelockSettings({
@@ -63,15 +64,18 @@ library StreamManagerSettingsConfig {
         } else if (_chainId == ChainIds.RSK_TESTNET) {
             // we use 1 for testnet to speed up testing TODO: this should be changed before final deployment
             streamSettings.peginConfirmations = 1;
+            streamSettings.rejectPeginConfirmations = 1;
             streamSettings.pegoutConfirmations = 1;
         } else if (_chainId == ChainIds.LOCAL || _chainId == ChainIds.RSK_REGTEST) {
             if (isTest) {
                 // reduce pegin confirmations to 2 for faster testing
                 streamSettings.peginConfirmations = 2;
+                streamSettings.rejectPeginConfirmations = 1;
                 streamSettings.pegoutConfirmations = 2;
             } else {
                 // Default values for local anvil or rsk regtest
                 streamSettings.peginConfirmations = 2;
+                streamSettings.rejectPeginConfirmations = 1;
                 streamSettings.pegoutConfirmations = 2;
             }
         } else {

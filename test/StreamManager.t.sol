@@ -184,6 +184,94 @@ contract StreamManagerTest is Test, HelperContract {
         streamManager.setPeginConfirmations(streamId, 10);
     }
 
+    function test_setRejectPeginConfirmations_Success() external {
+        // Arrange
+        uint64 streamId = 0;
+
+        // Assert
+        assertEq(
+            streamManager.getStreamById(streamId).rejectPeginConfirmations,
+            1,
+            "Reject pegin confirmation should be default"
+        );
+
+        uint8 rejectPeginConfirmations = 2;
+
+        vm.expectEmit(address(streamManager));
+        emit IStreamManager.RejectPeginConfirmationsUpdated(streamId, rejectPeginConfirmations);
+
+        // Act
+        vm.prank(address(streamManager.owner()));
+        streamManager.setRejectPeginConfirmations(streamId, rejectPeginConfirmations);
+
+        // Assert
+        assertEq(
+            streamManager.getStreamById(streamId).rejectPeginConfirmations,
+            rejectPeginConfirmations,
+            "rejectPeginConfirmations was not set correctly"
+        );
+    }
+
+    function test_setRejectPeginConfirmations_Rever_InvalidStreamId() external {
+        // Arrange
+        uint64 streamId = 10;
+        vm.prank(address(streamManager.owner()));
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.StreamNotFoundById.selector, streamId));
+
+        // Act
+        streamManager.setRejectPeginConfirmations(streamId, 6);
+    }
+
+    function test_setRejectPeginConfirmations_Revert_NotOwner() external {
+        // Arrange
+        uint64 streamId = 0;
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, this));
+
+        // Act
+        streamManager.setRejectPeginConfirmations(streamId, 6);
+    }
+
+    function test_setRejectPeginConfirmations_Revert_ZeroConfirmations() external {
+        // Arrange
+        uint64 streamId = 0;
+        uint8 zeroConfirmations = 0;
+        address owner = streamManager.owner();
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IStreamManager.InvalidRejectPeginConfirmations.selector, zeroConfirmations)
+        );
+
+        // Act
+        vm.prank(owner);
+        streamManager.setRejectPeginConfirmations(streamId, zeroConfirmations);
+    }
+
+    function test_setRejectPeginConfirmations_Revert_ExceedsPeginConfirmations() external {
+        // Arrange - stream has peginConfirmations 2 by default (local test)
+        uint64 streamId = 0;
+        uint8 peginConfirmations = streamManager.getStreamById(streamId).peginConfirmations;
+        uint8 rejectPeginConfirmations = peginConfirmations + 1; // 3 > 2
+        address owner = streamManager.owner();
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IStreamManager.RejectPeginConfirmationsExceedsPegin.selector,
+                rejectPeginConfirmations,
+                peginConfirmations
+            )
+        );
+
+        // Act
+        vm.prank(owner);
+        streamManager.setRejectPeginConfirmations(streamId, rejectPeginConfirmations);
+    }
+
     function test_setPegoutConfirmations_Success() external {
         // Arrange
         uint64 streamId = 0;
@@ -1647,6 +1735,11 @@ contract StreamManagerTest is Test, HelperContract {
                 "Pegin confirmations should be equal to the pegin confirmations"
             );
             assertEq(
+                stream.rejectPeginConfirmations,
+                streamSettings[i].rejectPeginConfirmations,
+                "Reject pegin confirmations should be equal to the reject pegin confirmations"
+            );
+            assertEq(
                 stream.pegoutConfirmations,
                 streamSettings[i].pegoutConfirmations,
                 "Pegout confirmations should be equal to the pegout confirmations"
@@ -1764,6 +1857,35 @@ contract StreamManagerTest is Test, HelperContract {
                 streamSettings[0].peginConfirmations,
                 0
             )
+        );
+
+        // Act
+        cleanStreamManager.initializeStreams(streamSettings);
+    }
+
+    function test_initializeStreams_Revert_ZeroRejectPeginConfirmations() external {
+        // Arrange
+        StreamManagerHarness cleanStreamManager = setup_cleanStreamManager();
+        StreamSettings[] memory streamSettings = setup_streamSettings();
+        streamSettings[0].rejectPeginConfirmations = 0; // Invalid
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.InvalidRejectPeginConfirmations.selector, uint8(0)));
+
+        // Act
+        cleanStreamManager.initializeStreams(streamSettings);
+    }
+
+    function test_initializeStreams_Revert_RejectPeginConfirmationsExceedsPegin() external {
+        // Arrange - setup has peginConfirmations 2, rejectPeginConfirmations 2; set reject > pegin
+        StreamManagerHarness cleanStreamManager = setup_cleanStreamManager();
+        StreamSettings[] memory streamSettings = setup_streamSettings();
+        streamSettings[0].peginConfirmations = 2;
+        streamSettings[0].rejectPeginConfirmations = 5; // Invalid: 5 > 2
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IStreamManager.RejectPeginConfirmationsExceedsPegin.selector, uint8(5), uint8(2))
         );
 
         // Act
