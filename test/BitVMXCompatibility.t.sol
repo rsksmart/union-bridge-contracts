@@ -32,7 +32,7 @@ pragma solidity ^0.8.20;
  *   - Example: 0x031bda579ffbf5dcea00edf476d34334bb4f6b5fa4bd418ccf61244ef575bda31b
  *
  * MEMBER DISPUTE KEYS:
- *   compressed covenantKey:
+ *   compressed disputeKey:
  *     - publicKeyX: bytes32 (x-coordinate)
  *
  * SOLIDITY SYNTAXED REQUES PEGIN TRANSACTION:
@@ -45,7 +45,7 @@ pragma solidity ^0.8.20;
  * -------------------------------
  * Replace the placeholder values in the test function with the actual data extracted from BitVMX logs.
  *
- * covenantKeys[0,1,2,3]
+ * disputeKeys[0,1,2,3]
  * committeeAggregatedKey
  * expectedAcceptPeginTxid
  * inside the _getBitVMXRequestPeginTransaction() function paste the complete transaction structure
@@ -60,11 +60,9 @@ pragma solidity ^0.8.20;
  *
  * Known issues:
  * - The user btc address that is extracted from the OP_RETURN output can come from BITVMX as either even or odd,
- *   the contracts expect the pubkey even (prefix 0x02).
+ *   the contracts assume the user's pubkey is even (prefix 0x02) as a protocol-level decision.
  *   This effectively means that the test will fail if the generated pubkey is odd (prefix 0x03).
- *   To make sure everything is working as expected we can modify the BtcHelper.pubKeyXonlyToCompact
- *   function temporarily to return 0x03 prefix instead of 0x02, and re-run the test to confirm it passes.
- *   Another temporary fix is to modify the receive_key in the user_1.yaml to be an even key.
+ *   A temporary fix is to modify the receive_key in the user_1.yaml to be an even key.
  *
  *   Future fix should be either in BitVMX to always generate with 0x02 prefix, or to modify the transaction structure to get the uncompressed pubkey.
  *
@@ -75,6 +73,7 @@ import {HelperContract} from "test/helpers/HelperContract.sol";
 import {BtcTransaction, BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
 import {BtcTxSPVProof} from "src/interfaces/IPegCommonTypes.sol";
 import {Role, Committee} from "src/interfaces/ICommitteeRegistry.sol";
+import {CompactPubKey} from "src/interfaces/IMemberRegistry.sol";
 import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
 
 contract BitVMXCompatibilityTest is Test, HelperContract {
@@ -89,12 +88,16 @@ contract BitVMXCompatibilityTest is Test, HelperContract {
         // DATA FROM BitVMX - UPDATE THESE after running the request_pegin example in BitVMX client
         // ====================================================================
 
-        // Covenant keys from BitVMX (x-coordinates only) - UPDATE THIS from BitVMX output
-        bytes32[] memory covenantKeys = new bytes32[](4);
-        covenantKeys[0] = 0x0ec6b8e5787e7146ee61585f00d2b49cd191b30deba8a744754c60589119239c;
-        covenantKeys[1] = 0x47000231143a7ecabfc9d96c4177e6a374f9f90cdd81cbebcb70c9088f8a033a;
-        covenantKeys[2] = 0xcc1d15954cd9c9a8e9f0a04224420ee14b0b8729d4dc933f2dd97b3af29b0ab4;
-        covenantKeys[3] = 0xb0e42bec591549fb11880740f49978a35e95462482ebcda489a3fe119c937df3;
+        // Dispute keys from BitVMX (33-byte compressed: parity + x-coordinate) - UPDATE THIS from BitVMX output
+        CompactPubKey[] memory disputeKeys = new CompactPubKey[](4);
+        disputeKeys[0] =
+            CompactPubKey({parity: 0x02, xOnly: 0x0ec6b8e5787e7146ee61585f00d2b49cd191b30deba8a744754c60589119239c});
+        disputeKeys[1] =
+            CompactPubKey({parity: 0x02, xOnly: 0x47000231143a7ecabfc9d96c4177e6a374f9f90cdd81cbebcb70c9088f8a033a});
+        disputeKeys[2] =
+            CompactPubKey({parity: 0x02, xOnly: 0xcc1d15954cd9c9a8e9f0a04224420ee14b0b8729d4dc933f2dd97b3af29b0ab4});
+        disputeKeys[3] =
+            CompactPubKey({parity: 0x02, xOnly: 0xb0e42bec591549fb11880740f49978a35e95462482ebcda489a3fe119c937df3});
 
         // Committee aggregated key - UPDATE THIS from BitVMX output
         bytes memory committeeAggregatedKey = hex"030c260ce7e763ceece44830a886d8dd2c328445ffbcfd83c652bbc7671a55666e";
@@ -114,7 +117,7 @@ contract BitVMXCompatibilityTest is Test, HelperContract {
         registry.setMinCommitteeOperatorsHarness(BITVMX_WT_COUNT);
 
         // Create a committee with test keys, then override with BitVMX keys
-        _setupBitVMXCommittee(committeeAggregatedKey, covenantKeys);
+        _setupBitVMXCommittee(committeeAggregatedKey, disputeKeys);
 
         // Create SPV proof (mock for testing)
         bridgeMock.setBtcTransactionConfirmations(10);
@@ -160,12 +163,12 @@ contract BitVMXCompatibilityTest is Test, HelperContract {
     }
 
     /**
-     * @dev Sets up a committee and overrides operator covenant and committee id keys with BitVMX values.
+     * @dev Sets up a committee and overrides operator dispute and committee id keys with BitVMX values.
      * @param committeeAggregatedKey The aggregated public key from BitVMX
-     * @param bitvmxCovenantKeys Array of covenant keys from BitVMX (x-coordinates only)
+     * @param bitvmxDisputeKeys Array of dispute keys from BitVMX (33-byte compressed: parity + x-coordinate)
      * @return committeeId The created committee ID
      */
-    function _setupBitVMXCommittee(bytes memory committeeAggregatedKey, bytes32[] memory bitvmxCovenantKeys)
+    function _setupBitVMXCommittee(bytes memory committeeAggregatedKey, CompactPubKey[] memory bitvmxDisputeKeys)
         internal
         returns (uint128)
     {
@@ -178,14 +181,14 @@ contract BitVMXCompatibilityTest is Test, HelperContract {
         // Get the committee info to find operator addresses
         Committee memory committee = registry.getCommittee(committeeId);
 
-        // Expecting bitvmxCovenantKeys.length >= 4: first 2 -> operators, next 2 -> watchtowers
+        // Expecting bitvmxDisputeKeys.length >= 4: first 2 -> operators, next 2 -> watchtowers
         uint256 opAssigned = 0;
         uint256 wtAssigned = 0;
 
         for (uint256 i = 0; i < committee.members.length; i++) {
             if (opAssigned < BITVMX_OP_COUNT && committee.members[i].role == Role.OPERATOR) {
                 address operatorAddress = committee.members[i].memberAddress;
-                memberRegistry.setMemberDisputeKeyHarness(operatorAddress, bitvmxCovenantKeys[opAssigned]);
+                memberRegistry.setMemberDisputeKeyHarness(operatorAddress, bitvmxDisputeKeys[opAssigned]);
                 opAssigned++;
                 continue;
             }
@@ -193,7 +196,7 @@ contract BitVMXCompatibilityTest is Test, HelperContract {
             if (wtAssigned < BITVMX_WT_COUNT && committee.members[i].role == Role.WATCHTOWER) {
                 address wtAddress = committee.members[i].memberAddress;
                 // watchtower keys are expected after operator keys in the array
-                memberRegistry.setMemberDisputeKeyHarness(wtAddress, bitvmxCovenantKeys[BITVMX_OP_COUNT + wtAssigned]);
+                memberRegistry.setMemberDisputeKeyHarness(wtAddress, bitvmxDisputeKeys[BITVMX_OP_COUNT + wtAssigned]);
                 wtAssigned++;
                 continue;
             }
@@ -205,8 +208,8 @@ contract BitVMXCompatibilityTest is Test, HelperContract {
 
         // Recalculate the packet's enabler scriptPubKey with the updated BitVMX keys
         // This is necessary because the packet was created with default keys, but we've now
-        // overridden both the committee aggregated key and the covenant keys.
-        bytes32[] memory updatedDisputeKeys = registry.getCommitteeDisputeKeys(committeeId);
+        // overridden both the committee aggregated key and the dispute keys.
+        CompactPubKey[] memory updatedDisputeKeys = registry.getCommitteeDisputeKeys(committeeId);
         bytes memory updatedEnablerScript =
             bitcoinManager.getEnablerOutputP2TRScriptPub(committeeAggregatedKey, updatedDisputeKeys);
         streamManager.setPacketEnablerScriptHarness(0, 0, updatedEnablerScript);

@@ -3,7 +3,13 @@ pragma solidity ^0.8.20;
 
 import {Script} from "forge-std/Script.sol";
 import {Vm} from "forge-std/Vm.sol";
-import {PublicKeyType, ECDSAPublicKey, RSAPublicKey, RSA_PUBLIC_KEY_CHUNKS} from "src/interfaces/IMemberRegistry.sol";
+import {
+    PublicKeyType,
+    ECDSAPublicKey,
+    RSAPublicKey,
+    RSA_PUBLIC_KEY_CHUNKS,
+    CompactPubKey
+} from "src/interfaces/IMemberRegistry.sol";
 import {MemberRegistrationKeys} from "src/interfaces/IMemberRegistry.sol";
 import {BtcTxSPVProof} from "src/interfaces/IPegCommonTypes.sol";
 import {BtcTransaction, BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
@@ -90,6 +96,15 @@ abstract contract ScriptUtils is Script {
         }
         rsaPublicKey = RSAPublicKey({rsaPublicKey: rsaPublicKeyArray});
         return rsaPublicKey;
+    }
+
+    /// @notice Returns true if a stored CompactPubKey matches the given ECDSAPublicKey
+    function compactPubKeyMatchesECDSA(CompactPubKey memory _stored, ECDSAPublicKey memory _submitted)
+        internal
+        pure
+        returns (bool)
+    {
+        return _stored.xOnly == _submitted.publicKeyX && _stored.parity == BtcHelper.parityFromY(_submitted.publicKeyY);
     }
 
     /// @notice Generates a deterministic registration 'public keys' from a private key
@@ -434,7 +449,7 @@ abstract contract ScriptUtils is Script {
         BtcTxOut[] memory btcOutputs = new BtcTxOut[](1);
         btcOutputs[0] = BtcTxOut({
             amount: _amount - Constants.P2TR_FEE,
-            scriptPubKey: BtcScriptParser.getP2WPKHScript(BtcHelper.pubKeyXonlyToCompact(_btcReimbursementPubKey))
+            scriptPubKey: BtcScriptParser.getP2WPKHScript(BtcHelper.assumeEvenParityCompact(_btcReimbursementPubKey))
         });
         return BtcTransaction({
             version: Constants.BTC_TX_VERSION,
@@ -525,7 +540,7 @@ abstract contract ScriptUtils is Script {
     }
 
     // ========================== Input Not Revealed ==========================
-    function createInputNotRevealedTx(bytes32 _challengeTxid, bytes32[] memory _disputePubKeys)
+    function createInputNotRevealedTx(bytes32 _challengeTxid, CompactPubKey[] memory _disputePubKeys)
         internal
         pure
         returns (BtcTransaction memory)
@@ -545,7 +560,7 @@ abstract contract ScriptUtils is Script {
         btcOutputs[0] = BtcTxOut({amount: 0, scriptPubKey: abi.encodePacked(OpCodes.OP_RETURN)}); // OP_RETURN
         for (uint256 i = 0; i < memberCount; i++) {
             bytes memory speedupScriptPubKey =
-                BtcScriptParser.getP2WPKHScript(BtcHelper.pubKeyXonlyToCompact(_disputePubKeys[i]));
+                BtcScriptParser.getP2WPKHScript(BtcHelper.compactPubKeyToBytes(_disputePubKeys[i]));
             btcOutputs[1 + i] = BtcTxOut({amount: Constants.SPEED_UP_AMOUNT, scriptPubKey: speedupScriptPubKey});
         }
 

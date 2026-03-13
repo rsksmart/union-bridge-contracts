@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import {IOperatorTakeManager, TakeTimeout} from "./interfaces/IOperatorTakeManager.sol";
 import {ChallengeInfo, IChallengeManager} from "./interfaces/IChallengeManager.sol";
 import {OperatorTakeInfo} from "./interfaces/IOperatorTakeManager.sol";
+import {CompactPubKey} from "./interfaces/IMemberRegistry.sol";
 import {IPegoutManager, PegoutStartInfo} from "./interfaces/IPegoutManager.sol";
 import {PegManagerBase} from "./PegManagerBase.sol";
 import {ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
@@ -199,8 +200,11 @@ contract OperatorTakeManager is IOperatorTakeManager, PegManagerBase {
             revert InvalidPegStatus(streamInfo.pegStatus);
         }
 
-        (address operatorTakeAddress, bytes32 operatorDisputePubKey, bytes32 operatorTakePubKey) =
-            committeeRegistry.selectTakeOperator(committeeId, signatureData, missingNonces);
+        (
+            address operatorTakeAddress,
+            CompactPubKey memory operatorDisputePubKey,
+            CompactPubKey memory operatorTakePubKey
+        ) = committeeRegistry.selectTakeOperator(committeeId, signatureData, missingNonces);
         // delete the previous operator take info if exists then update with the new selected operator
         delete operatorTakeInfo[_acceptPeginTxid];
         _updateOperatorTakeInfo(opInfo, streamInfo, operatorTakeAddress, operatorDisputePubKey, operatorTakePubKey);
@@ -252,8 +256,8 @@ contract OperatorTakeManager is IOperatorTakeManager, PegManagerBase {
         OperatorTakeInfo storage _opInfo,
         StreamPosition memory _streamInfo,
         address _operatorTakeAddress,
-        bytes32 _operatorDisputePubKey,
-        bytes32 _operatorTakePubKey
+        CompactPubKey memory _operatorDisputePubKey,
+        CompactPubKey memory _operatorTakePubKey
     ) internal {
         _opInfo.operatorTakeUpdatedAt = block.timestamp;
         _opInfo.operatorTakeAddress = _operatorTakeAddress;
@@ -262,11 +266,11 @@ contract OperatorTakeManager is IOperatorTakeManager, PegManagerBase {
         _opInfo.pegoutId = _generatePegoutId(_streamInfo, _operatorTakePubKey, sequenceNumber);
     }
 
-    function _generatePegoutId(StreamPosition memory _streamInfo, bytes32 _operatorTakePubKey, uint256 _sequenceNumber)
-        internal
-        view
-        returns (bytes32)
-    {
+    function _generatePegoutId(
+        StreamPosition memory _streamInfo,
+        CompactPubKey memory _operatorTakePubKey,
+        uint256 _sequenceNumber
+    ) internal view returns (bytes32) {
         bytes32 pegoutId = keccak256(
             abi.encodePacked(
                 Constants.PEGOUT_ID_VERSION,
@@ -274,7 +278,8 @@ contract OperatorTakeManager is IOperatorTakeManager, PegManagerBase {
                 _streamInfo.streamId,
                 _streamInfo.packetNumber,
                 _streamInfo.slotId,
-                _operatorTakePubKey,
+                _operatorTakePubKey.parity,
+                _operatorTakePubKey.xOnly,
                 rbtcBridge.getBestBlockHash() // used as randomness for the pegout ID
             )
         );

@@ -22,6 +22,7 @@ import {StreamPosition, PegStatus, BtcTxSPVProof} from "src/interfaces/IPegCommo
 import {Constants} from "src/libraries/Constants.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Committee, Role} from "src/interfaces/ICommitteeRegistry.sol";
+import {CompactPubKey} from "src/interfaces/IMemberRegistry.sol";
 import {StreamManagerSettingsConfig} from "script/helpers/StreamManagerSettingsConfig.sol";
 import {ChainIds} from "src/libraries/Network.sol";
 import {StreamManagerHarness} from "test/helpers/StreamManagerHarness.sol";
@@ -112,7 +113,7 @@ contract StreamManagerTest is Test, HelperContract {
         uint128 committeeId = COMMITTEE_ID_STREAM_1_COMMITTEE_1;
         uint64 expectedPacketNumber = 1;
         bytes memory committeePubKey = COMMITTEE_TAKE_PUB_KEY();
-        bytes32[] memory disputeKeys = registry.getCommitteeDisputeKeys(committeeId);
+        CompactPubKey[] memory disputeKeys = registry.getCommitteeDisputeKeys(committeeId);
 
         // Assert
         vm.expectEmit(address(streamManager));
@@ -1382,7 +1383,7 @@ contract StreamManagerTest is Test, HelperContract {
         // For the pourpose of this test we can reuse the existing committee that was created during the setup
         uint128 committeeId = COMMITTEE_ID_STREAM_1_COMMITTEE_1;
         bytes memory committeePubKey = COMMITTEE_TAKE_PUB_KEY();
-        bytes32[] memory disputeKeys = registry.getCommitteeDisputeKeys(committeeId);
+        CompactPubKey[] memory disputeKeys = registry.getCommitteeDisputeKeys(committeeId);
         vm.prank(address(registry));
         streamManager.createNewPacket(streamId, committeeId, committeePubKey, disputeKeys);
         uint64 thirdPacketNumber = 2;

@@ -24,7 +24,7 @@ import {
     CommunicationData,
     COMMUNICATION_DATA_CHUNKS
 } from "src/interfaces/ICommitteeRegistry.sol";
-import {MemberRegistrationKeys} from "src/interfaces/IMemberRegistry.sol";
+import {MemberRegistrationKeys, MemberKeys, CompactPubKey, ECDSAPublicKey} from "src/interfaces/IMemberRegistry.sol";
 import {StreamDenomination, Slot, Stream, SlotState, SlotLocation} from "src/interfaces/IStreamManager.sol";
 import {
     BtcTxIn, BtcTxOut, BtcTransaction, BitcoinSignatureData, PrevoutData
@@ -313,7 +313,7 @@ abstract contract HelperContract is Test, TestUtils {
         uint128 committeeId = streamManager.getCommitteeId(stream.streamId, stream.peginPacketPointer);
 
         bytes memory aggregatedTakePubKey = registry.getCommitteeTakePubKey(committeeId);
-        bytes32[] memory disputeKeys = registry.getCommitteeDisputeKeys(committeeId);
+        CompactPubKey[] memory disputeKeys = registry.getCommitteeDisputeKeys(committeeId);
 
         // Get the enabler output script using the BitcoinManager
         bytes memory enablerScript = bitcoinManager.getEnablerOutputP2TRScriptPub(aggregatedTakePubKey, disputeKeys);
@@ -387,9 +387,7 @@ abstract contract HelperContract is Test, TestUtils {
     function getUserSpeedUpOut() internal pure returns (BtcTxOut memory) {
         return BtcTxOut({
             amount: Constants.SPEED_UP_AMOUNT,
-            // TODO we consider the btc reimbursement public key as even
-            // this may not be the case in the future and we should change this
-            scriptPubKey: BtcScriptParser.getP2WPKHScript(BtcHelper.pubKeyXonlyToCompact(BTC_REIMBURSEMENT_PUBKEY))
+            scriptPubKey: BtcScriptParser.getP2WPKHScript(BtcHelper.assumeEvenParityCompact(BTC_REIMBURSEMENT_PUBKEY))
         });
     }
 
@@ -409,7 +407,7 @@ abstract contract HelperContract is Test, TestUtils {
 
         uint128 committeeId = streamManager.getCommitteeId(uint64(DEFAULT_STREAM), packetNumber);
         bytes memory aggregatedTakePubKey = registry.getCommitteeTakePubKey(committeeId);
-        bytes32[] memory disputeKeys = registry.getCommitteeDisputeKeys(committeeId);
+        CompactPubKey[] memory disputeKeys = registry.getCommitteeDisputeKeys(committeeId);
         bytes memory enablerScript = bitcoinManager.getEnablerOutputP2TRScriptPub(aggregatedTakePubKey, disputeKeys);
 
         return BtcTxOut({amount: Constants.ENABLER_AMOUNT, scriptPubKey: enablerScript});
@@ -589,11 +587,12 @@ abstract contract HelperContract is Test, TestUtils {
         assertEq(slot.acceptPeginTx, setup.acceptPeginTxid, "Slot should reference the correct accept peg-in tx");
     }
 
-    function calculatePegoutId(bytes32 operatorTakePubKey, uint64 streamId, uint64 packetNumber, uint64 slotId)
-        internal
-        view
-        returns (bytes32)
-    {
+    function calculatePegoutId(
+        CompactPubKey memory operatorTakePubKey,
+        uint64 streamId,
+        uint64 packetNumber,
+        uint64 slotId
+    ) internal view returns (bytes32) {
         return keccak256(
             abi.encodePacked(
                 Constants.PEGOUT_ID_VERSION,
@@ -601,7 +600,8 @@ abstract contract HelperContract is Test, TestUtils {
                 streamId,
                 packetNumber,
                 slotId,
-                operatorTakePubKey,
+                operatorTakePubKey.parity,
+                operatorTakePubKey.xOnly,
                 BtcHelper.hash256(bridgeMock.getBtcBlockchainBestBlockHeader())
             )
         );
@@ -901,6 +901,24 @@ abstract contract HelperContract is Test, TestUtils {
         memberRegistry.registerMemberHarness(user, memberRegistrationKeys);
     }
 
+    function setup_memberWithOddParityTakeKey() internal returns (MemberKeys memory keys) {
+        // Private key 5 produces a wallet with odd Y take key (verified: publicKeyY % 2 == 1)
+        uint256 oddParityTakePrivKey = 5;
+        address memberAddr = vm.addr(oddParityTakePrivKey);
+        MemberRegistrationKeys memory regKeys = generateRegistrationPublicKeys(oddParityTakePrivKey);
+        setup_applyToStream(StreamDenomination._0_001BTC, memberAddr, regKeys, Role.OPERATOR);
+        keys = memberRegistry.getMemberPublicKeys(memberAddr);
+    }
+
+    function setup_memberWithOddParityDisputeKey() internal returns (MemberKeys memory keys) {
+        // Private key 2 produces a wallet with odd Y dispute key (verified: publicKeyY % 2 == 1)
+        uint256 oddParityDisputePrivKey = 2;
+        address memberAddr = vm.addr(oddParityDisputePrivKey);
+        MemberRegistrationKeys memory regKeys = generateRegistrationPublicKeys(oddParityDisputePrivKey);
+        setup_applyToStream(StreamDenomination._0_001BTC, memberAddr, regKeys, Role.OPERATOR);
+        keys = memberRegistry.getMemberPublicKeys(memberAddr);
+    }
+
     function setup_getExpectedCommitteeAfterExpire() internal view returns (Committee memory) {
         // NOTE: member order is tied to the timeout used in setup_pendingCommitteeAndExpire()
         Committee memory committee = Committee({
@@ -1007,7 +1025,8 @@ abstract contract HelperContract is Test, TestUtils {
 
         setup.cancelUserTakeSPV = createBtcTxSPVProof(
             createCancelUserTakeTx(
-                setup.acceptPeginTxid, BtcHelper.pubKeyXonlyToCompact(getMemberDisputePubKey(operatorAddress))
+                setup.acceptPeginTxid,
+                BtcHelper.compactPubKeyToBytes(memberRegistry.getMemberDisputePubKey(operatorAddress))
             )
         );
 
@@ -1058,9 +1077,9 @@ abstract contract HelperContract is Test, TestUtils {
         opWonTx = createOperatorWonTx(_acceptPeginTxid, inputRevealedTxid, operatorDisputePubKeyCompact, VALUE);
     }
 
-    function _getMemberDisputePubKeyCompact(address _operatorAddress) internal returns (bytes memory) {
-        bytes32 operatorPubKey = getMemberDisputePubKey(_operatorAddress);
-        return BtcHelper.pubKeyXonlyToCompact(operatorPubKey);
+    function _getMemberDisputePubKeyCompact(address _operatorAddress) internal view returns (bytes memory) {
+        CompactPubKey memory compactKey = memberRegistry.getMemberDisputePubKey(_operatorAddress);
+        return BtcHelper.compactPubKeyToBytes(compactKey);
     }
 
     function _createReimbursementKickoffSPV(bytes memory _operatorDisputePubKeyCompact, uint64 _slotId)
@@ -1105,15 +1124,11 @@ abstract contract HelperContract is Test, TestUtils {
         bytes memory committeePubKey = registry.getCommitteeTakePubKey(committeeId);
         bytes32 challengeTxid = bitcoinManager.getBtcTxid(setup.challengeSPV.btcTx);
         bytes memory operatorPubKey =
-            BtcHelper.pubKeyXonlyToCompact(memberRegistry.getMemberDisputePubKey(operatorAddress));
+            BtcHelper.compactPubKeyToBytes(memberRegistry.getMemberDisputePubKey(operatorAddress));
         setup.inputRevealedSPV =
             createBtcTxSPVProof(createInputRevealedTx(challengeTxid, committeePubKey, operatorPubKey));
 
-        CommitteeMember[] memory committeeMembers = registry.getCommitteeMembers(committeeId);
-        bytes32[] memory disputePubKeys = new bytes32[](committeeMembers.length);
-        for (uint256 i = 0; i < committeeMembers.length; i++) {
-            disputePubKeys[i] = memberRegistry.getMemberDisputePubKey(committeeMembers[i].memberAddress);
-        }
+        CompactPubKey[] memory disputePubKeys = registry.getCommitteeDisputeKeys(committeeId);
         setup.inputNotRevealedSPV = createBtcTxSPVProof(createInputNotRevealedTx(challengeTxid, disputePubKeys));
 
         vm.prank(operatorAddress);
@@ -1123,8 +1138,8 @@ abstract contract HelperContract is Test, TestUtils {
     function setup_inputRevealed() internal returns (address operatorAddress, RegisterUserTakeSetup memory setup) {
         (operatorAddress, setup) = setup_challenge();
 
-        bytes32 operatorPubKey = getMemberDisputePubKey(operatorAddress);
-        bytes memory operatorDisputePubKeyCompact = BtcHelper.pubKeyXonlyToCompact(operatorPubKey);
+        bytes memory operatorDisputePubKeyCompact =
+            BtcHelper.compactPubKeyToBytes(memberRegistry.getMemberDisputePubKey(operatorAddress));
 
         bytes32 inputRevealedTxid = bitcoinManager.getBtcTxid(setup.inputRevealedSPV.btcTx);
         setup.operatorWonSPV = createBtcTxSPVProof(
@@ -1171,15 +1186,14 @@ abstract contract HelperContract is Test, TestUtils {
     }
 
     function assertEventOperatorTakeTriggered(RegisterUserTakeSetup memory setup, address _operatorAddress) internal {
-        bytes32 takePubKey = memberRegistry.getMemberTakePubKey(_operatorAddress);
-        bytes32 disputePubKey = memberRegistry.getMemberDisputePubKey(_operatorAddress);
+        MemberKeys memory keys = memberRegistry.getMemberPublicKeys(_operatorAddress);
 
         OperatorTakeInfo memory expectedOpInfo = OperatorTakeInfo({
             operatorTakeUpdatedAt: block.timestamp,
             operatorTakeAddress: _operatorAddress,
-            operatorTakePubKey: takePubKey,
-            operatorDisputePubKey: disputePubKey,
-            pegoutId: calculatePegoutId(takePubKey, setup.stream.streamId, setup.packetNumber, setup.slotId),
+            operatorTakePubKey: keys.takePubKey,
+            operatorDisputePubKey: keys.disputePubKey,
+            pegoutId: calculatePegoutId(keys.takePubKey, setup.stream.streamId, setup.packetNumber, setup.slotId),
             advanceFundsBlockNumber: 0,
             reimbursementKickoffTxid: bytes32(0)
         });
@@ -1331,8 +1345,8 @@ abstract contract HelperContract is Test, TestUtils {
     /// @param _memberAddress The address of the member
     /// @return disputeKey The dispute key 33 bytes compact format for the member
     function getDisputeKeyByAddress(address _memberAddress) internal view returns (bytes memory disputeKey) {
-        bytes32 operatorXOnlyPubKey = memberRegistry.getMemberDisputePubKey(_memberAddress);
-        disputeKey = BtcHelper.pubKeyXonlyToCompact(operatorXOnlyPubKey);
+        CompactPubKey memory compactKey = memberRegistry.getMemberDisputePubKey(_memberAddress);
+        disputeKey = BtcHelper.compactPubKeyToBytes(compactKey);
         return disputeKey;
     }
 

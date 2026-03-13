@@ -12,7 +12,7 @@ import {
     CommunicationData,
     COMMUNICATION_DATA_CHUNKS
 } from "src/interfaces/ICommitteeRegistry.sol";
-import {IMemberRegistry, MemberRegistrationKeys} from "src/interfaces/IMemberRegistry.sol";
+import {IMemberRegistry, MemberRegistrationKeys, CompactPubKey} from "src/interfaces/IMemberRegistry.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {StreamDenomination, IStreamManager, Stream} from "src/interfaces/IStreamManager.sol";
 import {IAccessManager} from "src/interfaces/IAccessManager.sol";
@@ -22,6 +22,7 @@ import {Constants} from "src/libraries/Constants.sol";
 import {SignatureData, OperatorTakeData} from "src/interfaces/ISignatureManager.sol";
 import {IPausable} from "src/interfaces/IPausable.sol";
 import {BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
+import {BtcHelper} from "src/libraries/BtcHelper.sol";
 
 contract CommitteeRegistryTest is Test, HelperContract {
     // Maximum allowed gas for committee creation operations
@@ -71,8 +72,12 @@ contract CommitteeRegistryTest is Test, HelperContract {
         setup_applyToStream(denomination, member, memberRegistrationKeys, role);
 
         // Assert
-        assertEq(memberRegistry.getMemberDisputePubKey(member), memberRegistrationKeys.disputeKey.publicKeyX);
-        assertEq(memberRegistry.getMemberTakePubKey(member), memberRegistrationKeys.takeKey.publicKeyX);
+        assertMatchingCompactAndECDSA(
+            memberRegistry.getMemberDisputePubKey(member), memberRegistrationKeys.disputeKey, "Dispute pub key"
+        );
+        assertMatchingCompactAndECDSA(
+            memberRegistry.getMemberTakePubKey(member), memberRegistrationKeys.takeKey, "Take pub key"
+        );
         assertEq(
             keccak256(abi.encode(memberRegistry.getMemberComPubKey(member))),
             keccak256(abi.encode(memberRegistrationKeys.communicationKey))
@@ -363,7 +368,7 @@ contract CommitteeRegistryTest is Test, HelperContract {
         uint64 streamId = uint64(SETUP_PENDING_COMMITTEE_DENOMINATION);
         uint64 packetNumber = 0;
         bytes memory takeAggregatedKey = registry.getCommitteeTakePubKey(committeeId);
-        bytes32[] memory disputeKeys = registry.getCommitteeDisputeKeys(committeeId);
+        CompactPubKey[] memory disputeKeys = registry.getCommitteeDisputeKeys(committeeId);
         vm.prank(address(registry));
         streamManager.createNewPacket(streamId, committeeId, takeAggregatedKey, disputeKeys);
 
@@ -2629,18 +2634,18 @@ contract CommitteeRegistryTest is Test, HelperContract {
         uint256 expectedOpTakeIndex = honestOperatorIndex;
 
         address expectedOperator = expectedCommittee.members[expectedOpTakeIndex].memberAddress;
-        bytes32 expectedDisputePubKey = getMemberDisputePubKey(expectedOperator);
-        bytes32 expectedTakePubKey = memberRegistry.getMemberTakePubKey(expectedOperator);
+        CompactPubKey memory expectedDisputePubKey = memberRegistry.getMemberDisputePubKey(expectedOperator);
+        CompactPubKey memory expectedTakePubKey = memberRegistry.getMemberTakePubKey(expectedOperator);
 
         // Act - Call through operatorTakeManager since it's onlyPegManager
         vm.prank(address(operatorTakeManager));
-        (address operatorAddress, bytes32 disputePubKey, bytes32 takePubKey) =
+        (address operatorAddress, CompactPubKey memory disputePubKey, CompactPubKey memory takePubKey) =
             registry.selectTakeOperator(committeeId, signatureData, missingNonces);
 
         // Assert
         assertEq(operatorAddress, expectedOperator, "Operator address should match expected");
-        assertEq(disputePubKey, expectedDisputePubKey, "Dispute pub key should match expected");
-        assertEq(takePubKey, expectedTakePubKey, "Take pub key should match expected");
+        assertEqCompactPubKey(disputePubKey, expectedDisputePubKey, "Dispute pub key should match expected");
+        assertEqCompactPubKey(takePubKey, expectedTakePubKey, "Take pub key should match expected");
 
         // Verify the operator take index was updated
         Committee memory updatedCommittee = registry.getCommittee(committeeId);
@@ -2681,18 +2686,18 @@ contract CommitteeRegistryTest is Test, HelperContract {
         // Expected operator is the one at targetIndex (the operator we gave nonce to)
         uint256 expectedOpTakeIndex = targetIndex;
         address expectedOperator = expectedCommittee.members[expectedOpTakeIndex].memberAddress;
-        bytes32 expectedDisputePubKey = getMemberDisputePubKey(expectedOperator);
-        bytes32 expectedTakePubKey = memberRegistry.getMemberTakePubKey(expectedOperator);
+        CompactPubKey memory expectedDisputePubKey = memberRegistry.getMemberDisputePubKey(expectedOperator);
+        CompactPubKey memory expectedTakePubKey = memberRegistry.getMemberTakePubKey(expectedOperator);
 
         // Act - Call through operatorTakeManager since it's onlyPegManager
         vm.prank(address(operatorTakeManager));
-        (address operatorAddress, bytes32 disputePubKey, bytes32 takePubKey) =
+        (address operatorAddress, CompactPubKey memory disputePubKey, CompactPubKey memory takePubKey) =
             registry.selectTakeOperator(committeeId, signatureData, missingNonces);
 
         // Assert
         assertEq(operatorAddress, expectedOperator, "Operator address should match expected");
-        assertEq(disputePubKey, expectedDisputePubKey, "Dispute pub key should match expected");
-        assertEq(takePubKey, expectedTakePubKey, "Take pub key should match expected");
+        assertEqCompactPubKey(disputePubKey, expectedDisputePubKey, "Dispute pub key should match expected");
+        assertEqCompactPubKey(takePubKey, expectedTakePubKey, "Take pub key should match expected");
 
         // Verify the operator take index was updated
         Committee memory updatedCommittee = registry.getCommittee(committeeId);
@@ -2738,27 +2743,27 @@ contract CommitteeRegistryTest is Test, HelperContract {
 
         // Expected operator is the one at targetIndex (the operator we gave nonce to)
         address expectedOperator = expectedCommittee.members[targetIndex].memberAddress;
-        bytes32 expectedDisputePubKey = getMemberDisputePubKey(expectedOperator);
-        bytes32 expectedTakePubKey = memberRegistry.getMemberTakePubKey(expectedOperator);
+        CompactPubKey memory expectedDisputePubKey = memberRegistry.getMemberDisputePubKey(expectedOperator);
+        CompactPubKey memory expectedTakePubKey = memberRegistry.getMemberTakePubKey(expectedOperator);
 
         // Select the operator that has the nonce - Call through operatorTakeManager since it's canSelectTakeOperator
         vm.prank(address(operatorTakeManager));
-        (address operatorAddress1, bytes32 disputePubKey1, bytes32 takePubKey1) =
+        (address operatorAddress1, CompactPubKey memory disputePubKey1, CompactPubKey memory takePubKey1) =
             registry.selectTakeOperator(committeeId, signatureData, missingNonces);
 
         // Act - Call through operatorTakeManager since it's canSelectTakeOperator
         // Repick the operator that has the nonce
         vm.prank(address(operatorTakeManager));
-        (address operatorAddress2, bytes32 disputePubKey2, bytes32 takePubKey2) =
+        (address operatorAddress2, CompactPubKey memory disputePubKey2, CompactPubKey memory takePubKey2) =
             registry.selectTakeOperator(committeeId, signatureData, missingNonces);
 
         // Assert
         assertEq(operatorAddress1, operatorAddress2, "Operator address should match expected repicked");
         assertEq(operatorAddress2, expectedOperator, "Operator address should match expected");
-        assertEq(disputePubKey2, expectedDisputePubKey, "Dispute pub key should match expected");
-        assertEq(disputePubKey1, disputePubKey2, "Dispute pub key should match expected repicked");
-        assertEq(takePubKey1, takePubKey2, "Take pub key should match expected repicked");
-        assertEq(takePubKey1, expectedTakePubKey, "Take pub key should match expected");
+        assertEqCompactPubKey(disputePubKey2, expectedDisputePubKey, "Dispute pub key should match expected");
+        assertEqCompactPubKey(disputePubKey1, disputePubKey2, "Dispute pub key should match expected repicked");
+        assertEqCompactPubKey(takePubKey1, takePubKey2, "Take pub key should match expected repicked");
+        assertEqCompactPubKey(takePubKey1, expectedTakePubKey, "Take pub key should match expected");
 
         // Verify the operator take index was updated
         Committee memory updatedCommittee = registry.getCommittee(committeeId);

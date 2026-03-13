@@ -5,7 +5,8 @@ import {console} from "forge-std/console.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
 import {ICommitteeRegistry, Role, UTXO} from "src/interfaces/ICommitteeRegistry.sol";
-import {IMemberRegistry, MemberRegistrationKeys} from "src/interfaces/IMemberRegistry.sol";
+import {IMemberRegistry, MemberRegistrationKeys, MemberKeys} from "src/interfaces/IMemberRegistry.sol";
+import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {StreamDenomination, IStreamManager} from "src/interfaces/IStreamManager.sol";
 
 contract ApplyToStreamScript is ScriptUtils, ContractAddressManager {
@@ -83,11 +84,12 @@ contract ApplyToStreamScript is ScriptUtils, ContractAddressManager {
             StreamDenomination(streamId), Role(role), memberRegistrationKeys, fundingUTXO
         );
         vm.stopBroadcast();
-        if (memberRegistry.getMemberTakePubKey(user) != memberRegistrationKeys.takeKey.publicKeyX) {
+        MemberKeys memory memberPubKeys = memberRegistry.getMemberPublicKeys(user);
+        if (!compactPubKeyMatchesECDSA(memberPubKeys.takePubKey, memberRegistrationKeys.takeKey)) {
             revert("applyToStream failed: take public key mismatch");
         }
-        if (memberRegistry.getMemberDisputePubKey(user) != memberRegistrationKeys.disputeKey.publicKeyX) {
-            revert("applyToStream failed: covenant public key mismatch");
+        if (!compactPubKeyMatchesECDSA(memberPubKeys.disputePubKey, memberRegistrationKeys.disputeKey)) {
+            revert("applyToStream failed: dispute public key mismatch");
         }
         if (
             keccak256(abi.encode(memberRegistry.getMemberComPubKey(user)))

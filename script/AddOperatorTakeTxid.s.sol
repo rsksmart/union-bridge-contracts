@@ -36,9 +36,7 @@ contract addOperatorTakeTxidsScript is ScriptUtils, ContractAddressManager {
         ICommitteeRegistry committeeRegistry = getCommitteeRegistry();
         IMemberRegistry memberRegistry = committeeRegistry.memberRegistry();
 
-        bytes32 operatorXOnlyDisputeKey = memberRegistry.getMemberDisputePubKey(getDeployerAddress());
-
-        operatorPubKey = BtcHelper.pubKeyXonlyToCompact(operatorXOnlyDisputeKey);
+        operatorPubKey = BtcHelper.compactPubKeyToBytes(memberRegistry.getMemberDisputePubKey(getDeployerAddress()));
         amount = 100_000; // 0.001 BTC
 
         // Calculate expected slot and packet numbers

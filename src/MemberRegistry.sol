@@ -10,6 +10,7 @@ import {
     Member,
     MemberRegistrationKeys,
     MemberKeys,
+    CompactPubKey,
     ApplicationData,
     Balance,
     ECDSAPublicKey,
@@ -22,6 +23,7 @@ import {Constants} from "./libraries/Constants.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {IRbtcBridge} from "./interfaces/IRbtcBridge.sol";
 import {Secp256k1} from "./libraries/Secp256k1.sol";
+import {BtcHelper} from "./libraries/BtcHelper.sol";
 import {IAccessManager} from "./interfaces/IAccessManager.sol";
 
 /// @title MemberRegistry
@@ -103,7 +105,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
     {
         Member storage member = members[_address];
         // Check if the member is already registered
-        if (member.publicKeys.takePubKey == bytes32(0)) {
+        if (member.publicKeys.takePubKey.xOnly == bytes32(0)) {
             member = _registerMember(_address, _publicKeys);
         } else {
             // Check if the public keys are the same as the stored member's public keys
@@ -360,25 +362,30 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
         }
     }
 
+    function _validateCompactPubKeyMatch(
+        CompactPubKey storage _stored,
+        ECDSAPublicKey calldata _submitted,
+        PublicKeyType _keyType
+    ) internal view {
+        bytes1 parity = BtcHelper.parityFromY(_submitted.publicKeyY);
+        if (_stored.xOnly != _submitted.publicKeyX || _stored.parity != parity) {
+            revert PublicKeyMismatchECDSA(
+                _keyType, _stored, CompactPubKey({parity: parity, xOnly: _submitted.publicKeyX})
+            );
+        }
+    }
+
     function _validateMemberKeyMatch(Member storage _member, MemberRegistrationKeys calldata _publicKeys)
         internal
         view
     {
-        // TAKE key
-        if (_member.publicKeys.takePubKey != _publicKeys.takeKey.publicKeyX) {
-            revert PublicKeyMismatch(PublicKeyType.TAKE, _member.publicKeys.takePubKey, _publicKeys.takeKey.publicKeyX);
-        }
-        // DISPUTE key
-        if (_member.publicKeys.disputePubKey != _publicKeys.disputeKey.publicKeyX) {
-            revert PublicKeyMismatch(
-                PublicKeyType.DISPUTE, _member.publicKeys.disputePubKey, _publicKeys.disputeKey.publicKeyX
-            );
-        }
+        _validateCompactPubKeyMatch(_member.publicKeys.takePubKey, _publicKeys.takeKey, PublicKeyType.TAKE);
+        _validateCompactPubKeyMatch(_member.publicKeys.disputePubKey, _publicKeys.disputeKey, PublicKeyType.DISPUTE);
         // COMMUNICATION key - compare RSA public key
         bytes32 storedComKeyHash = _getRSAKeyHash(_member.publicKeys.communicationPubKey.rsaPublicKey);
         bytes32 newComKeyHash = _getRSAKeyHash(_publicKeys.communicationKey.rsaPublicKey);
         if (storedComKeyHash != newComKeyHash) {
-            revert PublicKeyMismatch(PublicKeyType.COMMUNICATION, storedComKeyHash, newComKeyHash);
+            revert PublicKeyMismatchRSA(storedComKeyHash, newComKeyHash);
         }
     }
 
@@ -391,9 +398,12 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
 
         Member storage member = members[_memberAddress]; // Get reference
 
-        // Initialize Member public keys from the struct
-        member.publicKeys.takePubKey = _publicKeys.takeKey.publicKeyX;
-        member.publicKeys.disputePubKey = _publicKeys.disputeKey.publicKeyX;
+        // Initialize Member public keys from the struct (compute parity from Y-coordinate)
+        bytes1 takeParity = BtcHelper.parityFromY(_publicKeys.takeKey.publicKeyY);
+        bytes1 disputeParity = BtcHelper.parityFromY(_publicKeys.disputeKey.publicKeyY);
+        member.publicKeys.takePubKey = CompactPubKey({parity: takeParity, xOnly: _publicKeys.takeKey.publicKeyX});
+        member.publicKeys.disputePubKey =
+            CompactPubKey({parity: disputeParity, xOnly: _publicKeys.disputeKey.publicKeyX});
         member.publicKeys.communicationPubKey = _publicKeys.communicationKey;
 
         _initMemberBalance(member);
@@ -404,7 +414,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
     }
 
     /// @inheritdoc IMemberRegistry
-    function getMemberTakePubKey(address _address) external view override returns (bytes32) {
+    function getMemberTakePubKey(address _address) external view override returns (CompactPubKey memory) {
         return _getMember(_address).publicKeys.takePubKey;
     }
 
@@ -414,7 +424,7 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
     }
 
     /// @inheritdoc IMemberRegistry
-    function getMemberDisputePubKey(address _address) external view override returns (bytes32) {
+    function getMemberDisputePubKey(address _address) external view override returns (CompactPubKey memory) {
         return _getMember(_address).publicKeys.disputePubKey;
     }
 
@@ -478,12 +488,12 @@ contract MemberRegistry is IMemberRegistry, BaseProxy, ReentrancyGuardUpgradeabl
 
     /// @inheritdoc IMemberRegistry
     function isMember(address _address) external view returns (bool) {
-        return members[_address].publicKeys.takePubKey != bytes32(0);
+        return members[_address].publicKeys.takePubKey.xOnly != bytes32(0);
     }
 
     function _getMember(address _address) internal view returns (Member storage member) {
         member = members[_address];
-        if (member.publicKeys.takePubKey == bytes32(0)) {
+        if (member.publicKeys.takePubKey.xOnly == bytes32(0)) {
             revert MemberNotRegistered(_address);
         }
     }

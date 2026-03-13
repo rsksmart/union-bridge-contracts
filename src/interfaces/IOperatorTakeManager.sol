@@ -3,13 +3,14 @@ pragma solidity ^0.8.20;
 
 import {BtcTxSPVProof} from "./IPegCommonTypes.sol";
 import {StreamPosition} from "./IPegCommonTypes.sol";
+import {CompactPubKey} from "./IMemberRegistry.sol";
 
 /// @notice Information for operator take flow (stored in OperatorTakeManager)
 struct OperatorTakeInfo {
     uint256 operatorTakeUpdatedAt;
     address operatorTakeAddress;
-    bytes32 operatorTakePubKey;
-    bytes32 operatorDisputePubKey;
+    CompactPubKey operatorTakePubKey;
+    CompactPubKey operatorDisputePubKey;
     bytes32 pegoutId;
     int256 advanceFundsBlockNumber;
     bytes32 reimbursementKickoffTxid;
@@ -97,7 +98,7 @@ interface IOperatorTakeManager {
         bytes32 pegoutId,
         uint128 committeeId,
         StreamPosition streamInfo,
-        bytes32 operatorTakePubKey
+        CompactPubKey operatorTakePubKey
     );
 
     /// @notice Event emitted when cancel user take spv proof is registered
@@ -127,7 +128,7 @@ interface IOperatorTakeManager {
         bytes32 indexed pegoutId,
         uint128 committeeId,
         StreamPosition streamInfo,
-        bytes32 operatorTakePubKey
+        CompactPubKey operatorTakePubKey
     );
 
     // ===================== Errors =====================

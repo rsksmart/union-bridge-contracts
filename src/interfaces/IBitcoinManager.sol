@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
+import {CompactPubKey} from "./IMemberRegistry.sol";
+
 /// @notice Represents a Bitcoin transaction input that references a previous UTXO
 /// @dev This struct follows Bitcoin's transaction input format as defined in BIP-141
 /// @dev All multi-byte fields are stored in little-endian format (Bitcoin's native format)
@@ -166,7 +168,7 @@ interface IBitcoinManager {
     /// @param _userXOnlyPubKey The user's public key (x-coordinate only, 32 bytes)
     /// @param _registerPeginTx The transaction id of the peg-in request being spent
     /// @param _prevoutDatas Array of prevout data for all inputs being spent (taptree + enabler outputs)
-    /// @param _disputeKeys The dispute keys (covenant public keys) for all members
+    /// @param _disputeKeys The dispute keys for all members
     /// @return BitcoinSignatureData containing txid, signatureHash, and signatureMessage
     /// @dev we don't check the inputs as this function is called by the pegin manager
     function getAcceptPeginSignatureHash(
@@ -174,22 +176,23 @@ interface IBitcoinManager {
         bytes32 _userXOnlyPubKey,
         bytes32 _registerPeginTx,
         PrevoutData[] memory _prevoutDatas,
-        bytes32[] memory _disputeKeys
+        CompactPubKey[] memory _disputeKeys
     ) external pure returns (BitcoinSignatureData memory);
 
     /// @notice Generates the enabler output P2TR script pub key
     /// @dev Creates a Taproot script for the enabler output with dispute keys in the merkle tree
     /// @param _committeeTakePubKey The committee's take aggregated public key (33 bytes compressed)
-    /// @param _disputeKeys Array of dispute keys for committee members (x-only, 32 bytes each)
+    /// @param _disputeKeys Array of dispute keys for committee members (parity byte + x-only 32 bytes)
     /// @return The P2TR script pub key bytes
-    function getEnablerOutputP2TRScriptPub(bytes memory _committeeTakePubKey, bytes32[] memory _disputeKeys)
+    function getEnablerOutputP2TRScriptPub(bytes memory _committeeTakePubKey, CompactPubKey[] memory _disputeKeys)
         external
         pure
         returns (bytes memory);
 
     /// @notice Generates a P2WPKH script pub key for speed-up outputs
     /// @dev Creates a P2WPKH script for Child Pays for Parent (CPFP) transactions to speed up the original transaction
-    /// @param _pubKey The user's public key (x-coordinate only, 32 bytes)
+    /// @dev Since user keys are x-only from OP_RETURN, parity is not available. So we will assume even Y-coordinate (0x02 prefix)
+    /// @param _pubKey The user's x-only public key (32 bytes, from OP_RETURN)
     /// @return The P2WPKH script pub key
     function getSpeedUpScriptPub(bytes32 _pubKey) external pure returns (bytes memory);
 
@@ -220,7 +223,9 @@ interface IBitcoinManager {
     /// @dev Ensures the output correctly pays the committee member with the expected P2WPKH script
     /// @param _pegoutOutput The Bitcoin transaction output to validate
     /// @param _memberPubKey The committee member's public key that should receive the funds
-    function validatePegoutMemberOutput(BtcTxOut calldata _pegoutOutput, bytes32 _memberPubKey) external pure;
+    function validatePegoutMemberOutput(BtcTxOut calldata _pegoutOutput, CompactPubKey calldata _memberPubKey)
+        external
+        pure;
 
     /// @notice Validates that a peg-out transaction output encodes the correct peg-out id in OP_RETURN
     /// @dev Ensures the OP_RETURN output contains the expected peg-out id for tracking

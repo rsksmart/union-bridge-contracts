@@ -29,8 +29,9 @@ contract RegisterOperatorWonScript is ScriptUtils, ContractAddressManager {
         ICommitteeRegistry committeeRegistry = getCommitteeRegistry();
         IMemberRegistry memberRegistry = committeeRegistry.memberRegistry();
 
-        bytes32 operatorXOnlyDisputeKey = memberRegistry.getMemberDisputePubKey(getDeployerAddress());
-        operatorDisputePubKey = BtcHelper.pubKeyXonlyToCompact(operatorXOnlyDisputeKey);
+        operatorDisputePubKey =
+            BtcHelper.compactPubKeyToBytes(memberRegistry.getMemberDisputePubKey(getDeployerAddress()));
+
         amount = 100_000; // 0.001 BTC
 
         streamManager = IStreamManager(getStreamManager());

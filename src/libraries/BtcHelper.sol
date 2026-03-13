@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {Constants} from "./Constants.sol";
+import {CompactPubKey} from "../interfaces/IMemberRegistry.sol";
 /**
  * @title Btc Helper
  * @notice Usefull functions for Bitcoin parsin/encoding/decoding
@@ -151,12 +152,26 @@ library BtcHelper {
         return _amount * 10 ** 10;
     }
 
-    /// @notice Converts a bytes32 public key to a bytes format
-    /// @dev The public key is expected to be in the compressed format (x-coordinate only)
-    /// @dev The first byte is set to 0x02 to indicate a compressed public key
-    /// @param _pubKey The public key in bytes32 format
-    /// @return The public key in bytes format
-    function pubKeyXonlyToCompact(bytes32 _pubKey) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(0x02), _pubKey);
+    /// @notice Returns the parity prefix byte for a compressed public key from its Y coordinate
+    /// @param _publicKeyY The Y coordinate of the public key
+    /// @return 0x02 if Y is even, 0x03 if Y is odd
+    function parityFromY(bytes32 _publicKeyY) internal pure returns (bytes1) {
+        return uint256(_publicKeyY) % 2 == 0 ? bytes1(0x02) : bytes1(0x03);
+    }
+
+    /// @notice Serializes a CompactPubKey to 33-byte compressed bytes format
+    /// @param _key The CompactPubKey with parity and x-only coordinate
+    /// @return The public key in 33-byte bytes format
+    function compactPubKeyToBytes(CompactPubKey memory _key) internal pure returns (bytes memory) {
+        return abi.encodePacked(_key.parity, _key.xOnly);
+    }
+
+    /// @notice Serializes an x-only public key to 33-byte compressed format assuming even parity (0x02)
+    /// @dev Used where parity is not available (e.g. x-only key extracted from OP_RETURN).
+    ///      TODO: When parity becomes available at this call site, replace with compactPubKeyToBytes instead.
+    /// @param _pubKey The x-only public key (32 bytes)
+    /// @return The public key in 33-byte compressed format with 0x02 prefix
+    function assumeEvenParityCompact(bytes32 _pubKey) internal pure returns (bytes memory) {
+        return abi.encodePacked(bytes1(0x02), _pubKey);
     }
 }

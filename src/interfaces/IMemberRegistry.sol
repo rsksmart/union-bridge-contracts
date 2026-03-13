@@ -21,6 +21,14 @@ enum PublicKeyType {
     LENGTH
 }
 
+/// @notice Compressed Bitcoin public key with parity prefix
+struct CompactPubKey {
+    /// @notice parity is 0x02 (even Y) or 0x03 (odd Y)
+    bytes1 parity;
+    /// @notice X-coordinate of the public key
+    bytes32 xOnly;
+}
+
 /// @notice Represents the data needed for ECDSA public key registration
 /// @dev Includes the public key coordinates and ECDSA signature for verification
 struct ECDSAPublicKey {
@@ -84,9 +92,9 @@ struct Balance {
 /// @dev Contains different key types for different purposes
 struct MemberKeys {
     /// @notice TAKE public key (ECDSA)
-    bytes32 takePubKey;
+    CompactPubKey takePubKey;
     /// @notice DISPUTE public key (ECDSA)
-    bytes32 disputePubKey;
+    CompactPubKey disputePubKey;
     /// @notice COMMUNICATION public key (RSA)
     RSAPublicKey communicationPubKey;
 }
@@ -189,8 +197,8 @@ interface IMemberRegistry {
 
     /// @notice Gets the TAKE public key for a specific member
     /// @param _address The member's address
-    /// @return The TAKE public key (x-coordinate only)
-    function getMemberTakePubKey(address _address) external view returns (bytes32);
+    /// @return The TAKE public key in compact form (parity byte + x-coordinate)
+    function getMemberTakePubKey(address _address) external view returns (CompactPubKey memory);
 
     /// @notice Gets the COMMUNICATION public key for a specific member
     /// @param _address The member's address
@@ -199,8 +207,8 @@ interface IMemberRegistry {
 
     /// @notice Retrieves the DISPUTE public key for a specific member
     /// @param _address The member's address
-    /// @return The member's dispute public key (x-only)
-    function getMemberDisputePubKey(address _address) external view returns (bytes32);
+    /// @return The DISPUTE public key in compact form (parity byte + x-coordinate)
+    function getMemberDisputePubKey(address _address) external view returns (CompactPubKey memory);
 
     /// @notice Retrieves all public keys for a specific member
     /// @param _address The member's address
@@ -407,11 +415,16 @@ interface IMemberRegistry {
     /// @param keyType The type of the public key (TAKE, DISPUTE, or COMMUNICATION)
     error InvalidZeroRSAPublicKey(PublicKeyType keyType);
 
-    /// @notice Thrown when a public key doesn't match the expected value
-    /// @param keyType The type of the public key (TAKE, DISPUTE, or COMMUNICATION)
-    /// @param currentPubKey The current public key
-    /// @param newPubKey The new public key
-    error PublicKeyMismatch(PublicKeyType keyType, bytes32 currentPubKey, bytes32 newPubKey);
+    /// @notice Thrown when an ECDSA public key doesn't match the registered value
+    /// @param keyType The type of the public key (TAKE or DISPUTE)
+    /// @param registeredPubKey The previously registered public key
+    /// @param submittedPubKey The newly submitted public key
+    error PublicKeyMismatchECDSA(PublicKeyType keyType, CompactPubKey registeredPubKey, CompactPubKey submittedPubKey);
+
+    /// @notice Thrown when an RSA public key hash doesn't match the registered value
+    /// @param registeredKeyHash Hash of the previously registered RSA public key
+    /// @param submittedKeyHash Hash of the newly submitted RSA public key
+    error PublicKeyMismatchRSA(bytes32 registeredKeyHash, bytes32 submittedKeyHash);
 
     /// @notice Thrown when a signature is zero
     /// @param keyType The type of the public key (TAKE, DISPUTE, or COMMUNICATION)

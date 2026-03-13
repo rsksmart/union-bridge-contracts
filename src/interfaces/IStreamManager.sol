@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import {Role} from "./ICommitteeRegistry.sol";
 import {StreamPosition, PegStatus} from "./IPegCommonTypes.sol";
+import {CompactPubKey} from "./IMemberRegistry.sol";
 
 /// @notice Represents different Bitcoin denominations supported by the union bridge
 /// @dev Each denomination corresponds to a specific stream for efficient fund management
@@ -161,12 +162,12 @@ interface IStreamManager {
     /// @param _streamId The ID of the stream to create a packet for
     /// @param _committeeId The ID of the committee that will process this packet
     /// @param _committeePubKey The aggregated key of the committee for Bitcoin operations
-    /// @param _disputeKeys The dispute keys (covenant public keys) for the committee members
+    /// @param _disputeKeys The dispute keys for the committee members
     function createNewPacket(
         uint64 _streamId,
         uint128 _committeeId,
         bytes memory _committeePubKey,
-        bytes32[] memory _disputeKeys
+        CompactPubKey[] memory _disputeKeys
     ) external;
 
     /// @notice Gets a stream by its denomination

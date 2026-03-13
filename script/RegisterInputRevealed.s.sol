@@ -36,8 +36,8 @@ contract RegisterInputRevealedScript is ScriptUtils, ContractAddressManager {
         committeeDisputePubKey = committeeRegistry.getCommitteeDisputePubKey(committeeId);
 
         IMemberRegistry memberRegistry = committeeRegistry.memberRegistry();
-        bytes32 operatorXOnlyDisputeKey = memberRegistry.getMemberDisputePubKey(getDeployerAddress());
-        operatorDisputePubKey = BtcHelper.pubKeyXonlyToCompact(operatorXOnlyDisputeKey);
+        operatorDisputePubKey =
+            BtcHelper.compactPubKeyToBytes(memberRegistry.getMemberDisputePubKey(getDeployerAddress()));
 
         bytes32 reimbursementKickoffTxid = getTxid(createReimbursementKickoffTx(committeeTakePubKey, expectedSlotId));
         challengeTxid = getTxid(createChallengeTx(reimbursementKickoffTxid, committeeDisputePubKey));
