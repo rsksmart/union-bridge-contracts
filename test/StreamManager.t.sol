@@ -212,7 +212,7 @@ contract StreamManagerTest is Test, HelperContract {
         );
     }
 
-    function test_setRejectPeginConfirmations_Rever_InvalidStreamId() external {
+    function test_setRejectPeginConfirmations_Revert_StreamNotFoundById() external {
         // Arrange
         uint64 streamId = 10;
         vm.prank(address(streamManager.owner()));
@@ -224,7 +224,7 @@ contract StreamManagerTest is Test, HelperContract {
         streamManager.setRejectPeginConfirmations(streamId, 6);
     }
 
-    function test_setRejectPeginConfirmations_Revert_NotOwner() external {
+    function test_setRejectPeginConfirmations_Revert_OwnableUnauthorizedAccount() external {
         // Arrange
         uint64 streamId = 0;
 
@@ -235,7 +235,7 @@ contract StreamManagerTest is Test, HelperContract {
         streamManager.setRejectPeginConfirmations(streamId, 6);
     }
 
-    function test_setRejectPeginConfirmations_Revert_ZeroConfirmations() external {
+    function test_setRejectPeginConfirmations_Revert_InvalidRejectPeginConfirmations() external {
         // Arrange
         uint64 streamId = 0;
         uint8 zeroConfirmations = 0;
@@ -251,7 +251,7 @@ contract StreamManagerTest is Test, HelperContract {
         streamManager.setRejectPeginConfirmations(streamId, zeroConfirmations);
     }
 
-    function test_setRejectPeginConfirmations_Revert_ExceedsPeginConfirmations() external {
+    function test_setRejectPeginConfirmations_Revert_RejectPeginConfirmationsExceedsPegin() external {
         // Arrange - stream has peginConfirmations 2 by default (local test)
         uint64 streamId = 0;
         uint8 peginConfirmations = streamManager.getStreamById(streamId).peginConfirmations;
@@ -1863,7 +1863,7 @@ contract StreamManagerTest is Test, HelperContract {
         cleanStreamManager.initializeStreams(streamSettings);
     }
 
-    function test_initializeStreams_Revert_ZeroRejectPeginConfirmations() external {
+    function test_initializeStreams_Revert_InvalidRejectPeginConfirmations() external {
         // Arrange
         StreamManagerHarness cleanStreamManager = setup_cleanStreamManager();
         StreamSettings[] memory streamSettings = setup_streamSettings();
