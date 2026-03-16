@@ -591,9 +591,7 @@ contract DeployImplAndProxy is ScriptUtils {
         }
         vm.startBroadcast(getDeployerKey());
         // Deploy the upgradeable contract
-        address payable proxyAddress = payable(
-            Upgrades.deployUUPSProxy(_contractName, _initialCall, opts)
-        );
+        address payable proxyAddress = payable(Upgrades.deployUUPSProxy(_contractName, _initialCall, opts));
         vm.stopBroadcast();
         // Get the implementation address
         address implementationAddress = Upgrades.getImplementationAddress(proxyAddress);

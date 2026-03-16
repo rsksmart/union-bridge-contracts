@@ -914,14 +914,14 @@ contract OperatorTakeManagerTest is Test, HelperContract {
         // Arrange
         (address opAddress, RegisterUserTakeSetup memory setup) = setup_advanceFunds();
 
-        BtcTxSPVProof memory wrongSPV = createBtcTxSPVProof(createAdvanceFundsTx(setup.userPubKey, VALUE, hex"00"));
+        BtcTxSPVProof memory wrongSPV = createBtcTxSPVProof(createAdvanceFundsTx(setup.userPubKey, VALUE, bytes32(0)));
 
-        // Assert
+        // Assert - use getPegoutIdScript for correct format (OP_RETURN OP_PUSHBYTES_32 <32 bytes>)
         vm.expectRevert(
             abi.encodeWithSelector(
                 IPegoutManager.IncorrectOutputScript.selector,
-                hex"6a0000000000000000000000000000000000000000000000000000000000000000",
-                hex"6a04672af373376c8399cb5810ec9dc16eb14fb8d7cf10a4c067090732cf7b8aa2"
+                BtcScriptParser.getPegoutIdScript(bytes32(0)),
+                BtcScriptParser.getPegoutIdScript(setup.pegoutId)
             )
         );
 

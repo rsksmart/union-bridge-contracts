@@ -93,7 +93,9 @@ pragma solidity ^0.8.20;
  */
 import {Test} from "forge-std/Test.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
-import {BtcTransaction, BtcTxIn, BtcTxOut, PrevoutData, BitcoinSignatureData} from "src/interfaces/IBitcoinManager.sol";
+import {
+    BtcTransaction, BtcTxIn, BtcTxOut, PrevoutData, BitcoinSignatureData
+} from "src/interfaces/IBitcoinManager.sol";
 import {BtcTxSPVProof, StreamPosition} from "src/interfaces/IPegCommonTypes.sol";
 import {Role, Committee} from "src/interfaces/ICommitteeRegistry.sol";
 import {CompactPubKey} from "src/interfaces/IMemberRegistry.sol";
@@ -306,9 +308,7 @@ contract BitVMXCompatibilityTest is Test, HelperContract {
 
         // Verify output 1: OP_RETURN with pegout_id (BitVMX format: 6a 20 <32 bytes>)
         assertEq(
-            advanceFundsTx.outputs[Constants.ADVANCE_FUNDS_VOUT_OP_RETURN].amount,
-            0,
-            "OP_RETURN amount should be 0"
+            advanceFundsTx.outputs[Constants.ADVANCE_FUNDS_VOUT_OP_RETURN].amount, 0, "OP_RETURN amount should be 0"
         );
         bytes memory opReturnScript = advanceFundsTx.outputs[Constants.ADVANCE_FUNDS_VOUT_OP_RETURN].scriptPubKey;
         assertEq(opReturnScript.length, 34, "OP_RETURN should be 34 bytes (6a + 20 + 32)");
@@ -327,11 +327,7 @@ contract BitVMXCompatibilityTest is Test, HelperContract {
         );
 
         // Verify output 2: Operator change (P2WPKH)
-        assertEq(
-            advanceFundsTx.outputs[2].amount,
-            18_210,
-            "Operator change should be 18210 sats"
-        );
+        assertEq(advanceFundsTx.outputs[2].amount, 18_210, "Operator change should be 18210 sats");
 
         // Verify txid can be computed (transaction encoding is valid)
         bytes32 txid = bitcoinManager.getBtcTxid(advanceFundsTx);
@@ -348,12 +344,7 @@ contract BitVMXCompatibilityTest is Test, HelperContract {
      */
     function _getBitVMXAdvanceFundsTransaction() internal pure returns (BtcTransaction memory) {
         BtcTxIn[] memory inputs = new BtcTxIn[](1);
-        inputs[0] = BtcTxIn({
-            txId: BITVMX_ADVANCE_FUNDS_INPUT_TXID,
-            vout: 2,
-            scriptSig: hex"",
-            sequence: 4294967293
-        });
+        inputs[0] = BtcTxIn({txId: BITVMX_ADVANCE_FUNDS_INPUT_TXID, vout: 2, scriptSig: hex"", sequence: 4294967293});
 
         BtcTxOut[] memory outputs = new BtcTxOut[](3);
         outputs[0] = BtcTxOut({
@@ -364,10 +355,7 @@ contract BitVMXCompatibilityTest is Test, HelperContract {
             amount: 0,
             scriptPubKey: hex"6a200000000000000000000000000000000000000000000000000000000000000000"
         });
-        outputs[2] = BtcTxOut({
-            amount: 18_210,
-            scriptPubKey: hex"00147160086956f4dc826a89fc010f33bd86bf5347ed"
-        });
+        outputs[2] = BtcTxOut({amount: 18_210, scriptPubKey: hex"00147160086956f4dc826a89fc010f33bd86bf5347ed"});
 
         return BtcTransaction({version: 2, inputs: inputs, outputs: outputs, locktime: 0});
     }
@@ -497,10 +485,10 @@ contract BitVMXCompatibilityTest is Test, HelperContract {
     /// @dev Builds accept pegin tx matching exactly what the contract expects (from getAcceptPeginSignatureHash)
     /// @dev Builds accept pegin tx matching exactly what the contract expects (via getAcceptPeginSignatureHash)
     /// @dev Stream 0 pegout setup (0.001 BTC, BitVMX user)
-    function _setupPegoutForStream0(
-        bytes32 acceptPeginTxid,
-        BtcTransaction memory acceptTx
-    ) internal returns (RegisterUserTakeSetup memory setup) {
+    function _setupPegoutForStream0(bytes32 acceptPeginTxid, BtcTransaction memory acceptTx)
+        internal
+        returns (RegisterUserTakeSetup memory setup)
+    {
         setup.acceptPeginTxid = acceptPeginTxid;
         setup.acceptPeginSPV = createBtcTxSPVProof(acceptTx);
         setup.stream = streamManager.getStream(100_000);
@@ -512,10 +500,8 @@ contract BitVMXCompatibilityTest is Test, HelperContract {
         Slot memory slot = streamManager.getSlot(0, 0, 0);
         PrevoutData[] memory prevoutDatas = new PrevoutData[](2);
         prevoutDatas[0] = PrevoutData({value: slot.acceptPeginAmount, scriptPubKey: slot.scriptPubKey});
-        prevoutDatas[1] = PrevoutData({
-            value: Constants.ENABLER_AMOUNT,
-            scriptPubKey: streamManager.getEnablerScriptPubKey(0, 0)
-        });
+        prevoutDatas[1] =
+            PrevoutData({value: Constants.ENABLER_AMOUNT, scriptPubKey: streamManager.getEnablerScriptPubKey(0, 0)});
         BitcoinSignatureData memory pegoutData =
             bitcoinManager.getPegoutTxData(setup.userPubKey, setup.acceptPeginTxid, prevoutDatas);
         setup.pegoutTx = pegoutData.tx;

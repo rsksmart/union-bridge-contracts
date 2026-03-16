@@ -662,8 +662,9 @@ abstract contract HelperContract is Test, TestUtils {
         uint256 operatorAdded = 0;
         for (uint256 i = 0; i < members.length && operatorAdded < _operatorCount; i++) {
             if (members[i].role == Role.OPERATOR) {
-                (BtcTransaction memory opTakeTx, BtcTransaction memory opWonTx,) =
-                    setup_getOperatorTakeDataForStream(_acceptPeginTxid, members[i].memberAddress, _streamId, _slotId, _streamDenomination);
+                (BtcTransaction memory opTakeTx, BtcTransaction memory opWonTx,) = setup_getOperatorTakeDataForStream(
+                    _acceptPeginTxid, members[i].memberAddress, _streamId, _slotId, _streamDenomination
+                );
 
                 bytes32 takeTxid = bitcoinManager.getBtcTxid(opTakeTx);
                 bytes32 wonTxid = bitcoinManager.getBtcTxid(opWonTx);
@@ -680,14 +681,22 @@ abstract contract HelperContract is Test, TestUtils {
         uint64 _streamId,
         uint64 _slotId,
         uint64 _streamDenomination
-    ) internal returns (BtcTransaction memory opTakeTx, BtcTransaction memory opWonTx, BtcTxSPVProof memory reimbursementKickoffSPV) {
+    )
+        internal
+        returns (
+            BtcTransaction memory opTakeTx,
+            BtcTransaction memory opWonTx,
+            BtcTxSPVProof memory reimbursementKickoffSPV
+        )
+    {
         bytes memory operatorDisputePubKeyCompact = _getMemberDisputePubKeyCompact(_operatorAddress);
 
         bytes32 reimbursementTxid;
         (reimbursementTxid, reimbursementKickoffSPV) =
             _createReimbursementKickoffSPV(operatorDisputePubKeyCompact, uint32(_slotId));
 
-        opTakeTx = createOperatorTakeTx(_acceptPeginTxid, reimbursementTxid, operatorDisputePubKeyCompact, _streamDenomination);
+        opTakeTx =
+            createOperatorTakeTx(_acceptPeginTxid, reimbursementTxid, operatorDisputePubKeyCompact, _streamDenomination);
 
         uint128 committeeId = streamManager.getCommitteeId(_streamId, 0);
         bytes memory committeePubKey = registry.getCommitteeTakePubKey(committeeId);
@@ -697,7 +706,8 @@ abstract contract HelperContract is Test, TestUtils {
         bytes32 inputRevealedTxid =
             _createInputRevealedTxid(challengeTxid, committeePubKey, operatorDisputePubKeyCompact);
 
-        opWonTx = createOperatorWonTx(_acceptPeginTxid, inputRevealedTxid, operatorDisputePubKeyCompact, _streamDenomination);
+        opWonTx =
+            createOperatorWonTx(_acceptPeginTxid, inputRevealedTxid, operatorDisputePubKeyCompact, _streamDenomination);
     }
 
     function setup_depositAggregatedKey(uint128 _committeeId, address _memberAddress) internal {
