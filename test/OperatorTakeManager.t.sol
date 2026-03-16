@@ -6,8 +6,8 @@ import {HelperContract} from "test/helpers/HelperContract.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {BtcTxSPVProof, StreamPosition, PegStatus} from "src/interfaces/IPegCommonTypes.sol";
 import {IPegoutManager} from "src/interfaces/IPegoutManager.sol";
-import {Slot, Stream, SlotState, StreamDenomination, IStreamManager} from "src/interfaces/IStreamManager.sol";
-import {Committee, ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
+import {SlotState, StreamDenomination, IStreamManager} from "src/interfaces/IStreamManager.sol";
+import {Committee} from "src/interfaces/ICommitteeRegistry.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IAccessManager} from "src/interfaces/IAccessManager.sol";
 import {IOperatorTakeManager, TakeTimeout, OperatorTakeInfo} from "src/interfaces/IOperatorTakeManager.sol";
@@ -611,31 +611,6 @@ contract OperatorTakeManagerTest is Test, HelperContract {
         operatorTakeManager.setTakeTimeout(
             uint64(DEFAULT_STREAM), TakeTimeout({userTake: 1 days, operatorTake: 1 days})
         );
-    }
-
-    function test_setChallengeManager_Success() external view {
-        // Assert — already set during deploy
-        assertEq(address(operatorTakeManager.challengeManager()), address(challengeManager));
-    }
-
-    function test_setChallengeManager_Revert_AlreadySet() external {
-        // Arrange
-        address owner = operatorTakeManager.owner();
-
-        // Assert
-        vm.expectRevert(IOperatorTakeManager.AlreadySet.selector);
-
-        // Act
-        vm.prank(owner);
-        operatorTakeManager.setChallengeManager(address(challengeManager));
-    }
-
-    function test_setChallengeManager_Revert_OwnableUnauthorizedAccount() external {
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
-
-        // Act
-        operatorTakeManager.setChallengeManager(address(challengeManager));
     }
 
     function test_triggerOperatorTake_Revert_EnforcedPause_PausedContract() external {
@@ -1507,166 +1482,5 @@ contract OperatorTakeManagerTest is Test, HelperContract {
         // Act
         vm.prank(operatorAddress);
         operatorTakeManager.registerOperatorTake(setup.operatorTakeSPV);
-    }
-
-    // ============ skipOperatorWon Tests ============
-
-    function test_skipOperatorWon_Revert_EnforcedPause() external {
-        // Arrange
-        (, RegisterUserTakeSetup memory setup) = setup_inputRevealed();
-        pauseContracts();
-
-        // Assert
-        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
-
-        // Act
-        operatorTakeManager.skipOperatorWon(setup.acceptPeginTxid);
-    }
-
-    function test_skipOperatorWon_Revert_InvalidPegStatus() external {
-        // Arrange: status is CHALLENGE, not REVEALED
-        (, RegisterUserTakeSetup memory setup) = setup_challenge();
-
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegBase.InvalidPegStatus.selector, PegStatus.CHALLENGE));
-
-        // Act
-        operatorTakeManager.skipOperatorWon(setup.acceptPeginTxid);
-    }
-
-    function test_skipOperatorWon_Revert_MemberNotInCommittee() external {
-        // Arrange: caller is not a committee member
-        (, RegisterUserTakeSetup memory setup) = setup_inputRevealed();
-
-        Stream memory stream = streamManager.getStreamById(setup.stream.streamId);
-        uint256 skipThreshold = uint256(stream.timelockSettings.opWonTimelock) + 2 * uint256(stream.pegoutConfirmations);
-        int256 revealBtcBlockNumber = BEST_CHAIN_HEIGHT + 1 - CONFIRMATIONS;
-        bridgeMock.setBtcBlockchainBestChainHeight(revealBtcBlockNumber + int256(skipThreshold));
-
-        address notACommitteeMember = address(999);
-
-        // Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                ICommitteeRegistry.MemberNotInCommittee.selector, COMMITTEE_ID_STREAM_1_COMMITTEE_1, notACommitteeMember
-            )
-        );
-
-        // Act
-        vm.prank(notACommitteeMember);
-        operatorTakeManager.skipOperatorWon(setup.acceptPeginTxid);
-    }
-
-    function test_skipOperatorWon_Revert_OperatorWonTimeoutNotExpired() external {
-        // Arrange: height is exactly one block below threshold (boundary condition)
-        (, RegisterUserTakeSetup memory setup) = setup_inputRevealed();
-
-        Stream memory stream = streamManager.getStreamById(setup.stream.streamId);
-        uint256 skipThreshold = uint256(stream.timelockSettings.opWonTimelock) + 2 * uint256(stream.pegoutConfirmations);
-        int256 revealBtcBlockNumber = BEST_CHAIN_HEIGHT + 1 - CONFIRMATIONS;
-        int256 oneBeforeThreshold = revealBtcBlockNumber + int256(skipThreshold) - 1;
-        bridgeMock.setBtcBlockchainBestChainHeight(oneBeforeThreshold);
-
-        address member = getCommitteeMemberAddressByIndex(COMMITTEE_ID_STREAM_1_COMMITTEE_1, 0);
-
-        // Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IOperatorTakeManager.OperatorWonTimeoutNotExpired.selector,
-                revealBtcBlockNumber,
-                oneBeforeThreshold,
-                skipThreshold
-            )
-        );
-
-        // Act
-        vm.prank(member);
-        operatorTakeManager.skipOperatorWon(setup.acceptPeginTxid);
-    }
-
-    function test_skipOperatorWon_Success() external {
-        // Arrange
-        (, RegisterUserTakeSetup memory setup) = setup_inputRevealed();
-
-        Stream memory stream = streamManager.getStreamById(setup.stream.streamId);
-        uint256 skipThreshold = uint256(stream.timelockSettings.opWonTimelock) + 2 * uint256(stream.pegoutConfirmations);
-        int256 revealBtcBlockNumber = BEST_CHAIN_HEIGHT + 1 - CONFIRMATIONS;
-        int256 currentBtcHeight = revealBtcBlockNumber + int256(skipThreshold); // exactly on the threshold
-        bridgeMock.setBtcBlockchainBestChainHeight(currentBtcHeight);
-
-        StreamPosition memory expectedStreamInfo = StreamPosition({
-            streamId: setup.stream.streamId,
-            packetNumber: setup.packetNumber,
-            slotId: setup.slotId,
-            pegStatus: PegStatus.REVEALED
-        });
-
-        address member = getCommitteeMemberAddressByIndex(COMMITTEE_ID_STREAM_1_COMMITTEE_1, 0);
-
-        // Assert event
-        vm.expectEmit(address(operatorTakeManager));
-        emit IOperatorTakeManager.OperatorWonSkipped(
-            setup.acceptPeginTxid, COMMITTEE_ID_STREAM_1_COMMITTEE_1, expectedStreamInfo
-        );
-
-        // Act
-        vm.prank(member);
-        operatorTakeManager.skipOperatorWon(setup.acceptPeginTxid);
-
-        // Assert state
-        StreamPosition memory streamInfo = streamManager.getStreamPosition(setup.acceptPeginTxid);
-        assertEq(uint256(streamInfo.pegStatus), uint256(PegStatus.COMPLETED), "PegStatus should be COMPLETED");
-
-        Slot memory slot = streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId);
-        assertTrue(slot.state == SlotState.COMPLETED, "Slot state should be COMPLETED");
-        assertEq(slot.takeTx, bytes32(0), "takeTx should be zero (no BTC tx for skip)");
-    }
-
-    function test_skipOperatorWon_Success_LastSlot_ClosesPacketAndReleasesCommittee() external {
-        // Arrange: complete all slots except the last one
-        setup_multiplePegFlows(Constants.SLOTS_PER_PACKET - 1);
-
-        (, RegisterUserTakeSetup memory setup) = setup_inputRevealed();
-        assertEq(setup.slotId, Constants.SLOTS_PER_PACKET - 1, "Should be the last slot");
-
-        Stream memory stream = streamManager.getStreamById(setup.stream.streamId);
-        uint256 skipThreshold = uint256(stream.timelockSettings.opWonTimelock) + 2 * uint256(stream.pegoutConfirmations);
-        int256 revealBtcBlockNumber = BEST_CHAIN_HEIGHT + 1 - CONFIRMATIONS;
-        bridgeMock.setBtcBlockchainBestChainHeight(revealBtcBlockNumber + int256(skipThreshold));
-
-        address member = getCommitteeMemberAddressByIndex(COMMITTEE_ID_STREAM_1_COMMITTEE_1, 0);
-
-        // Assert
-        vm.expectEmit(address(streamManager));
-        emit IStreamManager.PacketClosed(setup.stream.streamId, setup.packetNumber);
-
-        vm.expectEmit(address(registry));
-        emit ICommitteeRegistry.CommitteeMembersReleased(setup.stream.streamId, setup.packetNumber);
-
-        // Act
-        vm.prank(member);
-        operatorTakeManager.skipOperatorWon(setup.acceptPeginTxid);
-    }
-
-    function test_registerOperatorWon_Revert_InvalidPegStatus_AfterSkip() external {
-        // Arrange
-        (address opAddress, RegisterUserTakeSetup memory setup) = setup_inputRevealed();
-
-        Stream memory stream = streamManager.getStreamById(setup.stream.streamId);
-        uint256 skipThreshold = uint256(stream.timelockSettings.opWonTimelock) + 2 * uint256(stream.pegoutConfirmations);
-        int256 revealBtcBlockNumber = BEST_CHAIN_HEIGHT + 1 - CONFIRMATIONS;
-        int256 currentBtcHeight = revealBtcBlockNumber + int256(skipThreshold);
-        bridgeMock.setBtcBlockchainBestChainHeight(currentBtcHeight);
-
-        address member = getCommitteeMemberAddressByIndex(COMMITTEE_ID_STREAM_1_COMMITTEE_1, 0);
-        vm.prank(member);
-        operatorTakeManager.skipOperatorWon(setup.acceptPeginTxid);
-
-        // Assert
-        vm.expectRevert(abi.encodeWithSelector(IPegBase.InvalidPegStatus.selector, PegStatus.COMPLETED));
-
-        // Act
-        vm.prank(opAddress);
-        operatorTakeManager.registerOperatorWon(setup.operatorWonSPV);
     }
 }

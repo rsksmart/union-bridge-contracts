@@ -11,9 +11,6 @@ struct ChallengeInfo {
     bytes32 challengeTxid;
     /// @notice The transaction id of the input reveal transaction
     bytes32 revealTxid;
-    /// @notice Bitcoin block number when the input reveal tx was confirmed
-    /// @dev Used by skipOperatorWon to verify the timeout has elapsed
-    int256 revealBtcBlockNumber;
 }
 
 /// @title IChallengeManager

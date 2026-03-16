@@ -56,12 +56,6 @@ interface IOperatorTakeManager {
     /// @param _pegoutTxSPVProof The BTC SPV proof of the operator won transaction
     function registerOperatorWon(BtcTxSPVProof calldata _pegoutTxSPVProof) external;
 
-    /// @notice Skips the operator won step if the timeout has elapsed
-    /// @dev Callable by any committee member once opWonTimelock + 2 * pegoutConfirmations
-    ///      Bitcoin blocks have passed since the reveal was confirmed.
-    /// @param _acceptPeginTxid The peg-in txid whose status is REVEALED
-    function skipOperatorWon(bytes32 _acceptPeginTxid) external;
-
     /// @notice Triggers the operator take process for a peg-out when not all committee members sign within timeout
     /// @param _acceptPeginTxid The accept peg-in transaction id for the peg-out
     function triggerOperatorTake(bytes32 _acceptPeginTxid) external;
@@ -77,10 +71,6 @@ interface IOperatorTakeManager {
     /// @return userTake Timeout in seconds for user take operations
     /// @return operatorTake Timeout in seconds for operator take operations
     function takeTimeouts(uint256 streamId) external view returns (uint256 userTake, uint256 operatorTake);
-
-    /// @notice Sets the ChallengeManager contract address (one-time, owner only)
-    /// @param _challengeManager The address of the ChallengeManager contract
-    function setChallengeManager(address _challengeManager) external;
 
     /// @notice Sets the timeout settings for a specific stream
     /// @dev Only callable by the contract owner
@@ -117,9 +107,6 @@ interface IOperatorTakeManager {
     /// @param streamId The stream identifier
     /// @param newTimeout The new timeout settings
     event TakeTimeoutUpdated(uint64 indexed streamId, TakeTimeout newTimeout);
-
-    /// @notice Event emitted when the operator won step is skipped after timeout
-    event OperatorWonSkipped(bytes32 indexed acceptPeginTxid, uint128 committeeId, StreamPosition streamInfo);
 
     /// @notice Event emitted when reimbursement kickoff is successfully registered
     event ReimbursementKickoffRegistered(
@@ -163,9 +150,6 @@ interface IOperatorTakeManager {
     /// @notice Thrown when operator take data is not found for a given accept peg-in txid and operator address
     error OperatorTakeDataNotFound(bytes32 acceptPeginTxid, address operatorAddress);
 
-    /// @notice Thrown when trying to set a contract reference that has already been set
-    error AlreadySet();
-
     /// @notice Thrown when the per-stream timeout array has incorrect length
     error InvalidTimeoutsLength();
 
@@ -177,12 +161,6 @@ interface IOperatorTakeManager {
 
     /// @notice Thrown when trying to trigger operator take but user take was already signed
     error UserTakeAlreadySigned(bytes32 acceptPeginTxid);
-
-    /// @notice Thrown when skipOperatorWon is called before the timeout has expired
-    /// @param revealBtcBlockNumber Block at which reveal was confirmed
-    /// @param currentBtcHeight Current Bitcoin best chain height
-    /// @param skipThreshold Required blocks since reveal (opWonTimelock + 2 * pegoutConfirmations)
-    error OperatorWonTimeoutNotExpired(int256 revealBtcBlockNumber, int256 currentBtcHeight, uint256 skipThreshold);
 
     /// @notice Thrown when trying to trigger operator take before operator take timeout has expired
     error OperatorTakeTimeoutNotExpired(uint256 updatedAt, uint256 expireAt);
