@@ -533,6 +533,11 @@ interface IStreamManager {
     /// @param peginConfirmations The stream's pegin confirmations (reject must be <= this)
     error RejectPeginConfirmationsExceedsPegin(uint8 rejectPeginConfirmations, uint8 peginConfirmations);
 
+    /// @notice Thrown when pegin confirmations are set lower than reject pegin confirmations
+    /// @param peginConfirmations The requested pegin confirmations
+    /// @param rejectPeginConfirmations The stream's reject pegin confirmations (pegin must be >= this)
+    error PeginConfirmationsLowerThanRejectPegin(uint8 peginConfirmations, uint8 rejectPeginConfirmations);
+
     /// @notice Thrown when peg-out confirmations are invalid
     /// @param confirmations The invalid number of confirmations
     error InvalidPegoutConfirmations(uint8 confirmations);

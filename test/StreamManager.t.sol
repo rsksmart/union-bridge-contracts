@@ -184,6 +184,31 @@ contract StreamManagerTest is Test, HelperContract {
         streamManager.setPeginConfirmations(streamId, 10);
     }
 
+    function test_setPeginConfirmations_Revert_PeginConfirmationsLowerThanRejectPegin() external {
+        // Arrange
+        uint64 streamId = 0;
+        address owner = streamManager.owner();
+
+        // Set rejectPeginConfirmations to 2 so we can try setting peginConfirmations to 1 (below it)
+        vm.prank(owner);
+        streamManager.setRejectPeginConfirmations(streamId, 2);
+        uint8 rejectPeginConfirmations = 2;
+        uint8 peginConfirmations = 1;
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IStreamManager.PeginConfirmationsLowerThanRejectPegin.selector,
+                peginConfirmations,
+                rejectPeginConfirmations
+            )
+        );
+
+        // Act
+        vm.prank(owner);
+        streamManager.setPeginConfirmations(streamId, peginConfirmations);
+    }
+
     function test_setRejectPeginConfirmations_Success() external {
         // Arrange
         uint64 streamId = 0;
@@ -221,7 +246,7 @@ contract StreamManagerTest is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(IStreamManager.StreamNotFoundById.selector, streamId));
 
         // Act
-        streamManager.setRejectPeginConfirmations(streamId, 6);
+        streamManager.setRejectPeginConfirmations(streamId, 2);
     }
 
     function test_setRejectPeginConfirmations_Revert_OwnableUnauthorizedAccount() external {
@@ -232,7 +257,7 @@ contract StreamManagerTest is Test, HelperContract {
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, this));
 
         // Act
-        streamManager.setRejectPeginConfirmations(streamId, 6);
+        streamManager.setRejectPeginConfirmations(streamId, 2);
     }
 
     function test_setRejectPeginConfirmations_Revert_InvalidRejectPeginConfirmations() external {

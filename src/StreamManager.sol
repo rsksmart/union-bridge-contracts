@@ -497,6 +497,9 @@ contract StreamManager is IStreamManager, BaseProxy {
         if (_confirmations == 0) {
             revert InvalidPeginConfirmations(_confirmations);
         }
+        if (_confirmations < streams[_streamId].rejectPeginConfirmations) {
+            revert PeginConfirmationsLowerThanRejectPegin(_confirmations, streams[_streamId].rejectPeginConfirmations);
+        }
 
         streams[_streamId].peginConfirmations = _confirmations;
         emit PeginConfirmationsUpdated(_streamId, _confirmations);
