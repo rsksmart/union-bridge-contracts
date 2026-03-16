@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import {console} from "forge-std/console.sol";
 import {VmSafe} from "forge-std/Vm.sol";
-import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
+import {Options, Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 import {CommitteeRegistry} from "src/CommitteeRegistry.sol";
 import {MemberRegistry} from "src/MemberRegistry.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
@@ -505,6 +505,9 @@ contract DeployImplAndProxy is ScriptUtils {
         TakeTimeout[] memory _timeoutSettings
     ) public returns (OperatorTakeManager) {
         string memory contractName = "OperatorTakeManager.sol";
+        if (vm.isContext(VmSafe.ForgeContext.TestGroup)) {
+            contractName = "OperatorTakeManagerHarness.sol";
+        }
         (, address proxyAdddress) = deployContractAndUUPSProxy(
             contractName,
             abi.encodeCall(
@@ -581,16 +584,15 @@ contract DeployImplAndProxy is ScriptUtils {
     {
         // Open zeppelin upgrades plugin currecntly does not support external libraries
         // See https://docs.openzeppelin.com/upgrades-plugins/faq#why-cant-i-use-external-libraries
-        // Options memory opts;
-        // opts.unsafeAllow = "unsafeAllowLinkedLibraries";
+        Options memory opts;
+        // Skip upgrade safety validation in tests (avoids "build info not from full compilation" when forge test does incremental compile)
+        if (vm.isContext(VmSafe.ForgeContext.TestGroup)) {
+            opts.unsafeSkipAllChecks = true;
+        }
         vm.startBroadcast(getDeployerKey());
         // Deploy the upgradeable contract
         address payable proxyAddress = payable(
-            Upgrades.deployUUPSProxy(
-                _contractName, //"MyUpgradeableToken.sol",
-                _initialCall // abi.encodeCall(MyUpgradeableToken.initialize, (msg.sender))
-                    //opts
-            )
+            Upgrades.deployUUPSProxy(_contractName, _initialCall, opts)
         );
         vm.stopBroadcast();
         // Get the implementation address

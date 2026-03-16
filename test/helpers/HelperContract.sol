@@ -12,6 +12,7 @@ import {SignatureManager} from "src/SignatureManager.sol";
 import {AccessManager} from "src/AccessManager.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
 import {OperatorTakeManager} from "src/OperatorTakeManager.sol";
+import {OperatorTakeManagerHarness} from "test/helpers/OperatorTakeManagerHarness.sol";
 import {ChallengeManager} from "src/ChallengeManager.sol";
 import {RbtcBridge} from "src/RbtcBridge.sol";
 import {BridgeMock} from "./BridgeMock.sol";
@@ -90,7 +91,7 @@ abstract contract HelperContract is Test, TestUtils {
     PegoutManagerHarness internal pegoutManager;
     AccessManager internal accessManager;
     ChallengeManager internal challengeManager;
-    OperatorTakeManager internal operatorTakeManager;
+    OperatorTakeManagerHarness internal operatorTakeManager;
 
     // Arrange
     uint64 internal constant VALUE = 1_000_000; // 0.01 BTC
@@ -112,7 +113,7 @@ abstract contract HelperContract is Test, TestUtils {
         accessManager = AccessManager(deployScript.accessManager());
         signatureManager = SignatureManager(deployScript.signatureManager());
         challengeManager = ChallengeManager(deployScript.challengeManager());
-        operatorTakeManager = OperatorTakeManager(deployScript.operatorTakeManager());
+        operatorTakeManager = OperatorTakeManagerHarness(address(deployScript.operatorTakeManager()));
         // Set up bridge mock at bridge precompiled address
         bridgeMock = BridgeMock(deployScript.bridgeAddress());
         globalUserAddress = address(this);
@@ -646,6 +647,57 @@ abstract contract HelperContract is Test, TestUtils {
                 operatorAdded++;
             }
         }
+    }
+
+    /// @dev Stream-aware variant for BitVMX/stream 0 (0.001 BTC) - uses streamId and denomination
+    function setup_addOperatorTakeTxidsForStream_MultipleOperators(
+        bytes32 _acceptPeginTxid,
+        uint128 _committeeId,
+        uint64 _streamId,
+        uint64 _slotId,
+        uint256 _operatorCount,
+        uint64 _streamDenomination
+    ) internal {
+        CommitteeMember[] memory members = registry.getCommitteeMembers(_committeeId);
+        uint256 operatorAdded = 0;
+        for (uint256 i = 0; i < members.length && operatorAdded < _operatorCount; i++) {
+            if (members[i].role == Role.OPERATOR) {
+                (BtcTransaction memory opTakeTx, BtcTransaction memory opWonTx,) =
+                    setup_getOperatorTakeDataForStream(_acceptPeginTxid, members[i].memberAddress, _streamId, _slotId, _streamDenomination);
+
+                bytes32 takeTxid = bitcoinManager.getBtcTxid(opTakeTx);
+                bytes32 wonTxid = bitcoinManager.getBtcTxid(opWonTx);
+
+                setup_addOperatorTakeTxids(members[i].memberAddress, _acceptPeginTxid, takeTxid, wonTxid);
+                operatorAdded++;
+            }
+        }
+    }
+
+    function setup_getOperatorTakeDataForStream(
+        bytes32 _acceptPeginTxid,
+        address _operatorAddress,
+        uint64 _streamId,
+        uint64 _slotId,
+        uint64 _streamDenomination
+    ) internal returns (BtcTransaction memory opTakeTx, BtcTransaction memory opWonTx, BtcTxSPVProof memory reimbursementKickoffSPV) {
+        bytes memory operatorDisputePubKeyCompact = _getMemberDisputePubKeyCompact(_operatorAddress);
+
+        bytes32 reimbursementTxid;
+        (reimbursementTxid, reimbursementKickoffSPV) =
+            _createReimbursementKickoffSPV(operatorDisputePubKeyCompact, uint32(_slotId));
+
+        opTakeTx = createOperatorTakeTx(_acceptPeginTxid, reimbursementTxid, operatorDisputePubKeyCompact, _streamDenomination);
+
+        uint128 committeeId = streamManager.getCommitteeId(_streamId, 0);
+        bytes memory committeePubKey = registry.getCommitteeTakePubKey(committeeId);
+
+        bytes32 challengeTxid = _createChallengeTxid(reimbursementTxid, committeePubKey);
+
+        bytes32 inputRevealedTxid =
+            _createInputRevealedTxid(challengeTxid, committeePubKey, operatorDisputePubKeyCompact);
+
+        opWonTx = createOperatorWonTx(_acceptPeginTxid, inputRevealedTxid, operatorDisputePubKeyCompact, _streamDenomination);
     }
 
     function setup_depositAggregatedKey(uint128 _committeeId, address _memberAddress) internal {

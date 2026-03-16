@@ -237,6 +237,22 @@ abstract contract ScriptUtils is Script {
         return btcTxSPVProof;
     }
 
+    /// @notice Creates a BtcTxSPVProof with custom block and merkle proof data.
+    /// @dev Used for BitVMX ADVANCE_FUNDS_TX SPV from bitvmx logs
+    function createBtcTxSPVProof(
+        BtcTransaction memory _btcTransaction,
+        bytes32 _blockHash,
+        uint256 _merkleBranchPath,
+        bytes32[] memory _merkleBranchHashes
+    ) internal pure returns (BtcTxSPVProof memory) {
+        return BtcTxSPVProof({
+            blockHash: _blockHash,
+            btcTx: _btcTransaction,
+            merkleBranchPath: _merkleBranchPath,
+            merkleBranchHashes: _merkleBranchHashes
+        });
+    }
+
     function createCancelUserTakeTx(bytes32 _acceptPeginTxid, bytes memory _operatorPubKey)
         internal
         pure

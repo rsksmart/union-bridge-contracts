@@ -76,7 +76,7 @@ pragma solidity ^0.8.20;
  *    - merkle_branch_path -> merkleBranchPath
  *    - merkle_branch_hashes -> merkleBranchHashes (convert to bytes32[])
  *
- * REFERENCE TX_HEX (source for _getBitVMXAdvanceFundsTransaction - from advanceFundsLogs.log):
+ * REFERENCE TX_HEX (source for _getBitVMXAdvanceFundsTransaction - from bitvmx logs:
  * 02000000000101340acc8ed678f2c031a6232ef564433d18e2876ed06530552313f611f19570010200000000fdffffff03e681010000000000160014bcf0470d714b9a4d5559c883d94dc18709ee199d0000000000000000226a20000000000000000000000000000000000000000000000000000000000000000022470000000000001600147160086956f4dc826a89fc010f33bd86bf5347ed02483045022100a5d5b068a4ad0877fe2aad780a63a22539604ee7c99cb6e58507ca96c3251b3402201840ebde4546a29b780107ca96cfa03d3c961f95fe61b8f717bf34575c15edc50121034ae05c8530a41ef79d0e95200d69dae62bc1f491a306ee434413f7dc2857764300000000
  *
  * ============================================================================
@@ -93,13 +93,15 @@ pragma solidity ^0.8.20;
  */
 import {Test} from "forge-std/Test.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
-import {BtcTransaction, BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
-import {BtcTxSPVProof} from "src/interfaces/IPegCommonTypes.sol";
+import {BtcTransaction, BtcTxIn, BtcTxOut, PrevoutData, BitcoinSignatureData} from "src/interfaces/IBitcoinManager.sol";
+import {BtcTxSPVProof, StreamPosition} from "src/interfaces/IPegCommonTypes.sol";
 import {Role, Committee} from "src/interfaces/ICommitteeRegistry.sol";
 import {CompactPubKey} from "src/interfaces/IMemberRegistry.sol";
-import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
+import {Stream, Slot, StreamDenomination, PegStatus} from "src/interfaces/IStreamManager.sol";
 import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
 import {Constants} from "src/libraries/Constants.sol";
+import {BtcHelper} from "src/libraries/BtcHelper.sol";
+import {OperatorTakeInfo} from "src/interfaces/IOperatorTakeManager.sol";
 
 contract BitVMXCompatibilityTest is Test, HelperContract {
     uint8 constant BITVMX_OP_COUNT = 2;
@@ -368,5 +370,162 @@ contract BitVMXCompatibilityTest is Test, HelperContract {
         });
 
         return BtcTransaction({version: 2, inputs: inputs, outputs: outputs, locktime: 0});
+    }
+
+    /// @dev BitVMX user pubkey (P2WPKH bcf0470d714b9a4d5559c883d94dc18709ee199d) from bitvmx logs
+    bytes constant BITVMX_USER_PUBKEY = hex"03e728aa9022e7554cb553be119dc225a66490a5c3384b2351c966aaefbd0d8b82";
+
+    /// @dev BitVMX ADVANCE_FUNDS_TX SPV from bitvmx logs (use the one from "Advance funds complete")
+    bytes32 constant BITVMX_ADVANCE_FUNDS_BLOCK_HASH =
+        0x635a99891a2f778961a16b568f844977f1837afbad3bca062ef631f0e4f4f7e4;
+    uint256 constant BITVMX_ADVANCE_FUNDS_MERKLE_PATH = 1;
+    bytes32 constant BITVMX_ADVANCE_FUNDS_MERKLE_HASH =
+        0xaaf0b60c9bb76bae3b59bfdcd9e08f7556858895a6d8765fa0b97e0a6f29c5fc;
+
+    /**
+     * @dev Calls registerAdvanceFunds with the ACTUAL BitVMX ADVANCE_FUNDS_TX SPV end-to-end.
+     * @dev Uses real SPV data from bitvmx logs; stream 0 (0.001 BTC); BitVMX user pubkey.
+     * @dev Uses OperatorTakeManagerHarness to inject pegoutId=0 since BitVMX produces it.
+     */
+    function test_registerAdvanceFundsWithBitVMXSPV() external {
+        runTestDeployScript();
+        registry.setMinCommitteeWatchtowersHarness(BITVMX_OP_COUNT);
+        registry.setMinCommitteeOperatorsHarness(BITVMX_WT_COUNT);
+
+        // BitVMX committee keys (from test_bitVMXTransactionPassesValidation)
+        CompactPubKey[] memory disputeKeys = new CompactPubKey[](4);
+        disputeKeys[0] =
+            CompactPubKey({parity: 0x02, xOnly: 0x0ec6b8e5787e7146ee61585f00d2b49cd191b30deba8a744754c60589119239c});
+        disputeKeys[1] =
+            CompactPubKey({parity: 0x02, xOnly: 0x47000231143a7ecabfc9d96c4177e6a374f9f90cdd81cbebcb70c9088f8a033a});
+        disputeKeys[2] =
+            CompactPubKey({parity: 0x02, xOnly: 0xcc1d15954cd9c9a8e9f0a04224420ee14b0b8729d4dc933f2dd97b3af29b0ab4});
+        disputeKeys[3] =
+            CompactPubKey({parity: 0x02, xOnly: 0xb0e42bec591549fb11880740f49978a35e95462482ebcda489a3fe119c937df3});
+        bytes memory committeeAggregatedKey = hex"030c260ce7e763ceece44830a886d8dd2c328445ffbcfd83c652bbc7671a55666e";
+
+        uint128 committeeId = _setupBitVMXCommittee(committeeAggregatedKey, disputeKeys);
+        bridgeMock.setBtcTransactionConfirmations(10);
+
+        // Request pegin with BitVMX request tx (stream 0)
+        BtcTransaction memory requestTx = _getBitVMXRequestPeginTransaction();
+        bridgeMock.setBtcBlockchainBestChainHeight(BEST_CHAIN_HEIGHT);
+        peginManager.requestPegin(createBtcTxSPVProof(requestTx));
+        Stream memory str0 = streamManager.getStream(100_000);
+        bridgeMock.setBtcBlockchainBestChainHeight(
+            BEST_CHAIN_HEIGHT + int256(uint256(str0.timelockSettings.requestPeginTimelock))
+        );
+
+        // Accept pegin for stream 0 - use contract's expected accept tx (getAcceptPeginSignatureHash)
+        BtcTransaction memory acceptTx = _getAcceptPeginTxMatchingContract(requestTx, 0);
+        bridgeMock.setBtcBlockchainBestChainHeight(BEST_CHAIN_HEIGHT);
+        bridgeMock.setBtcTransactionConfirmations(CONFIRMATIONS);
+        peginManager.acceptPegin(createBtcTxSPVProof(acceptTx));
+        bridgeMock.setBtcBlockchainBestChainHeight(BEST_CHAIN_HEIGHT + 1);
+        bytes32 acceptPeginTxid = bitcoinManager.getBtcTxid(acceptTx);
+        setup_addOperatorTakeTxidsForStream_MultipleOperators(acceptPeginTxid, committeeId, 0, 0, 4, 100_000);
+
+        // Pegout flow for stream 0 with BitVMX user
+        RegisterUserTakeSetup memory setup = _setupPegoutForStream0(acceptPeginTxid, acceptTx);
+
+        // Trigger operator take, cancel user take
+        vm.warp(block.timestamp + TAKE_0_TIMEOUT_DEFAULT + 1);
+        // Use operator indices (2,3) for 4-member committee - indices 3,4 would use vm.addr(5) which is NOT in committee
+        setup_addMemberSignature_MultipleMembers(setup.pegoutTxid, registry.committeeMemberCount() / 2, 2);
+        operatorTakeManager.triggerOperatorTake(setup.acceptPeginTxid);
+        OperatorTakeInfo memory opInfo = operatorTakeManager.getOperatorTakeInfo(setup.acceptPeginTxid);
+        address operatorAddress = opInfo.operatorTakeAddress;
+
+        setup.cancelUserTakeSPV = createBtcTxSPVProof(
+            createCancelUserTakeTx(
+                setup.acceptPeginTxid,
+                BtcHelper.compactPubKeyToBytes(memberRegistry.getMemberDisputePubKey(operatorAddress))
+            )
+        );
+
+        // Set pegout id to 0 for BitVMX compatibility, otherwise would fail with IncorrectOutputScript.
+        operatorTakeManager.setOperatorTakePegoutIdHarness(setup.acceptPeginTxid, bytes32(0));
+
+        // Build advance funds SPV with ACTUAL BitVMX tx and SPV data from bitvmx logs
+        bytes32[] memory merkleHashes = new bytes32[](1);
+        merkleHashes[0] = BITVMX_ADVANCE_FUNDS_MERKLE_HASH;
+        setup.advanceFundsSPV = createBtcTxSPVProof(
+            _getBitVMXAdvanceFundsTransaction(),
+            BITVMX_ADVANCE_FUNDS_BLOCK_HASH,
+            BITVMX_ADVANCE_FUNDS_MERKLE_PATH,
+            merkleHashes
+        );
+
+        bridgeMock.setBtcBlockchainBestChainHeight(BEST_CHAIN_HEIGHT + 20); // Ensure cancel block < advance block
+        operatorTakeManager.registerCancelUserTake(setup.cancelUserTakeSPV);
+
+        vm.prank(operatorAddress);
+        operatorTakeManager.registerAdvanceFunds(setup.acceptPeginTxid, setup.advanceFundsSPV);
+
+        StreamPosition memory pos = streamManager.getStreamPosition(setup.acceptPeginTxid);
+        assertEq(uint256(pos.pegStatus), uint256(PegStatus.ADVANCED), "Peg status should be ADVANCED");
+    }
+
+    /// @dev Builds accept pegin tx that exactly matches what the contract expects (from getAcceptPeginSignatureHash)
+    function _getAcceptPeginTxMatchingContract(BtcTransaction memory _requestTx, uint64 _streamId)
+        internal
+        view
+        returns (BtcTransaction memory)
+    {
+        (uint64 packetNumber,, bytes32 btcReimbursementPubKey) =
+            bitcoinManager.getPeginOpReturnData(_requestTx.outputs[Constants.REQUEST_PEGIN_VOUT_OP_RETURN]);
+        uint128 committeeId = streamManager.getCommitteeId(_streamId, packetNumber);
+        bytes memory committeePubKey = registry.getCommitteeTakePubKey(committeeId);
+        bytes memory enablerScriptPubKey = streamManager.getEnablerScriptPubKey(_streamId, packetNumber);
+        bytes32 requestPeginTxid = bitcoinManager.getBtcTxid(_requestTx);
+
+        PrevoutData[] memory prevoutDatas = new PrevoutData[](2);
+        prevoutDatas[0] = PrevoutData({
+            value: _requestTx.outputs[Constants.REQUEST_PEGIN_VOUT_TAPTREE].amount,
+            scriptPubKey: _requestTx.outputs[Constants.REQUEST_PEGIN_VOUT_TAPTREE].scriptPubKey
+        });
+        prevoutDatas[1] = PrevoutData({value: Constants.SPEED_UP_AMOUNT, scriptPubKey: enablerScriptPubKey});
+
+        CompactPubKey[] memory disputeKeys = registry.getCommitteeDisputeKeys(committeeId);
+        BitcoinSignatureData memory sigData = bitcoinManager.getAcceptPeginSignatureHash(
+            committeePubKey, btcReimbursementPubKey, requestPeginTxid, prevoutDatas, disputeKeys
+        );
+        return sigData.tx;
+    }
+
+    /// @dev Stream 0 pegout setup (0.001 BTC, BitVMX user)
+    /// @dev Builds accept pegin tx matching exactly what the contract expects (from getAcceptPeginSignatureHash)
+    /// @dev Builds accept pegin tx matching exactly what the contract expects (via getAcceptPeginSignatureHash)
+    /// @dev Stream 0 pegout setup (0.001 BTC, BitVMX user)
+    function _setupPegoutForStream0(
+        bytes32 acceptPeginTxid,
+        BtcTransaction memory acceptTx
+    ) internal returns (RegisterUserTakeSetup memory setup) {
+        setup.acceptPeginTxid = acceptPeginTxid;
+        setup.acceptPeginSPV = createBtcTxSPVProof(acceptTx);
+        setup.stream = streamManager.getStream(100_000);
+        setup.userPubKey = BITVMX_USER_PUBKEY;
+        setup.packetNumber = 0;
+        setup.slotId = 0;
+
+        bridgeMock.setWeisTransferredToUnionBridge(BtcHelper.satoshiToWei(100_000));
+        Slot memory slot = streamManager.getSlot(0, 0, 0);
+        PrevoutData[] memory prevoutDatas = new PrevoutData[](2);
+        prevoutDatas[0] = PrevoutData({value: slot.acceptPeginAmount, scriptPubKey: slot.scriptPubKey});
+        prevoutDatas[1] = PrevoutData({
+            value: Constants.ENABLER_AMOUNT,
+            scriptPubKey: streamManager.getEnablerScriptPubKey(0, 0)
+        });
+        BitcoinSignatureData memory pegoutData =
+            bitcoinManager.getPegoutTxData(setup.userPubKey, setup.acceptPeginTxid, prevoutDatas);
+        setup.pegoutTx = pegoutData.tx;
+        setup.pegoutTxSPVProof = createBtcTxSPVProof(setup.pegoutTx);
+        setup.pegoutTxid = pegoutData.txid;
+        setup.pegoutSignatureHash = pegoutData.signatureHash;
+
+        vm.prank(globalUserAddress);
+        pegoutManager.tryPegout{value: BtcHelper.satoshiToWei(100_000)}(setup.userPubKey);
+        // Need nonces from all 4 members before addMemberSignature (AllNoncesAreNotPresent check)
+        setup_addMemberNonce_MultipleMembers(setup.pegoutTxid, 0, registry.committeeMemberCount());
     }
 }
