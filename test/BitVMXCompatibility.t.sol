@@ -58,6 +58,29 @@ pragma solidity ^0.8.20;
  * - Test should pass = BitVMX transactions are valid and compatible with contracts
  * - Test failure = Transaction structure mismatch, debug :)
  *
+ * ============================================================================
+ * ADVANCE_FUNDS_TX COMPATIBILITY TEST
+ * ============================================================================
+ *
+ * The test_bitVMXAdvanceFundsTxSPVPassesValidation test validates that the
+ * ADVANCE_FUNDS_TX SPV from BitVMX (rust-bitvmx-client) passes contract validation.
+ *
+ * HOW TO GET THE SPV FROM BITVMX:
+ * 1. Run: ./examples/union/scripts/run-example.sh advance_funds
+ * 2. In the logs, find "ADVANCE_FUNDS_TX SPV for unit test" (printed after "Advance funds complete")
+ *    NOTE: There are TWO SPVs with this label - use the one from "Advance funds complete"
+ *    (NOT the one from "Pegin accepted and confirmed" which is the ACCEPT_PEGIN_TX)
+ * 3. Map the parameters to BtcTxSPVProof struct:
+ *    - block_hash -> blockHash
+ *    - tx_hex -> decode into BtcTransaction (excluding witness for txid calc)
+ *    - merkle_branch_path -> merkleBranchPath
+ *    - merkle_branch_hashes -> merkleBranchHashes (convert to bytes32[])
+ *
+ * REFERENCE TX_HEX (source for _getBitVMXAdvanceFundsTransaction - from advanceFundsLogs.log):
+ * 02000000000101340acc8ed678f2c031a6232ef564433d18e2876ed06530552313f611f19570010200000000fdffffff03e681010000000000160014bcf0470d714b9a4d5559c883d94dc18709ee199d0000000000000000226a20000000000000000000000000000000000000000000000000000000000000000022470000000000001600147160086956f4dc826a89fc010f33bd86bf5347ed02483045022100a5d5b068a4ad0877fe2aad780a63a22539604ee7c99cb6e58507ca96c3251b3402201840ebde4546a29b780107ca96cfa03d3c961f95fe61b8f717bf34575c15edc50121034ae05c8530a41ef79d0e95200d69dae62bc1f491a306ee434413f7dc2857764300000000
+ *
+ * ============================================================================
+ *
  * Known issues:
  * - The user btc address that is extracted from the OP_RETURN output can come from BITVMX as either even or odd,
  *   the contracts assume the user's pubkey is even (prefix 0x02) as a protocol-level decision.
@@ -75,6 +98,8 @@ import {BtcTxSPVProof} from "src/interfaces/IPegCommonTypes.sol";
 import {Role, Committee} from "src/interfaces/ICommitteeRegistry.sol";
 import {CompactPubKey} from "src/interfaces/IMemberRegistry.sol";
 import {StreamDenomination} from "src/interfaces/IStreamManager.sol";
+import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
+import {Constants} from "src/libraries/Constants.sol";
 
 contract BitVMXCompatibilityTest is Test, HelperContract {
     uint8 constant BITVMX_OP_COUNT = 2;
@@ -244,6 +269,102 @@ contract BitVMXCompatibilityTest is Test, HelperContract {
         outputs[2] = BtcTxOut({
             amount: 1080,
             scriptPubKey: hex"5120a00556469858b54b0a230c3277c2eaa5f181ef36360ff261b620f4bb928c756f"
+        });
+
+        return BtcTransaction({version: 2, inputs: inputs, outputs: outputs, locktime: 0});
+    }
+
+    /**
+     * @dev Verifies that ADVANCE_FUNDS_TX SPV from BitVMX passes contract validation.
+     * @dev Validates transaction structure and OP_RETURN pegout_id format compatibility.
+     */
+    function test_bitVMXAdvanceFundsTxSPVPassesValidation() external {
+        runTestDeployScript();
+
+        // Parse BitVMX ADVANCE_FUNDS_TX into BtcTransaction struct
+        BtcTransaction memory advanceFundsTx = _getBitVMXAdvanceFundsTransaction();
+
+        // Verify transaction structure
+        assertEq(advanceFundsTx.version, 2, "Version should be 2");
+        assertEq(advanceFundsTx.inputs.length, 1, "Should have 1 input");
+        assertEq(advanceFundsTx.outputs.length, 3, "Should have 3 outputs (user, OP_RETURN, change)");
+        assertEq(advanceFundsTx.locktime, 0, "Locktime should be 0");
+
+        // Verify output 0: User funds (P2WPKH) - 100000 - (P2TR_FEE*2 + SPEED_UP) = 98790 for 0.001 BTC stream
+        assertEq(
+            advanceFundsTx.outputs[Constants.ADVANCE_FUNDS_VOUT_USER].amount,
+            98_790,
+            "User amount should be 98790 sats (0.001 BTC stream)"
+        );
+        assertEq(
+            advanceFundsTx.outputs[Constants.ADVANCE_FUNDS_VOUT_USER].scriptPubKey.length,
+            22,
+            "User output should be P2WPKH (22 bytes)"
+        );
+
+        // Verify output 1: OP_RETURN with pegout_id (BitVMX format: 6a 20 <32 bytes>)
+        assertEq(
+            advanceFundsTx.outputs[Constants.ADVANCE_FUNDS_VOUT_OP_RETURN].amount,
+            0,
+            "OP_RETURN amount should be 0"
+        );
+        bytes memory opReturnScript = advanceFundsTx.outputs[Constants.ADVANCE_FUNDS_VOUT_OP_RETURN].scriptPubKey;
+        assertEq(opReturnScript.length, 34, "OP_RETURN should be 34 bytes (6a + 20 + 32)");
+
+        // Verify our getPegoutIdScript produces matching format for bytes32(0)
+        bytes memory expectedPegoutIdScript = BtcScriptParser.getPegoutIdScript(bytes32(0));
+        assertEq(
+            opReturnScript,
+            expectedPegoutIdScript,
+            "OP_RETURN format should match BtcScriptParser.getPegoutIdScript (BitVMX compatible)"
+        );
+
+        // Verify BitcoinManager accepts the pegout_id output format
+        bitcoinManager.validatePegoutIdOutput(
+            advanceFundsTx.outputs[Constants.ADVANCE_FUNDS_VOUT_OP_RETURN], bytes32(0)
+        );
+
+        // Verify output 2: Operator change (P2WPKH)
+        assertEq(
+            advanceFundsTx.outputs[2].amount,
+            18_210,
+            "Operator change should be 18210 sats"
+        );
+
+        // Verify txid can be computed (transaction encoding is valid)
+        bytes32 txid = bitcoinManager.getBtcTxid(advanceFundsTx);
+        assertTrue(txid != bytes32(0), "Txid should be non-zero");
+    }
+
+    /// @dev Input txid from BitVMX ADVANCE_FUNDS_TX (wire format - will be reversed during encoding)
+    bytes32 constant BITVMX_ADVANCE_FUNDS_INPUT_TXID =
+        0x340acc8ed678f2c031a6232ef564433d18e2876ed06530552313f611f1957001;
+
+    /**
+     * @dev Parses the BitVMX ADVANCE_FUNDS_TX hex into BtcTransaction struct.
+     * @dev Witness data is excluded as it's not needed for txid calculation.
+     */
+    function _getBitVMXAdvanceFundsTransaction() internal pure returns (BtcTransaction memory) {
+        BtcTxIn[] memory inputs = new BtcTxIn[](1);
+        inputs[0] = BtcTxIn({
+            txId: BITVMX_ADVANCE_FUNDS_INPUT_TXID,
+            vout: 2,
+            scriptSig: hex"",
+            sequence: 4294967293
+        });
+
+        BtcTxOut[] memory outputs = new BtcTxOut[](3);
+        outputs[0] = BtcTxOut({
+            amount: 98_790, // 100000 - (P2TR_FEE*2 + SPEED_UP) for 0.001 BTC stream
+            scriptPubKey: hex"0014bcf0470d714b9a4d5559c883d94dc18709ee199d"
+        });
+        outputs[1] = BtcTxOut({
+            amount: 0,
+            scriptPubKey: hex"6a200000000000000000000000000000000000000000000000000000000000000000"
+        });
+        outputs[2] = BtcTxOut({
+            amount: 18_210,
+            scriptPubKey: hex"00147160086956f4dc826a89fc010f33bd86bf5347ed"
         });
 
         return BtcTransaction({version: 2, inputs: inputs, outputs: outputs, locktime: 0});

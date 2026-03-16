@@ -40,8 +40,13 @@ library BtcScriptParser {
         return abi.encodePacked(OpCodes.OP_0, OpCodes.OP_PUSHBYTES_32, scriptHash);
     }
 
+    /// @notice Creates OP_RETURN script for pegout ID (BitVMX compatible format)
+    /// @dev Uses standard Bitcoin script format: OP_RETURN OP_PUSHBYTES_32 <32 bytes>
+    /// @dev Matches BitVMX rust-bitvmx-client ADVANCE_FUNDS_TX output structure
+    /// @param _pegoutId The 32-byte pegout identifier
+    /// @return The script bytes for OP_RETURN output
     function getPegoutIdScript(bytes32 _pegoutId) internal pure returns (bytes memory) {
-        return abi.encodePacked(OpCodes.OP_RETURN, _pegoutId);
+        return abi.encodePacked(OpCodes.OP_RETURN, OpCodes.OP_PUSHBYTES_32, _pegoutId);
     }
 
     /// @notice Pushes a number onto the Bitcoin script stack
