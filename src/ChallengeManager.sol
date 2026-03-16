@@ -78,7 +78,8 @@ contract ChallengeManager is IChallengeManager, PegBase {
             pegoutConfirmations, txid, _challenge.blockHash, _challenge.merkleBranchPath, _challenge.merkleBranchHashes
         );
 
-        challengeInfo[_acceptPeginTxid] = ChallengeInfo({challengeTxid: txid, revealTxid: bytes32(0)});
+        challengeInfo[_acceptPeginTxid] =
+            ChallengeInfo({challengeTxid: txid, revealTxid: bytes32(0), revealBtcBlockNumber: 0});
 
         emit ChallengeRegistered(txid, _acceptPeginTxid, committeeId, streamInfo);
 
@@ -184,7 +185,8 @@ contract ChallengeManager is IChallengeManager, PegBase {
         bytes32 txid = bitcoinManager.getBtcTxid(_inputRevealed.btcTx);
 
         // Verify the txid is part of the Merkle Root and has enough confirmations
-        rbtcBridge.verifyTxConfirmations(
+        // and capture the block number for skipOperatorWon timeout tracking
+        int256 revealBtcBlockNumber = rbtcBridge.getTxBlockNumberAndVerifyConfirmations(
             pegoutConfirmations,
             txid,
             _inputRevealed.blockHash,
@@ -193,6 +195,7 @@ contract ChallengeManager is IChallengeManager, PegBase {
         );
 
         info.revealTxid = txid;
+        info.revealBtcBlockNumber = revealBtcBlockNumber;
         emit RevealRegistered(txid, _acceptPeginTxid, committeeId, streamInfo);
 
         streamManager.setPegStatus(_acceptPeginTxid, PegStatus.REVEALED);
