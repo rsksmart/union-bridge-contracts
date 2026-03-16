@@ -1196,7 +1196,8 @@ abstract contract HelperContract is Test, TestUtils {
             operatorDisputePubKey: keys.disputePubKey,
             pegoutId: calculatePegoutId(keys.takePubKey.xOnly, setup.stream.streamId, setup.packetNumber, setup.slotId),
             advanceFundsBlockNumber: 0,
-            reimbursementKickoffTxid: bytes32(0)
+            reimbursementKickoffTxid: bytes32(0),
+            reimbursementKickoffBtcBlockNumber: 0
         });
 
         StreamPosition memory expectedStreamPosition = StreamPosition({

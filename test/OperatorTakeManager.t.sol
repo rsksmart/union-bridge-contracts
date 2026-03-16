@@ -716,27 +716,16 @@ contract OperatorTakeManagerTest is Test, HelperContract {
         assertTrue(updatedStreamInfo.pegStatus == PegStatus.OP_SELECTED, "PegStatus should be reset to OP_SELECTED");
     }
 
-    function test_triggerOperatorTake_Success_FromKickoff() external {
+    function test_triggerOperatorTake_Revert_InvalidPegStatus_FromKickoff() external {
         // Arrange - setup_operatorTake brings state to KICKOFF
         (, RegisterUserTakeSetup memory setup) = setup_operatorTake();
-        uint256 createdAt = block.timestamp;
-        // Expire the operator take timeout
-        vm.warp(createdAt + TAKE_1_TIMEOUT_DEFAULT + 1);
 
-        // Get the expected next operator
-        Committee memory committee = registry.getCommittee(COMMITTEE_ID_STREAM_1_COMMITTEE_1);
-        uint256 expectedOpTakeIndex = (committee.operatorTakeIndex + 1) % committee.members.length;
-        address expectedOperatorAddress = committee.members[expectedOpTakeIndex].memberAddress;
-
-        // Assert
-        assertEventOperatorTakeTriggered(setup, expectedOperatorAddress);
+        // Assert - KICKOFF is no longer a valid state for triggerOperatorTake;
+        // union client should call skipOperatorTake instead
+        vm.expectRevert(abi.encodeWithSelector(IPegBase.InvalidPegStatus.selector, PegStatus.KICKOFF));
 
         // Act
         operatorTakeManager.triggerOperatorTake(setup.acceptPeginTxid);
-
-        // Assert - status should be reset to OP_SELECTED
-        StreamPosition memory updatedStreamInfo = streamManager.getStreamPosition(setup.acceptPeginTxid);
-        assertTrue(updatedStreamInfo.pegStatus == PegStatus.OP_SELECTED, "PegStatus should be reset to OP_SELECTED");
     }
 
     function test_triggerOperatorTake_FromAdvanced_Revert_OperatorTakeTimeoutNotExpired() external {
@@ -759,23 +748,15 @@ contract OperatorTakeManagerTest is Test, HelperContract {
         operatorTakeManager.triggerOperatorTake(setup.acceptPeginTxid);
     }
 
-    function test_triggerOperatorTake_FromKickoff_Revert_OperatorTakeTimeoutNotExpired() external {
+    function test_triggerOperatorTake_FromKickoff_Revert_InvalidPegStatus_RegardlessOfTimeout() external {
         // Arrange - setup_operatorTake brings state to KICKOFF
         _setupDistinctStreamTimeouts();
         (, RegisterUserTakeSetup memory setup) = setup_operatorTake();
+        // Even after timeout expiry, KICKOFF is not a valid state for triggerOperatorTake
+        vm.warp(block.timestamp + TAKE_1_TIMEOUT_DEFAULT + 1);
 
-        // Get operatorTakeUpdatedAt
-        OperatorTakeInfo memory opInfo = operatorTakeManager.getOperatorTakeInfo(setup.acceptPeginTxid);
-        uint256 operatorTakeUpdatedAt = opInfo.operatorTakeUpdatedAt;
-
-        // Assert - should revert because timeout hasn't expired
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IOperatorTakeManager.OperatorTakeTimeoutNotExpired.selector,
-                operatorTakeUpdatedAt,
-                operatorTakeUpdatedAt + TAKE_1_TIMEOUT_DEFAULT
-            )
-        );
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IPegBase.InvalidPegStatus.selector, PegStatus.KICKOFF));
         operatorTakeManager.triggerOperatorTake(setup.acceptPeginTxid);
     }
 
@@ -1668,5 +1649,171 @@ contract OperatorTakeManagerTest is Test, HelperContract {
         // Act
         vm.prank(opAddress);
         operatorTakeManager.registerOperatorWon(setup.operatorWonSPV);
+    }
+
+    // ============ skipOperatorTake Tests ============
+
+    function test_skipOperatorTake_Revert_EnforcedPause() external {
+        // Arrange
+        (, RegisterUserTakeSetup memory setup) = setup_operatorTake();
+        pauseContracts();
+
+        // Assert
+        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
+
+        // Act
+        operatorTakeManager.skipOperatorTake(setup.acceptPeginTxid);
+    }
+
+    function test_skipOperatorTake_Revert_InvalidPegStatus() external {
+        // Arrange: status is ADVANCED, not KICKOFF
+        (, RegisterUserTakeSetup memory setup) = setup_reimbursementKickoff();
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IPegBase.InvalidPegStatus.selector, PegStatus.ADVANCED));
+
+        // Act
+        operatorTakeManager.skipOperatorTake(setup.acceptPeginTxid);
+    }
+
+    function test_skipOperatorTake_Revert_MemberNotInCommittee() external {
+        // Arrange: caller is not a committee member
+        (, RegisterUserTakeSetup memory setup) = setup_operatorTake();
+
+        Stream memory stream = streamManager.getStreamById(setup.stream.streamId);
+        uint256 skipThreshold =
+            uint256(stream.timelockSettings.wtNoChallengeTimelock) + 2 * uint256(stream.pegoutConfirmations);
+        int256 kickoffBtcBlockNumber = BEST_CHAIN_HEIGHT + 1 - CONFIRMATIONS;
+        bridgeMock.setBtcBlockchainBestChainHeight(kickoffBtcBlockNumber + int256(skipThreshold));
+
+        address notACommitteeMember = address(999);
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ICommitteeRegistry.MemberNotInCommittee.selector, COMMITTEE_ID_STREAM_1_COMMITTEE_1, notACommitteeMember
+            )
+        );
+
+        // Act
+        vm.prank(notACommitteeMember);
+        operatorTakeManager.skipOperatorTake(setup.acceptPeginTxid);
+    }
+
+    function test_skipOperatorTake_Revert_OperatorTakeSkipTimeoutNotExpired() external {
+        // Arrange: height is exactly one block below threshold (boundary condition)
+        (, RegisterUserTakeSetup memory setup) = setup_operatorTake();
+
+        Stream memory stream = streamManager.getStreamById(setup.stream.streamId);
+        uint256 skipThreshold =
+            uint256(stream.timelockSettings.wtNoChallengeTimelock) + 2 * uint256(stream.pegoutConfirmations);
+        int256 kickoffBtcBlockNumber = BEST_CHAIN_HEIGHT + 1 - CONFIRMATIONS;
+        int256 oneBeforeThreshold = kickoffBtcBlockNumber + int256(skipThreshold) - 1;
+        bridgeMock.setBtcBlockchainBestChainHeight(oneBeforeThreshold);
+
+        address member = getCommitteeMemberAddressByIndex(COMMITTEE_ID_STREAM_1_COMMITTEE_1, 0);
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IOperatorTakeManager.OperatorTakeSkipTimeoutNotExpired.selector,
+                kickoffBtcBlockNumber,
+                oneBeforeThreshold,
+                skipThreshold
+            )
+        );
+
+        // Act
+        vm.prank(member);
+        operatorTakeManager.skipOperatorTake(setup.acceptPeginTxid);
+    }
+
+    function test_skipOperatorTake_Success() external {
+        // Arrange
+        (, RegisterUserTakeSetup memory setup) = setup_operatorTake();
+
+        Stream memory stream = streamManager.getStreamById(setup.stream.streamId);
+        uint256 skipThreshold =
+            uint256(stream.timelockSettings.wtNoChallengeTimelock) + 2 * uint256(stream.pegoutConfirmations);
+        int256 kickoffBtcBlockNumber = BEST_CHAIN_HEIGHT + 1 - CONFIRMATIONS;
+        int256 currentBtcHeight = kickoffBtcBlockNumber + int256(skipThreshold); // exactly on the threshold
+        bridgeMock.setBtcBlockchainBestChainHeight(currentBtcHeight);
+
+        StreamPosition memory expectedStreamInfo = StreamPosition({
+            streamId: setup.stream.streamId,
+            packetNumber: setup.packetNumber,
+            slotId: setup.slotId,
+            pegStatus: PegStatus.KICKOFF
+        });
+
+        address member = getCommitteeMemberAddressByIndex(COMMITTEE_ID_STREAM_1_COMMITTEE_1, 0);
+
+        // Assert event
+        vm.expectEmit(address(operatorTakeManager));
+        emit IOperatorTakeManager.OperatorTakeSkipped(
+            setup.acceptPeginTxid, COMMITTEE_ID_STREAM_1_COMMITTEE_1, expectedStreamInfo
+        );
+
+        // Act
+        vm.prank(member);
+        operatorTakeManager.skipOperatorTake(setup.acceptPeginTxid);
+
+        // Assert state
+        StreamPosition memory streamInfo = streamManager.getStreamPosition(setup.acceptPeginTxid);
+        assertEq(uint256(streamInfo.pegStatus), uint256(PegStatus.COMPLETED), "PegStatus should be COMPLETED");
+
+        Slot memory slot = streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId);
+        assertTrue(slot.state == SlotState.COMPLETED, "Slot state should be COMPLETED");
+        assertEq(slot.takeTx, bytes32(0), "takeTx should be zero (no BTC tx for skip)");
+    }
+
+    function test_skipOperatorTake_Success_LastSlot_ClosesPacketAndReleasesCommittee() external {
+        // Arrange: complete all slots except the last one
+        setup_multiplePegFlows(Constants.SLOTS_PER_PACKET - 1);
+
+        (, RegisterUserTakeSetup memory setup) = setup_operatorTake();
+        assertEq(setup.slotId, Constants.SLOTS_PER_PACKET - 1, "Should be the last slot");
+
+        Stream memory stream = streamManager.getStreamById(setup.stream.streamId);
+        uint256 skipThreshold =
+            uint256(stream.timelockSettings.wtNoChallengeTimelock) + 2 * uint256(stream.pegoutConfirmations);
+        int256 kickoffBtcBlockNumber = BEST_CHAIN_HEIGHT + 1 - CONFIRMATIONS;
+        bridgeMock.setBtcBlockchainBestChainHeight(kickoffBtcBlockNumber + int256(skipThreshold));
+
+        address member = getCommitteeMemberAddressByIndex(COMMITTEE_ID_STREAM_1_COMMITTEE_1, 0);
+
+        // Assert
+        vm.expectEmit(address(streamManager));
+        emit IStreamManager.PacketClosed(setup.stream.streamId, setup.packetNumber);
+
+        vm.expectEmit(address(registry));
+        emit ICommitteeRegistry.CommitteeMembersReleased(setup.stream.streamId, setup.packetNumber);
+
+        // Act
+        vm.prank(member);
+        operatorTakeManager.skipOperatorTake(setup.acceptPeginTxid);
+    }
+
+    function test_registerOperatorTake_Revert_InvalidPegStatus_AfterSkip() external {
+        // Arrange
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_operatorTake();
+
+        Stream memory stream = streamManager.getStreamById(setup.stream.streamId);
+        uint256 skipThreshold =
+            uint256(stream.timelockSettings.wtNoChallengeTimelock) + 2 * uint256(stream.pegoutConfirmations);
+        int256 kickoffBtcBlockNumber = BEST_CHAIN_HEIGHT + 1 - CONFIRMATIONS;
+        int256 currentBtcHeight = kickoffBtcBlockNumber + int256(skipThreshold);
+        bridgeMock.setBtcBlockchainBestChainHeight(currentBtcHeight);
+
+        address member = getCommitteeMemberAddressByIndex(COMMITTEE_ID_STREAM_1_COMMITTEE_1, 0);
+        vm.prank(member);
+        operatorTakeManager.skipOperatorTake(setup.acceptPeginTxid);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IPegBase.InvalidPegStatus.selector, PegStatus.COMPLETED));
+
+        // Act
+        vm.prank(opAddress);
+        operatorTakeManager.registerOperatorTake(setup.operatorTakeSPV);
     }
 }

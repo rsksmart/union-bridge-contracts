@@ -187,10 +187,7 @@ contract OperatorTakeManager is IOperatorTakeManager, PegManagerBase {
 
         if (streamInfo.pegStatus == PegStatus.USER_TAKE) {
             _handleUserTake(_acceptPeginTxid, pegoutInfo.createdAt, missingSignatures, streamInfo.streamId);
-        } else if (
-            streamInfo.pegStatus == PegStatus.OP_SELECTED || streamInfo.pegStatus == PegStatus.ADVANCED
-                || streamInfo.pegStatus == PegStatus.KICKOFF
-        ) {
+        } else if (streamInfo.pegStatus == PegStatus.OP_SELECTED || streamInfo.pegStatus == PegStatus.ADVANCED) {
             _verifyOperatorTakeTimeoutExpired(opInfo.operatorTakeUpdatedAt, streamInfo.streamId);
         } else if (streamInfo.pegStatus == PegStatus.CHALLENGE || streamInfo.pegStatus == PegStatus.REVEALED) {
             // Only the challenge manager can trigger operator take in these states
@@ -396,6 +393,7 @@ contract OperatorTakeManager is IOperatorTakeManager, PegManagerBase {
 
         opInfo.operatorTakeUpdatedAt = block.timestamp;
         opInfo.reimbursementKickoffTxid = txid;
+        opInfo.reimbursementKickoffBtcBlockNumber = blockNumber;
 
         emit ReimbursementKickoffRegistered(
             txid, _acceptPeginTxid, opInfo.pegoutId, committeeId, streamInfo, opInfo.operatorTakePubKey
@@ -513,6 +511,31 @@ contract OperatorTakeManager is IOperatorTakeManager, PegManagerBase {
         }
 
         emit OperatorWonSkipped(_acceptPeginTxid, committeeId, streamInfo);
+        _completeSlot(streamInfo, _acceptPeginTxid, bytes32(0));
+    }
+
+    /// @inheritdoc IOperatorTakeManager
+    function skipOperatorTake(bytes32 _acceptPeginTxid) external nonReentrant whenNotPaused {
+        // slither-disable-next-line unused-return
+        (StreamPosition memory streamInfo, uint128 committeeId,) =
+            streamManager.validatePegoutStatus(_acceptPeginTxid, PegStatus.KICKOFF);
+
+        committeeRegistry.validateMemberInCommittee(committeeId, _msgSender());
+
+        OperatorTakeInfo storage opInfo = operatorTakeInfo[_acceptPeginTxid];
+
+        Stream memory stream = streamManager.getStreamById(streamInfo.streamId);
+        uint256 skipThreshold =
+            uint256(stream.timelockSettings.wtNoChallengeTimelock) + 2 * uint256(stream.pegoutConfirmations);
+
+        int256 currentBtcHeight = rbtcBridge.bridge().getBtcBlockchainBestChainHeight();
+        if (currentBtcHeight < opInfo.reimbursementKickoffBtcBlockNumber + int256(skipThreshold)) {
+            revert OperatorTakeSkipTimeoutNotExpired(
+                opInfo.reimbursementKickoffBtcBlockNumber, currentBtcHeight, skipThreshold
+            );
+        }
+
+        emit OperatorTakeSkipped(_acceptPeginTxid, committeeId, streamInfo);
         _completeSlot(streamInfo, _acceptPeginTxid, bytes32(0));
     }
 

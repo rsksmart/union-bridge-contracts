@@ -14,6 +14,7 @@ struct OperatorTakeInfo {
     bytes32 pegoutId;
     int256 advanceFundsBlockNumber;
     bytes32 reimbursementKickoffTxid;
+    int256 reimbursementKickoffBtcBlockNumber;
 }
 
 /// @notice Per-stream timeout settings for a single stream
@@ -61,6 +62,12 @@ interface IOperatorTakeManager {
     ///      Bitcoin blocks have passed since the reveal was confirmed.
     /// @param _acceptPeginTxid The peg-in txid whose status is REVEALED
     function skipOperatorWon(bytes32 _acceptPeginTxid) external;
+
+    /// @notice Skips the operator take step if the timeout has elapsed
+    /// @dev Callable by any committee member once wtNoChallengeTimelock + 2 * pegoutConfirmations
+    ///      Bitcoin blocks have passed since the reimbursement kickoff tx was confirmed.
+    /// @param _acceptPeginTxid The peg-in txid whose status is KICKOFF
+    function skipOperatorTake(bytes32 _acceptPeginTxid) external;
 
     /// @notice Triggers the operator take process for a peg-out when not all committee members sign within timeout
     /// @param _acceptPeginTxid The accept peg-in transaction id for the peg-out
@@ -120,6 +127,9 @@ interface IOperatorTakeManager {
 
     /// @notice Event emitted when the operator won step is skipped after timeout
     event OperatorWonSkipped(bytes32 indexed acceptPeginTxid, uint128 committeeId, StreamPosition streamInfo);
+
+    /// @notice Event emitted when the operator take step is skipped after timeout
+    event OperatorTakeSkipped(bytes32 indexed acceptPeginTxid, uint128 committeeId, StreamPosition streamInfo);
 
     /// @notice Event emitted when reimbursement kickoff is successfully registered
     event ReimbursementKickoffRegistered(
@@ -183,6 +193,14 @@ interface IOperatorTakeManager {
     /// @param currentBtcHeight Current Bitcoin best chain height
     /// @param skipThreshold Required blocks since reveal (opWonTimelock + 2 * pegoutConfirmations)
     error OperatorWonTimeoutNotExpired(int256 revealBtcBlockNumber, int256 currentBtcHeight, uint256 skipThreshold);
+
+    /// @notice Thrown when skipOperatorTake is called before the timeout has expired
+    /// @param kickoffBtcBlockNumber Block at which reimbursement kickoff was confirmed
+    /// @param currentBtcHeight Current Bitcoin best chain height
+    /// @param skipThreshold Required blocks since kickoff (wtNoChallengeTimelock + 2 * pegoutConfirmations)
+    error OperatorTakeSkipTimeoutNotExpired(
+        int256 kickoffBtcBlockNumber, int256 currentBtcHeight, uint256 skipThreshold
+    );
 
     /// @notice Thrown when trying to trigger operator take before operator take timeout has expired
     error OperatorTakeTimeoutNotExpired(uint256 updatedAt, uint256 expireAt);
