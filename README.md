@@ -580,7 +580,9 @@ Each stream requires a `StreamSettings` struct that defines:
   - 1 BTC: 100,000,000 satoshis
   - 10 BTC: 1,000,000,000 satoshis
 
-- **`peginConfirmations`** (uint8): Number of Bitcoin confirmations required for peg-in transactions. Default: 12 blocks for mainnet, 1 block for testnet, 2 blocks for local development.
+- **`peginConfirmations`** (uint8): Number of Bitcoin confirmations required for peg-in transactions (request pegin and accept pegin). Default: 12 blocks for mainnet, 1 block for testnet, 2 blocks for local development.
+
+- **`rejectPeginConfirmations`** (uint8): Number of Bitcoin confirmations required for reject pegin and user reimbursement transactions. Shorter than `peginConfirmations` to reduce the DDoS window (e.g. 6 blocks for mainnet). Default: 6 for mainnet, 1 for testnet, 1 for local development.
 
 - **`pegoutConfirmations`** (uint8): Number of Bitcoin confirmations required for peg-out transactions. Default: 12 blocks for mainnet, 1 block for testnet, 2 blocks for local development.
 
