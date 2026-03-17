@@ -1,5 +1,5 @@
 # IPauseManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/6a9ea8ca3ca82c82894d3db0e338e4bf6bb46de8/src/interfaces/IPauseManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/ee0115174aa9f16d975ad140f940d23fb1883b23/src/interfaces/IPauseManager.sol)
 
 Interface for the centralized pause manager contract
 
@@ -99,7 +99,7 @@ function setPegoutManager(address _pegoutManager) external;
 
 ### setChallengeManager
 
-Sets the Pegout Manager contract address
+Sets the Challenge Manager contract address
 
 *Only callable by the contract owner*
 
@@ -112,6 +112,23 @@ function setChallengeManager(address _challengeManager) external;
 |Name|Type|Description|
 |----|----|-----------|
 |`_challengeManager`|`address`|The address of the Challenge Manager contract|
+
+
+### setOperatorTakeManager
+
+Sets the OperatorTakeManager contract address
+
+*Only callable by the contract owner*
+
+
+```solidity
+function setOperatorTakeManager(address _operatorTakeManager) external;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_operatorTakeManager`|`address`|The address of the OperatorTakeManager contract|
 
 
 ### setMemberRegistry

@@ -1,5 +1,5 @@
 # SignatureManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/6a9ea8ca3ca82c82894d3db0e338e4bf6bb46de8/src/SignatureManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/ee0115174aa9f16d975ad140f940d23fb1883b23/src/SignatureManager.sol)
 
 **Inherits:**
 [ISignatureManager](/src/interfaces/ISignatureManager.sol/interface.ISignatureManager.md), [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md)
@@ -277,6 +277,27 @@ function checkAllOperatorTakesHashesReady(bytes32 _acceptPeginTxid) external vie
 |Name|Type|Description|
 |----|----|-----------|
 |`<none>`|`bool`|true if all OperatorTake transaction id's are present, false otherwise|
+
+
+### getMissingOperatorTakeHashes
+
+Gets the number of missing OperatorTake transaction id's for a given accept peg-in transaction
+
+
+```solidity
+function getMissingOperatorTakeHashes(bytes32 _acceptPeginTxid) external view returns (uint8);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction id|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`uint8`|The number of missing OperatorTake transaction id's|
 
 
 ### getOperatorTakeData
