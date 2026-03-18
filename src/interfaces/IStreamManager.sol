@@ -98,6 +98,9 @@ struct Stream {
     /// @notice Number of confirmations required for peg-in transactions
     /// @dev Ensures sufficient Bitcoin confirmations before accepting peg-ins
     uint8 peginConfirmations;
+    /// @notice Number of confirmations required for reject pegin and user reimbursement transactions
+    /// @dev Shorter than peginConfirmations to reduce DDoS window; attacker has no incentive to fork Bitcoin
+    uint8 rejectPeginConfirmations;
     /// @notice Number of confirmations required for peg-out transactions
     /// @dev Ensures sufficient Bitcoin confirmations before completing peg-outs
     uint8 pegoutConfirmations;
@@ -136,6 +139,8 @@ struct StreamSettings {
     uint64 denomination;
     /// @notice Number of confirmations required for peg-in transactions
     uint8 peginConfirmations;
+    /// @notice Number of confirmations required for reject pegin and user reimbursement transactions
+    uint8 rejectPeginConfirmations;
     /// @notice Number of confirmations required for peg-out transactions
     uint8 pegoutConfirmations;
     /// @notice Timelock settings for the Bitcoin transactions stored in the stream manager
@@ -278,6 +283,12 @@ interface IStreamManager {
     /// @param _streamId The ID of the stream
     /// @param _confirmations The number of confirmations required for peg-in transactions
     function setPeginConfirmations(uint64 _streamId, uint8 _confirmations) external;
+
+    /// @notice Sets the number of confirmations required for reject pegin and user reimbursement transactions
+    /// @dev Only callable by the contract owner
+    /// @param _streamId The ID of the stream
+    /// @param _confirmations The number of confirmations required for reject pegin and user reimbursement
+    function setRejectPeginConfirmations(uint64 _streamId, uint8 _confirmations) external;
 
     /// @notice Sets the number of confirmations required for peg-out transactions
     /// @dev Only callable by the contract owner
@@ -436,6 +447,11 @@ interface IStreamManager {
     /// @param _confirmations The number of confirmations required
     event PeginConfirmationsUpdated(uint64 _streamId, uint8 _confirmations);
 
+    /// @notice Event emitted when the number of confirmations required for reject pegin and user reimbursement is updated
+    /// @param _streamId The ID of the stream
+    /// @param _confirmations The number of confirmations required
+    event RejectPeginConfirmationsUpdated(uint64 _streamId, uint8 _confirmations);
+
     /// @notice Event emitted when the number of confirmations required for peg-out transactions is updated
     /// @param _streamId The ID of the stream
     /// @param _confirmations The number of confirmations required
@@ -507,6 +523,20 @@ interface IStreamManager {
     /// @notice Thrown when peg-in confirmations are invalid
     /// @param confirmations The invalid number of confirmations
     error InvalidPeginConfirmations(uint8 confirmations);
+
+    /// @notice Thrown when reject pegin confirmations are invalid
+    /// @param confirmations The invalid number of confirmations
+    error InvalidRejectPeginConfirmations(uint8 confirmations);
+
+    /// @notice Thrown when reject pegin confirmations exceed pegin confirmations
+    /// @param rejectPeginConfirmations The requested reject pegin confirmations
+    /// @param peginConfirmations The stream's pegin confirmations (reject must be <= this)
+    error RejectPeginConfirmationsExceedsPegin(uint8 rejectPeginConfirmations, uint8 peginConfirmations);
+
+    /// @notice Thrown when pegin confirmations are set lower than reject pegin confirmations
+    /// @param peginConfirmations The requested pegin confirmations
+    /// @param rejectPeginConfirmations The stream's reject pegin confirmations (pegin must be >= this)
+    error PeginConfirmationsLowerThanRejectPegin(uint8 peginConfirmations, uint8 rejectPeginConfirmations);
 
     /// @notice Thrown when peg-out confirmations are invalid
     /// @param confirmations The invalid number of confirmations

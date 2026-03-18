@@ -1,5 +1,5 @@
 # BtcHelper
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/6a9ea8ca3ca82c82894d3db0e338e4bf6bb46de8/src/libraries/BtcHelper.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/ee0115174aa9f16d975ad140f940d23fb1883b23/src/libraries/BtcHelper.sol)
 
 **Author:**
 Fairgate
@@ -286,28 +286,69 @@ function satoshiToWei(uint256 _amount) internal pure returns (uint256);
 |`<none>`|`uint256`|The amount in wei|
 
 
-### pubKeyXonlyToCompact
+### parityFromY
 
-Converts a bytes32 public key to a bytes format
-
-*The public key is expected to be in the compressed format (x-coordinate only)*
-
-*The first byte is set to 0x02 to indicate a compressed public key*
+Returns the parity prefix byte for a compressed public key from its Y coordinate
 
 
 ```solidity
-function pubKeyXonlyToCompact(bytes32 _pubKey) internal pure returns (bytes memory);
+function parityFromY(bytes32 _publicKeyY) internal pure returns (bytes1);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_pubKey`|`bytes32`|The public key in bytes32 format|
+|`_publicKeyY`|`bytes32`|The Y coordinate of the public key|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`bytes`|The public key in bytes format|
+|`<none>`|`bytes1`|0x02 if Y is even, 0x03 if Y is odd|
+
+
+### compactPubKeyToBytes
+
+Serializes a CompactPubKey to 33-byte compressed bytes format
+
+
+```solidity
+function compactPubKeyToBytes(CompactPubKey memory _key) internal pure returns (bytes memory);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_key`|`CompactPubKey`|The CompactPubKey with parity and x-only coordinate|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`bytes`|The public key in 33-byte bytes format|
+
+
+### assumeEvenParityCompact
+
+Serializes an x-only public key to 33-byte compressed format assuming even parity (0x02)
+
+*Used where parity is not available (e.g. x-only key extracted from OP_RETURN).
+TODO: When parity becomes available at this call site, replace with compactPubKeyToBytes instead.*
+
+
+```solidity
+function assumeEvenParityCompact(bytes32 _pubKey) internal pure returns (bytes memory);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_pubKey`|`bytes32`|The x-only public key (32 bytes)|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`bytes`|The public key in 33-byte compressed format with 0x02 prefix|
 
 

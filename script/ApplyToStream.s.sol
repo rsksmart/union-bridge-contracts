@@ -6,7 +6,6 @@ import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
 import {ICommitteeRegistry, Role, UTXO} from "src/interfaces/ICommitteeRegistry.sol";
 import {IMemberRegistry, MemberRegistrationKeys, MemberKeys} from "src/interfaces/IMemberRegistry.sol";
-import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {StreamDenomination, IStreamManager} from "src/interfaces/IStreamManager.sol";
 
 contract ApplyToStreamScript is ScriptUtils, ContractAddressManager {

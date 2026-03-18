@@ -118,12 +118,21 @@ contract StreamManager is IStreamManager, BaseProxy {
                     _streamSettings[i].pegoutConfirmations
                 );
             }
+            if (_streamSettings[i].rejectPeginConfirmations == 0) {
+                revert InvalidRejectPeginConfirmations(_streamSettings[i].rejectPeginConfirmations);
+            }
+            if (_streamSettings[i].rejectPeginConfirmations > _streamSettings[i].peginConfirmations) {
+                revert RejectPeginConfirmationsExceedsPegin(
+                    _streamSettings[i].rejectPeginConfirmations, _streamSettings[i].peginConfirmations
+                );
+            }
             streams.push(
                 Stream({
                     streamId: i,
                     denomination: _streamSettings[i].denomination,
                     peginPacketPointer: 0,
                     peginConfirmations: _streamSettings[i].peginConfirmations,
+                    rejectPeginConfirmations: _streamSettings[i].rejectPeginConfirmations,
                     pegoutConfirmations: _streamSettings[i].pegoutConfirmations,
                     timelockSettings: _streamSettings[i].timelockSettings
                 })
@@ -488,9 +497,29 @@ contract StreamManager is IStreamManager, BaseProxy {
         if (_confirmations == 0) {
             revert InvalidPeginConfirmations(_confirmations);
         }
+        if (_confirmations < streams[_streamId].rejectPeginConfirmations) {
+            revert PeginConfirmationsLowerThanRejectPegin(_confirmations, streams[_streamId].rejectPeginConfirmations);
+        }
 
         streams[_streamId].peginConfirmations = _confirmations;
         emit PeginConfirmationsUpdated(_streamId, _confirmations);
+    }
+
+    /// @inheritdoc IStreamManager
+    function setRejectPeginConfirmations(uint64 _streamId, uint8 _confirmations)
+        external
+        streamExists(_streamId)
+        onlyOwner
+    {
+        if (_confirmations == 0) {
+            revert InvalidRejectPeginConfirmations(_confirmations);
+        }
+        if (_confirmations > streams[_streamId].peginConfirmations) {
+            revert RejectPeginConfirmationsExceedsPegin(_confirmations, streams[_streamId].peginConfirmations);
+        }
+
+        streams[_streamId].rejectPeginConfirmations = _confirmations;
+        emit RejectPeginConfirmationsUpdated(_streamId, _confirmations);
     }
 
     /// @inheritdoc IStreamManager

@@ -1,5 +1,5 @@
 # IMemberRegistry
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/6a9ea8ca3ca82c82894d3db0e338e4bf6bb46de8/src/interfaces/IMemberRegistry.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/ee0115174aa9f16d975ad140f940d23fb1883b23/src/interfaces/IMemberRegistry.sol)
 
 Interface for managing committee member registration, applications, and balance tracking
 
@@ -203,7 +203,7 @@ Gets the TAKE public key for a specific member
 
 
 ```solidity
-function getMemberTakePubKey(address _address) external view returns (bytes32);
+function getMemberTakePubKey(address _address) external view returns (CompactPubKey memory);
 ```
 **Parameters**
 
@@ -215,7 +215,7 @@ function getMemberTakePubKey(address _address) external view returns (bytes32);
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`bytes32`|The TAKE public key (x-coordinate only)|
+|`<none>`|`CompactPubKey`|The TAKE public key in compact form (parity byte + x-coordinate)|
 
 
 ### getMemberComPubKey
@@ -237,6 +237,27 @@ function getMemberComPubKey(address _address) external view returns (RSAPublicKe
 |Name|Type|Description|
 |----|----|-----------|
 |`<none>`|`RSAPublicKey`|The COMMUNICATION public key (RSA struct)|
+
+
+### getMemberDisputePubKey
+
+Retrieves the DISPUTE public key for a specific member
+
+
+```solidity
+function getMemberDisputePubKey(address _address) external view returns (CompactPubKey memory);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_address`|`address`|The member's address|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`CompactPubKey`|The DISPUTE public key in compact form (parity byte + x-coordinate)|
 
 
 ### getMemberPublicKeys
@@ -838,7 +859,7 @@ error InvalidEDCSAPublicKey(PublicKeyType keyType, bytes32 publicKeyX, bytes32 p
 
 |Name|Type|Description|
 |----|----|-----------|
-|`keyType`|`PublicKeyType`|The type of the public key (TAKE, COVENANT, or COMMUNICATION)|
+|`keyType`|`PublicKeyType`|The type of the public key (TAKE, DISPUTE, or COMMUNICATION)|
 |`publicKeyX`|`bytes32`|The X-coordinate of the public key|
 |`publicKeyY`|`bytes32`|The Y-coordinate of the public key|
 
@@ -854,23 +875,38 @@ error InvalidZeroRSAPublicKey(PublicKeyType keyType);
 
 |Name|Type|Description|
 |----|----|-----------|
-|`keyType`|`PublicKeyType`|The type of the public key (TAKE, COVENANT, or COMMUNICATION)|
+|`keyType`|`PublicKeyType`|The type of the public key (TAKE, DISPUTE, or COMMUNICATION)|
 
-### PublicKeyMismatch
-Thrown when a public key doesn't match the expected value
+### PublicKeyMismatchECDSA
+Thrown when an ECDSA public key doesn't match the registered value
 
 
 ```solidity
-error PublicKeyMismatch(PublicKeyType keyType, bytes32 currentPubKey, bytes32 newPubKey);
+error PublicKeyMismatchECDSA(PublicKeyType keyType, CompactPubKey registeredPubKey, CompactPubKey submittedPubKey);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`keyType`|`PublicKeyType`|The type of the public key (TAKE, COVENANT, or COMMUNICATION)|
-|`currentPubKey`|`bytes32`|The current public key|
-|`newPubKey`|`bytes32`|The new public key|
+|`keyType`|`PublicKeyType`|The type of the public key (TAKE or DISPUTE)|
+|`registeredPubKey`|`CompactPubKey`|The previously registered public key|
+|`submittedPubKey`|`CompactPubKey`|The newly submitted public key|
+
+### PublicKeyMismatchRSA
+Thrown when an RSA public key hash doesn't match the registered value
+
+
+```solidity
+error PublicKeyMismatchRSA(bytes32 registeredKeyHash, bytes32 submittedKeyHash);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`registeredKeyHash`|`bytes32`|Hash of the previously registered RSA public key|
+|`submittedKeyHash`|`bytes32`|Hash of the newly submitted RSA public key|
 
 ### InvalidZeroEDCSASignature
 Thrown when a signature is zero
@@ -884,7 +920,7 @@ error InvalidZeroEDCSASignature(PublicKeyType keyType, ECDSAPublicKey publicKey)
 
 |Name|Type|Description|
 |----|----|-----------|
-|`keyType`|`PublicKeyType`|The type of the public key (TAKE, COVENANT, or COMMUNICATION)|
+|`keyType`|`PublicKeyType`|The type of the public key (TAKE, DISPUTE, or COMMUNICATION)|
 |`publicKey`|`ECDSAPublicKey`|The public key registration with invalid signature|
 
 ### InvalidEDCSASignature
@@ -901,7 +937,7 @@ error InvalidEDCSASignature(
 
 |Name|Type|Description|
 |----|----|-----------|
-|`keyType`|`PublicKeyType`|The type of the public key (TAKE, COVENANT, or COMMUNICATION)|
+|`keyType`|`PublicKeyType`|The type of the public key (TAKE, DISPUTE, or COMMUNICATION)|
 |`publicKey`|`ECDSAPublicKey`|The public key registration with invalid signature|
 |`recoveredSignerAddress`|`address`|The address recovered from the signature|
 |`signerAddress`|`address`|The expected signer address|

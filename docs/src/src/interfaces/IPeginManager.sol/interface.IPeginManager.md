@@ -1,5 +1,5 @@
 # IPeginManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/6a9ea8ca3ca82c82894d3db0e338e4bf6bb46de8/src/interfaces/IPeginManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/ee0115174aa9f16d975ad140f940d23fb1883b23/src/interfaces/IPeginManager.sol)
 
 Interface for managing peg-in operations
 
@@ -11,7 +11,7 @@ Generates request peg-in data including temporary Bitcoin address and member dis
 
 *Creates a Taproot address with committee and user reimbursment paths for secure peg-in*
 
-*Returns an array of dispute keys (covenant keys) for each committee member in order*
+*Returns an array of dispute keys for each committee member in order*
 
 
 ```solidity
@@ -21,7 +21,7 @@ function getRequestPeginData(address _rootstockDepositAddress, uint64 _value, by
     returns (
         string memory temporaryPeginAddress,
         uint64 packetNumber,
-        bytes32[] memory memberDisputeKeys,
+        CompactPubKey[] memory memberDisputeKeys,
         uint64 availableSlots
     );
 ```
@@ -39,7 +39,7 @@ function getRequestPeginData(address _rootstockDepositAddress, uint64 _value, by
 |----|----|-----------|
 |`temporaryPeginAddress`|`string`|The generated temporary Bitcoin address for deposit|
 |`packetNumber`|`uint64`|The packet number for this peg-in request|
-|`memberDisputeKeys`|`bytes32[]`|Array of dispute keys (covenant keys) for each committee member in order|
+|`memberDisputeKeys`|`CompactPubKey[]`|Array of dispute keys for each committee member in order|
 |`availableSlots`|`uint64`||
 
 
