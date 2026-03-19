@@ -58,29 +58,6 @@ pragma solidity ^0.8.20;
  * - Test should pass = BitVMX transactions are valid and compatible with contracts
  * - Test failure = Transaction structure mismatch, debug :)
  *
- * ============================================================================
- * ADVANCE_FUNDS_TX COMPATIBILITY TEST
- * ============================================================================
- *
- * The test_bitVMXAdvanceFundsTxSPVPassesValidation test validates that the
- * ADVANCE_FUNDS_TX SPV from BitVMX (rust-bitvmx-client) passes contract validation.
- *
- * HOW TO GET THE SPV FROM BITVMX:
- * 1. Run: ./examples/union/scripts/run-example.sh advance_funds
- * 2. In the logs, find "ADVANCE_FUNDS_TX SPV for unit test" (printed after "Advance funds complete")
- *    NOTE: There are TWO SPVs with this label - use the one from "Advance funds complete"
- *    (NOT the one from "Pegin accepted and confirmed" which is the ACCEPT_PEGIN_TX)
- * 3. Map the parameters to BtcTxSPVProof struct:
- *    - block_hash -> blockHash
- *    - tx_hex -> decode into BtcTransaction (excluding witness for txid calc)
- *    - merkle_branch_path -> merkleBranchPath
- *    - merkle_branch_hashes -> merkleBranchHashes (convert to bytes32[])
- *
- * REFERENCE TX_HEX (source for _getBitVMXAdvanceFundsTransaction - from bitvmx logs:
- * 02000000000101340acc8ed678f2c031a6232ef564433d18e2876ed06530552313f611f19570010200000000fdffffff03e681010000000000160014bcf0470d714b9a4d5559c883d94dc18709ee199d0000000000000000226a20000000000000000000000000000000000000000000000000000000000000000022470000000000001600147160086956f4dc826a89fc010f33bd86bf5347ed02483045022100a5d5b068a4ad0877fe2aad780a63a22539604ee7c99cb6e58507ca96c3251b3402201840ebde4546a29b780107ca96cfa03d3c961f95fe61b8f717bf34575c15edc50121034ae05c8530a41ef79d0e95200d69dae62bc1f491a306ee434413f7dc2857764300000000
- *
- * ============================================================================
- *
  * Known issues:
  * - The user btc address that is extracted from the OP_RETURN output can come from BITVMX as either even or odd,
  *   the contracts assume the user's pubkey is even (prefix 0x02) as a protocol-level decision.
@@ -279,6 +256,20 @@ contract BitVMXCompatibilityTest is Test, HelperContract {
     }
 
     /**
+     * ============================================================================
+     * ADVANCE_FUNDS_TX COMPATIBILITY TEST
+     * ============================================================================
+     *
+     * The test_bitVMXAdvanceFundsTxSPVPassesValidation test validates that the
+     * ADVANCE_FUNDS_TX SPV from BitVMX (rust-bitvmx-client) passes contract validation.
+     *
+     * HOW TO GET THE SPV FROM BITVMX:
+     * 1. Run: ./examples/union/scripts/run-example.sh advance_funds
+     * 2. In logs/<num>/advance_funds_<num>/example.log, find "SPV proof: BtcTxSPVProoft" (printed right before "Advance funds complete")
+     * 3. Map the parameters to BtcTxSPVProof struct (block_hash, tx, merkle_branch_path, merkle_branch_hashes).
+     * Raw SPV proof: BtcTxSPVProof { block_hash: "635a99891a2f778961a16b568f844977f1837afbad3bca062ef631f0e4f4f7e4", tx: Transaction { version: Version(2), lock_time: 0 blocks, input: [TxIn { previous_output: OutPoint { txid: 017095f111f61323553065d06e87e2183d4364f52e23a631c0f278d68ecc0a34, vout: 2 }, script_sig: Script(), sequence: Sequence(0xfffffffd), witness: Witness: { indices: 2, indices_start: 107, witnesses: [[0x30, 0x45, 0x02, 0x21, 0x00, 0xa5, 0xd5, 0xb0, 0x68, 0xa4, 0xad, 0x08, 0x77, 0xfe, 0x2a, 0xad, 0x78, 0x0a, 0x63, 0xa2, 0x25, 0x39, 0x60, 0x4e, 0xe7, 0xc9, 0x9c, 0xb6, 0xe5, 0x85, 0x07, 0xca, 0x96, 0xc3, 0x25, 0x1b, 0x34, 0x02, 0x20, 0x18, 0x40, 0xeb, 0xde, 0x45, 0x46, 0xa2, 0x9b, 0x78, 0x01, 0x07, 0xca, 0x96, 0xcf, 0xa0, 0x3d, 0x3c, 0x96, 0x1f, 0x95, 0xfe, 0x61, 0xb8, 0xf7, 0x17, 0xbf, 0x34, 0x57, 0x5c, 0x15, 0xed, 0xc5, 0x01], [0x03, 0x4a, 0xe0, 0x5c, 0x85, 0x30, 0xa4, 0x1e, 0xf7, 0x9d, 0x0e, 0x95, 0x20, 0x0d, 0x69, 0xda, 0xe6, 0x2b, 0xc1, 0xf4, 0x91, 0xa3, 0x06, 0xee, 0x43, 0x44, 0x13, 0xf7, 0xdc, 0x28, 0x57, 0x76, 0x43]] } }], output: [TxOut { value: 98790 SAT, script_pubkey: Script(OP_0 OP_PUSHBYTES_20 bcf0470d714b9a4d5559c883d94dc18709ee199d) }, TxOut { value: 0 SAT, script_pubkey: Script(OP_RETURN OP_PUSHBYTES_32 0000000000000000000000000000000000000000000000000000000000000000) }, TxOut { value: 18210 SAT, script_pubkey: Script(OP_0 OP_PUSHBYTES_20 7160086956f4dc826a89fc010f33bd86bf5347ed) }] }, merkle_branch_path: "1", merkle_branch_hashes: [[170, 240, 182, 12, 155, 183, 107, 174, 59, 89, 191, 220, 217, 224, 143, 117, 86, 133, 136, 149, 166, 216, 118, 95, 160, 185, 126, 10, 111, 41, 197, 252]] }
+     * Solidity formated SPV proof: ADVANCE_FUNDS_TX SPV for unit test (BitVMXCompatibility.t.sol): block_hash=0x635a99891a2f778961a16b568f844977f1837afbad3bca062ef631f0e4f4f7e4, tx_hex=02000000000101340acc8ed678f2c031a6232ef564433d18e2876ed06530552313f611f19570010200000000fdffffff03e681010000000000160014bcf0470d714b9a4d5559c883d94dc18709ee199d0000000000000000226a20000000000000000000000000000000000000000000000000000000000000000022470000000000001600147160086956f4dc826a89fc010f33bd86bf5347ed02483045022100a5d5b068a4ad0877fe2aad780a63a22539604ee7c99cb6e58507ca96c3251b3402201840ebde4546a29b780107ca96cfa03d3c961f95fe61b8f717bf34575c15edc50121034ae05c8530a41ef79d0e95200d69dae62bc1f491a306ee434413f7dc2857764300000000, merkle_branch_path=1, merkle_branch_hashes=[0xaaf0b60c9bb76bae3b59bfdcd9e08f7556858895a6d8765fa0b97e0a6f29c5fc]
+     *
      * @dev Verifies that ADVANCE_FUNDS_TX SPV from BitVMX passes contract validation.
      * @dev Validates transaction structure and OP_RETURN pegout_id format compatibility.
      */
@@ -311,7 +302,7 @@ contract BitVMXCompatibilityTest is Test, HelperContract {
             advanceFundsTx.outputs[Constants.ADVANCE_FUNDS_VOUT_OP_RETURN].amount, 0, "OP_RETURN amount should be 0"
         );
         bytes memory opReturnScript = advanceFundsTx.outputs[Constants.ADVANCE_FUNDS_VOUT_OP_RETURN].scriptPubKey;
-        assertEq(opReturnScript.length, 34, "OP_RETURN should be 34 bytes (6a + 20 + 32)");
+        assertEq(opReturnScript.length, 34, "OP_RETURN should be 34 bytes (OP_RETURN opcode (1) + OP_PUSHBYTES_32 opcode (1) + 32 bytes data (32)");
 
         // Verify our getPegoutIdScript produces matching format for bytes32(0)
         bytes memory expectedPegoutIdScript = BtcScriptParser.getPegoutIdScript(bytes32(0));
@@ -483,7 +474,6 @@ contract BitVMXCompatibilityTest is Test, HelperContract {
 
     /// @dev Stream 0 pegout setup (0.001 BTC, BitVMX user)
     /// @dev Builds accept pegin tx matching exactly what the contract expects (from getAcceptPeginSignatureHash)
-    /// @dev Builds accept pegin tx matching exactly what the contract expects (via getAcceptPeginSignatureHash)
     /// @dev Stream 0 pegout setup (0.001 BTC, BitVMX user)
     function _setupPegoutForStream0(bytes32 acceptPeginTxid, BtcTransaction memory acceptTx)
         internal
