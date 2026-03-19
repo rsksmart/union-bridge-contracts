@@ -22,7 +22,6 @@ import {Constants} from "src/libraries/Constants.sol";
 import {SignatureData, OperatorTakeData} from "src/interfaces/ISignatureManager.sol";
 import {IPausable} from "src/interfaces/IPausable.sol";
 import {BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
-import {BtcHelper} from "src/libraries/BtcHelper.sol";
 
 contract CommitteeRegistryTest is Test, HelperContract {
     // Maximum allowed gas for committee creation operations

@@ -385,7 +385,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
         // and that block is inside Bitcoin Mainchain
         // and has enough confirmations
         int256 blockNumber = rbtcBridge.getTxBlockNumberAndVerifyConfirmations(
-            stream.peginConfirmations,
+            stream.rejectPeginConfirmations,
             _userReimbursementTxid,
             _userReimbursementTxSPVProof.blockHash,
             _userReimbursementTxSPVProof.merkleBranchPath,
@@ -459,7 +459,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
         // and that block is inside Bitcoin Mainchain
         // and has enough confirmations
         rbtcBridge.verifyTxConfirmations(
-            stream.peginConfirmations,
+            stream.rejectPeginConfirmations,
             _rejectPeginTxid,
             _rejectPeginTxSPVProof.blockHash,
             _rejectPeginTxSPVProof.merkleBranchPath,

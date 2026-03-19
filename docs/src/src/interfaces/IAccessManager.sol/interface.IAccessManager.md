@@ -1,5 +1,5 @@
 # IAccessManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/6a9ea8ca3ca82c82894d3db0e338e4bf6bb46de8/src/interfaces/IAccessManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/ee0115174aa9f16d975ad140f940d23fb1883b23/src/interfaces/IAccessManager.sol)
 
 Interface for access control in the union bridge
 
@@ -196,6 +196,23 @@ function canSetBaseEvent(address _caller) external view;
 |`_caller`|`address`|The address of the caller|
 
 
+### revertIfNotChallengeManager
+
+Requires the caller to be the challenge manager
+
+*Reverts if the caller is not the challenge manager*
+
+
+```solidity
+function revertIfNotChallengeManager(address _caller) external view;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_caller`|`address`|The address of the caller|
+
+
 ### revertIfNotTestnet
 
 Reverts if not called on testnet, regtest, or local network
@@ -354,6 +371,20 @@ Thrown when an account is not authorized to set the base event
 
 ```solidity
 error UnauthorizedToSetBaseEvent(address _caller);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_caller`|`address`|The address of the unauthorized account|
+
+### CallerIsNotChallengeManager
+Thrown when an account is not the challenge manager
+
+
+```solidity
+error CallerIsNotChallengeManager(address _caller);
 ```
 
 **Parameters**

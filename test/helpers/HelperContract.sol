@@ -25,7 +25,7 @@ import {
     CommunicationData,
     COMMUNICATION_DATA_CHUNKS
 } from "src/interfaces/ICommitteeRegistry.sol";
-import {MemberRegistrationKeys, MemberKeys, CompactPubKey, ECDSAPublicKey} from "src/interfaces/IMemberRegistry.sol";
+import {MemberRegistrationKeys, MemberKeys, CompactPubKey} from "src/interfaces/IMemberRegistry.sol";
 import {StreamDenomination, Slot, Stream, SlotState, SlotLocation} from "src/interfaces/IStreamManager.sol";
 import {
     BtcTxIn, BtcTxOut, BtcTransaction, BitcoinSignatureData, PrevoutData

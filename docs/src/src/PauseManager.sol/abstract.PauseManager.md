@@ -1,5 +1,5 @@
 # PauseManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/6a9ea8ca3ca82c82894d3db0e338e4bf6bb46de8/src/PauseManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/ee0115174aa9f16d975ad140f940d23fb1883b23/src/PauseManager.sol)
 
 **Inherits:**
 [IPauseManager](/src/interfaces/IPauseManager.sol/interface.IPauseManager.md), [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md)
@@ -61,6 +61,15 @@ The ChallengeManager contract
 
 ```solidity
 address public challengeManager;
+```
+
+
+### operatorTakeManager
+The OperatorTakeManager contract
+
+
+```solidity
+address public operatorTakeManager;
 ```
 
 
@@ -172,7 +181,7 @@ function setPegoutManager(address _pegoutManager) external onlyOwner;
 
 ### setChallengeManager
 
-Sets the Pegout Manager contract address
+Sets the Challenge Manager contract address
 
 *Only callable by the contract owner*
 
@@ -185,6 +194,21 @@ function setChallengeManager(address _challengeManager) external onlyOwner;
 |Name|Type|Description|
 |----|----|-----------|
 |`_challengeManager`|`address`|The address of the Challenge Manager contract|
+
+
+### setOperatorTakeManager
+
+Sets the OperatorTakeManager contract address
+
+
+```solidity
+function setOperatorTakeManager(address _operatorTakeManager) external onlyOwner;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_operatorTakeManager`|`address`|The address of the OperatorTakeManager contract|
 
 
 ### setMemberRegistry
