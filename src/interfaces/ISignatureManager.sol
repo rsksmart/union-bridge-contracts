@@ -80,18 +80,12 @@ interface ISignatureManager {
     /// @dev Returns signatures in the same order as committee members for Musig2 compatibility
     /// @param _txid The hash to get signatures for
     /// @return partialSignaturesData Array of signature data for all committee members
-    /// @return missingSignatures Number of missing signatures
     /// @return missingNonces Number of missing nonces
     /// @return committeeId The committee ID for this signature collection
     function getPartialSignatures(bytes32 _txid)
         external
         view
-        returns (
-            SignatureData[] memory partialSignaturesData,
-            uint8 missingSignatures,
-            uint8 missingNonces,
-            uint128 committeeId
-        );
+        returns (SignatureData[] memory partialSignaturesData, uint8 missingNonces, uint128 committeeId);
 
     /// @notice Initializes OperatorTake transaction id collection for a given accept peg-in transaction
     /// @dev Sets up the OperatorTake txid tracking structure for committee members

@@ -57,7 +57,7 @@ contract ChallengeManager is IChallengeManager, PegBase {
         whenNotPaused
     {
         (StreamPosition memory streamInfo, uint128 committeeId, uint8 pegoutConfirmations) =
-            streamManager.validatePegoutStatus(_acceptPeginTxid, PegStatus.KICKOFF);
+            streamManager.validatePegStatus(_acceptPeginTxid, PegStatus.KICKOFF);
         committeeRegistry.validateMemberInCommittee(committeeId, _msgSender());
 
         if (_challenge.btcTx.inputs.length != Constants.CHALLENGE_INPUT_COUNT) {
@@ -100,7 +100,7 @@ contract ChallengeManager is IChallengeManager, PegBase {
         whenNotPaused
     {
         (StreamPosition memory streamInfo, uint128 committeeId, uint8 pegoutConfirmations) =
-            streamManager.validatePegoutStatus(_acceptPeginTxid, PegStatus.CHALLENGE);
+            streamManager.validatePegStatus(_acceptPeginTxid, PegStatus.CHALLENGE);
         committeeRegistry.validateMemberInCommittee(committeeId, _msgSender());
 
         if (_inputNotRevealed.btcTx.inputs.length != Constants.INPUT_NOT_REVEALED_INPUT_COUNT) {
@@ -156,7 +156,7 @@ contract ChallengeManager is IChallengeManager, PegBase {
         whenNotPaused
     {
         (StreamPosition memory streamInfo, uint128 committeeId, uint8 pegoutConfirmations) =
-            streamManager.validatePegoutStatus(_acceptPeginTxid, PegStatus.CHALLENGE);
+            streamManager.validatePegStatus(_acceptPeginTxid, PegStatus.CHALLENGE);
         committeeRegistry.validateMemberInCommittee(committeeId, _msgSender());
 
         if (_inputRevealed.btcTx.inputs.length != Constants.INPUT_REVEALED_INPUT_COUNT) {
@@ -205,7 +205,7 @@ contract ChallengeManager is IChallengeManager, PegBase {
         whenNotPaused
     {
         (StreamPosition memory streamInfo, uint128 committeeId, uint8 pegoutConfirmations) =
-            streamManager.validatePegoutStatus(_acceptPeginTxid, PegStatus.REVEALED);
+            streamManager.validatePegStatus(_acceptPeginTxid, PegStatus.REVEALED);
         committeeRegistry.validateMemberInCommittee(committeeId, _msgSender());
 
         if (_stopOperatorWon.btcTx.inputs.length != Constants.STOP_OPERATOR_WON_INPUT_COUNT) {

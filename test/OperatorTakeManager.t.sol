@@ -41,18 +41,30 @@ contract OperatorTakeManagerTest is Test, HelperContract {
         setup_completeCommitteeAndNewMembers();
     }
 
-    function test_triggerOperatorTake_Revert_UserTakeAlreadySigned() external {
-        // Arrange
+    function test_triggerOperatorTake_Success_AllSignaturesPresent() external {
+        // Arrange: add all signatures
         RegisterUserTakeSetup memory setup = setup_pegoutAndMemberNonces();
+        uint256 createdAt = block.timestamp;
         setup_addMemberSignature_MultipleMembers(setup.pegoutTxid, 0, registry.committeeMemberCount());
 
-        // Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(IOperatorTakeManager.UserTakeAlreadySigned.selector, setup.acceptPeginTxid)
-        );
+        // expire TAKE_0
+        vm.warp(createdAt + TAKE_0_TIMEOUT_DEFAULT + 1);
 
-        // Act
+        Committee memory committee = registry.getCommittee(COMMITTEE_ID_STREAM_1_COMMITTEE_1);
+        uint256 lastOpTakeIndex = committee.operatorTakeIndex;
+        uint256 expectedOpTakeIndex = (lastOpTakeIndex + 1) % committee.members.length;
+        address expectedOperatorAddress = committee.members[expectedOpTakeIndex].memberAddress;
+
+        // Assert event
+        assertEventOperatorTakeTriggered(setup, expectedOperatorAddress);
+
+        // Act: should succeed even though all signatures are present
         operatorTakeManager.triggerOperatorTake(setup.acceptPeginTxid);
+
+        // Assert status
+        assertTrue(
+            streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId).state == SlotState.ADVANCED
+        );
     }
 
     function test_triggerOperatorTake_Revert_PegoutNotFoundForPegin() external {

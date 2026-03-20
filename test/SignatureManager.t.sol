@@ -115,10 +115,9 @@ contract SignatureManagerTest is Test, HelperContract {
 
         // Assert
         assertEq(allSignaturesReady, false, "Not all signatures should be ready at this point");
-        (SignatureData[] memory signatures, uint8 missingSignatures, uint8 missingNonces, uint128 committeeId) =
+        (SignatureData[] memory signatures, uint8 missingNonces, uint128 committeeId) =
             signatureManager.getPartialSignatures(txid);
-        // Check the missing signatures and missing nonces
-        assertEq(missingSignatures, registry.committeeMemberCount() - 1, "missingSignatures should be equal to 1");
+        // Check the missing nonces
         assertEq(missingNonces, 0, "missingNonces should be equal to 1");
         // Check the committee id
         assertEq(
@@ -179,10 +178,9 @@ contract SignatureManagerTest is Test, HelperContract {
 
         // Assert
         assertEq(allSignaturesReady, true, "Not all signatures should be ready at this point");
-        (SignatureData[] memory signatures, uint8 missingSignatures, uint8 missingNonces, uint128 committeeId) =
+        (SignatureData[] memory signatures, uint8 missingNonces, uint128 committeeId) =
             signatureManager.getPartialSignatures(txid);
-        // Check the missing signatures and missing nonces
-        assertEq(missingSignatures, 0, "missingSignatures should be equal to 0");
+        // Check the missing nonces
         assertEq(missingNonces, 0, "missingNonces should be equal to 0");
         // Check the committee id
         assertEq(
@@ -367,12 +365,9 @@ contract SignatureManagerTest is Test, HelperContract {
         signatureManager.initSignatures(txid, COMMITTEE_ID_STREAM_1_COMMITTEE_1);
 
         // Assert
-        (SignatureData[] memory signatures, uint8 missingSignatures, uint8 missingNonces, uint128 committeeId) =
+        (SignatureData[] memory signatures, uint8 missingNonces, uint128 committeeId) =
             signatureManager.getPartialSignatures(txid);
-        // Check the missing signatures and missing nonces
-        assertEq(
-            missingSignatures, committeeMemberCount, "missingSignatures should be equal to the committee member count"
-        );
+        // Check the missing nonces
         assertEq(missingNonces, committeeMemberCount, "missingNonces should be equal to the committee member count");
         // Check the committee id
         assertEq(
