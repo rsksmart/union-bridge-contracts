@@ -907,8 +907,8 @@ contract OperatorTakeManagerTest is Test, HelperContract {
         vm.expectRevert(
             abi.encodeWithSelector(
                 IPegoutManager.IncorrectOutputScript.selector,
-                hex"6a0000000000000000000000000000000000000000000000000000000000000000",
-                hex"6a04672af373376c8399cb5810ec9dc16eb14fb8d7cf10a4c067090732cf7b8aa2"
+                BtcScriptParser.getPegoutIdScript(bytes32(0)),
+                BtcScriptParser.getPegoutIdScript(setup.pegoutId)
             )
         );
 

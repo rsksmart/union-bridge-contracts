@@ -41,7 +41,7 @@ library BtcScriptParser {
     }
 
     function getPegoutIdScript(bytes32 _pegoutId) internal pure returns (bytes memory) {
-        return abi.encodePacked(OpCodes.OP_RETURN, _pegoutId);
+        return abi.encodePacked(OpCodes.OP_RETURN, OpCodes.OP_PUSHBYTES_32, _pegoutId);
     }
 
     /// @notice Pushes a number onto the Bitcoin script stack
