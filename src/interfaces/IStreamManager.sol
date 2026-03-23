@@ -344,26 +344,29 @@ interface IStreamManager {
     /// @return The stream position associated with the transaction ID
     function getStreamPosition(bytes32 _acceptPeginTxid) external view returns (StreamPosition memory);
 
-    /// @notice Validates peg-in status and returns the stream position
+    /// @notice Validates that the peg status matches the expected status
     /// @param _acceptPeginTxid The accept peg-in transaction ID
-    /// @param _expectedStatus The expected peg status for the operation
-    /// @return streamPosition The stream position if validation passes
-    /// @dev Reverts with PeginNotRequested if the peg-in was not requested
-    /// @dev Reverts with InvalidPegStatus if the current status does not match the expected status
-    function validatePeginStatus(bytes32 _acceptPeginTxid, PegStatus _expectedStatus)
-        external
-        view
-        returns (StreamPosition memory streamPosition);
-
-    /// @notice Validates peg-out status and returns stream position, committee ID, and peg-out confirmations
-    /// @param _acceptPeginTxid The accept peg-in transaction ID
-    /// @param _expectedStatus The expected peg status for the operation
+    /// @param _expectedStatus The expected peg status
     /// @return streamPosition The stream position if validation passes
     /// @return committeeId The committee ID for the packet
     /// @return pegoutConfirmations The number of confirmations required for peg-out transactions
     /// @dev Reverts with PeginNotRequested if the peg-in was not requested
     /// @dev Reverts with InvalidPegStatus if the current status does not match the expected status
-    function validatePegoutStatus(bytes32 _acceptPeginTxid, PegStatus _expectedStatus)
+    function validatePegStatus(bytes32 _acceptPeginTxid, PegStatus _expectedStatus)
+        external
+        view
+        returns (StreamPosition memory streamPosition, uint128 committeeId, uint8 pegoutConfirmations);
+
+    /// @notice Validates that the peg status matches one of two expected statuses
+    /// @param _acceptPeginTxid The accept peg-in transaction ID
+    /// @param _statusA The first acceptable peg status
+    /// @param _statusB The second acceptable peg status
+    /// @return streamPosition The stream position if validation passes
+    /// @return committeeId The committee ID for the packet
+    /// @return pegoutConfirmations The number of confirmations required for peg-out transactions
+    /// @dev Reverts with PeginNotRequested if the peg-in was not requested
+    /// @dev Reverts with InvalidPegStatus if the current status does not match either expected status
+    function validatePegStatus(bytes32 _acceptPeginTxid, PegStatus _statusA, PegStatus _statusB)
         external
         view
         returns (StreamPosition memory streamPosition, uint128 committeeId, uint8 pegoutConfirmations);

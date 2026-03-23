@@ -124,7 +124,7 @@ contract OperatorTakeManager is IOperatorTakeManager, PegManagerBase {
         }
 
         // slither-disable-next-line unused-return
-        (,, uint8 pegoutConfirmations) = streamManager.validatePegoutStatus(acceptPeginTxid, PegStatus.OP_SELECTED);
+        (,, uint8 pegoutConfirmations) = streamManager.validatePegStatus(acceptPeginTxid, PegStatus.OP_SELECTED);
 
         // Validate that the vout is correct
         uint32 vout = _cancelUserTakeSPVProof.btcTx.inputs[Constants.CANCEL_USER_TAKE_VIN_ACCEPT_PEGIN].vout;
@@ -163,7 +163,7 @@ contract OperatorTakeManager is IOperatorTakeManager, PegManagerBase {
         PegoutStartInfo memory pegoutInfo = pegoutManager.getPegoutStartInfo(_acceptPeginTxid);
         StreamPosition memory streamInfo = streamManager.getStreamPosition(_acceptPeginTxid);
 
-        (SignatureData[] memory signatureData, uint8 missingSignatures, uint8 missingNonces, uint128 committeeId) =
+        (SignatureData[] memory signatureData, uint8 missingNonces, uint128 committeeId) =
             signatureManager.getPartialSignatures(pegoutInfo.pegoutTxid);
 
         OperatorTakeInfo storage opInfo = operatorTakeInfo[_acceptPeginTxid];
@@ -172,7 +172,7 @@ contract OperatorTakeManager is IOperatorTakeManager, PegManagerBase {
         }
 
         if (streamInfo.pegStatus == PegStatus.USER_TAKE) {
-            _handleUserTake(_acceptPeginTxid, pegoutInfo.createdAt, missingSignatures, streamInfo.streamId);
+            _handleUserTake(_acceptPeginTxid, pegoutInfo.createdAt, streamInfo.streamId);
         } else if (
             streamInfo.pegStatus == PegStatus.OP_SELECTED || streamInfo.pegStatus == PegStatus.ADVANCED
                 || streamInfo.pegStatus == PegStatus.KICKOFF
@@ -211,15 +211,7 @@ contract OperatorTakeManager is IOperatorTakeManager, PegManagerBase {
         );
     }
 
-    function _handleUserTake(
-        bytes32 _acceptPeginTxid,
-        uint256 _pegoutCreatedAt,
-        uint8 _missingSignatures,
-        uint64 _streamId
-    ) internal {
-        if (_missingSignatures == 0) {
-            revert UserTakeAlreadySigned(_acceptPeginTxid);
-        }
+    function _handleUserTake(bytes32 _acceptPeginTxid, uint256 _pegoutCreatedAt, uint64 _streamId) internal {
         // slither-disable-next-line timestamp
         if (block.timestamp <= _pegoutCreatedAt + takeTimeouts[_streamId].userTake) {
             revert UserTakeTimeoutNotExpired(_pegoutCreatedAt, _pegoutCreatedAt + takeTimeouts[_streamId].userTake);
@@ -280,7 +272,7 @@ contract OperatorTakeManager is IOperatorTakeManager, PegManagerBase {
     {
         // slither-disable-next-line unused-return
         (StreamPosition memory streamInfo, uint128 committeeId,) =
-            streamManager.validatePegoutStatus(_acceptPeginTxid, PegStatus.OP_SELECTED);
+            streamManager.validatePegStatus(_acceptPeginTxid, PegStatus.OP_SELECTED);
 
         OperatorTakeInfo storage opInfo = _validateOperatorTakeCaller(_acceptPeginTxid);
         PegoutStartInfo memory pegoutInfo = pegoutManager.getPegoutStartInfo(_acceptPeginTxid);
@@ -353,7 +345,7 @@ contract OperatorTakeManager is IOperatorTakeManager, PegManagerBase {
         whenNotPaused
     {
         (StreamPosition memory streamInfo, uint128 committeeId, uint8 pegoutConfirmations) =
-            streamManager.validatePegoutStatus(_acceptPeginTxid, PegStatus.ADVANCED);
+            streamManager.validatePegStatus(_acceptPeginTxid, PegStatus.ADVANCED);
 
         OperatorTakeInfo storage opInfo = _validateOperatorTakeCaller(_acceptPeginTxid);
 
@@ -530,7 +522,7 @@ contract OperatorTakeManager is IOperatorTakeManager, PegManagerBase {
         }
 
         (streamInfo, committeeId, pegoutConfirmations) =
-            streamManager.validatePegoutStatus(acceptPeginTxid, _expectedStatus);
+            streamManager.validatePegStatus(acceptPeginTxid, _expectedStatus);
         opInfo = _validateOperatorTakeCaller(acceptPeginTxid);
     }
 

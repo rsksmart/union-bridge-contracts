@@ -768,6 +768,22 @@ contract PegoutManagerTest is Test, HelperContract {
         pegoutManager.registerUserTake(setup.pegoutTxSPVProof);
     }
 
+    function test_registerUserTake_Success_FromOpSelected() external {
+        // Arrange: advance to OP_SELECTED via setup_cancelUserTake (triggerOperatorTake path)
+        (, RegisterUserTakeSetup memory setup) = setup_cancelUserTake();
+
+        // Verify status is now OP_SELECTED
+        StreamPosition memory streamInfo = streamManager.getStreamPosition(setup.acceptPeginTxid);
+        assertEq(uint256(streamInfo.pegStatus), uint256(PegStatus.OP_SELECTED), "PegStatus should be OP_SELECTED");
+
+        // Act: registerUserTake should succeed from OP_SELECTED state
+        pegoutManager.registerUserTake(setup.pegoutTxSPVProof);
+
+        // Assert: slot should be COMPLETED
+        Slot memory updatedSlot = streamManager.getSlot(setup.stream.streamId, setup.packetNumber, setup.slotId);
+        assertEq(uint256(updatedSlot.state), uint256(SlotState.COMPLETED), "Slot should be marked as COMPLETED");
+    }
+
     // ============ RbtcBridge Integration Tests ============
 
     function test_tryPegout_RbtcBridgeIntegration() external {

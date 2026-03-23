@@ -192,4 +192,29 @@ contract BtcScriptParserTest is Test, TestUtils {
             "getP2WPKH third part should be the Hash160 of the public key"
         );
     }
+
+    function test_getPegoutIdScript_Success() external pure {
+        // Arrange
+        bytes32 pegoutId = bytes32(0);
+        // Act
+        bytes memory script = BtcScriptParser.getPegoutIdScript(pegoutId);
+        // Assert
+        // Expected: OP_RETURN (0x6a) + OP_PUSHBYTES_32 (0x20) + 32 zero bytes
+        assertEq(
+            script,
+            hex"6a200000000000000000000000000000000000000000000000000000000000000000",
+            "getPegoutIdScript with zero id should be OP_RETURN + OP_PUSHBYTES_32 + 32 zero bytes"
+        );
+
+        // Arrange non-zero pegoutId
+        pegoutId = 0x672af373376c8399cb5810ec9dc16eb14fb8d7cf10a4c067090732cf7b8aa200;
+        // Act
+        script = BtcScriptParser.getPegoutIdScript(pegoutId);
+        // Assert
+        assertEq(
+            script,
+            hex"6a20672af373376c8399cb5810ec9dc16eb14fb8d7cf10a4c067090732cf7b8aa200",
+            "getPegoutIdScript should be OP_RETURN + OP_PUSHBYTES_32 + pegoutId bytes"
+        );
+    }
 }

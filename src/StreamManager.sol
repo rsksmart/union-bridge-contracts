@@ -593,40 +593,36 @@ contract StreamManager is IStreamManager, BaseProxy {
         return streamPositions[_acceptPeginTxid];
     }
 
-    function _validatePegStatus(bytes32 _acceptPeginTxid, PegStatus _expectedStatus)
-        internal
-        view
-        returns (StreamPosition memory streamPosition)
-    {
-        streamPosition = streamPositions[_acceptPeginTxid];
-
-        if (streamPosition.pegStatus == PegStatus.NOT_REGISTERED) {
-            revert IPegBase.PeginNotRequested(_acceptPeginTxid);
-        }
-
-        if (streamPosition.pegStatus != _expectedStatus) {
-            revert IPegBase.InvalidPegStatus(streamPosition.pegStatus);
-        }
-
-        return streamPosition;
-    }
-
     /// @inheritdoc IStreamManager
-    function validatePeginStatus(bytes32 _acceptPeginTxid, PegStatus _expectedStatus)
-        external
-        view
-        returns (StreamPosition memory)
-    {
-        return _validatePegStatus(_acceptPeginTxid, _expectedStatus);
-    }
-
-    /// @inheritdoc IStreamManager
-    function validatePegoutStatus(bytes32 _acceptPeginTxid, PegStatus _expectedStatus)
+    function validatePegStatus(bytes32 _acceptPeginTxid, PegStatus _expectedStatus)
         external
         view
         returns (StreamPosition memory streamPosition, uint128 committeeId, uint8 pegoutConfirmations)
     {
-        streamPosition = _validatePegStatus(_acceptPeginTxid, _expectedStatus);
+        return _validatePegStatus(_acceptPeginTxid, _expectedStatus, _expectedStatus);
+    }
+
+    /// @inheritdoc IStreamManager
+    function validatePegStatus(bytes32 _acceptPeginTxid, PegStatus _statusA, PegStatus _statusB)
+        external
+        view
+        returns (StreamPosition memory streamPosition, uint128 committeeId, uint8 pegoutConfirmations)
+    {
+        return _validatePegStatus(_acceptPeginTxid, _statusA, _statusB);
+    }
+
+    function _validatePegStatus(bytes32 _acceptPeginTxid, PegStatus _statusA, PegStatus _statusB)
+        internal
+        view
+        returns (StreamPosition memory streamPosition, uint128 committeeId, uint8 pegoutConfirmations)
+    {
+        streamPosition = streamPositions[_acceptPeginTxid];
+        if (streamPosition.pegStatus == PegStatus.NOT_REGISTERED) {
+            revert IPegBase.PeginNotRequested(_acceptPeginTxid);
+        }
+        if (streamPosition.pegStatus != _statusA && streamPosition.pegStatus != _statusB) {
+            revert IPegBase.InvalidPegStatus(streamPosition.pegStatus);
+        }
         committeeId = _getPacket(streamPosition.streamId, streamPosition.packetNumber).committeeId;
         pegoutConfirmations = _getStreamById(streamPosition.streamId).pegoutConfirmations;
     }

@@ -228,7 +228,7 @@ contract PegoutManager is IPegoutManager, PegManagerBase {
 
         // get the stream data for this pegout
         (StreamPosition memory streamInfo, uint128 committeeId, uint8 pegoutConfirmations) =
-            streamManager.validatePegoutStatus(acceptPeginTxid, PegStatus.USER_TAKE);
+            streamManager.validatePegStatus(acceptPeginTxid, PegStatus.USER_TAKE, PegStatus.OP_SELECTED);
 
         // Validate that the vout is correct
         if (vout != Constants.ACCEPT_PEGIN_VOUT_TAPTREE) {

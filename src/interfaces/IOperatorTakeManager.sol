@@ -159,9 +159,6 @@ interface IOperatorTakeManager {
     /// @notice Thrown when trying to trigger operator take before user take timeout has expired
     error UserTakeTimeoutNotExpired(uint256 createdAt, uint256 expireAt);
 
-    /// @notice Thrown when trying to trigger operator take but user take was already signed
-    error UserTakeAlreadySigned(bytes32 acceptPeginTxid);
-
     /// @notice Thrown when trying to trigger operator take before operator take timeout has expired
     error OperatorTakeTimeoutNotExpired(uint256 updatedAt, uint256 expireAt);
 
