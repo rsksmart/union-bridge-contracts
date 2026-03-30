@@ -280,7 +280,10 @@ contract OperatorTakeManager is IOperatorTakeManager, PegManagerBase {
         (bytes32 txid, int256 blockNumber) =
             _verifyAdvanceFundsTx(_advanceFunds, pegoutInfo.userPubKey, opInfo.pegoutId, streamInfo.streamId);
 
-        if (cancelUserTakeTxBlockNumber[_acceptPeginTxid] < blockNumber) {
+        if (cancelUserTakeTxBlockNumber[_acceptPeginTxid] == 0) {
+            revert UserTakeNotCancelled(_acceptPeginTxid);
+        }
+        if (blockNumber < cancelUserTakeTxBlockNumber[_acceptPeginTxid]) {
             revert AdvanceFundsBeforeCancelUserTake(_acceptPeginTxid);
         }
 

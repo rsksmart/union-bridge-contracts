@@ -852,17 +852,29 @@ contract OperatorTakeManagerTest is Test, HelperContract {
     }
 
     function test_registerAdvanceFunds_Revert_UserTakeNotCancelled() external {
-        // Arrange
-        pauseAndUnpauseContracts();
+        // Arrange - setup the state to do the cancel user take but don't actually register it
         (address opAddress, RegisterUserTakeSetup memory setup) = setup_cancelUserTake();
 
-        bytes32 txid = bitcoinManager.getBtcTxid(setup.advanceFundsSPV.btcTx);
-        StreamPosition memory streamInfo = StreamPosition({
-            streamId: setup.stream.streamId,
-            packetNumber: setup.packetNumber,
-            slotId: setup.slotId,
-            pegStatus: PegStatus.OP_SELECTED
-        });
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IOperatorTakeManager.UserTakeNotCancelled.selector, setup.acceptPeginTxid)
+        );
+
+        // Act
+        vm.prank(opAddress);
+        operatorTakeManager.registerAdvanceFunds(setup.acceptPeginTxid, setup.advanceFundsSPV);
+    }
+
+    function test_registerAdvanceFunds_Revert_AdvanceFundsBeforeCancelUserTake() external {
+        // Arrange
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_cancelUserTake();
+
+        // Register cancel user take at a higher block number
+        bridgeMock.setBtcBlockchainBestChainHeight(BEST_CHAIN_HEIGHT + 1);
+        operatorTakeManager.registerCancelUserTake(setup.cancelUserTakeSPV);
+
+        // Lower bestChainHeight so advance funds gets a smaller block number
+        bridgeMock.setBtcBlockchainBestChainHeight(BEST_CHAIN_HEIGHT);
 
         // Assert
         vm.expectRevert(
@@ -874,6 +886,23 @@ contract OperatorTakeManagerTest is Test, HelperContract {
         // Act
         vm.prank(opAddress);
         operatorTakeManager.registerAdvanceFunds(setup.acceptPeginTxid, setup.advanceFundsSPV);
+    }
+
+    function test_registerAdvanceFunds_Success_SameBlockAsCancelUserTake() external {
+        // Arrange
+        (address opAddress, RegisterUserTakeSetup memory setup) = setup_cancelUserTake();
+
+        // Register cancel and advance funds at the same bestChainHeight so they have the same block number
+        bridgeMock.setBtcBlockchainBestChainHeight(BEST_CHAIN_HEIGHT);
+        operatorTakeManager.registerCancelUserTake(setup.cancelUserTakeSPV);
+
+        // Act — same-block advance should succeed (advanceBlock < cancelBlock is false)
+        vm.prank(opAddress);
+        operatorTakeManager.registerAdvanceFunds(setup.acceptPeginTxid, setup.advanceFundsSPV);
+
+        // Assert
+        StreamPosition memory streamInfo = streamManager.getStreamPosition(setup.acceptPeginTxid);
+        assertEq(uint256(streamInfo.pegStatus), uint256(PegStatus.ADVANCED));
     }
 
     function test_registerAdvanceFunds_Revert_WrongUserAmount() external {

@@ -162,6 +162,9 @@ interface IOperatorTakeManager {
     /// @notice Thrown when trying to trigger operator take before operator take timeout has expired
     error OperatorTakeTimeoutNotExpired(uint256 updatedAt, uint256 expireAt);
 
+    /// @notice Thrown when operator is trying to advance funds without having cancelled the user take flow
+    error UserTakeNotCancelled(bytes32 acceptPeginTxid);
+
     /// @notice Thrown when operator is trying to advance funds before cancelling user take flow
     error AdvanceFundsBeforeCancelUserTake(bytes32 acceptPeginTxid);
 
