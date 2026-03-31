@@ -5,10 +5,9 @@ import {ChallengeInfo, IChallengeManager} from "./interfaces/IChallengeManager.s
 import {PegBase} from "./PegBase.sol";
 import {BtcTxSPVProof, StreamPosition} from "./interfaces/IPegCommonTypes.sol";
 import {Constants} from "./libraries/Constants.sol";
-import {OpCodes} from "./libraries/OpCodes.sol";
 import {IStreamManager, PegStatus} from "./interfaces/IStreamManager.sol";
 import {ICommitteeRegistry} from "./interfaces/ICommitteeRegistry.sol";
-import {IBitcoinManager, BtcTransaction} from "./interfaces/IBitcoinManager.sol";
+import {IBitcoinManager} from "./interfaces/IBitcoinManager.sol";
 import {IOperatorTakeManager} from "./interfaces/IOperatorTakeManager.sol";
 import {IRbtcBridge} from "./interfaces/IRbtcBridge.sol";
 
@@ -109,13 +108,9 @@ contract ChallengeManager is IChallengeManager, PegBase {
             );
         }
 
-        uint256 expectedOutputCount = 1 + committeeRegistry.getCommitteeMembersLength(committeeId);
+        uint256 expectedOutputCount = committeeRegistry.getCommitteeMembersLength(committeeId);
         if (_inputNotRevealed.btcTx.outputs.length != expectedOutputCount) {
             revert InvalidInputNotRevealedOutputCount(_inputNotRevealed.btcTx.outputs.length, expectedOutputCount);
-        }
-
-        if (!_isInputNotRevealed(_inputNotRevealed.btcTx)) {
-            revert InvalidInputNotRevealedOutput();
         }
 
         ChallengeInfo storage info = _getChallengeInfo(_acceptPeginTxid);
@@ -144,11 +139,6 @@ contract ChallengeManager is IChallengeManager, PegBase {
         operatorTakeManager.triggerOperatorTake(_acceptPeginTxid);
     }
 
-    function _isInputNotRevealed(BtcTransaction memory _btcTx) public pure returns (bool) {
-        bytes memory scriptPubKey = _btcTx.outputs[Constants.INPUT_NOT_REVEALED_VOUT_OP_RETURN].scriptPubKey;
-        return scriptPubKey.length == 1 && scriptPubKey[0] == OpCodes.OP_RETURN;
-    }
-
     /// @inheritdoc IChallengeManager
     function registerInputRevealed(bytes32 _acceptPeginTxid, BtcTxSPVProof memory _inputRevealed)
         external
@@ -167,11 +157,6 @@ contract ChallengeManager is IChallengeManager, PegBase {
             revert InvalidRevealedOutputCount(
                 _inputRevealed.btcTx.outputs.length, Constants.INPUT_REVEALED_OUTPUT_COUNT
             );
-        }
-
-        // Verify that this is not an input not revealed transaction
-        if (_isInputNotRevealed(_inputRevealed.btcTx)) {
-            revert InvalidRevealedOutput();
         }
 
         ChallengeInfo storage info = _getChallengeInfo(_acceptPeginTxid);

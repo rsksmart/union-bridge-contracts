@@ -555,13 +555,12 @@ abstract contract ScriptUtils is Script {
         });
 
         uint256 memberCount = _disputePubKeys.length;
-        // Outputs: Output 0 is OP_RETURN (empty) per dispute_core.rs, then one speedup output per committee member
-        BtcTxOut[] memory btcOutputs = new BtcTxOut[](1 + memberCount);
-        btcOutputs[0] = BtcTxOut({amount: 0, scriptPubKey: abi.encodePacked(OpCodes.OP_RETURN)}); // OP_RETURN
+        // Outputs: one speedup output per committee member
+        BtcTxOut[] memory btcOutputs = new BtcTxOut[](memberCount);
         for (uint256 i = 0; i < memberCount; i++) {
             bytes memory speedupScriptPubKey =
                 BtcScriptParser.getP2WPKHScript(BtcHelper.compactPubKeyToBytes(_disputePubKeys[i]));
-            btcOutputs[1 + i] = BtcTxOut({amount: Constants.SPEED_UP_AMOUNT, scriptPubKey: speedupScriptPubKey});
+            btcOutputs[i] = BtcTxOut({amount: Constants.SPEED_UP_AMOUNT, scriptPubKey: speedupScriptPubKey});
         }
 
         // TODO: locktime could be updated to match bitvmx transaction. It's not checked by the contract though.

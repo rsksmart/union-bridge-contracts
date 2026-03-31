@@ -11,7 +11,7 @@ import {CommitteeRegistryHarness} from "test/helpers/CommitteeRegistryHarness.so
 import {SignatureManager} from "src/SignatureManager.sol";
 import {AccessManager} from "src/AccessManager.sol";
 import {BitcoinManager} from "src/BitcoinManager.sol";
-import {OperatorTakeManager} from "src/OperatorTakeManager.sol";
+import {OperatorTakeManagerHarness} from "test/helpers/OperatorTakeManagerHarness.sol";
 import {ChallengeManager} from "src/ChallengeManager.sol";
 import {RbtcBridge} from "src/RbtcBridge.sol";
 import {BridgeMock} from "./BridgeMock.sol";
@@ -41,8 +41,6 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 abstract contract HelperContract is Test, TestUtils {
     bytes32 internal constant BTC_REIMBURSEMENT_PUBKEY =
         0x7d235c24420b2f55450c8414725aa74e6db01035245efdab0e1cfa7ab29aca0f;
-
-    bytes32 internal constant PEGOUT_ID = 0x2752c0d7974fcf16967915fa3d5e005af8d3993980c48145aa591ebcc6117776;
 
     uint128 constant COMMITTEE_ID_STREAM_1_COMMITTEE_1 = 118226726889222519722182588745663749063;
     uint128 constant COMMITTEE_ID_STREAM_1_COMMITTEE_2 = 9059004642890852444280677687625412743;
@@ -90,7 +88,7 @@ abstract contract HelperContract is Test, TestUtils {
     PegoutManagerHarness internal pegoutManager;
     AccessManager internal accessManager;
     ChallengeManager internal challengeManager;
-    OperatorTakeManager internal operatorTakeManager;
+    OperatorTakeManagerHarness internal operatorTakeManager;
 
     // Arrange
     uint64 internal constant VALUE = 1_000_000; // 0.01 BTC
@@ -112,7 +110,7 @@ abstract contract HelperContract is Test, TestUtils {
         accessManager = AccessManager(deployScript.accessManager());
         signatureManager = SignatureManager(deployScript.signatureManager());
         challengeManager = ChallengeManager(deployScript.challengeManager());
-        operatorTakeManager = OperatorTakeManager(deployScript.operatorTakeManager());
+        operatorTakeManager = OperatorTakeManagerHarness(address(deployScript.operatorTakeManager()));
         // Set up bridge mock at bridge precompiled address
         bridgeMock = BridgeMock(deployScript.bridgeAddress());
         globalUserAddress = address(this);

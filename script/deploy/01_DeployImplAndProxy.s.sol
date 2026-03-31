@@ -500,6 +500,9 @@ contract DeployImplAndProxy is ScriptUtils {
         TakeTimeout[] memory _timeoutSettings
     ) public returns (OperatorTakeManager) {
         string memory contractName = "OperatorTakeManager.sol";
+        if (vm.isContext(VmSafe.ForgeContext.TestGroup)) {
+            contractName = "OperatorTakeManagerHarness.sol";
+        }
         (, address proxyAdddress) = deployContractAndUUPSProxy(
             contractName,
             abi.encodeCall(

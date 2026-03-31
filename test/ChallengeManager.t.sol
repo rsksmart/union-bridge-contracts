@@ -4,7 +4,6 @@ pragma solidity ^0.8.20;
 import {Test} from "forge-std/Test.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
 import {Constants} from "src/libraries/Constants.sol";
-import {OpCodes} from "src/libraries/OpCodes.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {IPegBase} from "src/interfaces/IPegBase.sol";
@@ -298,26 +297,6 @@ contract ChallengeManagerTest is Test, HelperContract {
         challengeManager.registerInputRevealed(setup.acceptPeginTxid, setup.inputRevealedSPV);
     }
 
-    function test_registerInputRevealed_Revert_InvalidRevealedOutput() external {
-        // Arrange
-        (address opAddress, RegisterUserTakeSetup memory setup) = setup_challenge();
-        address memberAddress = getCommitteeMemberAddressByIndex(COMMITTEE_ID_STREAM_1_COMMITTEE_1, 0);
-        assertNotEq(memberAddress, opAddress, "Member address should be different from operator address");
-
-        // Remove extra outputs to have the same output count as REVEALED_INPUT_TX
-        BtcTxOut[] memory outputs = new BtcTxOut[](2);
-        outputs[0] = setup.inputNotRevealedSPV.btcTx.outputs[0];
-        outputs[1] = setup.inputNotRevealedSPV.btcTx.outputs[1];
-        setup.inputNotRevealedSPV.btcTx.outputs = outputs;
-
-        //Assert - inputNotRevealedSPV has OP_RETURN at output 0
-        vm.expectRevert(IChallengeManager.InvalidRevealedOutput.selector);
-        vm.prank(memberAddress);
-
-        // Act - register input NOT revealed tx should throw
-        challengeManager.registerInputRevealed(setup.acceptPeginTxid, setup.inputNotRevealedSPV);
-    }
-
     function test_registerInputRevealed_Revert_ChallengeTxidNotMatch() external {
         // Arrange
         (address opAddress, RegisterUserTakeSetup memory setup) = setup_challenge();
@@ -551,28 +530,6 @@ contract ChallengeManagerTest is Test, HelperContract {
         challengeManager.registerInputNotRevealed(setup.acceptPeginTxid, setup.inputNotRevealedSPV);
     }
 
-    function test_registerInputNotRevealed_Revert_InvalidInputNotRevealedOutput() external {
-        // Arrange - pass INPUT_REVEALED_TX (output 0 is P2TR) to registerInputNotRevealed which expects OP_RETURN
-        (address opAddress, RegisterUserTakeSetup memory setup) = setup_challenge();
-        address memberAddress = getCommitteeMemberAddressByIndex(COMMITTEE_ID_STREAM_1_COMMITTEE_1, 0);
-        assertNotEq(memberAddress, opAddress, "Member address should be different from operator address");
-        BtcTxOut[] memory outputs = new BtcTxOut[](11);
-        outputs[0] = setup.inputRevealedSPV.btcTx.outputs[0];
-        outputs[1] = setup.inputRevealedSPV.btcTx.outputs[1];
-        // Add extra outputs to have the same output count as INPUT_NOT_REVEALED_TX
-        for (uint256 i = 2; i < 11; i++) {
-            outputs[i] = BtcTxOut({amount: 0, scriptPubKey: abi.encodePacked(OpCodes.OP_RETURN)});
-        }
-        setup.inputRevealedSPV.btcTx.outputs = outputs;
-
-        // Assert - inputRevealedSPV has P2TR at output 0, not OP_RETURN
-        vm.expectRevert(IChallengeManager.InvalidInputNotRevealedOutput.selector);
-        vm.prank(memberAddress);
-
-        // Act - register input REVEALED tx should throw
-        challengeManager.registerInputNotRevealed(setup.acceptPeginTxid, setup.inputRevealedSPV);
-    }
-
     function test_registerInputNotRevealed_Revert_InvalidInputNotRevealedOutputCount() external {
         // Arrange
         (address opAddress, RegisterUserTakeSetup memory setup) = setup_challenge();
@@ -580,7 +537,7 @@ contract ChallengeManagerTest is Test, HelperContract {
         assertNotEq(memberAddress, opAddress, "Member address should be different from operator address");
 
         uint128 committeeId = streamManager.getCommitteeId(uint64(DEFAULT_STREAM), setup.packetNumber);
-        uint256 expectedOutputCount = 1 + registry.getCommitteeMembersLength(committeeId);
+        uint256 expectedOutputCount = registry.getCommitteeMembersLength(committeeId);
         BtcTxOut[] memory wrongOutputCount = new BtcTxOut[](0);
         setup.inputNotRevealedSPV.btcTx.outputs = wrongOutputCount;
 

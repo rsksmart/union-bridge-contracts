@@ -124,10 +124,6 @@ library Constants {
     /// @dev Input index for challenge vin in input not revealed Bitcoin transaction
     uint32 constant INPUT_NOT_REVEALED_VIN_CHALLENGE = 0;
 
-    /// @dev Output index for OP_RETURN output in input not revealed Bitcoin transaction
-    /// @dev First output (index 0) is OP_RETURN (unspendable, empty data) per dispute_core.rs
-    uint32 constant INPUT_NOT_REVEALED_VOUT_OP_RETURN = 0;
-
     /// @dev Input index for revealed vin challenge in input revealed Bitcoin transaction
     uint32 constant INPUT_REVEALED_VIN_CHALLENGE = 0;
 
