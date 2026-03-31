@@ -1,5 +1,5 @@
 # OperatorTakeManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/ee0115174aa9f16d975ad140f940d23fb1883b23/src/OperatorTakeManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/bd6b4a28bf5973e554d9b7a237190a44cdd46b38/src/OperatorTakeManager.sol)
 
 **Inherits:**
 [IOperatorTakeManager](/src/interfaces/IOperatorTakeManager.sol/interface.IOperatorTakeManager.md), [PegManagerBase](/src/PegManagerBase.sol/abstract.PegManagerBase.md)
@@ -171,8 +171,7 @@ function triggerOperatorTake(bytes32 _acceptPeginTxid) external nonReentrant whe
 
 
 ```solidity
-function _handleUserTake(bytes32 _acceptPeginTxid, uint256 _pegoutCreatedAt, uint8 _missingSignatures, uint64 _streamId)
-    internal;
+function _handleUserTake(bytes32 _acceptPeginTxid, uint256 _pegoutCreatedAt, uint64 _streamId) internal;
 ```
 
 ### _verifyOperatorTakeTimeoutExpired

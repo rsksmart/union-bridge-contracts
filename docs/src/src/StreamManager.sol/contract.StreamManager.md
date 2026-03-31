@@ -1,5 +1,5 @@
 # StreamManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/ee0115174aa9f16d975ad140f940d23fb1883b23/src/StreamManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/bd6b4a28bf5973e554d9b7a237190a44cdd46b38/src/StreamManager.sol)
 
 **Inherits:**
 [IStreamManager](/src/interfaces/IStreamManager.sol/interface.IStreamManager.md), [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md)
@@ -874,52 +874,15 @@ function getStreamPosition(bytes32 _acceptPeginTxid) external view returns (Stre
 |`<none>`|`StreamPosition`|The stream position associated with the transaction ID|
 
 
-### _validatePegStatus
+### validatePegStatus
 
-
-```solidity
-function _validatePegStatus(bytes32 _acceptPeginTxid, PegStatus _expectedStatus)
-    internal
-    view
-    returns (StreamPosition memory streamPosition);
-```
-
-### validatePeginStatus
-
-Validates peg-in status and returns the stream position
+Validates that the peg status matches the expected status
 
 *Reverts with PeginNotRequested if the peg-in was not requested*
 
 
 ```solidity
-function validatePeginStatus(bytes32 _acceptPeginTxid, PegStatus _expectedStatus)
-    external
-    view
-    returns (StreamPosition memory);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction ID|
-|`_expectedStatus`|`PegStatus`|The expected peg status for the operation|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`<none>`|`StreamPosition`|streamPosition The stream position if validation passes|
-
-
-### validatePegoutStatus
-
-Validates peg-out status and returns stream position, committee ID, and peg-out confirmations
-
-*Reverts with PeginNotRequested if the peg-in was not requested*
-
-
-```solidity
-function validatePegoutStatus(bytes32 _acceptPeginTxid, PegStatus _expectedStatus)
+function validatePegStatus(bytes32 _acceptPeginTxid, PegStatus _expectedStatus)
     external
     view
     returns (StreamPosition memory streamPosition, uint128 committeeId, uint8 pegoutConfirmations);
@@ -929,7 +892,7 @@ function validatePegoutStatus(bytes32 _acceptPeginTxid, PegStatus _expectedStatu
 |Name|Type|Description|
 |----|----|-----------|
 |`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction ID|
-|`_expectedStatus`|`PegStatus`|The expected peg status for the operation|
+|`_expectedStatus`|`PegStatus`|The expected peg status|
 
 **Returns**
 
@@ -939,6 +902,46 @@ function validatePegoutStatus(bytes32 _acceptPeginTxid, PegStatus _expectedStatu
 |`committeeId`|`uint128`|The committee ID for the packet|
 |`pegoutConfirmations`|`uint8`|The number of confirmations required for peg-out transactions|
 
+
+### validatePegStatus
+
+Validates that the peg status matches the expected status
+
+*Reverts with PeginNotRequested if the peg-in was not requested*
+
+
+```solidity
+function validatePegStatus(bytes32 _acceptPeginTxid, PegStatus _statusA, PegStatus _statusB)
+    external
+    view
+    returns (StreamPosition memory streamPosition, uint128 committeeId, uint8 pegoutConfirmations);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction ID|
+|`_statusA`|`PegStatus`||
+|`_statusB`|`PegStatus`||
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`streamPosition`|`StreamPosition`|The stream position if validation passes|
+|`committeeId`|`uint128`|The committee ID for the packet|
+|`pegoutConfirmations`|`uint8`|The number of confirmations required for peg-out transactions|
+
+
+### _validatePegStatus
+
+
+```solidity
+function _validatePegStatus(bytes32 _acceptPeginTxid, PegStatus _statusA, PegStatus _statusB)
+    internal
+    view
+    returns (StreamPosition memory streamPosition, uint128 committeeId, uint8 pegoutConfirmations);
+```
 
 ### setPegStatus
 

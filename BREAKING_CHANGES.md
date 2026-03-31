@@ -1,5 +1,67 @@
 # Breaking Changes
 
+## [v0.5.1]
+
+### Public Functions - Changed Names or Parameters (v0.5.1)
+
+1. **`validatePeginStatus` and `validatePegoutStatus` → `validatePegStatus`** (in `IStreamManager`)
+   - **Old signatures**:
+     - `function validatePeginStatus(bytes32 _acceptPeginTxid, PegStatus _expectedStatus) external view returns (StreamPosition memory)`
+     - `function validatePegoutStatus(bytes32 _acceptPeginTxid, PegStatus _expectedStatus) external view returns (StreamPosition memory, uint128 committeeId, uint8 pegoutConfirmations)`
+   - **New signatures** (overloaded):
+     - `function validatePegStatus(bytes32 _acceptPeginTxid, PegStatus _expectedStatus) external view returns (StreamPosition memory, uint128 committeeId, uint8 pegoutConfirmations)` — validates a single expected status
+     - `function validatePegStatus(bytes32 _acceptPeginTxid, PegStatus _statusA, PegStatus _statusB) external view returns (StreamPosition memory, uint128 committeeId, uint8 pegoutConfirmations)` — validates that the current status matches either of two acceptable statuses
+   - **Impact**: Both old functions are removed. Callers of `validatePeginStatus` must switch to the single-argument overload of `validatePegStatus` and handle the two additional return values (`committeeId`, `pegoutConfirmations`). Callers of `validatePegoutStatus` must switch to the same single-argument overload.
+
+2. **`getPartialSignatures` return type changed** (in `ISignatureManager`)
+   - **Old signature**: `function getPartialSignatures(bytes32 _txid) external view returns (SignatureData[] memory, uint8 missingSignatures, uint8 missingNonces, uint128 committeeId)`
+   - **New signature**: `function getPartialSignatures(bytes32 _txid) external view returns (SignatureData[] memory, uint8 missingNonces, uint128 committeeId)`
+   - **Change**: `missingSignatures` return value removed.
+   - **Impact**: Callers must update destructuring to remove the `missingSignatures` position.
+
+### Public Functions - Removed (v0.5.1)
+
+1. **`validatePeginStatus`** (in `IStreamManager`) — replaced by `validatePegStatus` (see above).
+2. **`validatePegoutStatus`** (in `IStreamManager`) — replaced by `validatePegStatus` (see above).
+3. **`_isInputNotRevealed`** (in `ChallengeManager`) — was a `public pure` helper; removed along with its OP_RETURN output validation logic.
+
+### Errors - Removed (v0.5.1)
+
+1. **`InvalidInputNotRevealedOutput`** (in `IChallengeManager`) — removed; OP_RETURN output is no longer required on `INPUT_NOT_REVEALED_TX`.
+2. **`InvalidRevealedOutput`** (in `IChallengeManager`) — removed; the corresponding OP_RETURN-based check is gone.
+3. **`UserTakeAlreadySigned`** (in `IOperatorTakeManager`) — removed; `triggerOperatorTake` can now be called even when all committee signatures are present (see Workflow Changes below).
+
+### Errors - New (v0.5.1)
+
+1. **`UserTakeNotCancelled(bytes32 acceptPeginTxid)`** (in `IOperatorTakeManager`) — thrown when the operator tries to call `registerAdvanceFunds` before cancelling the user take flow (i.e., `cancelUserTakeTxBlockNumber` is still zero).
+
+### Bitcoin Transaction Format Changes (v0.5.1)
+
+1. **`INPUT_NOT_REVEALED_TX` output structure changed**
+   - **Old**: First output was an OP_RETURN (unspendable, empty data); speedup outputs followed at indices `1..N`.
+   - **New**: OP_RETURN output removed. Speedup outputs are now at indices `0..N-1` (one per committee member).
+   - **Impact**: The expected output count is now exactly `committeeMembers.length` (previously `1 + committeeMembers.length`). Integrations that construct or validate `INPUT_NOT_REVEALED_TX` must remove the OP_RETURN output and re-index the speedup outputs.
+
+2. **`ADVANCE_FUNDS_TX` OP_RETURN script format changed**
+   - **Old script**: `OP_RETURN <pegout_id_32_bytes>` (push opcode omitted — invalid OP_RETURN format)
+   - **New script**: `OP_RETURN OP_PUSHBYTES_32 <pegout_id_32_bytes>` (valid standard OP_RETURN format)
+   - **Impact**: Integrations that construct or parse the OP_RETURN output of `ADVANCE_FUNDS_TX` must include the `OP_PUSHBYTES_32` (`0x20`) byte before the 32-byte pegout ID. The raw script is now `[0x6a, 0x20, <32 bytes>]` instead of `[0x6a, <32 bytes>]`.
+
+### Workflow Changes (v0.5.1)
+
+1. **`triggerOperatorTake` no longer blocked when all signatures are present**
+   - Previously, calling `triggerOperatorTake` while the peg-out was in `USER_TAKE` status and all committee signatures were collected reverted with `UserTakeAlreadySigned`.
+   - Now, `triggerOperatorTake` can be called once the user take timeout has expired regardless of whether all signatures are present. This handles the edge case where signatures were collected but the `USER_TAKE_TX` was never submitted on-chain.
+
+2. **`registerUserTake` now accepts `OP_SELECTED` status**
+   - Previously, `registerUserTake` only accepted peg-outs in `USER_TAKE` status.
+   - Now it also accepts `OP_SELECTED` status, allowing a committee member to register a valid user take Bitcoin transaction even after the operator take flow has been triggered.
+
+3. **`registerAdvanceFunds` requires user take to be explicitly cancelled first**
+   - The previous check (`cancelUserTakeTxBlockNumber < blockNumber`) allowed advancing funds without a cancellation record if `cancelUserTakeTxBlockNumber` was 0 (default).
+   - Now, if `cancelUserTakeTxBlockNumber == 0`, the call reverts with `UserTakeNotCancelled`. The operator must call `registerCancelUserTake` before `registerAdvanceFunds`.
+   - **Impact**: Any integration that called `registerAdvanceFunds` without first registering a cancel user take transaction must be updated to include the `registerCancelUserTake` step.
+
 ## [v0.5.0]
 
 ### Contract Restructuring (v0.5.0)

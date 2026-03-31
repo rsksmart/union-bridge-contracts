@@ -1078,23 +1078,16 @@ REVEAL_INPUT_TX is a critical component of the dispute resolution mechanism:
 
 #### INPUT_NOT_REVEALED_TX Outputs
 
-The total number of outputs must equal 1 + committee member count (one OP_RETURN plus one speedup output per member).
+The total number of outputs must equal the committee member count (one speedup output per member).
 
-##### Output 0: OP_RETURN Output
-
-- **Type**: OP_RETURN (unspendable)
-- **Amount**: 0 sats
-- **Purpose**: Unspendable output (empty data); funds are effectively burned/donated to miners as fees
-- **Reference**: [dispute_core.rs](https://github.com/FairgateLabs/rust-bitvmx-client/blob/dev/src/program/protocols/union/dispute_core.rs) - `OutputType::segwit_unspendable(op_return(vec![]))`
-
-##### Output 1 to N: Speedup Outputs
+##### Output 0 to N-1: Speedup Outputs
 
 - **Type**: SegWit (P2WPKH)
 - **Amount**: `SPEEDUP_VALUE` (540 satoshis) per output
 - **Key**: Each committee member's speedup key (`speedup_key`)
 - **Count**: One speedup output per committee member
 - **Purpose**: Speedup transactions for each committee member
-- **Indexing**: The speedup output index for each member is `1 + member_index` (output 0 is the OP_RETURN)
+- **Indexing**: The speedup output index for each member is `member_index` (outputs start at 0)
 - **Reference**: [dispute_core.rs](https://github.com/FairgateLabs/rust-bitvmx-client/blob/dev/src/program/protocols/union/dispute_core.rs) - `add_dispute_core_speedup_outputs` adds one `segwit_key(AmountType::Auto, keys[i].get_public(SPEEDUP_KEY))` per committee member to both CHALLENGE_TX and INPUT_NOT_REVEALED_TX
 
 #### INPUT_NOT_REVEALED_TX Transaction Flow
@@ -1102,8 +1095,8 @@ The total number of outputs must equal 1 + committee member count (one OP_RETURN
 ```mermaid
 graph LR
     A[CHALLENGE_TX<br/>output 0: REVEAL_INPUT Output] --> B[INPUT_NOT_REVEALED_TX<br/>Inputs:<br/>• Input 0: CHALLENGE_TX output<br/>  Script Path: Input Not Revealed (leaf 1)<br/>  Timelock: INPUT_NOT_REVEALED_TIMELOCK<br/>  Committee aggregated signature]
-    B --> C[INPUT_NOT_REVEALED_TX<br/>Outputs:<br/>• Output 0: OP_RETURN (unspendable)<br/>  Empty data<br/><br/>• Output 1-N: Speedup Outputs<br/>  P2WPKH - One per committee member<br/>  Amount: SPEEDUP_VALUE each]
-    
+    B --> C[INPUT_NOT_REVEALED_TX<br/>Outputs:<br/>• Output 0-N: Speedup Outputs<br/>  P2WPKH - One per committee member<br/>  Amount: SPEEDUP_VALUE each]
+
     style A fill:#fce4ec
     style B fill:#fce4ec
     style C fill:#fce4ec
@@ -1237,10 +1230,11 @@ graph LR
 - **Type**: OP_RETURN (unspendable)
 - **Amount**: 0 sats
 - **Purpose**: Contains pegout metadata for transaction monitoring and validation
-- **Data Format**: Contains the pegout ID (`pegout_id`) as raw bytes
+- **Data Format**: Contains the pegout ID (`pegout_id`) prefixed with a push opcode
 - **Data Structure**:
+  - **Script**: `OP_RETURN OP_PUSHBYTES_32 <pegout_id>` — raw bytes: `[0x6a, 0x20, <32 bytes>]`
   - **Content**: `pegout_id` (32 bytes) - The unique identifier for this peg-out request
-  - **Encoding**: Raw bytes of the pegout ID
+  - **Encoding**: Standard OP_RETURN with explicit push opcode (`OP_PUSHBYTES_32 = 0x20`) before the data
 - **Validation**: The Rootstock contract validates this OP_RETURN output when `registerAdvanceFunds` is called to ensure:
   - The pegout ID matches the one generated in the `tryPegout` call
   - The transaction is correctly associated with the peg-out request

@@ -1,5 +1,5 @@
 # IChallengeManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/ee0115174aa9f16d975ad140f940d23fb1883b23/src/interfaces/IChallengeManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/bd6b4a28bf5973e554d9b7a237190a44cdd46b38/src/interfaces/IChallengeManager.sol)
 
 Interface for managing challenge operations
 
@@ -265,23 +265,7 @@ error InvalidInputNotRevealedOutputCount(uint256 actual, uint256 expected);
 |Name|Type|Description|
 |----|----|-----------|
 |`actual`|`uint256`|The actual number of outputs found|
-|`expected`|`uint256`|The expected number of outputs (1 OP_RETURN + one speedup per committee member)|
-
-### InvalidInputNotRevealedOutput
-Thrown when outputs are empty or output 0 of input not revealed tx is not OP_RETURN as required
-
-
-```solidity
-error InvalidInputNotRevealedOutput();
-```
-
-### InvalidRevealedOutput
-Thrown when outputs are empty or the output 0 input revealed tx is actually the output 0 of an input not revealed tx
-
-
-```solidity
-error InvalidRevealedOutput();
-```
+|`expected`|`uint256`|The expected number of outputs (one speedup per committee member)|
 
 ### InvalidRevealedInputCount
 Thrown when the number of inputs in a input reveal transaction is incorrect

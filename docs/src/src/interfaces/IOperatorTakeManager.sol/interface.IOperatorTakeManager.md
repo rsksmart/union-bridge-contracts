@@ -1,5 +1,5 @@
 # IOperatorTakeManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/ee0115174aa9f16d975ad140f940d23fb1883b23/src/interfaces/IOperatorTakeManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/bd6b4a28bf5973e554d9b7a237190a44cdd46b38/src/interfaces/IOperatorTakeManager.sol)
 
 Interface for operator take flow: advance funds, kickoff, operator take, operator won
 
@@ -343,20 +343,20 @@ Thrown when trying to trigger operator take before user take timeout has expired
 error UserTakeTimeoutNotExpired(uint256 createdAt, uint256 expireAt);
 ```
 
-### UserTakeAlreadySigned
-Thrown when trying to trigger operator take but user take was already signed
-
-
-```solidity
-error UserTakeAlreadySigned(bytes32 acceptPeginTxid);
-```
-
 ### OperatorTakeTimeoutNotExpired
 Thrown when trying to trigger operator take before operator take timeout has expired
 
 
 ```solidity
 error OperatorTakeTimeoutNotExpired(uint256 updatedAt, uint256 expireAt);
+```
+
+### UserTakeNotCancelled
+Thrown when operator is trying to advance funds without having cancelled the user take flow
+
+
+```solidity
+error UserTakeNotCancelled(bytes32 acceptPeginTxid);
 ```
 
 ### AdvanceFundsBeforeCancelUserTake

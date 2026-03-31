@@ -1,5 +1,5 @@
 # Constants
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/ee0115174aa9f16d975ad140f940d23fb1883b23/src/libraries/Constants.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/bd6b4a28bf5973e554d9b7a237190a44cdd46b38/src/libraries/Constants.sol)
 
 Library containing all constants used throughout the union bridge contracts
 
@@ -312,17 +312,6 @@ uint32 constant CHALLENGE_VIN_REIMBURSEMENT_KICKOFF = 0;
 
 ```solidity
 uint32 constant INPUT_NOT_REVEALED_VIN_CHALLENGE = 0;
-```
-
-
-### INPUT_NOT_REVEALED_VOUT_OP_RETURN
-*Output index for OP_RETURN output in input not revealed Bitcoin transaction*
-
-*First output (index 0) is OP_RETURN (unspendable, empty data) per dispute_core.rs*
-
-
-```solidity
-uint32 constant INPUT_NOT_REVEALED_VOUT_OP_RETURN = 0;
 ```
 
 

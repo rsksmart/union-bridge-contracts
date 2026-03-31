@@ -1,5 +1,5 @@
 # SignatureManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/ee0115174aa9f16d975ad140f940d23fb1883b23/src/SignatureManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/bd6b4a28bf5973e554d9b7a237190a44cdd46b38/src/SignatureManager.sol)
 
 **Inherits:**
 [ISignatureManager](/src/interfaces/ISignatureManager.sol/interface.ISignatureManager.md), [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md)
@@ -166,12 +166,7 @@ Gets all partial signatures for a given hash
 function getPartialSignatures(bytes32 _txid)
     external
     view
-    returns (
-        SignatureData[] memory partialSignaturesData,
-        uint8 missingSignatures,
-        uint8 missingNonces,
-        uint128 committeeId
-    );
+    returns (SignatureData[] memory partialSignaturesData, uint8 missingNonces, uint128 committeeId);
 ```
 **Parameters**
 
@@ -184,7 +179,6 @@ function getPartialSignatures(bytes32 _txid)
 |Name|Type|Description|
 |----|----|-----------|
 |`partialSignaturesData`|`SignatureData[]`|Array of signature data for all committee members|
-|`missingSignatures`|`uint8`|Number of missing signatures|
 |`missingNonces`|`uint8`|Number of missing nonces|
 |`committeeId`|`uint128`|The committee ID for this signature collection|
 
