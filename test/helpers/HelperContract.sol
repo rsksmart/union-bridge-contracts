@@ -525,9 +525,12 @@ abstract contract HelperContract is Test, TestUtils {
     }
 
     function setup_peginAndSPVs() internal returns (RegisterUserTakeSetup memory setup) {
+        return setup_peginAndSPVs(COMMITTEE_ID_STREAM_1_COMMITTEE_1);
+    }
+
+    function setup_peginAndSPVs(uint128 _committeeId) internal returns (RegisterUserTakeSetup memory setup) {
         // =========== Request Peg-In & Accept Peg-In ============
-        (bytes32 acceptPeginTxid,, BtcTransaction memory acceptPeginTx) =
-            setup_requestAndAcceptPeginFlow(COMMITTEE_ID_STREAM_1_COMMITTEE_1);
+        (bytes32 acceptPeginTxid,, BtcTransaction memory acceptPeginTx) = setup_requestAndAcceptPeginFlow(_committeeId);
 
         // Get the accept peg-in tx id that will be spent in the peg-out
         setup.acceptPeginSPV = createBtcTxSPVProof(acceptPeginTx);
@@ -536,20 +539,16 @@ abstract contract HelperContract is Test, TestUtils {
         setup.userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
 
         // =================== Request Peg-Out ===================
-        uint64 pegoutAmount = VALUE; // Same amount as peg-in
-        uint256 pegoutAmountInWei = BtcHelper.satoshiToWei(pegoutAmount);
-
-        // Calculate expected values
-        Stream memory stream = streamManager.getStream(pegoutAmount);
-        Slot memory slot = streamManager.getSlot(stream.streamId, setup.packetNumber, setup.slotId);
+        Stream memory stream = streamManager.getStream(VALUE);
 
         SlotLocation memory slotLocation = streamManager.getNextPegoutSlotLocation(stream.streamId);
         setup.packetNumber = slotLocation.packetId;
         setup.slotId = slotLocation.slotId;
+        Slot memory slot = streamManager.getSlot(stream.streamId, setup.packetNumber, setup.slotId);
 
         // Set up mock to allow burning this amount
         // Add capacity to support multiple pegout calls in sequence
-        bridgeMock.setWeisTransferredToUnionBridge(pegoutAmountInWei);
+        bridgeMock.setWeisTransferredToUnionBridge(BtcHelper.satoshiToWei(VALUE));
 
         // Prepare prevout data for both inputs: taptree and enabler outputs
         // Read taptree from slot, enabler from packet (matching production code in _preparePegoutPrevoutDatas)
