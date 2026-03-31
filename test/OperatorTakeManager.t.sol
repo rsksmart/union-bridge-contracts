@@ -1000,6 +1000,47 @@ contract OperatorTakeManagerTest is Test, HelperContract {
         operatorTakeManager.registerAdvanceFunds(setup.acceptPeginTxid, setup.advanceFundsSPV);
     }
 
+    function test_registerAdvanceFunds_Revert_MisbehavingOperator_ReplayFromPreviousPegoutSameUser() external {
+        // Cycle 1: operator advances funds
+        (address opAddress, RegisterUserTakeSetup memory setup1) = setup_inputRevealed();
+        vm.prank(opAddress);
+        operatorTakeManager.registerOperatorWon(setup1.operatorWonSPV);
+
+        // Cycle 2: same user, same operator selected (only opAddress has a signature for the new pegoutTxid)
+        RegisterUserTakeSetup memory setup2 = setup_pegoutAndMemberNonces();
+
+        // expire the operator take timeout for cycle 2
+        uint256 createdAt2 = block.timestamp;
+        vm.warp(createdAt2 + TAKE_0_TIMEOUT_DEFAULT + 1);
+
+        // Add a signature only for the same operator so it is the single eligible candidate
+        bytes32 dummySig = hex"f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0";
+        setup_addMemberSignature(opAddress, setup2.pegoutTxid, dummySig);
+        operatorTakeManager.triggerOperatorTake(setup2.acceptPeginTxid);
+
+        OperatorTakeInfo memory opInfo2 = operatorTakeManager.getOperatorTakeInfo(setup2.acceptPeginTxid);
+        assertEq(opInfo2.operatorTakeAddress, opAddress, "Same operator should be selected for cycle 2");
+
+        BtcTxSPVProof memory cancelUserTakeSPV2 = createBtcTxSPVProof(
+            createCancelUserTakeTx(
+                setup2.acceptPeginTxid, BtcHelper.compactPubKeyToBytes(memberRegistry.getMemberDisputePubKey(opAddress))
+            )
+        );
+        operatorTakeManager.registerCancelUserTake(cancelUserTakeSPV2);
+
+        // Operator tries to reuse cycle 1's advance funds spv
+        // it gets rejected because the pegoutId in the OP_RETURN doesn't match
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IPegoutManager.IncorrectOutputScript.selector,
+                BtcScriptParser.getPegoutIdScript(setup1.pegoutId),
+                BtcScriptParser.getPegoutIdScript(opInfo2.pegoutId)
+            )
+        );
+        vm.prank(opAddress);
+        operatorTakeManager.registerAdvanceFunds(setup2.acceptPeginTxid, setup1.advanceFundsSPV);
+    }
+
     function test_registerReimbursementKickoff_Success_UnpausedContract() external {
         // Arrange
         bridgeMock.setStoreEvents(true);
