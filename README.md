@@ -1,4 +1,4 @@
-# BitVMX Union Bridge Contracts
+# Union Bridge Contracts
 
 This repository contains the specifications and Solidity code for the Union Bridge Contracts.
 
