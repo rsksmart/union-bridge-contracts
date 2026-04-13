@@ -40,7 +40,7 @@ forge script \
     script/testnet/ForceCloseCommittee.s.sol \
     --sig "run(uint64)" \
     "$STREAM_ID" \
-    --rpc-url $RPC \
+    --rpc-url http://rskj-01.testnet.ub.iovlabs.net:4444 \
     --legacy \
     --broadcast \
     --slow \

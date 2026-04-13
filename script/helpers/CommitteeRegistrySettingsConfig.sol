@@ -14,9 +14,9 @@ library CommitteeRegistrySettingsConfig {
         // Default values this are used in unit tests
         settings = CommitteeRegistrySettings({
             pendingCommitteeTimeout: 1 days,
-            minCommitteeWatchtowers: 3,
-            minCommitteeOperators: 3,
-            committeeMemberCount: 10
+            minCommitteeWatchtowers: 2,
+            minCommitteeOperators: 2,
+            committeeMemberCount: 4
         });
         if (chainId == ChainIds.RSK_MAINNET) {
             // Default values for mainnet
