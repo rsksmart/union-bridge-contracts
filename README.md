@@ -1,5 +1,8 @@
 # Union Bridge Contracts
 
+[![CI](https://github.com/rsksmart/union-bridge-contracts/actions/workflows/ci.yml/badge.svg)](https://github.com/rsksmart/union-bridge-contracts/actions/workflows/ci.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/rsksmart/union-bridge-contracts/badge)](https://scorecard.dev/viewer/?uri=github.com/rsksmart/union-bridge-contracts)
+
 This repository contains the specifications and Solidity code for the Union Bridge Contracts.
 
 ## Disclaimer
