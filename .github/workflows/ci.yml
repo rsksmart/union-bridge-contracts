@@ -19,16 +19,27 @@ env:
 jobs:
   slither:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v6.0.2
         with:
           submodules: recursive
 
       - name: Run Slither
+        id: slither
         uses: crytic/slither-action@b52cc1cbfee9ca3e8722dd5224299d16c9a6b80f #v0.4.2
         with:
           target: "."
           solc-version: "0.8.33"
+          sarif: slither-results.sarif
+          fail-on: none
+
+      - name: Upload Slither SARIF to Code Scanning
+        uses: github/codeql-action/upload-sarif@32f7c15247fa6542dc765bd40f6a15dc2caeed89 # v4.31.2
+        with:
+          sarif_file: ${{ steps.slither.outputs.sarif }}
 
   forge-test:
     runs-on: ubuntu-latest
