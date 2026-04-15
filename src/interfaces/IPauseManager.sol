@@ -60,7 +60,7 @@ interface IPauseManager {
     /// @notice Emitted when a pausable contract address is updated
     /// @param contractName The name of the contract that was updated
     /// @param newAddress The new address of the contract
-    event PausableContractUpdated(string contractName, address newAddress);
+    event PausableContractUpdated(string contractName, address indexed newAddress);
 
     // ===================== Errors =====================
 

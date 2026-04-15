@@ -146,7 +146,9 @@ interface ISignatureManager {
     /// @param memberAddress The member's address
     /// @param takeTxid The OperatorTake transaction id provided by the member
     /// @param wonTxid The OperatorWon transaction id provided by the member
-    event OperatorTakeTxidsAdded(bytes32 acceptPeginTxid, address memberAddress, bytes32 takeTxid, bytes32 wonTxid);
+    event OperatorTakeTxidsAdded(
+        bytes32 indexed acceptPeginTxid, address indexed memberAddress, bytes32 takeTxid, bytes32 wonTxid
+    );
 
     /// @notice Event emitted when all OperatorTake and OperatorWon transaction id's are added
     /// @param acceptPeginTxid The accept peg-in transaction id
