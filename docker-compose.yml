@@ -9,7 +9,8 @@ services:
       - /bin/bash
       - -c
       - |
+        cd /share
         slither --version
-        slither ./share --filter-paths "lib/" --exclude naming-convention,low-level-calls,incorrect-equality
+        slither .
     volumes:
       - ./:/share
