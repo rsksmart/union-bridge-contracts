@@ -20,7 +20,7 @@ interface IPausable {
 
     /// @notice Event emitted when the pauser is updated
     /// @param newPauser The new pauser address
-    event PauserUpdated(address newPauser);
+    event PauserUpdated(address indexed newPauser);
 
     // ===================== Errors =====================
 
