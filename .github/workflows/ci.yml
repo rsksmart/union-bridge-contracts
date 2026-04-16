@@ -19,16 +19,41 @@ env:
 jobs:
   slither:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v6.0.2
         with:
           submodules: recursive
 
       - name: Run Slither
+        id: slither
+        continue-on-error: true
         uses: crytic/slither-action@b52cc1cbfee9ca3e8722dd5224299d16c9a6b80f #v0.4.2
         with:
           target: "."
           solc-version: "0.8.33"
+          sarif: "slither-results.sarif"
+          fail-on: all
+  
+      - name: Upload Slither SARIF to Code Scanning
+        if: always() && hashFiles('slither-results.sarif') != '' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
+        uses: github/codeql-action/upload-sarif@32f7c15247fa6542dc765bd40f6a15dc2caeed89 # v4.31.2
+        with:
+          sarif_file: slither-results.sarif
+  
+      - name: Fail if Slither reported findings
+        if: steps.slither.outcome == 'failure' && hashFiles('slither-results.sarif') != ''
+        run: |
+          echo "::error::Slither reported findings (see uploaded SARIF and job log for details)."
+          exit 1
+
+      - name: Fail if Slither execution failed
+        if: steps.slither.outcome == 'failure' && hashFiles('slither-results.sarif') == ''
+        run: |
+          echo "::error::Slither execution failed or did not produce SARIF; see job log for details."
+          exit 1
 
   forge-test:
     runs-on: ubuntu-latest
