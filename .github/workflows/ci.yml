@@ -29,17 +29,25 @@ jobs:
 
       - name: Run Slither
         id: slither
+        continue-on-error: true
         uses: crytic/slither-action@b52cc1cbfee9ca3e8722dd5224299d16c9a6b80f #v0.4.2
         with:
           target: "."
           solc-version: "0.8.33"
-          sarif: slither-results.sarif
-          fail-on: none
-
+          sarif: "slither-results.sarif"
+          fail-on: all
+  
       - name: Upload Slither SARIF to Code Scanning
+        if: (success() || failure()) && hashFiles('slither-results.sarif') != ''
         uses: github/codeql-action/upload-sarif@32f7c15247fa6542dc765bd40f6a15dc2caeed89 # v4.31.2
         with:
           sarif_file: ${{ steps.slither.outputs.sarif }}
+  
+      - name: Fail if Slither reported findings
+        if: steps.slither.outcome == 'failure'
+        run: |
+          echo "::error::Slither reported findings (see job log; SARIF uploaded when available)."
+          exit 1
 
   forge-test:
     runs-on: ubuntu-latest
