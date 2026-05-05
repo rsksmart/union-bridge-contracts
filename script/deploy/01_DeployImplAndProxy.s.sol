@@ -77,7 +77,7 @@ contract DeployImplAndProxy is ScriptUtils {
         } else if (block.chainid == ChainIds.RSK_TESTNET) {
             // RSK Testnet
             btcBtcNetwork = BtcNetwork.TESTNET;
-        } else if (block.chainid == ChainIds.LOCAL || block.chainid == ChainIds.RSK_REGTEST) {
+        } else if (block.chainid == ChainIds.LOCAL) {
             // Foundry local chainid
             btcBtcNetwork = BtcNetwork.REGTEST;
             // Set Bridge Mock
@@ -85,6 +85,9 @@ contract DeployImplAndProxy is ScriptUtils {
             BridgeMock bridgeMock = new BridgeMock();
             vm.stopBroadcast();
             bridgeAddress = payable(address(bridgeMock));
+        } else if (block.chainid == ChainIds.RSK_REGTEST) {
+            // RSK Regtest
+            btcBtcNetwork = BtcNetwork.REGTEST;
         } else {
             revert("Blockchain is not RSK or regtest");
         }
