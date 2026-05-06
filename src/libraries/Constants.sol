@@ -177,11 +177,11 @@ library Constants {
     // Stream and Packet Constants
     /// @dev Number of slots per packet in the streamfv
     /// @dev NOTE: SLOTS_PER_PACKET should be smaller than 2^16 to avoid overflow of slot location
-    uint8 constant SLOTS_PER_PACKET = 100;
+    uint8 constant SLOTS_PER_PACKET = 50;
 
     /// @dev Threshold for slot usage that triggers new committee creation
     /// @dev When 80% of slots are filled, a new committee is created
-    uint8 constant SLOT_USAGE_THRESHOLD = 80;
+    uint8 constant SLOT_USAGE_THRESHOLD = 40;
 
     /// @dev Maximum number of candidates to a committee for a particular role and stream denominations
     uint256 constant MAX_CANDIDATES_SIZE_PER_ROLE = 100;
