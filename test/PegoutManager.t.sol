@@ -1704,13 +1704,16 @@ contract PegoutManagerTest is Test, HelperContract {
         (address opAddress, RegisterUserTakeSetup memory setup) = setup_reimbursementKickoff();
 
         // Set a base event directly on the bridge mock to simulate it already being set
-        vm.prank(address(rbtcBridge));
-        bridgeMock.setBaseEvent("existing base event");
+        uint256 firstBaseEventBlock = block.number;
+        vm.roll(firstBaseEventBlock);
+        vm.prank(address(pegoutManager));
+        rbtcBridge.setBaseEvent("first base event");
 
         // Assert - should revert because base event is already set
-        vm.expectRevert(IRbtcBridge.BaseEventAlreadySet.selector);
+        vm.expectRevert(abi.encodeWithSelector(IRbtcBridge.BaseEventAlreadySet.selector));
 
         // Act
+        vm.roll(firstBaseEventBlock);
         vm.prank(opAddress);
         pegoutManager.registerReimbursementKickoff(setup.acceptPeginTxid, setup.reimbursementKickoffSPV);
     }

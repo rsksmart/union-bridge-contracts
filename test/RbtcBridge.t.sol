@@ -744,13 +744,16 @@ contract RbtcBridgeTest is HelperContract {
         bytes memory baseEvent = "second base event";
 
         // Set first base event directly on bridge mock
-        vm.prank(address(rbtcBridge));
-        bridgeMock.setBaseEvent("first base event");
+        uint256 firstBaseEventBlock = block.number;
+        vm.roll(firstBaseEventBlock);
+        vm.prank(address(pegoutManager));
+        rbtcBridge.setBaseEvent("first base event");
 
         // Assert
-        vm.expectRevert(IRbtcBridge.BaseEventAlreadySet.selector);
+        vm.expectRevert(abi.encodeWithSelector(IRbtcBridge.BaseEventAlreadySet.selector));
 
         // Act - try to set another base event
+        vm.roll(firstBaseEventBlock);
         vm.prank(address(pegoutManager));
         rbtcBridge.setBaseEvent(baseEvent);
     }
