@@ -744,15 +744,37 @@ contract RbtcBridgeTest is HelperContract {
         bytes memory baseEvent = "second base event";
 
         // Set first base event directly on bridge mock
-        vm.prank(address(rbtcBridge));
-        bridgeMock.setBaseEvent("first base event");
+        vm.prank(address(pegoutManager));
+        rbtcBridge.setBaseEvent("first base event");
 
         // Assert
-        vm.expectRevert(IRbtcBridge.BaseEventAlreadySet.selector);
+        vm.expectRevert(abi.encodeWithSelector(IRbtcBridge.BaseEventAlreadySet.selector));
 
         // Act - try to set another base event
         vm.prank(address(pegoutManager));
         rbtcBridge.setBaseEvent(baseEvent);
+    }
+
+    function test_setBaseEvent_Success_SetInNextBlock() external {
+        // Arrange
+        bridgeMock.setStoreEvents(true);
+        bytes memory firstBaseEvent = "first base event";
+        bytes memory secondBaseEvent = "second base event";
+
+        // Act - set base event in current block
+        vm.prank(address(pegoutManager));
+        rbtcBridge.setBaseEvent(firstBaseEvent);
+
+        // Move to next block and set a new base event
+        vm.roll(block.number + 1);
+        vm.prank(address(pegoutManager));
+        rbtcBridge.setBaseEvent(secondBaseEvent);
+
+        // Assert
+        bytes memory retrievedBaseEvent = bridgeMock.getBaseEvent();
+        assertEq(retrievedBaseEvent.length, secondBaseEvent.length, "Base event length should match");
+        assertEq(keccak256(retrievedBaseEvent), keccak256(secondBaseEvent), "Base event content should match");
+        assertEq(rbtcBridge.latestBaseEventBlock(), block.number, "Latest base event block should be current block");
     }
 
     function test_setBaseEvent_Revert_EnforcedPause_PausedContract() external {
