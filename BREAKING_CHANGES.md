@@ -301,6 +301,15 @@
 3. **Pegout queueing** – `requestPegout` no longer reverts when a stream is busy. Subsequent requests must use `PegoutManager.enqueuePegout()` to join the per-stream queue. Once the active peg-out completes, the next request is automatically promoted; anyone can also trigger promotion by calling `tryProcessEnqueuedPegout`. Integrations must handle the queued state and surface queue position to users.
 4. **rejectPeginConfirmations** – `StreamManager` now tracks a separate confirmation count for reject-pegin and user-reimbursement transactions, configurable via `setRejectPeginConfirmations`. This must be ≤ `peginConfirmations`.
 
+## [v0.4.1-alpha]
+
+### Bitcoin Transaction Script Validation (v0.4.1-alpha)
+
+1. **OP_RETURN Pegout ID script now uses OP_PUSHBYTES_32**
+   - **Reason**: Bitcoin script pub key has OP_PUSHBYTES_32 opcode after OP_RETURN to push the pegout id (bytes32) to the stack.
+   - **Change**: `BtcScriptParser.getPegoutIdScript` now encodes the pegoutId OP_RETURN output as `OP_RETURN OP_PUSHBYTES_32 <32‑byte pegoutId>` instead of `OP_RETURN <pegoutId>` without an explicit push opcode.
+   - **Impact**: Any integration that was constructing the pegoutId output without `OP_PUSHBYTES_32` must update their Bitcoin transaction builder; scripts missing the `0x20` push opcode will now fail validation.
+
 ## [v0.4.0-alpha]
 
 ### Contract Restructuring (v0.4.0-alpha)
