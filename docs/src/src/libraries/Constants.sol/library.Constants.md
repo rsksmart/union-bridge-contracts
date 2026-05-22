@@ -1,5 +1,5 @@
 # Constants
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/aa0c5b500b0a03f68164877ee0ab01eebfbdfa68/src/libraries/Constants.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/bd6b4a28bf5973e554d9b7a237190a44cdd46b38/src/libraries/Constants.sol)
 
 Library containing all constants used throughout the union bridge contracts
 
@@ -10,9 +10,9 @@ Library containing all constants used throughout the union bridge contracts
 
 ## State Variables
 ### SEQUENCE
-*Sequence number for replace-by-fee Bitcoin transactions (0xFFFFFFFD)*
+*Sequence number for replace-by-fee Bitcoin transaction (0xFFFFFFFD)*
 
-*This enables replace-by-fee functionality for Bitcoin transactions*
+*This enables replace-by-fee functionality for Bitcoin transaction*
 
 
 ```solidity
@@ -21,7 +21,7 @@ uint32 constant SEQUENCE = 0xFFFFFFFD;
 
 
 ### LOCKTIME
-*Locktime value for Bitcoin transactions (0 = no locktime)*
+*Locktime value for Bitcoin transaction (0 = no locktime)*
 
 *Used to specify when a transaction can be included in a block*
 
@@ -43,7 +43,7 @@ uint32 constant BTC_TX_VERSION = 2;
 
 
 ### REQUEST_PEGIN_VOUT_TAPTREE
-*Output index for Taproot output in request peg-in Bitcoin transactions*
+*Output index for Taproot output in request peg-in Bitcoin transaction*
 
 *First output (index 0) contains the main Taproot payment*
 
@@ -54,7 +54,7 @@ uint32 constant REQUEST_PEGIN_VOUT_TAPTREE = 0;
 
 
 ### REQUEST_PEGIN_VOUT_OP_RETURN
-*Output index for OP_RETURN output in request peg-in Bitcoin transactions*
+*Output index for OP_RETURN output in request peg-in Bitcoin transaction*
 
 *Second output (index 1) contains metadata: packet number, RSK address, BTC reimbursement key*
 
@@ -65,7 +65,7 @@ uint32 constant REQUEST_PEGIN_VOUT_OP_RETURN = 1;
 
 
 ### REQUEST_PEGIN_VOUT_ENABLER
-*Output index for enabler output in request peg-in Bitcoin transactions*
+*Output index for enabler output in request peg-in Bitcoin transaction*
 
 *Third output (index 2) contains the enabler output with dispute keys*
 
@@ -76,7 +76,7 @@ uint32 constant REQUEST_PEGIN_VOUT_ENABLER = 2;
 
 
 ### REJECT_PEGIN_VIN_ENABLER
-*Input index for consuming the request peg-in enabler output in reject peg-in Bitcoin transactions*
+*Input index for consuming the request peg-in enabler output in reject peg-in Bitcoin transaction*
 
 *First input (index 0) contains the rejected output by a member of the committee*
 
@@ -87,7 +87,7 @@ uint32 constant REJECT_PEGIN_VIN_ENABLER = 0;
 
 
 ### ACCEPT_PEGIN_VIN_TAPTREE
-*Input index for consuming the request peg-in taptree output in accept peg-in Bitcoin transactions*
+*Input index for consuming the request peg-in taptree output in accept peg-in Bitcoin transaction*
 
 *First input (index 0) spends the request peg-in taptree UTXO*
 
@@ -98,7 +98,7 @@ uint32 constant ACCEPT_PEGIN_VIN_TAPTREE = 0;
 
 
 ### ACCEPT_PEGIN_VIN_ENABLER
-*Input index for consuming the request peg-in enabler output in accept peg-in Bitcoin transactions*
+*Input index for consuming the request peg-in enabler output in accept peg-in Bitcoin transaction*
 
 *Second input (index 1) spends the request peg-in enabler UTXO*
 
@@ -109,7 +109,7 @@ uint32 constant ACCEPT_PEGIN_VIN_ENABLER = 1;
 
 
 ### ACCEPT_PEGIN_VOUT_TAPTREE
-*Output index for Taproot output in accept peg-in Bitcoin transactions*
+*Output index for Taproot output in accept peg-in Bitcoin transaction*
 
 *First output (index 0) contains the P2TR payment to the committee*
 
@@ -120,7 +120,7 @@ uint32 constant ACCEPT_PEGIN_VOUT_TAPTREE = 0;
 
 
 ### ACCEPT_PEGIN_VOUT_ENABLER
-*Output index for enabler output in accept peg-in Bitcoin transactions*
+*Output index for enabler output in accept peg-in Bitcoin transaction*
 
 *Second output (index 1) contains the enabler output with operator dispute keys only*
 
@@ -131,7 +131,7 @@ uint32 constant ACCEPT_PEGIN_VOUT_ENABLER = 1;
 
 
 ### ACCEPT_PEGIN_VOUT_SPEED_UP
-*Output index for speed-up output in accept peg-in Bitcoin transactions*
+*Output index for speed-up output in accept peg-in Bitcoin transaction*
 
 *Third output (index 2) contains the speed-up payment for CPFP*
 
@@ -142,7 +142,7 @@ uint32 constant ACCEPT_PEGIN_VOUT_SPEED_UP = 2;
 
 
 ### ADVANCE_FUNDS_VOUT_USER
-*Output index for user output in advance funds Bitcoin transactions*
+*Output index for user output in advance funds Bitcoin transaction*
 
 *First output (index 0) contains the payment to the user*
 
@@ -153,7 +153,7 @@ uint32 constant ADVANCE_FUNDS_VOUT_USER = 0;
 
 
 ### ADVANCE_FUNDS_VOUT_OP_RETURN
-*Output index for OP_RETURN output in advance funds Bitcoin transactions*
+*Output index for OP_RETURN output in advance funds Bitcoin transaction*
 
 *Second output (index 1) contains metadata for tracking*
 
@@ -163,8 +163,19 @@ uint32 constant ADVANCE_FUNDS_VOUT_OP_RETURN = 1;
 ```
 
 
+### CANCEL_USER_TAKE_VIN_ACCEPT_PEGIN
+*Input index for user input in cancel user take Bitcoin transaction*
+
+*First input (index 0) spends the accept peg-in output UTXO*
+
+
+```solidity
+uint32 constant CANCEL_USER_TAKE_VIN_ACCEPT_PEGIN = 0;
+```
+
+
 ### OPERATOR_TAKE_VIN_ACCEPT_PEGIN
-*Input index for user input in operator take Bitcoin transactions*
+*Input index for user input in operator take Bitcoin transaction*
 
 *First input (index 0) spends the accept peg-in output UTXO*
 
@@ -175,7 +186,7 @@ uint32 constant OPERATOR_TAKE_VIN_ACCEPT_PEGIN = 0;
 
 
 ### OPERATOR_WON_VIN_ACCEPT_PEGIN
-*Input index for user input in operator won Bitcoin transactions*
+*Input index for user input in operator won Bitcoin transaction*
 
 *First input (index 0) spends the accept peg-in output UTX*
 
@@ -186,7 +197,7 @@ uint32 constant OPERATOR_WON_VIN_ACCEPT_PEGIN = 0;
 
 
 ### OPERATOR_TAKE_VIN_REIMBURSEMENT_KICKOFF
-*Input index for reimbursement kickoff input in operator take Bitcoin transactions*
+*Input index for reimbursement kickoff input in operator take Bitcoin transaction*
 
 *Second input (index 1) spends the reimbursement kickoff UTXO*
 
@@ -197,7 +208,7 @@ uint32 constant OPERATOR_TAKE_VIN_REIMBURSEMENT_KICKOFF = 1;
 
 
 ### OPERATOR_WON_VIN_INPUT_REVEALED
-*Input index for revealed input in operator won Bitcoin transactions*
+*Input index for revealed input in operator won Bitcoin transaction*
 
 *Second input (index 1) spends the revealed input UTXO*
 
@@ -207,8 +218,19 @@ uint32 constant OPERATOR_WON_VIN_INPUT_REVEALED = 1;
 ```
 
 
+### CANCEL_USER_TAKE_VOUT_OPERATOR
+*Output index for operator dispute key in cancel user take Bitcoin transaction*
+
+*First output (index 0) contains the payment to the operator's dispute key*
+
+
+```solidity
+uint32 constant CANCEL_USER_TAKE_VOUT_OPERATOR = 0;
+```
+
+
 ### OPERATOR_TAKE_VOUT_OPERATOR
-*Output index for operator dispute key inoperator take Bitcoin transactions*
+*Output index for operator dispute key inoperator take Bitcoin transaction*
 
 *First output (index 0) contains the payment to the operator's dispute key*
 
@@ -219,7 +241,7 @@ uint32 constant OPERATOR_TAKE_VOUT_OPERATOR = 0;
 
 
 ### OPERATOR_WON_VOUT_OPERATOR
-*Output index for operator dispute key in operator won Bitcoin transactions*
+*Output index for operator dispute key in operator won Bitcoin transaction*
 
 *First output (index 0) contains the payment to the operator's dispute key*
 
@@ -230,7 +252,7 @@ uint32 constant OPERATOR_WON_VOUT_OPERATOR = 0;
 
 
 ### PEGOUT_VIN_TAPTREE
-*Input index for consuming the accept peg-in taptree output in pegout Bitcoin transactions*
+*Input index for consuming the accept peg-in taptree output in pegout Bitcoin transaction*
 
 *First input (index 0) spends the accept peg-in taptree UTXO*
 
@@ -241,7 +263,7 @@ uint32 constant PEGOUT_VIN_TAPTREE = 0;
 
 
 ### PEGOUT_VIN_ENABLER
-*Input index for consuming the accept peg-in enabler output in pegout Bitcoin transactions*
+*Input index for consuming the accept peg-in enabler output in pegout Bitcoin transaction*
 
 *Second input (index 1) spends the accept peg-in enabler UTXO*
 
@@ -252,7 +274,7 @@ uint32 constant PEGOUT_VIN_ENABLER = 1;
 
 
 ### PEGOUT_VOUT_USER
-*Output index for user payment output in pegout Bitcoin transactions*
+*Output index for user payment output in pegout Bitcoin transaction*
 
 *First output (index 0) contains the payment to the user*
 
@@ -263,7 +285,7 @@ uint32 constant PEGOUT_VOUT_USER = 0;
 
 
 ### PEGOUT_VOUT_SPEED_UP
-*Output index for speed-up output in pegout Bitcoin transactions*
+*Output index for speed-up output in pegout Bitcoin transaction*
 
 *Second output (index 1) contains the speed-up payment for CPFP*
 
@@ -274,13 +296,40 @@ uint32 constant PEGOUT_VOUT_SPEED_UP = 1;
 
 
 ### CHALLENGE_VIN_REIMBURSEMENT_KICKOFF
-*Input index for reimbursement kickoff input in challenge vin reimbursement kickoff Bitcoin transactions*
+*Input index for reimbursement kickoff input in challenge vin reimbursement kickoff Bitcoin transaction*
 
 *First input (index 0) spends the reimbursement kickoff UTXO*
 
 
 ```solidity
 uint32 constant CHALLENGE_VIN_REIMBURSEMENT_KICKOFF = 0;
+```
+
+
+### INPUT_NOT_REVEALED_VIN_CHALLENGE
+*Input index for challenge vin in input not revealed Bitcoin transaction*
+
+
+```solidity
+uint32 constant INPUT_NOT_REVEALED_VIN_CHALLENGE = 0;
+```
+
+
+### INPUT_REVEALED_VIN_CHALLENGE
+*Input index for revealed vin challenge in input revealed Bitcoin transaction*
+
+
+```solidity
+uint32 constant INPUT_REVEALED_VIN_CHALLENGE = 0;
+```
+
+
+### KICKOFF_VIN_SLOT_ID
+*Input index for kickoff vin in kickoff Bitcoin transaction*
+
+
+```solidity
+uint32 constant KICKOFF_VIN_SLOT_ID = 0;
 ```
 
 
@@ -293,12 +342,21 @@ uint32 constant CHALLENGE_INPUT_COUNT = 1;
 ```
 
 
-### INPUT_REVEALED_VIN_CHALLENGE
-*Input index for revealed vin challenge in input revealed Bitcoin transactions*
+### INPUT_NOT_REVEALED_INPUT_COUNT
+*Number of inputs in an input not revealed Bitcoin transaction*
 
 
 ```solidity
-uint32 constant INPUT_REVEALED_VIN_CHALLENGE = 0;
+uint32 constant INPUT_NOT_REVEALED_INPUT_COUNT = 1;
+```
+
+
+### STOP_OPERATOR_WON_INPUT_COUNT
+*Number of inputs in a stop operator won Bitcoin transaction*
+
+
+```solidity
+uint32 constant STOP_OPERATOR_WON_INPUT_COUNT = 2;
 ```
 
 
@@ -311,21 +369,21 @@ uint32 constant INPUT_REVEALED_INPUT_COUNT = 1;
 ```
 
 
+### INPUT_REVEALED_OUTPUT_COUNT
+*Number of outputs in an input revealed Bitcoin transaction*
+
+
+```solidity
+uint32 constant INPUT_REVEALED_OUTPUT_COUNT = 2;
+```
+
+
 ### KICKOFF_INPUT_COUNT
-*Input index for kickoff vin in kickoff Bitcoin transactions*
+*Input index for kickoff vin in kickoff Bitcoin transaction*
 
 
 ```solidity
 uint32 constant KICKOFF_INPUT_COUNT = 1;
-```
-
-
-### KICKOFF_VIN_SLOT_ID
-*Input index for kickoff vin in kickoff Bitcoin transactions*
-
-
-```solidity
-uint32 constant KICKOFF_VIN_SLOT_ID = 0;
 ```
 
 
@@ -362,6 +420,28 @@ uint32 constant ACCEPT_PEGIN_OUTPUT_COUNT = 3;
 ```
 
 
+### CANCEL_USER_TAKE_INPUT_COUNT
+*Number of inputs in a cancel user take transaction*
+
+*Includes: accept pegin enabler input*
+
+
+```solidity
+uint32 constant CANCEL_USER_TAKE_INPUT_COUNT = 1;
+```
+
+
+### CANCEL_USER_TAKE_OUTPUT_COUNT
+*Number of outputs in a cancel user take transaction*
+
+*Includes: operator speedup key*
+
+
+```solidity
+uint32 constant CANCEL_USER_TAKE_OUTPUT_COUNT = 1;
+```
+
+
 ### PEGOUT_INPUT_COUNT
 *Number of inputs in a pegout transaction*
 
@@ -385,7 +465,7 @@ uint32 constant PEGOUT_OUTPUT_COUNT = 2;
 
 
 ### SIGHASH_ALL
-*Signature hash type for Bitcoin transactions (SIGHASH_ALL = 0x01)*
+*Signature hash type for Bitcoin transaction (SIGHASH_ALL = 0x01)*
 
 *Indicates that all inputs and outputs are signed*
 
@@ -396,7 +476,7 @@ uint8 constant SIGHASH_ALL = 0x01;
 
 
 ### P2TR_FEE
-*Fee for P2TR Bitcoin transactions in satoshis*
+*Fee for P2TR Bitcoin transaction in satoshis*
 
 *TODO: Check if this is correct for current network conditions*
 
@@ -407,7 +487,7 @@ uint64 constant P2TR_FEE = 335;
 
 
 ### SPEED_UP_AMOUNT
-*Speed-up amount in satoshis for CPFP Bitcoin transactions*
+*Speed-up amount in satoshis for CPFP Bitcoin transaction*
 
 *Amount sent to speed-up output to accelerate parent transaction*
 
@@ -418,7 +498,7 @@ uint64 constant SPEED_UP_AMOUNT = 540;
 
 
 ### DUST_AMOUNT
-*Dust threshold in satoshis for Bitcoin transactions*
+*Dust threshold in satoshis for Bitcoin transaction*
 
 *Minimum amount required for a Bitcoin output to be considered valid*
 
@@ -500,6 +580,13 @@ uint256 constant MAX_COMMITTEE_MEMBER_COUNT = 100;
 
 ```solidity
 uint8 constant PEGOUT_ID_VERSION = 1;
+```
+
+
+### MAX_PEGOUT_QUEUE_SIZE
+
+```solidity
+uint64 constant MAX_PEGOUT_QUEUE_SIZE = 10;
 ```
 
 

@@ -141,12 +141,7 @@ contract SignatureManager is ISignatureManager, BaseProxy {
     function getPartialSignatures(bytes32 _txid)
         external
         view
-        returns (
-            SignatureData[] memory partialSignaturesData,
-            uint8 missingSignatures,
-            uint8 missingNonces,
-            uint128 committeeId
-        )
+        returns (SignatureData[] memory partialSignaturesData, uint8 missingNonces, uint128 committeeId)
     {
         Signatures storage signatures = _getSignatures(_txid);
         CommitteeMember[] memory members = committeeRegistry.getCommitteeMembers(signatures.committeeId);
@@ -156,7 +151,7 @@ contract SignatureManager is ISignatureManager, BaseProxy {
         for (uint256 i = 0; i < memberCount; i++) {
             partialSignaturesData[i] = signatures.partialSignaturesData[members[i].memberAddress];
         }
-        return (partialSignaturesData, signatures.missingSignatures, signatures.missingNonces, signatures.committeeId);
+        return (partialSignaturesData, signatures.missingNonces, signatures.committeeId);
     }
 
     function _getSignatures(bytes32 _txid) internal view returns (Signatures storage) {
@@ -281,6 +276,11 @@ contract SignatureManager is ISignatureManager, BaseProxy {
     function checkAllOperatorTakesHashesReady(bytes32 _acceptPeginTxid) external view returns (bool) {
         OperatorTakeTxids storage operatorTakeTxids = _getOperatorTakeTxids(_acceptPeginTxid);
         return (operatorTakeTxids.missingHashes == 0);
+    }
+
+    /// @inheritdoc ISignatureManager
+    function getMissingOperatorTakeHashes(bytes32 _acceptPeginTxid) external view returns (uint8) {
+        return _getOperatorTakeTxids(_acceptPeginTxid).missingHashes;
     }
 
     /// @inheritdoc ISignatureManager

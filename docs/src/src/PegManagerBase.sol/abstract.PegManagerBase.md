@@ -1,5 +1,5 @@
 # PegManagerBase
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/aa0c5b500b0a03f68164877ee0ab01eebfbdfa68/src/PegManagerBase.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/bd6b4a28bf5973e554d9b7a237190a44cdd46b38/src/PegManagerBase.sol)
 
 **Inherits:**
 [IPegManagerBase](/src/interfaces/IPegManagerBase.sol/interface.IPegManagerBase.md), [PegBase](/src/PegBase.sol/abstract.PegBase.md)
@@ -50,4 +50,11 @@ function __PegManagerBase_init(
 |`_streamManager`|`IStreamManager`|The stream manager contract address|
 |`_signatureManager`|`ISignatureManager`||
 
+
+### _completeSlot
+
+
+```solidity
+function _completeSlot(StreamPosition memory _streamInfo, bytes32 _acceptPeginTxid, bytes32 _txid) internal;
+```
 

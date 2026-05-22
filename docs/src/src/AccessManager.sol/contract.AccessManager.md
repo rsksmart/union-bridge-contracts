@@ -1,5 +1,5 @@
 # AccessManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/aa0c5b500b0a03f68164877ee0ab01eebfbdfa68/src/AccessManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/bd6b4a28bf5973e554d9b7a237190a44cdd46b38/src/AccessManager.sol)
 
 **Inherits:**
 [IAccessManager](/src/interfaces/IAccessManager.sol/interface.IAccessManager.md), [PauseManager](/src/PauseManager.sol/abstract.PauseManager.md)
@@ -210,6 +210,23 @@ Requires the caller to have permissions to set the base event
 
 ```solidity
 function canSetBaseEvent(address _caller) external view;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_caller`|`address`|The address of the caller|
+
+
+### revertIfNotChallengeManager
+
+Requires the caller to be the challenge manager
+
+*Reverts if the caller is not the challenge manager*
+
+
+```solidity
+function revertIfNotChallengeManager(address _caller) external view;
 ```
 **Parameters**
 

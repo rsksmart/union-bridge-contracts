@@ -10,6 +10,7 @@
 - [CommitteeRegistry](CommitteeRegistry.sol/contract.CommitteeRegistry.md)
 - [MemberRegistry](MemberRegistry.sol/contract.MemberRegistry.md)
 - [Musig2](Musig2.sol/contract.Musig2.md)
+- [OperatorTakeManager](OperatorTakeManager.sol/contract.OperatorTakeManager.md)
 - [Pausable](Pausable.sol/abstract.Pausable.md)
 - [PauseManager](PauseManager.sol/abstract.PauseManager.md)
 - [PegBase](PegBase.sol/abstract.PegBase.md)

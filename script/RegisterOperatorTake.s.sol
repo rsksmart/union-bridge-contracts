@@ -1,86 +1,59 @@
-// SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 import {console} from "forge-std/console.sol";
-import {PegoutManager} from "src/PegoutManager.sol";
 import {BtcTxSPVProof, StreamPosition} from "src/interfaces/IPegCommonTypes.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
-import {Slot, SlotState, IStreamManager, Packet} from "src/interfaces/IStreamManager.sol";
+import {Slot, SlotState, IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
 import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
+import {IOperatorTakeManager} from "src/interfaces/IOperatorTakeManager.sol";
 
 contract RegisterOperatorTakeScript is ScriptUtils, ContractAddressManager {
-    PegoutManager pegoutManager;
+    IOperatorTakeManager operatorTakeManager;
+    IStreamManager streamManager;
 
     uint64 amount;
-    bytes operatorPubKey;
-    bytes32 acceptPeginTxid;
-    bytes committeePubKey;
-    bytes userPubKey;
+    bytes operatorDisputePubKey;
 
-    IStreamManager streamManager;
     uint64 expectedStreamId;
     uint64 expectedPacketNumber;
-    uint64 expectedSlotId;
-    bytes32 expectedPegoutId;
+    uint32 expectedSlotId;
 
     function setUp(bytes32 _acceptPeginTxid) internal {
-        pegoutManager = PegoutManager(getPegoutManager());
+        operatorTakeManager = getOperatorTakeManager();
 
-        ICommitteeRegistry registry = getCommitteeRegistry();
-        IMemberRegistry memberRegistry = registry.memberRegistry();
+        ICommitteeRegistry committeeRegistry = getCommitteeRegistry();
+        IMemberRegistry memberRegistry = committeeRegistry.memberRegistry();
 
-        bytes32 operatorXOnlyPubKey = memberRegistry.getMemberPublicKeys(getDeployerAddress()).covenantPubKey;
-        operatorPubKey = BtcHelper.pubKeyXonlyToCompact(operatorXOnlyPubKey);
-        userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+        operatorDisputePubKey =
+            BtcHelper.compactPubKeyToBytes(memberRegistry.getMemberDisputePubKey(getDeployerAddress()));
+
         amount = 100_000; // 0.001 BTC
 
-        // Calculate expected slot and packet numbers
         streamManager = IStreamManager(getStreamManager());
         StreamPosition memory streamPosition = streamManager.getStreamPosition(_acceptPeginTxid);
         expectedStreamId = streamPosition.streamId;
         expectedPacketNumber = streamPosition.packetNumber;
-        expectedSlotId = streamPosition.slotId;
-
-        Packet memory packet = streamManager.getPacket(expectedStreamId, expectedPacketNumber);
-        committeePubKey = packet.committeePubKey;
-
-        expectedPegoutId = pegoutManager.getPegoutTempInfo(_acceptPeginTxid).pegoutId;
+        expectedSlotId = uint32(streamPosition.slotId);
     }
 
-    function run(bytes32 _acceptPeginTxid) public {
+    function run(bytes32 _acceptPeginTxid, bytes32 _reimbursementKickoffTxid) public {
         setUp(_acceptPeginTxid);
 
-        // ADVANCE FUNDS
-        BtcTransaction memory advanceFundsTx = createAdvanceFundsTx(userPubKey, amount, expectedPegoutId);
-        BtcTxSPVProof memory advanceFundsSPV = createBtcTxSPVProof(advanceFundsTx);
-
-        // Register advance funds
-        vm.startBroadcast(getDeployerKey());
-        pegoutManager.registerAdvanceFunds(_acceptPeginTxid, advanceFundsSPV);
-        vm.stopBroadcast();
-
-        // REIMBURSEMENT KICKOFF
-        BtcTransaction memory kickoffTx = createReimbursementKickoffTx(committeePubKey, expectedSlotId);
-        BtcTxSPVProof memory kickoffTxSPVProof = createBtcTxSPVProof(kickoffTx);
-        bytes32 reimbursementKickoffTxid = getTxid(kickoffTx);
-
-        // Register reimbursement kickoff
-        vm.startBroadcast(getDeployerKey());
-        pegoutManager.registerReimbursementKickoff(_acceptPeginTxid, kickoffTxSPVProof);
-        vm.stopBroadcast();
+        console.log("=== Register Operator Take ===");
 
         // OPERATOR TAKE
         BtcTransaction memory takeTx =
-            createOperatorTakeTx(_acceptPeginTxid, reimbursementKickoffTxid, operatorPubKey, amount);
+            createOperatorTakeTx(_acceptPeginTxid, _reimbursementKickoffTxid, operatorDisputePubKey, amount);
         BtcTxSPVProof memory takeTxSPVProof = createBtcTxSPVProof(takeTx);
 
         // Register operator take
         vm.startBroadcast(getDeployerKey());
-        pegoutManager.registerOperatorTake(takeTxSPVProof);
+        operatorTakeManager.registerOperatorTake(takeTxSPVProof);
         vm.stopBroadcast();
 
         Slot memory slot = streamManager.getSlot(expectedStreamId, expectedPacketNumber, expectedSlotId);

@@ -1,58 +1,31 @@
-// SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 import {BitcoinSignatureData} from "./IBitcoinManager.sol";
 import {SlotState} from "./IStreamManager.sol";
 import {BtcTxSPVProof, StreamPosition} from "./IPegCommonTypes.sol";
 
-/// @notice Temporary information stored during peg-out processing
-/// @dev Contains data needed for peg-out transaction validation
-struct PegoutTempInfo {
-    /// @notice The user's public key that will receive the Bitcoin funds
+/// @notice Start info stored in PegoutManager (user take / pegout creation only)
+struct PegoutStartInfo {
     bytes userPubKey;
-    /// @notice Timestamp when the peg-out was initially created
     uint256 createdAt;
-    /// @notice Timestamp when the operator take was last updated/triggered
-    uint256 operatorTakeUpdatedAt;
-    /// @notice The committee ID responsible for signing this peg-out
-    uint128 committeeId;
-    /// @notice The operator address that will advance the funds to the user
-    address takeOperatorAddress;
-    /// @notice The take public key (takePubKey) of the selected operator for operator-take transactions (x-coordinate only)
-    bytes32 operatorTakePubKey;
-    /// @notice The dispute public key (covenantPubKey) of the selected operator for operator-take transactions (x-coordinate only)
-    bytes32 operatorDisputePubKey;
-    /// @notice The unique identifier for this peg-out operation
-    bytes32 pegoutId;
-    /// @notice Block number when advance funds was mined
-    int256 advanceFundsBlockNumber;
-    /// @notice The transaction id of the reimbursement kickoff transaction
-    bytes32 reimbursementKickoffTxid;
+    bytes32 pegoutTxid;
 }
 
-/// @notice Settings for the PegoutManager contract
-/// @dev Contains timeout configurations in seconds for peg-out operations
-struct PegoutManagerSettings {
-    /// @notice Timeout in seconds for the user to take the pegout
-    /// @dev This is the time the members have to sign the pegout transaction before start of operator take
-    uint256 userTakeTimeout;
-    /// @notice Timeout in seconds for the operator to take the pegout
-    /// @dev This is the time the operator has to advance the funds to the user and present the proof
-    uint256 operatorTakeTimeout;
+struct PegoutRequest {
+    /// @notice The user's public key that will receive the Bitcoin funds
+    bytes userPubKey;
+    /// @notice user RSK address in case a refund is needed.
+    address userAddress;
 }
 
 /// @title IPegoutManager
 /// @notice Interface for managing peg-out operations
 interface IPegoutManager {
-    /// @notice Gets temporary information stored during peg-out processing
+    /// @notice Gets start information stored during peg-out creation
     /// @param _acceptPeginTxid The accept peg-in transaction id
-    /// @return The temporary information needed for peg-out processing
-    function getPegoutTempInfo(bytes32 _acceptPeginTxid) external view returns (PegoutTempInfo memory);
-
-    /// @notice Gets the accept peg-in transaction id for a given peg-out transaction id
-    /// @param _pegoutTxid The peg-out transaction id
-    /// @return The accept peg-in transaction id
-    function getAcceptPeginTxid(bytes32 _pegoutTxid) external view returns (bytes32);
+    /// @return The start info (userPubKey, createdAt)
+    function getPegoutStartInfo(bytes32 _acceptPeginTxid) external view returns (PegoutStartInfo memory);
 
     // ===================== Peg-out Request =====================
 
@@ -74,71 +47,24 @@ interface IPegoutManager {
     /// @param _pegoutTxSPVProof The BTC SPV proof of the peg-out transaction
     function registerUserTake(BtcTxSPVProof calldata _pegoutTxSPVProof) external;
 
-    /// @notice Gets the peg-out signature hash for a specific stream, packet, and slot
-    /// @param streamId The stream identifier
-    /// @param packetNumber The packet number within the stream
-    /// @param slotId The slot identifier within the packet
-    /// @return The peg-out signature hash
-    function getPegoutTxid(uint64 streamId, uint64 packetNumber, uint64 slotId) external view returns (bytes32);
+    /// @notice Get queue size for enqueued peg-out requests for a specific stream
+    /// @param _streamId The stream identifier
+    /// @return The number of enqueued peg-out requests for the specified stream
+    function getPegoutQueueLength(uint64 _streamId) external view returns (uint64);
 
-    /// @notice Sets the timeout duration for user take operations
-    /// @dev Only callable by the contract owner
-    /// @dev Emits UserTakeTimeoutUpdated event upon successful update
-    /// @dev Reverts if the timeout is zero
-    /// @param _timeout The new timeout duration in seconds
-    function setUserTakeTimeout(uint256 _timeout) external;
+    /// @notice Enqueues a peg-out request for a specific stream
+    /// @dev This function allows users to enqueue their peg-out requests where there is a pegout in process
+    /// @param _userPubKey The user's compressed public key that will receive the Bitcoin funds
+    function enqueuePegout(bytes memory _userPubKey) external payable;
 
-    /// @notice Sets the timeout duration for operator take operations
-    /// @dev Only callable by the contract owner
-    /// @dev Emits OperatorTakeTimeoutUpdated event upon successful update
-    /// @dev Reverts if the timeout is zero
-    /// @param _timeout The new timeout duration in seconds
-    function setOperatorTakeTimeout(uint256 _timeout) external;
+    /// @notice Dequeues a peg-out request for processing for a specific stream
+    /// @dev Should be called from the user that enqueued a pegout
+    /// @param _streamId The stream identifier
+    function dequeuePegout(uint64 _streamId) external;
 
-    /// @notice Gets the current timeout duration for user take operations
-    /// @return The timeout duration in seconds
-    function userTakeTimeout() external view returns (uint256);
-
-    /// @notice Gets the current timeout duration for operator take operations
-    /// @return The timeout duration in seconds
-    function operatorTakeTimeout() external view returns (uint256);
-
-    /// @notice Registers the advance funds transaction submitted by the operator
-    /// @dev Validates the SPV proof and updated the peg-out status accordingly
-    /// @param acceptPeginTxid The accept peg-in transaction id that it's being advanced
-    /// @param _advanceFunds The BTC SPV proof of the advance funds transaction
-    function registerAdvanceFunds(bytes32 acceptPeginTxid, BtcTxSPVProof calldata _advanceFunds) external;
-
-    /// @notice Registers the reimbursement kickoff transaction submitted by the operator
-    /// @dev Validates the SPV proof and updates the peg-out status accordingly
-    /// @param acceptPeginTxid The accept peg-in transaction id that it's being reimbursed
-    /// @param _kickoffSPV The BTC SPV proof of the reimbursement kickoff transaction
-    function registerReimbursementKickoff(bytes32 acceptPeginTxid, BtcTxSPVProof calldata _kickoffSPV) external;
-
-    /// @notice Deposits an operator take proof for a peg-out transaction
-    /// @dev Validates the SPV proof and marks the slot as paid when operator takes over
-    /// @dev Only callable when the peg status is KICKOFF and contract is unpaused
-    /// @dev Emits PegoutRegistered event upon successful deposit
-    /// @dev Only callable when contract is unpaused
-    function registerOperatorTake(BtcTxSPVProof calldata _pegoutTxSPVProof) external;
-
-    /// @notice Deposits an operator won proof for a peg-out transaction
-    /// @param _pegoutTxSPVProof The BTC SPV proof of the operator won transaction
-    /// @dev Validates the SPV proof and marks the slot as paid when operator takes over
-    /// @dev Only callable when the peg status is OPERATOR_TAKE
-    /// @dev Emits PegoutRegistered event upon successful deposit
-    /// @dev Only callable when contract is unpaused
-    function registerOperatorWon(BtcTxSPVProof memory _pegoutTxSPVProof) external;
-
-    /// @notice Triggers the operator take process for a peg-out when not all committee members sign within timeout
-    /// @dev This function can be called after a User Take expiration or after an Operator Take expiration
-    /// @dev Each case has its own timeout and before triggering the operator take (after a User Take expiration)
-    /// @dev signatures should be checked to see if the User Take was already signed
-    /// @dev Partial signatures are used to skip those operators that have not signed the User Take
-    /// @dev Emits OperatorTakeTriggered event upon successful triggering
-    /// @dev Only callable when contract is unpaused
-    /// @param _pegoutTxid The transaction id of the peg-out request
-    function triggerOperatorTake(bytes32 _pegoutTxid) external;
+    /// @notice Tries to process an enqueued peg-out request for a specific stream
+    /// @param _streamId The stream identifier
+    function tryProcessEnqueuedPegout(uint64 _streamId) external;
 
     // ===================== Events =====================
 
@@ -163,7 +89,7 @@ interface IPegoutManager {
     /// @notice Event emitted when a peg-out is successfully registered
     /// @param blockHash The Bitcoin block hash containing the peg-out transaction
     /// @param txid The hash of the peg-out transaction
-    /// @param acceptPeginTxid The hash of the original accept peg-in transaction
+    /// @param acceptPeginTxid The txid of the original accept peg-in transaction
     /// @param committeeId The ID of the committee responsible for this peg-out
     /// @param streamInfo The stream position information related to this peg-out
     event PegoutRegistered(
@@ -174,61 +100,17 @@ interface IPegoutManager {
         StreamPosition streamInfo
     );
 
-    /// @notice Event emitted when advance funds are successfully registered
-    /// @param blockHash The Bitcoin block hash containing the advance funds transaction
-    /// @param txid The hash of the advance funds transaction
-    /// @param acceptPeginTxid The hash of the original accept peg-in transaction
-    /// @param pegoutId The unique identifier for this peg-out operation
-    /// @param committeeId The ID of the committee responsible for this advance funds
-    /// @param streamInfo The stream position information related to this advance funds
-    /// @param operatorTakePubKey The public key of the operator that took the advance funds
-    event AdvanceFundsRegistered(
-        bytes32 indexed blockHash,
-        bytes32 indexed txid,
-        bytes32 indexed acceptPeginTxid,
-        bytes32 pegoutId,
-        uint128 committeeId,
-        StreamPosition streamInfo,
-        bytes32 operatorTakePubKey
-    );
+    /// @notice Event emitted when a peg-out request is enqueued
+    /// @param streamId The stream identifier for which the peg-out request is enqueued
+    /// @param userPubKey The user's public key that will receive the Bitcoin funds
+    /// @param userAddress The user's RSK address in case a refund is needed
+    event PegoutEnqueued(uint64 indexed streamId, bytes userPubKey, address userAddress);
 
-    /// @notice Event emitted when reimbursement kickoff is successfully registered
-    /// @param txid The hash of the reimbursement kickoff transaction
-    /// @param acceptPeginTxid The hash of the original accept peg-in transaction
-    /// @param pegoutId The unique identifier for this peg-out operation
-    /// @param committeeId The ID of the committee responsible for this reimbursement kickoff
-    /// @param streamInfo The stream position information related to this reimbursement kickoff
-    /// @param operatorTakePubKey The public key of the operator that took the advance funds
-    event ReimbursementKickoffRegistered(
-        bytes32 indexed txid,
-        bytes32 indexed acceptPeginTxid,
-        bytes32 indexed pegoutId,
-        uint128 committeeId,
-        StreamPosition streamInfo,
-        bytes32 operatorTakePubKey
-    );
-
-    /// @notice Event emitted when the user take timeout is updated
-    /// @param newTimeout The new timeout duration in seconds
-    event UserTakeTimeoutUpdated(uint256 newTimeout);
-
-    /// @notice Event emitted when the operator take timeout is updated
-    /// @param newTimeout The new timeout duration in seconds
-    event OperatorTakeTimeoutUpdated(uint256 newTimeout);
-
-    /// @notice Event emitted when operator take is triggered for a peg-out
-    /// @param pegoutTxid The transaction id of the peg-out request
-    /// @param pegoutInfo Complete pegout temporary information including operator details
-    /// @param streamPosition Stream position information including slot ID
-    /// @param updatedAt The timestamp when the operator take was triggered
-    /// @param expireAt The timestamp when the operator take timeout expires
-    event OperatorTakeTriggered(
-        bytes32 indexed pegoutTxid,
-        PegoutTempInfo pegoutInfo,
-        StreamPosition streamPosition,
-        uint256 updatedAt,
-        uint256 expireAt
-    );
+    /// @notice Event emitted when a peg-out request is dequeued for processing
+    /// @param streamId The stream identifier for which the peg-out request is dequeued
+    /// @param userPubKey The user's public key that will receive the Bitcoin funds
+    /// @param userAddress The user's RSK address in case a refund is needed
+    event PegoutDequeued(uint64 indexed streamId, bytes userPubKey, address userAddress);
 
     // ===================== Errors =====================
 
@@ -275,75 +157,36 @@ interface IPegoutManager {
     /// @param expected The expected script bytes
     error IncorrectOutputScript(bytes actual, bytes expected);
 
-    /// @notice Thrown when an invalid timeout value is provided (zero timeout)
-    /// @param timeout The invalid timeout value that was provided
-    error InvalidTimeout(uint256 timeout);
+    /// @notice Thrown when the pegout queue has reached its maximum size
+    /// @param streamId The stream identifier
+    error PegoutQueueFull(uint64 streamId);
 
-    /// @notice Thrown when trying to trigger operator take before user take timeout has expired
-    /// @param createdAt The timestamp when the user take was created
-    /// @param expireAt The timestamp when the user take timeout expires
-    error UserTakeTimeoutNotExpired(uint256 createdAt, uint256 expireAt);
+    /// @notice Thrown when there are no enqueued peg-outs to process
+    /// @param streamId The stream identifier for which there are no enqueued peg-outs to process
+    error NoEnqueuedPegout(uint64 streamId);
 
-    /// @notice Thrown when trying to trigger operator take but user take was already signed
-    /// @param pegoutTxid The signature hash of the peg-out request
-    error UserTakeAlreadySigned(bytes32 pegoutTxid);
+    /// @notice Thrown when there are no free filled slots available for peg-out in the specified stream
+    /// @param streamId The stream identifier
+    /// @param queueLength The current length of the peg-out queue for the stream
+    /// @param remainingFilledSlots The number of remaining filled slots available for peg-out in the stream
+    error NoFreeFilledSlot(uint64 streamId, uint64 queueLength, uint64 remainingFilledSlots);
 
-    /// @notice Thrown when trying to trigger operator take before operator take timeout has expired
-    /// @param createdAt The timestamp when the operator take was updated
-    /// @param expireAt The timestamp when the operator take timeout expires
-    error OperatorTakeTimeoutNotExpired(uint256 createdAt, uint256 expireAt);
+    /// @notice Thrown when trying to process an enqueued peg-out but the peg-out data is not found in the queue
+    /// @param streamId The stream identifier for which the peg-out data was not found
+    /// @param userAddress The user's RSK address associated with the peg-out request that was not found
+    error PegoutNotFoundInQueue(uint64 streamId, address userAddress);
 
-    /// @notice Thrown when a peg-out signature hash is not found in the system
-    /// @param pegoutTxid The signature hash that was not found
-    error PegoutTxidNotFound(bytes32 pegoutTxid);
+    /// @notice Thrown when RSK transfer fails
+    /// @param userAddress The user's address
+    /// @param amount The amount that failed to transfer
+    error FailedToSendRSK(address userAddress, uint256 amount);
 
-    /// @notice Thrown when the operator address does not match the expected operator that should advance the funds
-    /// @param expectedOperator The expected operator address that should take the pegout
-    /// @param actualOperator The actual operator address that was provided
-    error OperatorTakeAddressNotMatch(address expectedOperator, address actualOperator);
+    /// @notice Thrown when trying to process a peg-out but there is already an enqueued peg-out for the same stream
+    /// @param streamId The stream identifier for which there is already an enqueued peg-out
+    /// @param queueLength The current length of the peg-out queue for the stream
+    error EnqueuedPegoutsForStream(uint64 streamId, uint64 queueLength);
 
-    /// @notice Thrown when the reimbursement kickoff transaction is mined before the advance funds transaction
-    /// @param advanceFundsBlockNumber The block number when advance funds was mined
-    /// @param reimbursementKickoffBlockNumber The block number when reimbursement kickoff was mined
-    error ReimbursementKickoffBeforeAdvanceFunds(int256 advanceFundsBlockNumber, int256 reimbursementKickoffBlockNumber);
-
-    /// @notice Thrown when the advance funds amount is lower than the expected peg-out amount
-    /// @param actual The actual amount in satoshis of the advance funds transaction
-    /// @param expected The expected amount in satoshis that should be advanced
-    error WrongUserAmount(uint256 actual, uint256 expected);
-
-    /// @notice Thrown when the reimbursement kickoff txid does not match the expected value
-    /// @param actual The actual reimbursement kickoff txid provided
-    /// @param expected The expected reimbursement kickoff txid
-    error ReimbursementKickoffTxidNotMatch(bytes32 actual, bytes32 expected);
-
-    /// @notice Thrown when the input txid Operator Won transaction does not match the expected value
-    /// @param actual The actual input txid provided
-    /// @param expected The expected input txid
-    error InputRevealedTxidNotMatch(bytes32 actual, bytes32 expected);
-
-    /// @notice Thrown when operator take data is not found for a given accept peg-in txid and operator address
-    /// @param acceptPeginTxid The accept peg-in transaction id
-    /// @param operatorAddress The operator address for which the data was not found
-    error OperatorTakeDataNotFound(bytes32 acceptPeginTxid, address operatorAddress);
-
-    /// @notice Thrown when the operator take transaction id does not match the expected value
-    /// @param actual The actual operator take transaction id provided
-    /// @param expected The expected operator take transaction id
-    error OperatorTakeTxidNotMatch(bytes32 actual, bytes32 expected);
-
-    /// @notice Thrown when the operator won transaction id does not match the expected value
-    /// @param actual The actual operator won transaction id provided
-    /// @param expected The expected operator won transaction id
-    error OperatorWonTxidNotMatch(bytes32 actual, bytes32 expected);
-
-    /// @notice Thrown when the number of inputs in the kickoff transaction doesn't match the expected count
-    /// @param actual The actual number of inputs
-    /// @param expected The expected number of inputs
-    error InvalidKickoffInputCount(uint256 actual, uint256 expected);
-
-    /// @notice Thrown when the slot id in the kickoff transaction doesn't match the expected slot id
-    /// @param actual The actual slot id from the transaction input
-    /// @param expected The expected slot id from the stream position
-    error InvalidSlotId(uint32 actual, uint64 expected);
+    /// @notice Thrown when a peg-out txid is not found for the given accept peg-in transaction id
+    /// @param acceptPeginTxid The accept peg-in transaction that doesn't have a pegout txid associated.
+    error PegoutNotFoundForPegin(bytes32 acceptPeginTxid);
 }

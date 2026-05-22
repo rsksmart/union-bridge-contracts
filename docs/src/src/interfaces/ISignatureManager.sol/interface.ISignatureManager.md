@@ -1,5 +1,5 @@
 # ISignatureManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/aa0c5b500b0a03f68164877ee0ab01eebfbdfa68/src/interfaces/ISignatureManager.sol)
+[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/bd6b4a28bf5973e554d9b7a237190a44cdd46b38/src/interfaces/ISignatureManager.sol)
 
 Interface for managing multi-signature operations in the union bridge
 
@@ -107,12 +107,7 @@ Gets all partial signatures for a given hash
 function getPartialSignatures(bytes32 _txid)
     external
     view
-    returns (
-        SignatureData[] memory partialSignaturesData,
-        uint8 missingSignatures,
-        uint8 missingNonces,
-        uint128 committeeId
-    );
+    returns (SignatureData[] memory partialSignaturesData, uint8 missingNonces, uint128 committeeId);
 ```
 **Parameters**
 
@@ -125,7 +120,6 @@ function getPartialSignatures(bytes32 _txid)
 |Name|Type|Description|
 |----|----|-----------|
 |`partialSignaturesData`|`SignatureData[]`|Array of signature data for all committee members|
-|`missingSignatures`|`uint8`|Number of missing signatures|
 |`missingNonces`|`uint8`|Number of missing nonces|
 |`committeeId`|`uint128`|The committee ID for this signature collection|
 
@@ -166,7 +160,7 @@ function addOperatorTakeTxids(bytes32 _acceptPeginTxid, bytes32 _takeTxid, bytes
 |----|----|-----------|
 |`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction id|
 |`_takeTxid`|`bytes32`|The OperatorTake transaction id to add|
-|`_wonTxid`|`bytes32`|The OperatorWon transaction id to add|
+|`_wonTxid`|`bytes32`||
 
 
 ### checkAllOperatorTakesHashesReady
@@ -188,6 +182,27 @@ function checkAllOperatorTakesHashesReady(bytes32 _acceptPeginTxid) external vie
 |Name|Type|Description|
 |----|----|-----------|
 |`<none>`|`bool`|true if all OperatorTake transaction id's are present, false otherwise|
+
+
+### getMissingOperatorTakeHashes
+
+Gets the number of missing OperatorTake transaction id's for a given accept peg-in transaction
+
+
+```solidity
+function getMissingOperatorTakeHashes(bytes32 _acceptPeginTxid) external view returns (uint8);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction id|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`uint8`|The number of missing OperatorTake transaction id's|
 
 
 ### getOperatorTakeData

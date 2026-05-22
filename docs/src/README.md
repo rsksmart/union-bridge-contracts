@@ -451,6 +451,43 @@ verify_proxy \
 
 **Note:** The function automatically extracts the implementation address and initialization data from the broadcast file based on the proxy address. If no broadcast file is provided, it defaults to `broadcast/DeployScript.s.sol/<chain_id>/run-latest.json`. The initialization data is automatically processed to extract the actual `initialize()` call data by skipping the first 32 bytes (selector + padding).
 
+### Transferring ownership
+
+**Note:** While ownership can be transferred to any address, it is **strongly recommended** to use a multisig wallet (such as a [Safe multisig](https://rootstock.io/blog/safe-multisig-wallet-now-available-on-rootstock/)) for enhanced security and decentralized control.
+
+Ownership transfer uses a **two-step process** (`Ownable2StepUpgradeable`):
+
+1. **Current owner calls `transferOwnership(newOwner)`** on each contract. This sets the `pendingOwner` to the new owner address.
+2. **New owner calls `acceptOwnership()`** on each contract. After this, the new owner becomes the `owner` and `pendingOwner` is cleared.
+
+**Prerequisites:**
+
+- The `<NETWORK>_PEGIN_MANAGER` environment variable must be set in your `.env` file (e.g., `TESTNET_PEGIN_MANAGER`, `MAINNET_PEGIN_MANAGER`, `ALPHANET_PEGIN_MANAGER`, `LOCAL_PEGIN_MANAGER`, or `REGTEST_PEGIN_MANAGER` depending on the network you're targeting). This address is required as the entry point for the script to discover all other bridge contract addresses on-chain.
+
+**Using shell scripts (recommended):**
+
+```bash
+# Transfer ownership (automates step 1 for all contracts)
+# Note: The new owner address must start with 0x prefix
+bash shell/script/owner/transfer-ownership.sh <network> <new_owner_address>
+
+# Check ownership status
+bash shell/script/owner/check-ownership-status.sh <network>
+```
+
+**Supported networks:** `testnet`, `mainnet`, `alphanet`, `local`, `regtest`
+
+**Which contracts are transferred:**
+
+- AccessManager, PeginManager, PegoutManager, OperatorTakeManager, StreamManager, CommitteeRegistry, MemberRegistry, BitcoinManager, SignatureManager, RbtcBridge, ChallengeManager
+
+**After running the transfer script:**
+
+- Step 1 is complete: Ownership transfers are initiated (the new owner is set as `pendingOwner` on all contracts)
+- Step 2 required: The new owner must call `acceptOwnership()` on each contract to complete the transfer
+  - If using a Safe multisig: Use the Safe UI (https://safe.rootstock.io/) to create and execute `acceptOwnership()` transactions
+  - If using a regular EOA: Call `acceptOwnership()` from that address
+
 ### Rust crate with Bindings
 
 To generate the new bindings for the smart contracts run :
@@ -468,7 +505,7 @@ This can be achived using the methods introduced at [RSKIP-502](https://github.c
 
 For local network this is not necesary as it will use the [BridgeMock](./test/helpers/BridgeMock.sol)
 
-Example to register the bridge address in alphanet and testnet with  ``setUnionBridgeContractAddressForTestnet`
+Example to register the bridge address in alphanet and testnet with `setUnionBridgeContractAddressForTestnet`
 
 ```bash
 cast send 0x0000000000000000000000000000000001000006 "setUnionBridgeContractAddressForTestnet(address)" 0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6 --rpc-url http://node-use1-1.alphanet.rskcomputing.net:4444 --legacy --value 0 --gas-limit 500100 --gas-price 4325612 --private-key <RAW_PRIVATE_KEY>
@@ -543,7 +580,9 @@ Each stream requires a `StreamSettings` struct that defines:
   - 1 BTC: 100,000,000 satoshis
   - 10 BTC: 1,000,000,000 satoshis
 
-- **`peginConfirmations`** (uint8): Number of Bitcoin confirmations required for peg-in transactions. Default: 12 blocks for mainnet, 1 block for testnet, 2 blocks for local development.
+- **`peginConfirmations`** (uint8): Number of Bitcoin confirmations required for peg-in transactions (request pegin and accept pegin). Default: 12 blocks for mainnet, 1 block for testnet, 2 blocks for local development.
+
+- **`rejectPeginConfirmations`** (uint8): Number of Bitcoin confirmations required for reject pegin and user reimbursement transactions. Shorter than `peginConfirmations` to reduce the DDoS window (e.g. 6 blocks for mainnet). Default: 6 for mainnet, 1 for testnet, 1 for local development.
 
 - **`pegoutConfirmations`** (uint8): Number of Bitcoin confirmations required for peg-out transactions. Default: 12 blocks for mainnet, 1 block for testnet, 2 blocks for local development.
 
@@ -663,7 +702,7 @@ sequenceDiagram
     CR->>CR: Decrement missingCommunicationData counter
     CR-->>-M: MemberCommunicationDataDeposited event
 
-    M->>+CR: depositAggregatedKey(committeeId, aggregatedKey)
+    M->>+CR: depositAggregatedKeys(committeeId, aggregatedTakeKey, aggregatedDisputeKey)
     Note right of M: Provides aggregated public key (33 bytes)
     CR->>CR: Validate member is in pending committee
     CR->>CR: Store aggregated key
@@ -700,7 +739,7 @@ sequenceDiagram
     MR-->>-CR: Balance updates completed
     CR->>CR: _registerCommittee()
     CR-->>ENV: NewCommittee event
-    CR->>+SM: createNewPacket(streamId, committeeId, aggregatedKey)
+    CR->>+SM: createNewPacket(streamId, committeeId, aggregatedTakePubKey, disputeKeys)
     SM->>SM: Create new packet with committee
     SM-->>-CR: Packet created
     CR->>CR: _deletePendingCommittee()
@@ -714,7 +753,7 @@ sequenceDiagram
 
 ### Phase 1: Request Peg-In
 
-1. **User generates temporary address**: User calls `getTemporaryPeginAddress()` to get a Bitcoin committee address for deposit
+1. **User generates temporary address**: User calls `getRequestPeginData()` to get a Bitcoin committee address for deposit
 2. **User deposits BTC**: User sends Bitcoin to the generated temporary address, including an OP_RETURN output with the RSK address where they want to receive the funds. For detailed information about the [REQUEST_PEGIN_TX](./bitcoin-transactions.md#1-request_pegin_tx-request-pegin-transaction) transaction structure, inputs/outputs, and Taproot script details.
 3. **Member submits request**: A committee member who monitors the Bitcoin network calls `requestPegin()` with the Bitcoin transaction and SPV proof
 4. **System validates**: System validates the transaction, reserves a slot, and stores the request. If the reserved slot reaches the slot-usage threshold (e.g. 80%), the system triggers **committee creation** for the next packet so a new packet will be ready when needed.
@@ -730,7 +769,7 @@ sequenceDiagram
     Note over U,ENV: Phase 1: Request Peg-In
     Note over U,ENV: User requests to peg-in Bitcoin to RSK
 
-    U->>+PIM: getTemporaryPeginAddress(rootstockAddress, value, btcReimbursementPubKey)
+    U->>+PIM: getRequestPeginData(rootstockAddress, value, btcReimbursementPubKey)
     PIM-->>-U: temporaryPeginAddress
 
     U->>U: Send BTC to temporaryPeginAddress
@@ -951,43 +990,67 @@ sequenceDiagram
 
 If not all committee members sign within the timeout period:
 
-1. **Trigger operator take**: A member calls `triggerOperatorTake()` to start the operator take process, which emits an event indicating which operator needs to do the funds advancement. A unique **PEGOUT ID** is created at this step (derived from stream position, operator take public key, current bitcoin block hash, version of the pegout id and an incrementing sequence number). This pegout ID is included in the `OperatorTakeTriggered` event and must be embedded in the [ADVANCE_FUNDS_TX](./bitcoin-transactions.md#1-advance_funds_tx-advance-funds-transaction) OP_RETURN output for later verification.
-2. **Operator advances funds**: An operator advances BTC to the user's Bitcoin address. For detailed information about the [ADVANCE_FUNDS_TX](./bitcoin-transactions.md#1-advance_funds_tx-advance-funds-transaction) transaction structure, inputs/outputs, and spending conditions.
-3. **Broadcast Reimbursement Kickoff**: The operator broadcasts a Reimbursement Kickoff Bitcoin transaction. When the operator calls `registerReimbursementKickoff()` with the SPV proof, the contract sets the [BASE EVENT](https://github.com/rsksmart/RSKIPs/blob/master/IPs/RSKIP529.md) on the RBTC bridge (via `RbtcBridge.setBaseEvent`) to the 32-byte pegout ID. This base event is used by the bridge for tracking and must be set before the operator take flow can complete.
-4. **Challenge period**: If no one challenges within the timeout period, the member proceeds
-5. **Broadcast Operator Take transaction**: The operator broadcasts the Operator Take (Take1) Bitcoin transaction. For detailed information about the [OPERATOR_TAKE_TX](./bitcoin-transactions.md#2-operator_take_tx-operator-take-transaction) transaction structure, inputs/outputs, and spending conditions.
-6. **Submit BTC transaction**: Operator calls `registerOperatorTake()` with the Bitcoin transaction and SPV proof
-7. **Validate transaction**: System validates the BTC transaction and proof
-8. **Peg-out Registered**: System emits an event PegoutRegistered informing that RBTC is now linked to Bitcoin via operator take. If the completed slot was the last one in the packet, the committee is released.
+1. **Trigger operator take**: A member calls `OperatorTakeManager.triggerOperatorTake()` to start the operator take process, which emits an event indicating which operator needs to do the funds advancement. A unique **PEGOUT ID** is created at this step (derived from stream position, operator take public key, current bitcoin block hash, version of the pegout id and an incrementing sequence number). This pegout ID is included in the `OperatorTakeTriggered` event and must be embedded in the [ADVANCE_FUNDS_TX](./bitcoin-transactions.md#1-advance_funds_tx-advance-funds-transaction) OP_RETURN output for later verification.
+2. **Cancel user take flow**: Selected operator cancels the user take flow before advancing the funds.
+3. **Operator advances funds**: An operator advances BTC to the user's Bitcoin address. For detailed information about the [ADVANCE_FUNDS_TX](./bitcoin-transactions.md#1-advance_funds_tx-advance-funds-transaction) transaction structure, inputs/outputs, and spending conditions.
+4. **Broadcast Reimbursement Kickoff**: The operator broadcasts a Reimbursement Kickoff Bitcoin transaction. When the operator calls `OperatorTakeManager.registerReimbursementKickoff()` with the SPV proof, the contract sets the [BASE EVENT](https://github.com/rsksmart/RSKIPs/blob/master/IPs/RSKIP529.md) on the RBTC bridge (via `RbtcBridge.setBaseEvent`) to the 32-byte pegout ID. This base event is used by the bridge for tracking and must be set before the operator take flow can complete.
+5. **Challenge period**: If no one challenges within the timeout period, the member proceeds
+6. **Broadcast Operator Take transaction**: The operator broadcasts the Operator Take (Take1) Bitcoin transaction. For detailed information about the [OPERATOR_TAKE_TX](./bitcoin-transactions.md#2-operator_take_tx-operator-take-transaction) transaction structure, inputs/outputs, and spending conditions.
+7. **Submit BTC transaction**: Operator calls `OperatorTakeManager.registerOperatorTake()` with the Bitcoin transaction and SPV proof
+8. **Validate transaction**: System validates the BTC transaction and proof
+9. **Peg-out Registered**: System emits an event PegoutRegistered informing that RBTC is now linked to Bitcoin via operator take. If the completed slot was the last one in the packet, the committee is released.
+
+##### Operator Take Timeout Enforcement
+
+If the selected operator fails to complete their required steps within the `takeTimeout.operatorTake` period, any member can call `OperatorTakeManager.triggerOperatorTake()` again to select a new operator:
+
+- **From OP_SELECTED**: Operator failed to register `OperatorTakeManager.registerAdvanceFunds()` within the timeout.
+- **From ADVANCED**: Operator registered advance funds but failed to register `OperatorTakeManager.registerReimbursementKickoff()` within the timeout. Status resets to `OP_SELECTED`.
+- **From KICKOFF**: Operator registered kickoff but failed to register `OperatorTakeManager.registerOperatorTake()` within the timeout. Status resets to `OP_SELECTED`.
+
+The timeout window resets each time the operator makes progress (each call to `registerAdvanceFunds()` or `registerReimbursementKickoff()` updates the `operatorTakeUpdatedAt` timestamp).
+
+#### Disputed Case: Operator Won (Take2) - Operator wins challenge dispute
+
+If the operator's REIMBURSEMENT_KICKOFF_TX is challenged by a watchtower:
+
+1. **Challenge registered**: A watchtower calls `registerChallenge()` after detecting incorrect behavior (e.g., invalid ADVANCE_FUNDS_TX). For detailed information about the [CHALLENGE_TX](./bitcoin-transactions.md#2-challenge_tx-challenge-transaction) transaction structure, inputs/outputs, and spending conditions.
+2. **Operator reveals input**: The operator must respond by broadcasting REVEAL_INPUT_TX to prove they advanced funds correctly. The operator signs the slot ID using their Winternitz SLOT_ID_KEY. For detailed information about the [REVEAL_INPUT_TX](./bitcoin-transactions.md#3-reveal_input_tx-reveal-input-transaction) transaction structure, inputs/outputs, and spending conditions.
+3. **Automatic dispatch**: The Dispute Core protocol automatically dispatches OPERATOR_WON_TX after REVEAL_INPUT_TX is confirmed, scheduled for execution after OP_WON_TIMELOCK blocks expire (default: 150 blocks).
+4. **Broadcast Operator Won transaction**: After the timelock expires, the operator broadcasts the Operator Won (Take2) Bitcoin transaction. For detailed information about the [OPERATOR_WON_TX](./bitcoin-transactions.md#3-operator_won_tx-operator-won-transaction) transaction structure, inputs/outputs, and spending conditions.
+5. **Submit BTC transaction**: Operator calls `OperatorTakeManager.registerOperatorWon()` with the SPV proof of [OPERATOR_WON_TX](./bitcoin-transactions.md#3-operator_won_tx-operator-won-transaction) transaction.
+6. **Validate transaction**: System validates the BTC transaction and proof
+7. **Peg-out Registered**: System emits an event PegoutRegistered informing that RBTC is now linked to Bitcoin via operator won (disputed fallback)
 
 ```mermaid
 sequenceDiagram
     participant M as Member
-    participant POM as PegoutManager
+    participant OTM as OperatorTakeManager
+    participant RB as RbtcBridge
     participant ENV as Environment
 
     Note over M,ENV: Alternative: Operator Take (Take1) - not all members signed
     Note over M,ENV: When not all members sign within timeout
 
-    M->>+POM: triggerOperatorTake(pegoutTxid)
+    M->>+OTM: triggerOperatorTake(acceptPeginTxid)
     Note right of M: Member triggers operator take after timeout.<br/>Pegout ID created and emitted in OperatorTakeTriggered
-    POM->>POM: Validate timeout and signatures status
-    POM-->>-ENV: OperatorTakeTriggered event (includes pegoutId)
+    OTM->>OTM: Validate timeout and signatures status
+    OTM-->>-ENV: OperatorTakeTriggered event (includes pegoutId)
 
     M->>M: Bitcoin user funds advancement
     Note right of M: Operator advances BTC to user's Bitcoin address
-    M->>+POM: registerAdvanceFunds(btcTxSPVProof)
+    M->>+OTM: registerAdvanceFunds(acceptPeginTxid, btcTxSPVProof)
     Note right of M: Operator calls `registerAdvanceFunds()` with the advancement tx and SPV proof
-    POM->>POM: Validate BTC transaction and SPV proof
-    POM-->>-ENV: AdvanceFundsRegistered event
+    OTM->>OTM: Validate BTC transaction and SPV proof
+    OTM-->>-ENV: AdvanceFundsRegistered event
 
     M->>M: Bitcoin Reimbursement Kickoff
     Note right of M: Operator broadcasts Reimbursement Kickoff Bitcoin transaction
-    M->>+POM: registerReimbursementKickoff(btcTxSPVProof)
+    M->>+OTM: registerReimbursementKickoff(acceptPeginTxid, btcTxSPVProof)
     Note right of M: Operator calls `registerReimbursementKickoff()` with the kickoff tx and SPV proof
-    POM->>POM: Validate BTC transaction and SPV proof
-    POM->>POM: setBaseEvent(pegoutId) on RbtcBridge
-    POM-->>-ENV: ReimbursementKickoffRegistered event
+    OTM->>OTM: Validate BTC transaction and SPV proof
+    OTM->>RB: setBaseEvent(pegoutId)
+    OTM-->>-ENV: ReimbursementKickoffRegistered event
 
     Note over M,ENV: Challenge period timeout
     Note over M,ENV: If no one challenges within timeout period
@@ -995,11 +1058,11 @@ sequenceDiagram
     M->>M: Bitcoin Operator Take (Take1)
     Note right of M: Operator broadcasts the final Operator Take Bitcoin transaction
 
-    M->>+POM: registerOperatorTake(btcTxSPVProof)
+    M->>+OTM: registerOperatorTake(btcTxSPVProof)
     Note right of M: Operator calls `registerOperatorTake()` with the Bitcoin transaction and SPV proof
-    POM->>POM: Validate BTC transaction and proof
-    POM-->>-ENV: PegoutRegistered event
-    Note right of POM: RBTC is now pegged-out to Bitcoin via operator take
+    OTM->>OTM: Validate BTC transaction and proof
+    OTM-->>-ENV: PegoutRegistered event
+    Note right of OTM: RBTC is now pegged-out to Bitcoin via operator take
 ```
 
 #### Disputed Case: Operator Won (Take2) - Operator wins challenge dispute
@@ -1010,7 +1073,7 @@ If the operator's REIMBURSEMENT_KICKOFF_TX is challenged by a watchtower:
 2. **Operator reveals input**: The operator must respond by broadcasting REVEAL_INPUT_TX to prove they advanced funds correctly. The operator signs the slot ID using their Winternitz SLOT_ID_KEY. A member calls `ChallengeManager.registerInputRevealed()` with the SPV proof. For detailed information about the [REVEAL_INPUT_TX](./bitcoin-transactions.md#3-reveal_input_tx-reveal-input-transaction) transaction structure, inputs/outputs, and spending conditions.
 3. **Automatic dispatch**: The Dispute Core protocol automatically dispatches OPERATOR_WON_TX after REVEAL_INPUT_TX is confirmed, scheduled for execution after OP_WON_TIMELOCK blocks expire (default: 150 blocks).
 4. **Broadcast Operator Won transaction**: After the timelock expires, the operator broadcasts the Operator Won (Take2) Bitcoin transaction. For detailed information about the [OPERATOR_WON_TX](./bitcoin-transactions.md#3-operator_won_tx-operator-won-transaction) transaction structure, inputs/outputs, and spending conditions.
-5. **Submit BTC transaction**: Operator calls `registerOperatorWon()` with the SPV proof of [OPERATOR_WON_TX](./bitcoin-transactions.md#3-operator_won_tx-operator-won-transaction) transaction.
+5. **Submit BTC transaction**: Operator calls `OperatorTakeManager.registerOperatorWon()` with the SPV proof of [OPERATOR_WON_TX](./bitcoin-transactions.md#3-operator_won_tx-operator-won-transaction) transaction.
 6. **Validate transaction**: System validates the BTC transaction and proof
 7. **Peg-out Registered**: System emits an event PegoutRegistered informing that RBTC is now linked to Bitcoin via operator won (disputed fallback). If the completed slot was the last one in the packet, the committee is released.
 
@@ -1020,7 +1083,7 @@ sequenceDiagram
     participant Op as Operator
     participant BTC as Bitcoin Blockchain
     participant CM as ChallengeManager
-    participant POM as PegoutManager
+    participant OTM as OperatorTakeManager
     participant ENV as Environment
 
     Note over Op,ENV: Operator Take (Take1) - Challenge Dispute Flow
@@ -1032,7 +1095,7 @@ sequenceDiagram
     Note right of WT: Watchtower challenges via ChallengeManager
     CM->>CM: Validate BTC transaction and SPV proof
     CM-->>-ENV: ChallengeRegistered event
-    Note right of POM: Status: CHALLENGE
+    Note right of CM: Status: CHALLENGE
 
     Op->>BTC: 2. Dispatch REVEAL_INPUT_TX
     Note right of Op: Operator reveals slot ID signature<br/>proving correct fund advancement
@@ -1047,11 +1110,11 @@ sequenceDiagram
 
     Op->>BTC: 3. Dispatch OPERATOR_WON_TX
     BTC-->>Op: Transaction mined
-    Op->>+POM: registerOperatorWon(btcTxSPVProof)
-    Note right of Op: Operator calls `registerOperatorWon()`<br/>with OPERATOR_WON_TX and SPV proof
-    POM->>POM: Validate BTC transaction and SPV proof
-    POM-->>-ENV: PegoutRegistered event
-    Note right of POM: Reimbursement to the operator who advanced<br/>funds (user was already pegged-out in advance funds)
+    Op->>+OTM: registerOperatorWon(btcTxSPVProof)
+    Note right of Op: Operator calls `OperatorTakeManager.registerOperatorWon()`<br/>with OPERATOR_WON_TX and SPV proof
+    OTM->>OTM: Validate BTC transaction and SPV proof
+    OTM-->>-ENV: PegoutRegistered event
+    Note right of OTM: Reimbursement to the operator who advanced<br/>funds (user was already pegged-out in advance funds)
 ```
 
 ---
@@ -1148,7 +1211,8 @@ The BitVMX Union Bridge is a sophisticated smart contract system that enables se
 graph TB
     %% Core Contracts
     PIM[PeginManager<br/>Handles Bitcoin → RSK operations]
-    POM[PegoutManager<br/>Handles RSK → Bitcoin operations]
+    POM[PegoutManager<br/>Handles RSK → Bitcoin peg-out request]
+    OTM[OperatorTakeManager<br/>Operator take flow management]
     CM[ChallengeManager<br/>Dispute resolution management]
     PB[PegBase<br/>Shared abstract base contract]
     PMB[PegManagerBase<br/>Shared abstract base contract]
@@ -1167,6 +1231,7 @@ graph TB
     PMB -.inherits.-> PB
     PIM -.inherits.-> PMB
     POM -.inherits.-> PMB
+    OTM -.inherits.-> PMB
     CM -.inherits.-> PB
 
     %% RbtcBridge - RSKIP-502 Single Authorized Address
@@ -1189,15 +1254,24 @@ graph TB
     POM --> MR
     POM -->|calls burnRbtc| RB
 
+    %% OperatorTakeManager Relationships
+    OTM --> BM
+    OTM --> CR
+    OTM --> SM
+    OTM --> SigM
+    OTM --> POM
+    OTM -->|setBaseEvent| RB
+
     %% ChallengeManager Relationships
     CM --> BM
     CM --> CR
     CM --> SM
-    CM --> POM
+    CM --> OTM
 
     %% AccessManager Relationships - Pause Control
     AM -.controls pause.-> PIM
     AM -.controls pause.-> POM
+    AM -.controls pause.-> OTM
     AM -.controls pause.-> CR
     AM -.controls pause.-> MR
     AM -.controls pause.-> RB
@@ -1215,6 +1289,7 @@ graph TB
     CR --> SM
     CR --> PIM
     CR --> POM
+    CR --> OTM
 
     MR --> SM
     MR --> CR
@@ -1222,9 +1297,11 @@ graph TB
     SigM --> CR
     SigM --> PIM
     SigM --> POM
+    SigM --> OTM
 
     SM --> PIM
     SM --> POM
+    SM --> OTM
     SM --> CR
 
     %% Styling
@@ -1234,7 +1311,7 @@ graph TB
     classDef bridgeContract fill:#ffe0b2,stroke:#e65100,stroke-width:3px
     classDef external fill:#fff3e0,stroke:#e65100,stroke-width:2px
 
-    class PIM,POM,CM,BM,CR,MR,SM,SigM coreContract
+    class PIM,POM,OTM,CM,BM,CR,MR,SM,SigM coreContract
     class PB,PMB baseContract
     class AM accessContract
     class RB bridgeContract
@@ -1261,16 +1338,28 @@ graph TB
 - **Purpose**: Manages peg-out operations from Rootstock to Bitcoin
 - **Key Features**:
   - Processes peg-out requests and burns RBTC via RbtcBridge
-  - Manages user take and operator take flows
-  - Handles timeout-based operator advancement
+  - Registers user take (Take0) when all members sign; operator take flows are delegated to OperatorTakeManager
   - Coordinates committee signatures for peg-outs
   - Integrates with MemberRegistry for operator management
   - Inherits shared functionality from PegManagerBase (which inherits from PegBase)
 - **Security Features**: Pausable (via AccessManager), UUPS upgradeable, non-reentrant
 
-#### 3. **PegBase**
+#### 3. **OperatorTakeManager**
 
-- **Purpose**: Abstract base contract providing shared functionality for PeginManager, PegoutManager, and ChallengeManager
+- **Purpose**: Manages operator take flow when not all committee members sign within the user take timeout
+- **Key Features**:
+  - `triggerOperatorTake(acceptPeginTxid)` – member triggers operator take; creates pegout ID and selects operator
+  - `registerAdvanceFunds(acceptPeginTxid, btcTxSPVProof)` – operator registers ADVANCE_FUNDS_TX
+  - `registerReimbursementKickoff(acceptPeginTxid, btcTxSPVProof)` – operator registers kickoff; sets RbtcBridge base event
+  - `registerOperatorTake(btcTxSPVProof)` – operator registers OPERATOR_TAKE_TX (Take1)
+  - `registerOperatorWon(btcTxSPVProof)` – operator registers OPERATOR_WON_TX (Take2, disputed case)
+  - Manages user take and operator take timeouts; allows re-triggering to select a new operator on timeout
+  - Coordinates with PegoutManager (pegout context), StreamManager, SignatureManager, CommitteeRegistry, RbtcBridge (setBaseEvent)
+- **Security Features**: Pausable (via AccessManager), UUPS upgradeable, non-reentrant
+
+#### 4. **PegBase**
+
+- **Purpose**: Abstract base contract providing shared functionality for PeginManager, PegoutManager, OperatorTakeManager, and ChallengeManager
 - **Key Features**:
   - Centralizes common state variables (bitcoinManager, streamManager, committeeRegistry)
   - Provides shared initialization logic with AccessManager integration
@@ -1278,16 +1367,16 @@ graph TB
   - Inherits from BaseProxy, ReentrancyGuardUpgradeable, and Pausable
 - **Security Features**: Pausable (via AccessManager), UUPS upgradeable, non-reentrant
 
-#### 4. **PegManagerBase**
+#### 5. **PegManagerBase**
 
-- **Purpose**: Abstract base contract providing shared functionality for PeginManager and PegoutManager
+- **Purpose**: Abstract base contract providing shared functionality for PeginManager, PegoutManager, and OperatorTakeManager
 - **Key Features**:
   - Extends PegBase with additional manager-specific functionality
   - Centralizes common state variables (signatureManager, rbtcBridge)
   - Provides shared initialization logic
   - Stream/signature manager and pause authority are configured at initialization or via upgrade (no post-deploy setters in this base)
 
-#### 5. **RbtcBridge**
+#### 6. **RbtcBridge**
 
 - **Purpose**: RSKIP-502 intermediary contract that serves as the single authorized address for RBTC minting and burning with the PowPeg Bridge
 - **Key Features**:
@@ -1297,12 +1386,13 @@ graph TB
   - Provides `verifyTxConfirmations()` and `getTxBlockNumberAndVerifyConfirmations()` functions to verify Bitcoin transaction confirmations using RSK bridge precompiled contract
   - Provides `getBestBlockHash()` function to retrieve the hash of the best Bitcoin block
   - Implements strict access control via AccessManager: only PeginManager can call mint, only PegoutManager can call burn
+  - Provides `setBaseEvent(pegoutId)` RSKIP-529 base event for bridge tracking
   - Enforces 100k gas limit on RBTC transfers to prevent DoS attacks
   - Handles all PowPeg Bridge error codes (cap exceeded, transfers disabled, unauthorized caller)
 - **Security Features**: UUPS upgradeable, non-reentrant, pausable via AccessManager
-- **Critical Role**: Without RbtcBridge, both managers cannot interact with PowPeg Bridge due to single-address constraint. Additionally, ChallengeManager, PeginManager, PegoutManager, and MemberRegistry depend on RbtcBridge's transaction verification functions (`verifyTxConfirmations`, `getTxBlockNumberAndVerifyConfirmations`, `getBestBlockHash`) to validate Bitcoin transactions and block data
+- **Critical Role**: Without RbtcBridge, both managers cannot interact with PowPeg Bridge due to single-address constraint. Additionally, ChallengeManager, PeginManager, PegoutManager, OperatorTakeManager, and MemberRegistry depend on RbtcBridge's transaction verification functions (`verifyTxConfirmations`, `getTxBlockNumberAndVerifyConfirmations`, `getBestBlockHash`) to validate Bitcoin transactions and block data
 
-#### 6. **BitcoinManager**
+#### 7. **BitcoinManager**
 
 - **Purpose**: Handles Bitcoin address generation and transaction validation
 - **Key Features**:
@@ -1312,7 +1402,7 @@ graph TB
   - Manages Taproot addresses with key spend and script spend paths
 - **Security Features**: UUPS upgradeable
 
-#### 7. **CommitteeRegistry**
+#### 8. **CommitteeRegistry**
 
 - **Purpose**: Manages committee formation, selection, and lifecycle
 - **Key Features**:
@@ -1322,7 +1412,7 @@ graph TB
   - Coordinates with MemberRegistry for member management
 - **Security Features**: Pausable (via AccessManager), UUPS upgradeable, non-reentrant
 
-#### 8. **MemberRegistry**
+#### 9. **MemberRegistry**
 
 - **Purpose**: Manages member registration, applications, and balance tracking
 - **Key Features**:
@@ -1332,7 +1422,7 @@ graph TB
   - Supports member applications to different streams
 - **Security Features**: Pausable (via AccessManager), UUPS upgradeable, non-reentrant
 
-#### 9. **StreamManager**
+#### 10. **StreamManager**
 
 - **Purpose**: Manages streams and packet allocation for different Bitcoin denominations
 - **Key Features**:
@@ -1342,7 +1432,7 @@ graph TB
   - Tracks stream usage and committee rotation
 - **Security Features**: UUPS upgradeable
 
-#### 10. **SignatureManager**
+#### 11. **SignatureManager**
 
 - **Purpose**: Manages multi-signature operations for committee members
 - **Key Features**:
@@ -1359,7 +1449,7 @@ graph TB
   - Handles challenge registration when operators present invalid reimbursement transactions
   - Manages input revelation for BitVMX dispute resolution
   - Validates challenge transactions and SPV proofs
-  - Coordinates with PegoutManager for challenge context
+  - Coordinates with OperatorTakeManager for challenge context (operator take dispute flow)
   - Inherits shared functionality from PegBase
 - **Security Features**: Pausable (via AccessManager), UUPS upgradeable, non-reentrant
 
@@ -1371,7 +1461,7 @@ graph TB
   - Provides authorization checks for sensitive operations across the bridge system
   - Enforces permissions through view functions that restrict sensitive operations (peg status modifications, committee management, packet creation, RBTC operations, signature initialization, member management) to authorized contracts only
   - Single control point for pausing all contracts
-  - Coordinates pause/unpause across PeginManager, PegoutManager, CommitteeRegistry, MemberRegistry, RbtcBridge, and ChallengeManager
+  - Coordinates pause/unpause across PeginManager, PegoutManager, OperatorTakeManager, CommitteeRegistry, MemberRegistry, RbtcBridge, and ChallengeManager
   - Owner-controlled with single transaction emergency stop
   - Provides system-wide pause status checking
 - **Security Features**: UUPS upgradeable, owner access control
@@ -1386,7 +1476,7 @@ graph TB
 
 #### Pausability
 
-- **PeginManager**, **PegoutManager**, **CommitteeRegistry**, **MemberRegistry**, **RbtcBridge**, and **ChallengeManager** are pausable
+- **PeginManager**, **PegoutManager**, **OperatorTakeManager**, **CommitteeRegistry**, **MemberRegistry**, **RbtcBridge**, and **ChallengeManager** are pausable
 - **AccessManager** (which extends PauseManager) provides centralized pause control for all contracts
 - Pause functionality allows emergency stops of critical operations with a single transaction
 - Only AccessManager owner can pause/unpause the system
@@ -1396,7 +1486,7 @@ graph TB
 
 - **BaseProxy** provides ownership functionality through OpenZeppelin's Ownable2StepUpgradeable
 - **AccessManager** contract provides role-based access control
-- **PeginManager**, **PegoutManager**, and **ChallengeManager** have privileges over other contracts (enforced via AccessManager)
+- **PeginManager**, **PegoutManager**, **OperatorTakeManager**, and **ChallengeManager** have privileges over other contracts (enforced via AccessManager)
 
 #### Reentrancy Protection
 
@@ -1414,17 +1504,18 @@ graph TB
 ### Contract Interactions
 
 1. **PeginManager** manages peg-in operations, coordinating with BitcoinManager, CommitteeRegistry, StreamManager, SignatureManager, and RbtcBridge for minting RBTC
-2. **PegoutManager** manages peg-out operations, coordinating with BitcoinManager, CommitteeRegistry, StreamManager, SignatureManager, MemberRegistry, and RbtcBridge for burning RBTC
-3. **ChallengeManager** manages challenge operations for dispute resolution, coordinating with PegoutManager, BitcoinManager, CommitteeRegistry, and StreamManager
-4. **RbtcBridge** serves as the single authorized intermediary between both managers and the PowPeg Bridge (RSKIP-502), handling all RBTC minting and burning operations
-5. **AccessManager** controls pause state and provides role-based access control for PeginManager, PegoutManager, CommitteeRegistry, MemberRegistry, RbtcBridge, and ChallengeManager
-6. **PegBase** provides shared base functionality for PeginManager, PegoutManager, and ChallengeManager
-7. **PegManagerBase** extends PegBase with additional manager-specific functionality for PeginManager and PegoutManager
-8. **CommitteeRegistry** manages committee lifecycle and coordinates with MemberRegistry and StreamManager
-9. **StreamManager** handles stream and packet management, working with CommitteeRegistry
-10. **SignatureManager** processes multi-signature operations for committees
-11. **BitcoinManager** provides Bitcoin-specific functionality as a utility contract
-12. **MemberRegistry** manages member data and balances across all other contracts
+2. **PegoutManager** manages peg-out requests and user take (Take0), coordinating with BitcoinManager, CommitteeRegistry, StreamManager, SignatureManager, MemberRegistry, and RbtcBridge for burning RBTC
+3. **OperatorTakeManager** manages operator take flow (Take1, Take2), coordinating with PegoutManager, StreamManager, SignatureManager, CommitteeRegistry, RbtcBridge, and BitcoinManager
+4. **ChallengeManager** manages challenge operations for dispute resolution, coordinating with OperatorTakeManager, BitcoinManager, CommitteeRegistry, and StreamManager
+5. **RbtcBridge** serves as the single authorized intermediary between both managers and the PowPeg Bridge (RSKIP-502), handling all RBTC minting and burning operations
+6. **AccessManager** controls pause state and provides role-based access control for PeginManager, PegoutManager, OperatorTakeManager, CommitteeRegistry, MemberRegistry, RbtcBridge, and ChallengeManager
+7. **PegBase** provides shared base functionality for PeginManager, PegoutManager, OperatorTakeManager, and ChallengeManager
+8. **PegManagerBase** extends PegBase with additional manager-specific functionality for PeginManager, PegoutManager, and OperatorTakeManager
+9. **CommitteeRegistry** manages committee lifecycle and coordinates with MemberRegistry and StreamManager
+10. **StreamManager** handles stream and packet management, working with CommitteeRegistry
+11. **SignatureManager** processes multi-signature operations for committees
+12. **BitcoinManager** provides Bitcoin-specific functionality as a utility contract
+13. **MemberRegistry** manages member data and balances across all other contracts
 
 ### Deployment Architecture
 
@@ -1443,7 +1534,7 @@ This architecture ensures security, upgradeability, and maintainability while pr
 
 ## Musig2 - Multi-Signatures on Bitcoin
 
-MuSig2 allows groups of mutually distrusting parties to cooperatively sign data and aggregate their signatures into a single aggregated signature which is indistinguishable from a signature made by a single private key. The group collectively controls an aggregated public key which can only create signatures if everyone in the group cooperates (AKA an *N-of-N multisignature scheme*). MuSig2 is optimized to support secure signature aggregation with only *two round-trips of network communication*.
+MuSig2 allows groups of mutually distrusting parties to cooperatively sign data and aggregate their signatures into a single aggregated signature which is indistinguishable from a signature made by a single private key. The group collectively controls an aggregated public key which can only create signatures if everyone in the group cooperates (AKA an _N-of-N multisignature scheme_). MuSig2 is optimized to support secure signature aggregation with only _two round-trips of network communication_.
 
 Specifically we use the [smart contracts to verify Musig2](./src/Musig2.sol) partial signatures, in order to slash dishonest committee participants. We followed [rust musgi2 library](https://docs.rs/musig2/latest/musig2/) implementation that uses [BIP-0327: MuSig2 for BIP340-compatible Multi-Signatures](https://github.com/bitcoin/bips/blob/master/bip-0327.mediawiki), for creating and verifying signatures which validate under Bitcoin consensus rules.
 
@@ -1453,11 +1544,11 @@ If you’re not already familiar with MuSig2, the process of cooperative signing
 
 1. All signers share their public keys with one-another. The group computes an `aggregated public` key which they collectively control.
 
-2. In the *first signing round*, signers generate and share nonces (random numbers) with one-another. These nonces have both secret and public versions. Only the public nonce (AKA PubNonce) should be shared, while the corresponding secret nonce (AKA SecNonce) must be kept secret.
+2. In the _first signing round_, signers generate and share nonces (random numbers) with one-another. These nonces have both secret and public versions. Only the public nonce (AKA PubNonce) should be shared, while the corresponding secret nonce (AKA SecNonce) must be kept secret.
 
 3. Once every signer has received the public nonces of every other signer, each signer makes a partial signature for a message using their secret key and secret nonce.
 
-4. In the *second signing round*, signers share their partial signatures with one-another. Partial signatures can be verified to place blame on misbehaving signers (but are not themselves unforgeable).
+4. In the _second signing round_, signers share their partial signatures with one-another. Partial signatures can be verified to place blame on misbehaving signers (but are not themselves unforgeable).
 
 5. A valid set of partial signatures can be aggregated into a final signature, which is just a normal Schnorr signature, valid under the aggregated public key.
 
