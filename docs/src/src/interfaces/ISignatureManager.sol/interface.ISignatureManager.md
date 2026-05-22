@@ -1,5 +1,5 @@
 # ISignatureManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/bd6b4a28bf5973e554d9b7a237190a44cdd46b38/src/interfaces/ISignatureManager.sol)
+[Git Source](https://github.com/rsksmart/union-bridge-contracts/blob/cf5421e1f47ca597147a56a1404f8189f6c70b20/src/interfaces/ISignatureManager.sol)
 
 Interface for managing multi-signature operations in the union bridge
 
@@ -160,7 +160,7 @@ function addOperatorTakeTxids(bytes32 _acceptPeginTxid, bytes32 _takeTxid, bytes
 |----|----|-----------|
 |`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction id|
 |`_takeTxid`|`bytes32`|The OperatorTake transaction id to add|
-|`_wonTxid`|`bytes32`||
+|`_wonTxid`|`bytes32`|The OperatorWon transaction id to add|
 
 
 ### checkAllOperatorTakesHashesReady
@@ -313,7 +313,9 @@ Event emitted when OperatorTake and OperatorWon transaction id are added for a m
 
 
 ```solidity
-event OperatorTakeTxidsAdded(bytes32 acceptPeginTxid, address memberAddress, bytes32 takeTxid, bytes32 wonTxid);
+event OperatorTakeTxidsAdded(
+    bytes32 indexed acceptPeginTxid, address indexed memberAddress, bytes32 takeTxid, bytes32 wonTxid
+);
 ```
 
 **Parameters**
