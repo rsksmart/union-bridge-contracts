@@ -7,9 +7,10 @@ import {
     PublicKeyType,
     ECDSAPublicKey,
     RSAPublicKey,
-    MemberRegistrationKeys,
-    RSA_PUBLIC_KEY_CHUNKS
-} from "src/interfaces/ICommitteeRegistry.sol";
+    RSA_PUBLIC_KEY_CHUNKS,
+    CompactPubKey
+} from "src/interfaces/IMemberRegistry.sol";
+import {MemberRegistrationKeys} from "src/interfaces/IMemberRegistry.sol";
 import {BtcTxSPVProof} from "src/interfaces/IPegCommonTypes.sol";
 import {BtcTransaction, BtcTxIn, BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
 import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
@@ -25,6 +26,8 @@ abstract contract ScriptUtils is Script {
     uint64 constant REIMBURSEMENT_KICKOFF_AMOUNT = 5137;
     // Fake amount just for testing purposes
     uint64 constant INPUT_REVEALED_AMOUNT = 4000;
+
+    bytes32 constant SECOND_REVEAL_TXID = bytes32(0xabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd);
 
     function getDeployerKey() public view returns (uint256) {
         return getMemberKey(uint32(vm.envUint("DEPLOYER_INDEX")));
@@ -95,6 +98,15 @@ abstract contract ScriptUtils is Script {
         return rsaPublicKey;
     }
 
+    /// @notice Returns true if a stored CompactPubKey matches the given ECDSAPublicKey
+    function compactPubKeyMatchesECDSA(CompactPubKey memory _stored, ECDSAPublicKey memory _submitted)
+        internal
+        pure
+        returns (bool)
+    {
+        return _stored.xOnly == _submitted.publicKeyX && _stored.parity == BtcHelper.parityFromY(_submitted.publicKeyY);
+    }
+
     /// @notice Generates a deterministic registration 'public keys' from a private key
     /// @dev This is only for testing purposes
     /// @param _privateKey The private key to generate the public keys from
@@ -105,17 +117,17 @@ abstract contract ScriptUtils is Script {
     {
         // Generate a deterministic 'public keys' from a private key
         registrationKeys.takeKey = generateECDSAPublicKey(_privateKey, PublicKeyType.TAKE);
-        registrationKeys.covenantKey = generateECDSAPublicKey(_privateKey, PublicKeyType.COVENANT);
+        registrationKeys.disputeKey = generateECDSAPublicKey(_privateKey, PublicKeyType.DISPUTE);
         registrationKeys.communicationKey = generateRSAPublicKey(_privateKey, PublicKeyType.COMMUNICATION);
     }
 
     // ========================== Peg in ==========================
-    function getAcceptPeginP2TRScriptPub(bytes memory _committeePubKey) internal pure returns (bytes memory) {
-        bytes32 tweakedPublicKey = getAcceptPeginTweakedPublicKey(_committeePubKey);
+    function getP2TRKeySpendScriptPub(bytes memory _committeePubKey) internal pure returns (bytes memory) {
+        bytes32 tweakedPublicKey = getKeySpendTweakedPublicKey(_committeePubKey);
         return BtcTaproot.getP2TRScriptPubKey(tweakedPublicKey);
     }
 
-    function getAcceptPeginTweakedPublicKey(bytes memory _committeePubKey) internal pure returns (bytes32) {
+    function getKeySpendTweakedPublicKey(bytes memory _committeePubKey) internal pure returns (bytes32) {
         // Extract x-coordinate from compressed public key (skip first byte which is prefix)
         // Assembly is required here for BIP340 X-only public key extraction from the 33-byte compressed format.
         // BIP340 specifies Schnorr signatures use only the x-coordinate, stored at bytes 1-32 (skipping the prefix byte).
@@ -225,6 +237,28 @@ abstract contract ScriptUtils is Script {
         return btcTxSPVProof;
     }
 
+    function createCancelUserTakeTx(bytes32 _acceptPeginTxid, bytes memory _operatorPubKey)
+        internal
+        pure
+        returns (BtcTransaction memory)
+    {
+        // Input: spend the accept peg-in UTXO
+        BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
+        btcInputs[0] = BtcTxIn({
+            txId: _acceptPeginTxid,
+            vout: Constants.ACCEPT_PEGIN_VOUT_ENABLER, // Enabler output
+            sequence: Constants.SEQUENCE,
+            scriptSig: hex""
+        });
+
+        // Output: operator speedup
+        BtcTxOut[] memory btcOutputs = new BtcTxOut[](1);
+        bytes memory operatorScriptPubKey = BtcScriptParser.getP2WPKHScript(_operatorPubKey);
+        btcOutputs[0] = BtcTxOut({amount: Constants.SPEED_UP_AMOUNT, scriptPubKey: operatorScriptPubKey});
+
+        return BtcTransaction({version: Constants.BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
+    }
+
     function createOperatorTakeTx(
         bytes32 _acceptPeginTxid,
         bytes32 _reimbursementKickoffTxid,
@@ -307,7 +341,33 @@ abstract contract ScriptUtils is Script {
         return BtcTransaction({version: Constants.BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
     }
 
-    function createReimbursementKickoffTx(bytes memory _committeePubKey, uint64 _slotIndex)
+    function createStopOperatorWonTx(bytes32 _inputRevealedTxid) internal pure returns (BtcTransaction memory) {
+        // Input: spend the accept peg-in UTXO
+        BtcTxIn[] memory btcInputs = new BtcTxIn[](Constants.STOP_OPERATOR_WON_INPUT_COUNT);
+        btcInputs[0] = BtcTxIn({
+            txId: _inputRevealedTxid,
+            vout: 0, // P2TR output is at index 0
+            sequence: Constants.SEQUENCE,
+            scriptSig: hex""
+        });
+
+        btcInputs[1] = BtcTxIn({
+            txId: SECOND_REVEAL_TXID,
+            vout: 0, // P2TR output is at index 0
+            sequence: Constants.SEQUENCE,
+            scriptSig: hex""
+        });
+
+        // Outputs
+        BtcTxOut[] memory btcOutputs = new BtcTxOut[](1);
+
+        // Fake value and script. They are not checked by the contract.
+        btcOutputs[0] = BtcTxOut({amount: 10, scriptPubKey: bytes("")});
+
+        return BtcTransaction({version: Constants.BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
+    }
+
+    function createReimbursementKickoffTx(bytes memory _committeePubKey, uint64 _slotId)
         internal
         pure
         returns (BtcTransaction memory)
@@ -317,7 +377,7 @@ abstract contract ScriptUtils is Script {
         btcInputs[0] = BtcTxIn({
             // Input txid is uncheckable by the contract
             txId: bytes32(0xabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd),
-            vout: uint32(_slotIndex),
+            vout: uint32(_slotId),
             sequence: Constants.SEQUENCE,
             scriptSig: hex""
         });
@@ -389,7 +449,7 @@ abstract contract ScriptUtils is Script {
         BtcTxOut[] memory btcOutputs = new BtcTxOut[](1);
         btcOutputs[0] = BtcTxOut({
             amount: _amount - Constants.P2TR_FEE,
-            scriptPubKey: BtcScriptParser.getP2WPKHScript(BtcHelper.pubKeyXonlyToCompact(_btcReimbursementPubKey))
+            scriptPubKey: BtcScriptParser.getP2WPKHScript(BtcHelper.assumeEvenParityCompact(_btcReimbursementPubKey))
         });
         return BtcTransaction({
             version: Constants.BTC_TX_VERSION,
@@ -417,11 +477,9 @@ abstract contract ScriptUtils is Script {
         // Outputs
         BtcTxOut[] memory btcOutputs = new BtcTxOut[](1);
 
-        // P2TR to committee
-        btcOutputs[0] = BtcTxOut({
-            amount: REIMBURSEMENT_KICKOFF_AMOUNT,
-            scriptPubKey: getAcceptPeginP2TRScriptPub(_committeePubKey)
-        });
+        // TODO: we use getP2TRKeySpendScriptPub for testing purposes, actual value is a taptree that uses WINTERNITZ signatures but we can't validate it in solidity.
+        btcOutputs[0] =
+            BtcTxOut({amount: REIMBURSEMENT_KICKOFF_AMOUNT, scriptPubKey: getP2TRKeySpendScriptPub(_committeePubKey)});
 
         return BtcTransaction({version: Constants.BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
     }
@@ -455,7 +513,34 @@ abstract contract ScriptUtils is Script {
     }
 
     // ========================== Reveal ==========================
-    function createRevealTx(bytes32 _challengeTxid, bytes memory _committeePubKey)
+    function createInputRevealedTx(
+        bytes32 _challengeTxid,
+        bytes memory _committeeDisputePubKey,
+        bytes memory _operatorDisputePubKeyCompact
+    ) internal pure returns (BtcTransaction memory) {
+        // Input: spend the challenge UTXO
+        BtcTxIn[] memory btcInputs = new BtcTxIn[](1);
+        btcInputs[0] = BtcTxIn({
+            txId: _challengeTxid,
+            vout: 0, // P2TR output is at index 0
+            sequence: Constants.SEQUENCE,
+            scriptSig: hex""
+        });
+
+        // Outputs
+        BtcTxOut[] memory btcOutputs = new BtcTxOut[](2);
+
+        // This ouput is used by Operator Won Tx input Close enabler
+        // This is a fake amount just for testing purposes
+        btcOutputs[0] = BtcTxOut({amount: 2000, scriptPubKey: getP2TRKeySpendScriptPub(_committeeDisputePubKey)});
+        bytes memory speedupScriptPubKey = BtcScriptParser.getP2WPKHScript(_operatorDisputePubKeyCompact);
+        btcOutputs[1] = BtcTxOut({amount: Constants.SPEED_UP_AMOUNT, scriptPubKey: speedupScriptPubKey});
+
+        return BtcTransaction({version: Constants.BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
+    }
+
+    // ========================== Input Not Revealed ==========================
+    function createInputNotRevealedTx(bytes32 _challengeTxid, CompactPubKey[] memory _disputePubKeys)
         internal
         pure
         returns (BtcTransaction memory)
@@ -469,13 +554,16 @@ abstract contract ScriptUtils is Script {
             scriptSig: hex""
         });
 
-        // Outputs
-        BtcTxOut[] memory btcOutputs = new BtcTxOut[](1);
+        uint256 memberCount = _disputePubKeys.length;
+        // Outputs: one speedup output per committee member
+        BtcTxOut[] memory btcOutputs = new BtcTxOut[](memberCount);
+        for (uint256 i = 0; i < memberCount; i++) {
+            bytes memory speedupScriptPubKey =
+                BtcScriptParser.getP2WPKHScript(BtcHelper.compactPubKeyToBytes(_disputePubKeys[i]));
+            btcOutputs[i] = BtcTxOut({amount: Constants.SPEED_UP_AMOUNT, scriptPubKey: speedupScriptPubKey});
+        }
 
-        // P2TR to committee
-        // This is a fake amount just for testing purposes
-        btcOutputs[0] = BtcTxOut({amount: 2000, scriptPubKey: getAcceptPeginP2TRScriptPub(_committeePubKey)});
-
+        // TODO: locktime could be updated to match bitvmx transaction. It's not checked by the contract though.
         return BtcTransaction({version: Constants.BTC_TX_VERSION, inputs: btcInputs, outputs: btcOutputs, locktime: 0});
     }
 

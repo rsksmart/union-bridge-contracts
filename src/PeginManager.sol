@@ -1,10 +1,10 @@
-// SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 import {PegManagerBase} from "./PegManagerBase.sol";
 import {IPeginManager, RequestPeginTempInfo} from "./interfaces/IPeginManager.sol";
 import {ICommitteeRegistry, CommitteeMember} from "./interfaces/ICommitteeRegistry.sol";
-import {IMemberRegistry, MemberKeys} from "./interfaces/IMemberRegistry.sol";
+import {IMemberRegistry, CompactPubKey} from "./interfaces/IMemberRegistry.sol";
 import {IStreamManager, Stream} from "./interfaces/IStreamManager.sol";
 import {IBitcoinManager, PrevoutData, BitcoinSignatureData, BtcTxOut} from "./interfaces/IBitcoinManager.sol";
 import {BtcTxSPVProof, StreamPosition, PegStatus} from "./interfaces/IPegCommonTypes.sol";
@@ -65,7 +65,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
         returns (
             string memory bitcoinDepositAddress,
             uint64 packetNumber,
-            bytes32[] memory memberDisputeKeys,
+            CompactPubKey[] memory memberDisputeKeys,
             uint64 availableSlots
         )
     {
@@ -79,18 +79,17 @@ contract PeginManager is IPeginManager, PegManagerBase {
 
         // Get the current packet's committee ID and key
         uint128 committeeId = streamManager.getCommitteeId(stream.streamId, stream.peginPacketPointer);
-        bytes memory committeeKey = streamManager.getCommitteePubKey(stream.streamId, stream.peginPacketPointer);
+        bytes memory committeeKey = committeeRegistry.getCommitteeTakePubKey(committeeId);
 
         // Get the committee members
         CommitteeMember[] memory committeeMembers = committeeRegistry.getCommitteeMembers(committeeId);
 
-        // Extract dispute keys (covenant keys) from each member
-        memberDisputeKeys = new bytes32[](committeeMembers.length);
+        // Extract dispute keys from each member
+        memberDisputeKeys = new CompactPubKey[](committeeMembers.length);
         IMemberRegistry memberRegistry = committeeRegistry.memberRegistry();
         for (uint256 i = 0; i < committeeMembers.length; i++) {
             // slither-disable-next-line calls-loop
-            MemberKeys memory keys = memberRegistry.getMemberPublicKeys(committeeMembers[i].memberAddress);
-            memberDisputeKeys[i] = keys.covenantPubKey;
+            memberDisputeKeys[i] = memberRegistry.getMemberDisputePubKey(committeeMembers[i].memberAddress);
         }
 
         return (
@@ -115,12 +114,10 @@ contract PeginManager is IPeginManager, PegManagerBase {
             uint64 packetNumber,
             address rskDestinationAddress,
             bytes32 btcReimbursementPubKey,
+            uint128 committeeId,
             Stream memory stream,
             bytes memory committeePubKey
         ) = _validatePeginP2TRAndOpReturn(_requestPeginTxSPVProof);
-
-        // Get committee ID for later use
-        uint128 committeeId = streamManager.getCommitteeId(stream.streamId, packetNumber);
 
         // Fetch the enabler scriptPubKey from the packet (calculated during packet creation)
         bytes memory enablerScriptPubKey = streamManager.getEnablerScriptPubKey(stream.streamId, packetNumber);
@@ -211,6 +208,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
             uint64 packetNumber,
             address rskDestinationAddress,
             bytes32 btcReimbursementPubKey,
+            uint128 committeeId,
             Stream memory stream,
             bytes memory committeePubKey
         )
@@ -225,8 +223,9 @@ contract PeginManager is IPeginManager, PegManagerBase {
         stream =
             streamManager.getStream(_requestPeginTxSPVProof.btcTx.outputs[Constants.REQUEST_PEGIN_VOUT_TAPTREE].amount);
 
-        // getCommitteePubKey reverts if packet does not exist
-        committeePubKey = streamManager.getCommitteePubKey(stream.streamId, packetNumber);
+        committeeId = streamManager.getCommitteeId(stream.streamId, packetNumber);
+        // getCommitteeTakePubKey reverts if committee does not exist
+        committeePubKey = committeeRegistry.getCommitteeTakePubKey(committeeId);
 
         // Validates that the Taproot Script has a Key Path for the committeePubKey
         // and has a timelock for btcReimbursementPubKey
@@ -296,7 +295,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
         // Second input: enabler output from request peg-in
         prevoutDatas[1] = PrevoutData({value: Constants.SPEED_UP_AMOUNT, scriptPubKey: _enablerScriptPubKey});
         // Get the members dispute keys of the committee
-        bytes32[] memory membersDisputeKeys = committeeRegistry.getCommitteeDisputeKeys(_committeeId);
+        CompactPubKey[] memory membersDisputeKeys = committeeRegistry.getCommitteeDisputeKeys(_committeeId);
         acceptPeginSignatureData = bitcoinManager.getAcceptPeginSignatureHash(
             _committeePubKey, _btcReimbursementPubKey, _requestPeginTxid, prevoutDatas, membersDisputeKeys
         );
@@ -333,7 +332,8 @@ contract PeginManager is IPeginManager, PegManagerBase {
 
         // Validate the peg in request tx exists and the status
         bytes32 acceptPeginTxid = acceptPegins[requestPeginTxid];
-        StreamPosition memory streamInfo = _validatePegStatus(acceptPeginTxid, PegStatus.REGISTERED);
+        // slither-disable-next-line unused-return
+        (StreamPosition memory streamInfo,,) = streamManager.validatePegStatus(acceptPeginTxid, PegStatus.REGISTERED);
 
         // Calculate userReimbursementTxid from BtcTransaction
         bytes32 userReimbursementTxid = bitcoinManager.getBtcTxid(_userReimbursementTxSPVProof.btcTx);
@@ -386,7 +386,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
         // and that block is inside Bitcoin Mainchain
         // and has enough confirmations
         int256 blockNumber = rbtcBridge.getTxBlockNumberAndVerifyConfirmations(
-            stream.peginConfirmations,
+            stream.rejectPeginConfirmations,
             _userReimbursementTxid,
             _userReimbursementTxSPVProof.blockHash,
             _userReimbursementTxSPVProof.merkleBranchPath,
@@ -409,7 +409,8 @@ contract PeginManager is IPeginManager, PegManagerBase {
 
         // Validate the peg in request tx exists and the status
         bytes32 acceptPeginTxid = acceptPegins[requestPeginTxid];
-        StreamPosition memory streamInfo = _validatePegStatus(acceptPeginTxid, PegStatus.REGISTERED);
+        // slither-disable-next-line unused-return
+        (StreamPosition memory streamInfo,,) = streamManager.validatePegStatus(acceptPeginTxid, PegStatus.REGISTERED);
 
         // Calculate userReimbursementTxid from BtcTransaction
         bytes32 rejectPeginTxid = bitcoinManager.getBtcTxid(_rejectPeginTxSPVProof.btcTx);
@@ -460,7 +461,7 @@ contract PeginManager is IPeginManager, PegManagerBase {
         // and that block is inside Bitcoin Mainchain
         // and has enough confirmations
         rbtcBridge.verifyTxConfirmations(
-            stream.peginConfirmations,
+            stream.rejectPeginConfirmations,
             _rejectPeginTxid,
             _rejectPeginTxSPVProof.blockHash,
             _rejectPeginTxSPVProof.merkleBranchPath,

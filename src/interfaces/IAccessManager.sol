@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 /// @notice Interface for access control in the union bridge
@@ -60,6 +60,11 @@ interface IAccessManager {
     /// @dev Reverts if the caller does not have permissions to set the base event
     function canSetBaseEvent(address _caller) external view;
 
+    /// @notice Requires the caller to be the challenge manager
+    /// @param _caller The address of the caller
+    /// @dev Reverts if the caller is not the challenge manager
+    function revertIfNotChallengeManager(address _caller) external view;
+
     // ===================== Events =====================
 
     // ===================== Errors =====================
@@ -107,6 +112,10 @@ interface IAccessManager {
     /// @notice Thrown when an account is not authorized to set the base event
     /// @param _caller The address of the unauthorized account
     error UnauthorizedToSetBaseEvent(address _caller);
+
+    /// @notice Thrown when an account is not the challenge manager
+    /// @param _caller The address of the unauthorized account
+    error CallerIsNotChallengeManager(address _caller);
 
     // --- TESTNET ONLY ---
     // TODO: Remove before mainnet deployment

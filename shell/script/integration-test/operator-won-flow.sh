@@ -41,6 +41,7 @@ RSK_DESTINATION_ADDRESS="0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BD"
 REQUEST_PEGIN_TXID="0xf0a9dbb31c82cb5737a9fa1b3c3f784257c249ae087b8f00c6d87e23837345ca"
 ACCEPT_PEGIN_TXID="0x7c176a5e8cb3934c1352bfcf979c8359a19d083ef42ed1118ae552a511e8d2bb"
 PEGOUT_TXID="0xae3ae334fdd6a0dcc43198e8c4efda2bce75c2469ecb9c53527474fc3f8dbdf2"
+INPUT_REVEALED_TXID="0x8151e3126ff7d6d3820e457fa4be7c32da6a3ae37b3bd15b7744e3ba10c1eabb"
 MNEMONIC_INDEX=0
 NONCE="0xf8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000"
 # Current Timestamp plus 6 hours
@@ -86,6 +87,16 @@ echo "================ ADVANCE $RPC TIME TO $TIMESTAMP ================"
 cast rpc evm_setNextBlockTimestamp $TIMESTAMP --rpc-url $RPC
 cast rpc evm_mine --rpc-url $RPC
 # Start the operator take flow (advance funds and reimbursement kickoff)
-bash "$SCRIPT_DIR/operator-take/trigger-operator-take.sh" -h "$PEGOUT_TXID" $ALPHANET_FLAG
-# Register operator won - (this challenges the reimbursement kickoff, then reveals the input and finally registers the operator won)
-bash "$SCRIPT_DIR/operator-take/register-operator-won.sh" -a "$ACCEPT_PEGIN_TXID" $ALPHANET_FLAG
+bash "$SCRIPT_DIR/operator-take/trigger-operator-take.sh" -a "$ACCEPT_PEGIN_TXID" $ALPHANET_FLAG
+# Register cancel user take
+bash "$SCRIPT_DIR/operator-take/register-cancel-user-take.sh" -a "$ACCEPT_PEGIN_TXID" $ALPHANET_FLAG
+# Register advance funds
+bash "$SCRIPT_DIR/operator-take/register-advance-funds.sh" -a "$ACCEPT_PEGIN_TXID" $ALPHANET_FLAG
+# Register reimbursement kickoff
+bash "$SCRIPT_DIR/operator-take/register-reimbursement-kickoff.sh" -a "$ACCEPT_PEGIN_TXID" $ALPHANET_FLAG
+# Register challenge
+bash "$SCRIPT_DIR/operator-take/register-challenge.sh" -a "$ACCEPT_PEGIN_TXID" $ALPHANET_FLAG
+# Register input revealed
+bash "$SCRIPT_DIR/operator-take/register-input-revealed.sh" -a "$ACCEPT_PEGIN_TXID" $ALPHANET_FLAG
+# Register operator won
+bash "$SCRIPT_DIR/operator-take/register-operator-won.sh" -a "$ACCEPT_PEGIN_TXID" -i "$INPUT_REVEALED_TXID" $ALPHANET_FLAG

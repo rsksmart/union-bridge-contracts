@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 import {console} from "forge-std/console.sol";
@@ -11,6 +11,7 @@ import {Constants} from "src/libraries/Constants.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
 import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
+import {CompactPubKey} from "src/interfaces/IMemberRegistry.sol";
 
 contract AcceptPeginScript is ScriptUtils, ContractAddressManager {
     PeginManager peginManager;
@@ -39,8 +40,8 @@ contract AcceptPeginScript is ScriptUtils, ContractAddressManager {
         RequestPeginTempInfo memory requestPeginTempInfo = peginManager.getRequestPeginTempInfo(_requestPeginTxid);
 
         // Get the committee public key
-        bytes memory committeePubKey =
-            streamManager.getCommitteePubKey(streamPosition.streamId, streamPosition.packetNumber);
+        uint128 committeeId = streamManager.getCommitteeId(streamPosition.streamId, streamPosition.packetNumber);
+        bytes memory committeeTakePubKey = committeeRegistry.getCommitteeTakePubKey(committeeId);
 
         // BtcTransaction to verify
         BtcTransaction memory btcTransaction = BtcTransaction({
@@ -70,13 +71,12 @@ contract AcceptPeginScript is ScriptUtils, ContractAddressManager {
         Stream memory stream = streamManager.getStreamById(streamPosition.streamId);
         btcTransaction.outputs[0] = BtcTxOut({
             amount: stream.denomination - Constants.P2TR_FEE - Constants.SPEED_UP_AMOUNT,
-            scriptPubKey: getAcceptPeginP2TRScriptPub(committeePubKey)
+            scriptPubKey: getP2TRKeySpendScriptPub(committeeTakePubKey)
         });
 
         // Enabler output
-        uint128 committeeId = streamManager.getCommitteeId(streamPosition.streamId, streamPosition.packetNumber);
-        bytes32[] memory disputeKeys = committeeRegistry.getCommitteeDisputeKeys(committeeId);
-        bytes memory enablerScript = bitcoinManager.getEnablerOutputP2TRScriptPub(committeePubKey, disputeKeys);
+        CompactPubKey[] memory disputeKeys = committeeRegistry.getCommitteeDisputeKeys(committeeId);
+        bytes memory enablerScript = bitcoinManager.getEnablerOutputP2TRScriptPub(committeeTakePubKey, disputeKeys);
         btcTransaction.outputs[1] = BtcTxOut({amount: Constants.ENABLER_AMOUNT, scriptPubKey: enablerScript});
 
         // Speed up output (child pays for parent)

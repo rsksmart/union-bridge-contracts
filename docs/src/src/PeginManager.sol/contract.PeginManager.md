@@ -1,5 +1,5 @@
 # PeginManager
-[Git Source](https://github.com/rsksmart/union-bridge-contracts/blob/68c14faa89612dfba1b7e9abf29455625661476f/src/PeginManager.sol)
+[Git Source](https://github.com/rsksmart/union-bridge-contracts/blob/cf5421e1f47ca597147a56a1404f8189f6c70b20/src/PeginManager.sol)
 
 **Inherits:**
 [IPeginManager](/src/interfaces/IPeginManager.sol/interface.IPeginManager.md), [PegManagerBase](/src/PegManagerBase.sol/abstract.PegManagerBase.md)
@@ -108,7 +108,7 @@ function getRequestPeginData(address _rootstockDepositAddress, uint64 _value, by
     returns (
         string memory bitcoinDepositAddress,
         uint64 packetNumber,
-        bytes32[] memory memberDisputeKeys,
+        CompactPubKey[] memory memberDisputeKeys,
         uint64 availableSlots
     );
 ```
@@ -126,7 +126,7 @@ function getRequestPeginData(address _rootstockDepositAddress, uint64 _value, by
 |----|----|-----------|
 |`bitcoinDepositAddress`|`string`|temporaryPeginAddress The generated temporary Bitcoin address for deposit|
 |`packetNumber`|`uint64`|The packet number for this peg-in request|
-|`memberDisputeKeys`|`bytes32[]`|Array of dispute keys (covenant keys) for each committee member in order|
+|`memberDisputeKeys`|`CompactPubKey[]`|Array of dispute keys for each committee member in order|
 |`availableSlots`|`uint64`||
 
 
@@ -168,6 +168,7 @@ function _validatePeginP2TRAndOpReturn(BtcTxSPVProof memory _requestPeginTxSPVPr
         uint64 packetNumber,
         address rskDestinationAddress,
         bytes32 btcReimbursementPubKey,
+        uint128 committeeId,
         Stream memory stream,
         bytes memory committeePubKey
     );

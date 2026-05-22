@@ -1,12 +1,19 @@
-// SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
-import {CommitteeMember, Committee, MemberRegistrationKeys} from "src/CommitteeRegistry.sol";
-import {MemberKeys, PublicKeyType} from "src/interfaces/ICommitteeRegistry.sol";
+import {CommitteeMember, Committee} from "src/CommitteeRegistry.sol";
+import {
+    MemberRegistrationKeys,
+    MemberKeys,
+    CompactPubKey,
+    ECDSAPublicKey,
+    PublicKeyType
+} from "src/interfaces/IMemberRegistry.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {Vm} from "forge-std/Vm.sol";
+import {BtcHelper} from "src/libraries/BtcHelper.sol";
 
 abstract contract TestUtils is Test, ScriptUtils {
     function assertEqCommittee(
@@ -69,9 +76,14 @@ abstract contract TestUtils is Test, ScriptUtils {
         pure
     {
         assertEq(
-            actualCommittee.aggregatedKey,
-            expectedCommittee.aggregatedKey,
-            string(abi.encodePacked("expect committees to have same aggregatedKey"))
+            actualCommittee.takeAggregatedKey,
+            expectedCommittee.takeAggregatedKey,
+            string(abi.encodePacked("expect committees to have same takeAggregatedKey"))
+        );
+        assertEq(
+            actualCommittee.disputeAggregatedKey,
+            expectedCommittee.disputeAggregatedKey,
+            string(abi.encodePacked("expect committees to have same disputeAggregatedKey"))
         );
     }
 
@@ -130,14 +142,35 @@ abstract contract TestUtils is Test, ScriptUtils {
         return bytes32(wallet.publicKeyX);
     }
 
-    //TODO: consider changing name
-    function getXPublicKeysFromRegistration(MemberRegistrationKeys memory _registrationKeys)
+    function assertEqCompactPubKey(CompactPubKey memory actual, CompactPubKey memory expected, string memory message)
+        internal
+        pure
+    {
+        assertEq(actual.xOnly, expected.xOnly, string(abi.encodePacked(message, " xOnly")));
+        assertEq(actual.parity, expected.parity, string(abi.encodePacked(message, " parity")));
+    }
+
+    function assertMatchingCompactAndECDSA(
+        CompactPubKey memory _compact,
+        ECDSAPublicKey memory _ecdsa,
+        string memory message
+    ) internal pure {
+        assertEq(_compact.xOnly, _ecdsa.publicKeyX, string(abi.encodePacked(message, " xOnly")));
+        assertEq(
+            _compact.parity, BtcHelper.parityFromY(_ecdsa.publicKeyY), string(abi.encodePacked(message, " parity"))
+        );
+    }
+
+    function memberKeysFromRegistration(MemberRegistrationKeys memory _registrationKeys)
         internal
         pure
         returns (MemberKeys memory publicKeys)
     {
-        publicKeys.takePubKey = _registrationKeys.takeKey.publicKeyX;
-        publicKeys.covenantPubKey = _registrationKeys.covenantKey.publicKeyX;
+        bytes1 takeParity = BtcHelper.parityFromY(_registrationKeys.takeKey.publicKeyY);
+        bytes1 disputeParity = BtcHelper.parityFromY(_registrationKeys.disputeKey.publicKeyY);
+        publicKeys.takePubKey = CompactPubKey({parity: takeParity, xOnly: _registrationKeys.takeKey.publicKeyX});
+        publicKeys.disputePubKey =
+            CompactPubKey({parity: disputeParity, xOnly: _registrationKeys.disputeKey.publicKeyX});
         publicKeys.communicationPubKey = _registrationKeys.communicationKey;
     }
 }

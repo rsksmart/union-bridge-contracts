@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 /// @notice Interface for pauser in the union bridge
@@ -20,7 +20,7 @@ interface IPausable {
 
     /// @notice Event emitted when the pauser is updated
     /// @param newPauser The new pauser address
-    event PauserUpdated(address newPauser);
+    event PauserUpdated(address indexed newPauser);
 
     // ===================== Errors =====================
 

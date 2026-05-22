@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 import {
@@ -21,6 +21,8 @@ import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {IBitcoinManager} from "src/interfaces/IBitcoinManager.sol";
 import {StreamPosition, PegStatus} from "src/interfaces/IPegCommonTypes.sol";
 import {Role} from "src/interfaces/ICommitteeRegistry.sol";
+import {CompactPubKey} from "src/interfaces/IMemberRegistry.sol";
+import {IPegBase} from "src/interfaces/IPegBase.sol";
 
 /// @title Stream Manager
 /// @notice Manages streams for the union bridge system
@@ -116,12 +118,21 @@ contract StreamManager is IStreamManager, BaseProxy {
                     _streamSettings[i].pegoutConfirmations
                 );
             }
+            if (_streamSettings[i].rejectPeginConfirmations == 0) {
+                revert InvalidRejectPeginConfirmations(_streamSettings[i].rejectPeginConfirmations);
+            }
+            if (_streamSettings[i].rejectPeginConfirmations > _streamSettings[i].peginConfirmations) {
+                revert RejectPeginConfirmationsExceedsPegin(
+                    _streamSettings[i].rejectPeginConfirmations, _streamSettings[i].peginConfirmations
+                );
+            }
             streams.push(
                 Stream({
                     streamId: i,
                     denomination: _streamSettings[i].denomination,
                     peginPacketPointer: 0,
                     peginConfirmations: _streamSettings[i].peginConfirmations,
+                    rejectPeginConfirmations: _streamSettings[i].rejectPeginConfirmations,
                     pegoutConfirmations: _streamSettings[i].pegoutConfirmations,
                     timelockSettings: _streamSettings[i].timelockSettings
                 })
@@ -146,20 +157,12 @@ contract StreamManager is IStreamManager, BaseProxy {
     function createNewPacket(
         uint64 _streamId,
         uint128 _committeeId,
-        bytes calldata _committeePubKey,
-        bytes32[] memory _disputeKeys
+        bytes memory _committeePubKey,
+        CompactPubKey[] memory _disputeKeys
     ) external {
         // Verify that the caller has permission to create a packet
         accessManager.canCreatePacket(_msgSender());
-        _createNewPacket(_streamId, _committeeId, _committeePubKey, _disputeKeys);
-    }
 
-    function _createNewPacket(
-        uint64 _streamId,
-        uint128 _committeeId,
-        bytes memory _committeePubKey,
-        bytes32[] memory _disputeKeys
-    ) internal {
         // Calculate enabler script once for the whole packet
         bytes memory enablerScriptPubKey = bitcoinManager.getEnablerOutputP2TRScriptPub(_committeePubKey, _disputeKeys);
 
@@ -168,7 +171,6 @@ contract StreamManager is IStreamManager, BaseProxy {
             Packet({
                 packetNumber: packetNumber,
                 committeeId: _committeeId,
-                committeePubKey: _committeePubKey,
                 enablerScriptPubKey: enablerScriptPubKey,
                 finishedSlots: 0
             })
@@ -211,6 +213,10 @@ contract StreamManager is IStreamManager, BaseProxy {
 
     /// @inheritdoc IStreamManager
     function getPacket(uint64 _streamId, uint64 _packetNumber) public view returns (Packet memory) {
+        return _getPacket(_streamId, _packetNumber);
+    }
+
+    function _getPacket(uint64 _streamId, uint64 _packetNumber) internal view returns (Packet memory) {
         if (_streamId >= streams.length) {
             revert StreamNotFoundById(_streamId);
         }
@@ -228,6 +234,16 @@ contract StreamManager is IStreamManager, BaseProxy {
             return 0;
         }
         return packets[_streamId][stream.peginPacketPointer].committeeId;
+    }
+
+    /// @inheritdoc IStreamManager
+    function getFilledSlotsCount(uint64 _streamId) external view returns (uint64) {
+        uint64 totalFilledSlots = uint64(filledSlots[_streamId].length);
+        uint64 nextIndex = nextPegoutSlotIndex[_streamId];
+        if (nextIndex >= totalFilledSlots) {
+            return 0;
+        }
+        return totalFilledSlots - nextIndex;
     }
 
     function _getNextPegoutSlotLocation(uint64 _streamId) internal view returns (SlotLocation memory) {
@@ -259,6 +275,7 @@ contract StreamManager is IStreamManager, BaseProxy {
         }
 
         SlotLocation memory slotLocation = _getNextPegoutSlotLocation(_streamId);
+
         Slot storage slotToUse = slots[_streamId][slotLocation.packetId][slotLocation.slotId];
         slotToUse.state = SlotState.LOCKED;
         nextPegoutSlotIndex[_streamId]++;
@@ -373,17 +390,12 @@ contract StreamManager is IStreamManager, BaseProxy {
 
     /// @inheritdoc IStreamManager
     function getCommitteeId(uint64 _streamId, uint64 _packetNumber) external view returns (uint128) {
-        return getPacket(_streamId, _packetNumber).committeeId;
-    }
-
-    /// @inheritdoc IStreamManager
-    function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes memory) {
-        return getPacket(_streamId, _packetNumber).committeePubKey;
+        return _getPacket(_streamId, _packetNumber).committeeId;
     }
 
     /// @inheritdoc IStreamManager
     function getEnablerScriptPubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes memory) {
-        return getPacket(_streamId, _packetNumber).enablerScriptPubKey;
+        return _getPacket(_streamId, _packetNumber).enablerScriptPubKey;
     }
 
     /// @inheritdoc IStreamManager
@@ -440,10 +452,11 @@ contract StreamManager is IStreamManager, BaseProxy {
     }
 
     /// @inheritdoc IStreamManager
-    function advanceSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) external {
+    function advanceSlot(bytes32 _acceptPeginTxid) external {
         // Verify that the caller has permission to modify the peg status
         accessManager.canModifyPegStatus(_msgSender());
-        Slot storage slot = _getSlot(_streamId, _packetNumber, _slotId);
+        StreamPosition storage streamPosition = streamPositions[_acceptPeginTxid];
+        Slot storage slot = _getSlot(streamPosition.streamId, streamPosition.packetNumber, streamPosition.slotId);
 
         // Validate that the slot exists and is in LOCKED state
         if (slot.state != SlotState.LOCKED) {
@@ -484,9 +497,29 @@ contract StreamManager is IStreamManager, BaseProxy {
         if (_confirmations == 0) {
             revert InvalidPeginConfirmations(_confirmations);
         }
+        if (_confirmations < streams[_streamId].rejectPeginConfirmations) {
+            revert PeginConfirmationsLowerThanRejectPegin(_confirmations, streams[_streamId].rejectPeginConfirmations);
+        }
 
         streams[_streamId].peginConfirmations = _confirmations;
         emit PeginConfirmationsUpdated(_streamId, _confirmations);
+    }
+
+    /// @inheritdoc IStreamManager
+    function setRejectPeginConfirmations(uint64 _streamId, uint8 _confirmations)
+        external
+        streamExists(_streamId)
+        onlyOwner
+    {
+        if (_confirmations == 0) {
+            revert InvalidRejectPeginConfirmations(_confirmations);
+        }
+        if (_confirmations > streams[_streamId].peginConfirmations) {
+            revert RejectPeginConfirmationsExceedsPegin(_confirmations, streams[_streamId].peginConfirmations);
+        }
+
+        streams[_streamId].rejectPeginConfirmations = _confirmations;
+        emit RejectPeginConfirmationsUpdated(_streamId, _confirmations);
     }
 
     /// @inheritdoc IStreamManager
@@ -558,6 +591,40 @@ contract StreamManager is IStreamManager, BaseProxy {
     /// @inheritdoc IStreamManager
     function getStreamPosition(bytes32 _acceptPeginTxid) external view returns (StreamPosition memory) {
         return streamPositions[_acceptPeginTxid];
+    }
+
+    /// @inheritdoc IStreamManager
+    function validatePegStatus(bytes32 _acceptPeginTxid, PegStatus _expectedStatus)
+        external
+        view
+        returns (StreamPosition memory streamPosition, uint128 committeeId, uint8 pegoutConfirmations)
+    {
+        return _validatePegStatus(_acceptPeginTxid, _expectedStatus, _expectedStatus);
+    }
+
+    /// @inheritdoc IStreamManager
+    function validatePegStatus(bytes32 _acceptPeginTxid, PegStatus _statusA, PegStatus _statusB)
+        external
+        view
+        returns (StreamPosition memory streamPosition, uint128 committeeId, uint8 pegoutConfirmations)
+    {
+        return _validatePegStatus(_acceptPeginTxid, _statusA, _statusB);
+    }
+
+    function _validatePegStatus(bytes32 _acceptPeginTxid, PegStatus _statusA, PegStatus _statusB)
+        internal
+        view
+        returns (StreamPosition memory streamPosition, uint128 committeeId, uint8 pegoutConfirmations)
+    {
+        streamPosition = streamPositions[_acceptPeginTxid];
+        if (streamPosition.pegStatus == PegStatus.NOT_REGISTERED) {
+            revert IPegBase.PeginNotRequested(_acceptPeginTxid);
+        }
+        if (streamPosition.pegStatus != _statusA && streamPosition.pegStatus != _statusB) {
+            revert IPegBase.InvalidPegStatus(streamPosition.pegStatus);
+        }
+        committeeId = _getPacket(streamPosition.streamId, streamPosition.packetNumber).committeeId;
+        pegoutConfirmations = _getStreamById(streamPosition.streamId).pegoutConfirmations;
     }
 
     /// @inheritdoc IStreamManager

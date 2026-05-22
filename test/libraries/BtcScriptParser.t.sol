@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
@@ -193,30 +193,28 @@ contract BtcScriptParserTest is Test, TestUtils {
         );
     }
 
-    function test_getPegoutIdScript_Success() external view {
+    function test_getPegoutIdScript_Success() external pure {
         // Arrange
-        bytes32 pegoutId = keccak256("pegout-id");
+        bytes32 pegoutId = bytes32(0);
         // Act
         bytes memory script = BtcScriptParser.getPegoutIdScript(pegoutId);
         // Assert
-        assertEq(script.length, 34, "getPegoutIdScript should return 1 + 1 + 32 bytes");
-        uint256 opReturnIndex = 0;
-        assertEq(script[opReturnIndex], OpCodes.OP_RETURN, "First byte should be OP_RETURN");
-        uint256 opPushbytesIndex = 1;
-        assertEq(script[opPushbytesIndex], OpCodes.OP_PUSHBYTES_32, "Second byte should be OP_PUSHBYTES_32");
-        uint256 pegoutIdIndex = 2;
+        // Expected: OP_RETURN (0x6a) + OP_PUSHBYTES_32 (0x20) + 32 zero bytes
         assertEq(
-            BytesHelper.bytesToBytes32(script, pegoutIdIndex), pegoutId, "Remaining 32 bytes should be the pegoutId"
+            script,
+            hex"6a200000000000000000000000000000000000000000000000000000000000000000",
+            "getPegoutIdScript with zero id should be OP_RETURN + OP_PUSHBYTES_32 + 32 zero bytes"
         );
-    }
 
-    function test_getPegoutIdScript_DifferentIdsProduceDifferentScripts() external view {
-        bytes32 pegoutId1 = bytes32(uint256(1));
-        bytes32 pegoutId2 = bytes32(uint256(2));
-        bytes memory script1 = BtcScriptParser.getPegoutIdScript(pegoutId1);
-        bytes memory script2 = BtcScriptParser.getPegoutIdScript(pegoutId2);
-        assertEq(script1.length, 34);
-        assertEq(script2.length, 34);
-        assertTrue(keccak256(script1) != keccak256(script2), "Different pegoutIds must produce different scripts");
+        // Arrange non-zero pegoutId
+        pegoutId = 0x672af373376c8399cb5810ec9dc16eb14fb8d7cf10a4c067090732cf7b8aa200;
+        // Act
+        script = BtcScriptParser.getPegoutIdScript(pegoutId);
+        // Assert
+        assertEq(
+            script,
+            hex"6a20672af373376c8399cb5810ec9dc16eb14fb8d7cf10a4c067090732cf7b8aa200",
+            "getPegoutIdScript should be OP_RETURN + OP_PUSHBYTES_32 + pegoutId bytes"
+        );
     }
 }

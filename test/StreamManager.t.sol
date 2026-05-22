@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
@@ -22,6 +22,7 @@ import {StreamPosition, PegStatus, BtcTxSPVProof} from "src/interfaces/IPegCommo
 import {Constants} from "src/libraries/Constants.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Committee, Role} from "src/interfaces/ICommitteeRegistry.sol";
+import {CompactPubKey} from "src/interfaces/IMemberRegistry.sol";
 import {StreamManagerSettingsConfig} from "script/helpers/StreamManagerSettingsConfig.sol";
 import {ChainIds} from "src/libraries/Network.sol";
 import {StreamManagerHarness} from "test/helpers/StreamManagerHarness.sol";
@@ -111,8 +112,8 @@ contract StreamManagerTest is Test, HelperContract {
         // we expect the packet number to be 1 since the first packet is being created in the test setup function
         uint128 committeeId = COMMITTEE_ID_STREAM_1_COMMITTEE_1;
         uint64 expectedPacketNumber = 1;
-        bytes memory committeePubKey = COMMITTEE_PUB_KEY();
-        bytes32[] memory disputeKeys = registry.getCommitteeDisputeKeys(committeeId);
+        bytes memory committeePubKey = COMMITTEE_TAKE_PUB_KEY();
+        CompactPubKey[] memory disputeKeys = registry.getCommitteeDisputeKeys(committeeId);
 
         // Assert
         vm.expectEmit(address(streamManager));
@@ -126,7 +127,7 @@ contract StreamManagerTest is Test, HelperContract {
         // Assert
         Packet memory packet = streamManager.getPacket(setupStreamId, expectedPacketNumber);
         assertEq(packet.packetNumber, expectedPacketNumber, "packetNumber was not set correctly");
-        assertEq(packet.committeePubKey, committeePubKey, "committeePubKey was not set correctly");
+        assertEq(packet.committeeId, committeeId, "committeeId was not set correctly");
         bytes memory expectedEnablerScriptPubKey =
             hex"51201cbeafdb8fa122bf71ea817df2ed9131bfa165952d63ba5841313f918a0f86c9";
         assertEq(packet.enablerScriptPubKey, expectedEnablerScriptPubKey, "enablerScriptPubKey was not set correctly");
@@ -181,6 +182,119 @@ contract StreamManagerTest is Test, HelperContract {
 
         // Act
         streamManager.setPeginConfirmations(streamId, 10);
+    }
+
+    function test_setPeginConfirmations_Revert_PeginConfirmationsLowerThanRejectPegin() external {
+        // Arrange
+        uint64 streamId = 0;
+        address owner = streamManager.owner();
+
+        // Set rejectPeginConfirmations to 2 so we can try setting peginConfirmations to 1 (below it)
+        vm.prank(owner);
+        streamManager.setRejectPeginConfirmations(streamId, 2);
+        uint8 rejectPeginConfirmations = 2;
+        uint8 peginConfirmations = 1;
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IStreamManager.PeginConfirmationsLowerThanRejectPegin.selector,
+                peginConfirmations,
+                rejectPeginConfirmations
+            )
+        );
+
+        // Act
+        vm.prank(owner);
+        streamManager.setPeginConfirmations(streamId, peginConfirmations);
+    }
+
+    function test_setRejectPeginConfirmations_Success() external {
+        // Arrange
+        uint64 streamId = 0;
+
+        // Assert
+        assertEq(
+            streamManager.getStreamById(streamId).rejectPeginConfirmations,
+            1,
+            "Reject pegin confirmation should be default"
+        );
+
+        uint8 rejectPeginConfirmations = 2;
+
+        vm.expectEmit(address(streamManager));
+        emit IStreamManager.RejectPeginConfirmationsUpdated(streamId, rejectPeginConfirmations);
+
+        // Act
+        vm.prank(address(streamManager.owner()));
+        streamManager.setRejectPeginConfirmations(streamId, rejectPeginConfirmations);
+
+        // Assert
+        assertEq(
+            streamManager.getStreamById(streamId).rejectPeginConfirmations,
+            rejectPeginConfirmations,
+            "rejectPeginConfirmations was not set correctly"
+        );
+    }
+
+    function test_setRejectPeginConfirmations_Revert_StreamNotFoundById() external {
+        // Arrange
+        uint64 streamId = 10;
+        vm.prank(address(streamManager.owner()));
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.StreamNotFoundById.selector, streamId));
+
+        // Act
+        streamManager.setRejectPeginConfirmations(streamId, 2);
+    }
+
+    function test_setRejectPeginConfirmations_Revert_OwnableUnauthorizedAccount() external {
+        // Arrange
+        uint64 streamId = 0;
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, this));
+
+        // Act
+        streamManager.setRejectPeginConfirmations(streamId, 2);
+    }
+
+    function test_setRejectPeginConfirmations_Revert_InvalidRejectPeginConfirmations() external {
+        // Arrange
+        uint64 streamId = 0;
+        uint8 zeroConfirmations = 0;
+        address owner = streamManager.owner();
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IStreamManager.InvalidRejectPeginConfirmations.selector, zeroConfirmations)
+        );
+
+        // Act
+        vm.prank(owner);
+        streamManager.setRejectPeginConfirmations(streamId, zeroConfirmations);
+    }
+
+    function test_setRejectPeginConfirmations_Revert_RejectPeginConfirmationsExceedsPegin() external {
+        // Arrange - stream has peginConfirmations 2 by default (local test)
+        uint64 streamId = 0;
+        uint8 peginConfirmations = streamManager.getStreamById(streamId).peginConfirmations;
+        uint8 rejectPeginConfirmations = peginConfirmations + 1; // 3 > 2
+        address owner = streamManager.owner();
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IStreamManager.RejectPeginConfirmationsExceedsPegin.selector,
+                rejectPeginConfirmations,
+                peginConfirmations
+            )
+        );
+
+        // Act
+        vm.prank(owner);
+        streamManager.setRejectPeginConfirmations(streamId, rejectPeginConfirmations);
     }
 
     function test_setPegoutConfirmations_Success() external {
@@ -1381,8 +1495,8 @@ contract StreamManagerTest is Test, HelperContract {
         // Create a new packet and add one filled slot
         // For the pourpose of this test we can reuse the existing committee that was created during the setup
         uint128 committeeId = COMMITTEE_ID_STREAM_1_COMMITTEE_1;
-        bytes memory committeePubKey = COMMITTEE_PUB_KEY();
-        bytes32[] memory disputeKeys = registry.getCommitteeDisputeKeys(committeeId);
+        bytes memory committeePubKey = COMMITTEE_TAKE_PUB_KEY();
+        CompactPubKey[] memory disputeKeys = registry.getCommitteeDisputeKeys(committeeId);
         vm.prank(address(registry));
         streamManager.createNewPacket(streamId, committeeId, committeePubKey, disputeKeys);
         uint64 thirdPacketNumber = 2;
@@ -1472,7 +1586,7 @@ contract StreamManagerTest is Test, HelperContract {
 
         // 4. Advance slot
         vm.prank(address(pegoutManager));
-        streamManager.advanceSlot(streamId, packetNumber, slotId);
+        streamManager.advanceSlot(acceptPeginTx);
 
         // 5. Complete slot
         vm.prank(address(pegoutManager));
@@ -1646,6 +1760,11 @@ contract StreamManagerTest is Test, HelperContract {
                 "Pegin confirmations should be equal to the pegin confirmations"
             );
             assertEq(
+                stream.rejectPeginConfirmations,
+                streamSettings[i].rejectPeginConfirmations,
+                "Reject pegin confirmations should be equal to the reject pegin confirmations"
+            );
+            assertEq(
                 stream.pegoutConfirmations,
                 streamSettings[i].pegoutConfirmations,
                 "Pegout confirmations should be equal to the pegout confirmations"
@@ -1763,6 +1882,35 @@ contract StreamManagerTest is Test, HelperContract {
                 streamSettings[0].peginConfirmations,
                 0
             )
+        );
+
+        // Act
+        cleanStreamManager.initializeStreams(streamSettings);
+    }
+
+    function test_initializeStreams_Revert_InvalidRejectPeginConfirmations() external {
+        // Arrange
+        StreamManagerHarness cleanStreamManager = setup_cleanStreamManager();
+        StreamSettings[] memory streamSettings = setup_streamSettings();
+        streamSettings[0].rejectPeginConfirmations = 0; // Invalid
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IStreamManager.InvalidRejectPeginConfirmations.selector, uint8(0)));
+
+        // Act
+        cleanStreamManager.initializeStreams(streamSettings);
+    }
+
+    function test_initializeStreams_Revert_RejectPeginConfirmationsExceedsPegin() external {
+        // Arrange - setup has peginConfirmations 2, rejectPeginConfirmations 2; set reject > pegin
+        StreamManagerHarness cleanStreamManager = setup_cleanStreamManager();
+        StreamSettings[] memory streamSettings = setup_streamSettings();
+        streamSettings[0].peginConfirmations = 2;
+        streamSettings[0].rejectPeginConfirmations = 5; // Invalid: 5 > 2
+
+        // Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(IStreamManager.RejectPeginConfirmationsExceedsPegin.selector, uint8(5), uint8(2))
         );
 
         // Act
@@ -1911,4 +2059,51 @@ contract StreamManagerTest is Test, HelperContract {
         }
         return streamSettings;
     }
+
+    function test_getFilledSlotsCount_Success() external {
+        // Arrange
+        bytes memory userPubKey = hex"02d56ad001b55eabf431e602599fcc0d7ed9d676ac93c2be11d0de6e25dd598d8b";
+        uint64 amount = VALUE;
+        Stream memory stream = streamManager.getStream(amount);
+        uint256 amountInWei = BtcHelper.satoshiToWei(amount);
+
+        // Act & Assert - Initially 0 filled slots
+        assertEq(streamManager.getFilledSlotsCount(stream.streamId), 0, "Filled slot count should be 0");
+
+        // Arrange
+        setup_multipleRequestAndAcceptPeginFlows(1);
+
+        // Act & Assert - After one filled slot
+        assertEq(streamManager.getFilledSlotsCount(stream.streamId), 1, "Filled slot count should be 1");
+    }
+
+    // ==================== TESTNET ONLY FUNCTION TESTS ====================
+
+    function test_restartStreamPointers_TESTNET_Revert_OwnableUnauthorizedAccount() external {
+        // Arrange
+        address unauthorizedAccount = address(0x1234);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, unauthorizedAccount));
+
+        // Act
+        vm.prank(unauthorizedAccount);
+        streamManager.restartStreamPointers_TESTNET(setupStreamId);
+    }
+
+    function test_restartStreamPointers_TESTNET_Revert_TestnetOnlyFunction() external {
+        // Arrange
+        address owner = streamManager.owner();
+
+        // Simulate RSK mainnet (chain ID 30)
+        vm.chainId(30);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IAccessManager.TestnetOnlyFunction.selector));
+
+        // Act
+        vm.prank(owner);
+        streamManager.restartStreamPointers_TESTNET(setupStreamId);
+    }
+    // ==================== END TESTNET ONLY FUNCTION TESTS ====================
 }

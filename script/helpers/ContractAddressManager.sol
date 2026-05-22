@@ -14,6 +14,7 @@ import {ISignatureManager} from "src/interfaces/ISignatureManager.sol";
 import {AccessManager} from "src/AccessManager.sol";
 import {IRbtcBridge} from "src/interfaces/IRbtcBridge.sol";
 import {IChallengeManager} from "src/interfaces/IChallengeManager.sol";
+import {IOperatorTakeManager} from "src/interfaces/IOperatorTakeManager.sol";
 import {BytesHelper} from "src/libraries/BytesHelper.sol";
 
 /// @title ContractAddressManager
@@ -54,6 +55,12 @@ abstract contract ContractAddressManager is Script {
     /// @return The ChallengeManager contract
     function getChallengeManager() internal view returns (IChallengeManager) {
         return IChallengeManager(getAccessManager().challengeManager());
+    }
+
+    /// @notice Get the OperatorTakeManager contract address for the current network
+    /// @return The OperatorTakeManager contract
+    function getOperatorTakeManager() internal view returns (IOperatorTakeManager) {
+        return IOperatorTakeManager(getAccessManager().operatorTakeManager());
     }
 
     /// @notice Get the StreamManager contract for the current network

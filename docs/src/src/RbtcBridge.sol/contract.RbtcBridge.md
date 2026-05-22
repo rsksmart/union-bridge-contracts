@@ -1,5 +1,5 @@
 # RbtcBridge
-[Git Source](https://github.com/rsksmart/union-bridge-contracts/blob/68c14faa89612dfba1b7e9abf29455625661476f/src/RbtcBridge.sol)
+[Git Source](https://github.com/rsksmart/union-bridge-contracts/blob/cf5421e1f47ca597147a56a1404f8189f6c70b20/src/RbtcBridge.sol)
 
 **Inherits:**
 [IRbtcBridge](/src/interfaces/IRbtcBridge.sol/interface.IRbtcBridge.md), ReentrancyGuardUpgradeable, [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md), [Pausable](/src/Pausable.sol/abstract.Pausable.md)
@@ -34,13 +34,6 @@ The access manager contract that manages access control
 
 ```solidity
 IAccessManager public accessManager;
-```
-
-
-### latestBaseEventBlock
-
-```solidity
-uint256 public latestBaseEventBlock;
 ```
 
 

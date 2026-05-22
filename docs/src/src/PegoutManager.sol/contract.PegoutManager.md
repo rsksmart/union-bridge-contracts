@@ -1,5 +1,5 @@
 # PegoutManager
-[Git Source](https://github.com/rsksmart/union-bridge-contracts/blob/68c14faa89612dfba1b7e9abf29455625661476f/src/PegoutManager.sol)
+[Git Source](https://github.com/rsksmart/union-bridge-contracts/blob/cf5421e1f47ca597147a56a1404f8189f6c70b20/src/PegoutManager.sol)
 
 **Inherits:**
 [IPegoutManager](/src/interfaces/IPegoutManager.sol/interface.IPegoutManager.md), [PegManagerBase](/src/PegManagerBase.sol/abstract.PegManagerBase.md)
@@ -8,51 +8,24 @@ Manages peg-out operations from Rootstock to Bitcoin
 
 
 ## State Variables
-### userTakeTimeout
-Timeout in seconds for user take operations
-
+### pegoutStartInfo
 
 ```solidity
-uint256 public userTakeTimeout;
+mapping(bytes32 acceptPeginTxid => PegoutStartInfo startInfo) internal pegoutStartInfo;
 ```
 
 
-### operatorTakeTimeout
-Timeout in seconds for operator take operations
-
+### pegoutQueue
 
 ```solidity
-uint256 public operatorTakeTimeout;
+mapping(uint64 streamId => PegoutRequest[]) internal pegoutQueue;
 ```
 
 
-### sequenceNumber
-The pegout ID sequence number incremented for each new triggerOperatorTake
-
+### currentPegoutQueuePointer
 
 ```solidity
-uint256 public sequenceNumber;
-```
-
-
-### pegoutTempInfo
-
-```solidity
-mapping(bytes32 acceptPeginTxid => PegoutTempInfo tempInfo) internal pegoutTempInfo;
-```
-
-
-### pegoutToPeginTxid
-
-```solidity
-mapping(bytes32 pegoutTxid => bytes32 acceptPeginTxid) internal pegoutToPeginTxid;
-```
-
-
-### pegoutTxids
-
-```solidity
-mapping(bytes32 key => bytes32 pegoutTxid) internal pegoutTxids;
+mapping(uint64 streamId => uint64) internal currentPegoutQueuePointer;
 ```
 
 
@@ -72,8 +45,7 @@ function initialize(
     IBitcoinManager _bitcoinManager,
     IRbtcBridge _rbtcBridge,
     IStreamManager _streamManager,
-    ISignatureManager _signatureManager,
-    PegoutManagerSettings memory _settings
+    ISignatureManager _signatureManager
 ) public virtual initializer;
 ```
 **Parameters**
@@ -87,16 +59,15 @@ function initialize(
 |`_rbtcBridge`|`IRbtcBridge`|The RbtcBridge contract for burning RBTC|
 |`_streamManager`|`IStreamManager`|The stream manager contract address|
 |`_signatureManager`|`ISignatureManager`|The signature manager contract address|
-|`_settings`|`PegoutManagerSettings`|The peg manager settings including timeouts|
 
 
-### getPegoutTempInfo
+### getPegoutStartInfo
 
-Gets temporary information stored during peg-out processing
+Gets start information stored during peg-out creation
 
 
 ```solidity
-function getPegoutTempInfo(bytes32 _acceptPeginTxid) external view returns (PegoutTempInfo memory);
+function getPegoutStartInfo(bytes32 _acceptPeginTxid) external view returns (PegoutStartInfo memory pegoutInfo);
 ```
 **Parameters**
 
@@ -108,35 +79,108 @@ function getPegoutTempInfo(bytes32 _acceptPeginTxid) external view returns (Pego
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`PegoutTempInfo`|The temporary information needed for peg-out processing|
-
-
-### getAcceptPeginTxid
-
-Gets the accept peg-in transaction id for a given peg-out transaction id
-
-
-```solidity
-function getAcceptPeginTxid(bytes32 _pegoutTxid) external view returns (bytes32);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_pegoutTxid`|`bytes32`|The peg-out transaction id|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`<none>`|`bytes32`|The accept peg-in transaction id|
+|`pegoutInfo`|`PegoutStartInfo`|The start info (userPubKey, createdAt)|
 
 
 ### _validatePegoutRequest
 
 
 ```solidity
-function _validatePegoutRequest(bytes memory _userPubKey, uint256 amountInWei) internal pure;
+function _validatePegoutRequest(bytes memory _userPubKey, uint256 _amountInWei)
+    internal
+    view
+    returns (Stream memory stream, uint64 queueLength);
+```
+
+### enqueuePegout
+
+Enqueues a peg-out request for a specific stream
+
+*This function allows users to enqueue their peg-out requests where there is a pegout in process*
+
+
+```solidity
+function enqueuePegout(bytes memory _userPubKey) external payable nonReentrant whenNotPaused;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_userPubKey`|`bytes`|The user's compressed public key that will receive the Bitcoin funds|
+
+
+### dequeuePegout
+
+Dequeues a peg-out request for processing for a specific stream
+
+*Should be called from the user that enqueued a pegout*
+
+
+```solidity
+function dequeuePegout(uint64 _streamId) external nonReentrant whenNotPaused;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_streamId`|`uint64`|The stream identifier|
+
+
+### getPegoutQueueLength
+
+Get queue size for enqueued peg-out requests for a specific stream
+
+
+```solidity
+function getPegoutQueueLength(uint64 _streamId) external view returns (uint64);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_streamId`|`uint64`|The stream identifier|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`uint64`|The number of enqueued peg-out requests for the specified stream|
+
+
+### _getPegoutQueueLength
+
+
+```solidity
+function _getPegoutQueueLength(uint64 _streamId) internal view returns (uint64);
+```
+
+### _popPegoutQueue
+
+
+```solidity
+function _popPegoutQueue(uint64 _streamId) internal returns (PegoutRequest memory request);
+```
+
+### tryProcessEnqueuedPegout
+
+Tries to process an enqueued peg-out request for a specific stream
+
+
+```solidity
+function tryProcessEnqueuedPegout(uint64 _streamId) external nonReentrant whenNotPaused;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_streamId`|`uint64`|The stream identifier|
+
+
+### _processPegout
+
+
+```solidity
+function _processPegout(bytes memory _userPubKey, Stream memory _stream) internal;
 ```
 
 ### tryPegout
@@ -173,29 +217,6 @@ function registerUserTake(BtcTxSPVProof memory _pegoutTxSPVProof) external nonRe
 |`_pegoutTxSPVProof`|`BtcTxSPVProof`|The BTC SPV proof of the peg-out transaction|
 
 
-### getPegoutTxid
-
-Gets the peg-out signature hash for a specific stream, packet, and slot
-
-
-```solidity
-function getPegoutTxid(uint64 streamId, uint64 packetNumber, uint64 slotId) external view returns (bytes32);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`streamId`|`uint64`|The stream identifier|
-|`packetNumber`|`uint64`|The packet number within the stream|
-|`slotId`|`uint64`|The slot identifier within the packet|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`<none>`|`bytes32`|The peg-out signature hash|
-
-
 ### _storePegoutAndInitSignatures
 
 
@@ -204,177 +225,6 @@ function _storePegoutAndInitSignatures(bytes32 _pegoutTxid, uint64 _streamId, ui
     internal
     returns (uint128);
 ```
-
-### triggerOperatorTake
-
-Triggers the operator take process for a peg-out when not all committee members sign within timeout
-
-*This function can be called after a User Take expiration or after an Operator Take expiration*
-
-
-```solidity
-function triggerOperatorTake(bytes32 _pegoutTxid) external nonReentrant whenNotPaused;
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_pegoutTxid`|`bytes32`|The transaction id of the peg-out request|
-
-
-### _generatePegoutId
-
-
-```solidity
-function _generatePegoutId(StreamPosition memory _streamInfo, bytes32 _operatorTakePubKey, uint256 _sequenceNumber)
-    internal
-    view
-    returns (bytes32);
-```
-
-### registerAdvanceFunds
-
-Registers the advance funds transaction submitted by the operator
-
-*Validates the SPV proof and updated the peg-out status accordingly*
-
-
-```solidity
-function registerAdvanceFunds(bytes32 acceptPeginTxid, BtcTxSPVProof memory _advanceFunds)
-    external
-    nonReentrant
-    whenNotPaused;
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`acceptPeginTxid`|`bytes32`|The accept peg-in transaction id that it's being advanced|
-|`_advanceFunds`|`BtcTxSPVProof`|The BTC SPV proof of the advance funds transaction|
-
-
-### _verifyAdvanceFundsTx
-
-
-```solidity
-function _verifyAdvanceFundsTx(BtcTxSPVProof memory _advanceFunds, PegoutTempInfo memory _pegoutInfo, uint64 _streamId)
-    internal
-    view
-    returns (bytes32 txid, int256 blockNumber);
-```
-
-### _validateOperatorTakeAddress
-
-
-```solidity
-function _validateOperatorTakeAddress(bytes32 _acceptPeginTxid) internal view returns (PegoutTempInfo storage);
-```
-
-### registerReimbursementKickoff
-
-Registers the reimbursement kickoff transaction submitted by the operator
-
-*Validates the SPV proof and updates the peg-out status accordingly*
-
-
-```solidity
-function registerReimbursementKickoff(bytes32 acceptPeginTxid, BtcTxSPVProof memory _kickoffSPV)
-    external
-    nonReentrant
-    whenNotPaused;
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`acceptPeginTxid`|`bytes32`|The accept peg-in transaction id that it's being reimbursed|
-|`_kickoffSPV`|`BtcTxSPVProof`|The BTC SPV proof of the reimbursement kickoff transaction|
-
-
-### registerOperatorTake
-
-Deposits an operator take proof for a peg-out transaction
-
-*Validates the SPV proof and marks the slot as paid when operator takes over*
-
-
-```solidity
-function registerOperatorTake(BtcTxSPVProof memory _pegoutTxSPVProof) external nonReentrant whenNotPaused;
-```
-
-### registerOperatorWon
-
-Deposits an operator won proof for a peg-out transaction
-
-*Validates the SPV proof and marks the slot as paid when operator takes over*
-
-*Only callable when the peg status is OPERATOR_TAKE*
-
-*Emits PegoutRegistered event upon successful deposit*
-
-*Only callable when contract is unpaused*
-
-
-```solidity
-function registerOperatorWon(BtcTxSPVProof memory _pegoutTxSPVProof) external nonReentrant whenNotPaused;
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_pegoutTxSPVProof`|`BtcTxSPVProof`|The BTC SPV proof of the operator won transaction|
-
-
-### _completeSlot
-
-
-```solidity
-function _completeSlot(StreamPosition memory _streamInfo, bytes32 _acceptPeginTxid, bytes32 _txid) internal;
-```
-
-### _getOperatorTakeData
-
-
-```solidity
-function _getOperatorTakeData(bytes32 _acceptPeginTxid, address _opAddress)
-    internal
-    view
-    returns (OperatorTakeData memory);
-```
-
-### setUserTakeTimeout
-
-Sets the timeout duration for user take operations
-
-*Only callable by the contract owner*
-
-
-```solidity
-function setUserTakeTimeout(uint256 _timeout) external onlyOwner;
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_timeout`|`uint256`|The new timeout duration in seconds|
-
-
-### setOperatorTakeTimeout
-
-Sets the timeout duration for operator take operations
-
-*Only callable by the contract owner*
-
-
-```solidity
-function setOperatorTakeTimeout(uint256 _timeout) external onlyOwner;
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_timeout`|`uint256`|The new timeout duration in seconds|
-
 
 ### _preparePegoutPrevoutDatas
 
