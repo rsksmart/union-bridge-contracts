@@ -1,5 +1,5 @@
 # ChallengeManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/bd6b4a28bf5973e554d9b7a237190a44cdd46b38/src/ChallengeManager.sol)
+[Git Source](https://github.com/rsksmart/union-bridge-contracts/blob/dd34207db3c68e4260aba3e2d2660c73733e6970/src/ChallengeManager.sol)
 
 **Inherits:**
 [IChallengeManager](/src/interfaces/IChallengeManager.sol/interface.IChallengeManager.md), [PegBase](/src/PegBase.sol/abstract.PegBase.md)

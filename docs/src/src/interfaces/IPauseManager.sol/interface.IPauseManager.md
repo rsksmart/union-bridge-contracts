@@ -1,5 +1,5 @@
 # IPauseManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/bd6b4a28bf5973e554d9b7a237190a44cdd46b38/src/interfaces/IPauseManager.sol)
+[Git Source](https://github.com/rsksmart/union-bridge-contracts/blob/dd34207db3c68e4260aba3e2d2660c73733e6970/src/interfaces/IPauseManager.sol)
 
 Interface for the centralized pause manager contract
 
@@ -171,7 +171,7 @@ Emitted when a pausable contract address is updated
 
 
 ```solidity
-event PausableContractUpdated(string contractName, address newAddress);
+event PausableContractUpdated(string contractName, address indexed newAddress);
 ```
 
 **Parameters**

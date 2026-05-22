@@ -1,5 +1,5 @@
 # BitcoinManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/bd6b4a28bf5973e554d9b7a237190a44cdd46b38/src/BitcoinManager.sol)
+[Git Source](https://github.com/rsksmart/union-bridge-contracts/blob/dd34207db3c68e4260aba3e2d2660c73733e6970/src/BitcoinManager.sol)
 
 **Inherits:**
 [IBitcoinManager](/src/interfaces/IBitcoinManager.sol/interface.IBitcoinManager.md), [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md)
