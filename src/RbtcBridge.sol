@@ -34,6 +34,7 @@ contract RbtcBridge is IRbtcBridge, ReentrancyGuardUpgradeable, BaseProxy, Pausa
     /// @dev Used to check access control for sensitive operations
     IAccessManager public accessManager;
 
+    /// @notice The block number of the last successful base event update
     uint256 public latestBaseEventBlock;
 
     /// @notice Initializes the RbtcBridge contract
