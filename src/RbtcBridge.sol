@@ -34,6 +34,9 @@ contract RbtcBridge is IRbtcBridge, ReentrancyGuardUpgradeable, BaseProxy, Pausa
     /// @dev Used to check access control for sensitive operations
     IAccessManager public accessManager;
 
+    /// @notice The block number of the last successful base event update
+    uint256 public latestBaseEventBlock;
+
     /// @notice Initializes the RbtcBridge contract
     /// @param _initialOwner The initial owner of the contract
     /// @param _bridge The RSK PowPeg Bridge contract address
@@ -222,9 +225,11 @@ contract RbtcBridge is IRbtcBridge, ReentrancyGuardUpgradeable, BaseProxy, Pausa
         if (_baseEvent.length > 128) {
             revert BaseEventTooLong();
         }
-        if (bridge.getBaseEvent().length > 0) {
+        // Validate that the base event is not already set in this block
+        if (latestBaseEventBlock == block.number) {
             revert BaseEventAlreadySet();
         }
+        latestBaseEventBlock = block.number;
         // Set the base event
         bridge.setBaseEvent(_baseEvent);
 

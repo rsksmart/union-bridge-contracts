@@ -301,6 +301,22 @@
 3. **Pegout queueing** – `requestPegout` no longer reverts when a stream is busy. Subsequent requests must use `PegoutManager.enqueuePegout()` to join the per-stream queue. Once the active peg-out completes, the next request is automatically promoted; anyone can also trigger promotion by calling `tryProcessEnqueuedPegout`. Integrations must handle the queued state and surface queue position to users.
 4. **rejectPeginConfirmations** – `StreamManager` now tracks a separate confirmation count for reject-pegin and user-reimbursement transactions, configurable via `setRejectPeginConfirmations`. This must be ≤ `peginConfirmations`.
 
+## [v0.4.2-alpha]
+
+### Base Event semantics (`RbtcBridge`) (v0.4.2-alpha)
+
+1. **`setBaseEvent` – duplicate guard is per block, not lifetime**
+   - **Reason**: The previous check (`bridge.getBaseEvent().length > 0`) blocked any new base event after one was set, even across different peg-outs/blocks. Now a new base event can be set in a later block, overriding the previous one. Only multiple calls in the same block must be prevented.
+   - **Change**: `RbtcBridge.setBaseEvent` no longer reads `bridge.getBaseEvent()`. It reverts with `BaseEventAlreadySet` only if `latestBaseEventBlock == block.number`. A new `uint256 public latestBaseEventBlock` records the block of the last successful call.
+   - **Impact**:
+     - Integrations that assumed “base event can only be set once ever” must update: a new `setBaseEvent`, overwriting the previous one.
+     - Two `setBaseEvent` calls in the **same block** still revert with `BaseEventAlreadySet` on the second.
+
+### Struct and Storage Layout Changes (v0.4.2-alpha)
+
+1. **`RbtcBridge`**
+   - **Added**: `latestBaseEventBlock` (`uint256`).
+
 ## [v0.4.1-alpha]
 
 ### Bitcoin Transaction Script Validation (v0.4.1-alpha)

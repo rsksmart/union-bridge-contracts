@@ -772,14 +772,15 @@ contract OperatorTakeManagerTest is Test, HelperContract {
         pauseAndUnpauseContracts();
         (address opAddress, RegisterUserTakeSetup memory setup) = setup_reimbursementKickoff();
 
-        // Set a base event directly on the bridge mock to simulate it already being set
-        vm.prank(address(rbtcBridge));
-        bridgeMock.setBaseEvent("existing base event");
+        // Set a base event
+        vm.prank(address(operatorTakeManager));
+        rbtcBridge.setBaseEvent("existing base event");
 
-        // Assert - should revert because base event is already set
+        // Assert
         vm.expectRevert(IRbtcBridge.BaseEventAlreadySet.selector);
 
-        // Act
+        // Act - calling registerReimbursementKickoff will try to set another base event.
+        // It will revert since previous base event was set in the same block
         vm.prank(opAddress);
         operatorTakeManager.registerReimbursementKickoff(setup.acceptPeginTxid, setup.reimbursementKickoffSPV);
     }
