@@ -1,5 +1,5 @@
 # BtcNetwork
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/aa0c5b500b0a03f68164877ee0ab01eebfbdfa68/src/libraries/Network.sol)
+[Git Source](https://github.com/rsksmart/union-bridge-contracts/blob/68c14faa89612dfba1b7e9abf29455625661476f/src/libraries/Network.sol)
 
 Represents different Bitcoin networks
 
