@@ -1,5 +1,5 @@
 # IMemberRegistry
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/aa0c5b500b0a03f68164877ee0ab01eebfbdfa68/src/interfaces/IMemberRegistry.sol)
+[Git Source](https://github.com/rsksmart/union-bridge-contracts/blob/68c14faa89612dfba1b7e9abf29455625661476f/src/interfaces/IMemberRegistry.sol)
 
 Interface for managing committee member registration, applications, and balance tracking
 
