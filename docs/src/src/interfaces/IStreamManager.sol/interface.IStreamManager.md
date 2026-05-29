@@ -1,5 +1,5 @@
 # IStreamManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/aa0c5b500b0a03f68164877ee0ab01eebfbdfa68/src/interfaces/IStreamManager.sol)
+[Git Source](https://github.com/rsksmart/union-bridge-contracts/blob/cf5421e1f47ca597147a56a1404f8189f6c70b20/src/interfaces/IStreamManager.sol)
 
 Interface for managing streams, packets, and slots in the union bridge
 
@@ -20,8 +20,8 @@ Creates a new packet for a stream
 function createNewPacket(
     uint64 _streamId,
     uint128 _committeeId,
-    bytes calldata _committeePubKey,
-    bytes32[] memory _disputeKeys
+    bytes memory _committeePubKey,
+    CompactPubKey[] memory _disputeKeys
 ) external;
 ```
 **Parameters**
@@ -30,8 +30,8 @@ function createNewPacket(
 |----|----|-----------|
 |`_streamId`|`uint64`|The ID of the stream to create a packet for|
 |`_committeeId`|`uint128`|The ID of the committee that will process this packet|
-|`_committeePubKey`|`bytes`|The public key of the committee for Bitcoin operations|
-|`_disputeKeys`|`bytes32[]`|The dispute keys (covenant public keys) for the committee members|
+|`_committeePubKey`|`bytes`|The aggregated key of the committee for Bitcoin operations|
+|`_disputeKeys`|`CompactPubKey[]`|The dispute keys for the committee members|
 
 
 ### getStream
@@ -323,28 +323,6 @@ function getCommitteeId(uint64 _streamId, uint64 _packetNumber) external view re
 |`<none>`|`uint128`|uint128 The committee ID for the packet|
 
 
-### getCommitteePubKey
-
-Retrieves the committee public key for a specific packet
-
-
-```solidity
-function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes memory);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_streamId`|`uint64`|The ID of the stream|
-|`_packetNumber`|`uint64`|The index of the packet within the stream|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`<none>`|`bytes`|bytes The committee public key for this packet (33 bytes)|
-
-
 ### getEnablerScriptPubKey
 
 Retrieves the enabler script public key for a specific packet
@@ -401,15 +379,13 @@ Marks a slot as advanced by the operator to the user
 
 
 ```solidity
-function advanceSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) external;
+function advanceSlot(bytes32 _acceptPeginTxid) external;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_streamId`|`uint64`|The index of the stream|
-|`_packetNumber`|`uint64`|The index of the packet within the stream|
-|`_slotId`|`uint64`|The index of the slot within the packet|
+|`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction ID|
 
 
 ### setPeginConfirmations
@@ -428,6 +404,24 @@ function setPeginConfirmations(uint64 _streamId, uint8 _confirmations) external;
 |----|----|-----------|
 |`_streamId`|`uint64`|The ID of the stream|
 |`_confirmations`|`uint8`|The number of confirmations required for peg-in transactions|
+
+
+### setRejectPeginConfirmations
+
+Sets the number of confirmations required for reject pegin and user reimbursement transactions
+
+*Only callable by the contract owner*
+
+
+```solidity
+function setRejectPeginConfirmations(uint64 _streamId, uint8 _confirmations) external;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_streamId`|`uint64`|The ID of the stream|
+|`_confirmations`|`uint8`|The number of confirmations required for reject pegin and user reimbursement|
 
 
 ### setPegoutConfirmations
@@ -608,6 +602,69 @@ function getStreamPosition(bytes32 _acceptPeginTxid) external view returns (Stre
 |`<none>`|`StreamPosition`|The stream position associated with the transaction ID|
 
 
+### validatePegStatus
+
+Validates that the peg status matches the expected status
+
+*Reverts with PeginNotRequested if the peg-in was not requested*
+
+*Reverts with InvalidPegStatus if the current status does not match the expected status*
+
+
+```solidity
+function validatePegStatus(bytes32 _acceptPeginTxid, PegStatus _expectedStatus)
+    external
+    view
+    returns (StreamPosition memory streamPosition, uint128 committeeId, uint8 pegoutConfirmations);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction ID|
+|`_expectedStatus`|`PegStatus`|The expected peg status|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`streamPosition`|`StreamPosition`|The stream position if validation passes|
+|`committeeId`|`uint128`|The committee ID for the packet|
+|`pegoutConfirmations`|`uint8`|The number of confirmations required for peg-out transactions|
+
+
+### validatePegStatus
+
+Validates that the peg status matches one of two expected statuses
+
+*Reverts with PeginNotRequested if the peg-in was not requested*
+
+*Reverts with InvalidPegStatus if the current status does not match either expected status*
+
+
+```solidity
+function validatePegStatus(bytes32 _acceptPeginTxid, PegStatus _statusA, PegStatus _statusB)
+    external
+    view
+    returns (StreamPosition memory streamPosition, uint128 committeeId, uint8 pegoutConfirmations);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction ID|
+|`_statusA`|`PegStatus`|The first acceptable peg status|
+|`_statusB`|`PegStatus`|The second acceptable peg status|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`streamPosition`|`StreamPosition`|The stream position if validation passes|
+|`committeeId`|`uint128`|The committee ID for the packet|
+|`pegoutConfirmations`|`uint8`|The number of confirmations required for peg-out transactions|
+
+
 ### getPacketSlotsLength
 
 Gets the length of the slots in a packet
@@ -647,6 +704,15 @@ function setPegStatus(bytes32 _acceptPeginTxid, PegStatus _newStatus) external;
 |`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction ID|
 |`_newStatus`|`PegStatus`|The new peg status to set|
 
+
+### getFilledSlotsCount
+
+Gets the number of remaining filled slots available for peg-out in the given stream
+
+
+```solidity
+function getFilledSlotsCount(uint64 _streamId) external view returns (uint64);
+```
 
 ### restartStreamPointers_TESTNET
 
@@ -821,6 +887,21 @@ Event emitted when the number of confirmations required for peg-in transactions 
 
 ```solidity
 event PeginConfirmationsUpdated(uint64 _streamId, uint8 _confirmations);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_streamId`|`uint64`|The ID of the stream|
+|`_confirmations`|`uint8`|The number of confirmations required|
+
+### RejectPeginConfirmationsUpdated
+Event emitted when the number of confirmations required for reject pegin and user reimbursement is updated
+
+
+```solidity
+event RejectPeginConfirmationsUpdated(uint64 _streamId, uint8 _confirmations);
 ```
 
 **Parameters**
@@ -1051,6 +1132,50 @@ error InvalidPeginConfirmations(uint8 confirmations);
 |Name|Type|Description|
 |----|----|-----------|
 |`confirmations`|`uint8`|The invalid number of confirmations|
+
+### InvalidRejectPeginConfirmations
+Thrown when reject pegin confirmations are invalid
+
+
+```solidity
+error InvalidRejectPeginConfirmations(uint8 confirmations);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`confirmations`|`uint8`|The invalid number of confirmations|
+
+### RejectPeginConfirmationsExceedsPegin
+Thrown when reject pegin confirmations exceed pegin confirmations
+
+
+```solidity
+error RejectPeginConfirmationsExceedsPegin(uint8 rejectPeginConfirmations, uint8 peginConfirmations);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`rejectPeginConfirmations`|`uint8`|The requested reject pegin confirmations|
+|`peginConfirmations`|`uint8`|The stream's pegin confirmations (reject must be <= this)|
+
+### PeginConfirmationsLowerThanRejectPegin
+Thrown when pegin confirmations are set lower than reject pegin confirmations
+
+
+```solidity
+error PeginConfirmationsLowerThanRejectPegin(uint8 peginConfirmations, uint8 rejectPeginConfirmations);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`peginConfirmations`|`uint8`|The requested pegin confirmations|
+|`rejectPeginConfirmations`|`uint8`|The stream's reject pegin confirmations (pegin must be >= this)|
 
 ### InvalidPegoutConfirmations
 Thrown when peg-out confirmations are invalid

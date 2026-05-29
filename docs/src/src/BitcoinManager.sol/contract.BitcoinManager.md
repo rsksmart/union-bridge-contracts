@@ -1,5 +1,5 @@
 # BitcoinManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/aa0c5b500b0a03f68164877ee0ab01eebfbdfa68/src/BitcoinManager.sol)
+[Git Source](https://github.com/rsksmart/union-bridge-contracts/blob/cf5421e1f47ca597147a56a1404f8189f6c70b20/src/BitcoinManager.sol)
 
 **Inherits:**
 [IBitcoinManager](/src/interfaces/IBitcoinManager.sol/interface.IBitcoinManager.md), [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md)
@@ -87,7 +87,7 @@ function getTemporaryPeginAddress(
     address _rskDestinationAddress,
     uint64 _value,
     bytes32 _btcReimbursementPubKey,
-    bytes memory _committeePubKey
+    bytes memory _committeeTakePubKey
 ) external view returns (string memory temporaryPeginAddress);
 ```
 **Parameters**
@@ -98,7 +98,7 @@ function getTemporaryPeginAddress(
 |`_rskDestinationAddress`|`address`|The RSK address that will receive the RBTC|
 |`_value`|`uint64`|The amount in satoshis to peg in (must match stream denomination)|
 |`_btcReimbursementPubKey`|`bytes32`|The user's Bitcoin public key (x-coordinate only, 32 bytes)|
-|`_committeePubKey`|`bytes`|The committee's public key|
+|`_committeeTakePubKey`|`bytes`|The committee's take aggregated public key|
 
 **Returns**
 
@@ -118,7 +118,7 @@ function _getRequestPeginTweakedPublicKey(
     address _rskDestinationAddress,
     uint64 _value,
     bytes32 _btcReimbursementPubKey,
-    bytes memory _committeePubKey
+    bytes memory _committeeTakePubKey
 ) internal pure returns (bytes32);
 ```
 
@@ -131,7 +131,7 @@ function _getRequestPeginTweakedPublicKey(
 function _validateRequestPeginInputs(
     uint32 _timelockBlocks,
     bytes32 _btcReimbursementPubKey,
-    bytes memory _committeePubKey,
+    bytes memory _committeeTakePubKey,
     address _rskDestinationAddress,
     uint64 _value
 ) internal pure;
@@ -175,7 +175,7 @@ function validateRequestPeginP2TROutput(
     address _rskDestinationAddress,
     uint64 _streamDenomination,
     bytes32 _btcReimbursementPubKey,
-    bytes memory _committeePubKey,
+    bytes memory _committeeTakePubKey,
     BtcTxOut calldata _p2trOut
 ) external pure;
 ```
@@ -187,7 +187,7 @@ function validateRequestPeginP2TROutput(
 |`_rskDestinationAddress`|`address`|The RSK address that should receive the RBTC|
 |`_streamDenomination`|`uint64`|The expected amount in satoshis|
 |`_btcReimbursementPubKey`|`bytes32`|The user's Bitcoin public key (x-coordinate only)|
-|`_committeePubKey`|`bytes`|The committee's public key|
+|`_committeeTakePubKey`|`bytes`|The committee's take aggregated public key|
 |`_p2trOut`|`BtcTxOut`|The Bitcoin transaction output to validate|
 
 
@@ -222,7 +222,7 @@ function _getRequestPeginP2TRScriptPub(
     address _rskDestinationAddress,
     uint64 _value,
     bytes32 _btcReimbursementPubKey,
-    bytes memory _committeePubKey
+    bytes memory _committeeTakePubKey
 ) internal pure returns (bytes memory);
 ```
 **Parameters**
@@ -233,7 +233,7 @@ function _getRequestPeginP2TRScriptPub(
 |`_rskDestinationAddress`|`address`|The RSK address that will receive the RBTC|
 |`_value`|`uint64`|The amount in satoshis for the peg-in request|
 |`_btcReimbursementPubKey`|`bytes32`|The user's Bitcoin public key for reimbursement (x-only)|
-|`_committeePubKey`|`bytes`|The committee's public key for the Taproot address (x-only)|
+|`_committeeTakePubKey`|`bytes`|The committee's take public key for the Taproot address (x-only)|
 
 **Returns**
 
@@ -275,14 +275,16 @@ Validates that a peg-out transaction output is a P2WPKH paying the committee mem
 
 
 ```solidity
-function validatePegoutMemberOutput(BtcTxOut calldata _pegoutOutput, bytes32 _memberPubKey) external pure;
+function validatePegoutMemberOutput(BtcTxOut calldata _pegoutOutput, CompactPubKey calldata _memberPubKey)
+    external
+    pure;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
 |`_pegoutOutput`|`BtcTxOut`|The Bitcoin transaction output to validate|
-|`_memberPubKey`|`bytes32`|The committee member's public key that should receive the funds|
+|`_memberPubKey`|`CompactPubKey`|The committee member's public key that should receive the funds|
 
 
 ### validatePegoutIdOutput
@@ -312,22 +314,22 @@ Calculates the signature hash for Bitcoin accept peg-in transactions
 
 ```solidity
 function getAcceptPeginSignatureHash(
-    bytes memory _committeePubKey,
+    bytes memory _committeeTakePubKey,
     bytes32 _userXOnlyPubKey,
     bytes32 _registerPeginTx,
     PrevoutData[] memory _prevoutDatas,
-    bytes32[] memory _disputeKeys
+    CompactPubKey[] memory _disputeKeys
 ) external pure returns (BitcoinSignatureData memory);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_committeePubKey`|`bytes`|The committee's public key (x-coordinate only)|
+|`_committeeTakePubKey`|`bytes`|The committee's take aggregated public key (x-coordinate only)|
 |`_userXOnlyPubKey`|`bytes32`|The user's public key (x-coordinate only, 32 bytes)|
 |`_registerPeginTx`|`bytes32`|The transaction id of the peg-in request being spent|
 |`_prevoutDatas`|`PrevoutData[]`|Array of prevout data for all inputs being spent (taptree + enabler outputs)|
-|`_disputeKeys`|`bytes32[]`|The dispute keys (covenant public keys) for all members|
+|`_disputeKeys`|`CompactPubKey[]`|The dispute keys for all members|
 
 **Returns**
 
@@ -336,13 +338,13 @@ function getAcceptPeginSignatureHash(
 |`<none>`|`BitcoinSignatureData`|BitcoinSignatureData containing txid, signatureHash, and signatureMessage|
 
 
-### _getAcceptPeginTweakedPublicKey
+### _getKeySpendTweakedPublicKey
 
 *Generates the Accept Pegin Taproot output script pub key with both key spend and script spend paths*
 
 
 ```solidity
-function _getAcceptPeginTweakedPublicKey(bytes memory _committeePubKey) internal pure returns (bytes32);
+function _getKeySpendTweakedPublicKey(bytes memory _committeePubKey) internal pure returns (bytes32);
 ```
 
 ### _getVerifyKeyScript
@@ -386,7 +388,7 @@ function _buildMerkleTreeFromLeaves(bytes32[] memory _leaves) internal pure retu
 
 
 ```solidity
-function _getEnablerOutputTweakedPublicKey(bytes memory _committeePubKey, bytes32[] memory _disputeKeys)
+function _getEnablerOutputTweakedPublicKey(bytes memory _committeeTakePubKey, bytes32[] memory _disputeKeys)
     internal
     pure
     returns (bytes32);
@@ -400,7 +402,7 @@ Generates the enabler output P2TR script pub key
 
 
 ```solidity
-function getEnablerOutputP2TRScriptPub(bytes memory _committeePubKey, bytes32[] memory _disputeKeys)
+function getEnablerOutputP2TRScriptPub(bytes memory _committeeTakePubKey, CompactPubKey[] memory _disputeKeys)
     public
     pure
     returns (bytes memory);
@@ -409,8 +411,8 @@ function getEnablerOutputP2TRScriptPub(bytes memory _committeePubKey, bytes32[] 
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_committeePubKey`|`bytes`|The committee's aggregated public key (33 bytes compressed)|
-|`_disputeKeys`|`bytes32[]`|Array of dispute keys for committee members (x-only, 32 bytes each)|
+|`_committeeTakePubKey`|`bytes`|The committee's take aggregated public key (33 bytes compressed)|
+|`_disputeKeys`|`CompactPubKey[]`|Array of dispute keys for committee members (parity byte + x-only 32 bytes)|
 
 **Returns**
 
@@ -419,13 +421,13 @@ function getEnablerOutputP2TRScriptPub(bytes memory _committeePubKey, bytes32[] 
 |`<none>`|`bytes`|The P2TR script pub key bytes|
 
 
-### _getAcceptPeginP2TRScriptPub
+### _getP2TRKeySpendScriptPub
 
 Generates the Accept Pegin Taproot output script pub key with both key spend and script spend paths
 
 
 ```solidity
-function _getAcceptPeginP2TRScriptPub(bytes memory _committeePubKey) internal pure returns (bytes memory);
+function _getP2TRKeySpendScriptPub(bytes memory _committeePubKey) internal pure returns (bytes memory);
 ```
 **Parameters**
 
@@ -472,7 +474,7 @@ function getSpeedUpScriptPub(bytes32 _pubKey) public pure returns (bytes memory)
 
 |Name|Type|Description|
 |----|----|-----------|
-|`_pubKey`|`bytes32`|The user's public key (x-coordinate only, 32 bytes)|
+|`_pubKey`|`bytes32`|The user's x-only public key (32 bytes, from OP_RETURN)|
 
 **Returns**
 

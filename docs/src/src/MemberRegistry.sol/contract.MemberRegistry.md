@@ -1,5 +1,5 @@
 # MemberRegistry
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/aa0c5b500b0a03f68164877ee0ab01eebfbdfa68/src/MemberRegistry.sol)
+[Git Source](https://github.com/rsksmart/union-bridge-contracts/blob/cf5421e1f47ca597147a56a1404f8189f6c70b20/src/MemberRegistry.sol)
 
 **Inherits:**
 [IMemberRegistry](/src/interfaces/IMemberRegistry.sol/interface.IMemberRegistry.md), [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md), ReentrancyGuardUpgradeable, [Pausable](/src/Pausable.sol/abstract.Pausable.md)
@@ -288,6 +288,17 @@ function _validateECDSAKey(ECDSAPublicKey calldata _key, PublicKeyType _type) in
 function _validateRSAKey(RSAPublicKey calldata _key, PublicKeyType _type) internal pure;
 ```
 
+### _validateCompactPubKeyMatch
+
+
+```solidity
+function _validateCompactPubKeyMatch(
+    CompactPubKey storage _stored,
+    ECDSAPublicKey calldata _submitted,
+    PublicKeyType _keyType
+) internal view;
+```
+
 ### _validateMemberKeyMatch
 
 
@@ -310,7 +321,7 @@ Gets the TAKE public key for a specific member
 
 
 ```solidity
-function getMemberTakePubKey(address _address) external view override returns (bytes32);
+function getMemberTakePubKey(address _address) external view override returns (CompactPubKey memory);
 ```
 **Parameters**
 
@@ -322,7 +333,7 @@ function getMemberTakePubKey(address _address) external view override returns (b
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`bytes32`|The TAKE public key (x-coordinate only)|
+|`<none>`|`CompactPubKey`|The TAKE public key in compact form (parity byte + x-coordinate)|
 
 
 ### getMemberComPubKey
@@ -344,6 +355,27 @@ function getMemberComPubKey(address _address) external view override returns (RS
 |Name|Type|Description|
 |----|----|-----------|
 |`<none>`|`RSAPublicKey`|The COMMUNICATION public key (RSA struct)|
+
+
+### getMemberDisputePubKey
+
+Retrieves the DISPUTE public key for a specific member
+
+
+```solidity
+function getMemberDisputePubKey(address _address) external view override returns (CompactPubKey memory);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_address`|`address`|The member's address|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`CompactPubKey`|The DISPUTE public key in compact form (parity byte + x-coordinate)|
 
 
 ### getMemberPublicKeys

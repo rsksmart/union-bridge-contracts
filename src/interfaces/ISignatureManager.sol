@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 /// @notice Represents signature data for a committee member
@@ -80,18 +80,12 @@ interface ISignatureManager {
     /// @dev Returns signatures in the same order as committee members for Musig2 compatibility
     /// @param _txid The hash to get signatures for
     /// @return partialSignaturesData Array of signature data for all committee members
-    /// @return missingSignatures Number of missing signatures
     /// @return missingNonces Number of missing nonces
     /// @return committeeId The committee ID for this signature collection
     function getPartialSignatures(bytes32 _txid)
         external
         view
-        returns (
-            SignatureData[] memory partialSignaturesData,
-            uint8 missingSignatures,
-            uint8 missingNonces,
-            uint128 committeeId
-        );
+        returns (SignatureData[] memory partialSignaturesData, uint8 missingNonces, uint128 committeeId);
 
     /// @notice Initializes OperatorTake transaction id collection for a given accept peg-in transaction
     /// @dev Sets up the OperatorTake txid tracking structure for committee members
@@ -111,6 +105,11 @@ interface ISignatureManager {
     /// @param _acceptPeginTxid The accept peg-in transaction id to check
     /// @return true if all OperatorTake transaction id's are present, false otherwise
     function checkAllOperatorTakesHashesReady(bytes32 _acceptPeginTxid) external view returns (bool);
+
+    /// @notice Gets the number of missing OperatorTake transaction id's for a given accept peg-in transaction
+    /// @param _acceptPeginTxid The accept peg-in transaction id
+    /// @return The number of missing OperatorTake transaction id's
+    function getMissingOperatorTakeHashes(bytes32 _acceptPeginTxid) external view returns (uint8);
 
     /// @notice Gets all OperatorTake transaction data for a given accept peg-in transaction
     /// @param _acceptPeginTxid The accept peg-in transaction id
@@ -148,7 +147,9 @@ interface ISignatureManager {
     /// @param memberAddress The member's address
     /// @param takeTxid The OperatorTake transaction id provided by the member
     /// @param wonTxid The OperatorWon transaction id provided by the member
-    event OperatorTakeTxidsAdded(bytes32 acceptPeginTxid, address memberAddress, bytes32 takeTxid, bytes32 wonTxid);
+    event OperatorTakeTxidsAdded(
+        bytes32 indexed acceptPeginTxid, address indexed memberAddress, bytes32 takeTxid, bytes32 wonTxid
+    );
 
     /// @notice Event emitted when all OperatorTake and OperatorWon transaction id's are added
     /// @param acceptPeginTxid The accept peg-in transaction id

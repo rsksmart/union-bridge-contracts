@@ -41,6 +41,7 @@ RSK_DESTINATION_ADDRESS="0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
 REQUEST_PEGIN_TXID="0x37a0578cd5b418b612c5beb213d5c79cd4655a89f981ff59ba870bccf3f255e4"
 ACCEPT_PEGIN_TXID="0x1d1bf3a772f2a82c057f926d94c1c14c5c0294a9070ee28bf5d9bc35d8e1ebd6"
 PEGOUT_TXID="0x80610c3c5a84b534cd9ebf2cc72c412dc4b40427ccb082f35a5083c65c9baccc"
+REIMBURSEMENT_KICKOFF_TXID="0x0cbb7bd4fc45ea88604e0ecc463b942b0a2ea7497929d280d04a3066c91232d1"
 MNEMONIC_INDEX=0
 NONCE="0xf8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0f8c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a00000"
 # Current Timestamp plus 3 hours
@@ -86,8 +87,14 @@ echo "================ ADVANCE $RPC TIME TO $TIMESTAMP ================"
 cast rpc evm_setNextBlockTimestamp $TIMESTAMP --rpc-url $RPC
 cast rpc evm_mine --rpc-url $RPC
 # Start the operator take flow (advance funds and reimbursement kickoff)
-bash "$SCRIPT_DIR/operator-take/trigger-operator-take.sh" -h "$PEGOUT_TXID" $ALPHANET_FLAG
+bash "$SCRIPT_DIR/operator-take/trigger-operator-take.sh" -a "$ACCEPT_PEGIN_TXID" $ALPHANET_FLAG
+# Register cancel user take
+bash "$SCRIPT_DIR/operator-take/register-cancel-user-take.sh" -a "$ACCEPT_PEGIN_TXID" $ALPHANET_FLAG
+# Register advance funds
+bash "$SCRIPT_DIR/operator-take/register-advance-funds.sh" -a "$ACCEPT_PEGIN_TXID" $ALPHANET_FLAG
+# Register reimbursement kickoff
+bash "$SCRIPT_DIR/operator-take/register-reimbursement-kickoff.sh" -a "$ACCEPT_PEGIN_TXID" $ALPHANET_FLAG
 # Register operator take
-bash "$SCRIPT_DIR/operator-take/register-operator-take.sh" -a "$ACCEPT_PEGIN_TXID" $ALPHANET_FLAG
+bash "$SCRIPT_DIR/operator-take/register-operator-take.sh" -a "$ACCEPT_PEGIN_TXID" -r "$REIMBURSEMENT_KICKOFF_TXID" $ALPHANET_FLAG
 
 echo "================ OPERATOR TAKE FLOW COMPLETE ================"

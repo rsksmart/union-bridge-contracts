@@ -1,5 +1,5 @@
 # CommitteeRegistry
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/aa0c5b500b0a03f68164877ee0ab01eebfbdfa68/src/CommitteeRegistry.sol)
+[Git Source](https://github.com/rsksmart/union-bridge-contracts/blob/cf5421e1f47ca597147a56a1404f8189f6c70b20/src/CommitteeRegistry.sol)
 
 **Inherits:**
 [ICommitteeRegistry](/src/interfaces/ICommitteeRegistry.sol/interface.ICommitteeRegistry.md), [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md), ReentrancyGuardUpgradeable, [Pausable](/src/Pausable.sol/abstract.Pausable.md)
@@ -386,6 +386,55 @@ function getCommittee(uint128 _committeeId) external view returns (Committee mem
 |`<none>`|`Committee`|Committee The complete committee information|
 
 
+### _getCommitteeId
+
+
+```solidity
+function _getCommitteeId(uint64 _streamId, uint64 _nonce) internal pure returns (uint128);
+```
+
+### getCommitteeTakePubKey
+
+Retrieves the committee take aggregated public key for a specific packet
+
+
+```solidity
+function getCommitteeTakePubKey(uint128 _committeeId) external view returns (bytes memory);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_committeeId`|`uint128`|The committee ID|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`bytes`|bytes The committee take aggregated public key for this packet (33 bytes compressed format)|
+
+
+### getCommitteeDisputePubKey
+
+Retrieves the committee dispute aggregated public key for a specific packet
+
+
+```solidity
+function getCommitteeDisputePubKey(uint128 _committeeId) external view returns (bytes memory);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_committeeId`|`uint128`|The committee ID|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`bytes`|bytes The committee dispute aggregated public key for this packet (33 bytes compressed format)|
+
+
 ### _getCommittee
 
 
@@ -412,6 +461,27 @@ function getCommitteeMembers(uint128 _committeeId) external view returns (Commit
 |Name|Type|Description|
 |----|----|-----------|
 |`<none>`|`CommitteeMember[]`|Array of committee members with their roles|
+
+
+### getCommitteeMembersLength
+
+Gets the number of members in a specific committee
+
+
+```solidity
+function getCommitteeMembersLength(uint128 _committeeId) external view returns (uint256);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_committeeId`|`uint128`|The committee ID|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`uint256`|The number of committee members (e.g. for validating input-not-revealed tx output count)|
 
 
 ### _getCommitteeMembers
@@ -483,20 +553,23 @@ function _createCommitteeIfPending(uint64 _streamId) internal returns (bool);
 function _createCommittee(uint64 _streamId) internal returns (PendingCommitteeStatus);
 ```
 
-### _isInCommitteeOrRevert
+### _getMemberCommitteeData
 
 
 ```solidity
-function _isInCommitteeOrRevert(uint128 _committeeId, address _memberAddress) internal view;
+function _getMemberCommitteeData(uint128 _committeeId, address _memberAddress)
+    internal
+    view
+    returns (PendingCommitteeData storage memberCommitteeData);
 ```
 
-### isMemberInCommittee
+### validateMemberInCommittee
 
-Checks if a member is part of a specific committee
+Validates that a member is part of a specific committee; reverts if not
 
 
 ```solidity
-function isMemberInCommittee(uint128 _committeeId, address _memberAddress) external view returns (bool);
+function validateMemberInCommittee(uint128 _committeeId, address _memberAddress) external view;
 ```
 **Parameters**
 
@@ -506,23 +579,46 @@ function isMemberInCommittee(uint128 _committeeId, address _memberAddress) exter
 |`_memberAddress`|`address`|The address of the member to check|
 
 
-### depositAggregatedKey
+### depositAggregatedKeys
 
-Allows a member to deposit information  formation
+Allows a member to deposit their aggregated keys for committee formation
 
-*Called by members to provide their aggregated key for a pending committee*
+*Called by members to provide their take and dispute aggregated keys for a pending committee*
 
 
 ```solidity
-function depositAggregatedKey(uint128 _committeeId, bytes memory _aggregatedKey) external whenNotPaused;
+function depositAggregatedKeys(
+    uint128 _committeeId,
+    bytes memory _takeAggregatedKey,
+    bytes memory _disputeAggregatedKey
+) external whenNotPaused;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
 |`_committeeId`|`uint128`|The ID of the pending committee|
-|`_aggregatedKey`|`bytes`|The aggregated public key provided by the member (must be exactly 33 bytes)|
+|`_takeAggregatedKey`|`bytes`|The take aggregated public key provided by the member (must be exactly 33 bytes)|
+|`_disputeAggregatedKey`|`bytes`|The dispute aggregated public key provided by the member (must be exactly 33 bytes)|
 
+
+### _validateAggregatedKey
+
+
+```solidity
+function _validateAggregatedKey(bytes memory _aggregatedKey) internal pure;
+```
+
+### _setMemberCommitteeData
+
+
+```solidity
+function _setMemberCommitteeData(
+    PendingCommitteeData storage memberCommitteeData,
+    bytes memory _takeAggregatedKey,
+    bytes memory _disputeAggregatedKey
+) internal;
+```
 
 ### depositCommunicationData
 
@@ -705,7 +801,7 @@ Gets the operator dispute data (address and dispute public key) for operator-tak
 ```solidity
 function selectTakeOperator(uint128 _committeeId, SignatureData[] calldata _signatureData, uint8 _missingNonces)
     external
-    returns (address operatorAddress, bytes32 disputePubKey, bytes32 takePubKey);
+    returns (address operatorAddress, CompactPubKey memory disputePubKey, CompactPubKey memory takePubKey);
 ```
 **Parameters**
 
@@ -720,8 +816,8 @@ function selectTakeOperator(uint128 _committeeId, SignatureData[] calldata _sign
 |Name|Type|Description|
 |----|----|-----------|
 |`operatorAddress`|`address`|The address of the next available operator for take operations|
-|`disputePubKey`|`bytes32`|The operator's dispute public key|
-|`takePubKey`|`bytes32`|The operator's take public key|
+|`disputePubKey`|`CompactPubKey`|The operator's dispute public key|
+|`takePubKey`|`CompactPubKey`|The operator's take public key|
 
 
 ### onlyWhitelister
@@ -841,6 +937,24 @@ function setCommitteeMemberCount(uint256 _committeeMemberCount) external onlyOwn
 |`_committeeMemberCount`|`uint256`|The exact number of members required for a committee|
 
 
+### demoteOperatorToWatchtower
+
+Demotes an operator to watchtower in a specific active committee
+
+*Only callable by the contract owner*
+
+
+```solidity
+function demoteOperatorToWatchtower(uint128 _committeeId, address _memberAddress) external onlyOwner;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_committeeId`|`uint128`|The ID of the active committee|
+|`_memberAddress`|`address`|The address of the operator to demote|
+
+
 ### releaseCommittee
 
 Releases committee members from a packet and handles their staked balance
@@ -861,11 +975,11 @@ function releaseCommittee(uint64 _streamId, uint64 _packetNumber) external;
 
 ### getCommitteeDisputeKeys
 
-Gets the dispute keys (covenant public keys) for all committee members
+Gets the dispute keys for all committee members
 
 
 ```solidity
-function getCommitteeDisputeKeys(uint128 _committeeId) external view returns (bytes32[] memory);
+function getCommitteeDisputeKeys(uint128 _committeeId) external view returns (CompactPubKey[] memory);
 ```
 **Parameters**
 
@@ -877,14 +991,14 @@ function getCommitteeDisputeKeys(uint128 _committeeId) external view returns (by
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`bytes32[]`|Array of dispute keys for all members|
+|`<none>`|`CompactPubKey[]`|Array of dispute keys for all members|
 
 
 ### _getCommitteeDisputeKeys
 
 
 ```solidity
-function _getCommitteeDisputeKeys(uint128 _committeeId) internal view returns (bytes32[] memory);
+function _getCommitteeDisputeKeys(uint128 _committeeId) internal view returns (CompactPubKey[] memory);
 ```
 
 ### forceDiscardPendingCommittee_TESTNET

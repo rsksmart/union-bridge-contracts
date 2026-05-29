@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 import {console} from "forge-std/console.sol";
@@ -6,7 +6,7 @@ import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
 import {PegoutManager} from "src/PegoutManager.sol";
 import {ISignatureManager, OperatorTakeData} from "src/interfaces/ISignatureManager.sol";
-import {IStreamManager, Packet} from "src/interfaces/IStreamManager.sol";
+import {IStreamManager} from "src/interfaces/IStreamManager.sol";
 import {BtcTransaction} from "src/interfaces/IBitcoinManager.sol";
 import {BtcHelper} from "src/libraries/BtcHelper.sol";
 import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
@@ -21,7 +21,8 @@ contract addOperatorTakeTxidsScript is ScriptUtils, ContractAddressManager {
     uint64 amount;
 
     bytes operatorPubKey;
-    bytes committeePubKey;
+    bytes committeeTakePubKey;
+    bytes committeeDisputePubKey;
 
     IStreamManager streamManager;
     uint64 expectedStreamId;
@@ -32,12 +33,10 @@ contract addOperatorTakeTxidsScript is ScriptUtils, ContractAddressManager {
         pegoutManager = PegoutManager(getPegoutManager());
         signatureManager = ISignatureManager(pegoutManager.signatureManager());
 
-        ICommitteeRegistry registry = getCommitteeRegistry();
-        IMemberRegistry memberRegistry = registry.memberRegistry();
+        ICommitteeRegistry committeeRegistry = getCommitteeRegistry();
+        IMemberRegistry memberRegistry = committeeRegistry.memberRegistry();
 
-        bytes32 operatorXOnlyPubKey = memberRegistry.getMemberPublicKeys(getDeployerAddress()).covenantPubKey;
-
-        operatorPubKey = BtcHelper.pubKeyXonlyToCompact(operatorXOnlyPubKey);
+        operatorPubKey = BtcHelper.compactPubKeyToBytes(memberRegistry.getMemberDisputePubKey(getDeployerAddress()));
         amount = 100_000; // 0.001 BTC
 
         // Calculate expected slot and packet numbers
@@ -47,8 +46,9 @@ contract addOperatorTakeTxidsScript is ScriptUtils, ContractAddressManager {
         expectedPacketNumber = streamPosition.packetNumber;
         expectedSlotId = streamPosition.slotId;
 
-        Packet memory packet = streamManager.getPacket(expectedStreamId, expectedPacketNumber);
-        committeePubKey = packet.committeePubKey;
+        uint128 committeeId = streamManager.getCommitteeId(expectedStreamId, expectedPacketNumber);
+        committeeTakePubKey = committeeRegistry.getCommitteeTakePubKey(committeeId);
+        committeeDisputePubKey = committeeRegistry.getCommitteeDisputePubKey(committeeId);
 
         // Read args from command line / env
         if (_acceptPeginTxid == bytes32(0)) {
@@ -67,7 +67,7 @@ contract addOperatorTakeTxidsScript is ScriptUtils, ContractAddressManager {
         setUp(_mnemonicIndex, _acceptPeginTxid);
 
         // REIMBURSEMENT KICKOFF
-        BtcTransaction memory kickoffTx = createReimbursementKickoffTx(committeePubKey, expectedSlotId);
+        BtcTransaction memory kickoffTx = createReimbursementKickoffTx(committeeTakePubKey, expectedSlotId);
         bytes32 reimbursementKickoffTxid = getTxid(kickoffTx);
 
         // OPERATOR TAKE
@@ -76,11 +76,12 @@ contract addOperatorTakeTxidsScript is ScriptUtils, ContractAddressManager {
         bytes32 takeTxid = getTxid(takeTx);
 
         // CHALLENGE
-        BtcTransaction memory challengeTx = createChallengeTx(reimbursementKickoffTxid, committeePubKey);
+        BtcTransaction memory challengeTx = createChallengeTx(reimbursementKickoffTxid, committeeDisputePubKey);
         bytes32 challengeTxid = getTxid(challengeTx);
 
         // INPUT REVEALED
-        BtcTransaction memory inputRevealedTx = createRevealTx(challengeTxid, committeePubKey);
+        BtcTransaction memory inputRevealedTx =
+            createInputRevealedTx(challengeTxid, committeeDisputePubKey, operatorPubKey);
         bytes32 inputRevealedTxid = getTxid(inputRevealedTx);
 
         // OPERATOR WON

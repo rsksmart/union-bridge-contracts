@@ -1,5 +1,5 @@
 # SignatureManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/aa0c5b500b0a03f68164877ee0ab01eebfbdfa68/src/SignatureManager.sol)
+[Git Source](https://github.com/rsksmart/union-bridge-contracts/blob/cf5421e1f47ca597147a56a1404f8189f6c70b20/src/SignatureManager.sol)
 
 **Inherits:**
 [ISignatureManager](/src/interfaces/ISignatureManager.sol/interface.ISignatureManager.md), [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md)
@@ -166,12 +166,7 @@ Gets all partial signatures for a given hash
 function getPartialSignatures(bytes32 _txid)
     external
     view
-    returns (
-        SignatureData[] memory partialSignaturesData,
-        uint8 missingSignatures,
-        uint8 missingNonces,
-        uint128 committeeId
-    );
+    returns (SignatureData[] memory partialSignaturesData, uint8 missingNonces, uint128 committeeId);
 ```
 **Parameters**
 
@@ -184,7 +179,6 @@ function getPartialSignatures(bytes32 _txid)
 |Name|Type|Description|
 |----|----|-----------|
 |`partialSignaturesData`|`SignatureData[]`|Array of signature data for all committee members|
-|`missingSignatures`|`uint8`|Number of missing signatures|
 |`missingNonces`|`uint8`|Number of missing nonces|
 |`committeeId`|`uint128`|The committee ID for this signature collection|
 
@@ -277,6 +271,27 @@ function checkAllOperatorTakesHashesReady(bytes32 _acceptPeginTxid) external vie
 |Name|Type|Description|
 |----|----|-----------|
 |`<none>`|`bool`|true if all OperatorTake transaction id's are present, false otherwise|
+
+
+### getMissingOperatorTakeHashes
+
+Gets the number of missing OperatorTake transaction id's for a given accept peg-in transaction
+
+
+```solidity
+function getMissingOperatorTakeHashes(bytes32 _acceptPeginTxid) external view returns (uint8);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_acceptPeginTxid`|`bytes32`|The accept peg-in transaction id|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`uint8`|The number of missing OperatorTake transaction id's|
 
 
 ### getOperatorTakeData

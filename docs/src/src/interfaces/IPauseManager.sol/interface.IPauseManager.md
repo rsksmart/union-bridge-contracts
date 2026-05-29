@@ -1,5 +1,5 @@
 # IPauseManager
-[Git Source](https://github.com/temp-rsk/bitvmx-union-bridge-contracts/blob/aa0c5b500b0a03f68164877ee0ab01eebfbdfa68/src/interfaces/IPauseManager.sol)
+[Git Source](https://github.com/rsksmart/union-bridge-contracts/blob/cf5421e1f47ca597147a56a1404f8189f6c70b20/src/interfaces/IPauseManager.sol)
 
 Interface for the centralized pause manager contract
 
@@ -99,7 +99,7 @@ function setPegoutManager(address _pegoutManager) external;
 
 ### setChallengeManager
 
-Sets the Pegout Manager contract address
+Sets the Challenge Manager contract address
 
 *Only callable by the contract owner*
 
@@ -112,6 +112,23 @@ function setChallengeManager(address _challengeManager) external;
 |Name|Type|Description|
 |----|----|-----------|
 |`_challengeManager`|`address`|The address of the Challenge Manager contract|
+
+
+### setOperatorTakeManager
+
+Sets the OperatorTakeManager contract address
+
+*Only callable by the contract owner*
+
+
+```solidity
+function setOperatorTakeManager(address _operatorTakeManager) external;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_operatorTakeManager`|`address`|The address of the OperatorTakeManager contract|
 
 
 ### setMemberRegistry
@@ -154,7 +171,7 @@ Emitted when a pausable contract address is updated
 
 
 ```solidity
-event PausableContractUpdated(string contractName, address newAddress);
+event PausableContractUpdated(string contractName, address indexed newAddress);
 ```
 
 **Parameters**
