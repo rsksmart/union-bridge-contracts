@@ -15,7 +15,7 @@ The core architecture includes:
 
 ## Tech stack and tooling
 
-- Solidity: follow the repository foundry.toml; currently solc_version = "0.8.33" and evm_version = "london".
+- Solidity: follow the repository foundry.toml for the current solc_version and evm_version settings.
 - Use Foundry conventions for contracts, tests, scripts, fixtures, and deployment code.
 - Do not introduce Hardhat, Truffle, or unrelated frameworks.
 - Use existing remappings, OpenZeppelin upgrade libraries, and repository scripts.
