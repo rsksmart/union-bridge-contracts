@@ -8,7 +8,7 @@ The core architecture includes:
 - RbtcBridge as the single intermediary contract authorized by the Rootstock PowPeg Bridge for RBTC minting and burning.
 - PeginManager for Bitcoin to Rootstock peg-in acceptance.
 - PegoutManager for Rootstock to Bitcoin peg-out requests.
-- Access control through OpenZeppelin AccessManager.
+- Access control through the project's AccessManager (see src/AccessManager.sol).
 - UUPS upgradeable contracts and proxy deployments.
 - Interaction with the Rootstock precompiled bridge at 0x0000000000000000000000000000000001000006.
 - Local testing through BridgeMock.
