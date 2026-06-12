@@ -111,7 +111,7 @@ jobs:
         run: bash coverage.sh
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@5a10622dd0a038e05edd7abcd6c7fd4f71026927 # v5.6.0
+        uses: codecov/codecov-action@0fb7174895f61a3b6b78fc075e0cd60383518dac # v5.5.5
         with:
           token: ${{ env.CC_TOKEN }}
           files: lcov.info
