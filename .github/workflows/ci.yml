@@ -138,8 +138,14 @@ jobs:
       - name: Install Open Zeppelin Upgrades Core
         run: npm install -g @openzeppelin/upgrades-core@1.44.2
 
+      - name: Clean build for OpenZeppelin upgrades validation
+        run: bash shell/clean-build.sh
+
       - name: Check gas snapshot
         run: bash shell/gas-snapshot.sh --check
+
+      - name: Clean build before tests
+        run: bash shell/clean-build.sh
 
       - name: Run tests
         # we run all tests in CI while in local we run only the tests that are relevant
