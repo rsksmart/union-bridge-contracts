@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"
+
 echo "================ UPDATE GAS SNAPSHOT ================"
 
 # Exclude heavy / environment-sensitive tests (full in-test deploys, gas benchmarks, script tests).
 EXCLUDES=(
-    --no-match-path "test/{CommitteeMemberIterationGas,scripts/*,BitVMXCompatibility,deploy/*}.t.sol"
+    --no-match-contract "(CommitteeMemberIterationGas|BitVMXCompatibility|DeployImplAndProxy|ForceCloseCommittee)"
     --no-match-test "GasConsumption"
 )
 

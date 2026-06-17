@@ -102,13 +102,34 @@ DIGEST_A="$(mktemp)"
 DIGEST_B="$(mktemp)"
 trap 'rm -rf "$ALT_ROOT" "$DIGEST_A" "$DIGEST_B"' EXIT
 
-echo "Replicating working tree to ${ALT_ROOT} (excluding build dirs)..." >&2
-tar -c -C "$ROOT" \
-    --exclude='./'"$OUT_DIR" \
-    --exclude='./cache' \
-    --exclude='./broadcast' \
-    --exclude='./.git' \
-    . | tar -x -C "$ALT_ROOT"
+# Paths that do not affect forge compilation; skip them to keep replication fast.
+COPY_EXCLUDE=(
+    "$OUT_DIR"
+    cache
+    broadcast
+    .git
+    node_modules
+    .pnpm-store
+    .npm
+    target
+    dist
+    build
+    venv
+    __pycache__
+    .pytest_cache
+    lcov.info
+    dry-run
+    31337
+    .DS_Store
+)
+
+TAR_EXCLUDE_ARGS=()
+for pattern in "${COPY_EXCLUDE[@]}"; do
+    TAR_EXCLUDE_ARGS+=(--exclude="$pattern")
+done
+
+echo "Replicating working tree to ${ALT_ROOT} (excluding build dirs and tool caches)..." >&2
+tar -c -C "$ROOT" "${TAR_EXCLUDE_ARGS[@]}" . | tar -x -C "$ALT_ROOT"
 
 build_in "$ROOT"
 collect_digest "$ROOT" "$DIGEST_A"

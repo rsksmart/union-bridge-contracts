@@ -8,7 +8,7 @@ forge coverage \
     --report summary \
     --no-match-coverage "(script|test)" \
     --no-match-test "GasConsumption" \
-    --no-match-path "test/{CommitteeMemberIterationGas,scripts/*}.t.sol"
+    --no-match-contract "(CommitteeMemberIterationGas|ForceCloseCommittee)"
 
 if [ ! -f lcov.info ]; then
     echo "lcov.info was not generated"
