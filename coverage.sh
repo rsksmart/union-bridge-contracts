@@ -3,6 +3,7 @@ set -eu
 bash shell/clean-build.sh
 # https://getfoundry.sh/forge/reference/forge-coverage.html
 # Align test selection with shell/test.sh and shell/gas-snapshot.sh
+rm -f lcov.info
 forge coverage \
     --report lcov \
     --report summary \
