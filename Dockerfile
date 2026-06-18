@@ -1,9 +1,9 @@
- # Deploy smart contracts
+# Deploy smart contracts
 FROM ghcr.io/foundry-rs/foundry:v1.3.1
 
 # "======= Install Node for OpenZeppelin ======="
 USER root
-ENV NODE_VERSION=22.14.0
+ENV NODE_VERSION=24.14.0
 ENV NVM_DIR=/root/.nvm
 RUN apt-get install -y curl \
     && curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.2/install.sh | bash \
