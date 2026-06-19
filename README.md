@@ -56,8 +56,8 @@ Contributions, feedback, and issue reports are welcome while development is ongo
 ### Pre requisites
 
 - You'll need the [Rust](https://www.rust-lang.org/) compiler and Cargo, Rust's package manager. The easiest way to install both is by using [rustup.rs.](https://rustup.rs/)
-- [Foundry v1.3.0](https://book.getfoundry.sh/getting-started/installation) running `foundryup -i v1.3.0` It's important that is this version, otherwise the Alloy version released for the rust crate can change.
-- [Node.js LTS (22)](https://nodejs.org/en/download)
+- [Foundry v1.3.1](https://book.getfoundry.sh/getting-started/installation) running `foundryup -i v1.3.1` It's important that is this version, otherwise the Alloy version released for the rust crate can change.
+- [Node.js LTS (24)](https://nodejs.org/en/download)
 
 ### Install dependencies
 
