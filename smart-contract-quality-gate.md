@@ -1,17 +1,14 @@
 # Smart Contracts Quality Gate Specification
 
-# Introduction
+## Introduction
 
 The purpose of this document is to introduce a checklist that helps to define quality standards for the smart contract development within the organization. The scope of the document is general, nevertheless it has a section dedicated to the Union Bridge Contracts project specifically as it is the first project that will be evaluated using these guidelines.
 
-# Code Standards
+## Code Standards
 
-<aside>
-❗
-
-All of the listed points should be covered. The ones that are more “flexible” are specified in the same point. E.g. accepting low, info slither warnings.
-
-</aside>
+> **Warning**
+>
+> All of the listed points should be covered. The ones that are more "flexible" are specified in the same point (e.g., accepting low/info Slither warnings).
 
 ## Documentation
 
@@ -21,16 +18,13 @@ All of the listed points should be covered. The ones that are more “flexible�
 
 ## Static analysis
 
-- **Linting**: no errors or warnings are allowed. If a linter rule is disabled either in the configuration or directly in the source code the reason should be documented explicitly. The recommended linter is `solhint`. A formatter is also recommended, specifically `forge fmt`, if the project had truffle/hardhat in the past and therefore is using `prettier` as formatter, that is also acceptable.
-- **Static analysis tools:** `slither` is the recommended tool. The code must pass `slither`’s analysis. High and medium level findings are not allowed. Low and info level are allowed as long they’re closed with the proper justification.
+- **Linting**: no errors or warnings are allowed. If a linter rule is disabled either in the configuration or directly in the source code the reason should be documented explicitly. The recommended linter for this repository is `forge lint` (see `Makefile`). A formatter is also recommended, specifically `forge fmt`; if a project previously used Truffle/Hardhat and therefore uses `prettier` as formatter, that is also acceptable.
+- **Static analysis tools:** `slither` is the recommended tool. The code must pass `slither`’s analysis. High and medium level findings are not allowed. Low and info level are allowed as long as they’re closed with the proper justification.
 - **Compiler warnings**: compiler warnings should be treated as errors. No compiler warnings should be present in the smart contracts source code or the deployer scripts. Compiler warnings are acceptable for the test contracts depending on the case, but they need to be documented in the comments of the test. Any specific compiler warning ignored at project level must be documented.
 
-<aside>
-💡
-
-The reason why `solhint` is recommended instead of `forge lint` is that the latter one has less than a year in production. However, as the tool grows it could easily replace `solhint`, therefore the recommendation is to have both in parallel and drop `solhint` when we consider `forge lint` is ready enough.
-
-</aside>
+> **Note**
+>
+> This repository uses `forge lint` (see `Makefile`). If a project prefers additional/alternative Solidity linting (e.g., `solhint`), it can be run in parallel as long as results are documented and enforced consistently.
 
 ## Compilation
 
@@ -41,7 +35,7 @@ The reason why `solhint` is recommended instead of `forge lint` is that the latt
 
 ## Interfaces
 
-- **Contract interface**: the external functionality of the contract must be entirely declared in a separate file with the interface which is implemented by the respective contract. This interface file must have a comprehensive `natspec` and all the declarations needed to generate a binding for any off chain system.
+- **Contract interface**: the external functionality of the contract must be entirely declared in a separate file with the interface which is implemented by the respective contract. This interface file must have a comprehensive `NatSpec` and all the declarations needed to generate a binding for any off-chain system.
 - **ABI compatibility**: changes in the ABI (generated from the files of the point above) must follow [semantic versioning](https://semver.org/). Any breaking changes must be properly documented along its rationale in the release notes.
 
 ## Testing
@@ -50,12 +44,12 @@ The reason why `solhint` is recommended instead of `forge lint` is that the latt
 - **Coverage**: both the line and branch coverage should be 100%. To enforce this using `codecov` is recommended.
 - **Fuzz tests**: ideally all the functions that are part of the contract interface should be fuzzed. Ideally with at least 10000 `runs`. The usage of `include_storage` and `include_push_bytes` is also recommended.
 - **Invariant tests**: every feature must document and explain separately which invariants it preserves and/or adds in the code being added. It also should be tested via invariant tests. The recommended configuration is 1000 `runs` x 600 `depth`. In this case the usage of `include_storage` and `include_push_bytes` is recommended as well.
-- **Fork tests**: fork testing is mandatory when interacting with any already deployed contracts. When fork testing, a block must be chosen to make the tests deterministic. Updates in the test may include changing the block and adjusting the tests accordingly. When choosing a new block, a recent one should be used. For example, after deploying a new versions tests must be changed to use the newly deployed contracts.
+- **Fork tests**: fork testing is mandatory when interacting with any already deployed contracts. When fork testing, a block must be chosen to make the tests deterministic. Updates in the test may include changing the block and adjusting the tests accordingly. When choosing a new block, a recent one should be used. For example, after deploying a new version, tests must be changed to use the newly deployed contracts.
 
 ## Deployment / Scripts
 
 - **Storage layout:** It needs to be ensured that there are not breaking changes for the storage of already deployed proxies. This can be done via OpenZeppelin upgrades plugin.
-- **Deployment tests**: continuing with the previous point, if an existing proxy is being extended, a test simulating the upgrade and the posterior expected behavior should be provided as well. Fork tests can be useful for this.
+- **Deployment tests**: continuing with the previous point, if an existing proxy is being extended, a test simulating the upgrade and the post-upgrade expected behavior should be provided as well. Fork tests can be useful for this.
 - **Upgradeability tests**: if a new proxy is being added then a test upgrading such proxy should be provided.
 - **Deployment scripts testing**: any deployment scripts provided must also have their own test suite. How does this differ from the previous points? This suite should validate the set up itself. E.g. assigned roles, initialization, etc.
 - **Scripts testing**: testing the scripts that are non-deployment scripts is not mandatory, but if they have any usage beyond being a development utility, then the tests become mandatory.
@@ -92,9 +86,7 @@ The purpose for this section is to list requirements that only apply to the Unio
 - **Pausability**: contracts that mutate bridge-critical state or handle value must remain pausable via `whenNotPaused` and delegate the pauser role to `AccessManager` through `PauseManager`. Adding a new pausable contract requires updating `PauseManager` wiring and the deployment script setters.
 - **Testnet-only entry points**: functions intended for test environments must be guarded with `accessManager.revertIfNotTestnet()`. Their presence and removal must be tracked in release notes.
 
-<aside>
-💡
-
-The Union Bridge Contracts project currently has fork tests pinned at block `6438663`, even though the testing section recommends to do it in mainnet with the latest possible block, this fork test are enough for the current state of the project.
-
-</aside>
+> **Note**
+>
+> The fork-based deployment simulation (`shell/script/deploy/simulate-deploy.sh`) is pinned at block `6438663` for determinism.
+> If the pinned block is updated, adjust any dependent fork-based tests/scripts accordingly.
