@@ -13,12 +13,12 @@ The purpose of this document is to introduce a checklist that helps to define qu
 ## Documentation
 
 - **Release notes**: every release should document specifically which features it implements and point to the RSKIP or document with the feature design it is implementing.
-- **Implementation decisions:** all the implementation decisions not present in the feature design documents or RSKIPs must be explicitly documented including its rationale.
+ - **Implementation decisions:** all implementation decisions not present in the feature design documents or RSKIPs must be explicitly documented, including their rationale.
 - This is not all the content required for the documentation. Some of the points below also define content that must be included in the documentation too.
 
 ## Static analysis
 
-- **Linting**: no errors or warnings are allowed. If a linter rule is disabled either in the configuration or directly in the source code the reason should be documented explicitly. The recommended linter for this repository is `forge lint` (see `Makefile`). A formatter is also recommended, specifically `forge fmt`; if a project previously used Truffle/Hardhat and therefore uses `prettier` as formatter, that is also acceptable.
+- **Linting**: no errors or warnings are allowed. If a linter rule is disabled either in the configuration or directly in the source code the reason should be documented explicitly. The recommended linter for this repository is `forge lint` (see `Makefile`). A formatter is also recommended, specifically `forge fmt`; if a project previously used Truffle/Hardhat and therefore uses `prettier` as formatter, that is also acceptable. Future inclusion of `solhint` is recommended as well.
 - **Static analysis tools:** `slither` is the recommended tool. The code must pass `slither`’s analysis. High and medium level findings are not allowed. Low and info level are allowed as long as they’re closed with the proper justification.
 - **Compiler warnings**: compiler warnings should be treated as errors. No compiler warnings should be present in the smart contracts source code or the deployer scripts. Compiler warnings are acceptable for the test contracts depending on the case, but they need to be documented in the comments of the test. Any specific compiler warning ignored at project level must be documented.
 
@@ -29,14 +29,14 @@ The purpose of this document is to introduce a checklist that helps to define qu
 ## Compilation
 
 - **Compiler version pinning**: both the compiler and EVM versions should be pinned in the `foundry.toml` file in order to reduce ambiguity.
-- **Compiler compatibility:** if the project eventually updates the compiler version, further updates must ensure all the compiler versions that have been supported still valid. Otherwise, this needs to be documented explicitly when updating the compiler version.
+- **Compiler compatibility:** if the project eventually updates the compiler version, further updates must ensure all the compiler versions that have been supported are still valid. Otherwise, this needs to be documented explicitly when updating the compiler version.
 - **Contract size:** to reduce future frictions, upgradeable contracts sizes should remain well below the [EIP-170](https://eips.ethereum.org/EIPS/eip-170) size limit. E.g. 20k so we have a 4k buffer in case urgent changes are needed.
 - **Bytecode determinism**: bytecode should remain deterministic. Independent builds that use the same configurations documented in the release notes should produce the exact same bytecode hash. Ideally, this should be enforced in the pipeline by building and comparing the resulting hash.
 
 ## Interfaces
 
 - **Contract interface**: the external functionality of the contract must be entirely declared in a separate file with the interface which is implemented by the respective contract. This interface file must have a comprehensive `NatSpec` and all the declarations needed to generate a binding for any off-chain system.
-- **ABI compatibility**: changes in the ABI (generated from the files of the point above) must follow [semantic versioning](https://semver.org/). Any breaking changes must be properly documented along its rationale in the release notes.
+- **ABI compatibility**: changes in the ABI (generated from the files of the point above) must follow [semantic versioning](https://semver.org/). Any breaking changes must be properly documented along with their rationale in the release notes.
 
 ## Testing
 
@@ -57,7 +57,7 @@ The purpose of this document is to introduce a checklist that helps to define qu
 ## Gas / Fees analysis
 
 - **Changes in gas**: in every case a gas snapshot diff must be provided. The maximum allowed increase depends on the features being added.
-- **Changes in fee model**: if the change affects the fee model or the economics of the project the how and the why needs to be explicitly documented.
+- **Changes in fee model**: if the change affects the fee model or the economics of the project, the how and the why need to be explicitly documented.
 
 ## Dependencies / Security
 
