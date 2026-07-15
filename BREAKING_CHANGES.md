@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [v0.4.3-alpha]
+
+### Deployment Script Changes (v0.4.3-alpha)
+
+1. **RSK Regtest deployments now use the native Bridge precompile**
+   - **Reason**: RSK regtest nodes run the real PowPeg bridge precompile, so deploying a mock diverges from mainnet/testnet behavior.
+   - **Change**: `01_DeployImplAndProxy.s.sol` no longer deploys a `BridgeMock` when `block.chainid == ChainIds.RSK_REGTEST` (33). It now wires `RbtcBridge` to the native bridge at `RSK_BRIDGE_ADDRESS` (`0x…01000006`), same as mainnet/testnet. `BridgeMock` is still deployed for the Foundry `LOCAL` chain id (31337).
+   - **Impact**: Environments deploying to RSK regtest that relied on `BridgeMock` (e.g. to manipulate bridge state in tests) must run under the `LOCAL` chain id instead. Deployed contract ABIs are unchanged.
+
 ## [v0.4.2-alpha]
 
 ### Base Event semantics (`RbtcBridge`) (v0.4.2-alpha)
