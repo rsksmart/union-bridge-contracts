@@ -1,5 +1,5 @@
 # PauseManager
-[Git Source](https://github.com/rsksmart/union-bridge-contracts/blob/68c14faa89612dfba1b7e9abf29455625661476f/src/PauseManager.sol)
+[Git Source](https://github.com/rsksmart/union-bridge-contracts/blob/b56fdca4d854a3d344854107131d121e04834d63/src/PauseManager.sol)
 
 **Inherits:**
 [IPauseManager](/src/interfaces/IPauseManager.sol/interface.IPauseManager.md), [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md)
