@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 import {console} from "forge-std/console.sol";
@@ -24,8 +24,7 @@ contract BlockSlotScript is ScriptUtils, ContractAddressManager {
         streamManager = peginManager.streamManager();
         memberRegistry = registry.memberRegistry();
 
-        bytes32 operatorXOnlyPubKey = memberRegistry.getMemberPublicKeys(getDeployerAddress()).covenantPubKey;
-        operatorPubKey = BtcHelper.pubKeyXonlyToCompact(operatorXOnlyPubKey);
+        operatorPubKey = BtcHelper.compactPubKeyToBytes(memberRegistry.getMemberDisputePubKey(getDeployerAddress()));
 
         // Reject Pegin Btc transaction to verify
         BtcTransaction memory rejectPeginTx = createRejectPeginTx(_requestPeginTxid, operatorPubKey);

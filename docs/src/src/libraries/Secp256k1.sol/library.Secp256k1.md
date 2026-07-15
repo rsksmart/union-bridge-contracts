@@ -1,5 +1,5 @@
 # Secp256k1
-[Git Source](https://github.com/rsksmart/union-bridge-contracts/blob/b56fdca4d854a3d344854107131d121e04834d63/src/libraries/Secp256k1.sol)
+[Git Source](https://github.com/rsksmart/union-bridge-contracts/blob/cf5421e1f47ca597147a56a1404f8189f6c70b20/src/libraries/Secp256k1.sol)
 
 **Author:**
 Witnet Foundation

@@ -1,5 +1,5 @@
 # PegBase
-[Git Source](https://github.com/rsksmart/union-bridge-contracts/blob/b56fdca4d854a3d344854107131d121e04834d63/src/PegBase.sol)
+[Git Source](https://github.com/rsksmart/union-bridge-contracts/blob/cf5421e1f47ca597147a56a1404f8189f6c70b20/src/PegBase.sol)
 
 **Inherits:**
 [IPegBase](/src/interfaces/IPegBase.sol/interface.IPegBase.md), [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md), [Pausable](/src/Pausable.sol/abstract.Pausable.md), ReentrancyGuardUpgradeable
@@ -82,14 +82,4 @@ function __PegBase_init(
 |`_rbtcBridge`|`IRbtcBridge`|The rbtc bridge contract for verifying Bitcoin transaction confirmations|
 |`_streamManager`|`IStreamManager`|The stream manager contract address|
 
-
-### _validatePegStatus
-
-
-```solidity
-function _validatePegStatus(bytes32 _acceptPeginTxid, PegStatus _expectedStatus)
-    internal
-    view
-    returns (StreamPosition memory);
-```
 

@@ -2,25 +2,163 @@ name: CI
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   FOUNDRY_PROFILE: ci
   IS_TEST: true
 
 jobs:
-  run-ci:
+  slither:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 #v7.0.0
+        with:
+          submodules: recursive
+
+      - name: Run Slither
+        id: slither
+        continue-on-error: true
+        uses: crytic/slither-action@b52cc1cbfee9ca3e8722dd5224299d16c9a6b80f #v0.4.2
+        with:
+          target: "."
+          solc-version: "0.8.33"
+          sarif: "slither-results.sarif"
+          fail-on: all
+
+      - name: Upload Slither SARIF to Code Scanning
+        if: always() && hashFiles('slither-results.sarif') != '' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
+        uses: github/codeql-action/upload-sarif@32f7c15247fa6542dc765bd40f6a15dc2caeed89 # v4.31.2
+        with:
+          sarif_file: slither-results.sarif
+
+      - name: Fail if Slither reported findings
+        if: steps.slither.outcome == 'failure' && hashFiles('slither-results.sarif') != ''
+        run: |
+          echo "::error::Slither reported findings (see uploaded SARIF and job log for details)."
+          exit 1
+
+      - name: Fail if Slither execution failed
+        if: steps.slither.outcome == 'failure' && hashFiles('slither-results.sarif') == ''
+        run: |
+          echo "::error::Slither execution failed or did not produce SARIF; see job log for details."
+          exit 1
+
+  forge-lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 #v7.0.0
         with:
           submodules: recursive
 
       - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
+        uses: foundry-rs/foundry-toolchain@b00af27efadbc7b4ca8b82abbd903b17cc874d2a # v1.9.0
         with:
           version: v1.3.1
+
+      - name: Check formatting and lint
+        run: make fmt-check lint
+
+  build-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 #v7.0.0
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@b00af27efadbc7b4ca8b82abbd903b17cc874d2a # v1.9.0
+        with:
+          version: v1.3.1
+
+      - name: Verify production contract sizes
+        run: bash shell/check-contract-sizes.sh
+
+      - name: Verify bytecode determinism
+        run: bash shell/check-bytecode-determinism.sh
+
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 #v7.0.0
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24.14.0"
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@b00af27efadbc7b4ca8b82abbd903b17cc874d2a # v1.9.0
+        with:
+          version: v1.3.1
+
+      - name: Install Open Zeppelin Upgrades Core
+        run: npm install -g @openzeppelin/upgrades-core@1.44.2
+
+      - name: Generate coverage report
+        run: bash coverage.sh
+
+      - name: Check Codecov token availability
+        id: codecov_token
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        run: |
+          if [ -n "$CODECOV_TOKEN" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Codecov token not available; skipping upload."
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload coverage to Codecov
+        if: steps.codecov_token.outputs.available == 'true'
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        with:
+          token: ${{ env.CC_TOKEN }}
+          files: lcov.info
+          fail_ci_if_error: true
+        env:
+          CC_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  forge-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 #v7.0.0
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24.14.0"
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@b00af27efadbc7b4ca8b82abbd903b17cc874d2a # v1.9.0
+        with:
+          version: v1.3.1
+
+      - name: Install Open Zeppelin Upgrades Core
+        run: npm install -g @openzeppelin/upgrades-core@1.44.2
+
+      - name: Clean build for OpenZeppelin upgrades validation
+        run: bash shell/clean-build.sh
+
+      - name: Check gas snapshot
+        run: bash shell/gas-snapshot.sh --check
+
+      - name: Clean build before tests
+        run: bash shell/clean-build.sh
 
       - name: Run tests
         # we run all tests in CI while in local we run only the tests that are relevant

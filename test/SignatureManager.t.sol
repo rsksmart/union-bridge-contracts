@@ -1,19 +1,19 @@
-// SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
 import {
+    Committee,
     ICommitteeRegistry,
     StreamDenomination,
     Role,
-    CommitteeMember,
-    MemberRegistrationKeys
+    CommitteeMember
 } from "src/interfaces/ICommitteeRegistry.sol";
+import {MemberRegistrationKeys} from "src/interfaces/IMemberRegistry.sol";
 import {IAccessManager} from "src/interfaces/IAccessManager.sol";
 import {SignatureData, ISignatureManager, OperatorTakeData} from "src/interfaces/ISignatureManager.sol";
 import {Constants} from "src/libraries/Constants.sol";
-import {Committee} from "src/interfaces/ICommitteeRegistry.sol";
 
 contract SignatureManagerTest is Test, HelperContract {
     uint128 internal setupCommitteeId;
@@ -24,7 +24,7 @@ contract SignatureManagerTest is Test, HelperContract {
         runTestDeployScript();
         (Committee memory expectedCommittee, uint128 committeeId) = setup_completeCommittee();
 
-        setupExpectedCommittee.aggregatedKey = expectedCommittee.aggregatedKey;
+        setupExpectedCommittee.takeAggregatedKey = expectedCommittee.takeAggregatedKey;
         setupExpectedCommittee.leaderAddress = expectedCommittee.leaderAddress;
         setupExpectedCommittee.streamId = expectedCommittee.streamId;
         for (uint64 i = 0; i < expectedCommittee.members.length; i++) {
@@ -115,10 +115,9 @@ contract SignatureManagerTest is Test, HelperContract {
 
         // Assert
         assertEq(allSignaturesReady, false, "Not all signatures should be ready at this point");
-        (SignatureData[] memory signatures, uint8 missingSignatures, uint8 missingNonces, uint128 committeeId) =
+        (SignatureData[] memory signatures, uint8 missingNonces, uint128 committeeId) =
             signatureManager.getPartialSignatures(txid);
-        // Check the missing signatures and missing nonces
-        assertEq(missingSignatures, registry.committeeMemberCount() - 1, "missingSignatures should be equal to 1");
+        // Check the missing nonces
         assertEq(missingNonces, 0, "missingNonces should be equal to 1");
         // Check the committee id
         assertEq(
@@ -179,10 +178,9 @@ contract SignatureManagerTest is Test, HelperContract {
 
         // Assert
         assertEq(allSignaturesReady, true, "Not all signatures should be ready at this point");
-        (SignatureData[] memory signatures, uint8 missingSignatures, uint8 missingNonces, uint128 committeeId) =
+        (SignatureData[] memory signatures, uint8 missingNonces, uint128 committeeId) =
             signatureManager.getPartialSignatures(txid);
-        // Check the missing signatures and missing nonces
-        assertEq(missingSignatures, 0, "missingSignatures should be equal to 0");
+        // Check the missing nonces
         assertEq(missingNonces, 0, "missingNonces should be equal to 0");
         // Check the committee id
         assertEq(
@@ -367,12 +365,9 @@ contract SignatureManagerTest is Test, HelperContract {
         signatureManager.initSignatures(txid, COMMITTEE_ID_STREAM_1_COMMITTEE_1);
 
         // Assert
-        (SignatureData[] memory signatures, uint8 missingSignatures, uint8 missingNonces, uint128 committeeId) =
+        (SignatureData[] memory signatures, uint8 missingNonces, uint128 committeeId) =
             signatureManager.getPartialSignatures(txid);
-        // Check the missing signatures and missing nonces
-        assertEq(
-            missingSignatures, committeeMemberCount, "missingSignatures should be equal to the committee member count"
-        );
+        // Check the missing nonces
         assertEq(missingNonces, committeeMemberCount, "missingNonces should be equal to the committee member count");
         // Check the committee id
         assertEq(

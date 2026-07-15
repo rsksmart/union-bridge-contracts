@@ -1,5 +1,5 @@
 # PauseManager
-[Git Source](https://github.com/rsksmart/union-bridge-contracts/blob/b56fdca4d854a3d344854107131d121e04834d63/src/PauseManager.sol)
+[Git Source](https://github.com/rsksmart/union-bridge-contracts/blob/cf5421e1f47ca597147a56a1404f8189f6c70b20/src/PauseManager.sol)
 
 **Inherits:**
 [IPauseManager](/src/interfaces/IPauseManager.sol/interface.IPauseManager.md), [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md)
@@ -61,6 +61,15 @@ The ChallengeManager contract
 
 ```solidity
 address public challengeManager;
+```
+
+
+### operatorTakeManager
+The OperatorTakeManager contract
+
+
+```solidity
+address public operatorTakeManager;
 ```
 
 
@@ -172,7 +181,7 @@ function setPegoutManager(address _pegoutManager) external onlyOwner;
 
 ### setChallengeManager
 
-Sets the Pegout Manager contract address
+Sets the Challenge Manager contract address
 
 *Only callable by the contract owner*
 
@@ -185,6 +194,21 @@ function setChallengeManager(address _challengeManager) external onlyOwner;
 |Name|Type|Description|
 |----|----|-----------|
 |`_challengeManager`|`address`|The address of the Challenge Manager contract|
+
+
+### setOperatorTakeManager
+
+Sets the OperatorTakeManager contract address
+
+
+```solidity
+function setOperatorTakeManager(address _operatorTakeManager) external onlyOwner;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_operatorTakeManager`|`address`|The address of the OperatorTakeManager contract|
 
 
 ### setMemberRegistry

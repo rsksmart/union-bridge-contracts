@@ -1,10 +1,11 @@
-// SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 import {console} from "forge-std/console.sol";
 import {Script} from "forge-std/Script.sol";
 import {PeginManager} from "src/PeginManager.sol";
 import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
+import {CompactPubKey} from "src/interfaces/IMemberRegistry.sol";
 
 contract GetTemporaryAddressScript is Script, ContractAddressManager {
     PeginManager peginManager;
@@ -23,7 +24,7 @@ contract GetTemporaryAddressScript is Script, ContractAddressManager {
     function run() public {
         setUp();
 
-        (string memory result, uint64 packetNumber, bytes32[] memory memberDisputeKeys, uint64 availableSlots) =
+        (string memory result, uint64 packetNumber, CompactPubKey[] memory memberDisputeKeys, uint64 availableSlots) =
             peginManager.getRequestPeginData(rootstock_deposit_address, value, btc_reimbursement_pub_key);
         console.log("=== getRequestPeginData ===");
         console.log(result);
@@ -34,7 +35,8 @@ contract GetTemporaryAddressScript is Script, ContractAddressManager {
         console.log("=== Member Dispute Keys ===");
         for (uint256 i = 0; i < memberDisputeKeys.length; i++) {
             console.log("Member", i, ":");
-            console.logBytes32(memberDisputeKeys[i]);
+            console.logBytes1(memberDisputeKeys[i].parity);
+            console.logBytes32(memberDisputeKeys[i].xOnly);
         }
     }
 }

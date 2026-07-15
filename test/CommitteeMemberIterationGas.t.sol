@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 import {Test, console} from "forge-std/Test.sol";
@@ -261,7 +261,7 @@ contract CommitteeMemberIterationGasTest is Test, HelperContract {
 
         // Act
         uint256 gasStart = gasleft();
-        vm.prank(address(pegoutManager));
+        vm.prank(address(operatorTakeManager));
         registry.selectTakeOperator(committeeId, signatureData, 1);
         uint256 gasUsed = gasStart - gasleft();
         (uint256 gasPrice, uint256 costInWei) = calculateGasCost(gasUsed);

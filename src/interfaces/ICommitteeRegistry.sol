@@ -1,15 +1,12 @@
-// SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 import {StreamDenomination} from "./IStreamManager.sol";
-import {IMemberRegistry} from "./IMemberRegistry.sol";
+import {IMemberRegistry, MemberRegistrationKeys, CompactPubKey} from "./IMemberRegistry.sol";
 import {SignatureData} from "./ISignatureManager.sol";
 
 /// @dev Amount of bytes32 chunks for communication data
 uint8 constant COMMUNICATION_DATA_CHUNKS = 8;
-
-/// @dev Amount of bytes32 chunks for DER-encoded RSA public key
-uint8 constant RSA_PUBLIC_KEY_CHUNKS = 10;
 
 struct CommitteeRegistrySettings {
     /// @notice Timeout in seconds for pending committee formation
@@ -62,102 +59,6 @@ enum PendingCommitteeStatus {
     LENGTH
 }
 
-/// @notice Represents the balance and application staking information for a member
-/// @dev Tracks available balance, applications, and staked amounts across packets
-struct Balance {
-    /// @notice Available balance that can be withdrawn
-    uint256 available;
-    /// @notice Array of application data for different streams
-    ApplicationData[] applications;
-    /// @notice Mapping of staked amounts for packets where the member is part of a committee
-    /// @dev Each element is a mapping from packet number to staked amount
-    mapping(uint64 packetNumber => uint256 amount)[] staked;
-}
-
-/// @notice Represents application data for a member's role request
-/// @dev Contains the requested role, pre-staked amount, and funding UTXO
-struct ApplicationData {
-    /// @notice The role requested by the member
-    Role requestedRole;
-    /// @notice Amount pre-staked for this application
-    uint256 preStaked;
-    /// @notice Whether the member wants to reapply for the committee once a packet is over
-    bool reApply;
-    /// @notice The Bitcoin UTXO used for funding this application
-    UTXO fundingUTXO;
-}
-
-/// @notice Represents the different types of public keys a member can register
-/// @dev Each key type serves a specific purpose in the committee operations
-enum PublicKeyType {
-    /// @notice Public key used for take operations (normal peg-out)
-    TAKE,
-    /// @notice Public key used for covenant operations (dispute resolution)
-    COVENANT,
-    /// @notice Public key used for communication between members
-    COMMUNICATION,
-    /// @notice This must always be the last element since it represents the total count of enum elements
-    /// @dev Used for validation and iteration over the enum values
-    LENGTH
-}
-
-/// @notice Represents the data needed for ECDSA public key registration
-/// @dev Includes the public key coordinates and ECDSA signature for verification
-struct ECDSAPublicKey {
-    /// @notice X-coordinate of the public key
-    bytes32 publicKeyX;
-    /// @notice Y-coordinate of the public key
-    bytes32 publicKeyY;
-    /// @notice Recovery parameter for ECDSA signature
-    uint8 v;
-    /// @notice R component of ECDSA signature
-    bytes32 r;
-    /// @notice S component of ECDSA signature
-    bytes32 s;
-}
-
-/// @notice Represents RSA public key for communication
-/// @dev Contains DER-encoded RSA public key
-/// @dev We use a fixed bytes32 array for gas efficiency
-struct RSAPublicKey {
-    /// @notice DER-encoded RSA public key stored as bytes32 chunks
-    bytes32[RSA_PUBLIC_KEY_CHUNKS] rsaPublicKey;
-}
-
-/// @notice Member public key registration structure
-/// @dev Contains mixed key types for registration
-struct MemberRegistrationKeys {
-    /// @notice TAKE public key (ECDSA) - fully validated
-    ECDSAPublicKey takeKey;
-    /// @notice COVENANT public key (ECDSA) - no validation
-    ECDSAPublicKey covenantKey;
-    /// @notice COMMUNICATION public key (RSA) - input validation only
-    RSAPublicKey communicationKey;
-}
-
-/// @notice Member public keys structure for members
-/// @dev Contains different key types for different purposes
-struct MemberKeys {
-    /// @notice TAKE public key (ECDSA)
-    bytes32 takePubKey;
-    /// @notice COVENANT public key (ECDSA)
-    bytes32 covenantPubKey;
-    /// @notice COMMUNICATION public key (RSA)
-    RSAPublicKey communicationPubKey;
-}
-
-/// @notice Represents a committee member with their keys, roles, and balance
-/// @dev Contains all information needed to manage a member's participation
-struct Member {
-    /// @notice Member public keys for different purposes
-    /// @dev Contains TAKE (ECDSA), COVENANT (ECDSA), and COMMUNICATION (RSA) keys
-    MemberKeys publicKeys;
-    /// @notice Balance and staking information for the member
-    Balance balance;
-    /// @notice Additional data stored as key-value pairs
-    mapping(string key => string value) data;
-}
-
 /// @notice Represents a member within a specific committee
 /// @dev Contains the member's address and assigned role in the committee
 struct CommitteeMember {
@@ -170,8 +71,10 @@ struct CommitteeMember {
 /// @notice Represents a complete committee with aggregated key and members
 /// @dev Contains all information needed for committee operations
 struct Committee {
-    /// @notice Bitcoin public key of the committee (aggregated from member keys)
-    bytes aggregatedKey;
+    /// @notice Bitcoin take public key of the committee (aggregated from member keys)
+    bytes takeAggregatedKey;
+    /// @notice Bitcoin dispute public key of the committee (aggregated from member keys)
+    bytes disputeAggregatedKey;
     /// @notice Array of committee members with their roles
     CommitteeMember[] members;
     /// @notice Address of the committee leader
@@ -195,8 +98,10 @@ struct Committee {
 /// @notice Represents pending data for a member in committee formation
 /// @dev Contains the aggregated key provided by the member and committee status
 struct PendingCommitteeData {
-    /// @notice Aggregated key provided by the member
-    bytes aggregatedKey;
+    /// @notice Take aggregated key provided by the member
+    bytes takeAggregatedKey;
+    /// @notice Dispute aggregated key provided by the member
+    bytes disputeAggregatedKey;
     /// @notice Whether the member is included in the committee
     bool inCommittee;
     /// @notice Array of encrypted Communication Data
@@ -261,21 +166,41 @@ interface ICommitteeRegistry {
     /// @return Committee The complete committee information
     function getCommittee(uint128 _committeeId) external view returns (Committee calldata);
 
+    /// @notice Retrieves the committee take aggregated public key for a specific packet
+    /// @param _committeeId The committee ID
+    /// @return bytes The committee take aggregated public key for this packet (33 bytes compressed format)
+    function getCommitteeTakePubKey(uint128 _committeeId) external view returns (bytes memory);
+
+    /// @notice Retrieves the committee dispute aggregated public key for a specific packet
+    /// @param _committeeId The committee ID
+    /// @return bytes The committee dispute aggregated public key for this packet (33 bytes compressed format)
+    function getCommitteeDisputePubKey(uint128 _committeeId) external view returns (bytes memory);
+
     /// @notice Gets all members of a specific committee
     /// @param _committeeId The committee ID
     /// @return Array of committee members with their roles
     function getCommitteeMembers(uint128 _committeeId) external view returns (CommitteeMember[] memory);
 
+    /// @notice Gets the number of members in a specific committee
+    /// @param _committeeId The committee ID
+    /// @return The number of committee members (e.g. for validating input-not-revealed tx output count)
+    function getCommitteeMembersLength(uint128 _committeeId) external view returns (uint256);
+
     /// @notice Gets the member registry contract address
     /// @return The member registry contract
     function memberRegistry() external view returns (IMemberRegistry);
 
-    /// @notice Allows a member to deposit information  formation
-    /// @dev Called by members to provide their aggregated key for a pending committee
+    /// @notice Allows a member to deposit their aggregated keys for committee formation
+    /// @dev Called by members to provide their take and dispute aggregated keys for a pending committee
     /// @dev Only callable when contract is unpaused
     /// @param _committeeId The ID of the pending committee
-    /// @param _aggregatedKey The aggregated public key provided by the member (must be exactly 33 bytes)
-    function depositAggregatedKey(uint128 _committeeId, bytes memory _aggregatedKey) external;
+    /// @param _takeAggregatedKey The take aggregated public key provided by the member (must be exactly 33 bytes)
+    /// @param _disputeAggregatedKey The dispute aggregated public key provided by the member (must be exactly 33 bytes)
+    function depositAggregatedKeys(
+        uint128 _committeeId,
+        bytes memory _takeAggregatedKey,
+        bytes memory _disputeAggregatedKey
+    ) external;
 
     /// @notice Triggers the creation of a new committee for a stream if the timeout has expired
     /// @dev This function is called when the slot usage threshold is reached
@@ -324,10 +249,10 @@ interface ICommitteeRegistry {
         view
         returns (CommunicationData[] memory communicationData);
 
-    /// @notice Checks if a member is part of a specific committee
+    /// @notice Validates that a member is part of a specific committee; reverts if not
     /// @param _committeeId The committee ID
     /// @param _memberAddress The address of the member to check
-    function isMemberInCommittee(uint128 _committeeId, address _memberAddress) external view returns (bool);
+    function validateMemberInCommittee(uint128 _committeeId, address _memberAddress) external view;
 
     /// @notice Sets the Whitelister address
     /// @dev Only callable by the contract owner
@@ -354,6 +279,14 @@ interface ICommitteeRegistry {
     /// @param _committeeMemberCount The exact number of members required for a committee
     function setCommitteeMemberCount(uint256 _committeeMemberCount) external;
 
+    /// @notice Demotes an operator to watchtower in a specific active committee
+    /// @dev Only callable by the contract owner
+    /// @dev Owner-only access is temporary, once slashing is implemented, this function
+    ///      will be internal and called directly by the slashing mechanism
+    /// @param _committeeId The ID of the active committee
+    /// @param _memberAddress The address of the operator to demote
+    function demoteOperatorToWatchtower(uint128 _committeeId, address _memberAddress) external;
+
     /// @notice Gets the operator dispute data (address and dispute public key) for operator-take operations
     /// @dev Rotates through committee operators to distribute take responsibilities
     /// @dev Only operators who have deposited their signatures nonces are eligible for take operations
@@ -366,7 +299,7 @@ interface ICommitteeRegistry {
     /// @dev Reverts with TakeOperatorNotFound if no eligible operator is found
     function selectTakeOperator(uint128 _committeeId, SignatureData[] calldata _signatureData, uint8 _missingNonces)
         external
-        returns (address operatorAddress, bytes32 disputePubKey, bytes32 takePubKey);
+        returns (address operatorAddress, CompactPubKey memory disputePubKey, CompactPubKey memory takePubKey);
 
     /// @notice Releases committee members from a packet and handles their staked balance
     /// @dev Called by PegManager to release committee members after packet completion
@@ -398,10 +331,10 @@ interface ICommitteeRegistry {
     /// @return The pending committee timeout
     function pendingCommitteeTimeout() external view returns (uint256);
 
-    /// @notice Gets the dispute keys (covenant public keys) for all committee members
+    /// @notice Gets the dispute keys for all committee members
     /// @param _committeeId The committee ID
     /// @return Array of dispute keys for all members
-    function getCommitteeDisputeKeys(uint128 _committeeId) external view returns (bytes32[] memory);
+    function getCommitteeDisputeKeys(uint128 _committeeId) external view returns (CompactPubKey[] memory);
 
     // ===================== Events =====================
     /// @notice Event emitted when a new committee is created
@@ -445,8 +378,11 @@ interface ICommitteeRegistry {
     /// @notice Event emitted when member info is deposited for committee formation
     /// @param committeeId The ID of the pending committee
     /// @param member The member's address
-    /// @param aggregatedKey The aggregated key provided by the member
-    event MemberInfoDeposited(uint128 indexed committeeId, address indexed member, bytes aggregatedKey);
+    /// @param takeAggregatedKey The take aggregated key provided by the member
+    /// @param disputeAggregatedKey The dispute aggregated key provided by the member
+    event MemberInfoDeposited(
+        uint128 indexed committeeId, address indexed member, bytes takeAggregatedKey, bytes disputeAggregatedKey
+    );
 
     /// @notice Event emitted when no honest operators remain in a committee
     /// @param committeeId The ID of the committee with no honest operators
@@ -469,6 +405,11 @@ interface ICommitteeRegistry {
     /// @param streamId The stream ID for the committee
     /// @param packetNumber The packet number where the committee was active
     event CommitteeMembersReleased(uint64 streamId, uint64 packetNumber);
+
+    /// @notice Event emitted when an operator is demoted to watchtower in a committee
+    /// @param committeeId The committee where the demotion occurred
+    /// @param memberAddress The address of the demoted member
+    event OperatorDemotedToWatchtower(uint128 indexed committeeId, address indexed memberAddress);
 
     // ===================== Errors =====================
     /// @notice Thrown when a committee is not in pending state
@@ -496,6 +437,9 @@ interface ICommitteeRegistry {
 
     /// @notice Error thrown when the aggregated key is all zeros
     error InvalidAggregatedKeyZero();
+
+    /// @notice Error thrown when take and dispute aggregated keys are the same
+    error InvalidSameAggregatedKeys();
 
     /// @notice Thrown when a member is not in the committee
     /// @param committeeId The committee ID
@@ -575,6 +519,21 @@ interface ICommitteeRegistry {
     /// @param createdAt Timestamp committee creation
     /// @param expireAt Timestamp committee expiration
     error PendingCommitteeExpired(uint128 committeeId, uint256 currentTime, uint256 createdAt, uint256 expireAt);
+
+    /// @notice Thrown when trying to demote from a committee that is still pending
+    /// @param committeeId The ID of the pending committee
+    error CommitteeIsNotActive(uint128 committeeId);
+
+    /// @notice Thrown when the member is not an operator in the given committee
+    /// @param committeeId The committee ID
+    /// @param memberAddress The member's address
+    error MemberIsNotOperatorInCommittee(uint128 committeeId, address memberAddress);
+
+    /// @notice Thrown when demotion would drop the committee below the minimum operator count
+    /// @param committeeId The committee ID
+    /// @param currentOperators The current number of operators in the committee
+    /// @param minOperators The minimum required
+    error DemotionViolatesMinOperators(uint128 committeeId, uint256 currentOperators, uint256 minOperators);
 
     // --- TESTNET ONLY: Force close committee functionality ---
     // TODO: Remove before mainnet deployment

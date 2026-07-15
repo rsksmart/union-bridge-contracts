@@ -47,5 +47,4 @@ exclude_lints = [
     "asm-keccak256",
     "pascal-case-struct",
     "incorrect-shift",
-    "",
 ]

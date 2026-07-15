@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 import {console} from "forge-std/console.sol";
@@ -11,8 +11,8 @@ import {OpCodes} from "src/libraries/OpCodes.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {ScriptUtils} from "script/helpers/ScriptUtils.sol";
 import {ContractAddressManager} from "script/helpers/ContractAddressManager.sol";
-import {ICommitteeRegistry, CommitteeMember} from "src/interfaces/ICommitteeRegistry.sol";
-import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
+import {ICommitteeRegistry} from "src/interfaces/ICommitteeRegistry.sol";
+import {IMemberRegistry, CompactPubKey} from "src/interfaces/IMemberRegistry.sol";
 
 contract RequestPeginScript is ScriptUtils, ContractAddressManager {
     PeginManager peginManager;
@@ -35,7 +35,8 @@ contract RequestPeginScript is ScriptUtils, ContractAddressManager {
         // Committee public key
         Stream memory stream = streamManager.getStream(value);
         uint64 packetNumber = stream.peginPacketPointer;
-        bytes memory committeePubKey = streamManager.getCommitteePubKey(stream.streamId, packetNumber);
+        uint128 committeeId = streamManager.getCommitteeId(stream.streamId, packetNumber);
+        bytes memory committeePubKey = committeeRegistry.getCommitteeTakePubKey(committeeId);
         // BtcTransaction to verify
         BtcTransaction memory btcTransaction = BtcTransaction({
             version: Constants.BTC_TX_VERSION,
@@ -74,12 +75,7 @@ contract RequestPeginScript is ScriptUtils, ContractAddressManager {
             )
         });
         // Enabler output
-        uint128 committeeId = streamManager.getCommitteeId(stream.streamId, packetNumber);
-        CommitteeMember[] memory committeeMembers = committeeRegistry.getCommitteeMembers(committeeId);
-        bytes32[] memory disputeKeys = new bytes32[](committeeMembers.length);
-        for (uint256 i = 0; i < committeeMembers.length; i++) {
-            disputeKeys[i] = memberRegistry.getMemberPublicKeys(committeeMembers[i].memberAddress).covenantPubKey;
-        }
+        CompactPubKey[] memory disputeKeys = committeeRegistry.getCommitteeDisputeKeys(committeeId);
         bytes memory enablerScript = bitcoinManager.getEnablerOutputP2TRScriptPub(committeePubKey, disputeKeys);
         btcTransaction.outputs[2] = BtcTxOut({amount: Constants.ENABLER_AMOUNT, scriptPubKey: enablerScript});
 

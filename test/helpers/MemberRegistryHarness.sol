@@ -2,7 +2,8 @@
 pragma solidity ^0.8.20;
 
 import {MemberRegistry} from "src/MemberRegistry.sol";
-import {Role, UTXO, MemberRegistrationKeys} from "src/interfaces/ICommitteeRegistry.sol";
+import {Role, UTXO} from "src/interfaces/ICommitteeRegistry.sol";
+import {MemberRegistrationKeys, CompactPubKey} from "src/interfaces/IMemberRegistry.sol";
 import {IStreamManager, StreamDenomination} from "src/interfaces/IStreamManager.sol";
 import {IAccessManager} from "src/interfaces/IAccessManager.sol";
 import {IRbtcBridge} from "src/interfaces/IRbtcBridge.sol";
@@ -39,11 +40,11 @@ contract MemberRegistryHarness is MemberRegistry {
         candidates.pop();
     }
 
-    /// @notice Forcefully sets a member's covenant key for testing purposes
+    /// @notice Forcefully sets a member's dispute key for testing purposes
     /// @dev Bypasses all validation - USE ONLY IN TESTS
-    /// @param _memberAddress The member whose covenant key to set
-    /// @param _covenantKey The covenant public key (x-coordinate only)
-    function setMemberCovenantKeyHarness(address _memberAddress, bytes32 _covenantKey) public {
-        members[_memberAddress].publicKeys.covenantPubKey = _covenantKey;
+    /// @param _memberAddress The member whose dispute key to set
+    /// @param _disputeKey The dispute public key
+    function setMemberDisputeKeyHarness(address _memberAddress, CompactPubKey memory _disputeKey) public {
+        members[_memberAddress].publicKeys.disputePubKey = _disputeKey;
     }
 }

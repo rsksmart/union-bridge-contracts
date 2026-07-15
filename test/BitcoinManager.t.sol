@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
@@ -12,6 +12,7 @@ import {
     BitcoinSignatureData
 } from "src/interfaces/IBitcoinManager.sol";
 import {Constants} from "src/libraries/Constants.sol";
+import {CompactPubKey} from "src/interfaces/IMemberRegistry.sol";
 import {BtcTaproot} from "src/libraries/BtcTaproot.sol";
 import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
 
@@ -168,7 +169,7 @@ contract BitcoinManagerTest is Test, HelperContract {
         uint64 value = VALUE;
         address rskDestinationAddress = getPeginRskDestinationAddress();
         bytes32 btcReimbursementPubKey = getPeginBtcReimbursementPubKey();
-        bytes memory committeePubKey = COMMITTEE_PUB_KEY();
+        bytes memory committeePubKey = COMMITTEE_TAKE_PUB_KEY();
         uint32 timelockBlocks = 12;
         // Act
         vm.prank(address(peginManager));
@@ -186,7 +187,7 @@ contract BitcoinManagerTest is Test, HelperContract {
         uint64 value = VALUE;
         address rskDestinationAddress = getPeginRskDestinationAddress();
         bytes32 btcReimbursementPubKey = getPeginBtcReimbursementPubKey();
-        bytes memory committeePubKey = COMMITTEE_PUB_KEY();
+        bytes memory committeePubKey = COMMITTEE_TAKE_PUB_KEY();
         uint32 timelockBlocks = 1;
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IBitcoinManager.InvalidOutputAmount.selector, btcTxOut.amount, value));
@@ -202,17 +203,27 @@ contract BitcoinManagerTest is Test, HelperContract {
         bytes memory committeePubKey = hex"02d1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d";
 
         // Hardcoded dispute keys from the test committee (10 members)
-        bytes32[] memory disputeKeys = new bytes32[](10);
-        disputeKeys[0] = 0x186ba6bc992e556294d75dcf0b60cbea88d3de0bae02cf4401e97d2fbfdca40d;
-        disputeKeys[1] = 0xb40e85efe8651cd63b9514adac7fcca825484acb6841ee80867fcaa7d41156c6;
-        disputeKeys[2] = 0x58b91a3800e0cd15d0acb64b5aad901043a62ca82862b8f0a97ff5e2de50af6c;
-        disputeKeys[3] = 0x8a8240d1ff88b42c53e5cf1d3093a9589277b0e8e413712599d0ef2a5a32c04b;
-        disputeKeys[4] = 0x2e6ec7e4985bca96582f7474eef4c7ebb6552b066c60c8e2d4ded3b8d56f9060;
-        disputeKeys[5] = 0x924b3bf87fc171eade0db2940235b89bb714776b0e833652377d7e93be52d8cd;
-        disputeKeys[6] = 0xda48fd2a49e1d997c456c4fb1c5075b0d4a3cc733a18eda2eac650d4fa1636bd;
-        disputeKeys[7] = 0xf8935fcdc39fc07d8decedeab6fc2fefd7059a754e223aff6f028303b86239a8;
-        disputeKeys[8] = 0x99696efd85605ae9c7e1486a6ee8ed074122afd6be8f7ac1b41db5a14b96dafd;
-        disputeKeys[9] = 0xe711328b222907a4428b24e7624117257415082694a0aa23bd52fdafe1f54536;
+        CompactPubKey[] memory disputeKeys = new CompactPubKey[](10);
+        disputeKeys[0] =
+            CompactPubKey({parity: 0x02, xOnly: 0x186ba6bc992e556294d75dcf0b60cbea88d3de0bae02cf4401e97d2fbfdca40d});
+        disputeKeys[1] =
+            CompactPubKey({parity: 0x02, xOnly: 0xb40e85efe8651cd63b9514adac7fcca825484acb6841ee80867fcaa7d41156c6});
+        disputeKeys[2] =
+            CompactPubKey({parity: 0x02, xOnly: 0x58b91a3800e0cd15d0acb64b5aad901043a62ca82862b8f0a97ff5e2de50af6c});
+        disputeKeys[3] =
+            CompactPubKey({parity: 0x02, xOnly: 0x8a8240d1ff88b42c53e5cf1d3093a9589277b0e8e413712599d0ef2a5a32c04b});
+        disputeKeys[4] =
+            CompactPubKey({parity: 0x02, xOnly: 0x2e6ec7e4985bca96582f7474eef4c7ebb6552b066c60c8e2d4ded3b8d56f9060});
+        disputeKeys[5] =
+            CompactPubKey({parity: 0x02, xOnly: 0x924b3bf87fc171eade0db2940235b89bb714776b0e833652377d7e93be52d8cd});
+        disputeKeys[6] =
+            CompactPubKey({parity: 0x02, xOnly: 0xda48fd2a49e1d997c456c4fb1c5075b0d4a3cc733a18eda2eac650d4fa1636bd});
+        disputeKeys[7] =
+            CompactPubKey({parity: 0x02, xOnly: 0xf8935fcdc39fc07d8decedeab6fc2fefd7059a754e223aff6f028303b86239a8});
+        disputeKeys[8] =
+            CompactPubKey({parity: 0x02, xOnly: 0x99696efd85605ae9c7e1486a6ee8ed074122afd6be8f7ac1b41db5a14b96dafd});
+        disputeKeys[9] =
+            CompactPubKey({parity: 0x02, xOnly: 0xe711328b222907a4428b24e7624117257415082694a0aa23bd52fdafe1f54536});
 
         // Expected P2TR scriptPubKey generated from the committee pubkey and dispute keys
         bytes memory expectedScript = hex"51201cbeafdb8fa122bf71ea817df2ed9131bfa165952d63ba5841313f918a0f86c9";

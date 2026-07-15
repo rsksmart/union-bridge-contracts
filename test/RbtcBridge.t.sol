@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 import {HelperContract} from "test/helpers/HelperContract.sol";
@@ -638,7 +638,7 @@ contract RbtcBridgeTest is HelperContract {
 
     // ============ setBaseEvent Tests ============
 
-    function test_setBaseEvent_Success_CallFromPegoutManager() external {
+    function test_setBaseEvent_Success_CallFromChallengeManager() external {
         // Arrange
         bridgeMock.setStoreEvents(true);
         bytes memory baseEvent = "test base event";
@@ -648,7 +648,7 @@ contract RbtcBridgeTest is HelperContract {
         emit IRbtcBridge.BaseEventSet(baseEvent);
 
         // Act
-        vm.prank(address(pegoutManager));
+        vm.prank(address(operatorTakeManager));
         rbtcBridge.setBaseEvent(baseEvent);
 
         // Assert - verify base event was set in bridge
@@ -671,7 +671,7 @@ contract RbtcBridgeTest is HelperContract {
         emit IRbtcBridge.BaseEventSet(baseEvent);
 
         // Act
-        vm.prank(address(pegoutManager));
+        vm.prank(address(operatorTakeManager));
         rbtcBridge.setBaseEvent(baseEvent);
 
         // Assert - verify base event was set
@@ -717,7 +717,7 @@ contract RbtcBridgeTest is HelperContract {
         vm.expectRevert(IRbtcBridge.BaseEventEmpty.selector);
 
         // Act
-        vm.prank(address(pegoutManager));
+        vm.prank(address(operatorTakeManager));
         rbtcBridge.setBaseEvent(emptyBaseEvent);
     }
 
@@ -734,7 +734,7 @@ contract RbtcBridgeTest is HelperContract {
         vm.expectRevert(IRbtcBridge.BaseEventTooLong.selector);
 
         // Act
-        vm.prank(address(pegoutManager));
+        vm.prank(address(operatorTakeManager));
         rbtcBridge.setBaseEvent(tooLongBaseEvent);
     }
 
@@ -743,15 +743,15 @@ contract RbtcBridgeTest is HelperContract {
         bridgeMock.setStoreEvents(true);
         bytes memory baseEvent = "second base event";
 
-        // Set first base event directly on bridge mock
-        vm.prank(address(pegoutManager));
+        // Set a base event
+        vm.prank(address(operatorTakeManager));
         rbtcBridge.setBaseEvent("first base event");
 
         // Assert
         vm.expectRevert(abi.encodeWithSelector(IRbtcBridge.BaseEventAlreadySet.selector));
 
-        // Act - try to set another base event
-        vm.prank(address(pegoutManager));
+        // Act - try to set another base event in the same block
+        vm.prank(address(operatorTakeManager));
         rbtcBridge.setBaseEvent(baseEvent);
     }
 
@@ -762,12 +762,12 @@ contract RbtcBridgeTest is HelperContract {
         bytes memory secondBaseEvent = "second base event";
 
         // Act - set base event in current block
-        vm.prank(address(pegoutManager));
+        vm.prank(address(operatorTakeManager));
         rbtcBridge.setBaseEvent(firstBaseEvent);
 
         // Move to next block and set a new base event
         vm.roll(block.number + 1);
-        vm.prank(address(pegoutManager));
+        vm.prank(address(operatorTakeManager));
         rbtcBridge.setBaseEvent(secondBaseEvent);
 
         // Assert

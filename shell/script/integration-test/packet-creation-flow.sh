@@ -21,6 +21,9 @@ OPERATOR_AMOUNT=3
 WATCHTOWER_AMOUNT=7
 STREAM=0
 ALPHANET_FLAG=""
+COMMITTEE_TAKE_PUBKEY=0x02d1cfc2049322ff6ba3a88c6e17c6622308f0fb1d2910ffadb309e4116358723d
+COMMITTEE_DISPUTE_PUBKEY=0x02e2dfc3050433ff7cb4b99d7f18d7733319f1fc2e4020ffbcc410f5227469834e
+
 
 # Parse optional args
 while getopts "o:w:s:-:" opt; do
@@ -86,12 +89,6 @@ for ((i=0; i<=MAX_MNEMONIC_INDEX; i++)); do
   bash "$SCRIPT_DIR/apply-to-stream.sh" -m "$i" -s "$STREAM" -r "$ROLE" $ALPHANET_FLAG
 done
 
-# Check if COMMITTEE_PK is defined in the environment
-if [ -z "$COMMITTEE_PK" ]; then
-  echo "Error: COMMITTEE_PK is not defined in the environment."
-  exit 1
-fi
-
 for ((i=0; i<=MAX_MNEMONIC_INDEX; i++)); do
   bash "$SCRIPT_DIR/deposit-communication-data.sh" -m "$i" -s "$STREAM" $ALPHANET_FLAG
 done
@@ -101,5 +98,5 @@ for ((i=0; i<=MAX_MNEMONIC_INDEX; i++)); do
 done
 
 for ((i=0; i<=MAX_MNEMONIC_INDEX; i++)); do
-  bash "$SCRIPT_DIR/deposit-aggregated-key.sh" -m "$i" -s "$STREAM" -p "$COMMITTEE_PK" $ALPHANET_FLAG
+  bash "$SCRIPT_DIR/deposit-aggregated-keys.sh" -m "$i" -s "$STREAM" -t "$COMMITTEE_TAKE_PUBKEY" -d "$COMMITTEE_DISPUTE_PUBKEY" $ALPHANET_FLAG
 done

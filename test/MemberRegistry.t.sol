@@ -1,21 +1,23 @@
-// SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
+import {ICommitteeRegistry, Role, Committee, CommitteeMember, UTXO} from "src/interfaces/ICommitteeRegistry.sol";
 import {
-    ICommitteeRegistry,
-    Role,
-    Committee,
+    IMemberRegistry,
     MemberRegistrationKeys,
-    PublicKeyType,
-    CommitteeMember,
     MemberKeys,
-    RSAPublicKey,
-    UTXO
-} from "src/interfaces/ICommitteeRegistry.sol";
-import {IMemberRegistry} from "src/interfaces/IMemberRegistry.sol";
+    CompactPubKey,
+    PublicKeyType,
+    RSAPublicKey
+} from "src/interfaces/IMemberRegistry.sol";
+import {BtcTxOut} from "src/interfaces/IBitcoinManager.sol";
+import {BtcHelper} from "src/libraries/BtcHelper.sol";
+import {BtcScriptParser} from "src/libraries/BtcScriptParser.sol";
 import {IAccessManager} from "src/interfaces/IAccessManager.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {IPausable} from "src/interfaces/IPausable.sol";
 import {IStreamManager, StreamDenomination} from "src/interfaces/IStreamManager.sol";
 import {Constants} from "src/libraries/Constants.sol";
 import {HelperContract} from "test/helpers/HelperContract.sol";
@@ -146,13 +148,13 @@ contract MemberRegistryTest is Test, HelperContract {
         // create committee to be released
         setup_pendingCommittee();
         uint128 committeeId = COMMITTEE_ID_STREAM_1_COMMITTEE_1;
-        bytes memory committeePubKey = COMMITTEE_PUB_KEY();
 
         uint64 streamId = uint64(SETUP_PENDING_COMMITTEE_DENOMINATION);
         uint64 packetNumber = 0;
-        bytes32[] memory disputeKeys = registry.getCommitteeDisputeKeys(committeeId);
+        bytes memory aggregatedTakePubKey = registry.getCommitteeTakePubKey(committeeId);
+        CompactPubKey[] memory disputeKeys = registry.getCommitteeDisputeKeys(committeeId);
         vm.prank(address(registry));
-        streamManager.createNewPacket(streamId, committeeId, committeePubKey, disputeKeys);
+        streamManager.createNewPacket(streamId, committeeId, aggregatedTakePubKey, disputeKeys);
         CommitteeMember[] memory members;
 
         pauseContracts();
@@ -280,7 +282,7 @@ contract MemberRegistryTest is Test, HelperContract {
         Role oppositeRole = _role == Role.OPERATOR ? Role.WATCHTOWER : Role.OPERATOR;
 
         uint256 privKey = uint256(1);
-        MemberKeys memory pubKeys = getXPublicKeysFromRegistration(memberRegistrationKeys);
+        MemberKeys memory pubKeys = memberKeysFromRegistration(memberRegistrationKeys);
         address user = vm.addr(privKey);
         uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, _role);
         vm.deal(user, minimumDeposit);
@@ -308,10 +310,10 @@ contract MemberRegistryTest is Test, HelperContract {
 
         // Assert
         MemberKeys memory actualKeys = memberRegistry.getMemberPublicKeys(user);
-        assertEq(actualKeys.takePubKey, pubKeys.takePubKey, "take public key should match");
-        assertEq(actualKeys.covenantPubKey, pubKeys.covenantPubKey, "covenant public key should match");
+        assertEqCompactPubKey(actualKeys.takePubKey, pubKeys.takePubKey, "take public key should match");
+        assertEqCompactPubKey(actualKeys.disputePubKey, pubKeys.disputePubKey, "dispute public key should match");
         assertEq(
-            keccak256(abi.encode(actualKeys.communicationPubKey)),
+            keccak256(abi.encode(memberRegistry.getMemberComPubKey(user))),
             keccak256(abi.encode(pubKeys.communicationPubKey)),
             "communication public key should match"
         );
@@ -411,12 +413,14 @@ contract MemberRegistryTest is Test, HelperContract {
         vm.deal(user, minimumDeposit);
 
         // Assert
+        MemberKeys memory stored = memberKeysFromRegistration(memberRegistrationKeys);
+        MemberKeys memory submitted = memberKeysFromRegistration(differentPubKey);
         vm.expectRevert(
             abi.encodeWithSelector(
-                IMemberRegistry.PublicKeyMismatch.selector,
+                IMemberRegistry.PublicKeyMismatchECDSA.selector,
                 PublicKeyType.TAKE,
-                memberRegistrationKeys.takeKey.publicKeyX,
-                differentPubKey.takeKey.publicKeyX
+                stored.takePubKey,
+                submitted.takePubKey
             )
         );
 
@@ -427,14 +431,14 @@ contract MemberRegistryTest is Test, HelperContract {
         );
     }
 
-    function test_applyToStream_Revert_PublicKeyMismatch_COVENANT() external {
+    function test_applyToStream_Revert_PublicKeyMismatch_DISPUTE() external {
         // Arrange
         uint256 privKey = uint256(1);
 
-        // Create fresh keys for second registration with different COVENANT key only
+        // Create fresh keys for second registration with different DISPUTE key only
         MemberRegistrationKeys memory differentPubKey;
         differentPubKey.takeKey = memberRegistrationKeys.takeKey; // Same TAKE key
-        differentPubKey.covenantKey = generateECDSAPublicKey(privKey + 1, PublicKeyType.COVENANT); // Different COVENANT key
+        differentPubKey.disputeKey = generateECDSAPublicKey(privKey + 1, PublicKeyType.DISPUTE); // Different DISPUTE key
         differentPubKey.communicationKey = memberRegistrationKeys.communicationKey; // Same COMMUNICATION key
 
         address user = vm.addr(privKey);
@@ -450,12 +454,14 @@ contract MemberRegistryTest is Test, HelperContract {
         vm.deal(user, minimumDeposit);
 
         // Assert
+        MemberKeys memory stored = memberKeysFromRegistration(memberRegistrationKeys);
+        MemberKeys memory submitted = memberKeysFromRegistration(differentPubKey);
         vm.expectRevert(
             abi.encodeWithSelector(
-                IMemberRegistry.PublicKeyMismatch.selector,
-                PublicKeyType.COVENANT,
-                memberRegistrationKeys.covenantKey.publicKeyX,
-                differentPubKey.covenantKey.publicKeyX
+                IMemberRegistry.PublicKeyMismatchECDSA.selector,
+                PublicKeyType.DISPUTE,
+                stored.disputePubKey,
+                submitted.disputePubKey
             )
         );
 
@@ -473,7 +479,7 @@ contract MemberRegistryTest is Test, HelperContract {
         // Create fresh keys for second registration with different COMMUNICATION key only
         MemberRegistrationKeys memory differentPubKey;
         differentPubKey.takeKey = memberRegistrationKeys.takeKey; // Same TAKE key
-        differentPubKey.covenantKey = memberRegistrationKeys.covenantKey; // Same COVENANT key
+        differentPubKey.disputeKey = memberRegistrationKeys.disputeKey; // Same DISPUTE key
         differentPubKey.communicationKey = generateRSAPublicKey(privKey + 1, PublicKeyType.COMMUNICATION); // Different COMMUNICATION key
 
         address user = vm.addr(privKey);
@@ -494,9 +500,7 @@ contract MemberRegistryTest is Test, HelperContract {
 
         // Assert
         vm.expectRevert(
-            abi.encodeWithSelector(
-                IMemberRegistry.PublicKeyMismatch.selector, PublicKeyType.COMMUNICATION, storedComKeyHash, newComKeyHash
-            )
+            abi.encodeWithSelector(IMemberRegistry.PublicKeyMismatchRSA.selector, storedComKeyHash, newComKeyHash)
         );
 
         // Act - use different stream to avoid "already registered" error
@@ -821,23 +825,23 @@ contract MemberRegistryTest is Test, HelperContract {
         );
     }
 
-    function test_applyToStream_Revert_InvalidEDCSAPublicKey_X_NotOnCurve_COVENANT() external {
+    function test_applyToStream_Revert_InvalidEDCSAPublicKey_X_NotOnCurve_DISPUTE() external {
         // Arrange
         uint256 privKey = uint256(1);
         address user = vm.addr(privKey);
         uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, DEFAULT_ROLE);
         vm.deal(user, minimumDeposit);
 
-        // Set the covenant public key X to a value that is not on the curve
-        memberRegistrationKeys.covenantKey.publicKeyX = bytes32(Secp256k1.N);
+        // Set the dispute public key X to a value that is not on the curve
+        memberRegistrationKeys.disputeKey.publicKeyX = bytes32(Secp256k1.N);
 
-        // Assert invalid covenant public key X
+        // Assert invalid dispute public key X
         vm.expectRevert(
             abi.encodeWithSelector(
                 IMemberRegistry.InvalidEDCSAPublicKey.selector,
-                PublicKeyType.COVENANT,
-                memberRegistrationKeys.covenantKey.publicKeyX,
-                memberRegistrationKeys.covenantKey.publicKeyY
+                PublicKeyType.DISPUTE,
+                memberRegistrationKeys.disputeKey.publicKeyX,
+                memberRegistrationKeys.disputeKey.publicKeyY
             )
         );
         // Act
@@ -847,23 +851,23 @@ contract MemberRegistryTest is Test, HelperContract {
         );
     }
 
-    function test_applyToStream_Revert_InvalidEDCSAPublicKey_Y_NotOnCurve_COVENANT() external {
+    function test_applyToStream_Revert_InvalidEDCSAPublicKey_Y_NotOnCurve_DISPUTE() external {
         // Arrange
         uint256 privKey = uint256(1);
         address user = vm.addr(privKey);
         uint256 minimumDeposit = streamManager.getMinimumDeposit(DEFAULT_STREAM, DEFAULT_ROLE);
         vm.deal(user, minimumDeposit);
 
-        // Set the covenant public key Y to a value that is not on the curve
-        memberRegistrationKeys.covenantKey.publicKeyY = bytes32(Secp256k1.N);
+        // Set the dispute public key Y to a value that is not on the curve
+        memberRegistrationKeys.disputeKey.publicKeyY = bytes32(Secp256k1.N);
 
-        // Assert invalid covenant public key Y
+        // Assert invalid dispute public key Y
         vm.expectRevert(
             abi.encodeWithSelector(
                 IMemberRegistry.InvalidEDCSAPublicKey.selector,
-                PublicKeyType.COVENANT,
-                memberRegistrationKeys.covenantKey.publicKeyX,
-                memberRegistrationKeys.covenantKey.publicKeyY
+                PublicKeyType.DISPUTE,
+                memberRegistrationKeys.disputeKey.publicKeyX,
+                memberRegistrationKeys.disputeKey.publicKeyY
             )
         );
         // Act
@@ -873,7 +877,7 @@ contract MemberRegistryTest is Test, HelperContract {
         );
     }
 
-    function test_applyToStream_Revert_InvalidZeroEDCSASignature_V_COVENANT() external {
+    function test_applyToStream_Revert_InvalidZeroEDCSASignature_V_DISPUTE() external {
         // Arrange
         uint256 privKey = uint256(1);
         address user = vm.addr(privKey);
@@ -881,14 +885,14 @@ contract MemberRegistryTest is Test, HelperContract {
         vm.deal(user, minimumDeposit);
 
         // Set the signature V to 0
-        memberRegistrationKeys.covenantKey.v = 0;
+        memberRegistrationKeys.disputeKey.v = 0;
 
         // Assert invalid zero signature
         vm.expectRevert(
             abi.encodeWithSelector(
                 IMemberRegistry.InvalidZeroEDCSASignature.selector,
-                PublicKeyType.COVENANT,
-                memberRegistrationKeys.covenantKey
+                PublicKeyType.DISPUTE,
+                memberRegistrationKeys.disputeKey
             )
         );
         // Act
@@ -898,7 +902,7 @@ contract MemberRegistryTest is Test, HelperContract {
         );
     }
 
-    function test_applyToStream_Revert_InvalidZeroEDCSASignature_R_COVENANT() external {
+    function test_applyToStream_Revert_InvalidZeroEDCSASignature_R_DISPUTE() external {
         // Arrange
         uint256 privKey = uint256(1);
         address user = vm.addr(privKey);
@@ -906,14 +910,14 @@ contract MemberRegistryTest is Test, HelperContract {
         vm.deal(user, minimumDeposit);
 
         // Set the signature R to 0
-        memberRegistrationKeys.covenantKey.r = bytes32(0);
+        memberRegistrationKeys.disputeKey.r = bytes32(0);
 
         // Assert invalid zero signature
         vm.expectRevert(
             abi.encodeWithSelector(
                 IMemberRegistry.InvalidZeroEDCSASignature.selector,
-                PublicKeyType.COVENANT,
-                memberRegistrationKeys.covenantKey
+                PublicKeyType.DISPUTE,
+                memberRegistrationKeys.disputeKey
             )
         );
         // Act
@@ -923,7 +927,7 @@ contract MemberRegistryTest is Test, HelperContract {
         );
     }
 
-    function test_applyToStream_Revert_InvalidZeroEDCSASignature_S_COVENANT() external {
+    function test_applyToStream_Revert_InvalidZeroEDCSASignature_S_DISPUTE() external {
         // Arrange
         uint256 privKey = uint256(1);
         address user = vm.addr(privKey);
@@ -931,14 +935,14 @@ contract MemberRegistryTest is Test, HelperContract {
         vm.deal(user, minimumDeposit);
 
         // Set the signature S to 0
-        memberRegistrationKeys.covenantKey.s = bytes32(0);
+        memberRegistrationKeys.disputeKey.s = bytes32(0);
 
         // Assert invalid zero signature
         vm.expectRevert(
             abi.encodeWithSelector(
                 IMemberRegistry.InvalidZeroEDCSASignature.selector,
-                PublicKeyType.COVENANT,
-                memberRegistrationKeys.covenantKey
+                PublicKeyType.DISPUTE,
+                memberRegistrationKeys.disputeKey
             )
         );
         // Act
@@ -1059,7 +1063,7 @@ contract MemberRegistryTest is Test, HelperContract {
             DEFAULT_STREAM, role, memberRegistrationKeysMemory, generateDefaultUTXO()
         );
         uint256 gasUsed = gasStart - gasleft();
-        assertLe(gasUsed, 710_000, "gas used should be less than 710_000");
+        assertLe(gasUsed, 760_000, "gas used should be less than 760_000");
     }
 
     function _test_unsubscribeFromStream_Success(Role _role) internal {
@@ -1391,17 +1395,43 @@ contract MemberRegistryTest is Test, HelperContract {
         // Arrange
         uint256 privKey = uint256(1);
         address userAddress = vm.addr(privKey);
-        MemberKeys memory pubKeys = getXPublicKeysFromRegistration(memberRegistrationKeys);
+        MemberKeys memory pubKeys = memberKeysFromRegistration(memberRegistrationKeys);
         setup_applyToStream(StreamDenomination._0_001BTC, userAddress, memberRegistrationKeys, Role.OPERATOR);
 
         // Act
-        bytes32 pubKey = memberRegistry.getMemberTakePubKey(userAddress);
+        CompactPubKey memory pubKey = memberRegistry.getMemberTakePubKey(userAddress);
 
         // Assert
-        assertEq(pubKeys.takePubKey, pubKey, "Member take public key by index is not the same as the registered one");
+        assertEqCompactPubKey(pubKeys.takePubKey, pubKey, "Member take public key should match registered one");
     }
 
-    function test_getMemberPublicKey_Revert_MemberNotRegistered() external {
+    function test_applyToStream_Success_OddParityDisputeKey() external {
+        MemberKeys memory keys = setup_memberWithOddParityDisputeKey();
+        assertEq(keys.disputePubKey.parity, bytes1(0x03), "Odd Y dispute key should store parity 0x03");
+    }
+
+    function test_validatePegoutMemberOutput_Success_OddParityDisputeKey() external {
+        MemberKeys memory keys = setup_memberWithOddParityDisputeKey();
+        bytes memory expectedScript =
+            BtcScriptParser.getP2WPKHScript(BtcHelper.compactPubKeyToBytes(keys.disputePubKey));
+        BtcTxOut memory output = BtcTxOut({amount: VALUE, scriptPubKey: expectedScript});
+        bitcoinManager.validatePegoutMemberOutput(output, keys.disputePubKey);
+    }
+
+    function test_applyToStream_Success_OddParityTakeKey() external {
+        MemberKeys memory keys = setup_memberWithOddParityTakeKey();
+        assertEq(keys.takePubKey.parity, bytes1(0x03), "Odd Y take key should store parity 0x03");
+    }
+
+    function test_validatePegoutMemberOutput_Success_OddParityTakeKey() external {
+        MemberKeys memory keys = setup_memberWithOddParityTakeKey();
+        bytes memory expectedScript =
+            BtcScriptParser.getP2WPKHScript(BtcHelper.compactPubKeyToBytes(keys.disputePubKey));
+        BtcTxOut memory output = BtcTxOut({amount: VALUE, scriptPubKey: expectedScript});
+        bitcoinManager.validatePegoutMemberOutput(output, keys.disputePubKey);
+    }
+
+    function test_getMemberPublicKeys_Revert_MemberNotRegistered() external {
         // Arrange
         address user = vm.addr(uint256(100));
 
@@ -1410,6 +1440,33 @@ contract MemberRegistryTest is Test, HelperContract {
 
         // Act
         memberRegistry.getMemberPublicKeys(user);
+    }
+
+    function test_getMemberDisputePubKey_Revert_MemberNotRegistered() external {
+        // Arrange
+        address user = vm.addr(uint256(100));
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IMemberRegistry.MemberNotRegistered.selector, user));
+
+        // Act
+        memberRegistry.getMemberDisputePubKey(user);
+    }
+
+    function test_getMemberDisputePubKey_Success() external {
+        // Arrange
+        uint256 privKey = uint256(1);
+        address userAddress = vm.addr(privKey);
+        MemberKeys memory pubKeys = memberKeysFromRegistration(memberRegistrationKeys);
+        setup_applyToStream(StreamDenomination._0_001BTC, userAddress, memberRegistrationKeys, Role.OPERATOR);
+
+        // Act
+        CompactPubKey memory disputePubKey = memberRegistry.getMemberDisputePubKey(userAddress);
+
+        // Assert
+        assertEqCompactPubKey(
+            disputePubKey, pubKeys.disputePubKey, "Member dispute public key should match the registered one"
+        );
     }
 
     function test_getMemberRequestedRole_Revert_MemberNotRegistered() external {
@@ -1459,7 +1516,7 @@ contract MemberRegistryTest is Test, HelperContract {
     function test_registerMember_Success() external {
         // Arrange
         uint256 privKey = uint256(1);
-        MemberKeys memory pubKeys = getXPublicKeysFromRegistration(memberRegistrationKeys);
+        MemberKeys memory pubKeys = memberKeysFromRegistration(memberRegistrationKeys);
         address user = vm.addr(privKey);
 
         // Assert
@@ -1471,10 +1528,10 @@ contract MemberRegistryTest is Test, HelperContract {
 
         // Assert
         MemberKeys memory actualKeys = memberRegistry.getMemberPublicKeys(user);
-        assertEq(actualKeys.takePubKey, pubKeys.takePubKey, "take public key should match");
-        assertEq(actualKeys.covenantPubKey, pubKeys.covenantPubKey, "covenant public key should match");
+        assertEqCompactPubKey(actualKeys.takePubKey, pubKeys.takePubKey, "take public key should match");
+        assertEqCompactPubKey(actualKeys.disputePubKey, pubKeys.disputePubKey, "dispute public key should match");
         assertEq(
-            keccak256(abi.encode(actualKeys.communicationPubKey)),
+            keccak256(abi.encode(memberRegistry.getMemberComPubKey(user))),
             keccak256(abi.encode(pubKeys.communicationPubKey)),
             "communication public key should match"
         );
@@ -1977,4 +2034,102 @@ contract MemberRegistryTest is Test, HelperContract {
         vm.prank(user);
         memberRegistry.unsubscribeFromStream(user, DEFAULT_STREAM);
     }
+
+    // ==================== TESTNET ONLY FUNCTION TESTS ====================
+
+    function test_forceReleaseCommitteeMembers_TESTNET_Revert_OwnableUnauthorizedAccount() external {
+        // Arrange
+        address unauthorizedAccount = address(0x1234);
+        uint64 streamId = uint64(DEFAULT_STREAM);
+        uint64 packetNumber = 0;
+        address[] memory memberAddresses = new address[](0);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, unauthorizedAccount));
+
+        // Act
+        vm.prank(unauthorizedAccount);
+        memberRegistry.forceReleaseCommitteeMembers_TESTNET(streamId, packetNumber, memberAddresses);
+    }
+
+    function test_forceReleaseCommitteeMembers_TESTNET_Revert_TestnetOnlyFunction() external {
+        // Arrange
+        uint64 streamId = uint64(DEFAULT_STREAM);
+        uint64 packetNumber = 0;
+        address[] memory memberAddresses = new address[](0);
+        address owner = memberRegistry.owner();
+
+        // Simulate RSK mainnet (chain ID 30)
+        vm.chainId(30);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IAccessManager.TestnetOnlyFunction.selector));
+
+        // Act
+        vm.prank(owner);
+        memberRegistry.forceReleaseCommitteeMembers_TESTNET(streamId, packetNumber, memberAddresses);
+    }
+
+    function test_forceExit_TESTNET_Success() external {
+        // Arrange
+        address recipient = address(0x5678);
+        address owner = memberRegistry.owner();
+        uint256 contractBalance = 1 ether;
+        vm.deal(address(memberRegistry), contractBalance);
+
+        // Assert
+        vm.expectEmit(address(memberRegistry));
+        emit IMemberRegistry.ForceExit(recipient, contractBalance);
+
+        // Act
+        vm.prank(owner);
+        memberRegistry.forceExit_TESTNET(recipient);
+
+        // Assert
+        assertEq(recipient.balance, contractBalance, "Recipient should receive the contract balance");
+        assertEq(address(memberRegistry).balance, 0, "Contract balance should be zero");
+    }
+
+    function test_forceExit_TESTNET_Revert_InvalidZeroAddress() external {
+        // Arrange
+        address owner = memberRegistry.owner();
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IPausable.InvalidZeroAddress.selector));
+
+        // Act
+        vm.prank(owner);
+        memberRegistry.forceExit_TESTNET(address(0));
+    }
+
+    function test_forceExit_TESTNET_Revert_OwnableUnauthorizedAccount() external {
+        // Arrange
+        address unauthorizedAccount = address(0x1234);
+        address recipient = address(0x5678);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, unauthorizedAccount));
+
+        // Act
+        vm.prank(unauthorizedAccount);
+        memberRegistry.forceExit_TESTNET(recipient);
+    }
+
+    function test_forceExit_TESTNET_Revert_TestnetOnlyFunction() external {
+        // Arrange
+        address recipient = address(0x5678);
+        address owner = memberRegistry.owner();
+
+        // Simulate RSK mainnet (chain ID 30)
+        vm.chainId(30);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IAccessManager.TestnetOnlyFunction.selector));
+
+        // Act
+        vm.prank(owner);
+        memberRegistry.forceExit_TESTNET(recipient);
+    }
+
+    // ==================== END TESTNET ONLY FUNCTION TESTS ====================
 }

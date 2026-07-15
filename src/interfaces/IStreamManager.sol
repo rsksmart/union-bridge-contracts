@@ -1,8 +1,9 @@
-// SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 import {Role} from "./ICommitteeRegistry.sol";
 import {StreamPosition, PegStatus} from "./IPegCommonTypes.sol";
+import {CompactPubKey} from "./IMemberRegistry.sol";
 
 /// @notice Represents different Bitcoin denominations supported by the union bridge
 /// @dev Each denomination corresponds to a specific stream for efficient fund management
@@ -76,9 +77,6 @@ struct Packet {
     /// @notice The committee ID responsible for this packet
     /// @dev Each packet is managed by a specific committee of validators
     uint128 committeeId;
-    /// @notice The internal key of the committee for this packet
-    /// @dev This is the public key used for committee operations
-    bytes committeePubKey;
     /// @notice The enabler output script for the packet
     /// @dev All slots in a packet share the same enabler script based on the committee
     bytes enablerScriptPubKey;
@@ -100,6 +98,9 @@ struct Stream {
     /// @notice Number of confirmations required for peg-in transactions
     /// @dev Ensures sufficient Bitcoin confirmations before accepting peg-ins
     uint8 peginConfirmations;
+    /// @notice Number of confirmations required for reject pegin and user reimbursement transactions
+    /// @dev Shorter than peginConfirmations to reduce DDoS window; attacker has no incentive to fork Bitcoin
+    uint8 rejectPeginConfirmations;
     /// @notice Number of confirmations required for peg-out transactions
     /// @dev Ensures sufficient Bitcoin confirmations before completing peg-outs
     uint8 pegoutConfirmations;
@@ -138,6 +139,8 @@ struct StreamSettings {
     uint64 denomination;
     /// @notice Number of confirmations required for peg-in transactions
     uint8 peginConfirmations;
+    /// @notice Number of confirmations required for reject pegin and user reimbursement transactions
+    uint8 rejectPeginConfirmations;
     /// @notice Number of confirmations required for peg-out transactions
     uint8 pegoutConfirmations;
     /// @notice Timelock settings for the Bitcoin transactions stored in the stream manager
@@ -163,13 +166,13 @@ interface IStreamManager {
     /// @dev Can only be called by the CommitteeRegistry when a new committee is formed
     /// @param _streamId The ID of the stream to create a packet for
     /// @param _committeeId The ID of the committee that will process this packet
-    /// @param _committeePubKey The public key of the committee for Bitcoin operations
-    /// @param _disputeKeys The dispute keys (covenant public keys) for the committee members
+    /// @param _committeePubKey The aggregated key of the committee for Bitcoin operations
+    /// @param _disputeKeys The dispute keys for the committee members
     function createNewPacket(
         uint64 _streamId,
         uint128 _committeeId,
-        bytes calldata _committeePubKey,
-        bytes32[] memory _disputeKeys
+        bytes memory _committeePubKey,
+        CompactPubKey[] memory _disputeKeys
     ) external;
 
     /// @notice Gets a stream by its denomination
@@ -256,12 +259,6 @@ interface IStreamManager {
     /// @return uint128 The committee ID for the packet
     function getCommitteeId(uint64 _streamId, uint64 _packetNumber) external view returns (uint128);
 
-    /// @notice Retrieves the committee public key for a specific packet
-    /// @param _streamId The ID of the stream
-    /// @param _packetNumber The index of the packet within the stream
-    /// @return bytes The committee public key for this packet (33 bytes)
-    function getCommitteePubKey(uint64 _streamId, uint64 _packetNumber) external view returns (bytes memory);
-
     /// @notice Retrieves the enabler script public key for a specific packet
     /// @param _streamId The ID of the stream
     /// @param _packetNumber The index of the packet within the stream
@@ -278,16 +275,20 @@ interface IStreamManager {
 
     /// @notice Marks a slot as advanced by the operator to the user
     /// @dev Updates the slot state to ADVANCED and stores the operator's peg-out transaction
-    /// @param _streamId The index of the stream
-    /// @param _packetNumber The index of the packet within the stream
-    /// @param _slotId The index of the slot within the packet
-    function advanceSlot(uint64 _streamId, uint64 _packetNumber, uint64 _slotId) external;
+    /// @param _acceptPeginTxid The accept peg-in transaction ID
+    function advanceSlot(bytes32 _acceptPeginTxid) external;
 
     /// @notice Sets the number of confirmations required for peg-in transactions
     /// @dev Only callable by the contract owner
     /// @param _streamId The ID of the stream
     /// @param _confirmations The number of confirmations required for peg-in transactions
     function setPeginConfirmations(uint64 _streamId, uint8 _confirmations) external;
+
+    /// @notice Sets the number of confirmations required for reject pegin and user reimbursement transactions
+    /// @dev Only callable by the contract owner
+    /// @param _streamId The ID of the stream
+    /// @param _confirmations The number of confirmations required for reject pegin and user reimbursement
+    function setRejectPeginConfirmations(uint64 _streamId, uint8 _confirmations) external;
 
     /// @notice Sets the number of confirmations required for peg-out transactions
     /// @dev Only callable by the contract owner
@@ -343,6 +344,33 @@ interface IStreamManager {
     /// @return The stream position associated with the transaction ID
     function getStreamPosition(bytes32 _acceptPeginTxid) external view returns (StreamPosition memory);
 
+    /// @notice Validates that the peg status matches the expected status
+    /// @param _acceptPeginTxid The accept peg-in transaction ID
+    /// @param _expectedStatus The expected peg status
+    /// @return streamPosition The stream position if validation passes
+    /// @return committeeId The committee ID for the packet
+    /// @return pegoutConfirmations The number of confirmations required for peg-out transactions
+    /// @dev Reverts with PeginNotRequested if the peg-in was not requested
+    /// @dev Reverts with InvalidPegStatus if the current status does not match the expected status
+    function validatePegStatus(bytes32 _acceptPeginTxid, PegStatus _expectedStatus)
+        external
+        view
+        returns (StreamPosition memory streamPosition, uint128 committeeId, uint8 pegoutConfirmations);
+
+    /// @notice Validates that the peg status matches one of two expected statuses
+    /// @param _acceptPeginTxid The accept peg-in transaction ID
+    /// @param _statusA The first acceptable peg status
+    /// @param _statusB The second acceptable peg status
+    /// @return streamPosition The stream position if validation passes
+    /// @return committeeId The committee ID for the packet
+    /// @return pegoutConfirmations The number of confirmations required for peg-out transactions
+    /// @dev Reverts with PeginNotRequested if the peg-in was not requested
+    /// @dev Reverts with InvalidPegStatus if the current status does not match either expected status
+    function validatePegStatus(bytes32 _acceptPeginTxid, PegStatus _statusA, PegStatus _statusB)
+        external
+        view
+        returns (StreamPosition memory streamPosition, uint128 committeeId, uint8 pegoutConfirmations);
+
     /// @notice Gets the length of the slots in a packet
     /// @param _streamId The ID of the stream
     /// @param _packetNumber The packet number
@@ -354,6 +382,9 @@ interface IStreamManager {
     /// @param _newStatus The new peg status to set
     /// @dev Only callable by the PegManager contract
     function setPegStatus(bytes32 _acceptPeginTxid, PegStatus _newStatus) external;
+
+    /// @notice Gets the number of remaining filled slots available for peg-out in the given stream
+    function getFilledSlotsCount(uint64 _streamId) external view returns (uint64);
 
     // Events
     /// @notice Event emitted when a new stream is created
@@ -418,6 +449,11 @@ interface IStreamManager {
     /// @param _streamId The ID of the stream
     /// @param _confirmations The number of confirmations required
     event PeginConfirmationsUpdated(uint64 _streamId, uint8 _confirmations);
+
+    /// @notice Event emitted when the number of confirmations required for reject pegin and user reimbursement is updated
+    /// @param _streamId The ID of the stream
+    /// @param _confirmations The number of confirmations required
+    event RejectPeginConfirmationsUpdated(uint64 _streamId, uint8 _confirmations);
 
     /// @notice Event emitted when the number of confirmations required for peg-out transactions is updated
     /// @param _streamId The ID of the stream
@@ -490,6 +526,20 @@ interface IStreamManager {
     /// @notice Thrown when peg-in confirmations are invalid
     /// @param confirmations The invalid number of confirmations
     error InvalidPeginConfirmations(uint8 confirmations);
+
+    /// @notice Thrown when reject pegin confirmations are invalid
+    /// @param confirmations The invalid number of confirmations
+    error InvalidRejectPeginConfirmations(uint8 confirmations);
+
+    /// @notice Thrown when reject pegin confirmations exceed pegin confirmations
+    /// @param rejectPeginConfirmations The requested reject pegin confirmations
+    /// @param peginConfirmations The stream's pegin confirmations (reject must be <= this)
+    error RejectPeginConfirmationsExceedsPegin(uint8 rejectPeginConfirmations, uint8 peginConfirmations);
+
+    /// @notice Thrown when pegin confirmations are set lower than reject pegin confirmations
+    /// @param peginConfirmations The requested pegin confirmations
+    /// @param rejectPeginConfirmations The stream's reject pegin confirmations (pegin must be >= this)
+    error PeginConfirmationsLowerThanRejectPegin(uint8 peginConfirmations, uint8 rejectPeginConfirmations);
 
     /// @notice Thrown when peg-out confirmations are invalid
     /// @param confirmations The invalid number of confirmations

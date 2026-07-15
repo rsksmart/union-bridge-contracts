@@ -1,5 +1,5 @@
 # ICommitteeRegistry
-[Git Source](https://github.com/rsksmart/union-bridge-contracts/blob/b56fdca4d854a3d344854107131d121e04834d63/src/interfaces/ICommitteeRegistry.sol)
+[Git Source](https://github.com/rsksmart/union-bridge-contracts/blob/cf5421e1f47ca597147a56a1404f8189f6c70b20/src/interfaces/ICommitteeRegistry.sol)
 
 Interface for managing committee registration and formation in the union bridge
 
@@ -161,6 +161,48 @@ function getCommittee(uint128 _committeeId) external view returns (Committee cal
 |`<none>`|`Committee`|Committee The complete committee information|
 
 
+### getCommitteeTakePubKey
+
+Retrieves the committee take aggregated public key for a specific packet
+
+
+```solidity
+function getCommitteeTakePubKey(uint128 _committeeId) external view returns (bytes memory);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_committeeId`|`uint128`|The committee ID|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`bytes`|bytes The committee take aggregated public key for this packet (33 bytes compressed format)|
+
+
+### getCommitteeDisputePubKey
+
+Retrieves the committee dispute aggregated public key for a specific packet
+
+
+```solidity
+function getCommitteeDisputePubKey(uint128 _committeeId) external view returns (bytes memory);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_committeeId`|`uint128`|The committee ID|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`bytes`|bytes The committee dispute aggregated public key for this packet (33 bytes compressed format)|
+
+
 ### getCommitteeMembers
 
 Gets all members of a specific committee
@@ -182,6 +224,27 @@ function getCommitteeMembers(uint128 _committeeId) external view returns (Commit
 |`<none>`|`CommitteeMember[]`|Array of committee members with their roles|
 
 
+### getCommitteeMembersLength
+
+Gets the number of members in a specific committee
+
+
+```solidity
+function getCommitteeMembersLength(uint128 _committeeId) external view returns (uint256);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_committeeId`|`uint128`|The committee ID|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`uint256`|The number of committee members (e.g. for validating input-not-revealed tx output count)|
+
+
 ### memberRegistry
 
 Gets the member registry contract address
@@ -197,24 +260,29 @@ function memberRegistry() external view returns (IMemberRegistry);
 |`<none>`|`IMemberRegistry`|The member registry contract|
 
 
-### depositAggregatedKey
+### depositAggregatedKeys
 
-Allows a member to deposit information  formation
+Allows a member to deposit their aggregated keys for committee formation
 
-*Called by members to provide their aggregated key for a pending committee*
+*Called by members to provide their take and dispute aggregated keys for a pending committee*
 
 *Only callable when contract is unpaused*
 
 
 ```solidity
-function depositAggregatedKey(uint128 _committeeId, bytes memory _aggregatedKey) external;
+function depositAggregatedKeys(
+    uint128 _committeeId,
+    bytes memory _takeAggregatedKey,
+    bytes memory _disputeAggregatedKey
+) external;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
 |`_committeeId`|`uint128`|The ID of the pending committee|
-|`_aggregatedKey`|`bytes`|The aggregated public key provided by the member (must be exactly 33 bytes)|
+|`_takeAggregatedKey`|`bytes`|The take aggregated public key provided by the member (must be exactly 33 bytes)|
+|`_disputeAggregatedKey`|`bytes`|The dispute aggregated public key provided by the member (must be exactly 33 bytes)|
 
 
 ### createCommittee
@@ -372,13 +440,13 @@ function getMemberCommunicationData(uint128 _committeeId, address _memberAddress
 |`communicationData`|`CommunicationData[]`|encrypted communication data (IP and Port) from the committee members|
 
 
-### isMemberInCommittee
+### validateMemberInCommittee
 
-Checks if a member is part of a specific committee
+Validates that a member is part of a specific committee; reverts if not
 
 
 ```solidity
-function isMemberInCommittee(uint128 _committeeId, address _memberAddress) external view returns (bool);
+function validateMemberInCommittee(uint128 _committeeId, address _memberAddress) external view;
 ```
 **Parameters**
 
@@ -473,6 +541,27 @@ function setCommitteeMemberCount(uint256 _committeeMemberCount) external;
 |`_committeeMemberCount`|`uint256`|The exact number of members required for a committee|
 
 
+### demoteOperatorToWatchtower
+
+Demotes an operator to watchtower in a specific active committee
+
+*Only callable by the contract owner*
+
+*Owner-only access is temporary, once slashing is implemented, this function
+will be internal and called directly by the slashing mechanism*
+
+
+```solidity
+function demoteOperatorToWatchtower(uint128 _committeeId, address _memberAddress) external;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_committeeId`|`uint128`|The ID of the active committee|
+|`_memberAddress`|`address`|The address of the operator to demote|
+
+
 ### selectTakeOperator
 
 Gets the operator dispute data (address and dispute public key) for operator-take operations
@@ -487,7 +576,7 @@ Gets the operator dispute data (address and dispute public key) for operator-tak
 ```solidity
 function selectTakeOperator(uint128 _committeeId, SignatureData[] calldata _signatureData, uint8 _missingNonces)
     external
-    returns (address operatorAddress, bytes32 disputePubKey, bytes32 takePubKey);
+    returns (address operatorAddress, CompactPubKey memory disputePubKey, CompactPubKey memory takePubKey);
 ```
 **Parameters**
 
@@ -502,8 +591,8 @@ function selectTakeOperator(uint128 _committeeId, SignatureData[] calldata _sign
 |Name|Type|Description|
 |----|----|-----------|
 |`operatorAddress`|`address`|The address of the next available operator for take operations|
-|`disputePubKey`|`bytes32`|The operator's dispute public key|
-|`takePubKey`|`bytes32`|The operator's take public key|
+|`disputePubKey`|`CompactPubKey`|The operator's dispute public key|
+|`takePubKey`|`CompactPubKey`|The operator's take public key|
 
 
 ### releaseCommittee
@@ -607,11 +696,11 @@ function pendingCommitteeTimeout() external view returns (uint256);
 
 ### getCommitteeDisputeKeys
 
-Gets the dispute keys (covenant public keys) for all committee members
+Gets the dispute keys for all committee members
 
 
 ```solidity
-function getCommitteeDisputeKeys(uint128 _committeeId) external view returns (bytes32[] memory);
+function getCommitteeDisputeKeys(uint128 _committeeId) external view returns (CompactPubKey[] memory);
 ```
 **Parameters**
 
@@ -623,7 +712,7 @@ function getCommitteeDisputeKeys(uint128 _committeeId) external view returns (by
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`bytes32[]`|Array of dispute keys for all members|
+|`<none>`|`CompactPubKey[]`|Array of dispute keys for all members|
 
 
 ### forceDiscardPendingCommittee_TESTNET
@@ -777,7 +866,9 @@ Event emitted when member info is deposited for committee formation
 
 
 ```solidity
-event MemberInfoDeposited(uint128 indexed committeeId, address indexed member, bytes aggregatedKey);
+event MemberInfoDeposited(
+    uint128 indexed committeeId, address indexed member, bytes takeAggregatedKey, bytes disputeAggregatedKey
+);
 ```
 
 **Parameters**
@@ -786,7 +877,8 @@ event MemberInfoDeposited(uint128 indexed committeeId, address indexed member, b
 |----|----|-----------|
 |`committeeId`|`uint128`|The ID of the pending committee|
 |`member`|`address`|The member's address|
-|`aggregatedKey`|`bytes`|The aggregated key provided by the member|
+|`takeAggregatedKey`|`bytes`|The take aggregated key provided by the member|
+|`disputeAggregatedKey`|`bytes`|The dispute aggregated key provided by the member|
 
 ### NoRemainingHonestOperators
 Event emitted when no honest operators remain in a committee
@@ -850,6 +942,21 @@ event CommitteeMembersReleased(uint64 streamId, uint64 packetNumber);
 |----|----|-----------|
 |`streamId`|`uint64`|The stream ID for the committee|
 |`packetNumber`|`uint64`|The packet number where the committee was active|
+
+### OperatorDemotedToWatchtower
+Event emitted when an operator is demoted to watchtower in a committee
+
+
+```solidity
+event OperatorDemotedToWatchtower(uint128 indexed committeeId, address indexed memberAddress);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`committeeId`|`uint128`|The committee where the demotion occurred|
+|`memberAddress`|`address`|The address of the demoted member|
 
 ### PendingCommitteeForceDiscarded
 
@@ -937,6 +1044,14 @@ Error thrown when the aggregated key is all zeros
 
 ```solidity
 error InvalidAggregatedKeyZero();
+```
+
+### InvalidSameAggregatedKeys
+Error thrown when take and dispute aggregated keys are the same
+
+
+```solidity
+error InvalidSameAggregatedKeys();
 ```
 
 ### MemberNotInCommittee
@@ -1162,4 +1277,49 @@ error PendingCommitteeExpired(uint128 committeeId, uint256 currentTime, uint256 
 |`currentTime`|`uint256`|Timestamp actual|
 |`createdAt`|`uint256`|Timestamp committee creation|
 |`expireAt`|`uint256`|Timestamp committee expiration|
+
+### CommitteeIsNotActive
+Thrown when trying to demote from a committee that is still pending
+
+
+```solidity
+error CommitteeIsNotActive(uint128 committeeId);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`committeeId`|`uint128`|The ID of the pending committee|
+
+### MemberIsNotOperatorInCommittee
+Thrown when the member is not an operator in the given committee
+
+
+```solidity
+error MemberIsNotOperatorInCommittee(uint128 committeeId, address memberAddress);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`committeeId`|`uint128`|The committee ID|
+|`memberAddress`|`address`|The member's address|
+
+### DemotionViolatesMinOperators
+Thrown when demotion would drop the committee below the minimum operator count
+
+
+```solidity
+error DemotionViolatesMinOperators(uint128 committeeId, uint256 currentOperators, uint256 minOperators);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`committeeId`|`uint128`|The committee ID|
+|`currentOperators`|`uint256`|The current number of operators in the committee|
+|`minOperators`|`uint256`|The minimum required|
 
