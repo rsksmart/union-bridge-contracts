@@ -301,6 +301,15 @@
 3. **Pegout queueing** – `requestPegout` no longer reverts when a stream is busy. Subsequent requests must use `PegoutManager.enqueuePegout()` to join the per-stream queue. Once the active peg-out completes, the next request is automatically promoted; anyone can also trigger promotion by calling `tryProcessEnqueuedPegout`. Integrations must handle the queued state and surface queue position to users.
 4. **rejectPeginConfirmations** – `StreamManager` now tracks a separate confirmation count for reject-pegin and user-reimbursement transactions, configurable via `setRejectPeginConfirmations`. This must be ≤ `peginConfirmations`.
 
+## [v0.4.3-alpha]
+
+### Deployment Script Changes (v0.4.3-alpha)
+
+1. **RSK Regtest deployments now use the native Bridge precompile**
+   - **Reason**: RSK regtest nodes run the real PowPeg bridge precompile, so deploying a mock diverges from mainnet/testnet behavior.
+   - **Change**: `01_DeployImplAndProxy.s.sol` no longer deploys a `BridgeMock` when `block.chainid == ChainIds.RSK_REGTEST` (33). It now wires `RbtcBridge` to the native bridge at `RSK_BRIDGE_ADDRESS` (`0x0000000000000000000000000000000001000006`), same as mainnet/testnet. `BridgeMock` is still deployed for the Foundry `LOCAL` chain id (31337).
+   - **Impact**: Environments deploying to RSK regtest that relied on `BridgeMock` (e.g. to manipulate bridge state in tests) must run under the `LOCAL` chain id instead. Deployed contract ABIs are unchanged.
+
 ## [v0.4.2-alpha]
 
 ### Base Event semantics (`RbtcBridge`) (v0.4.2-alpha)

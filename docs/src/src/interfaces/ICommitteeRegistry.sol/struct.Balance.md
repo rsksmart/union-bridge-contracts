@@ -1,5 +1,5 @@
 # Balance
-[Git Source](https://github.com/rsksmart/union-bridge-contracts/blob/68c14faa89612dfba1b7e9abf29455625661476f/src/interfaces/ICommitteeRegistry.sol)
+[Git Source](https://github.com/rsksmart/union-bridge-contracts/blob/b56fdca4d854a3d344854107131d121e04834d63/src/interfaces/ICommitteeRegistry.sol)
 
 Represents the balance and application staking information for a member
 

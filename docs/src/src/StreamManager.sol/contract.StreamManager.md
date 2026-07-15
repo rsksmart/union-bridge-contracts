@@ -1,5 +1,5 @@
 # StreamManager
-[Git Source](https://github.com/rsksmart/union-bridge-contracts/blob/cf5421e1f47ca597147a56a1404f8189f6c70b20/src/StreamManager.sol)
+[Git Source](https://github.com/rsksmart/union-bridge-contracts/blob/6c85aeb17a23ee9d675a92f8655a551ecca7b4c9/src/StreamManager.sol)
 
 **Inherits:**
 [IStreamManager](/src/interfaces/IStreamManager.sol/interface.IStreamManager.md), [BaseProxy](/src/BaseProxy.sol/abstract.BaseProxy.md)

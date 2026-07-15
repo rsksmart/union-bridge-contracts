@@ -1,5 +1,5 @@
 # Bech32m
-[Git Source](https://github.com/rsksmart/union-bridge-contracts/blob/cf5421e1f47ca597147a56a1404f8189f6c70b20/src/libraries/Bech32m.sol)
+[Git Source](https://github.com/rsksmart/union-bridge-contracts/blob/6c85aeb17a23ee9d675a92f8655a551ecca7b4c9/src/libraries/Bech32m.sol)
 
 Library for Bech32m encoding and decoding used in Bitcoin Taproot addresses
 
