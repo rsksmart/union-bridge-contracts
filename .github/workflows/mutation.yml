@@ -26,6 +26,15 @@ jobs:
     permissions:
       contents: read
       security-events: write
+    env:
+      # Pinned mewt release (kept in sync with Makefile's MEWT_VERSION) so a new
+      # upstream release can't run in CI without a reviewed bump here. The
+      # installer script is itself version-pinned (its download URLs and
+      # checksums are baked in at publish time), so fetching it from this
+      # specific tag - not /latest/ - is what makes the install reproducible,
+      # and using the same value for the cache key rules out a mismatch
+      # between what got cached and what gets installed.
+      MEWT_VERSION: "4.0.0"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 #v7.0.1
         with:
@@ -127,33 +136,17 @@ jobs:
         with:
           version: v1.3.1
 
-      - name: Resolve mewt version
-        if: steps.targets.outputs.has_targets == 'true'
-        id: mewt-version
-        run: |
-          # Tolerate rate limiting or a non-JSON response: `if` exempts this
-          # pipeline from `set -e`, so a curl/jq failure falls through to the
-          # unresolved-tag fallback below instead of failing the step.
-          if ! tag="$(curl -sL https://api.github.com/repos/trailofbits/mewt/releases/latest | jq -re '.tag_name')"; then
-            tag=""
-          fi
-          # A rate-limited or failed lookup must not cache an install under a bogus key.
-          if [ -z "$tag" ] || [ "$tag" = "null" ]; then
-            tag="unresolved-${{ github.run_id }}"
-          fi
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
-
       - name: Cache mewt
         if: steps.targets.outputs.has_targets == 'true'
         id: mewt-cache
         uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
         with:
           path: ~/.local/bin/mewt
-          key: mewt-${{ runner.os }}-${{ steps.mewt-version.outputs.tag }}
+          key: mewt-${{ runner.os }}-${{ env.MEWT_VERSION }}
 
       - name: Install mewt
         if: steps.targets.outputs.has_targets == 'true' && steps.mewt-cache.outputs.cache-hit != 'true'
-        run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/trailofbits/mewt/releases/latest/download/mewt-installer.sh | sh
+        run: curl --proto '=https' --tlsv1.2 -LsSf "https://github.com/trailofbits/mewt/releases/download/v${MEWT_VERSION}/mewt-installer.sh" | sh
 
       - name: Add mewt to PATH
         if: steps.targets.outputs.has_targets == 'true'
@@ -161,7 +154,16 @@ jobs:
 
       # Targets are always passed explicitly, which replaces [targets].include
       # for this invocation. They are already intersected with the allowlist.
+      #
+      # continue-on-error is deliberate: this step's exit code conflates two
+      # very different things. Surviving mutants alone never make `mewt run`
+      # exit non-zero (that's the "advisory only" model), so a failure here
+      # means the run itself broke - e.g. a failing baseline test, or mewt
+      # crashing. The steps below key off `outcome` to tell those apart from
+      # a clean run instead of publishing a misleadingly "green" result from a
+      # broken or partial campaign.
       - name: Run mutation campaign
+        id: campaign
         if: steps.targets.outputs.has_targets == 'true'
         continue-on-error: true
         env:
@@ -177,10 +179,25 @@ jobs:
           # shellcheck disable=SC2086
           mewt run "$@" $TARGETS
 
+      - name: Report campaign failure
+        if: steps.campaign.outcome == 'failure'
+        run: |
+          {
+            echo "### Mutation campaign failed"
+            echo
+            echo "\`mewt run\` did not complete successfully - this points at a broken"
+            echo "baseline (the allowlisted test command fails even without mutations)"
+            echo "or a tooling error, not at surviving mutants."
+            echo
+            echo "See the **Run mutation campaign** step log for details. No mutant"
+            echo "results are available for this run."
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Summarize results
-        if: steps.targets.outputs.has_targets == 'true'
-        # The campaign step above is continue-on-error: a failed or partial
-        # campaign must not turn this advisory job red via `mewt status`.
+        # Gated on the campaign's own success, not just has_targets: a failed
+        # or partial campaign must not be read by `mewt status` and published
+        # as if it were a clean result.
+        if: steps.campaign.outcome == 'success'
         continue-on-error: true
         env:
           TARGETS: ${{ steps.targets.outputs.targets }}
@@ -223,14 +240,20 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Generate SARIF
-        if: steps.targets.outputs.has_targets == 'true'
+        id: sarif
         # Same reasoning as "Summarize results": a failed/partial campaign
-        # must not turn this advisory job red via `mewt results`.
+        # must not be read by `mewt results` and published as a result.
+        if: steps.campaign.outcome == 'success'
         continue-on-error: true
         run: mewt results --format sarif > mutation.sarif
 
       - name: Upload SARIF file
-        if: steps.targets.outputs.has_targets == 'true' && hashFiles('mutation.sarif') != '' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
+        # `hashFiles` only confirms the redirect created a file, which happens
+        # even when `mewt results` itself fails - so gate on this step's own
+        # outcome instead of (or as well as) file presence, otherwise an
+        # empty/invalid mutation.sarif can reach upload-sarif and fail this
+        # supposedly advisory job when it fails to parse.
+        if: steps.sarif.outcome == 'success' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
         uses: github/codeql-action/upload-sarif@32f7c15247fa6542dc765bd40f6a15dc2caeed89 # v4.31.2
         with:
           sarif_file: mutation.sarif

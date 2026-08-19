@@ -17,12 +17,18 @@ BASE_REF ?= origin/main
 # Optional comma-separated mutation slugs, e.g. MUTATIONS=ER,CR,IF,IT,NR,RDV,RCI
 MUTATIONS ?=
 MEWT_FLAGS = $(if $(MUTATIONS),--mutations $(MUTATIONS))
+# Pinned mewt release (kept in sync with .github/workflows/mutation.yml) so a
+# new upstream release can't run in CI or locally without a reviewed bump here.
+# The installer script itself is version-pinned (its download URLs and
+# checksums are baked in at publish time), so fetching it from this specific
+# tag - not /latest/ - is what makes the install reproducible.
+MEWT_VERSION ?= 4.0.0
 
-# Install mewt (same installer the CI workflow uses)
+# Install mewt (same pinned installer the CI workflow uses)
 .PHONY: mutate-install
 mutate-install:
-	@echo "Installing mewt..."
-	curl --proto '=https' --tlsv1.2 -LsSf https://github.com/trailofbits/mewt/releases/latest/download/mewt-installer.sh | sh
+	@echo "Installing mewt v$(MEWT_VERSION)..."
+	curl --proto '=https' --tlsv1.2 -LsSf "https://github.com/trailofbits/mewt/releases/download/v$(MEWT_VERSION)/mewt-installer.sh" | sh
 	@echo ""
 	@mewt_bin="$$(command -v mewt || echo "$$HOME/.local/bin/mewt")"; \
 	if [ ! -x "$$mewt_bin" ]; then \
@@ -49,8 +55,8 @@ mutate-scope:
 # Mutate the contracts changed against BASE_REF
 .PHONY: mutate-changed
 mutate-changed:
-	@if ! git diff --quiet || ! git diff --cached --quiet; then \
-		echo "Error: working tree is dirty."; \
+	@if [ -n "$$(git status --porcelain)" ]; then \
+		echo "Error: working tree is dirty (including untracked files)."; \
 		echo "mewt rewrites contracts in place, so commit or stash first."; \
 		exit 1; \
 	fi
@@ -76,8 +82,8 @@ mutate-file:
 		echo "Run 'make mutate-scope' to see the eligible contracts."; \
 		exit 1; \
 	fi
-	@if ! git diff --quiet || ! git diff --cached --quiet; then \
-		echo "Error: working tree is dirty."; \
+	@if [ -n "$$(git status --porcelain)" ]; then \
+		echo "Error: working tree is dirty (including untracked files)."; \
 		echo "mewt rewrites contracts in place, so commit or stash first."; \
 		exit 1; \
 	fi
