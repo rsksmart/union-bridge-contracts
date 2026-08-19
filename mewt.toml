@@ -42,124 +42,128 @@ timeout = 120
 
 [[per_target]]
 glob = "src/AccessManager.sol"
-test.cmd = "forge test --match-path \"test/AccessManager.t.sol\""
+test.cmd = "forge test --force --match-path \"test/AccessManager.t.sol\""
 
 [[per_target]]
 glob = "src/BaseProxy.sol"
 # Directly or transitively inherited by nearly every contract in src/, and no
 # single suite (or short chain) exercises it in isolation; run everything.
-test.cmd = "forge test"
+test.cmd = "forge test --force"
 
 [[per_target]]
 glob = "src/BitcoinManager.sol"
-test.cmd = "forge test --match-path \"test/BitcoinManager.t.sol\" && forge test --match-path \"test/BitcoinManagerTaprootTree.t.sol\" && forge test --match-path \"test/BitVMXCompatibility.t.sol\""
+test.cmd = "forge test --force --match-path \"test/BitcoinManager.t.sol\" && forge test --force --match-path \"test/BitcoinManagerTaprootTree.t.sol\" && forge test --force --match-path \"test/BitVMXCompatibility.t.sol\""
 
 [[per_target]]
 glob = "src/ChallengeManager.sol"
-test.cmd = "forge test --match-path \"test/ChallengeManager.t.sol\""
+test.cmd = "forge test --force --match-path \"test/ChallengeManager.t.sol\""
 
 [[per_target]]
 glob = "src/CommitteeRegistry.sol"
-test.cmd = "forge test --match-path \"test/CommitteeRegistry.t.sol\" && forge test --match-path \"test/CommitteeMemberIterationGas.t.sol\""
+test.cmd = "forge test --force --match-path \"test/CommitteeRegistry.t.sol\" && forge test --force --match-path \"test/CommitteeMemberIterationGas.t.sol\""
 
 [[per_target]]
 glob = "src/MemberRegistry.sol"
-test.cmd = "forge test --match-path \"test/MemberRegistry.t.sol\""
+test.cmd = "forge test --force --match-path \"test/MemberRegistry.t.sol\""
 
 [[per_target]]
 glob = "src/Musig2.sol"
-test.cmd = "forge test --match-path \"test/Musig2.t.sol\""
+test.cmd = "forge test --force --match-path \"test/Musig2.t.sol\""
 
 [[per_target]]
 glob = "src/OperatorTakeManager.sol"
-test.cmd = "forge test --match-path \"test/OperatorTakeManager.t.sol\""
+test.cmd = "forge test --force --match-path \"test/OperatorTakeManager.t.sol\""
 
 [[per_target]]
 glob = "src/Pausable.sol"
 # Inherited by MemberRegistry, CommitteeRegistry, and (via PegBase) every peg
 # manager and ChallengeManager; run everything rather than an incomplete chain.
-test.cmd = "forge test"
+test.cmd = "forge test --force"
 
 [[per_target]]
 glob = "src/PauseManager.sol"
-test.cmd = "forge test --match-path \"test/PauseManager.t.sol\""
+test.cmd = "forge test --force --match-path \"test/PauseManager.t.sol\""
 
 [[per_target]]
 glob = "src/PegBase.sol"
-test.cmd = "forge test --match-path \"test/PeginManager.t.sol\" && forge test --match-path \"test/PegoutManager.t.sol\" && forge test --match-path \"test/ChallengeManager.t.sol\" && forge test --match-path \"test/OperatorTakeManager.t.sol\""
+test.cmd = "forge test --force --match-path \"test/PeginManager.t.sol\" && forge test --force --match-path \"test/PegoutManager.t.sol\" && forge test --force --match-path \"test/ChallengeManager.t.sol\" && forge test --force --match-path \"test/OperatorTakeManager.t.sol\""
 
 [[per_target]]
 glob = "src/PegManagerBase.sol"
-test.cmd = "forge test --match-path \"test/PeginManager.t.sol\" && forge test --match-path \"test/PegoutManager.t.sol\" && forge test --match-path \"test/OperatorTakeManager.t.sol\""
+test.cmd = "forge test --force --match-path \"test/PeginManager.t.sol\" && forge test --force --match-path \"test/PegoutManager.t.sol\" && forge test --force --match-path \"test/OperatorTakeManager.t.sol\""
 
 [[per_target]]
 glob = "src/PeginManager.sol"
-test.cmd = "forge test --match-path \"test/PeginManager.t.sol\""
+test.cmd = "forge test --force --match-path \"test/PeginManager.t.sol\""
 
 [[per_target]]
 glob = "src/PegoutManager.sol"
-test.cmd = "forge test --match-path \"test/PegoutManager.t.sol\""
+test.cmd = "forge test --force --match-path \"test/PegoutManager.t.sol\""
 
 [[per_target]]
 glob = "src/RbtcBridge.sol"
-test.cmd = "forge test --match-path \"test/RbtcBridge.t.sol\""
+test.cmd = "forge test --force --match-path \"test/RbtcBridge.t.sol\""
 
 [[per_target]]
 glob = "src/SignatureManager.sol"
-test.cmd = "forge test --match-path \"test/SignatureManager.t.sol\""
+test.cmd = "forge test --force --match-path \"test/SignatureManager.t.sol\""
 
 [[per_target]]
 glob = "src/StreamManager.sol"
-test.cmd = "forge test --match-path \"test/StreamManager.t.sol\""
+test.cmd = "forge test --force --match-path \"test/StreamManager.t.sol\""
 
 [[per_target]]
 glob = "src/libraries/Bech32m.sol"
-test.cmd = "forge test --match-path \"test/libraries/Bech32m.t.sol\""
+test.cmd = "forge test --force --match-path \"test/libraries/Bech32m.t.sol\""
 
 [[per_target]]
 glob = "src/libraries/BtcHelper.sol"
-test.cmd = "forge test --match-path \"test/libraries/BtcHelper.t.sol\""
+# Its own dedicated suite only covers reverseBytes32/hash256/hash160; the rest
+# of the library is exercised through BtcTxEncoder, BtcScriptParser,
+# MemberRegistry, BitcoinManager and the peg managers. Run everything rather
+# than maintain that consumer list.
+test.cmd = "forge test --force"
 
 [[per_target]]
 glob = "src/libraries/BtcScriptParser.sol"
-test.cmd = "forge test --match-path \"test/libraries/BtcScriptParser.t.sol\""
+test.cmd = "forge test --force --match-path \"test/libraries/BtcScriptParser.t.sol\""
 
 [[per_target]]
 glob = "src/libraries/BtcTaproot.sol"
-test.cmd = "forge test --match-path \"test/libraries/BtcTaproot.t.sol\""
+test.cmd = "forge test --force --match-path \"test/libraries/BtcTaproot.t.sol\""
 
 [[per_target]]
 glob = "src/libraries/BtcTxEncoder.sol"
-test.cmd = "forge test --match-path \"test/libraries/BtcTxEncoder.t.sol\""
+test.cmd = "forge test --force --match-path \"test/libraries/BtcTxEncoder.t.sol\""
 
 [[per_target]]
 glob = "src/libraries/BytesHelper.sol"
 # No dedicated unit test; imported directly by Musig2, BitcoinManager and
 # CommitteeRegistry (verified via `grep -rl BytesHelper src/`), so every
 # consumer suite must run or their mutants show as false survivors.
-test.cmd = "forge test --match-path \"test/Musig2.t.sol\" && forge test --match-path \"test/BitcoinManager.t.sol\" && forge test --match-path \"test/BitcoinManagerTaprootTree.t.sol\" && forge test --match-path \"test/BitVMXCompatibility.t.sol\" && forge test --match-path \"test/CommitteeRegistry.t.sol\" && forge test --match-path \"test/CommitteeMemberIterationGas.t.sol\""
+test.cmd = "forge test --force --match-path \"test/Musig2.t.sol\" && forge test --force --match-path \"test/BitcoinManager.t.sol\" && forge test --force --match-path \"test/BitcoinManagerTaprootTree.t.sol\" && forge test --force --match-path \"test/BitVMXCompatibility.t.sol\" && forge test --force --match-path \"test/CommitteeRegistry.t.sol\" && forge test --force --match-path \"test/CommitteeMemberIterationGas.t.sol\""
 
 [[per_target]]
 glob = "src/libraries/Constants.sol"
 # No dedicated unit test; imported by 11 contracts across almost the whole
 # system (verified via `grep -rl Constants src/`). Run everything rather than
 # maintain a long, drift-prone consumer chain.
-test.cmd = "forge test"
+test.cmd = "forge test --force"
 
 [[per_target]]
 glob = "src/libraries/Network.sol"
 # No dedicated unit test; imported directly by AccessManager, BitcoinManager
 # and Bech32m (verified via `grep -rl Network src/`).
-test.cmd = "forge test --match-path \"test/AccessManager.t.sol\" && forge test --match-path \"test/BitcoinManager.t.sol\" && forge test --match-path \"test/BitcoinManagerTaprootTree.t.sol\" && forge test --match-path \"test/BitVMXCompatibility.t.sol\" && forge test --match-path \"test/libraries/Bech32m.t.sol\""
+test.cmd = "forge test --force --match-path \"test/AccessManager.t.sol\" && forge test --force --match-path \"test/BitcoinManager.t.sol\" && forge test --force --match-path \"test/BitcoinManagerTaprootTree.t.sol\" && forge test --force --match-path \"test/BitVMXCompatibility.t.sol\" && forge test --force --match-path \"test/libraries/Bech32m.t.sol\""
 
 [[per_target]]
 glob = "src/libraries/OpCodes.sol"
 # No dedicated unit test; imported directly by BitcoinManager, BtcScriptParser
 # and BtcTaproot (verified via `grep -rl OpCodes src/`).
-test.cmd = "forge test --match-path \"test/BitcoinManager.t.sol\" && forge test --match-path \"test/BitcoinManagerTaprootTree.t.sol\" && forge test --match-path \"test/BitVMXCompatibility.t.sol\" && forge test --match-path \"test/libraries/BtcScriptParser.t.sol\" && forge test --match-path \"test/libraries/BtcTaproot.t.sol\""
+test.cmd = "forge test --force --match-path \"test/BitcoinManager.t.sol\" && forge test --force --match-path \"test/BitcoinManagerTaprootTree.t.sol\" && forge test --force --match-path \"test/BitVMXCompatibility.t.sol\" && forge test --force --match-path \"test/libraries/BtcScriptParser.t.sol\" && forge test --force --match-path \"test/libraries/BtcTaproot.t.sol\""
 
 [[per_target]]
 glob = "src/libraries/Secp256k1.sol"
 # No dedicated unit test; imported directly by MemberRegistry, Musig2 and
 # BtcTaproot (verified via `grep -rl Secp256k1 src/`).
-test.cmd = "forge test --match-path \"test/MemberRegistry.t.sol\" && forge test --match-path \"test/Musig2.t.sol\" && forge test --match-path \"test/libraries/BtcTaproot.t.sol\""
+test.cmd = "forge test --force --match-path \"test/MemberRegistry.t.sol\" && forge test --force --match-path \"test/Musig2.t.sol\" && forge test --force --match-path \"test/libraries/BtcTaproot.t.sol\""
