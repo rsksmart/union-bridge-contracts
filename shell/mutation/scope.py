@@ -111,7 +111,11 @@ def is_allowed(path: str, compiled: list[tuple[str, re.Pattern[str]]]) -> bool:
 def active_contracts() -> list[str]:
     """Every contract under src/ that is eligible for mutation testing."""
     paths = [path.as_posix() for path in sorted(Path("src").rglob("*.sol"))]
-    ignore = tuple(_load_config().get("targets", {}).get("ignore", [])) or EXCLUDED_PREFIXES
+    targets_config = _load_config().get("targets", {})
+    # mewt.toml is the source of truth: an explicit (even empty) [targets].ignore
+    # must be honored as-is, matching mewt's own "empty means ignore nothing"
+    # behavior. EXCLUDED_PREFIXES is only a fallback for a missing key.
+    ignore = tuple(targets_config["ignore"]) if "ignore" in targets_config else EXCLUDED_PREFIXES
     return [path for path in paths if not any(substr in path for substr in ignore)]
 
 
