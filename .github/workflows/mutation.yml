@@ -27,7 +27,7 @@ jobs:
       contents: read
       security-events: write
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 #v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 #v7.0.1
         with:
           submodules: recursive
           # Full history so the base ref is available to `git diff`.
@@ -67,8 +67,12 @@ jobs:
           HEAD_BASE_REF: ${{ github.base_ref }}
         run: |
           if [ -n "$INPUT_TARGETS" ]; then
+            # Word splitting on $INPUT_TARGETS is intended (it's a space-separated
+            # list); pathname expansion is not, so globbing is disabled first.
+            set -f
             # shellcheck disable=SC2086
             targets="$(printf '%s\n' $INPUT_TARGETS | python3 shell/mutation/scope.py filter)"
+            set +f
           else
             targets="$(./shell/mutation/changed-contracts.sh "origin/${HEAD_BASE_REF:-main}")"
           fi
@@ -119,7 +123,7 @@ jobs:
 
       - name: Install Foundry
         if: steps.targets.outputs.has_targets == 'true'
-        uses: foundry-rs/foundry-toolchain@b00af27efadbc7b4ca8b82abbd903b17cc874d2a # v1.9.0
+        uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1.9.1
         with:
           version: v1.3.1
 
@@ -127,8 +131,13 @@ jobs:
         if: steps.targets.outputs.has_targets == 'true'
         id: mewt-version
         run: |
-          tag="$(curl -sL https://api.github.com/repos/trailofbits/mewt/releases/latest | jq -r '.tag_name')"
-          # A rate-limited lookup must not cache an install under a bogus key.
+          # Tolerate rate limiting or a non-JSON response: `if` exempts this
+          # pipeline from `set -e`, so a curl/jq failure falls through to the
+          # unresolved-tag fallback below instead of failing the step.
+          if ! tag="$(curl -sL https://api.github.com/repos/trailofbits/mewt/releases/latest | jq -re '.tag_name')"; then
+            tag=""
+          fi
+          # A rate-limited or failed lookup must not cache an install under a bogus key.
           if [ -z "$tag" ] || [ "$tag" = "null" ]; then
             tag="unresolved-${{ github.run_id }}"
           fi
@@ -170,6 +179,9 @@ jobs:
 
       - name: Summarize results
         if: steps.targets.outputs.has_targets == 'true'
+        # The campaign step above is continue-on-error: a failed or partial
+        # campaign must not turn this advisory job red via `mewt status`.
+        continue-on-error: true
         env:
           TARGETS: ${{ steps.targets.outputs.targets }}
           MUTATIONS: ${{ steps.targets.outputs.mutations }}
@@ -212,6 +224,9 @@ jobs:
 
       - name: Generate SARIF
         if: steps.targets.outputs.has_targets == 'true'
+        # Same reasoning as "Summarize results": a failed/partial campaign
+        # must not turn this advisory job red via `mewt results`.
+        continue-on-error: true
         run: mewt results --format sarif > mutation.sarif
 
       - name: Upload SARIF file

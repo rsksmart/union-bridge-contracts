@@ -17,8 +17,16 @@ from __future__ import annotations
 
 import re
 import sys
-import tomllib
 from pathlib import Path
+
+try:
+    import tomllib
+except ModuleNotFoundError:
+    sys.exit(
+        "tomllib is not available (needs Python 3.11+); "
+        f"this interpreter is {sys.version.split()[0]}. "
+        "Run with a newer python3, e.g. `python3.12 shell/mutation/scope.py ...`."
+    )
 
 CONFIG = Path("mewt.toml")
 

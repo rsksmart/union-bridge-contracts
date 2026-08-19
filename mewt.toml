@@ -50,7 +50,7 @@ test.cmd = "forge test --match-path \"test/deploy/DeployImplAndProxy.t.sol\""
 
 [[per_target]]
 glob = "src/BitcoinManager.sol"
-test.cmd = "forge test --match-path \"test/{BitcoinManager,BitcoinManagerTaprootTree,BitVMXCompatibility}.t.sol\""
+test.cmd = "forge test --match-path \"test/BitcoinManager.t.sol\" && forge test --match-path \"test/BitcoinManagerTaprootTree.t.sol\" && forge test --match-path \"test/BitVMXCompatibility.t.sol\""
 
 [[per_target]]
 glob = "src/ChallengeManager.sol"
@@ -58,7 +58,7 @@ test.cmd = "forge test --match-path \"test/ChallengeManager.t.sol\""
 
 [[per_target]]
 glob = "src/CommitteeRegistry.sol"
-test.cmd = "forge test --match-path \"test/{CommitteeRegistry,CommitteeMemberIterationGas}.t.sol\""
+test.cmd = "forge test --match-path \"test/CommitteeRegistry.t.sol\" && forge test --match-path \"test/CommitteeMemberIterationGas.t.sol\""
 
 [[per_target]]
 glob = "src/MemberRegistry.sol"
@@ -82,11 +82,11 @@ test.cmd = "forge test --match-path \"test/PauseManager.t.sol\""
 
 [[per_target]]
 glob = "src/PegBase.sol"
-test.cmd = "forge test --match-path \"test/{PeginManager,PegoutManager,ChallengeManager,OperatorTakeManager}.t.sol\""
+test.cmd = "forge test --match-path \"test/PeginManager.t.sol\" && forge test --match-path \"test/PegoutManager.t.sol\" && forge test --match-path \"test/ChallengeManager.t.sol\" && forge test --match-path \"test/OperatorTakeManager.t.sol\""
 
 [[per_target]]
 glob = "src/PegManagerBase.sol"
-test.cmd = "forge test --match-path \"test/{PeginManager,PegoutManager}.t.sol\""
+test.cmd = "forge test --match-path \"test/PeginManager.t.sol\" && forge test --match-path \"test/PegoutManager.t.sol\""
 
 [[per_target]]
 glob = "src/PeginManager.sol"
@@ -130,20 +130,20 @@ test.cmd = "forge test --match-path \"test/libraries/BtcTxEncoder.t.sol\""
 
 [[per_target]]
 glob = "src/libraries/BytesHelper.sol"
-test.cmd = "forge test --match-path \"test/{PegoutManager.t.sol,libraries/BtcScriptParser.t.sol}\""
+test.cmd = "forge test --match-path \"test/PegoutManager.t.sol\" && forge test --match-path \"test/libraries/BtcScriptParser.t.sol\""
 
 [[per_target]]
 glob = "src/libraries/Constants.sol"
-test.cmd = "forge test --match-path \"test/{PeginManager,PegoutManager}.t.sol\""
+test.cmd = "forge test --match-path \"test/PeginManager.t.sol\" && forge test --match-path \"test/PegoutManager.t.sol\""
 
 [[per_target]]
 glob = "src/libraries/Network.sol"
-test.cmd = "forge test --match-path \"test/{deploy/DeployImplAndProxy.t.sol,libraries/Bech32m.t.sol,StreamManager.t.sol}\""
+test.cmd = "forge test --match-path \"test/deploy/DeployImplAndProxy.t.sol\" && forge test --match-path \"test/libraries/Bech32m.t.sol\" && forge test --match-path \"test/StreamManager.t.sol\""
 
 [[per_target]]
 glob = "src/libraries/OpCodes.sol"
-test.cmd = "forge test --match-path \"test/{BitcoinManagerTaprootTree.t.sol,libraries/BtcScriptParser.t.sol}\""
+test.cmd = "forge test --match-path \"test/BitcoinManagerTaprootTree.t.sol\" && forge test --match-path \"test/libraries/BtcScriptParser.t.sol\""
 
 [[per_target]]
 glob = "src/libraries/Secp256k1.sol"
-test.cmd = "forge test --match-path \"test/{libraries/BtcTaproot.t.sol,MemberRegistry.t.sol}\""
+test.cmd = "forge test --match-path \"test/libraries/BtcTaproot.t.sol\" && forge test --match-path \"test/MemberRegistry.t.sol\""

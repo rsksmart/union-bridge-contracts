@@ -55,7 +55,7 @@ mutate-changed:
 		exit 1; \
 	fi
 	@echo "Resolving contracts changed against $(BASE_REF)..."
-	@targets=$$(./shell/mutation/changed-contracts.sh $(BASE_REF)); \
+	@targets=$$(./shell/mutation/changed-contracts.sh "$(BASE_REF)"); \
 	if [ -z "$$targets" ]; then \
 		echo "No contracts in mutation scope changed."; \
 		exit 0; \
