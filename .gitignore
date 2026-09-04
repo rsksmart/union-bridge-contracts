@@ -29,3 +29,10 @@ package.json
 node_modules/
 # coverage
 lcov.info
+# Python
+__pycache__/
+*.pyc
+# mewt (mutation testing)
+mewt.sqlite
+mutation-status.json
+*.sarif

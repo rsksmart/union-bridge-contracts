@@ -173,6 +173,31 @@ bash shell/gas-consumption.sh
 
 Gas consumption needs to be under 80% of max block size (max block size 6.8M gas)
 
+### Mutation testing
+
+Advisory mutation testing with [mewt](https://github.com/trailofbits/mewt) measures whether unit tests catch small faults. The allowlist and per-contract test commands live in [`mewt.toml`](mewt.toml). Contracts matching `[targets].ignore` (currently `src/interfaces/`) are out of scope.
+
+CI (`.github/workflows/mutation.yml`) mutates only allowlisted contracts changed on the PR. Surviving mutants do not fail the job. If more than one allowlisted contract changed, the run is limited to high-severity slugs resolved at runtime from `mewt print mutations` (via `shell/mutation/high-severity-mutations.sh`).
+
+Local targets:
+
+```sh
+make mutate-install                         # install mewt
+make mutate-scope                           # print allowlist and check it for drift
+make mutate-changed                         # contracts changed against origin/main
+make mutate-file FILE=src/PeginManager.sol  # one contract
+make mutate-all                             # every allowlisted contract
+make mutate-status                          # last campaign overview
+make mutate-results                         # surviving mutants
+make mutate-clean                           # drop stale targets from the mewt database
+```
+
+On a dirty working tree, commit or stash first: mewt rewrites sources in place. For a faster high-severity pass:
+
+```sh
+make mutate-all MUTATIONS="$(./shell/mutation/high-severity-mutations.sh)"
+```
+
 ## Release
 
 Once we are code ready for a realease, we will run the following command:

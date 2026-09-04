@@ -1,0 +1,149 @@
+db = "mewt.sqlite"
+
+[log]
+level = "info"
+
+[targets]
+# Must stay in sync with the [[per_target]] globs below
+include = [
+    "src/AccessManager.sol",
+    "src/BaseProxy.sol",
+    "src/BitcoinManager.sol",
+    "src/ChallengeManager.sol",
+    "src/CommitteeRegistry.sol",
+    "src/MemberRegistry.sol",
+    "src/Musig2.sol",
+    "src/OperatorTakeManager.sol",
+    "src/PauseManager.sol",
+    "src/Pausable.sol",
+    "src/PegBase.sol",
+    "src/PegManagerBase.sol",
+    "src/PeginManager.sol",
+    "src/PegoutManager.sol",
+    "src/RbtcBridge.sol",
+    "src/SignatureManager.sol",
+    "src/StreamManager.sol",
+    "src/libraries/Bech32m.sol",
+    "src/libraries/BtcHelper.sol",
+    "src/libraries/BtcScriptParser.sol",
+    "src/libraries/BtcTaproot.sol",
+    "src/libraries/BtcTxEncoder.sol",
+    "src/libraries/BytesHelper.sol",
+    "src/libraries/Constants.sol",
+    "src/libraries/Network.sol",
+    "src/libraries/OpCodes.sol",
+    "src/libraries/Secp256k1.sol",
+]
+ignore = ["src/interfaces/"]
+
+# no [test].cmd to avoid silently running the whole unit suite
+[test]
+timeout = 120
+
+[[per_target]]
+glob = "src/AccessManager.sol"
+test.cmd = "forge test --match-path \"test/AccessManager.t.sol\""
+
+[[per_target]]
+glob = "src/BaseProxy.sol"
+test.cmd = "forge test --match-path \"test/deploy/DeployImplAndProxy.t.sol\""
+
+[[per_target]]
+glob = "src/BitcoinManager.sol"
+test.cmd = "forge test --match-path \"test/{BitcoinManager,BitcoinManagerTaprootTree}.t.sol\""
+
+[[per_target]]
+glob = "src/ChallengeManager.sol"
+test.cmd = "forge test --match-path \"test/ChallengeManager.t.sol\""
+
+[[per_target]]
+glob = "src/CommitteeRegistry.sol"
+test.cmd = "forge test --match-path \"test/CommitteeRegistry.t.sol\""
+
+[[per_target]]
+glob = "src/MemberRegistry.sol"
+test.cmd = "forge test --match-path \"test/MemberRegistry.t.sol\""
+
+[[per_target]]
+glob = "src/Musig2.sol"
+test.cmd = "forge test --match-path \"test/Musig2.t.sol\""
+
+[[per_target]]
+glob = "src/OperatorTakeManager.sol"
+test.cmd = "forge test --match-path \"test/OperatorTakeManager.t.sol\""
+
+[[per_target]]
+glob = "src/PauseManager.sol"
+test.cmd = "forge test --match-path \"test/PauseManager.t.sol\""
+
+[[per_target]]
+glob = "src/Pausable.sol"
+test.cmd = "forge test --match-path \"test/PauseManager.t.sol\""
+
+[[per_target]]
+glob = "src/PegBase.sol"
+test.cmd = "forge test --match-path \"test/{PeginManager,PegoutManager}.t.sol\""
+
+[[per_target]]
+glob = "src/PegManagerBase.sol"
+test.cmd = "forge test --match-path \"test/{PeginManager,PegoutManager}.t.sol\""
+
+[[per_target]]
+glob = "src/PeginManager.sol"
+test.cmd = "forge test --match-path \"test/PeginManager.t.sol\""
+
+[[per_target]]
+glob = "src/PegoutManager.sol"
+test.cmd = "forge test --match-path \"test/PegoutManager.t.sol\""
+
+[[per_target]]
+glob = "src/RbtcBridge.sol"
+test.cmd = "forge test --match-path \"test/RbtcBridge.t.sol\""
+
+[[per_target]]
+glob = "src/SignatureManager.sol"
+test.cmd = "forge test --match-path \"test/SignatureManager.t.sol\""
+
+[[per_target]]
+glob = "src/StreamManager.sol"
+test.cmd = "forge test --match-path \"test/StreamManager.t.sol\""
+
+[[per_target]]
+glob = "src/libraries/Bech32m.sol"
+test.cmd = "forge test --match-path \"test/libraries/Bech32m.t.sol\""
+
+[[per_target]]
+glob = "src/libraries/BtcHelper.sol"
+test.cmd = "forge test --match-path \"test/libraries/BtcHelper.t.sol\""
+
+[[per_target]]
+glob = "src/libraries/BtcScriptParser.sol"
+test.cmd = "forge test --match-path \"test/libraries/BtcScriptParser.t.sol\""
+
+[[per_target]]
+glob = "src/libraries/BtcTaproot.sol"
+test.cmd = "forge test --match-path \"test/{libraries/BtcTaproot,BitcoinManagerTaprootTree}.t.sol\""
+
+[[per_target]]
+glob = "src/libraries/BtcTxEncoder.sol"
+test.cmd = "forge test --match-path \"test/libraries/BtcTxEncoder.t.sol\""
+
+[[per_target]]
+glob = "src/libraries/BytesHelper.sol"
+test.cmd = "forge test --match-path \"test/{libraries/BtcScriptParser,PegoutManager}.t.sol\""
+
+[[per_target]]
+glob = "src/libraries/Constants.sol"
+test.cmd = "forge test --match-path \"test/{libraries/BtcTxEncoder,BitcoinManager,PeginManager}.t.sol\""
+
+[[per_target]]
+glob = "src/libraries/Network.sol"
+test.cmd = "forge test --match-path \"test/{libraries/Bech32m,StreamManager,deploy/DeployImplAndProxy}.t.sol\""
+
+[[per_target]]
+glob = "src/libraries/OpCodes.sol"
+test.cmd = "forge test --match-path \"test/{libraries/BtcScriptParser,BitcoinManagerTaprootTree}.t.sol\""
+
+[[per_target]]
+glob = "src/libraries/Secp256k1.sol"
+test.cmd = "forge test --match-path \"test/{libraries/BtcTaproot,libraries/ECDSA,MemberRegistry}.t.sol\""
