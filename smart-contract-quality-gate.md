@@ -45,6 +45,7 @@ The purpose of this document is to introduce a checklist that helps to define qu
 - **Fuzz tests**: ideally all the functions that are part of the contract interface should be fuzzed. Ideally with at least 10000 `runs`. The usage of `include_storage` and `include_push_bytes` is also recommended.
 - **Invariant tests**: every feature must document and explain separately which invariants it preserves and/or adds in the code being added. It also should be tested via invariant tests. The recommended configuration is 1000 `runs` x 600 `depth`. In this case the usage of `include_storage` and `include_push_bytes` is recommended as well.
 - **Fork tests**: fork testing is mandatory when interacting with any already deployed contracts. When fork testing, a block must be chosen to make the tests deterministic. Updates in the test may include changing the block and adjusting the tests accordingly. When choosing a new block, a recent one should be used. For example, after deploying a new version, tests must be changed to use the newly deployed contracts.
+- **Mutation testing**: advisory in CI. Changed allowlisted contracts are mutated with `mewt` (see `mewt.toml`); surviving mutants do not fail the PR.
 
 ## Deployment / Scripts
 
