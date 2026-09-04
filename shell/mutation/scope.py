@@ -4,7 +4,7 @@
 mewt.toml is the single source of truth for which contracts are eligible for
 mutation testing: the [[per_target]] globs are the allowlist. This module reads
 that allowlist back out so the shell entry points never restate it. The reason
-for this python script is to take leverage of the tomllib module which doesn't
+for this Python script is to take advantage of the tomllib module, which doesn't
 have an equivalent we can use in the shell.
 
 Subcommands:

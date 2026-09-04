@@ -13,11 +13,11 @@ BASE_REF ?= origin/main
 MUTATIONS ?=
 MEWT_FLAGS = $(if $(MUTATIONS),--mutations $(MUTATIONS))
 
-# Install mewt (same installer the CI workflow uses)
+# Install the pinned mewt release
 .PHONY: mutate-install
 mutate-install:
 	@echo "Installing mewt..."
-	curl --proto '=https' --tlsv1.2 -LsSf https://github.com/trailofbits/mewt/releases/latest/download/mewt-installer.sh | sh
+	./shell/mutation/install-mewt.sh
 	@echo ""
 	@mewt_bin="$$(command -v mewt || echo "$$HOME/.local/bin/mewt")"; \
 	if [ ! -x "$$mewt_bin" ]; then \

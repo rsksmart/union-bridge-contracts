@@ -46,7 +46,7 @@ test.cmd = "forge test --match-path \"test/AccessManager.t.sol\""
 
 [[per_target]]
 glob = "src/BaseProxy.sol"
-test.cmd = "forge test --match-path \"test/deploy/DeployImplAndProxy.t.sol\""
+test.cmd = "bash shell/clean-build.sh && forge test --match-path \"test/deploy/DeployImplAndProxy.t.sol\""
 
 [[per_target]]
 glob = "src/BitcoinManager.sol"
@@ -138,7 +138,7 @@ test.cmd = "forge test --match-path \"test/{libraries/BtcTxEncoder,BitcoinManage
 
 [[per_target]]
 glob = "src/libraries/Network.sol"
-test.cmd = "forge test --match-path \"test/{libraries/Bech32m,StreamManager,deploy/DeployImplAndProxy}.t.sol\""
+test.cmd = "bash shell/clean-build.sh && forge test --match-path \"test/{libraries/Bech32m,StreamManager,deploy/DeployImplAndProxy}.t.sol\""
 
 [[per_target]]
 glob = "src/libraries/OpCodes.sol"

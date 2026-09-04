@@ -58,6 +58,8 @@ Contributions, feedback, and issue reports are welcome while development is ongo
 - You'll need the [Rust](https://www.rust-lang.org/) compiler and Cargo, Rust's package manager. The easiest way to install both is by using [rustup.rs.](https://rustup.rs/)
 - [Foundry v1.3.1](https://book.getfoundry.sh/getting-started/installation) running `foundryup -i v1.3.1` It's important that is this version, otherwise the Alloy version released for the rust crate can change.
 - [Node.js LTS (24)](https://nodejs.org/en/download)
+- [Python 3.11+](https://www.python.org/downloads/) for mutation-scope tooling (`tomllib`)
+- [`jq`](https://jqlang.org/download/) for resolving mutation severities
 
 ### Install dependencies
 
@@ -175,9 +177,9 @@ Gas consumption needs to be under 80% of max block size (max block size 6.8M gas
 
 ### Mutation testing
 
-Advisory mutation testing with [mewt](https://github.com/trailofbits/mewt) measures whether unit tests catch small faults. The allowlist and per-contract test commands live in [`mewt.toml`](mewt.toml). Contracts matching `[targets].ignore` (currently `src/interfaces/`) are out of scope.
+Advisory mutation testing with [mewt](https://github.com/trailofbits/mewt) v4.0.0 measures whether unit tests catch small faults. The allowlist and per-contract test commands live in [`mewt.toml`](mewt.toml). Contracts matching `[targets].ignore` are out of scope.
 
-CI (`.github/workflows/mutation.yml`) mutates only allowlisted contracts changed on the PR. Surviving mutants do not fail the job. If more than one allowlisted contract changed, the run is limited to high-severity slugs resolved at runtime from `mewt print mutations` (via `shell/mutation/high-severity-mutations.sh`).
+CI (`.github/workflows/mutation.yml`) mutates only allowlisted contracts changed on the PR. Surviving mutants do not fail the job, but setup, baseline, configuration, and campaign execution errors do. If more than one allowlisted contract changed, the run is limited to high-severity slugs resolved at runtime from `mewt print mutations` (via `shell/mutation/high-severity-mutations.sh`).
 
 Local targets:
 
